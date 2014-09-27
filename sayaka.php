@@ -169,10 +169,22 @@ function stream()
 		ob_end_clean();
 	}
 
-	print "Ready..\n";
+	print "Ready..";
+	fflush(STDOUT);
 
 	// Start streaming
-	$tw->streaming("user", showstatus_callback);
+	$tw->streaming("user", showstatus_callback,
+		headerfunction_callback);
+}
+
+function headerfunction_callback($ch, $text)
+{
+	global $f_connected;
+	if (isset($f_connected) == false) {
+		print "Connected.\n";
+		$f_connected = true;
+	}
+	return strlen($text);
 }
 
 //

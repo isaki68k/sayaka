@@ -388,8 +388,14 @@ final class TwistOAuth {
      *                           e.g. https://111.222.333.444:8080
      * @throws TwistException
      */
-    public function streaming($url, $callback, $params = array(), $proxy = '') {
-        curl_exec($ch = $this->curlStreaming($url, $callback, $params, $proxy));
+    public function streaming($url, $callback, $headercallback = null, $params = array(), $proxy = '') {
+	$ch = $this->curlStreaming($url, $callback, $params, $proxy);
+// sayaka: headercallback を渡せるようにしてみた
+	if (!is_null($headercallback)) {
+       	  curl_setopt_array($ch, array(
+		CURLOPT_HEADERFUNCTION => $headercallback));
+	}
+	curl_exec($ch);
         // throw exception unless $callback returned true
         self::checkCurlError($ch);
     }
