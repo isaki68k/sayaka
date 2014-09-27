@@ -3,17 +3,19 @@ sayaka
 
 これは何?
 ---
-ターミナルに特化した PHP スクリプトの
-twitter ユーザストリームクライアントです。
+ターミナルに特化した twitter クライアントです。
 
+* ユーザストリームの垂れ流しが出来ます。
 * mlterm などの sixel 対応ターミナル用です。
+* PHP スクリプトです。
 * ruby じゃないので遅マシンでも快適 (たぶん)
 
 
 必要なもの
 ---
-* PHP (version 5.2 以上くらい?)
-  CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
+* PHP
+  - version 5.2 以上くらい?
+  - CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
 
 * PHP には以下のモジュールが必要です。
   - mbstring
@@ -22,8 +24,8 @@ twitter ユーザストリームクライアントです。
   - pdo
   - pdo_sqlite
 
-* pkgsrc なら lang/php、
-converter/php-mbstring, www/php-curl, textproc/php-json,
+* pkgsrc なら
+lang/php, converter/php-mbstring, www/php-curl, textproc/php-json,
 databases/php-pdo、databases/php-pdo_sqlite をインストールして、
 /usr/pkg/etc/php.ini に以下の行を追加します。
 ```
@@ -34,12 +36,22 @@ extension=pdo.so
 extension=pdo_sqlite.so
 ```
 
-* img2sixel
+* E_NOTICE レベルのワーニングがん無視なので、
+/usr/pkg/etc/php.ini の error_reporting に
+`& ~E_NOTICE` を追加するなどして
+E_NOTICE レベルのレポートを落としておくことをお勧めします。
+```
+- error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
++ error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE
+```
+
+* img2sixel …
 pkgsrc-current/graphics/libsixel をインストールするか、
 libsixel を make して img2sixel をパスの通ったところに置いてください。
 
-* curl
-pkgsrc/www/curl をインストールしてください。
+* curl …
+pkgsrc/www/curl をインストールするなどして、
+パスの通ってるところに置いといてください。
 
 
 インストール方法
