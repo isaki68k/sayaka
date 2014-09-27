@@ -493,6 +493,13 @@ function formatmsg($s)
 					"target_url"  => $target,
 				);
 			} else
+			if (preg_match("|(.*instagram.com/p/[\w\-]+)/?|", $exp, $m)) {
+				$target = "{$m[1]}/media/?size=t";
+				$mediainfo[] = array(
+					"display_url" => $disp,
+					"target_url"  => $target,
+				);
+			} else
 			if (preg_match("/\.(jpg|png|gif)$/", $exp)) {
 				$mediainfo[] = array(
 					"display_url" => $disp,
