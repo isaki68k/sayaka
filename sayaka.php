@@ -195,6 +195,9 @@ function showstatus_callback($object)
 	global $mediainfo;
 	global $mutelist;
 
+	define("ESC", "\x1b");
+	define("CSI", ESC."[");
+
 	// $object が元オブジェクト (イベント or メッセージ)
 
 	// https://dev.twitter.com/streaming/overview/messages-types#Events_event
@@ -285,20 +288,23 @@ function showstatus_callback($object)
 
 	print "";
 	show_icon(unescape($s->user->screen_name), $profile_image_url);
-	print "\x1b[3A\x1b[6C";
+	print CSI."3A";
+	print CSI."6C";
 	print "{$name} {$userid}{$verified}{$protected}\n";
-	print "\x1b[6C{$msg}";
+	print CSI."6C";
+	print $msg;
 	print "\n";
 
 	// picture
 	foreach ($mediainfo as $m) {
-		print "\x1b[6C";
+		print CSI."6C";
 		show_photo($m["target_url"], $m["width"]);
-		print "\x1b[1A";
+		print CSI."1A";
 	}
 
 	// source
-	print "\x1b[6C{$time} {$src}";
+	print CSI."6C";
+	print "{$time} {$src}";
 	// RT
 	$rtcnt = $s->retweet_count;
 	$rtcnt += 0;
@@ -315,7 +321,7 @@ function showstatus_callback($object)
 
 	// リツイート元
 	if (isset($status->retweeted_status)) {
-		print "\x1b[6C";
+		print CSI."6C";
 		$rt_time   = formattime($status);
 		$rt_userid = "@".unescape($status->user->screen_name);
 		$rt_name   = unescape($status->user->name);
@@ -326,7 +332,7 @@ function showstatus_callback($object)
 
 	// ふぁぼ元
 	if (isset($object->event) && $object->event == "favorite") {
-		print "\x1b[6C";
+		print CSI."6C";
 		$fav_time   = formattime($object);
 		$fav_userid = "@".unescape($object->source->screen_name);
 		$fav_name   = unescape($object->source->name);
