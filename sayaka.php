@@ -35,41 +35,46 @@
 	$progname = $_SERVER["argv"][0];
 	$cmd = "";
 
-	if ($_SERVER["argc"] < 2) {
-		usage();
-	}
-	for ($i = 1; $i < $_SERVER["argc"]; $i++) {
-		switch ($_SERVER["argv"][$i]) {
-		 case "--help":
-		 default:
+	if ($_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
+		header("Connection: Keep-alive");
+		$cmd = "stream";
+	} else {
+		if ($_SERVER["argc"] < 2) {
 			usage();
-			exit();
-		 case "--stream":
-			$cmd = "stream";
-			break;
-		 case "--color":
-			$i++;
-			$color_mode = $_SERVER["argv"][$i];
-			if ($color_mode == "") {
+		}
+		for ($i = 1; $i < $_SERVER["argc"]; $i++) {
+			switch ($_SERVER["argv"][$i]) {
+			 case "--help":
+			 default:
 				usage();
+				exit();
+			 case "--stream":
+				$cmd = "stream";
+				break;
+			 case "--color":
+				$i++;
+				$color_mode = $_SERVER["argv"][$i];
+				if ($color_mode == "") {
+					usage();
+				}
+				break;
+			 case "--post":
+				$cmd = "tweet";
+				$i++;
+				$text = $_SERVER["argv"][$i];
+				if ($text == "") {
+					usage();
+				}
+				break;
+			 case "--pipe":
+				// パイプモードなら標準入力から全部読み込む
+				$text = "";
+				while (($buf = fgets(STDIN))) {
+					$text .= $buf;
+				}
+				$cmd = "tweet";
+				break;
 			}
-			break;
-		 case "--post":
-			$cmd = "tweet";
-			$i++;
-			$text = $_SERVER["argv"][$i];
-			if ($text == "") {
-				usage();
-			}
-			break;
-		 case "--pipe":
-			// パイプモードなら標準入力から全部読み込む
-			$text = "";
-			while (($buf = fgets(STDIN))) {
-				$text .= $buf;
-			}
-			$cmd = "tweet";
-			break;
 		}
 	}
 
@@ -170,7 +175,7 @@ function stream()
 	}
 
 	print "Ready..";
-	fflush(STDOUT);
+	@fflush(STDOUT);
 
 	// Start streaming
 	$tw->streaming("user", showstatus_callback,
@@ -585,7 +590,7 @@ function show_image($img_file, $img_url, $width)
 	} else {
 		// ファイルを読んで標準出力に吐き出す(標準関数)
 		readfile($img_file);
-		fflush(STDOUT);
+		@fflush(STDOUT);
 		return true;
 	}
 }
