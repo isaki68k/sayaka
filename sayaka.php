@@ -283,25 +283,22 @@ function showstatus_callback($object)
 	// 今のところローカルアカウントはない
 	$profile_image_url = $s->user->profile_image_url;
 
+	print "";
 	show_icon(unescape($s->user->screen_name), $profile_image_url);
-	print "\x1b[3A";	// 上に移動
-	print "\x1b7";		// カーソル位置保存
-	print "\x1b[?69h";	// マージン有効 (DECLRMM)
-	print "\x1b[7;s";	// 左マージン設定 (DECSLRM)
-	print "\x1b8";		// カーソル位置復元
-	print "\x1b[6C";	// 左に移動
+	print "\x1b[3A\x1b[6C";
 	print "{$name} {$userid}{$verified}{$protected}\n";
-	print $msg;			// 本文
+	print "\x1b[6C{$msg}";
 	print "\n";
 
 	// picture
 	foreach ($mediainfo as $m) {
+		print "\x1b[6C";
 		show_photo($m["target_url"], $m["width"]);
 		print "\x1b[1A";
 	}
 
 	// source
-	print "{$time} {$src}";
+	print "\x1b[6C{$time} {$src}";
 	// RT
 	$rtcnt = $s->retweet_count;
 	$rtcnt += 0;
@@ -318,6 +315,7 @@ function showstatus_callback($object)
 
 	// リツイート元
 	if (isset($status->retweeted_status)) {
+		print "\x1b[6C";
 		$rt_time   = formattime($status);
 		$rt_userid = "@".unescape($status->user->screen_name);
 		$rt_name   = unescape($status->user->name);
@@ -328,6 +326,7 @@ function showstatus_callback($object)
 
 	// ふぁぼ元
 	if (isset($object->event) && $object->event == "favorite") {
+		print "\x1b[6C";
 		$fav_time   = formattime($object);
 		$fav_userid = "@".unescape($object->source->screen_name);
 		$fav_name   = unescape($object->source->name);
@@ -336,9 +335,6 @@ function showstatus_callback($object)
 		print "\n";
 	}
 
-	print "\x1b7";		// カーソル位置保存
-	print "\x1b[?69l";	// マージン無効 (DECLRMM)
-	print "\x1b8";		// カーソル位置復元
 	print "\n";
 }
 
