@@ -557,7 +557,10 @@ function show_icon($user, $img_url)
 {
 	global $iconsize;
 
-	$img_file = "icon-{$user}-{$iconsize}";
+	// URLのファイル名部分をキャッシュのキーにする
+	$filename = basename($img_url);
+	$img_file = "icon-{$user}-{$iconsize}-{$filename}.sixel";
+
 	if (show_image($img_file, $img_url, $iconsize) === false) {
 		print "\n\n\n\n";
 	}
@@ -576,8 +579,6 @@ function show_photo($img_url, $percent)
 //  $img_url は画像の URL
 //  $width は画像の幅。ピクセルかパーセントで指定。
 // 表示できれば真を返す。
-//
-// XXX アイコンの変更に対応すること
 function show_image($img_file, $img_url, $width)
 {
 	global $cachedir;
