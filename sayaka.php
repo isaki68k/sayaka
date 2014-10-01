@@ -141,17 +141,15 @@ function init_stream()
 	// XXX sixelなしモードを引数で指定したい
 	$img2sixel = rtrim(`which img2sixel`);
 	if ($img2sixel != "") {
-		if ($color_mode <= 16) {
-			if ($color_mode == 2) {
-				$img2sixel .= " -e --quality=low";
+		if ($color_mode == 2) {
+			$img2sixel .= " -e --quality=low";
+		} else if ($color_mode <= 16) {
+			$file = "colormap{$color_mode}.png";
+			if (file_exists($file)) {
+				$img2sixel .= " -m {$file}";
 			} else {
-				$file = "colormap{$color_mode}.png";
-				if (file_exists($file)) {
-					$img2sixel .= " -m {$file}";
-				} else {
-					print "No colormap file: {$file}\n";
-					exit(1);
-				}
+				print "No colormap file: {$file}\n";
+				exit(1);
 			}
 		}
 	}
