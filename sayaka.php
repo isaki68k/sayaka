@@ -594,8 +594,13 @@ function show_image($img_file, $img_url, $width)
 
 	if (!file_exists($img_file)) {
 		if ($img2sixel != "") {
+			$imgconv = "{$img2sixel} {$width}";
+			if (preg_match("/.gif$/i", $img_url)) {
+				// img2sixel では表示できない GIF があるため
+				$imgconv = "giftopnm | {$imgconv}";
+			}
 			system("(curl -Lks {$img_url} | "
-			     . "{$img2sixel} {$width} > {$img_file}) 2>/dev/null");
+			     . "{$imgconv} > {$img_file}) 2>/dev/null");
 		}
 	}
 	if (filesize($img_file) == 0) {
