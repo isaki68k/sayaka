@@ -34,6 +34,8 @@
 	// まず引数のチェックをする
 	$progname = $_SERVER["argv"][0];
 	$cmd = "";
+	$record_file = "";
+	$play_file = "";
 
 	if ($_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
 		header("Connection: Keep-alive");
@@ -55,6 +57,21 @@
 				$i++;
 				$color_mode = $_SERVER["argv"][$i];
 				if ($color_mode == "") {
+					usage();
+				}
+				break;
+			 case "--record":
+				$i++;
+				$record_file = $_SERVER["argv"][$i];
+				if ($record_file == "") {
+					usage();
+				}
+				break;
+			 case "--play":
+				$cmd = "play";
+				$i++;
+				$play_file = $_SERVER["argv"][$i];
+				if ($play_file == "") {
 					usage();
 				}
 				break;
@@ -103,6 +120,9 @@
 		init_stream();
 		stream();
 		break;
+	 case "play":
+		init_stream();
+		play();
 	}
 	exit(0);
 ?>
@@ -196,6 +216,18 @@ function headerfunction_callback($ch, $text)
 	return strlen($text);
 }
 
+// 再生モード
+function play()
+{
+	global $play_file;
+
+	$fp = fopen($play_file, "r");
+	while (($buf = fgets($fp))) {
+		$object = json_decode($buf);
+		showstatus_callback($object);
+	}
+}
+
 //
 // 1ツイートを表示するコールバック関数
 //
@@ -203,11 +235,19 @@ function showstatus_callback($object)
 {
 	global $mediainfo;
 	global $mutelist;
+	global $record_file;
 
 	define("ESC", "\x1b");
 	define("CSI", ESC."[");
 
 	// $object が元オブジェクト (イベント or メッセージ)
+
+	// 録画
+	if ($record_file != "") {
+		$fp = fopen($record_file, "a");
+		fwrite($fp, json_encode($object)."\n");
+		fclose($fp);
+	}
 
 	// https://dev.twitter.com/streaming/overview/messages-types#Events_event
 	if (isset($object->event)) {
@@ -674,12 +714,14 @@ function usage()
 
 	print <<<__EOM__
 usage:
- {$progname} --stream [--color <n>]
+ {$progname} --stream [--color <n>] [--record <file>]
 	streaming mode
  {$progname} --pipe
 	tweet from stdin
  {$progname} --post "msg"
 	tweet "msg" (without quote)
+ {$progname} --play <file>
+	replay the recorded file as stream
 
 __EOM__;
 	exit(0);
