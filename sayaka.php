@@ -178,9 +178,6 @@ function init_stream()
 	// giftopnm
 	$giftopnm = rtrim(`which giftopnm`);
 
-	// 古いキャッシュを削除
-	invalidate_cache();
-
 	// ミュートユーザ取得
 	get_mute_list();
 }
@@ -189,6 +186,9 @@ function init_stream()
 function stream()
 {
 	global $tw;
+
+	// 古いキャッシュを削除
+	invalidate_cache();
 
 	// Disable timeout
 	set_time_limit(0);
@@ -703,9 +703,10 @@ function invalidate_cache()
 	global $cachedir;
 
 	// アイコンは7日分くらいか
+	system("find {$cachedir} -atime +7 -delete");
 
 	// 写真は24時間分くらいか
-
+	system("find {$cachedir} -atime +1 -delete");
 }
 
 function usage()
