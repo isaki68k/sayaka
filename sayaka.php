@@ -540,12 +540,12 @@ function formatmsg($s)
 			//   target_url  それを元に実際に使う URL
 			//   width       幅指定。ピクセルか割合で
 
-			// pic.twitter.com の画像は :small でもでかいので 120px に縮小。
+			// pic.twitter.com の画像は :small でもでかいので 40% に縮小。
 			// :thumb は縮小ではなく切り抜きなので使わない。
 			$mediainfo[] = array(
 				"display_url" => $m->display_url,
 				"target_url"  => "{$m->media_url}:small",
-				"width"       => 120,
+				"width"       => "40%",
 			);
 		}
 	}
