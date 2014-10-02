@@ -132,6 +132,7 @@ function init_stream()
 {
 	global $color_mode;
 	global $img2sixel;
+	global $giftopnm;
 	global $cachedir;
 
 	// 色の初期化
@@ -153,6 +154,9 @@ function init_stream()
 			}
 		}
 	}
+
+	// giftopnm
+	$giftopnm = rtrim(`which giftopnm`);
 
 	// 古いキャッシュを削除
 	invalidate_cache();
@@ -583,6 +587,7 @@ function show_image($img_file, $img_url, $width)
 {
 	global $cachedir;
 	global $img2sixel;
+	global $giftopnm;
 
 	$img_file = "{$cachedir}/{$img_file}";
 
@@ -595,9 +600,9 @@ function show_image($img_file, $img_url, $width)
 	if (!file_exists($img_file)) {
 		if ($img2sixel != "") {
 			$imgconv = "{$img2sixel} {$width}";
-			if (preg_match("/.gif$/i", $img_url)) {
+			if (preg_match("/.gif$/i", $img_url) && $giftopnm != "") {
 				// img2sixel では表示できない GIF があるため
-				$imgconv = "giftopnm | {$imgconv}";
+				$imgconv = "{$giftopnm} | {$imgconv}";
 			}
 			system("(curl -Lks {$img_url} | "
 			     . "{$imgconv} > {$img_file}) 2>/dev/null");
