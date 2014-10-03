@@ -176,9 +176,6 @@ function init_stream()
 
 	// giftopnm
 	$giftopnm = rtrim(`which giftopnm`);
-
-	// ミュートユーザ取得
-	get_mute_list();
 }
 
 // ユーザストリーム
@@ -188,6 +185,9 @@ function stream()
 
 	// 古いキャッシュを削除
 	invalidate_cache();
+
+	// ミュートユーザ取得
+	get_mute_list();
 
 	// Disable timeout
 	set_time_limit(0);
