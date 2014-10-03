@@ -99,7 +99,6 @@
 	require_once "TwistOAuth.php";
 	require_once "subr.php";
 	setTimeZone();
-	mb_internal_encoding("UTF-8");
 
 	// DB からアクセストークンを取得
 	$db = new sayakaSQLite3($configdb);
@@ -480,26 +479,23 @@ function formatmsg($s)
 	// タグ情報を展開
 	// 文字位置しか指定されてないので、$text に一切の変更を加える前に
 	// 調べないとタグが分からないというクソ仕様…。
-	if (isset($s->entities) && isset($s->entities->hashtags)) {
-		// 何文字目から何文字目までっていう構造なので後ろから処理する。
-		// その際ソートは面倒なので、きっと前から並んでると思って逆順にする。
-		$rev_tags = array();
+	if (isset($s->entities) && count($s->entities->hashtags) > 0) {
+		$tags = array();
 		foreach ($s->entities->hashtags as $t) {
-			array_unshift($rev_tags, $t);
-		}
-
-		// 後ろから調べる
-		foreach ($rev_tags as $t) {
 			// t->indices[0] … 開始位置、1文字目からなら0
 			// t->indices[1] … 終了位置。この1文字前まで
-			list ($start, $end) = $t->indices;
+			$tags[] = $t->indices[0];
+			$tags[] = $t->indices[1];
+		}
 
-			// タグより前、タグ、タグより後ろに分解
-			$pre  = mb_substr($text, 0, $start);
-			$tag  = mb_substr($text, $start, $end - $start);
-			$post = mb_substr($text, $end);
-
-			$text = $pre . coloring($tag, COLOR_TAG) . $post;
+		$splittext = utf8_split($text, $tags);
+		$text = "";
+		for ($i = 0; $i < count($splittext); $i++) {
+			if ($i & 1) {
+				$text .= coloring($splittext[$i], COLOR_TAG);
+			} else {
+				$text .= $splittext[$i];
+			}
 		}
 	}
 
@@ -707,6 +703,62 @@ function invalidate_cache()
 
 	// 写真は24時間分くらいか
 	system("find {$cachedir} -atime +1 -delete");
+}
+
+// UTF-8 文字列を分割する
+//  utf8_split("abcdef", array(1, 3, 5, 6));
+//  rv = array("a", "bc", "de", "f");
+function utf8_split($str, $charpos)
+{
+	$len = strlen($str);
+
+	// 文字のインデックスをバイトインデックスに変換
+	$charindex = 0;
+	$bytepos = array(0);
+	$j = 0;
+	for ($i = 0; $i < $len; ) {
+		if ($charindex == $charpos[$j]) {
+			$bytepos[] = $i;
+			$j++;
+		}
+		$i += utf8_charlen($str[$i]);
+		$charindex++;
+	}
+
+	// バイトインデックスで分割
+	$rv = array();
+	for ($i = 0; $i < count($bytepos) - 1; $i++) {
+		$rv[] = substr($str,
+			$bytepos[$i],
+			$bytepos[$i + 1] - $bytepos[$i]);
+	}
+	$rv[] = substr($str, $bytepos[count($bytepos) - 1]);
+
+	return $rv;
+}
+
+// UTF-8 文字列の1バイト目から1文字目のバイト数を返す
+function utf8_charlen($c)
+{
+	$c = ord($c);
+	// UTF-8 は1バイト目で1文字のバイト数が分かる
+	if ($c <= 0x7f) {
+		return 1;
+	} else if ($c < 0xc2) {
+		return 0;
+	} else if ($c <= 0xdf) {
+		return 2;
+	} else if ($c <= 0xef) {
+		return 3;
+	} else if ($c <= 0xf7) {
+		return 4;
+	} else if ($c <= 0xfb) {
+		return 5;
+	} else if ($c <= 0xfd) {
+		return 6;
+	} else {
+		return 0;
+	}
 }
 
 function usage()
