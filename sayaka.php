@@ -715,14 +715,22 @@ function utf8_split($str, $charpos)
 	// 文字のインデックスをバイトインデックスに変換
 	$charindex = 0;
 	$bytepos = array(0);
-	$j = 0;
-	for ($i = 0; $i < $len; ) {
-		if ($charindex == $charpos[$j]) {
-			$bytepos[] = $i;
-			$j++;
+	$i = 0;
+	for ($j = 0; $j < count($charpos); $j++) {
+		while ($i < $len) {
+			if ($charindex == $charpos[$j]) {
+				$bytepos[] = $i;
+				break;
+			}
+			$chlen = utf8_charlen($str[$i]);
+			if ($chlen == 0) {
+				// 文字として数えない
+				$i++;
+			} else {
+				$i += $chlen;
+				$charindex++;
+			}
 		}
-		$i += utf8_charlen($str[$i]);
-		$charindex++;
 	}
 
 	// バイトインデックスで分割
