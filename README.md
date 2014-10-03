@@ -16,20 +16,18 @@ twitter クライアント sayaka ちゃん
   - CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
 
 * PHP には以下のモジュールが必要です。
-  - mbstring
   - curl
   - json
   - pdo
   - pdo_sqlite
 
 * pkgsrc なら
-lang/php, converter/php-mbstring, www/php-curl, textproc/php-json,
+lang/php, www/php-curl, textproc/php-json,
 databases/php-pdo、databases/php-pdo_sqlite をインストールして、
 /usr/pkg/etc/php.ini に以下の行を追加します。
 ```
 extension=curl.so
 extension=json.so
-extension=mbstring.so
 extension=pdo.so
 extension=pdo_sqlite.so
 ```
