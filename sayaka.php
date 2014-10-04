@@ -165,6 +165,9 @@ function init_stream()
 
 	// giftopnm
 	$giftopnm = rtrim(`which giftopnm`);
+
+	// NGワード取得
+	get_ngword();
 }
 
 // ユーザストリーム
@@ -316,6 +319,24 @@ function showstatus_callback($object)
 		}
 	}
 
+	// NGワード
+	$ng = false;
+	if (1 && ($ng = match_ngword($status)) !== false) {
+		// マッチしたらここで表示
+		$userid = coloring("@".unescape($ng['user']->screen_name), COLOR_NG);
+		$name   = coloring(unescape($ng['user']->name), COLOR_NG);
+		$time   = coloring(formattime($status), COLOR_NG);
+
+		$msg = coloring("NG:{$ng['ngword']}", COLOR_NG);
+
+		print CSI."6C";
+		print "{$name} {$userid}\n";
+		print CSI."6C";
+		print "{$time} {$msg}\n";
+		print "\n";
+		return;
+	}
+
 	$userid = coloring("@".unescape($s->user->screen_name), COLOR_USERID);
 	$name   = coloring(unescape($s->user->name), COLOR_USERNAME);
 	$src    = coloring(unescape(strip_tags($s->source))." から", COLOR_SOURCE);
@@ -401,6 +422,7 @@ function init_color()
 
 	define("BOLD",		"1");
 	define("UNDERSCORE","4");
+	define("STRIKE",	"9");
 	define("BLACK",		"30");
 	define("RED",		"31");
 	define("GREEN",		"32");
@@ -430,6 +452,7 @@ function init_color()
 		"COLOR_TAG"			=> CYAN,
 		"COLOR_VERIFIED"	=> CYAN,
 		"COLOR_PROTECTED"	=> BOLD.";".BLACK,
+		"COLOR_NG"			=> STRIKE,
 	);
 }
 
@@ -779,6 +802,82 @@ function utf8_charlen($c)
 	} else {
 		return 0;
 	}
+}
+
+// NG ワードをデータベースから読み込む
+function get_ngword()
+{
+	global $configdb;
+	global $ngwords;
+
+	$ngwords = array();
+
+	$db = new sayakaSQLite3($configdb);
+	$result = $db->query("select * from t_ngword");
+	while (($buf = $result->fetcharray(SQLITE3_ASSOC))) {
+		$ngwords[$buf['id']] = $buf;
+	}
+	$db->close();
+}
+
+// NG ワードと照合する。
+// 一致したら array(
+//  "word" => $ngwords['word'],
+//	"user" => userオブジェクト,
+// ) を返す。
+// 一致しなければ false を返す。
+function match_ngword($status)
+{
+	global $ngwords;
+
+	foreach ($ngwords as $ng) {
+		$user = false;
+		if ($ng['user_id'] > 1) {
+			// ユーザ指定があれば、ユーザが一致した時だけワード比較に進む
+			if ($ng['user_id'] == $status->user->id_str) {
+				$user = match_ngword_main($ng, $status);
+			}
+			// RTならRT先も比較
+			if (isset($status->retweeted_status)) {
+				$s = $status->retweeted_status;
+				if ($ng['user_id'] == $s->user->id_str) {
+					$user = match_ngword_main($ng, $s);
+				}
+			}
+		} else {
+			// ユーザ指定がなければ直接ワード比較
+			$user = match_ngword_main($ng, $status);
+		}
+
+		// いずれかで一致すれば帰る
+		if ($user !== false) {
+			return array(
+				"ngword" => $ng['ngword'],
+				"user" => $user,
+			);
+		}
+	}
+	return false;
+}
+
+// $status の本文その他を NGワード $ng と照合する。
+// マッチしたら該当ツイートユーザのオブジェクトを返す。
+// マッチしなければ false を返す。
+function match_ngword_main($ng, $status)
+{
+	// クライアント名
+	if (preg_match("/%SOURCE,(.*)/", $ng['ngword'], $match)) {
+		if (preg_match("/{$match[1]}/", $status->source)) {
+			return $status->user;
+		}
+	}
+
+	// 単純ワード比較
+	if (preg_match("/{$ng['ngword']}/", $status->text)) {
+		return $status->user;
+	}
+
+	return false;
 }
 
 function usage()
