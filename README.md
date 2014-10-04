@@ -41,13 +41,20 @@ E_NOTICE レベルのレポートを落としておくことをお勧めしま�
 + error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE
 ```
 
-* img2sixel …
-pkgsrc-current/graphics/libsixel をインストールするか、
-libsixel を make して img2sixel をパスの通ったところに置いてください。
-
-* curl …
+* curl (必須) …
 pkgsrc/www/curl をインストールするなどして、
 パスの通ってるところに置いといてください。
+
+* img2sixel (オプション) …
+pkgsrc-current/graphics/libsixel をインストールするか、
+libsixel を make して img2sixel をパスの通ったところに置いてください。
+なければアイコンや写真などが表示できないだけで、動作はします。
+
+* giftopnm (オプション) …
+pkgsrc/graphics/netpbm をインストールするなどして、
+パスの通ってるところに giftopnm を置いてください。
+なくても動作します (img2sixel が GIF 画像も直接扱います) が、
+giftopnm 通したほうが表示できる GIF 形式が増えるかも知れません。
 
 
 インストール方法
