@@ -14,12 +14,7 @@ twitter クライアント sayaka ちゃん
 * PHP
   - version 5.3 以上
   - CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
-
-* PHP には以下のモジュールが必要です。
-  - curl
-  - json
-  - pdo
-  - pdo_sqlite
+  - curl, json, pdo_sqlite モジュールが必要です。
 
 * pkgsrc なら
 lang/php, www/php-curl, textproc/php-json,
@@ -31,6 +26,23 @@ extension=json.so
 extension=pdo.so
 extension=pdo_sqlite.so
 ```
+
+* PHP を野良ビルドする場合以下のオプションくらいで行けそうです。
+```
+% ./configure
+   --disable-all
+   --disable-cgi
+   --enable-json
+   --enable-filter
+   --enable-pdo
+   --with-sqlite3=/usr/pkg
+   --with-curl=/usr/pkg
+% make
+```
+NetBSD-6.1.4/amd64 + pkgsrc-2014Q2 の場合、
+pkgsrc 版のバイナリが本体 7.6MB + モジュール 0.3MB くらい? ですが、
+このオプションで作った野良ビルド版では本体 3.7MB 程度になります。
+メモリの少ないマシンではこの差は効くかも。
 
 * E_NOTICE レベルのワーニングがん無視なので、
 /usr/pkg/etc/php.ini の error_reporting に
@@ -57,7 +69,7 @@ pkgsrc/graphics/netpbm をインストールするなどして、
 giftopnm 通したほうが表示できる GIF 形式が増えるかも知れません。
 
 
-インストール方法
+とりあえず使ってみる
 ---
 適当なところに展開してください。
 展開したディレクトリ内だけで動作します。
@@ -84,7 +96,7 @@ Input PIN code:
 ```
 
 
-コマンドライン引数
+コマンドライン引数など
 ---
 以下のうちいずれかで動作モードを指定します。
 * `--stream` … ユーザストリームモードです。
