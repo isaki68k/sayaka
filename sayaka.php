@@ -220,10 +220,19 @@ function play()
 {
 	global $play_file;
 
-	$fp = fopen($play_file, "r");
+	if ($play_file == "-") {
+		$fp = STDIN;
+	} else {
+		$fp = fopen($play_file, "r");
+	}
+
 	while (($buf = fgets($fp))) {
 		$object = json_decode($buf);
 		showstatus_callback($object);
+	}
+
+	if ($play_file != "-") {
+		fclose($fp);
 	}
 }
 
