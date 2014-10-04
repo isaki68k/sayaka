@@ -865,6 +865,59 @@ function match_ngword($status)
 // マッチしなければ false を返す。
 function match_ngword_main($ng, $status)
 {
+	// 生実況 NG
+	// %LIVE,www,hh:mm,HH:MM,comment
+	// www曜日、hh:mmからHH:MMまでの間、該当ユーザのツイートを非表示にする
+	// HH:MM は24時を越えることが出来る
+	if (preg_match("/\%LIVE,(\w+),([\d:]+),([\d:]+)/", $ng['ngword'], $match)) {
+		// 曜日と時刻2つを取り出す
+		$t1 = strptime($match[1], "%a");
+		$t2 = strptime($match[2], "%R");
+		$t3 = strptime($match[3], "%R");
+		$t4 = false;
+		// 終了時刻が 24時を越える場合にも対応
+		if ($t3 === false && preg_match("/(\d+):(\d+)/", $match[3], $mm)) {
+			$h = $mm[1] + 0;
+			// 24時を越えていれば
+			if ($h >= 24) {
+				// $t3 は一旦 24時にする
+				$t3 = array(
+					'tm_hour' => 24,
+					'tm_min' => 0,
+				);
+
+				// $t4 が実際の終了時刻
+				$h -= 24;
+				$t4 = strptime("{$h}:{$mm[2]}", "%R");
+			}
+		}
+
+		$wday  = $t1['tm_wday'];
+		$start = $t2['tm_hour'] * 60 + $t2['tm_min'];
+		$end   = $t3['tm_hour'] * 60 + $t3['tm_min'];
+
+		// 発言時刻
+		$unixtime = isset($status->timestamp_ms)
+			? intval($status->timestamp_ms / 1000)
+			: conv_twtime_to_unixtime($status->created_at);
+		$tm = localtime($unixtime, true);
+		$tmmin = $tm['tm_hour'] * 60 + $tm['tm_min'];
+
+		// 指定曜日の時間の範囲内ならアウト
+		if ($tm['tm_wday'] == $wday && $start <= $tmmin && $tmmin < $end) {
+			return $status->user;
+		}
+		// 終了時刻が24時を越える場合は、越えたところも比較
+		if ($t4 !== false) {
+			$wday = ($wday + 1) % 7;
+			$start = 0;
+			$end = $t4['tm_hour'] * 60 + $t4['tm_min'];
+			if ($tm['tm_wday'] == $wday && $start <= $tmmin && $tmmin < $end) {
+				return $status->user;
+			}
+		}
+	}
+
 	// クライアント名
 	if (preg_match("/%SOURCE,(.*)/", $ng['ngword'], $match)) {
 		if (preg_match("/{$match[1]}/", $status->source)) {
