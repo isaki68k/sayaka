@@ -714,9 +714,12 @@ function invalidate_cache()
 	system("find {$cachedir} -atime +1 -delete");
 }
 
-// UTF-8 文字列を分割する
+// UTF-8 文字列を分割する。
 //  utf8_split("abcdef", array(1, 3, 5, 6));
 //  rv = array("a", "bc", "de", "f");
+//
+// 元々 mb_substr() を使っていたが、mbstring 拡張だけで約 1.5MB あって
+// php の footprint に響くので、ここでは mbstring を使わずに書いてみる。
 function utf8_split($str, $charpos)
 {
 	$len = strlen($str);
@@ -754,7 +757,7 @@ function utf8_split($str, $charpos)
 	return $rv;
 }
 
-// UTF-8 文字列の1バイト目から1文字目のバイト数を返す
+// UTF-8 文字の先頭バイトからこの文字のバイト数を返す
 function utf8_charlen($c)
 {
 	$c = ord($c);
