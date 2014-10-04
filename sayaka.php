@@ -578,12 +578,23 @@ function formatmsg($s)
 			//   target_url  それを元に実際に使う URL
 			//   width       幅指定。ピクセルか割合で
 
-			// pic.twitter.com の画像は :small でもでかいので 40% に縮小。
-			// :thumb は縮小ではなく切り抜きなので使わない。
+			// pic.twitter.com の画像のうち :thumb は縮小ではなく切り抜き
+			// なので使わない。:small は縦横比に関わらず横 340px に縮小。
+			// 横長なら 340 x (340以下)、縦長なら 340 x (340以上) になって
+			// そのままでは縦長写真と横長写真で縮尺が揃わないクソ仕様なので
+			// ここでは長辺を基準に 40% に縮小する。
+			$w = $m->sizes->small->w;
+			$h = $m->sizes->small->h;
+			if ($h > $w) {
+				$width = intval(($w / $h) * $w * 0.4);
+			} else {
+				$width = intval($w * 0.4);
+			}
+
 			$mediainfo[] = array(
 				"display_url" => $m->display_url,
 				"target_url"  => "{$m->media_url}:small",
-				"width"       => "40%",
+				"width"       => $width,
 			);
 		}
 	}
