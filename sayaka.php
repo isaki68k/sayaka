@@ -44,54 +44,43 @@
 		if ($_SERVER["argc"] < 2) {
 			usage();
 		}
-		for ($i = 1; $i < $_SERVER["argc"]; $i++) {
-			switch ($_SERVER["argv"][$i]) {
-			 case "--help":
-			 default:
-				usage();
-				exit();
-			 case "--stream":
-				$cmd = "stream";
-				break;
-			 case "--color":
-				$i++;
-				$color_mode = $_SERVER["argv"][$i];
-				if ($color_mode == "") {
-					usage();
-				}
-				break;
-			 case "--record":
-				$i++;
-				$record_file = $_SERVER["argv"][$i];
-				if ($record_file == "") {
-					usage();
-				}
-				break;
-			 case "--play":
-				$cmd = "play";
-				$i++;
-				$play_file = $_SERVER["argv"][$i];
-				if ($play_file == "") {
-					usage();
-				}
-				break;
-			 case "--post":
-				$cmd = "tweet";
-				$i++;
-				$text = $_SERVER["argv"][$i];
-				if ($text == "") {
-					usage();
-				}
-				break;
-			 case "--pipe":
-				// パイプモードなら標準入力から全部読み込む
-				$text = "";
-				while (($buf = fgets(STDIN))) {
-					$text .= $buf;
-				}
-				$cmd = "tweet";
-				break;
+		$longopt = array(
+			"stream",
+			"color:",
+			"record:",
+			"play:",
+			"post:",
+			"pipe",
+			"help",
+		);
+		$opts = getopt("", $longopt);
+		if (isset($opts["stream"])) {
+			$cmd = "stream";
+		}
+		if (isset($opts["color"])) {
+			$color_mode = $opts["color"];
+		}
+		if (isset($opts["record"])) {
+			$record_file = $opts["record"];
+		}
+		if (isset($opts["play"])) {
+			$cmd = "play";
+			$play_file = $opts["play"];
+		}
+		if (isset($opts["post"])) {
+			$cmd = "tweet";
+			$text = $opts["post"];
+		}
+		if (isset($opts["pipe"])) {
+			$cmd = "tweet";
+			// パイプモードなら標準入力から全部読み込む
+			$text = "";
+			while (($buf = fgets(STDIN))) {
+				$text .= $buf;
 			}
+		}
+		if ($cmd == "") {
+			usage();
 		}
 	}
 
