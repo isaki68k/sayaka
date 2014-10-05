@@ -31,9 +31,10 @@
 	$iconsize = 35;
 	$color_mode = 256;
 
-	// まず引数のチェックをする
 	$version = "3.0.2 (2014/10/05)";
 	$progname = $_SERVER["argv"][0];
+
+	// まず引数のチェックをする
 	$cmd = "";
 	$record_file = "";
 	$play_file = "";
