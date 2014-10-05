@@ -377,12 +377,10 @@ function showstatus_callback($object)
 	print "\n";
 
 	// picture
-	if ($img2sixel != "") {
-		foreach ($mediainfo as $m) {
-			print CSI."6C";
-			show_photo($m["target_url"], $m["width"]);
-			print CSI."1A";
-		}
+	foreach ($mediainfo as $m) {
+		print CSI."6C";
+		show_photo($m["target_url"], $m["width"]);
+		print "\r";
 	}
 
 	// source
@@ -674,9 +672,7 @@ function show_icon($user, $img_url)
 function show_photo($img_url, $percent)
 {
 	$img_file = preg_replace("|[:/]|", "_", $img_url);
-	if (show_image($img_file, $img_url, $percent) == true) {
-		print "\n";
-	}
+	show_image($img_file, $img_url, $percent);
 }
 
 // 画像をキャッシュして表示
