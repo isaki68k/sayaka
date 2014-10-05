@@ -453,32 +453,47 @@ function init_color()
 	define("DARKGREEN",	"38;5;28");
 	define("ORANGE",	"38;5;142");
 
-	if ($color_mode > 16) {
-		$gray = GRAY;
-	} else {
-		$gray = BOLD.";".BLACK;	// なぜ黒+ボールドで灰色になるのか分からんけど
-	}
-
 	// 黒背景か白背景かで色合いを変えたほうが読みやすい
 	if ($bg_white) {
 		$blue = BLUE;
-		$name = ORANGE;
-		$yellow = DARKYELLOW;
-		$green = DARKGREEN;
 	} else {
 		$blue = CYAN;
-		$yellow = YELLOW;
-		$green = GREEN;
+	}
+
+	// ユーザ名。白地に黄色は出来れば暗めにしたい
+	$username = YELLOW;
+	if ($bg_white && $color_mode > 16) {
+		$username = "38;5;136";
+	}
+
+	// 時刻とクライアント欄は出来れば色を落としたい
+	// 16色ターミナルでは何もしない
+	$gray = "";
+	if ($color_mode > 16) {
+		$gray = GRAY;
+	}
+
+	// リツイートは緑色。白地の場合は出来れば濃い目にしたい
+	$green = GREEN;
+	if ($bg_white && $color_mode > 16) {
+		$green = "38;5;28";
+	}
+
+	// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
+	// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
+	$fav = YELLOW;
+	if ($bg_white && $color_mode > 16) {
+		$fav = "38;5;184";
 	}
 
 	$color2esc = array(
-		"COLOR_USERNAME"	=> $yellow,
+		"COLOR_USERNAME"	=> $username,
 		"COLOR_USERID"		=> $blue,
 		"COLOR_TIME"		=> $gray,
 		"COLOR_SOURCE"		=> $gray,
 
 		"COLOR_RETWEET"		=> BOLD.";".$green,
-		"COLOR_FAVORITE"	=> BOLD.";".$yellow,
+		"COLOR_FAVORITE"	=> BOLD.";".$fav,
 		"COLOR_URL"			=> UNDERSCORE.";".$blue,
 		"COLOR_TAG"			=> $blue,
 		"COLOR_VERIFIED"	=> $blue,
