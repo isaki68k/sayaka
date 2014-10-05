@@ -286,11 +286,11 @@ function showstatus_callback($object)
 		 case "follow":
 			$time = coloring(formattime($object), COLOR_TIME);
 			$u = $object->source;
-			$src_userid = coloring("@".unescape($u->screen_name), COLOR_USERID);
-			$src_name   = coloring(unescape($u->name), COLOR_USERNAME);
+			$src_userid = coloring(formatid($u->screen_name), COLOR_USERID);
+			$src_name   = coloring(formatname($u->name), COLOR_USERNAME);
 			$u = $object->target;
-			$dst_userid = coloring("@".unescape($u->screen_name), COLOR_USERID);
-			$dst_name   = coloring(unescape($u->name), COLOR_USERNAME);
+			$dst_userid = coloring(formatid($u->screen_name), COLOR_USERID);
+			$dst_name   = coloring(formatname($u->name), COLOR_USERNAME);
 
 			print "\x1b[6C";
 			print "{$src_userid} {$src_name} が {$dst_userid} {$dst_name} を";
@@ -343,8 +343,8 @@ function showstatus_callback($object)
 	$ng = false;
 	if (1 && ($ng = match_ngword($status)) !== false) {
 		// マッチしたらここで表示
-		$userid = coloring("@".unescape($ng['user']->screen_name), COLOR_NG);
-		$name   = coloring(unescape($ng['user']->name), COLOR_NG);
+		$userid = coloring(formatid($ng['user']->screen_name), COLOR_NG);
+		$name   = coloring(formatname($ng['user']->name), COLOR_NG);
 		$time   = coloring(formattime($status), COLOR_NG);
 
 		$msg = coloring("NG:{$ng['ngword']}", COLOR_NG);
@@ -357,8 +357,8 @@ function showstatus_callback($object)
 		return;
 	}
 
-	$userid = coloring("@".unescape($s->user->screen_name), COLOR_USERID);
-	$name   = coloring(unescape($s->user->name), COLOR_USERNAME);
+	$userid = coloring(formatid($s->user->screen_name), COLOR_USERID);
+	$name   = coloring(formatname($s->user->name), COLOR_USERNAME);
 	$src    = coloring(unescape(strip_tags($s->source))." から", COLOR_SOURCE);
 	$time   = coloring(formattime($s), COLOR_TIME);
 	$verified = $s->user->verified
@@ -410,8 +410,8 @@ function showstatus_callback($object)
 	if (isset($status->retweeted_status)) {
 		print CSI."6C";
 		$rt_time   = formattime($status);
-		$rt_userid = "@".unescape($status->user->screen_name);
-		$rt_name   = unescape($status->user->name);
+		$rt_userid = formatid($status->user->screen_name);
+		$rt_name   = formatname($status->user->name);
 		print coloring("{$rt_time} {$rt_name} {$rt_userid} がリツイート",
 			COLOR_RETWEET);
 		print "\n";
@@ -421,14 +421,26 @@ function showstatus_callback($object)
 	if (isset($object->event) && $object->event == "favorite") {
 		print CSI."6C";
 		$fav_time   = formattime($object);
-		$fav_userid = "@".unescape($object->source->screen_name);
-		$fav_name   = unescape($object->source->name);
+		$fav_userid = formatid($object->source->screen_name);
+		$fav_name   = formatname($object->source->name);
 		print coloring("{$fav_time} {$fav_name} {$fav_userid} がふぁぼ",
 			COLOR_FAVORITE);
 		print "\n";
 	}
 
 	print "\n";
+}
+
+// 名前表示用に整形
+function formatname($text)
+{
+	return preg_replace("/[\r\n]/", " ", unescape($text));
+}
+
+// ID 表示用に整形
+function formatid($text)
+{
+	return "@".unescape($text);
 }
 
 function unescape($text)
