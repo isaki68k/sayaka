@@ -419,6 +419,7 @@ function unescape($text)
 function init_color()
 {
 	global $color2esc;
+	global $color_mode;
 
 	define("BOLD",		"1");
 	define("UNDERSCORE","4");
@@ -431,28 +432,22 @@ function init_color()
 	define("MAGENTA",	"35");
 	define("CYAN",		"36");
 	define("WHITE",		"37");
-	define("BG_BLACK",	"40");
-	define("BG_RED",	"41");
-	define("BG_GREEN",	"42");
-	define("BG_YELLOW",	"43");
-	define("BG_BLUE",	"44");
-	define("BG_MAGENTA","45");
-	define("BG_CYAN",	"46");
-	define("BG_WHITE",	"47");
+
+	define("GRAY",		"38;5;245");
 
 	$color2esc = array(
 		"COLOR_USERNAME"	=> YELLOW,
 		"COLOR_USERID"		=> CYAN,
-		"COLOR_TIME"		=> BOLD.";".BLACK,
-		"COLOR_SOURCE"		=> BOLD.";".BLACK,
+		"COLOR_TIME"		=> $color_mode > 16 ? GRAY : BOLD.";".BLACK,
+		"COLOR_SOURCE"		=> $color_mode > 16 ? GRAY : BOLD.";".BLACK,
 
 		"COLOR_RETWEET"		=> BOLD.";".GREEN,
 		"COLOR_FAVORITE"	=> BOLD.";".YELLOW,
 		"COLOR_URL"			=> UNDERSCORE.";".CYAN,
 		"COLOR_TAG"			=> CYAN,
 		"COLOR_VERIFIED"	=> CYAN,
-		"COLOR_PROTECTED"	=> BOLD.";".BLACK,
-		"COLOR_NG"			=> STRIKE,
+		"COLOR_PROTECTED"	=> $color_mode > 16 ? GRAY : BOLD.";".BLACK,
+		"COLOR_NG"			=> STRIKE.";".GRAY,
 	);
 }
 
