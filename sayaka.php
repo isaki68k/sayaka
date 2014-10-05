@@ -32,6 +32,7 @@
 	$color_mode = 256;
 
 	// まず引数のチェックをする
+	$version = "3.0.2 (2014/10/05)";
 	$progname = $_SERVER["argv"][0];
 	$cmd = "";
 	$record_file = "";
@@ -55,6 +56,7 @@
 			"post:",
 			"pipe",
 			"help",
+			"version",
 		);
 		$opts = getopt("", $longopt);
 		if (isset($opts["stream"])) {
@@ -87,6 +89,10 @@
 			while (($buf = fgets(STDIN))) {
 				$text .= $buf;
 			}
+		}
+		if (isset($opts["version"])) {
+			cmd_version();
+			exit(0);
 		}
 		if ($cmd == "") {
 			usage();
@@ -980,10 +986,18 @@ function match_ngword_main($ng, $status)
 	return false;
 }
 
+function cmd_version()
+{
+	global $version;
+
+	print "sayaka ${version}\n";
+}
+
 function usage()
 {
 	global $progname;
 
+	cmd_version();
 	print <<<__EOM__
 usage:
  {$progname} --stream [--color <n>] [--record <file>]
