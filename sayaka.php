@@ -496,7 +496,7 @@ function init_color()
 		"COLOR_FAVORITE"	=> BOLD.";".$fav,
 		"COLOR_URL"			=> UNDERSCORE.";".$blue,
 		"COLOR_TAG"			=> $blue,
-		"COLOR_VERIFIED"	=> $blue,
+		"COLOR_VERIFIED"	=> CYAN,
 		"COLOR_PROTECTED"	=> $gray,
 		"COLOR_NG"			=> STRIKE.";".$gray,
 	);
