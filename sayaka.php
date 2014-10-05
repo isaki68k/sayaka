@@ -49,6 +49,7 @@
 			"stream",
 			"color:",
 			"white",
+			"noimg",
 			"record:",
 			"play:",
 			"post:",
@@ -64,6 +65,9 @@
 		}
 		if (isset($opts["white"])) {
 			$bg_white = true;
+		}
+		if (isset($opts["noimg"])) {
+			$img2sixel = "none";
 		}
 		if (isset($opts["record"])) {
 			$record_file = $opts["record"];
@@ -152,8 +156,13 @@ function init_stream()
 	init_color();
 
 	// img2sixel
-	// XXX sixelなしモードを引数で指定したい
-	$img2sixel = rtrim(`which img2sixel`);
+	// --noimg オプションなら img2sixel を使わない
+	// そうでなければ探して使う。がなければ使わない
+	if ($img2sixel == "none") {
+		$img2sixel = "";
+	} else {
+		$img2sixel = rtrim(`which img2sixel`);
+	}
 	if ($img2sixel != "") {
 		if ($color_mode == 2) {
 			$img2sixel .= " -e --quality=low";
@@ -368,10 +377,12 @@ function showstatus_callback($object)
 	print "\n";
 
 	// picture
-	foreach ($mediainfo as $m) {
-		print CSI."6C";
-		show_photo($m["target_url"], $m["width"]);
-		print CSI."1A";
+	if ($img2sixel != "") {
+		foreach ($mediainfo as $m) {
+			print CSI."6C";
+			show_photo($m["target_url"], $m["width"]);
+			print CSI."1A";
+		}
 	}
 
 	// source
@@ -679,6 +690,11 @@ function show_image($img_file, $img_url, $width)
 	global $img2sixel;
 	global $giftopnm;
 
+	// img2sixel 使わないモードならここで帰る
+	if ($img2sixel == "") {
+		return false;
+	}
+
 	$img_file = "{$cachedir}/{$img_file}";
 
 	if (strlen($width) > 0) {
@@ -688,15 +704,13 @@ function show_image($img_file, $img_url, $width)
 	}
 
 	if (!file_exists($img_file)) {
-		if ($img2sixel != "") {
-			$imgconv = "{$img2sixel} {$width}";
-			if (preg_match("/.gif$/i", $img_url) && $giftopnm != "") {
-				// img2sixel では表示できない GIF があるため
-				$imgconv = "{$giftopnm} | {$imgconv}";
-			}
-			system("(curl -Lks {$img_url} | "
-			     . "{$imgconv} > {$img_file}) 2>/dev/null");
+		$imgconv = "{$img2sixel} {$width}";
+		if (preg_match("/.gif$/i", $img_url) && $giftopnm != "") {
+			// img2sixel では表示できない GIF があるため
+			$imgconv = "{$giftopnm} | {$imgconv}";
 		}
+		system("(curl -Lks {$img_url} | "
+		     . "{$imgconv} > {$img_file}) 2>/dev/null");
 	}
 	if (filesize($img_file) == 0) {
 		unlink($img_file);
