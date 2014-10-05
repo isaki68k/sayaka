@@ -778,10 +778,10 @@ function invalidate_cache()
 	global $cachedir;
 
 	// アイコンは7日分くらいか
-	system("find {$cachedir} -atime +7 -delete");
+	system("find {$cachedir} -atime +7 -exec rm {} +");
 
 	// 写真は24時間分くらいか
-	system("find {$cachedir} -atime +1 -delete");
+	system("find {$cachedir} -atime +1 -exec rm {} +");
 }
 
 // UTF-8 文字列を分割する。
