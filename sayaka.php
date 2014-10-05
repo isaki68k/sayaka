@@ -36,6 +36,7 @@
 	$cmd = "";
 	$record_file = "";
 	$play_file = "";
+	$bg_white = false;
 
 	if ($_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
 		header("Connection: Keep-alive");
@@ -47,6 +48,7 @@
 		$longopt = array(
 			"stream",
 			"color:",
+			"white",
 			"record:",
 			"play:",
 			"post:",
@@ -59,6 +61,9 @@
 		}
 		if (isset($opts["color"])) {
 			$color_mode = $opts["color"];
+		}
+		if (isset($opts["white"])) {
+			$bg_white = true;
 		}
 		if (isset($opts["record"])) {
 			$record_file = $opts["record"];
@@ -420,6 +425,7 @@ function init_color()
 {
 	global $color2esc;
 	global $color_mode;
+	global $bg_white;
 
 	define("BOLD",		"1");
 	define("UNDERSCORE","4");
@@ -434,20 +440,41 @@ function init_color()
 	define("WHITE",		"37");
 
 	define("GRAY",		"38;5;245");
+	define("DARKYELLOW", "38;5;148");
+	define("DARKGREEN",	"38;5;28");
+	define("ORANGE",	"38;5;142");
+
+	if ($color_mode > 16) {
+		$gray = GRAY;
+	} else {
+		$gray = BOLD.";".BLACK;	// なぜ黒+ボールドで灰色になるのか分からんけど
+	}
+
+	// 黒背景か白背景かで色合いを変えたほうが読みやすい
+	if ($bg_white) {
+		$blue = BLUE;
+		$name = ORANGE;
+		$yellow = DARKYELLOW;
+		$green = DARKGREEN;
+	} else {
+		$blue = CYAN;
+		$yellow = YELLOW;
+		$green = GREEN;
+	}
 
 	$color2esc = array(
-		"COLOR_USERNAME"	=> YELLOW,
-		"COLOR_USERID"		=> CYAN,
-		"COLOR_TIME"		=> $color_mode > 16 ? GRAY : BOLD.";".BLACK,
-		"COLOR_SOURCE"		=> $color_mode > 16 ? GRAY : BOLD.";".BLACK,
+		"COLOR_USERNAME"	=> $yellow,
+		"COLOR_USERID"		=> $blue,
+		"COLOR_TIME"		=> $gray,
+		"COLOR_SOURCE"		=> $gray,
 
-		"COLOR_RETWEET"		=> BOLD.";".GREEN,
-		"COLOR_FAVORITE"	=> BOLD.";".YELLOW,
-		"COLOR_URL"			=> UNDERSCORE.";".CYAN,
-		"COLOR_TAG"			=> CYAN,
-		"COLOR_VERIFIED"	=> CYAN,
-		"COLOR_PROTECTED"	=> $color_mode > 16 ? GRAY : BOLD.";".BLACK,
-		"COLOR_NG"			=> STRIKE.";".GRAY,
+		"COLOR_RETWEET"		=> BOLD.";".$green,
+		"COLOR_FAVORITE"	=> BOLD.";".$yellow,
+		"COLOR_URL"			=> UNDERSCORE.";".$blue,
+		"COLOR_TAG"			=> $blue,
+		"COLOR_VERIFIED"	=> $blue,
+		"COLOR_PROTECTED"	=> $gray,
+		"COLOR_NG"			=> STRIKE.";".$gray,
 	);
 }
 
