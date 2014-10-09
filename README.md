@@ -28,6 +28,8 @@ extension=pdo_sqlite.so
 ```
 
 * PHP を野良ビルドする場合以下のオプションくらいで行けそうです。
+--with-curl 等に指定するパスは要不要も含めて環境に合わせて適宜。
+また括弧書きしたオプションについては不要な環境と必要な環境があるようです。
 ```
 % ./configure
    --disable-all
@@ -35,8 +37,10 @@ extension=pdo_sqlite.so
    --enable-json
    --enable-filter
    --enable-pdo
-   --with-sqlite3=/usr/pkg
-   --with-curl=/usr/pkg
+   --with-sqlite3(=/usr/pkg)
+   --with-curl(=/usr/pkg)
+  (--enable-hash)
+  (--enable-libxml)
 % make
 ```
 NetBSD-6.1.4/amd64 + pkgsrc-2014Q2 の場合、
