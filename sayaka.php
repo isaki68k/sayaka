@@ -472,10 +472,6 @@ function init_color()
 	define("GRAY",		"90");
 	define("YELLOW",	"93");
 
-	define("DARKYELLOW", "38;5;148");
-	define("DARKGREEN",	"38;5;28");
-	define("ORANGE",	"38;5;142");
-
 	// 黒背景か白背景かで色合いを変えたほうが読みやすい
 	if ($bg_white) {
 		$blue = BLUE;
