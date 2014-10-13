@@ -680,10 +680,16 @@ function formatmsg($s)
 function show_icon($user, $img_url)
 {
 	global $iconsize;
+	global $color_mode;
 
 	// URLのファイル名部分をキャッシュのキーにする
 	$filename = basename($img_url);
-	$img_file = "icon-{$user}-{$iconsize}-{$filename}.sixel";
+	if ($color_mode <= 16) {
+		$col = "-{$color_mode}";
+	} else {
+		$col = "";
+	}
+	$img_file = "icon-{$iconsize}x{$iconsize}{$col}-{$user}-{$filename}.sixel";
 
 	if (show_image($img_file, $img_url, $iconsize) === false) {
 		print "\n\n\n\n";
