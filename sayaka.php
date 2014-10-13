@@ -292,13 +292,13 @@ function showstatus_callback($object)
 			$u = $object->target;
 			$dst_userid = coloring(formatid($u->screen_name), COLOR_USERID);
 			$dst_name   = coloring(formatname($u->name), COLOR_USERNAME);
+			$src        = coloring("sayakaちゃんからお知らせ", COLOR_SOURCE);
 
-			print "\x1b[6C";
+			print CSI."6C";
 			print "{$src_userid} {$src_name} が {$dst_userid} {$dst_name} を";
 			print "フォローしました。\n";
-			print "\x1b[6C{$time} ";
-			print coloring("sayakaちゃんからお知らせ", COLOR_SOURCE);
-			print "\n";
+			print CSI."6C";
+			print "{$time} {$src}\n";
 			print "\n";
 			return;
 
@@ -519,7 +519,7 @@ function coloring($text, $color_type)
 	global $color2esc;
 
 	if (isset($color2esc[$color_type])) {
-		$rv = "\x1b[{$color2esc[$color_type]}m{$text}\x1b[0m";
+		$rv = CSI."{$color2esc[$color_type]}m". $text .CSI."0m";
 	} else {
 		$rv = "coloring({$text},{$color_type})";
 	}
