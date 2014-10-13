@@ -464,13 +464,14 @@ function init_color()
 	define("BLACK",		"30");
 	define("RED",		"31");
 	define("GREEN",		"32");
-	define("YELLOW",	"33");
+	define("BROWN",		"33");
 	define("BLUE",		"34");
 	define("MAGENTA",	"35");
 	define("CYAN",		"36");
 	define("WHITE",		"37");
+	define("GRAY",		"90");
+	define("YELLOW",	"93");
 
-	define("GRAY",		"38;5;245");
 	define("DARKYELLOW", "38;5;148");
 	define("DARKGREEN",	"38;5;28");
 	define("ORANGE",	"38;5;142");
@@ -482,28 +483,21 @@ function init_color()
 		$blue = CYAN;
 	}
 
-	// ユーザ名。白地に黄色は出来れば暗めにしたい
-	$username = YELLOW;
+	// ユーザ名。白地の場合は出来ればもう少し暗めにしたい
+	$username = BROWN;
 	if ($bg_white && $color_mode > 16) {
 		$username = "38;5;136";
 	}
 
-	// 時刻とクライアント欄は出来れば色を落としたい
-	// 16色ターミナルでは何もしない
-	$gray = "";
-	if ($color_mode > 16) {
-		$gray = GRAY;
-	}
-
-	// リツイートは緑色。白地の場合は出来れば濃い目にしたい
+	// リツイートは緑色。出来れば濃い目にしたい
 	$green = GREEN;
-	if ($bg_white && $color_mode > 16) {
+	if ($color_mode > 16) {
 		$green = "38;5;28";
 	}
 
 	// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
 	// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
-	$fav = YELLOW;
+	$fav = BROWN;
 	if ($bg_white && $color_mode > 16) {
 		$fav = "38;5;184";
 	}
@@ -511,16 +505,16 @@ function init_color()
 	$color2esc = array(
 		"COLOR_USERNAME"	=> $username,
 		"COLOR_USERID"		=> $blue,
-		"COLOR_TIME"		=> $gray,
-		"COLOR_SOURCE"		=> $gray,
+		"COLOR_TIME"		=> GRAY,
+		"COLOR_SOURCE"		=> GRAY,
 
 		"COLOR_RETWEET"		=> BOLD.";".$green,
 		"COLOR_FAVORITE"	=> BOLD.";".$fav,
 		"COLOR_URL"			=> UNDERSCORE.";".$blue,
 		"COLOR_TAG"			=> $blue,
 		"COLOR_VERIFIED"	=> CYAN,
-		"COLOR_PROTECTED"	=> $gray,
-		"COLOR_NG"			=> STRIKE.";".$gray,
+		"COLOR_PROTECTED"	=> GRAY,
+		"COLOR_NG"			=> STRIKE.";".GRAY,
 	);
 }
 
