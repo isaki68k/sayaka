@@ -128,12 +128,11 @@ Input PIN code:
 * `--record <file>` … ユーザストリームで受信したすべてのデータを
 	`<file>` に記録します。`--play` コマンドで再生できます。
 
-~~なお、PHP -S サーバモードでも起動します。
+~~なお、PHP -S サーバモードでも起動します。~~ (現在はしません)
 ```
 % php -S localhost:8000
 % curl localhost:8000/sayaka.php
 ```
-~~
 
 
 TODO
