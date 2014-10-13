@@ -63,6 +63,7 @@ function usage()
 // XXX パーミッションどうするのがいいかね
 function init_files()
 {
+	global $sayaka_home;
 	global $datadir;
 	global $cachedir;
 	global $datadb;
@@ -71,6 +72,12 @@ function init_files()
 	print "Initializing...\n";
 
 	// ディレクトリを作成
+	if (!file_exists($sayaka_home)) {
+		mkdir($sayaka_home, 0755, true);
+		chmod($sayaka_home, 0755 & ~umask());
+	} else {
+		print "sayaka directory \"{$sayaka_home}\" already exists\n";
+	}
 	chdir(dirname(__FILE__));
 	if (!file_exists($datadir)) {
 		mkdir($datadir, 0777, true);

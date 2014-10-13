@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.0.2 (2014/10/05)
+twitter クライアント sayaka ちゃん version 3.0.2+ (2014/10/13)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -73,22 +73,27 @@ pkgsrc/graphics/netpbm をインストールするなどして、
 giftopnm 通したほうが表示できる GIF 形式が増えるかも知れません。
 
 
+インストール方法
+---
+適当なところに展開して make; make install してください。
+```
+% make
+# make install
+```
+
+
 とりあえず使ってみる
 ---
-適当なところに展開してください。
-展開したディレクトリ内だけで動作します。
-
-
-初期化を行います。これは、ここに作業ディレクトリを作ります。
+まず初期化を行います。これは ~/.sayaka/ ディレクトリを作成します。
 ```
-% php config.php init
+% sayaka init
 ```
 
 クライアントの認証を行います。
 URL が表示されるのでブラウザで接続してください。
 表示された PIN コードを入力します。
 ```
-% php config.php authorize
+% sayaka authorize
 Authroize URL is: https://twitter.com/...
 
 Input PIN code:
@@ -96,7 +101,7 @@ Input PIN code:
 
 これでユーザストリームが表示できるようになります。
 ```
-% php sayaka.php --stream
+% sayaka --stream
 ```
 
 
@@ -104,6 +109,7 @@ Input PIN code:
 ---
 以下のうちいずれかで動作モードを指定します。
 * `--stream` … ユーザストリームモードです。
+	`stream` あるいは `s` と省略することも出来ます。
 * `--post <msg>` … 引数 <msg> をツイートします。
 * `--pipe`
 	標準出力の内容をツイートします。
@@ -111,8 +117,8 @@ Input PIN code:
 	ユーザストリームの代わりに `<file>` の内容を再生します。
 	`<file>` が `-` ならファイルの代わりに標準入力から読み込みます。
 
-以下のオプションは --stream の時に指定できます。
-* `--color <n>` … 色数を指定します。デフォルトは 256色?
+以下のオプションは `--stream` の時に指定できます。
+* `--color <n>` … 色数を指定します。デフォルトは 256色です。
 	他はたぶん 16 と 2 くらいを想定しています。
 
 * `--white` … 白背景用の色合いに変更します。
@@ -122,11 +128,12 @@ Input PIN code:
 * `--record <file>` … ユーザストリームで受信したすべてのデータを
 	`<file>` に記録します。`--play` コマンドで再生できます。
 
-なお、PHP -S サーバモードでも起動します。
+~~なお、PHP -S サーバモードでも起動します。
 ```
 % php -S localhost:8000
 % curl localhost:8000/sayaka.php
 ```
+~~
 
 
 TODO
