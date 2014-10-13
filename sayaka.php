@@ -318,6 +318,9 @@ function showstatus_callback($object)
 		// 通常のツイート
 		// $status はツイートメッセージ
 		$status = $object;
+	} else if (isset($object->friends)) {
+		// 最初に送られてくる friends リストはいらない
+		return;
 	} else {
 		// それ以外の情報はとりあえず無視
 		return;
