@@ -174,13 +174,7 @@ function init_stream()
 		if ($color_mode == 2) {
 			$img2sixel .= " -e --quality=low";
 		} else if ($color_mode <= 16) {
-			$file = "colormap{$color_mode}.png";
-			if (file_exists($file)) {
-				$img2sixel .= " -m {$file}";
-			} else {
-				print "No colormap file: {$file}\n";
-				exit(1);
-			}
+			$img2sixel .= " -m colormap{$color_mode}.png";
 		}
 	}
 
