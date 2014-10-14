@@ -71,7 +71,6 @@ function init_files()
 	print "Initializing...\n";
 
 	// ディレクトリを作成
-	chdir(dirname(__FILE__));
 	if (!file_exists($datadir)) {
 		mkdir($datadir, 0777, true);
 		chmod($datadir, 0777 & ~umask() | 07);
