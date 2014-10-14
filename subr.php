@@ -33,9 +33,8 @@
 	$consumer_secret = "faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw";
 
 	// どうするかね
-	$sayaka_home = $_SERVER['SAYAKA_HOME'];
-	$datadir  = "${sayaka_home}/data";
-	$cachedir = "${sayaka_home}/cache";
+	$datadir  = "./data";
+	$cachedir = "./cache";
 	$datadb   = "{$datadir}/data.sq3";
 	$configdb = "{$datadir}/config.sq3";
 
