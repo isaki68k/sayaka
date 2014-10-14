@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.0.2+ (2014/10/13)
+twitter クライアント sayaka ちゃん version 3.0.2+ (2014/10/14)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -75,16 +75,27 @@ giftopnm 通したほうが表示できる GIF 形式が増えるかも知れま
 
 インストール方法
 ---
-適当なところに展開して make; make install してください。
+展開したディレクトリ内だけで動作しますので、
+適当なところに展開してください。
+といいつつ後述の理由により ~/.sayaka/ に展開することを前提にしています。
+(これ以外のところに展開して使う場合は以下文中の ~/.sayaka を適宜読み替えてください)
+
+次に ~/.sayaka/ の sayaka.sh をパスの通ったところ
+(`/usr/local/bin` やあるいは `$HOME/bin` など)
+に sayaka にリネームして置くか、あるいはシンボリックリンクをはります。
 ```
-% make
-# make install
+(例)
+% cd ~/bin
+% ln -s ~/.sayaka/sayaka.sh sayaka
 ```
+
+~/.sayaka 以外のところに展開した場合は sayaka.sh の先頭のほうにある
+`SAYAKA_HOME` 変数のパスを展開先ディレクトリに書き換えてから使ってください。
 
 
 とりあえず使ってみる
 ---
-まず初期化を行います。これは ~/.sayaka/ ディレクトリを作成します。
+まず初期化を行います。これは ~/.sayaka に作業ディレクトリを作成します。
 ```
 % sayaka init
 ```
@@ -101,7 +112,7 @@ Input PIN code:
 
 これでユーザストリームが表示できるようになります。
 ```
-% sayaka --stream
+% sayaka stream
 ```
 
 
@@ -128,8 +139,9 @@ Input PIN code:
 * `--record <file>` … ユーザストリームで受信したすべてのデータを
 	`<file>` に記録します。`--play` コマンドで再生できます。
 
-~~なお、PHP -S サーバモードでも起動します。~~ (現在はしません)
+なお、PHP -S サーバモードでも起動します。
 ```
+% cd ~/.sayaka
 % php -S localhost:8000
 % curl localhost:8000/sayaka.php
 ```
