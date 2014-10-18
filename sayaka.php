@@ -54,6 +54,7 @@
 			"noimg",
 			"record:",
 			"play:",
+			"jis",
 			"post:",
 			"pipe",
 			"help",
@@ -78,6 +79,9 @@
 		if (isset($opts["play"])) {
 			$cmd = "play";
 			$play_file = $opts["play"];
+		}
+		if (isset($opts["jis"]) && function_exists("mb_convert_encoding")) {
+			$jis = true;
 		}
 		if (isset($opts["post"])) {
 			$cmd = "tweet";
@@ -289,10 +293,10 @@ function showstatus_callback($object)
 			$src        = coloring("sayakaちゃんからお知らせ", COLOR_SOURCE);
 
 			print CSI."6C";
-			print "{$src_userid} {$src_name} が {$dst_userid} {$dst_name} を";
-			print "フォローしました。\n";
+			print_("{$src_userid} {$src_name} が ");
+			print_("{$dst_userid} {$dst_name} をフォローしました。\n");
 			print CSI."6C";
-			print "{$time} {$src}\n";
+			print_("{$time} {$src}\n");
 			print "\n";
 			return;
 
@@ -348,9 +352,9 @@ function showstatus_callback($object)
 		$msg = coloring("NG:{$ng['ngword']}", COLOR_NG);
 
 		print CSI."6C";
-		print "{$name} {$userid}\n";
+		print_("{$name} {$userid}\n");
 		print CSI."6C";
-		print "{$time} {$msg}\n";
+		print_("{$time} {$msg}\n");
 		print "\n";
 		return;
 	}
@@ -371,13 +375,12 @@ function showstatus_callback($object)
 	// 今のところローカルアカウントはない
 	$profile_image_url = $s->user->profile_image_url;
 
-	print "";
 	show_icon(unescape($s->user->screen_name), $profile_image_url);
 	print CSI."3A";
 	print CSI."6C";
-	print "{$name} {$userid}{$verified}{$protected}\n";
+	print_("{$name} {$userid}{$verified}{$protected}\n");
 	print CSI."6C";
-	print $msg;
+	print_($msg);
 	print "\n";
 
 	// picture
@@ -389,7 +392,7 @@ function showstatus_callback($object)
 
 	// source
 	print CSI."6C";
-	print "{$time} {$src}";
+	print_("{$time} {$src}");
 	// RT
 	$rtcnt = $s->retweet_count;
 	$rtcnt += 0;
@@ -410,8 +413,8 @@ function showstatus_callback($object)
 		$rt_time   = formattime($status);
 		$rt_userid = formatid($status->user->screen_name);
 		$rt_name   = formatname($status->user->name);
-		print coloring("{$rt_time} {$rt_name} {$rt_userid} がリツイート",
-			COLOR_RETWEET);
+		print_(coloring("{$rt_time} {$rt_name} {$rt_userid} がリツイート",
+			COLOR_RETWEET));
 		print "\n";
 	}
 
@@ -421,12 +424,23 @@ function showstatus_callback($object)
 		$fav_time   = formattime($object);
 		$fav_userid = formatid($object->source->screen_name);
 		$fav_name   = formatname($object->source->name);
-		print coloring("{$fav_time} {$fav_name} {$fav_userid} がふぁぼ",
-			COLOR_FAVORITE);
+		print_(coloring("{$fav_time} {$fav_name} {$fav_userid} がふぁぼ",
+			COLOR_FAVORITE));
 		print "\n";
 	}
 
 	print "\n";
+}
+
+// 非ASCII文字を含む出力
+function print_($msg)
+{
+	global $jis;
+
+	if ($jis) {
+		$msg = mb_convert_encoding($msg, "JIS", "UTF-8");
+	}
+	print $msg;
 }
 
 // 名前表示用に整形
