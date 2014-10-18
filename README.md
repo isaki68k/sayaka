@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.0.3 (2014/10/17)
+twitter クライアント sayaka ちゃん version 3.0.4 (2014/10/18)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -10,6 +10,7 @@ twitter クライアント sayaka ちゃん version 3.0.3 (2014/10/17)
 
 最近の更新
 ---
+* 3.0.4 … --jis オプションを追加しました。
 * 3.0.3 … インストール手順を更新、起動スクリプトを用意しました。
 
 
@@ -19,21 +20,26 @@ twitter クライアント sayaka ちゃん version 3.0.3 (2014/10/17)
   - version 5.3 以上
   - CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
   - curl, json, pdo_sqlite モジュールが必要です。
+  - x68k で `--jis` オプションを使うには mbstring モジュールも必要です。
 
 * pkgsrc なら
 lang/php, www/php-curl, textproc/php-json,
-databases/php-pdo、databases/php-pdo_sqlite をインストールして、
+databases/php-pdo、databases/php-pdo_sqlite
+(、converters/php-mbstring) をインストールして、
 /usr/pkg/etc/php.ini に以下の行を追加します。
 ```
 extension=curl.so
 extension=json.so
 extension=pdo.so
 extension=pdo_sqlite.so
+(extension=mbstring.so)
 ```
 
 * PHP を野良ビルドする場合以下のオプションくらいで行けそうです。
 --with-curl 等に指定するパスは要不要も含めて環境に合わせて適宜。
 また括弧書きしたオプションについては不要な環境と必要な環境があるようです。
+--mbstring は x68k で使いたい人だけ指定すればよいですが、
+これだけでバイナリサイズが 1.5MB 増えます。
 ```
 % ./configure
    --disable-all
@@ -45,6 +51,7 @@ extension=pdo_sqlite.so
    --with-curl(=/usr/pkg)
   (--enable-hash)
   (--enable-libxml)
+  (--enable-mbstring)
 % make
 ```
 NetBSD-6.1.4/amd64 + pkgsrc-2014Q2 の場合、
@@ -139,6 +146,9 @@ Input PIN code:
 * `--white` … 白背景用の色合いに変更します。
 
 * `--noimg` … SIXEL 画像を一切出力しません。SIXEL 非対応ターミナル用。
+
+* `--jis` … 文字コードを JIS に変換して出力します。
+	JIS を受け取るターミナル用とか。
 
 * `--record <file>` … ユーザストリームで受信したすべてのデータを
 	`<file>` に記録します。`--play` コマンドで再生できます。
