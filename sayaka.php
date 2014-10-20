@@ -162,6 +162,7 @@ function init_stream()
 	global $img2sixel;
 	global $giftopnm;
 	global $cachedir;
+	global $screen_cols;
 
 	// 色の初期化
 	init_color();
@@ -184,6 +185,13 @@ function init_stream()
 
 	// giftopnm
 	$giftopnm = rtrim(`which giftopnm`);
+
+	// tput でターミナル1行の桁数を取得
+	$tput = rtrim(`which tput`);
+	if ($tput != "") {
+		$screen_cols = rtrim(`{$tput} cols`);
+	}
+	$screen_cols += 0;
 
 	// NGワード取得
 	get_ngword();
@@ -557,6 +565,7 @@ function formattime($object)
 function formatmsg($s)
 {
 	global $mediainfo;
+	global $screen_cols;
 
 	$mediainfo = array();
 
@@ -686,6 +695,60 @@ function formatmsg($s)
 				"width"       => $width,
 			);
 		}
+	}
+
+	/* 桁数が分かってる場合は整形してみるか */
+	if ($screen_cols > 0) {
+		$state = "";
+		$newtext = "";
+		$left = 6;
+		$x = $left;
+		$s = preg_split("//", $text, -1, PREG_SPLIT_NO_EMPTY);
+		for ($i = 0; $i < count($s); ) {
+			switch ($state) {
+			 case "esc":
+				$newtext .= $s[$i];
+				if ($s[$i] == "m") {
+					$state = "";
+				}
+				$i++;
+				break;
+
+			 case "":
+				if ($s[$i] == ESC) {
+					$state = "esc";
+					break;
+				} else if ($s[$i] == "\n") {
+					$newtext .= $s[$i];
+					$newtext .= CSI."6C";
+					$x = $left;
+					$i++;
+				} else if (ord($s[$i]) < 0x80) {
+					$newtext .= $s[$i];
+					$x++;
+					$i++;
+				} else {
+					/* とりあえず全部全角扱い */
+					if ($x > $screen_cols - 2) {
+						$newtext .= "\n";
+						$newtext .= CSI."6C";
+						$x = $left;
+					}
+					$clen = utf8_charlen($s[$i]);
+					for ($j = 0; $j < $clen; $j++) {
+						$newtext .= $s[$i++];
+					}
+					$x += 2;
+				}
+				if ($x > $screen_cols - 1) {
+					$newtext .= "\n";
+					$newtext .= CSI."6C";
+					$x = $left;
+				}
+				break;
+			}
+		}
+		$text = $newtext;
 	}
 
 	return $text;
