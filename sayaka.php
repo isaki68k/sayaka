@@ -300,10 +300,8 @@ function showstatus_callback($object)
 			$dst_name   = coloring(formatname($u->name), COLOR_USERNAME);
 			$src        = coloring("sayakaちゃんからお知らせ", COLOR_SOURCE);
 
-			print CSI."6C";
-			print_("{$src_userid} {$src_name} が ");
-			print_("{$dst_userid} {$dst_name} をフォローしました。\n");
-			print CSI."6C";
+			print_("{$src_userid} {$src_name} が "
+				.  "{$dst_userid} {$dst_name} をフォローしました。\n");
 			print_("{$time} {$src}\n");
 			print "\n";
 			return;
@@ -359,10 +357,9 @@ function showstatus_callback($object)
 
 		$msg = coloring("NG:{$ng['ngword']}", COLOR_NG);
 
-		print CSI."6C";
-		print_("{$name} {$userid}\n");
-		print CSI."6C";
-		print_("{$time} {$msg}\n");
+		print_("{$name} {$userid}\n"
+			.  "{$time} {$msg}");
+		print "\n";
 		print "\n";
 		return;
 	}
@@ -385,9 +382,9 @@ function showstatus_callback($object)
 
 	show_icon(unescape($s->user->screen_name), $profile_image_url);
 	print CSI."3A";
-	print CSI."6C";
-	print_("{$name} {$userid}{$verified}{$protected}\n");
-	print CSI."6C";
+
+	print_("{$name} {$userid}{$verified}{$protected}");
+	print "\n";
 	print_($msg);
 	print "\n";
 
@@ -398,26 +395,25 @@ function showstatus_callback($object)
 		print "\r";
 	}
 
-	// source
-	print CSI."6C";
-	print_("{$time} {$src}");
+	$rtmsg = "";
+	$favmsg = "";
 	// RT
 	$rtcnt = $s->retweet_count;
 	$rtcnt += 0;
 	if ($rtcnt > 0) {
-		print coloring(" {$rtcnt}RT", COLOR_RETWEET);
+		$rtmsg = coloring(" {$rtcnt}RT", COLOR_RETWEET);
 	}
 	// fav
 	$favcnt = $s->favorite_count;
 	$favcnt += 0;
 	if ($favcnt > 0) {
-		print coloring(" {$favcnt}Fav", COLOR_FAVORITE);
+		$favmsg = coloring(" {$favcnt}Fav", COLOR_FAVORITE);
 	}
+	print_("{$time} {$src}{$rtmsg}{$favmsg}");
 	print "\n";
 
 	// リツイート元
 	if (isset($status->retweeted_status)) {
-		print CSI."6C";
 		$rt_time   = formattime($status);
 		$rt_userid = formatid($status->user->screen_name);
 		$rt_name   = formatname($status->user->name);
@@ -428,7 +424,6 @@ function showstatus_callback($object)
 
 	// ふぁぼ元
 	if (isset($object->event) && $object->event == "favorite") {
-		print CSI."6C";
 		$fav_time   = formattime($object);
 		$fav_userid = formatid($object->source->screen_name);
 		$fav_name   = formatname($object->source->name);
@@ -440,10 +435,16 @@ function showstatus_callback($object)
 	print "\n";
 }
 
-// 非ASCII文字を含む出力
+// インデント及び文字コード変換付きの printf ラッパー
+// ただし "\n" は "\n"+インデント に置換するため、(メッセージ中に含まれる
+// 改行のように) 自動インデントしてほしい改行はこの $msg に含めてよく、
+// 逆にメッセージ行と日付行の間の改行のようなシステム的な改行は print "\n";
+// のほうを使うこと。
 function print_($msg)
 {
 	global $jis;
+
+	$msg = make_indent($msg);
 
 	if ($jis) {
 		$msg = mb_convert_encoding($msg, "JIS", "UTF-8");
@@ -565,7 +566,6 @@ function formattime($object)
 function formatmsg($s)
 {
 	global $mediainfo;
-	global $screen_cols;
 
 	$mediainfo = array();
 
@@ -697,61 +697,69 @@ function formatmsg($s)
 		}
 	}
 
-	/* 桁数が分かってる場合は整形してみるか */
-	if ($screen_cols > 0) {
-		$state = "";
-		$newtext = "";
-		$left = 6;
-		$x = $left;
-		$s = preg_split("//", $text, -1, PREG_SPLIT_NO_EMPTY);
-		for ($i = 0; $i < count($s); ) {
-			switch ($state) {
-			 case "esc":
-				$newtext .= $s[$i];
-				if ($s[$i] == "m") {
-					$state = "";
-				}
-				$i++;
-				break;
+	return $text;
+}
 
-			 case "":
-				if ($s[$i] == ESC) {
-					$state = "esc";
-					break;
-				} else if ($s[$i] == "\n") {
-					$newtext .= $s[$i];
-					$newtext .= CSI."6C";
-					$x = $left;
-					$i++;
-				} else if (ord($s[$i]) < 0x80) {
-					$newtext .= $s[$i];
-					$x++;
-					$i++;
-				} else {
-					/* とりあえず全部全角扱い */
-					if ($x > $screen_cols - 2) {
-						$newtext .= "\n";
-						$newtext .= CSI."6C";
-						$x = $left;
-					}
-					$clen = utf8_charlen($s[$i]);
-					for ($j = 0; $j < $clen; $j++) {
-						$newtext .= $s[$i++];
-					}
-					$x += 2;
-				}
-				if ($x > $screen_cols - 1) {
+// インデントをつける
+function make_indent($text)
+{
+	global $screen_cols;
+
+	// 桁数が分からない場合は何もしない
+	if ($screen_cols == 0) {
+		return $text;
+	}
+
+	$state = "";
+	$newtext = CSI."6C";
+	$left = 6;
+	$x = $left;
+	$s = preg_split("//", $text, -1, PREG_SPLIT_NO_EMPTY);
+	for ($i = 0; $i < count($s); ) {
+		switch ($state) {
+		 case "esc":
+			$newtext .= $s[$i];
+			if ($s[$i] == "m") {
+				$state = "";
+			}
+			$i++;
+			break;
+
+		 case "":
+			if ($s[$i] == ESC) {
+				$state = "esc";
+				break;
+			} else if ($s[$i] == "\n") {
+				$newtext .= $s[$i];
+				$newtext .= CSI."6C";
+				$x = $left;
+				$i++;
+			} else if (ord($s[$i]) < 0x80) {
+				$newtext .= $s[$i];
+				$x++;
+				$i++;
+			} else {
+				// とりあえず全部全角扱い
+				if ($x > $screen_cols - 2) {
 					$newtext .= "\n";
 					$newtext .= CSI."6C";
 					$x = $left;
 				}
-				break;
+				$clen = utf8_charlen($s[$i]);
+				for ($j = 0; $j < $clen; $j++) {
+					$newtext .= $s[$i++];
+				}
+				$x += 2;
 			}
+			if ($x > $screen_cols - 1) {
+				$newtext .= "\n";
+				$newtext .= CSI."6C";
+				$x = $left;
+			}
+			break;
 		}
-		$text = $newtext;
 	}
-
-	return $text;
+	return $newtext;
 }
 
 function show_icon($user, $img_url)
