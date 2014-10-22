@@ -21,25 +21,28 @@ twitter クライアント sayaka ちゃん version 3.0.4 (2014/10/18)
   - CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
   - curl, json, pdo_sqlite モジュールが必要です。
   - x68k で `--jis` オプションを使うには mbstring モジュールも必要です。
+  - X window で SIGWINCH によるターミナルサイズ変更に追従したい場合は pcntl モジュールが必要です。コンソールなどターミナルサイズが変わらないところで使うなら不要です。
 
 * pkgsrc なら
 lang/php, www/php-curl, textproc/php-json,
 databases/php-pdo、databases/php-pdo_sqlite
-(、converters/php-mbstring) をインストールして、
-/usr/pkg/etc/php.ini に以下の行を追加します。
+をインストールして /usr/pkg/etc/php.ini に以下の行を追加します。
+converters/php-mbstring、devel/php-pcntl は必要なら追加してください。
 ```
 extension=curl.so
 extension=json.so
 extension=pdo.so
 extension=pdo_sqlite.so
 (extension=mbstring.so)
+(extension=pcntl.so)
 ```
 
 * PHP を野良ビルドする場合以下のオプションくらいで行けそうです。
 --with-curl 等に指定するパスは要不要も含めて環境に合わせて適宜。
 また括弧書きしたオプションについては不要な環境と必要な環境があるようです。
---mbstring は x68k で使いたい人だけ指定すればよいですが、
+--enable-mbstring は x68k で使いたい人だけ指定すればよいですが、
 これだけでバイナリサイズが 1.5MB 増えます。
+同様に --enable-pcntl はターミナルサイズの変更に対応したい場合だけ指定すればよいです。
 ```
 % ./configure
    --disable-all
@@ -52,6 +55,7 @@ extension=pdo_sqlite.so
   (--enable-hash)
   (--enable-libxml)
   (--enable-mbstring)
+  (--enable-pcntl)
 % make
 ```
 NetBSD-6.1.4/amd64 + pkgsrc-2014Q2 の場合、
@@ -80,8 +84,8 @@ libsixel を make して img2sixel をパスの通ったところに置いてく
 * giftopnm (オプション) …
 pkgsrc/graphics/netpbm をインストールするなどして、
 パスの通ってるところに giftopnm を置いてください。
-なくても動作します (img2sixel が GIF 画像も直接扱います) が、
-giftopnm 通したほうが表示できる GIF 形式が増えるかも知れません。
+なくても動作します。
+というか将来廃止予定。
 
 
 インストール方法
