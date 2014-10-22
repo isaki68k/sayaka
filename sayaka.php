@@ -57,6 +57,7 @@
 			"jis",
 			"post:",
 			"pipe",
+			"debug",
 			"help",
 			"version",
 		);
@@ -82,6 +83,9 @@
 		}
 		if (isset($opts["jis"]) && function_exists("mb_convert_encoding")) {
 			$jis = true;
+		}
+		if (isset($opts["debug"])) {
+			$debug = true;
 		}
 		if (isset($opts["post"])) {
 			$cmd = "tweet";
@@ -1088,6 +1092,7 @@ function signal_handler($signo)
 {
 	global $screen_cols;
 	global $tput;
+	global $debug;
 
 	switch ($signo) {
 	 case SIGWINCH:
@@ -1096,7 +1101,9 @@ function signal_handler($signo)
 			$screen_cols = rtrim(`{$tput} cols`);
 		}
 		$screen_cols += 0;
-		print "screen columns={$screen_cols}\n";
+		if ($debug) {
+			print "screen columns={$screen_cols}\n";
+		}
 		break;
 	 default:
 		break;
