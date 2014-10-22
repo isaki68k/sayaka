@@ -108,6 +108,7 @@
 	require_once "TwistOAuth.php";
 	require_once "subr.php";
 	setTimeZone();
+	declare(ticks = 1);
 
 	// DB からアクセストークンを取得
 	$db = new sayakaSQLite3($configdb);
@@ -162,7 +163,7 @@ function init_stream()
 	global $img2sixel;
 	global $giftopnm;
 	global $cachedir;
-	global $screen_cols;
+	global $tput;
 
 	// 色の初期化
 	init_color();
@@ -186,12 +187,17 @@ function init_stream()
 	// giftopnm
 	$giftopnm = rtrim(`which giftopnm`);
 
-	// tput でターミナル1行の桁数を取得
+	// tput
 	$tput = rtrim(`which tput`);
-	if ($tput != "") {
-		$screen_cols = rtrim(`{$tput} cols`);
+
+	// pcntl モジュールがあればシグナルハンドラを設定。
+	// なければウィンドウサイズの変更が受け取れないだけなので
+	// (そもそもコンソールとかだと飛んでこないし) 気にしない。
+	if (function_exists("pcntl_signal")) {
+		pcntl_signal(SIGWINCH, "signal_handler");
 	}
-	$screen_cols += 0;
+	// 一度手動で呼び出して桁数を取得
+	signal_handler(SIGWINCH);
 
 	// NGワード取得
 	get_ngword();
@@ -1075,6 +1081,26 @@ function match_ngword_main($ng, $status)
 	}
 
 	return false;
+}
+
+// シグナルハンドラ
+function signal_handler($signo)
+{
+	global $screen_cols;
+	global $tput;
+
+	switch ($signo) {
+	 case SIGWINCH:
+		// ターミナル1行の桁数を取得
+		if ($tput != "") {
+			$screen_cols = rtrim(`{$tput} cols`);
+		}
+		$screen_cols += 0;
+		print "screen columns={$screen_cols}\n";
+		break;
+	 default:
+		break;
+	}
 }
 
 function cmd_version()
