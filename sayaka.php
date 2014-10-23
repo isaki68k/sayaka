@@ -31,7 +31,7 @@
 	$iconsize = 35;
 	$color_mode = 256;
 
-	$version = "3.0.2 (2014/10/05)";
+	$version = "3.0.5 (2014/10/23)";
 	$progname = $_SERVER["argv"][0];
 
 	// まず引数のチェックをする
