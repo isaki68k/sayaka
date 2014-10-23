@@ -748,6 +748,11 @@ function make_indent($text)
 				$newtext .= $s[$i];
 				$x++;
 				$i++;
+			} else if (ord($s[$i]) == 0xef && utf8_ishalfkana($s, $i)) {
+				// 半角カナ
+				$newtext .= $s[$i] . $s[$i + 1] . $s[$i + 2];
+				$x++;
+				$i += 3;
 			} else {
 				// とりあえず全部全角扱い
 				if ($x > $screen_cols - 2) {
@@ -956,6 +961,27 @@ function utf8_charlen($c)
 	} else {
 		return 0;
 	}
+}
+
+// UTF-8 文字が半角カナなら真を返す。
+// $s は UTF-8 文字列を1バイトごとに分解した配列。
+// その $i 番目(から3バイト) を調べる。
+// ただし先頭バイトが 0xef であることは調査済み。
+function utf8_ishalfkana($s, $i)
+{
+	// UTF-8 の半角カナは次の2ブロック
+	// 0xef bd a1 - 0xef bd bf
+	// 0xef be 80 - 0xef be 9f
+
+	// 入力が不正なら ord() が 0 になるのでこの次の if が成立しない
+	$s1 = ord($s[$i + 1]);
+	$s2 = ord($s[$i + 2]);
+
+	if ($s1 == 0xbd && (0xa1 <= $s2 && $s2 <= 0xbf))
+		return true;
+	if ($s1 == 0xbe && (0x80 <= $s2 && $s2 <= 0x9f))
+		return true;
+	return false;
 }
 
 // NG ワードをデータベースから読み込む
