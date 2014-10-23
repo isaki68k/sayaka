@@ -17,7 +17,7 @@ twitter クライアント sayaka ちゃん version 3.0.4 (2014/10/18)
 必要なもの
 ---
 * PHP
-  - version 5.3 以上
+  - version 5.3 以上 (5.2 以上なら動くかも)
   - CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
   - curl, json, pdo_sqlite モジュールが必要です。
   - x68k で `--jis` オプションを使うには mbstring モジュールも必要です。
@@ -26,16 +26,8 @@ twitter クライアント sayaka ちゃん version 3.0.4 (2014/10/18)
 * pkgsrc なら
 lang/php, www/php-curl, textproc/php-json,
 databases/php-pdo、databases/php-pdo_sqlite
-をインストールして /usr/pkg/etc/php.ini に以下の行を追加します。
+をインストールしてください。
 converters/php-mbstring、devel/php-pcntl は必要なら追加してください。
-```
-extension=curl.so
-extension=json.so
-extension=pdo.so
-extension=pdo_sqlite.so
-(extension=mbstring.so)
-(extension=pcntl.so)
-```
 
 * PHP を野良ビルドする場合以下のオプションくらいで行けそうです。
 --with-curl 等に指定するパスは要不要も含めて環境に合わせて適宜。
@@ -57,6 +49,7 @@ extension=pdo_sqlite.so
   (--enable-mbstring)
   (--enable-pcntl)
 % make
+# make install
 ```
 NetBSD-6.1.4/amd64 + pkgsrc-2014Q2 の場合、
 pkgsrc 版のバイナリが本体 7.6MB + モジュール 0.3MB くらい? ですが、
@@ -106,6 +99,19 @@ pkgsrc/graphics/netpbm をインストールするなどして、
 ~/.sayaka 以外のところに展開した場合は sayaka.sh の先頭のほうにある
 `SAYAKA_HOME` 変数のパスを展開先ディレクトリに書き換えてから使ってください。
 (以下 ~/.sayaka を適宜読み替えてください)
+
+
+NetBSD + pkgsrc の php は、
+モジュールを pkgsrc で入れただけでは有効になりません。
+make install や pkg_add した時に手動で php.ini を更新するようにメッセージが出たはずです。
+~/.sayaka/netbsd/update_php_ini.php は現在インストールされている php
+モジュールを有効にするよう php.ini を更新しますので、
+root になって以下を実行してください。
+```
+# ~(yourname)/.sayaka/netbsd/update_php_ini.php ext
+```
+このスクリプトは extension= 行以外には触れませんので副作用はないと思いますが、
+その辺を独自に編集している人や機械編集されるのが怖い人は pkg_add した時に表示されるメッセージのとおり、手動で編集してください。
 
 
 とりあえず使ってみる
