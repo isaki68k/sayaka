@@ -458,13 +458,10 @@ function print_($msg)
 
 	$msg = make_indent($msg);
 
-	// 全角チルダ(U+FF5E)は JIS X 0208 に変換先がなく、そのままでは
-	// 表示できないので、波ダッシュ(U+301C) に置換してみる。
-	// mlterm の時だけがいいかは分からないが少なくとも手元のuxtermでは
-	// 問題なかったので。
-	if (isset($_SERVER['MLTERM'])) {
-		$msg = str_replace("\xef\xbd\x9e", "\xe3\x80\x9c", $msg);
-	}
+	// 全角チルダ(U+FF5E)はおそらく全角チルダを表示したいのではなく、
+	// Windows が波ダッシュ(U+301C)を表示しようとしたものだと解釈したほうが
+	// 適用範囲が広いので、U+FF5E はすべて U+301C に変換してみる。
+	$msg = str_replace("\xef\xbd\x9e", "\xe3\x80\x9c", $msg);
 
 	if ($jis) {
 		$msg = mb_convert_encoding($msg, "JIS", "UTF-8");
