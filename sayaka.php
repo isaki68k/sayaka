@@ -311,8 +311,10 @@ function showstatus_callback($object)
 			$src        = coloring("sayakaちゃんからお知らせ", COLOR_SOURCE);
 
 			print_("{$src_userid} {$src_name} が "
-				.  "{$dst_userid} {$dst_name} をフォローしました。\n");
-			print_("{$time} {$src}\n");
+				.  "{$dst_userid} {$dst_name} をフォローしました。");
+			print "\n";
+			print_("{$time} {$src}");
+			print "\n";
 			print "\n";
 			return;
 
