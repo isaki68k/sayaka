@@ -31,7 +31,7 @@
 	$iconsize = 35;
 	$color_mode = 256;
 
-	$version = "3.0.5 (2014/10/23)";
+	$version = "3.0.5+ (2014/10/23)";
 	$progname = $_SERVER["argv"][0];
 
 	// まず引数のチェックをする
@@ -457,6 +457,14 @@ function print_($msg)
 	global $jis;
 
 	$msg = make_indent($msg);
+
+	// 全角チルダ(U+FF5E)は JIS X 0208 に変換先がなく、そのままでは
+	// 表示できないので、波ダッシュ(U+301C) に置換してみる。
+	// mlterm の時だけがいいかは分からないが少なくとも手元のuxtermでは
+	// 問題なかったので。
+	if (isset($_SERVER['MLTERM'])) {
+		$msg = str_replace("\xef\xbd\x9e", "\xe3\x80\x9c", $msg);
+	}
 
 	if ($jis) {
 		$msg = mb_convert_encoding($msg, "JIS", "UTF-8");
