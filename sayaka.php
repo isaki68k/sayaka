@@ -810,7 +810,7 @@ function show_icon($user, $img_url)
 
 function show_photo($img_url, $percent)
 {
-	$img_file = preg_replace("|[:/]|", "_", $img_url);
+	$img_file = preg_replace("|[:/\(\)\? ]|", "_", $img_url);
 	show_image($img_file, $img_url, $percent);
 }
 
