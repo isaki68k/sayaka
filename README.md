@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.0.5 (2014/10/23)
+twitter クライアント sayaka ちゃん version 3.0.6 (2014/12/06)
 ======
 
 ターミナルに特化した twitter クライアントです。
