@@ -103,10 +103,8 @@ img2sixel がない場合、アイコンや画像が表示できないだけで�
 (以下 ~/.sayaka を適宜読み替えてください)
 
 
-~~NetBSD + pkgsrc の php は、モジュールを pkgsrc で入れただけでは有効になりません。make install や pkg_add した時に手動で php.ini を更新するようにメッセージが出たはずです。~/.sayaka/netbsd/update_php_ini.php は現在インストールされている php モジュールを有効にするよう php.ini を更新しますので、root になって以下を実行してください。~~
-```
-~~# ~(yourname)/.sayaka/netbsd/update_php_ini.php ext~~
-```
+~~NetBSD + pkgsrc の php は、モジュールを pkgsrc で入れただけでは有効になりません。make install や pkg_add した時に手動で php.ini を更新するようにメッセージが出たはずです。~/.sayaka/netbsd/update_php_ini.php は現在インストールされている php モジュールを有効にするよう php.ini を更新しますので、root になって以下を実行してください。~~  
+~~`# ~(yourname)/.sayaka/netbsd/update_php_ini.php ext`~~  
 ~~このスクリプトは extension= 行以外には触れませんので副作用はないと思いますが、その辺を独自に編集している人や機械編集されるのが怖い人は pkg_add した時に表示されるメッセージのとおり、手動で編集してください。~~
 2014/11/02 以降の pkgsrc では `PHP_AUTO_REGISTER_EXT=yes` を設定しておけば自動的に php.ini が更新されるようになったのでそちら推奨。
 
