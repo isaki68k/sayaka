@@ -40,7 +40,11 @@ converters/php-mbstring、devel/php-pcntl は必要なら追加してくださ�
 --enable-mbstring は x68k で使いたい人だけ指定すればよいですが、
 これだけでバイナリサイズが 1.5MB 増えます。
 同様に --enable-pcntl はターミナルサイズの変更に対応したい場合だけ指定すればよいです。
-```
+NetBSD-6.1.4/amd64 + pkgsrc-2014Q2 の場合、
+pkgsrc 版のバイナリが本体 7.6MB + モジュール 0.3MB くらい? ですが、
+このオプションで作った野良ビルド版では本体 3.7MB 程度になります。
+メモリの少ないマシンではこの差は効くかも。
+ ```
 % ./configure
    --disable-all
    --disable-cgi
@@ -56,16 +60,12 @@ converters/php-mbstring、devel/php-pcntl は必要なら追加してくださ�
 % make
 # make install
 ```
-NetBSD-6.1.4/amd64 + pkgsrc-2014Q2 の場合、
-pkgsrc 版のバイナリが本体 7.6MB + モジュール 0.3MB くらい? ですが、
-このオプションで作った野良ビルド版では本体 3.7MB 程度になります。
-メモリの少ないマシンではこの差は効くかも。
 
 * E_NOTICE レベルのワーニングがん無視なので、
 /usr/pkg/etc/php.ini の error_reporting に
 `& ~E_NOTICE` を追加するなどして
 E_NOTICE レベルのレポートを落としておくことをお勧めします。
-```
+ ```
 - error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 + error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT & ~E_NOTICE
 ```
@@ -78,7 +78,6 @@ pkgsrc/www/curl をインストールするなどして、
 libsixel 1.3 以上を make して img2sixel をパスの通ったところに置いてください
 (libsixel 1.3 未満はオプションの関係で対応していません)。
 img2sixel がない場合、アイコンや画像が表示できないだけです。
-
 `./configure` に `--with-gdk-pixbuf2`
 オプションをつけると、より多くの画像がデコードできそうです。
 
