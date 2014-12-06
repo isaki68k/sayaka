@@ -463,6 +463,11 @@ function print_($msg)
 	// 適用範囲が広いので、U+FF5E はすべて U+301C に変換してみる。
 	$msg = str_replace("\xef\xbd\x9e", "\xe3\x80\x9c", $msg);
 
+	// 全角ハイフンマイナス(U+FF0D)は環境によって表示出来ない可能性があるが
+	// 全角マイナスで代用できるし、そっちはほぼ表示できるのだから、
+	// すべて置換しておく。困るようなシチュエーションはないだろう。
+	$msg = str_replace("\xef\xbc\x8d", "\xe2\x88\x92", $msg);
+
 	if ($jis) {
 		$msg = mb_convert_encoding($msg, "JIS", "UTF-8");
 	}
