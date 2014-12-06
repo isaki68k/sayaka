@@ -165,7 +165,6 @@ function init_stream()
 {
 	global $color_mode;
 	global $img2sixel;
-	global $giftopnm;
 	global $cachedir;
 	global $tput;
 
@@ -181,15 +180,13 @@ function init_stream()
 		$img2sixel = rtrim(`which img2sixel`);
 	}
 	if ($img2sixel != "") {
+		$img2sixel .= " -S";
 		if ($color_mode == 2) {
 			$img2sixel .= " -e --quality=low";
 		} else if ($color_mode <= 16) {
 			$img2sixel .= " -m colormap{$color_mode}.png";
 		}
 	}
-
-	// giftopnm
-	$giftopnm = rtrim(`which giftopnm`);
 
 	// tput
 	$tput = rtrim(`which tput`);
@@ -823,7 +820,6 @@ function show_image($img_file, $img_url, $width)
 {
 	global $cachedir;
 	global $img2sixel;
-	global $giftopnm;
 
 	// img2sixel 使わないモードならここで帰る
 	if ($img2sixel == "") {
@@ -840,10 +836,6 @@ function show_image($img_file, $img_url, $width)
 
 	if (!file_exists($img_file)) {
 		$imgconv = "{$img2sixel} {$width}";
-		if (preg_match("/.gif$/i", $img_url) && $giftopnm != "") {
-			// img2sixel では表示できない GIF があるため
-			$imgconv = "{$giftopnm} | {$imgconv}";
-		}
 		system("(curl -Lks {$img_url} | "
 		     . "{$imgconv} > {$img_file}) 2>/dev/null");
 	}

@@ -10,6 +10,7 @@ twitter クライアント sayaka ちゃん version 3.0.5 (2014/10/23)
 
 最近の更新
 ---
+* 3.0.6 … libsixel 1.3 に対応。libsixel 1.3 未満は使えません。
 * 3.0.5 … 本文を折り返して表示。
 * 3.0.4 … --jis オプションを追加しました。
 
@@ -70,15 +71,12 @@ pkgsrc/www/curl をインストールするなどして、
 パスの通ってるところに置いといてください。
 
 * img2sixel (オプション) …
-pkgsrc-current/graphics/libsixel をインストールするか、
-libsixel を make して img2sixel をパスの通ったところに置いてください。
-なければアイコンや写真などが表示できないだけで、動作はします。
+libsixel 1.3 以上を make して img2sixel をパスの通ったところに置いてください
+(libsixel 1.3 未満はオプションの関係で対応していません)。
+img2sixel がない場合、アイコンや画像が表示できないだけです。
 
-* giftopnm (オプション) …
-pkgsrc/graphics/netpbm をインストールするなどして、
-パスの通ってるところに giftopnm を置いてください。
-なくても動作します。
-というか将来廃止予定。
+`./configure` に `--with-gdk-pixbuf2`
+オプションをつけると、より多くの画像がデコードできそうです。
 
 
 インストール方法
