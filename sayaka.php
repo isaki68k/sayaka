@@ -390,6 +390,7 @@ function showstatus_callback($object)
 	$profile_image_url = $s->user->profile_image_url;
 
 	show_icon(unescape($s->user->screen_name), $profile_image_url);
+	print "\r";
 	print CSI."3A";
 
 	print_("{$name} {$userid}{$verified}{$protected}");
