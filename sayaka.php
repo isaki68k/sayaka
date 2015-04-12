@@ -267,7 +267,6 @@ function play()
 //
 function showstatus_callback($object)
 {
-	global $mediainfo;
 	global $mutelist;
 	global $record_file;
 
@@ -373,6 +372,17 @@ function showstatus_callback($object)
 		return;
 	}
 
+	showstatus($status, $s);
+	print "\n";
+}
+
+// 1ツイートを表示
+// $status は常に元ステータス
+// $s のほうは表示するステータス(RT なら RT 側)
+function showstatus($status, $s)
+{
+	global $global_indent_level;
+
 	$userid = coloring(formatid($s->user->screen_name), COLOR_USERID);
 	$name   = coloring(formatname($s->user->name), COLOR_USERNAME);
 	$src    = coloring(unescape(strip_tags($s->source))." から", COLOR_SOURCE);
@@ -384,7 +394,7 @@ function showstatus_callback($object)
 		? coloring(" ■", COLOR_PROTECTED)
 		: "";
 
-	$msg = formatmsg($s);
+	list ($msg, $mediainfo) = formatmsg($s);
 
 	// 今のところローカルアカウントはない
 	$profile_image_url = $s->user->profile_image_url;
@@ -397,6 +407,15 @@ function showstatus_callback($object)
 	print "\n";
 	print_($msg);
 	print "\n";
+
+	// コメント付きRT の引用部分
+	if (isset($s->quoted_status)) {
+		// この中はインデントを一つ下げる
+		print "\n";
+		$global_indent_level++;
+		showstatus($status, $s->quoted_status);
+		$global_indent_level--;
+	}
 
 	// picture
 	foreach ($mediainfo as $m) {
@@ -441,8 +460,6 @@ function showstatus_callback($object)
 			COLOR_FAVORITE));
 		print "\n";
 	}
-
-	print "\n";
 }
 
 // インデント及び文字コード変換付きの printf ラッパー
@@ -583,10 +600,9 @@ function formattime($object)
 }
 
 // ステータスを解析しながら本文を整形したり情報抜き出したりを同時にする。
+// 戻り値は array($msg, $mediainfo)。
 function formatmsg($s)
 {
-	global $mediainfo;
-
 	$mediainfo = array();
 
 	// 本文
@@ -634,9 +650,16 @@ function formatmsg($s)
 			$exp  = $u->expanded_url;
 
 			// 本文の短縮 URL を差し替える
-			// indices 使ってないけどまあ大丈夫だろう
-			$text = preg_replace("|{$u->url}|",
-				coloring($disp, COLOR_URL), $text);
+			if (isset($s->quoted_status_id_str)
+			 && preg_match("|/{$s->quoted_status_id_str}$|", $exp))
+			{
+				// この場合はコメント付き RT の URL なので取り除く
+				$text = preg_replace("|{$u->url}|", "", $text);
+			} else {
+				// indices 使ってないけどまあ大丈夫だろう
+				$text = preg_replace("|{$u->url}|",
+					coloring($disp, COLOR_URL), $text);
+			}
 
 			// 外部画像サービス
 			if (preg_match("|twitpic.com/(\w+)|", $exp, $m)) {
@@ -717,22 +740,26 @@ function formatmsg($s)
 		}
 	}
 
-	return $text;
+	return array($text, $mediainfo);
 }
 
 // インデントをつける
 function make_indent($text)
 {
 	global $screen_cols;
+	global $global_indent_level;
 
 	// 桁数が分からない場合は何もしない
 	if ($screen_cols == 0) {
 		return $text;
 	}
 
+	// インデント階層
+	$left = 6 * ($global_indent_level + 1);
+	$indent = CSI."{$left}C";
+
 	$state = "";
-	$newtext = CSI."6C";
-	$left = 6;
+	$newtext = $indent;
 	$x = $left;
 	$s = preg_split("//", $text, -1, PREG_SPLIT_NO_EMPTY);
 	for ($i = 0; $i < count($s); ) {
@@ -751,7 +778,7 @@ function make_indent($text)
 				break;
 			} else if ($s[$i] == "\n") {
 				$newtext .= $s[$i];
-				$newtext .= CSI."6C";
+				$newtext .= $indent;
 				$x = $left;
 				$i++;
 			} else if (ord($s[$i]) < 0x80) {
@@ -767,7 +794,7 @@ function make_indent($text)
 				// とりあえず全部全角扱い
 				if ($x > $screen_cols - 2) {
 					$newtext .= "\n";
-					$newtext .= CSI."6C";
+					$newtext .= $indent;
 					$x = $left;
 				}
 				$clen = utf8_charlen($s[$i]);
@@ -778,7 +805,7 @@ function make_indent($text)
 			}
 			if ($x > $screen_cols - 1) {
 				$newtext .= "\n";
-				$newtext .= CSI."6C";
+				$newtext .= $indent;
 				$x = $left;
 			}
 			break;
@@ -821,6 +848,13 @@ function show_image($img_file, $img_url, $width)
 {
 	global $cachedir;
 	global $img2sixel;
+	global $global_indent_level;
+
+	// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
+	if ($global_indent_level > 0) {
+		$left = $global_indent_level * 6;
+		print CSI."{$left}C";
+	}
 
 	// img2sixel 使わないモードならここで帰る
 	if ($img2sixel == "") {
