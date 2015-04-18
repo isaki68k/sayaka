@@ -288,13 +288,17 @@ function showstatus_callback($object)
 		//			"favorite", "unfavorite", "follow", "unfollow", ...
 		// timestamp_ms => イベント発生時刻(UNIXTIME)
 		// created_at => イベント発生時刻
-		// source => ふぁぼなら、ふぁぼ元ユーザ情報
-		// target => ふぁぼなら、ふぁぼ先ユーザ情報
-		// target_object => ふぁぼなら、ふぁぼったメッセージ
 
 		switch ($object->event) {
 		 case "favorite":
+			// source => ふぁぼ元ユーザ
+			// target => ふぁぼ先ユーザ
+			// target_object => ふぁぼったメッセージ
 			$status = $object->target_object;
+
+			// これだけだと、$status から $object が拾えないので
+			// $object をバックリンクしておく。
+			$status->object = $object;
 			break;
 		 case "follow":
 			$time = coloring(formattime($object), COLOR_TIME);
@@ -382,6 +386,10 @@ function showstatus_callback($object)
 function showstatus($status, $s)
 {
 	global $global_indent_level;
+
+	if (isset($status->object)) {
+		$object = $status->object;
+	}
 
 	$userid = coloring(formatid($s->user->screen_name), COLOR_USERID);
 	$name   = coloring(formatname($s->user->name), COLOR_USERNAME);
