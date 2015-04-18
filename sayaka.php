@@ -658,7 +658,7 @@ function formatmsg($s)
 			$exp  = $u->expanded_url;
 
 			// 本文の短縮 URL を差し替える
-			if (isset($s->quoted_status_id_str)
+			if (isset($s->quoted_status)
 			 && preg_match("|/{$s->quoted_status_id_str}$|", $exp))
 			{
 				// この場合はコメント付き RT の URL なので取り除く
