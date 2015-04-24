@@ -416,6 +416,13 @@ function showstatus($status, $s)
 	print_($msg);
 	print "\n";
 
+	// picture
+	foreach ($mediainfo as $m) {
+		print CSI."6C";
+		show_photo($m["target_url"], $m["width"]);
+		print "\r";
+	}
+
 	// コメント付きRT の引用部分
 	if (isset($s->quoted_status)) {
 		// この中はインデントを一つ下げる
@@ -423,13 +430,6 @@ function showstatus($status, $s)
 		$global_indent_level++;
 		showstatus($status, $s->quoted_status);
 		$global_indent_level--;
-	}
-
-	// picture
-	foreach ($mediainfo as $m) {
-		print CSI."6C";
-		show_photo($m["target_url"], $m["width"]);
-		print "\r";
 	}
 
 	$rtmsg = "";
