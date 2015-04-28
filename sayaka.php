@@ -136,6 +136,7 @@
 	 case "play":
 		init_stream();
 		play();
+		break;
 	}
 	exit(0);
 ?>
