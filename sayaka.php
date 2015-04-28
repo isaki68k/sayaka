@@ -911,6 +911,7 @@ function get_mute_list()
 
 	$options = array();
 	$options["include_entities"] = false;
+	$options["skip_status"] = false;
 	$json = $tw->get("mutes/users/list", $options);
 	if (isset($json->error)) {
 		print "get(mutes/users/list) failed: {$json->error}\n";
