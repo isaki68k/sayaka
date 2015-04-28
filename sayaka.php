@@ -58,6 +58,7 @@
 			"post:",
 			"pipe",
 			"debug",
+			"mutelist",
 			"help",
 			"version",
 		);
@@ -99,6 +100,9 @@
 				$text .= $buf;
 			}
 		}
+		if (isset($opts["mutelist"])) {
+			$cmd = "mutelist";
+		}
 		if (isset($opts["version"])) {
 			cmd_version();
 			exit(0);
@@ -136,6 +140,9 @@
 	 case "play":
 		init_stream();
 		play();
+		break;
+	 case "mutelist":
+		cmd_mutelist();
 		break;
 	}
 	exit(0);
@@ -320,11 +327,11 @@ function showstatus_callback($object)
 			return;
 
 		 case "mute":
-			add_mute_list($object->target->id_str);
+			add_mute_list($object->target);
 			return;
 
 		 case "unmute":
-			del_mute_list($object->target->id_str);
+			del_mute_list($object->target);
 			return;
 
 		 default:
@@ -895,7 +902,7 @@ function show_image($img_file, $img_url, $width)
 }
 
 // ミュートユーザ一覧の読み込み。
-// $mutelist は "id_str" => "id_str" の連想配列。
+// $mutelist は "id_str" => "screen_name" の連想配列。
 // 今は毎回 twitter から取得しているだけ。
 function get_mute_list()
 {
@@ -912,24 +919,36 @@ function get_mute_list()
 
 	$mutelist = array();
 	foreach ($json->users as $user) {
-		$mutelist[$user->id_str] = $user->id_str;
+		$mutelist[$user->id_str] = $user->screen_name;
 	}
 }
 
 // ミュートユーザを追加
-function add_mute_list($id_str)
+function add_mute_list($user)
 {
 	global $mutelist;
 
-	$mutelist[$id_str] = $id_str;
+	$mutelist[$user->id_str] = $user->screen_name;
 }
 
 // ミュートユーザを削除
-function del_mute_list($id_str)
+function del_mute_list($user)
 {
 	global $mutelist;
 
-	unset($mutelist[$id_str]);
+	unset($mutelist[$user->id_str]);
+}
+
+// 取得したミュートユーザの一覧を表示する
+function cmd_mutelist()
+{
+	global $mutelist;
+
+	get_mute_list();
+
+	foreach ($mutelist as $id => $scr) {
+		print "{$id}: {$scr}\n";
+	}
 }
 
 // 古いキャッシュを破棄する
