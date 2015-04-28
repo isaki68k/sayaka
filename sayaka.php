@@ -909,19 +909,32 @@ function get_mute_list()
 	global $tw;
 	global $mutelist;
 
-	$options = array();
-	$options["include_entities"] = false;
-	$options["skip_status"] = false;
-	$json = $tw->get("mutes/users/list", $options);
-	if (isset($json->error)) {
-		print "get(mutes/users/list) failed: {$json->error}\n";
-		return;
-	}
+	// ミュートユーザ一覧は一度に20人分しか送られてこず、
+	// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
+	// これを cursor に指定してもう一度リクエストを送る。
 
 	$mutelist = array();
-	foreach ($json->users as $user) {
-		$mutelist[$user->id_str] = $user->screen_name;
-	}
+	$cursor = "0";
+
+	do {
+		$options = array();
+		$options["include_entities"] = false;
+		$options["skip_status"] = false;
+		if ($cursor != "0") {
+			$options["cursor"] = $cursor;
+		}
+		$json = $tw->get("mutes/users/list", $options);
+		if (isset($json->error)) {
+			print "get(mutes/users/list) failed: {$json->error}\n";
+			return;
+		}
+
+		foreach ($json->users as $user) {
+			$mutelist[$user->id_str] = $user->screen_name;
+		}
+
+		$cursor = $json->next_cursor_str;
+	} while ($cursor != "0");
 }
 
 // ミュートユーザを追加
