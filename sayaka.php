@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-	// 設定ファイルに分けるか
-	$iconsize = 35;
+	$fontheight = 14;
 	$color_mode = 256;
 
 	$version = "3.0.7 (2015/04/19)";
@@ -57,6 +56,7 @@
 			"jis",
 			"post:",
 			"pipe",
+			"font:",
 			"debug",
 			"mutelist",
 			"help",
@@ -100,6 +100,9 @@
 				$text .= $buf;
 			}
 		}
+		if (isset($opts["font"])) {
+			$fontheight = $opts["font"];
+		}
 		if (isset($opts["mutelist"])) {
 			$cmd = "mutelist";
 		}
@@ -111,6 +114,9 @@
 			usage();
 		}
 	}
+
+	// フォント高さからアイコンの大きさを決定
+	$iconsize = intval($fontheight * 2.5);
 
 	// ここからメインルーチン
 	require_once "TwistOAuth.php";
