@@ -1240,12 +1240,16 @@ function usage()
 	cmd_version();
 	print <<<__EOM__
 usage:
- {$progname} --stream [--color <n>] [--record <file>]
-	streaming mode
- {$progname} --pipe
-	tweet from stdin
- {$progname} --post "msg"
-	tweet "msg" (without quote)
+ {$progname} --stream
+	streaming mode.
+		--color <n>: color mode { 2, 16, 256 }. default 256.
+		--font <n>: font height. default 14.
+		--white
+		--noimg
+		--jis
+		--record <file>
+ {$progname} [ --pipe | --post "msg" ]
+	tweet from stdin or "msg"(without quote)
  {$progname} --play <file>
 	replay the recorded file as stream
 
