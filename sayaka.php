@@ -117,6 +117,7 @@
 
 	// フォント高さからアイコンの大きさを決定
 	$iconsize = intval($fontheight * 2.5);
+	$imagesize = intval($fontheight * 8.5);
 
 	// ここからメインルーチン
 	require_once "TwistOAuth.php";
@@ -625,6 +626,8 @@ function formattime($object)
 // 戻り値は array($msg, $mediainfo)。
 function formatmsg($s)
 {
+	global $imagesize;
+
 	$mediainfo = array();
 
 	// 本文
@@ -716,7 +719,7 @@ function formatmsg($s)
 				$mediainfo[] = array(
 					"display_url" => $disp,
 					"target_url"  => $exp,
-					"width"       => 120,
+					"width"       => $imagesize,
 				);
 			}
 		}
@@ -749,9 +752,9 @@ function formatmsg($s)
 			$w = $m->sizes->small->w;
 			$h = $m->sizes->small->h;
 			if ($h > $w) {
-				$width = intval(($w / $h) * $w * 0.4);
+				$width = intval(($w / $h) * $imagesize);
 			} else {
-				$width = intval($w * 0.4);
+				$width = $imagesize;
 			}
 
 			$mediainfo[] = array(
