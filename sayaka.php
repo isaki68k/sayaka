@@ -27,11 +27,11 @@
  * SUCH DAMAGE.
  */
 
-	$fontheight = 14;
-	$color_mode = 256;
-
 	$version = "3.0.7 (2015/04/19)";
 	$progname = $_SERVER["argv"][0];
+
+	$fontheight = 14;
+	$color_mode = 256;
 
 	// まず引数のチェックをする
 	$cmd = "";
