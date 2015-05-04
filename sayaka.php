@@ -715,7 +715,7 @@ function formatmsg($s)
 					"target_url"  => $target,
 				);
 			} else
-			if (preg_match("/\.(jpg|png|gif)$/", $exp)) {
+			if (preg_match("/\.(jpg|jpeg|png|gif)$/", $exp)) {
 				$mediainfo[] = array(
 					"display_url" => $disp,
 					"target_url"  => $exp,
