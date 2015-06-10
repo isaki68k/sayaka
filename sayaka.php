@@ -54,6 +54,7 @@
 			"record:",
 			"play:",
 			"jis",
+			"eucjp",
 			"post:",
 			"pipe",
 			"font:",
@@ -84,6 +85,9 @@
 		}
 		if (isset($opts["jis"]) && function_exists("mb_convert_encoding")) {
 			$jis = true;
+		}
+		if (isset($opts["eucjp"]) && function_exists("mb_convert_encoding")) {
+			$eucjp = true;
 		}
 		if (isset($opts["debug"])) {
 			$debug = true;
@@ -493,6 +497,7 @@ function showstatus($status, $s)
 function print_($msg)
 {
 	global $jis;
+	global $eucjp;
 
 	$msg = make_indent($msg);
 
@@ -508,6 +513,8 @@ function print_($msg)
 
 	if ($jis) {
 		$msg = mb_convert_encoding($msg, "JIS", "UTF-8");
+	} else if ($eucjp) {
+		$msg = mb_convert_encoding($msg, "EUC-JP", "UTF-8");
 	}
 	print $msg;
 }
@@ -1247,6 +1254,7 @@ usage:
 		--white
 		--noimg
 		--jis
+		--eucjp
 		--record <file>
  {$progname} [ --pipe | --post "msg" ]
 	tweet from stdin or "msg"(without quote)
