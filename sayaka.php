@@ -27,7 +27,7 @@
  * SUCH DAMAGE.
  */
 
-	$version = "3.0.8 (2015/05/03)";
+	$version = "3.0.9 (2015/06/14)";
 	$progname = $_SERVER["argv"][0];
 
 	$fontheight = 14;
