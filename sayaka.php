@@ -53,6 +53,7 @@
 				"font:",
 				"jis",
 				"noimg",
+				"protect",
 				"record:",
 				"white",
 			"play:",
@@ -81,6 +82,9 @@
 		}
 		if (isset($opts["noimg"])) {
 			$img2sixel = "none";
+		}
+		if (isset($opts["protect"])) {
+			$protect = true;
 		}
 		if (isset($opts["record"])) {
 			$record_file = $opts["record"];
@@ -396,6 +400,7 @@ function showstatus_callback($object)
 function showstatus($status)
 {
 	global $global_indent_level;
+	global $protect;
 
 	if (isset($status->object)) {
 		$object = $status->object;
@@ -417,6 +422,14 @@ function showstatus($status)
 	$protected = $s->user->protected
 		? coloring(" ■", COLOR_PROTECTED)
 		: "";
+
+	// --protect オプションなら鍵ユーザのツイートを表示しない
+	if ($protect == true && $protected != "") {
+		print_(coloring("鍵垢", COLOR_NG)."\n"
+			.  "{$time}");
+		print "\n";
+		return;
+	}
 
 	list ($msg, $mediainfo) = formatmsg($s);
 
@@ -1253,6 +1266,7 @@ usage:
 		--noimg
 		--jis
 		--eucjp
+		--protect : don't display protected user's tweet
 		--record <file>
  {$progname} [ --pipe | --post "msg" ]
 	tweet from stdin or "msg"(without quote)
