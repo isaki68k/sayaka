@@ -48,16 +48,16 @@
 		}
 		$longopt = array(
 			"stream",
-			"color:",
-			"white",
-			"noimg",
-			"record:",
+				"color:",
+				"eucjp",
+				"font:",
+				"jis",
+				"noimg",
+				"record:",
+				"white",
 			"play:",
-			"jis",
-			"eucjp",
 			"post:",
 			"pipe",
-			"font:",
 			"debug",
 			"mutelist",
 			"help",
@@ -70,8 +70,14 @@
 		if (isset($opts["color"])) {
 			$color_mode = $opts["color"];
 		}
-		if (isset($opts["white"])) {
-			$bg_white = true;
+		if (isset($opts["eucjp"]) && function_exists("mb_convert_encoding")) {
+			$eucjp = true;
+		}
+		if (isset($opts["font"])) {
+			$fontheight = $opts["font"];
+		}
+		if (isset($opts["jis"]) && function_exists("mb_convert_encoding")) {
+			$jis = true;
 		}
 		if (isset($opts["noimg"])) {
 			$img2sixel = "none";
@@ -79,18 +85,12 @@
 		if (isset($opts["record"])) {
 			$record_file = $opts["record"];
 		}
+		if (isset($opts["white"])) {
+			$bg_white = true;
+		}
 		if (isset($opts["play"])) {
 			$cmd = "play";
 			$play_file = $opts["play"];
-		}
-		if (isset($opts["jis"]) && function_exists("mb_convert_encoding")) {
-			$jis = true;
-		}
-		if (isset($opts["eucjp"]) && function_exists("mb_convert_encoding")) {
-			$eucjp = true;
-		}
-		if (isset($opts["debug"])) {
-			$debug = true;
 		}
 		if (isset($opts["post"])) {
 			$cmd = "tweet";
@@ -104,8 +104,8 @@
 				$text .= $buf;
 			}
 		}
-		if (isset($opts["font"])) {
-			$fontheight = $opts["font"];
+		if (isset($opts["debug"])) {
+			$debug = true;
 		}
 		if (isset($opts["mutelist"])) {
 			$cmd = "mutelist";
