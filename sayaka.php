@@ -361,19 +361,12 @@ function showstatus_callback($object)
 		return;
 	}
 
-	// $status は常に元ツイート
-	// $s はリツイートかどうかで変わる。
-	$s = $status;
-	if (isset($status->retweeted_status)) {
-		$s = $status->retweeted_status;
-	}
-
 	// ミュートしてるユーザも stream には流れてきてしまうので、ここで弾く
 	if (isset($mutelist[$status->user->id_str])) {
 		return;
 	}
 	if (isset($status->retweeted_status)) {
-		if (isset($mutelist[$s->user->id_str])) {
+		if (isset($mutelist[$status->retweeted_status->user->id_str])) {
 			return;
 		}
 	}
@@ -395,19 +388,23 @@ function showstatus_callback($object)
 		return;
 	}
 
-	showstatus($status, $s);
+	showstatus($status);
 	print "\n";
 }
 
 // 1ツイートを表示
-// $status は常に元ステータス
-// $s のほうは表示するステータス(RT なら RT 側)
-function showstatus($status, $s)
+function showstatus($status)
 {
 	global $global_indent_level;
 
 	if (isset($status->object)) {
 		$object = $status->object;
+	}
+
+	$s = $status;
+	// RT なら、RT 元を $status、RT先を $s
+	if (isset($status->retweeted_status)) {
+		$s = $status->retweeted_status;
 	}
 
 	$userid = coloring(formatid($s->user->screen_name), COLOR_USERID);
@@ -447,10 +444,11 @@ function showstatus($status, $s)
 		// この中はインデントを一つ下げる
 		print "\n";
 		$global_indent_level++;
-		showstatus($status, $s->quoted_status);
+		showstatus($s->quoted_status);
 		$global_indent_level--;
 	}
 
+	// このステータスの既 RT、既ふぁぼ数
 	$rtmsg = "";
 	$favmsg = "";
 	// RT
