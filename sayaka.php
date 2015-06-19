@@ -30,7 +30,7 @@
 	$version = "3.0.9 (2015/06/14)";
 	$progname = $_SERVER["argv"][0];
 
-	$fontheight = 14;
+	$fontheight = 0;
 	$color_mode = 256;
 
 	// まず引数のチェックをする
@@ -123,10 +123,6 @@
 		}
 	}
 
-	// フォント高さからアイコンの大きさを決定
-	$iconsize = intval($fontheight * 2.5);
-	$imagesize = intval($fontheight * 8.5);
-
 	// ここからメインルーチン
 	require_once "TwistOAuth.php";
 	require_once "subr.php";
@@ -190,6 +186,8 @@ function init_stream()
 	global $img2sixel;
 	global $cachedir;
 	global $tput;
+	global $cellsize;
+	global $fontheight;
 
 	// 色の初期化
 	init_color();
@@ -213,6 +211,15 @@ function init_stream()
 
 	// tput
 	$tput = rtrim(`which tput`);
+
+	// cellsize
+	// --font が未指定の時のみ cellsize を使う
+	if ($fontheight == 0 && file_exists("./cellsize")) {
+		$cellsize = "./cellsize";
+	}
+	else {
+		$cellsize = "";
+	}
 
 	// pcntl モジュールがあればシグナルハンドラを設定。
 	// なければウィンドウサイズの変更が受け取れないだけなので
@@ -1226,6 +1233,10 @@ function signal_handler($signo)
 {
 	global $screen_cols;
 	global $tput;
+	global $cellsize;
+	global $fontheight;
+	global $iconsize;
+	global $imagesize;
 	global $debug;
 
 	switch ($signo) {
@@ -1235,8 +1246,28 @@ function signal_handler($signo)
 			$screen_cols = rtrim(`{$tput} cols`);
 		}
 		$screen_cols += 0;
+
+		// ターミナルのフォントの高さを取得
+		if ($cellsize != "") {
+			$fontheight = rtrim(`{$cellsize} -h`);
+			$fontheight += 0;
+		}
+
+		// cellsize が無かった時や、値がとれなかった時は
+		// デフォルト値として 14 を使う。
+		if ($fontheight <= 0) {
+			$fontheight = 14;
+		}
+
+		// フォント高さからアイコンの大きさを決定
+		$iconsize = intval($fontheight * 2.5);
+		$imagesize = intval($fontheight * 8.5);
+
 		if ($debug) {
 			print "screen columns={$screen_cols}\n";
+			print "font height=${fontheight}\n";
+			print "iconsize={$iconsize}\n";
+			print "imagesize={$imagesize}\n";
 		}
 		break;
 	 default:
