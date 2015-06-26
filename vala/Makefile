@@ -11,3 +11,7 @@ PKGS=	\
 
 sayaka:	${SRCS}
 	valac ${PKGS} ${SRCS}
+
+.PHONY:	clean
+clean:
+	rm -f sayaka
