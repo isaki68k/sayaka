@@ -1,3 +1,4 @@
+using System.OS;
 using Gee;
 
 class Program
@@ -6,25 +7,6 @@ class Program
 	{
 		var sayaka = new SayakaMain();
 		return sayaka.Main(args);
-	}
-}
-
-// <sys/signal.h> 由来
-class Signal
-{
-	public const int SIGWINCH = 28;
-}
-
-// tty 由来
-public class TTY
-{
-	public const int TIOCGWINSZ = 0x40087468;
-
-	public struct winsize {
-		ushort ws_row;
-		ushort ws_col;
-		ushort ws_xpixel;
-		ushort ws_ypixel;
 	}
 }
 
@@ -165,10 +147,10 @@ class SayakaMain
 		}
 
 		// シグナルハンドラを設定
-		Posix.@signal(Signal.SIGWINCH, signal_handler);
+		Posix.@signal(UnixSignal.SIGWINCH, signal_handler);
 
 		// 一度手動で呼び出して桁数を取得
-		signal_handler(Signal.SIGWINCH);
+		signal_handler(UnixSignal.SIGWINCH);
 	}
 
 	// 1ツイートを表示するコールバック関数
@@ -406,11 +388,11 @@ class SayakaMain
 	public void signal_handler_2(int signo)
 	{
 		switch (signo) {
-		 case Signal.SIGWINCH:
+		 case UnixSignal.SIGWINCH:
 			screen_cols = -1;
 			fontheight = -1;
-			TTY.winsize ws = TTY.winsize();
-			var r = Posix.ioctl(Posix.STDIN_FILENO, TTY.TIOCGWINSZ, &ws);
+			winsize ws = winsize();
+			var r = ioctl.TIOCGWINSZ(Posix.STDIN_FILENO, out ws);
 			if (r != 0) {
 				stdout.printf("TIOCGWINSZ failed\n");
 			} else {
