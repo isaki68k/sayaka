@@ -8,4 +8,4 @@ GEE=	--pkg gee-0.8
 POSIX=	--pkg posix
 
 sayaka:	${SRCS}
-	valac --pkg json-glib-1.0 ${GEE} ${POSIX} $>
+	valac --pkg json-glib-1.0 ${GEE} ${POSIX} ${SRCS}
