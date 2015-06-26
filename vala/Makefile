@@ -4,8 +4,10 @@ SRCS=	\
 	System.OS.vala \
 	System.OS.native.c \
 
-GEE=	--pkg gee-0.8
-POSIX=	--pkg posix
+PKGS=	\
+	--pkg json-glib-1.0 \
+	--pkg gee-0.8 \
+	--pkg posix \
 
 sayaka:	${SRCS}
-	valac --pkg json-glib-1.0 ${GEE} ${POSIX} ${SRCS}
+	valac ${PKGS} ${SRCS}
