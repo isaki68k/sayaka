@@ -209,7 +209,7 @@ class SayakaMain
 	// 1ツイートを表示
 	public void showstatus(Json.Object status)
 	{
-		Json.Object obj;
+		Json.Object obj = null;
 
 		if (status.has_member("object")) {
 			obj = status.get_object_member("object");
@@ -296,6 +296,30 @@ class SayakaMain
 		}
 		print_("%s %s%s%s".printf(time, src, rtmsg, favmsg));
 		stdout.printf("\n");
+
+		// リツイート元
+		if (status.has_member("retweeted_status")) {
+			var user = status.get_object_member("user");
+			var rt_time   = formattime(status);
+			var rt_userid = formatid(user.get_string_member("screen_name"));
+			var rt_name   = formatname(user.get_string_member("name"));
+			print_(coloring(@"$rt_time $rt_name $rt_userid がリツイート",
+				Color.Retweet));
+			stdout.printf("\n");
+		}
+
+		// ふぁぼ元
+		if (obj != null && obj.has_member("event")
+		 && obj.get_string_member("event") == "favorite")
+		{
+			var user = obj.get_object_member("source");
+			var fav_time   = formattime(obj);
+			var fav_userid = formatid(user.get_string_member("screen_name"));
+			var fav_name   = formatname(user.get_string_member("name"));
+			print_(coloring(@"$fav_time $fav_name $fav_userid がふぁぼ",
+				Color.Favorite));
+			stdout.printf("\n");
+		}
 	}
 
 	public void print_(string msg)
