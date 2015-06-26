@@ -1,5 +1,6 @@
 SRCS=	\
 	sayaka.vala \
+	myjson.vala \
 	System.OS.vala \
 	System.OS.native.c \
 

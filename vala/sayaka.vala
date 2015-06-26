@@ -207,35 +207,30 @@ class SayakaMain
 	}
 
 	// 1ツイートを表示
-	public void showstatus(Json.Object status)
+	public void showstatus(Json.Object json_status)
 	{
-		Json.Object obj = null;
+		MyJsonObject status = new MyJsonObject(json_status);
 
-		if (status.has_member("object")) {
-			obj = status.get_object_member("object");
-		}
+		MyJsonObject obj = status.GetObject("object", null);
 
-		Json.Object s = status;
 		// RT なら、RT 元を $status、RT先を $s
-		if (status.has_member("retweeted_status")) {
-			s = status.get_object_member("retweeted_status");
-		}
+		MyJsonObject s = status.GetObject("retweeted_status", status);
 
-		var s_user = s.get_object_member("user");
+		var s_user = s.GetObject("user");
 		var userid = coloring(formatid(
-			s_user.get_string_member("screen_name")),
+			s_user.GetString("screen_name")),
 			Color.UserId);
 		var name = coloring(formatname(
-			s_user.get_string_member("name")),
+			s_user.GetString("name")),
 			Color.UserName);
 		var src = coloring(PHP.unescape(PHP.strip_tags(
-			s.get_string_member("source") + "から")),
+			s.GetString("source") + "から")),
 			Color.Source);
 		var time = coloring(formattime(s), Color.Time);
-		var verified = s_user.get_boolean_member("verified")
+		var verified = s_user.GetBool("verified")
 			? coloring(" ●", Color.Verified)
 			: "";
-		var protected = s_user.get_boolean_member("protected")
+		var protected = s_user.GetBool("protected")
 			? coloring(" ■", Color.Protected)
 			: "";
 
@@ -251,9 +246,9 @@ class SayakaMain
 		var msg = formatmsg(s, ref mediainfo);
 
 		// 今のところローカルアカウントはない
-		var profile_image_url = s_user.get_string_member("profile_image_url");
+		var profile_image_url = s_user.GetString("profile_image_url");
 
-		show_icon(PHP.unescape(s_user.get_string_member("screen_name")),
+		show_icon(PHP.unescape(s_user.GetString("screen_name")),
 			profile_image_url);
 		stdout.printf("\n");
 		stdout.printf(CSI + "3A");
@@ -273,11 +268,11 @@ class SayakaMain
 #endif
 
 		// コメント付きRT の引用部分
-		if (s.has_member("quoted_status")) {
+		if (s.Has("quoted_status")) {
 			// この中はインデントを一つ下げる
 			stdout.printf("\n");
 			global_indent_level++;
-			showstatus(s.get_object_member("quoted_status"));
+			showstatus(s.GetObject("quoted_status").JsonObject);
 			global_indent_level--;
 		}
 
@@ -285,12 +280,12 @@ class SayakaMain
 		var rtmsg = "";
 		var favmsg = "";
 		// RT
-		var rtcnt = (int)s.get_int_member("retweet_count");
+		var rtcnt = (int)s.GetInt("retweet_count");
 		if (rtcnt > 0) {
 			rtmsg = coloring(" %dRT".printf(rtcnt), Color.Retweet);
 		}
 		// Fav
-		var favcnt = (int)s.get_int_member("favorite_count");
+		var favcnt = (int)s.GetInt("favorite_count");
 		if (favcnt > 0) {
 			favmsg = coloring(" %dFav".printf(favcnt), Color.Favorite);
 		}
@@ -298,24 +293,22 @@ class SayakaMain
 		stdout.printf("\n");
 
 		// リツイート元
-		if (status.has_member("retweeted_status")) {
-			var user = status.get_object_member("user");
+		if (status.Has("retweeted_status")) {
+			var user = status.GetObject("user");
 			var rt_time   = formattime(status);
-			var rt_userid = formatid(user.get_string_member("screen_name"));
-			var rt_name   = formatname(user.get_string_member("name"));
+			var rt_userid = formatid(user.GetString("screen_name"));
+			var rt_name   = formatname(user.GetString("name"));
 			print_(coloring(@"$rt_time $rt_name $rt_userid がリツイート",
 				Color.Retweet));
 			stdout.printf("\n");
 		}
 
 		// ふぁぼ元
-		if (obj != null && obj.has_member("event")
-		 && obj.get_string_member("event") == "favorite")
-		{
-			var user = obj.get_object_member("source");
+		if (obj != null && obj.GetString("event") == "favorite") {
+			var user = obj.GetObject("source");
 			var fav_time   = formattime(obj);
-			var fav_userid = formatid(user.get_string_member("screen_name"));
-			var fav_name   = formatname(user.get_string_member("name"));
+			var fav_userid = formatid(user.GetString("screen_name"));
+			var fav_name   = formatname(user.GetString("name"));
 			print_(coloring(@"$fav_time $fav_name $fav_userid がふぁぼ",
 				Color.Favorite));
 			stdout.printf("\n");
@@ -366,23 +359,23 @@ class SayakaMain
 		return src;	/* XXX */
 	}
 
-	public string formattime(Json.Object obj)
+	public string formattime(MyJsonObject obj)
 	{
 		return "";	/* XXX */
 	}
 
-	public string formatmsg(Json.Object s,
+	public string formatmsg(MyJsonObject s,
 		ref ArrayList<HashMap<string, string>> mediainfo)
 	{
 		// 本文
-		var text = s.get_string_member("text");
+		var text = s.GetString("text");
 
 		// タグ情報を展開
 		// 文字位置しか指定されてないので、text に一切の変更を加える前に
 		// 調べないとタグが分からないというクソ仕様…。
-		if (s.has_member("entities")) {
-			var hashtags = s.get_object_member("entities")
-			                .get_array_member("hashtags");
+		if (s.Has("entities")) {
+			var hashtags = s.GetObject("entities")
+			                .GetArray("hashtags");
 			if (hashtags.get_length() > 0) {
 				text = format_hashtags(text, hashtags);
 			}
