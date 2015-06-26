@@ -20,8 +20,5 @@ namespace System.OS
 		}
 	}
 
-	public class UnixSignal
-	{
-		public const int SIGWINCH = native_SIGWINCH;
-	}
+	public const int SIGWINCH = native_SIGWINCH;
 }

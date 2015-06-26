@@ -147,10 +147,10 @@ class SayakaMain
 		}
 
 		// シグナルハンドラを設定
-		Posix.@signal(UnixSignal.SIGWINCH, signal_handler);
+		Posix.@signal(SIGWINCH, signal_handler);
 
 		// 一度手動で呼び出して桁数を取得
-		signal_handler(UnixSignal.SIGWINCH);
+		signal_handler(SIGWINCH);
 	}
 
 	// 1ツイートを表示するコールバック関数
@@ -388,7 +388,7 @@ class SayakaMain
 	public void signal_handler_2(int signo)
 	{
 		switch (signo) {
-		 case UnixSignal.SIGWINCH:
+		 case SIGWINCH:
 			screen_cols = -1;
 			fontheight = -1;
 			winsize ws = winsize();
