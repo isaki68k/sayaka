@@ -409,7 +409,7 @@ class SayakaMain
 			screen_cols = -1;
 			fontheight = -1;
 			winsize ws = winsize();
-			var r = ioctl.TIOCGWINSZ(Posix.STDIN_FILENO, out ws);
+			var r = ioctl.TIOCGWINSZ(Posix.STDOUT_FILENO, out ws);
 			if (r != 0) {
 				stdout.printf("TIOCGWINSZ failed\n");
 			} else {
