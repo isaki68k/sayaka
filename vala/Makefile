@@ -4,7 +4,7 @@ SRCS=	\
 	System.OS.vala \
 	System.OS.native.c \
 
-GEE=	--pkg gee-1.0
+GEE=	--pkg gee-0.8
 POSIX=	--pkg posix
 
 sayaka:	${SRCS}
