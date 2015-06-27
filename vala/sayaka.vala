@@ -46,8 +46,8 @@ class PHP
 
 class SayakaMain
 {
-	public const string ESC = "\x1b";
-	public const string CSI = ESC + "[";
+	public const char ESC = '\x1b';
+	public const string CSI = "\x1b[";
 
 	public string img2sixel;
 	public int color_mode;
@@ -330,16 +330,65 @@ class SayakaMain
 	// インデントをつける
 	public string make_indent(string text)
 	{
-#if false
+		// 桁数が分からない場合は何もしない
+		if (screen_cols < 1) {
+			return text;
+		}
+
 		// インデント階層
 		var left = 6 * (global_indent_level + 1);
-		var indent = string.printf(CSI + "%dC", left);
+		string indent = CSI + @"$(left)C";
 
-		var state = "";
-		var newtext = indent;
+		bool inescape = false;
+		StringBuilder newtext = new StringBuilder();
+		newtext.append(indent);
 		var x = left;
-#endif
-		return text;	/* XXX */
+		for (var i = 0; i < text.length; ) {
+			uchar s = text[i];
+			if (inescape) {
+				newtext.append(text.substring(i, 1));
+				if (s == 'm') {
+					inescape = false;
+				}
+				i++;
+			} else {
+				if (s == ESC) {
+					inescape = true;
+					continue;
+				} else if (s == '\n') {
+					newtext.append("\n");
+					newtext.append(indent);
+					x = left;
+					i++;
+				} else if (s < 0x80) {
+					newtext.append(text.substring(i, 1));
+					x++;
+					i++;
+				} else if (s == 0xef && utf8_ishalfkana(text, i)) {
+					// 半角カナ
+					newtext.append(text.substring(i, 3));
+					x++;
+					i += 3;
+				} else {
+					// とりあえず全部全角扱い
+					if (x > screen_cols - 2) {
+						newtext.append("\n");
+						newtext.append(indent);
+						x = left;
+					}
+					var clen = utf8_charlen(s);
+					newtext.append(text.substring(i, clen));
+					i += clen;
+					x += 2;
+				}
+				if (x > screen_cols - 1) {
+					newtext.append("\n");
+					newtext.append(indent);
+					x = left;
+				}
+			}
+		}
+		return newtext.str;
 	}
 
 	// 名前表示用に整形
@@ -395,6 +444,52 @@ class SayakaMain
 	public void show_icon(string user, string img_url)
 	{
 		stdout.printf("\n\n\n\n");	/* XXX */
+	}
+
+	// UTF-8 文字の先頭バイトからこの文字のバイト数を返す
+	public int utf8_charlen(uint8 c)
+	{
+		// UTF-8 は1バイト目で1文字のバイト数が分かる
+		if (c <= 0x7f) {
+			return 1;
+		} else if (c < 0xc2) {
+			return 0;
+		} else if (c <= 0xdf) {
+			return 2;
+		} else if (c <= 0xef) {
+			return 3;
+		} else if (c <= 0xf7) {
+			return 4;
+		} else if (c <= 0xfb) {
+			return 5;
+		} else if (c <= 0xfd) {
+			return 6;
+		} else {
+			return 0;
+		}
+	}
+
+	// UTF-8 文字が半角カナなら真を返す。
+	// $s は UTF-8 文字列を1バイトごとに分解した配列。
+	// その $i 番目(から3バイト) を調べる。
+	// ただし先頭バイトが 0xef であることは調査済み。
+	public bool utf8_ishalfkana(string text, int i)
+	{
+		// UTF-8 の半角カナは次の2ブロック
+		// 0xef bd a1 - 0xef bd bf
+		// 0xef be 80 - 0xef be 9f
+
+		if (i + 2 >= text.length) {
+			return false;
+		}
+		var s1 = text[i + 1];
+		var s2 = text[i + 2];
+
+		if (s1 == 0xbd && (0xa1 <= s2 && s2 <= 0xbf))
+			return true;
+		if (s1 == 0xbe && (0x80 <= s2 && s2 <= 0x9f))
+			return true;
+		return false;
 	}
 
 	public static void signal_handler(int signo)
