@@ -49,18 +49,8 @@ class SayakaMain
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
 
-	public string img2sixel;
-	public int color_mode;
-	public bool protect;
-	public bool debug;
-	public int screen_cols;
-	public int fontheight;
-	public int iconsize;
-	public int imagesize;
-	public int global_indent_level;
-
 	public enum Color {
-		UserName,
+		Username,
 		UserId,
 		Time,
 		Source,
@@ -72,7 +62,20 @@ class SayakaMain
 		Verified,
 		Protected,
 		NG,
+		Max,
 	}
+
+	public string img2sixel;
+	public int color_mode;
+	public bool protect;
+	public bool debug;
+	public int screen_cols;
+	public int fontheight;
+	public int iconsize;
+	public int imagesize;
+	public int global_indent_level;
+	public bool bg_white;
+	public string[] color2esc = new string[Color.Max];
 
 	static SayakaMain sayakaMain;
 
@@ -90,6 +93,9 @@ class SayakaMain
 				break;
 			 case "--noimg":
 				img2sixel = "none";
+				break;
+			 case "--white":
+				bg_white = true;
 				break;
 			 case "--debug":
 				debug = true;
@@ -121,7 +127,7 @@ class SayakaMain
 	public void init_stream()
 	{
 		// 色の初期化
-		//init_color();
+		init_color();
 
 		// img2sixel
 		// --noimg オプションなら img2sixel を使わない
@@ -222,7 +228,7 @@ class SayakaMain
 			Color.UserId);
 		var name = coloring(formatname(
 			s_user.GetString("name")),
-			Color.UserName);
+			Color.Username);
 		var src = coloring(PHP.unescape(PHP.strip_tags(
 			s.GetString("source") + "から")),
 			Color.Source);
@@ -403,9 +409,81 @@ class SayakaMain
 		return "@" + PHP.unescape(text);
 	}
 
-	public string coloring(string src, Color col)
+	// 色定数
+	public const string BOLD		= "1";
+	public const string UNDERSCORE	= "4";
+	public const string STRIKE		= "9";
+	public const string BLACK		= "30";
+	public const string RED			= "31";
+	public const string GREEN		= "32";
+	public const string BROWN		= "33";
+	public const string BLUE		= "34";
+	public const string MAGENTA		= "35";
+	public const string CYAN		= "36";
+	public const string WHITE		= "37";
+	public const string GRAY		= "90";
+	public const string YELLOW		= "93";
+
+	public void init_color()
 	{
-		return src;	/* XXX */
+		string blue;
+		string green;
+		string username;
+		string fav;
+
+		// 黒背景か白背景かで色合いを変えたほうが読みやすい
+		if (bg_white) {
+			blue = BLUE;
+		} else {
+			blue = CYAN;
+		}
+
+		// ユーザ名。白地の場合は出来ればもう少し暗めにしたい
+		if (bg_white && color_mode > 16) {
+			username = "38;5;28";
+		} else {
+			username = BROWN;
+		}
+
+		// リツイートは緑色。出来れば濃い目にしたい
+		if (color_mode > 16) {
+			green = GREEN;
+		} else {
+			green = "38;5;28";
+		}
+
+		// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
+		// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
+		if (bg_white && color_mode > 16) {
+			fav = "38;5;184";
+		} else {
+			fav = BROWN;
+		}
+
+		color2esc[Color.Username]	= username;
+		color2esc[Color.UserId]		= blue;
+		color2esc[Color.Time]		= GRAY;
+		color2esc[Color.Source]		= GRAY;
+
+		color2esc[Color.Retweet]	= @"$(BOLD);$(green)";
+		color2esc[Color.Favorite]	= BOLD + ";" + fav;
+		color2esc[Color.Url]		= @"$(UNDERSCORE);$(blue)";
+		color2esc[Color.Tag]		= blue;
+		color2esc[Color.Verified]	= CYAN;
+		color2esc[Color.Protected]	= GRAY;
+		color2esc[Color.NG]			= @"$(STRIKE);$(GRAY)";
+	}
+
+	public string coloring(string text, Color col)
+	{
+		string rv;
+
+		if (color2esc[col] != null) {
+			rv = @"$(CSI)$(color2esc[col])m$(text)$(CSI)0m";
+		} else {
+			rv = @"Coloring($(text),$(col))";
+		}
+		return rv;
 	}
 
 	public string formattime(MyJsonObject obj)
