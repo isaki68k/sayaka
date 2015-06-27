@@ -12,6 +12,10 @@ PKGS=	\
 sayaka:	${SRCS}
 	valac ${PKGS} ${SRCS}
 
+c:	sayaka.c
+sayaka.c:	${SRCS}
+	valac -C ${PKGS} ${SRCS}
+
 .PHONY:	clean
 clean:
-	rm -f sayaka
+	rm -f sayaka sayaka.c
