@@ -642,8 +642,6 @@ class SayakaMain
 		stream = FileStream.open(img_file, "r");
 		if (stream == null) {
 			var imgconv = @"$(img2sixel) $(width)";
-			stdout.printf(@"(curl -Lks $(img_url) | "
-				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
 			Posix.system(@"(curl -Lks $(img_url) | "
 				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
 			stream = FileStream.open(img_file, "r");
