@@ -66,7 +66,7 @@ class SayakaMain
 	}
 
 	public string img2sixel;
-	public int color_mode;
+	public int color_mode = 256;
 	public bool protect;
 	public bool debug;
 	public int screen_cols;
@@ -149,7 +149,7 @@ class SayakaMain
 			img2sixel += " -S";
 			if (color_mode == 2) {
 				img2sixel += " -e --quality=low";
-			} else {
+			} else if (color_mode <= 16) {
 				img2sixel += " -m colormap%d.png".printf(color_mode);
 			}
 		}
@@ -258,7 +258,7 @@ class SayakaMain
 
 		show_icon(PHP.unescape(s_user.GetString("screen_name")),
 			profile_image_url);
-		stdout.printf("\n");
+		stdout.printf("\r");
 		stdout.printf(CSI + "3A");
 
 		print_(name + " " + userid + verified + protected);
@@ -725,18 +725,25 @@ class SayakaMain
 	{
 		switch (signo) {
 		 case SIGWINCH:
-			screen_cols = -1;
-			fontheight = -1;
+			// デフォルト値
+			screen_cols = 80;
+			fontheight = 14;
+
 			winsize ws = winsize();
 			var r = ioctl.TIOCGWINSZ(Posix.STDOUT_FILENO, out ws);
 			if (r != 0) {
-				stdout.printf("TIOCGWINSZ failed\n");
+				stdout.printf("TIOCGWINSZ failed.  Using default value.\n");
 			} else {
 				screen_cols = ws.ws_col;
-				if (ws.ws_row != 0) {
-					fontheight = ws.ws_ypixel / ws.ws_row;
+
+				if (ws.ws_ypixel == 0) {
+					stdout.printf("TIOCCGWINSZ ws_ypixel not supported. "
+						+ "Using default font height.\n");
+				} else {
+					if (ws.ws_row != 0) {
+						fontheight = ws.ws_ypixel / ws.ws_row;
+					}
 				}
-				(void)ws.ws_xpixel;	// shut up warning
 			}
 
 			// フォント高さからアイコンの大きさを決定
