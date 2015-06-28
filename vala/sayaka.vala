@@ -77,6 +77,8 @@ class SayakaMain
 	public bool bg_white;
 	public string[] color2esc = new string[Color.Max];
 
+	public string cachedir = "./cache";
+
 	static SayakaMain sayakaMain;
 
 	public SayakaMain()
@@ -268,7 +270,7 @@ class SayakaMain
 #if false
 		foreach (var m in mediainfo) {
 			stdout.printf(CSI + "6C");
-			//show_photo();
+			show_photo();
 			stdout.printf("\r");
 		}
 #endif
@@ -573,7 +575,101 @@ class SayakaMain
 
 	public void show_icon(string user, string img_url)
 	{
-		stdout.printf("\n\n\n\n");	/* XXX */
+		string col;
+
+		var filename = Path.get_basename(img_url);
+		if (color_mode <= 16) {
+			col = @"-$(color_mode)";
+		} else {
+			col = "";
+		}
+		var img_file =
+			@"icon-$(iconsize)x$(iconsize)$(col)-$(user)-$(filename).sixel";
+
+		if (show_image(img_file, img_url, @"$(iconsize)") == false) {
+			stdout.printf("\n\n");
+		}
+	}
+
+#if false
+	public bool show_photo(string img_url, string width)
+	{
+		// XXX regex は…
+		StringBuilder sb = new StringBuilder();
+		for (var i = 0; i < img_url.length; i++) {
+			var c = img_url[i];
+			if (c == ':' || c == '/' || c == '('
+			 || c == ')' || c == '?' || c == ' ')
+			{
+				sb.append("_");
+			} else {
+				sb.append(img_url.substring(i, 1));
+			}
+		}
+		var img_file = sb.str;
+
+		return show_image(img_file, img_url, width);
+	}
+#endif
+
+	// 画像をキャッシュして表示
+	//  $img_file はキャッシュディレクトリ内でのファイル名
+	//  $img_url は画像の URL
+	//  $width は画像の幅。ピクセルかパーセントで指定。
+	// 表示できれば真を返す。
+	public bool show_image(string img_file, string img_url, string width)
+	{
+		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
+		if (global_indent_level > 0) {
+			var left = global_indent_level * 6;
+			stdout.printf(@"$(CSI)$(left)C");
+		}
+
+		// img2sixel 使わないモードならここで帰る
+		if (img2sixel == "") {
+			return false;
+		}
+
+		var img_file_tmp = cachedir + "/" + img_file;
+		img_file = img_file_tmp;
+
+		if (width != "") {
+			var width_tmp = @"-w $(width)";
+			width = width_tmp;
+		}
+
+		FileStream stream;
+		stream = FileStream.open(img_file, "r");
+		if (stream == null) {
+			var imgconv = @"$(img2sixel) $(width)";
+			stdout.printf(@"(curl -Lks $(img_url) | "
+				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
+			Posix.system(@"(curl -Lks $(img_url) | "
+				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
+			stream = FileStream.open(img_file, "r");
+		}
+		// XXX うーん…この辺
+		size_t fsize = 0;
+		if (stream == null || (fsize = get_filesize(stream)) == 0) {
+			Posix.unlink(img_file);
+			return false;
+		}
+
+		// ファイルを読んで標準出力に吐き出す
+		uint8[] buf = new uint8[fsize];
+		var r = stream.read(buf);
+		stdout.write(buf, r);
+		stdout.flush();
+
+		return true;
+	}
+
+	public size_t get_filesize(FileStream stream)
+	{
+		stream.seek(0, FileSeek.END);
+		var fsize = stream.tell();
+		stream.rewind();
+		return fsize;
 	}
 
 	// UTF-8 文字の先頭バイトからこの文字のバイト数を返す
