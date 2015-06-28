@@ -655,8 +655,8 @@ class SayakaMain
 
 		// ファイルを読んで標準出力に吐き出す
 		uint8[] buf = new uint8[fsize];
-		var r = stream.read(buf);
-		stdout.write(buf, r);
+		stream.read(buf);
+		stdout.write(buf);
 		stdout.flush();
 
 		return true;
