@@ -879,7 +879,7 @@ function show_icon($user, $img_url)
 	$img_file = "icon-{$iconsize}x{$iconsize}{$col}-{$user}-{$filename}.sixel";
 
 	if (show_image($img_file, $img_url, $iconsize) === false) {
-		print "\n\n\n\n";
+		print "\n\n\n";
 	}
 }
 
