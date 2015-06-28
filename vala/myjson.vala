@@ -39,6 +39,15 @@ public class MyJsonObject
 		}
 	}
 
+	public int64 GetInt64(string member, int64 defval = 0)
+	{
+		if (JsonObject.has_member(member)) {
+			return JsonObject.get_int_member(member);
+		} else {
+			return defval;
+		}
+	}
+
 	public string GetString(string member, string defval = "")
 	{
 		if (JsonObject.has_member(member)) {
