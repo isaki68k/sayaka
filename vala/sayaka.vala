@@ -449,9 +449,9 @@ class SayakaMain
 
 		// リツイートは緑色。出来れば濃い目にしたい
 		if (color_mode > 16) {
-			green = GREEN;
-		} else {
 			green = "38;5;28";
+		} else {
+			green = GREEN;
 		}
 
 		// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
