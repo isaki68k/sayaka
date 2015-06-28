@@ -486,9 +486,61 @@ class SayakaMain
 		return rv;
 	}
 
+	// $object の日付時刻を表示用に整形して返す。
+	// timestamp_ms があれば使い、なければ created_at を使う。
+	// 今のところ、timestamp_ms はたぶん新しめのツイート/イベント通知には
+	// 付いてるはずだが、リツイートされた側は created_at しかない模様。
 	public string formattime(MyJsonObject obj)
 	{
-		return "";	/* XXX */
+		// vala の DateTime はセットする時に UTC かローカルタイムかを
+		// 決めたらそれ以降変えられないようなので(?)、
+		// 先に now_local() を作っといて、そのローカルタイムから
+		// utc_offset を取得しておく…。嘘だと思うけど…。
+		DateTime now = new DateTime.now_local();
+		int utc_offset = (int)((int64)now.get_utc_offset() / 1000 / 1000);
+
+		DateTime dt;
+		if (obj.Has("timestamp_ms")) {
+			// 数値のようにみえる文字列で格納されている
+			var timestamp_ms = obj.GetString("timestamp_ms");
+			var unixtime = int64.parse(timestamp_ms) / 1000;
+			dt = new DateTime.from_unix_utc(unixtime);
+		} else {
+			var created_at = obj.GetString("created_at");
+			dt = conv_twtime_to_datetime(created_at);
+		}
+
+		// dt は UTC で作ったらローカルタイムに出来ないっぽいので
+		// ここで時差分を追加してやる? 嘘だろ…。
+		dt = dt.add_hours(utc_offset / 3600);
+
+		if (dt.format("%F") == now.format("%F")) {
+			// 今日なら時刻のみ
+			return dt.format("%T");
+		} else {
+			return dt.format("%F %T");
+		}
+	}
+
+	// twitter 書式の日付時刻から DateTime を作って返す。
+	// "Wed Nov 18 18:54:12 +0000 2009"
+	public DateTime conv_twtime_to_datetime(string instr)
+	{
+		string[] w = instr.split(" ");
+		string monname = w[1];
+		int mday = int.parse(w[2]);
+		string timestr = w[3];
+		int year = int.parse(w[5]);
+
+		var mon = "JanFebMarAprMayJunJulAugSepOctNovDec".index_of(monname);
+		mon = (mon / 3) + 1;
+
+		string[] t = timestr.split(":");
+		int hour = int.parse(t[0]);
+		int min  = int.parse(t[1]);
+		int sec  = int.parse(t[2]);
+
+		return new DateTime.utc(year, mon, mday, hour, min, (double)sec);
 	}
 
 	public string formatmsg(MyJsonObject s,
