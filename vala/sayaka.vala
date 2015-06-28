@@ -587,7 +587,7 @@ class SayakaMain
 			@"icon-$(iconsize)x$(iconsize)$(col)-$(user)-$(filename).sixel";
 
 		if (show_image(img_file, img_url, @"$(iconsize)") == false) {
-			stdout.printf("\n\n");
+			stdout.printf("\n\n\n");
 		}
 	}
 
