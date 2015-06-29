@@ -171,7 +171,6 @@ namespace ULib
 			ValueArray_ = value;
 		}
 
-
 		/// <summary>
 		/// value を使用して Object 型の Json クラスの新しいインスタンスを初期化します。
 		/// </summary>
