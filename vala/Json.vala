@@ -410,7 +410,10 @@ namespace ULib
 						sb.append(",");
 					}
 					var kv = obj.At(i);
-					sb.append("\"" + kv.Key + "\"" + ":" + kv.Value.ToString());
+					sb.append("\"");
+					sb.append(kv.Key);
+					sb.append("\":");
+					sb.append(kv.Value.ToString());
 				}
 				sb.append("}");
 			} else {
@@ -432,6 +435,7 @@ namespace ULib
 		{
 			StringBuilder sb = new StringBuilder();
 			unichar c;
+			sb.append("\"");
 			for (int i = 0; src.get_next_char(ref i, out c);) {
 				switch (c) {
 					case '\"':
@@ -468,7 +472,8 @@ namespace ULib
 						break;
 				}
 			}
-			return "\"" + sb.str + "\"";
+			sb.append("\"");
+			return sb.str;
 		}
 	}
 
