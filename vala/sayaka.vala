@@ -291,12 +291,12 @@ class SayakaMain
 		var rtmsg = "";
 		var favmsg = "";
 		// RT
-		var rtcnt = (int)s.GetInt64("retweet_count");
+		var rtcnt = s.GetInt("retweet_count");
 		if (rtcnt > 0) {
 			rtmsg = coloring(" %dRT".printf(rtcnt), Color.Retweet);
 		}
 		// Fav
-		var favcnt = (int)s.GetInt64("favorite_count");
+		var favcnt = s.GetInt("favorite_count");
 		if (favcnt > 0) {
 			favmsg = coloring(" %dFav".printf(favcnt), Color.Favorite);
 		}
