@@ -88,7 +88,6 @@ namespace System.Collections.Generic
 			if (index >= 0) {
 				return arraydata.data[index].Value;
 			}
-stderr.printf("get return null!!!\n");
 			return null;
 		}
 

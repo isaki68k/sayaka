@@ -256,54 +256,79 @@ namespace ULib
 
 		public bool Has(string member)
 		{
-			return AsObject.ContainsKey(member);
+			return IsObject && AsObject.ContainsKey(member);
 		}
 
-		public bool GetBool(string member)
+		public bool GetBool(string member, bool defval = false)
 		{
-			// TODO: isObject
-			return AsObject[member].AsBool;
+			var json = GetJson(member);
+			if (json != null && json.IsBool) {
+				return json.AsBool;
+			} 
+			return defval;
 		}
 
-		public int64 GetInt64(string member)
+		public int GetInt(string member, int defval = 0)
 		{
-			// TODO: check
-			return AsObject[member].AsInt64;
+			var json = GetJson(member);
+			if (json != null && json.IsNumber) {
+				return (int)json.AsInt64;
+			}
+			return defval;
 		}
 
-		public double GetDouble(string member)
+		public int64 GetInt64(string member, int64 defval = 0)
 		{
-			return AsObject[member].AsDouble;
+			var json = GetJson(member);
+			if (json != null && json.IsNumber) {
+				return json.AsInt64;
+			}
+			return defval;
+		}
+
+		public double GetDouble(string member, double defval = 0d)
+		{
+			var json = GetJson(member);
+			if (json != null && json.IsNumber) {
+				return json.AsDouble;
+			}
+			return defval;
 		}
 
 		public string GetString(string member, string defval = "")
 		{
-			// TODO: isObject
-			if (Has(member)) {
-				return AsObject[member].AsString;
-			} else {
-				return defval;
+			var json = GetJson(member);
+			if (json != null && json.IsString) {
+				return json.AsString;
 			}
+			return defval;
 		}
 
-		public Array<Json> GetArray(string member)
+		public Array<Json>? GetArray(string member)
 		{
-			return AsObject[member].AsArray;
+			var json = GetJson(member);
+			if (json != null && json.IsArray) {
+				return json.AsArray;
+			}
+			return null;
 		}
 
-		public Dictionary<string, Json> GetObject(string member)
+		public Dictionary<string, Json>? GetObject(string member)
 		{
-			// TODO: isObject
-			return AsObject[member].AsObject;
+			var json = GetJson(member);
+			if (json != null && json.IsObject) {
+				return json.AsObject;
+			}
+			return null;
 		}
 
 		public Json? GetJson(string member)
 		{
-			if (Has(member)) {
+			if (IsObject) {
+				// member がなければ null が返ってくる規約になっている。
 				return AsObject[member];
-			} else {
-				return null;
 			}
+			return null;
 		}
 
 		public void Dump(Json json)

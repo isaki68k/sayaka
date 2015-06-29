@@ -217,10 +217,7 @@ class SayakaMain
 	// 1ツイートを表示
 	public void showstatus(ULib.Json status)
 	{
-		ULib.Json obj = null;
-		if (status.Has("object")) {
-			obj = status.GetJson("object");
-		}
+		ULib.Json obj = status.GetJson("object");
 
 		// RT なら、RT 元を $status、RT先を $s
 		ULib.Json s = status;
