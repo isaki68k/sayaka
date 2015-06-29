@@ -66,12 +66,11 @@ namespace ULib
 		// Number と String
 		public string ValueString { get; private set; }
 
-		// ValueArray は内部でポインタです。
 		public Array<Json> ValueArray {
 			get { return ValueArray_; }
 			set { ValueArray_ = value; }
 		}
-		private Array<Json>* ValueArray_;
+		private Array<Json> ValueArray_;
 
 		public Dictionary<string, Json> ValueDictionary
 		{
