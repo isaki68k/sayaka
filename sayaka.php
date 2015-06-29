@@ -301,8 +301,12 @@ function showstatus_callback($object)
 	global $mutelist;
 	global $record_file;
 
-	define("ESC", "\x1b");
-	define("CSI", ESC."[");
+	if (!defined("ESC")) {
+		define("ESC", "\x1b");
+	}
+	if (!defined("CSI")) {
+		define("CSI", ESC."[");
+	}
 
 	// $object が元オブジェクト (イベント or メッセージ)
 
