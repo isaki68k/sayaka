@@ -39,7 +39,8 @@
 	$play_file = "";
 	$bg_white = false;
 
-	if ($_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
+	if (array_key_exists("SERVER_PROTOCOL", $_SERVER) &&
+		$_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
 		header("Connection: Keep-alive");
 		$cmd = "stream";
 	} else {
@@ -257,8 +258,8 @@ function stream()
 	@fflush(STDOUT);
 
 	// Start streaming
-	$tw->streaming("user", showstatus_callback,
-		headerfunction_callback);
+	$tw->streaming("user", 'showstatus_callback',
+		'headerfunction_callback');
 }
 
 function headerfunction_callback($ch, $text)
@@ -300,8 +301,12 @@ function showstatus_callback($object)
 	global $mutelist;
 	global $record_file;
 
-	define("ESC", "\x1b");
-	define("CSI", ESC."[");
+	if (!defined("ESC")) {
+		define("ESC", "\x1b");
+	}
+	if (!defined("CSI")) {
+		define("CSI", ESC."[");
+	}
 
 	// $object が元オブジェクト (イベント or メッセージ)
 
@@ -331,14 +336,14 @@ function showstatus_callback($object)
 			$status->object = $object;
 			break;
 		 case "follow":
-			$time = coloring(formattime($object), COLOR_TIME);
+			$time = coloring(formattime($object), 'COLOR_TIME');
 			$u = $object->source;
-			$src_userid = coloring(formatid($u->screen_name), COLOR_USERID);
-			$src_name   = coloring(formatname($u->name), COLOR_USERNAME);
+			$src_userid = coloring(formatid($u->screen_name), 'COLOR_USERID');
+			$src_name   = coloring(formatname($u->name), 'COLOR_USERNAME');
 			$u = $object->target;
-			$dst_userid = coloring(formatid($u->screen_name), COLOR_USERID);
-			$dst_name   = coloring(formatname($u->name), COLOR_USERNAME);
-			$src        = coloring("sayakaちゃんからお知らせ", COLOR_SOURCE);
+			$dst_userid = coloring(formatid($u->screen_name), 'COLOR_USERID');
+			$dst_name   = coloring(formatname($u->name), 'COLOR_USERNAME');
+			$src        = coloring("sayakaちゃんからお知らせ", 'COLOR_SOURCE');
 
 			print_("{$src_name} ${src_userid} が "
 				.  "{$dst_name} {$dst_userid} をフォローしました。");
@@ -386,11 +391,11 @@ function showstatus_callback($object)
 	$ng = false;
 	if (1 && ($ng = match_ngword($status)) !== false) {
 		// マッチしたらここで表示
-		$userid = coloring(formatid($ng['user']->screen_name), COLOR_NG);
-		$name   = coloring(formatname($ng['user']->name), COLOR_NG);
-		$time   = coloring(formattime($status), COLOR_NG);
+		$userid = coloring(formatid($ng['user']->screen_name), 'COLOR_NG');
+		$name   = coloring(formatname($ng['user']->name), 'COLOR_NG');
+		$time   = coloring(formattime($status), 'COLOR_NG');
 
-		$msg = coloring("NG:{$ng['ngword']}", COLOR_NG);
+		$msg = coloring("NG:{$ng['ngword']}", 'COLOR_NG');
 
 		print_("{$name} {$userid}\n"
 			.  "{$time} {$msg}");
@@ -419,20 +424,20 @@ function showstatus($status)
 		$s = $status->retweeted_status;
 	}
 
-	$userid = coloring(formatid($s->user->screen_name), COLOR_USERID);
-	$name   = coloring(formatname($s->user->name), COLOR_USERNAME);
-	$src    = coloring(unescape(strip_tags($s->source))." から", COLOR_SOURCE);
-	$time   = coloring(formattime($s), COLOR_TIME);
+	$userid = coloring(formatid($s->user->screen_name), 'COLOR_USERID');
+	$name   = coloring(formatname($s->user->name), 'COLOR_USERNAME');
+	$src    = coloring(unescape(strip_tags($s->source))." から", 'COLOR_SOURCE');
+	$time   = coloring(formattime($s), 'COLOR_TIME');
 	$verified = $s->user->verified
-		? coloring(" ●", COLOR_VERIFIED)
+		? coloring(" ●", 'COLOR_VERIFIED')
 		: "";
 	$protected = $s->user->protected
-		? coloring(" ■", COLOR_PROTECTED)
+		? coloring(" ■", 'COLOR_PROTECTED')
 		: "";
 
 	// --protect オプションなら鍵ユーザのツイートを表示しない
 	if ($protect == true && $protected != "") {
-		print_(coloring("鍵垢", COLOR_NG)."\n"
+		print_(coloring("鍵垢", 'COLOR_NG')."\n"
 			.  "{$time}");
 		print "\n";
 		return;
@@ -475,13 +480,13 @@ function showstatus($status)
 	$rtcnt = $s->retweet_count;
 	$rtcnt += 0;
 	if ($rtcnt > 0) {
-		$rtmsg = coloring(" {$rtcnt}RT", COLOR_RETWEET);
+		$rtmsg = coloring(" {$rtcnt}RT", 'COLOR_RETWEET');
 	}
 	// fav
 	$favcnt = $s->favorite_count;
 	$favcnt += 0;
 	if ($favcnt > 0) {
-		$favmsg = coloring(" {$favcnt}Fav", COLOR_FAVORITE);
+		$favmsg = coloring(" {$favcnt}Fav", 'COLOR_FAVORITE');
 	}
 	print_("{$time} {$src}{$rtmsg}{$favmsg}");
 	print "\n";
@@ -492,7 +497,7 @@ function showstatus($status)
 		$rt_userid = formatid($status->user->screen_name);
 		$rt_name   = formatname($status->user->name);
 		print_(coloring("{$rt_time} {$rt_name} {$rt_userid} がリツイート",
-			COLOR_RETWEET));
+			'COLOR_RETWEET'));
 		print "\n";
 	}
 
@@ -502,7 +507,7 @@ function showstatus($status)
 		$fav_userid = formatid($object->source->screen_name);
 		$fav_name   = formatname($object->source->name);
 		print_(coloring("{$fav_time} {$fav_name} {$fav_userid} がふぁぼ",
-			COLOR_FAVORITE));
+			'COLOR_FAVORITE'));
 		print "\n";
 	}
 }
@@ -674,7 +679,7 @@ function formatmsg($s)
 		$text = "";
 		for ($i = 0; $i < count($splittext); $i++) {
 			if ($i & 1) {
-				$text .= coloring($splittext[$i], COLOR_TAG);
+				$text .= coloring($splittext[$i], 'COLOR_TAG');
 			} else {
 				$text .= $splittext[$i];
 			}
@@ -687,7 +692,7 @@ function formatmsg($s)
 	// ユーザID
 	$text = preg_replace_callback(
 			"/(^|[^A-Za-z\d])(@\w+)/",
-			function($m) { return $m[1].coloring($m[2], COLOR_USERID); },
+			function($m) { return $m[1].coloring($m[2], 'COLOR_USERID'); },
 			$text);
 
 	// 短縮 URL を展開
@@ -708,7 +713,7 @@ function formatmsg($s)
 			} else {
 				// indices 使ってないけどまあ大丈夫だろう
 				$text = preg_replace("|{$u->url}|",
-					coloring($disp, COLOR_URL), $text);
+					coloring($disp, 'COLOR_URL'), $text);
 			}
 
 			// 外部画像サービス
@@ -760,7 +765,7 @@ function formatmsg($s)
 			// 一応副作用はないので気にしないことにするか
 
 			$text = preg_replace("|{$m->url}|",
-				coloring($m->display_url, COLOR_URL), $text);
+				coloring($m->display_url, 'COLOR_URL'), $text);
 
 			// あとで画像展開につかうために覚えておく
 			//   url         本文中の短縮 URL (twitterから)
