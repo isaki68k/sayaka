@@ -68,7 +68,7 @@ namespace ULib
 
 		public Array<Json> ValueArray {
 			get { return ValueArray_; }
-			set { ValueArray_ = value; }
+			private set { ValueArray_ = value; }
 		}
 		private Array<Json> ValueArray_;
 
