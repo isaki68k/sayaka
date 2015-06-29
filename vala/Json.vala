@@ -394,7 +394,7 @@ namespace ULib
 			} else if (IsNumber) {
 				sb.append(AsNumber);
 			} else if (IsArray) {
-				Array<Json> ar = AsArray;
+				Array<Json> ar = ValueArray;
 				sb.append("[");
 				for (int i = 0; i < ar.length; i++) {
 					if (i != 0) {
@@ -404,7 +404,7 @@ namespace ULib
 				}
 				sb.append("]");
 			} else if (IsObject) {
-				Dictionary<string, Json> obj = AsObject;
+				Dictionary<string, Json> obj = ValueDictionary;
 				sb.append("obj=%p\n".printf(obj));
 				sb.append("{");
 				for (int i = 0; i < obj.Count; i++) {
