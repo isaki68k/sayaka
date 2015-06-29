@@ -775,7 +775,7 @@ namespace ULib
 			Terminate,	// Space / '}' / ']' / ',' / EOS
 		}
 
-		private ParseNumberHelper PNHDummy = new ParseNumberHelper();
+		public ParseNumberHelper PNHDummy = new ParseNumberHelper();
 		public class ParseNumberHelper
 		{
 			// 表のためのエイリアス
