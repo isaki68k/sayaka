@@ -9,6 +9,9 @@ PKGS=	\
 	--pkg gee-0.8 \
 	--pkg posix \
 
+# disable make's builtin rules
+.SUFFIXES:
+
 sayaka:	${SRCS}
 	valac ${PKGS} ${SRCS}
 
