@@ -1,11 +1,11 @@
 SRCS=	\
 	sayaka.vala \
-	myjson.vala \
+	Json.vala \
 	System.OS.vala \
 	System.OS.native.c \
+	System.Collections.Generic.Dictionary.vala \
 
 PKGS=	\
-	--pkg json-glib-1.0 \
 	--pkg gee-0.8 \
 	--pkg posix \
 

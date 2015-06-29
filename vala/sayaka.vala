@@ -1,5 +1,6 @@
 using System.OS;
 using Gee;
+using System.Collections.Generic;
 
 class Program
 {
@@ -112,15 +113,14 @@ class SayakaMain
 
 		string line;
 		while ((line = stdin.read_line()) != null) {
-			var parser = new Json.Parser();
+			var parser = new ULib.JsonParser();
 			try {
-				parser.load_from_data(line, -1);
+				var obj = parser.Parse(line);
+				showstatus_callback(obj);
 			} catch {
 				stdout.printf("error\n");
 				return 0;
 			}
-			var obj = parser.get_root().get_object();
-			showstatus_callback(obj);
 		}
 		return 0;
 	}
@@ -163,29 +163,29 @@ class SayakaMain
 
 	// 1ツイートを表示するコールバック関数
 	// ここではループ中からそのまま呼ばれる
-	public void showstatus_callback(Json.Object obj)
+	public void showstatus_callback(ULib.Json obj)
 	{
-		Json.Object status = null;
+		ULib.Json status = null;
 
 		// obj が元オブジェクト (イベント or メッセージ)
 
 		// 録画
 
-		if (obj.has_member("event")) {
+		if (obj.Has("event")) {
 			// event => イベント種別
 			//			"favorite", "unfavorite", "follow", "unfollow", ...
 			// timestamp_ms => イベント発生時刻(UNIXTIME)
 			// created_at => イベント発生時刻
 
-			var event = obj.get_string_member("event");
+			var event = obj.GetString("event");
 			switch (event) {
 			 case "favorite":
-				if (obj.has_member("target_object")) {
-					status = obj.get_object_member("target_object");
+				if (obj.Has("target_object")) {
+					status = obj.GetJson("target_object");
 
 					// これだけだと、$status から $object が拾えないので
 					// $object をバックリンクしておく。
-					status.set_object_member("object", obj);
+					status.AsObject.Add("object", obj);
 				}
 				break;
 			 case "follow":
@@ -194,11 +194,11 @@ class SayakaMain
 			 default:
 				return;
 			}
-		} else if (obj.has_member("text")) {
+		} else if (obj.Has("text")) {
 			// 通常のツイート
 			// status はツイートメッセージ
 			status = obj;
-		} else if (obj.has_member("friends")) {
+		} else if (obj.Has("friends")) {
 			// 最初に送られてくる friends リストはいらない
 			return;
 		} else {
@@ -215,16 +215,20 @@ class SayakaMain
 	}
 
 	// 1ツイートを表示
-	public void showstatus(Json.Object json_status)
+	public void showstatus(ULib.Json status)
 	{
-		MyJsonObject status = new MyJsonObject(json_status);
-
-		MyJsonObject obj = status.GetObject("object", null);
+		ULib.Json obj = null;
+		if (status.Has("object")) {
+			obj = status.GetJson("object");
+		}
 
 		// RT なら、RT 元を $status、RT先を $s
-		MyJsonObject s = status.GetObject("retweeted_status", status);
+		ULib.Json s = status;
+		if (status.Has("retweeted_status")) {
+			s = status.GetJson("retweeted_status");
+		}
 
-		var s_user = s.GetObject("user");
+		var s_user = s.GetJson("user");
 		var userid = coloring(formatid(
 			s_user.GetString("screen_name")),
 			Color.UserId);
@@ -280,7 +284,7 @@ class SayakaMain
 			// この中はインデントを一つ下げる
 			stdout.printf("\n");
 			global_indent_level++;
-			showstatus(s.GetObject("quoted_status").JsonObject);
+			showstatus(s.GetJson("quoted_status"));
 			global_indent_level--;
 		}
 
@@ -288,12 +292,12 @@ class SayakaMain
 		var rtmsg = "";
 		var favmsg = "";
 		// RT
-		var rtcnt = (int)s.GetInt("retweet_count");
+		var rtcnt = (int)s.GetInt64("retweet_count");
 		if (rtcnt > 0) {
 			rtmsg = coloring(" %dRT".printf(rtcnt), Color.Retweet);
 		}
 		// Fav
-		var favcnt = (int)s.GetInt("favorite_count");
+		var favcnt = (int)s.GetInt64("favorite_count");
 		if (favcnt > 0) {
 			favmsg = coloring(" %dFav".printf(favcnt), Color.Favorite);
 		}
@@ -302,7 +306,7 @@ class SayakaMain
 
 		// リツイート元
 		if (status.Has("retweeted_status")) {
-			var user = status.GetObject("user");
+			var user = status.GetJson("user");
 			var rt_time   = formattime(status);
 			var rt_userid = formatid(user.GetString("screen_name"));
 			var rt_name   = formatname(user.GetString("name"));
@@ -313,7 +317,7 @@ class SayakaMain
 
 		// ふぁぼ元
 		if (obj != null && obj.GetString("event") == "favorite") {
-			var user = obj.GetObject("source");
+			var user = obj.GetJson("source");
 			var fav_time   = formattime(obj);
 			var fav_userid = formatid(user.GetString("screen_name"));
 			var fav_name   = formatname(user.GetString("name"));
@@ -492,7 +496,7 @@ class SayakaMain
 	// timestamp_ms があれば使い、なければ created_at を使う。
 	// 今のところ、timestamp_ms はたぶん新しめのツイート/イベント通知には
 	// 付いてるはずだが、リツイートされた側は created_at しかない模様。
-	public string formattime(MyJsonObject obj)
+	public string formattime(ULib.Json obj)
 	{
 		// vala の DateTime はセットする時に UTC かローカルタイムかを
 		// 決めたらそれ以降変えられないようなので(?)、
@@ -545,7 +549,7 @@ class SayakaMain
 		return new DateTime.utc(year, mon, mday, hour, min, (double)sec);
 	}
 
-	public string formatmsg(MyJsonObject s,
+	public string formatmsg(ULib.Json s,
 		ref ArrayList<HashMap<string, string>> mediainfo)
 	{
 		// 本文
@@ -555,9 +559,9 @@ class SayakaMain
 		// 文字位置しか指定されてないので、text に一切の変更を加える前に
 		// 調べないとタグが分からないというクソ仕様…。
 		if (s.Has("entities")) {
-			var hashtags = s.GetObject("entities")
+			var hashtags = s.GetJson("entities")
 			                .GetArray("hashtags");
-			if (hashtags.get_length() > 0) {
+			if (hashtags.length > 0) {
 				text = format_hashtags(text, hashtags);
 			}
 		}
@@ -568,7 +572,7 @@ class SayakaMain
 		return text;
 	}
 
-	public string format_hashtags(string text, Json.Array hashtags)
+	public string format_hashtags(string text, Array<ULib.Json> hashtags)
 	{
 		return text;	/* XXX */
 	}
