@@ -819,7 +819,7 @@ namespace ULib
 			// 状態遷移表
 			// たとえば0行0列目は state が Begin の時に文字 Zero が来ると IntZero に遷移する
 			public static NumberStateKind[,] trans = new NumberStateKind[,] {
-				//                      Zero	Digit	Point	Exp 	Plus	Minus	Other	Terminate
+				//  Zero	Digit	Point	Exp 	Plus	Minus	Other	Terminate
 				{ IntZer, IntNum, Error_, Error_, Error_, Minus_, Error_,	Error_ },	// Begin
 				{ IntZer, IntNum, Error_, Error_, Error_, Error_, Error_,	Error_ },	// Minus
 				{ Error_, Error_, Point_, Exp___, Error_, Error_, Error_,	End___ },	// IntZero
