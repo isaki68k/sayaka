@@ -6,7 +6,6 @@ SRCS=	\
 	System.Collections.Generic.Dictionary.vala \
 
 PKGS=	\
-	--pkg gee-0.8 \
 	--pkg posix \
 
 # disable make's builtin rules

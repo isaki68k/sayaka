@@ -1,5 +1,4 @@
 using System.OS;
-using Gee;
 using System.Collections.Generic;
 
 class Program
@@ -253,7 +252,7 @@ class SayakaMain
 			return;
 		}
 
-		var mediainfo = new ArrayList<HashMap<string, string>>();
+		var mediainfo = new Array<Dictionary<string, string>>();
 		var msg = formatmsg(s, ref mediainfo);
 
 		// 今のところローカルアカウントはない
@@ -549,7 +548,7 @@ class SayakaMain
 	}
 
 	public string formatmsg(ULib.Json s,
-		ref ArrayList<HashMap<string, string>> mediainfo)
+		ref Array<Dictionary<string, string>> mediainfo)
 	{
 		// 本文
 		var text = s.GetString("text");
