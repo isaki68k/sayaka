@@ -185,7 +185,7 @@ class SayakaMain
 
 					// これだけだと、$status から $object が拾えないので
 					// $object をバックリンクしておく。
-					status.AsObject.Add("object", obj);
+					status.AsObject.AddOrUpdate("object", obj);
 				}
 				break;
 			 case "follow":
