@@ -10,7 +10,6 @@ namespace ULib
 	}
 
 	public class Json
-		: Object
 	{
 		public enum JsonType
 		{
