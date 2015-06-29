@@ -39,7 +39,8 @@
 	$play_file = "";
 	$bg_white = false;
 
-	if ($_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
+	if (array_key_exists("SERVER_PROTOCOL", $_SERVER) &&
+		$_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
 		header("Connection: Keep-alive");
 		$cmd = "stream";
 	} else {
