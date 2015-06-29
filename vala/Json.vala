@@ -562,6 +562,7 @@ namespace ULib
 		/// <returns></returns>
 		private Json ParseValue() throws JsonError
 		{
+			TRACE("ParseValue");
 			unichar c = GetCharSkipSpace();
 
 			if (c == '{') {
@@ -598,6 +599,7 @@ namespace ULib
 		/// <returns></returns>
 		private Json ParseLiteral(unichar firstchar, string compare, Json retval) throws JsonError
 		{
+			TRACE("ParseLiteral");
 			if (firstchar.to_string() + GetString(compare.length - 1) == compare) {
 				return retval;
 			} else {
@@ -613,10 +615,12 @@ namespace ULib
 		/// <returns></returns>
 		private Json ParseObject() throws JsonError
 		{
+			TRACE("ParseObject");
 			Dictionary<string, Json> dict = new Dictionary<string, Json>();
 
 			// 空オブジェクトだけ先に判定
 			if (GetCharSkipSpace() == '}') {
+				TRACE("ParseObject=EMPTY");
 				return new Json.Object(dict);
 			} else {
 				UnGetChar();
@@ -647,6 +651,7 @@ namespace ULib
 				c = GetCharSkipSpace();
 				if (c == ',') continue;
 				if (c == '}') {
+					TRACE("ParseObject=%s".printf(dict.DumpString()));
 					return new Json.Object(dict);
 				}
 				throw new JsonError.Format(ErrorMsg("Syntax error in Object"));
@@ -660,6 +665,7 @@ namespace ULib
 		/// <returns></returns>
 		private Json ParseArray() throws JsonError
 		{
+			TRACE("ParseArray");
 			Array<Json> list = new Array<Json>();
 
 			if (GetCharSkipSpace() == ']') {
@@ -687,6 +693,7 @@ namespace ULib
 		/// <returns></returns>
 		private Json ParseString() throws JsonError
 		{
+			TRACE("ParseString");
 			StringBuilder obj = new StringBuilder();
 			bool escape = false;
 
@@ -725,6 +732,7 @@ namespace ULib
 				} else if (c == '\\') {
 					escape = true;
 				} else if (c == '\"') {
+					TRACE("ParseString=%s".printf(obj.str));
 					return new Json.String(obj.str);
 				} else {
 					// 本当は制御コードは弾かなければいけないが、許容している。
@@ -834,6 +842,7 @@ namespace ULib
 		/// <returns></returns>
 		private Json ParseNumber() throws JsonError
 		{
+			TRACE("ParseNumber");
 
 			StringBuilder sb = new StringBuilder();
 			NumberCharKind type;
@@ -876,8 +885,14 @@ namespace ULib
 					state = nextstate;
 				}
 			}
+			TRACE("ParseNumber=%s".printf(sb.str));
 
 			return new Json.Number(sb.str);
+		}
+
+		private void TRACE(string msg)
+		{
+			//stderr.printf("%s\n", msg);
 		}
 	}
 }

@@ -112,9 +112,15 @@ namespace System.Collections.Generic
 
 		public void Dump()
 		{
+			stderr.printf("%s", DumpString());
+		}
+		public string DumpString()
+		{
+			var sb = new StringBuilder();
 			for (int i = 0; i < arraydata.length; i++) {
-				stderr.printf("%d %s %p\n", i, (string)arraydata.data[i].Key, arraydata.data[i].Value);
+				sb.append("%d %s %p\n".printf(i, (string)arraydata.data[i].Key, arraydata.data[i].Value));
 			}
+			return sb.str;
 		}
 	}
 }

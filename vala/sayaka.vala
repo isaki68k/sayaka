@@ -116,6 +116,8 @@ class SayakaMain
 			var parser = new ULib.JsonParser();
 			try {
 				var obj = parser.Parse(line);
+				TRACE("obj=%p".printf(obj));
+				TRACE("obj=%s\n".printf(obj.ToString()));
 				showstatus_callback(obj);
 			} catch {
 				stdout.printf("error\n");
@@ -775,5 +777,10 @@ class SayakaMain
 	{
 		stdout.printf("usage...\n");
 		Process.exit(0);
+	}
+
+	private void TRACE(string msg)
+	{
+		//stderr.printf("%s\n", msg);
 	}
 }
