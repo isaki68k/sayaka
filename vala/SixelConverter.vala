@@ -57,9 +57,9 @@ public class SixelConverter
 	public void SetPaletteFixed8()
 	{
 		for (int i = 0; i < 8; i++) {
-			uint8 R = (uint8)(i & 0x01) * 255;
-			uint8 G = (uint8)(i & 0x02) * 255;
-			uint8 B = (uint8)(i & 0x04) * 255;
+			uint8 R = (uint8)((i     ) & 0x01) * 255;
+			uint8 G = (uint8)((i >> 1) & 0x01) * 255;
+			uint8 B = (uint8)((i >> 2) & 0x01) * 255;
 
 			Palette[i, 0] = R;
 			Palette[i, 1] = G;
@@ -74,10 +74,10 @@ public class SixelConverter
 		// ANSI 16 色といっても色実体は実装依存らしい。
 
 		for (int i = 0; i < 16; i++) {
-			uint8 R = (uint8)(i & 0x01);
-			uint8 G = (uint8)(i & 0x02);
-			uint8 B = (uint8)(i & 0x04);
-			uint8 I = (uint8)(i & 0x08);
+			uint8 R = (uint8)((i     ) & 0x01);
+			uint8 G = (uint8)((i >> 1) & 0x01);
+			uint8 B = (uint8)((i >> 2) & 0x01);
+			uint8 I = (uint8)((i >> 3) & 0x01);
 
 			R = R * 170 + I * 85;
 			G = G * 170 + I * 85;
