@@ -203,9 +203,10 @@ public class SixelConverter
 
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				uint8 r = p0[ybase + x * nch + 0];
-				uint8 g = p0[ybase + x * nch + 1];
-				uint8 b = p0[ybase + x * nch + 2];
+				uint8* psrc = &p0[ybase + x * nch];
+				uint8 r = psrc[0];
+				uint8 g = psrc[1];
+				uint8 b = psrc[2];
 				// パレット番号の列として、画像を破壊して書き込み
 				p0[dst++] = op(r, g, b);
 			}
@@ -241,9 +242,17 @@ public class SixelConverter
 		DiffuseReduceCustom(FindFixed256);
 	}
 
+	public int16 DiffuseDivisor = 3;
+
+	private void DiffusePixel(uint8 r, uint8 g, uint8 b, uint8* ptr, uint8 c)
+	{
+		ptr[0] = satulate_add(ptr[0], ((int16)r - Palette[c, 0]) / DiffuseDivisor);
+		ptr[1] = satulate_add(ptr[1], ((int16)g - Palette[c, 1]) / DiffuseDivisor);
+		ptr[2] = satulate_add(ptr[2], ((int16)b - Palette[c, 2]) / DiffuseDivisor);
+	}
+
 	public void DiffuseReduceCustom(FindFunc op)
 	{
-		const int16 REMAIN_SCALE = 3;
 		unowned uint8[] p0 = pix.get_pixels();
 		int w = pix.get_width();
 		int h = pix.get_height();
@@ -254,9 +263,10 @@ public class SixelConverter
 
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				uint8 r = p0[ybase + x * nch + 0];
-				uint8 g = p0[ybase + x * nch + 1];
-				uint8 b = p0[ybase + x * nch + 2];
+				uint8* psrc = &p0[ybase + x * nch];
+				uint8 r = psrc[0];
+				uint8 g = psrc[1];
+				uint8 b = psrc[2];
 
 				uint8 C = op(r, g, b);
 				// パレット番号の列として、画像を破壊して書き込み
@@ -264,39 +274,15 @@ public class SixelConverter
 
 				if (x < w - 1) {
 					// 右のピクセルに誤差を分散
-					p0[ybase + (x + 1) * nch + 0] = satulate_add(
-						p0[ybase + (x + 1) * nch + 0],
-						((int16)r - Palette[C, 0]) / REMAIN_SCALE);
-					p0[ybase + (x + 1) * nch + 1] = satulate_add(
-						p0[ybase + (x + 1) * nch + 1],
-						((int16)g - Palette[C, 1]) / REMAIN_SCALE);
-					p0[ybase + (x + 1) * nch + 2] = satulate_add(
-						p0[ybase + (x + 1) * nch + 2],
-						((int16)b - Palette[C, 2]) / REMAIN_SCALE);
+					DiffusePixel(r, g, b, &p0[ybase + (x + 1) * nch], C);
 				}
 				if (y < h - 1) {
 					// 下のピクセルに誤差を分散
-					p0[ybase + stride + x * nch + 0] = satulate_add(
-						p0[ybase + stride + x * nch + 0],
-						((int16)r - Palette[C, 0]) / REMAIN_SCALE);
-					p0[ybase + stride + x * nch + 1] = satulate_add(
-						p0[ybase + stride + x * nch + 1],
-						((int16)g - Palette[C, 1]) / REMAIN_SCALE);
-					p0[ybase + stride + x * nch + 2] = satulate_add(
-						p0[ybase + stride + x * nch + 2],
-						((int16)b - Palette[C, 2]) / REMAIN_SCALE);
+					DiffusePixel(r, g, b, &p0[ybase + stride + x * nch], C);
 				}
 				if (x < w - 1 && y < h - 1) {
-					// 右のピクセルに誤差を分散
-					p0[ybase + stride + (x + 1) * nch + 0] = satulate_add(
-						p0[ybase + stride + (x + 1) * nch + 0],
-						((int16)r - Palette[C, 0]) / REMAIN_SCALE);
-					p0[ybase + stride + (x + 1) * nch + 1] = satulate_add(
-						p0[ybase + stride + (x + 1) * nch + 1],
-						((int16)g - Palette[C, 1]) / REMAIN_SCALE);
-					p0[ybase + stride + (x + 1) * nch + 2] = satulate_add(
-						p0[ybase + stride + (x + 1) * nch + 2],
-						((int16)b - Palette[C, 2]) / REMAIN_SCALE);
+					// 右下のピクセルに誤差を分散
+					DiffusePixel(r, g, b, &p0[ybase + stride + (x + 1) * nch], C);
 				}
 			}
 			ybase += stride;
