@@ -113,6 +113,12 @@ public class SixelConverter
 		return (uint8)((((int)r * 76 + (int)g * 153 + (int)b * 26) * (PaletteCount - 1) / 255 / 255));
 	}
 
+	// グレースケールパレット時に、RGB 平均で最も近いパレット番号を返します。
+	public uint8 FindGrayMean(uint8 r, uint8 g, uint8 b)
+	{
+		return (uint8)((((int)r + (int)g + (int)b) * (PaletteCount - 1) / 3 / 255));
+	}
+
 	// 固定8色時に、最も近いパレット番号を返します。
 	public uint8 FindFixed8(uint8 r, uint8 g, uint8 b)
 	{
