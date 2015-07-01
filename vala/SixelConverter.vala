@@ -167,32 +167,32 @@ public class SixelConverter
 	// ----- 要は誤差拡散法ではなく、当該ピクセルのみの値で減色するアルゴリズム。
 
 	// 単純減色法で NTSC 輝度減色でグレースケールにします。
-	public void ConvertNTSCGray()
+	public void SimpleReduceGray()
 	{
-		SimpleOp(FindGray);
+		SimpleReduceCustom(FindGray);
 	}
 
 	// 単純減色法で 固定8色にします。
-	public void ConvertFixed8()
+	public void SimpleReduceFixed8()
 	{
-		SimpleOp(FindFixed8);
+		SimpleReduceCustom(FindFixed8);
 	}
 
 	// 単純減色法で 固定16色にします。
-	public void ConvertFixed16()
+	public void SimpleReduceFixed16()
 	{
-		SimpleOp(FindFixed16);
+		SimpleReduceCustom(FindFixed16);
 	}
 
 	// 単純減色法で 固定256色にします。
-	public void ConvertFixed256()
+	public void SimpleReduceFixed256()
 	{
-		SimpleOp(FindFixed256);
+		SimpleReduceCustom(FindFixed256);
 	}
 
-
-	// 要は誤差拡散法ではなく、当該ピクセルのみの値で減色するアルゴリズム。
-	public void SimpleOp(FindFunc op)
+	// 単純減色法を適用します。
+	// この関数を実行すると、pix の内容は画像からパレット番号の列に変わります。
+	public void SimpleReduceCustom(FindFunc op)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
 		int w = pix.get_width();

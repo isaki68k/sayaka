@@ -17,17 +17,17 @@ class Program
 #if false
 		sx.SetPaletteFixed16();
 		sx.ReduceFixed16();
-		sx.ConvertFixed16();
+		sx.SimpleReduceFixed16();
 #endif
 #if !false
 		sx.SetPaletteFixed8();
 		sx.ReduceFixed8();
-		sx.ConvertFixed8();
+		sx.SimpleReduceFixed8();
 #endif
 #if false
 		sx.SetPaletteFixed256();
 		sx.ReduceFixed256();
-		sx.ConvertFixed256();
+		sx.SimpleReduceFixed256();
 #endif
 
 		sx.SixelToStream(stdout);
@@ -736,11 +736,11 @@ stderr.puts(@"curl $(img_url)");
 #if false
 		sx.SetPaletteFixed8();
 		sx.ReduceFix8();
-		sx.ConvertFixed8();
+		sx.SimpleReduceFixed8();
 #else
 		sx.SetPaletteFixed256();
 		sx.ReduceFixed256();
-		sx.ConvertFixed256();
+		sx.SimpleReduceFixed256();
 #endif
 		sx.SixelToStream(stdout);
 		stdout.flush();
