@@ -169,7 +169,6 @@ public class SixelConverter
 		int nch = pix.get_n_channels();
 		int stride = pix.get_rowstride();
 		int ybase = 0;
-		int dst = 0;
 
 		for (int y = 0; y < h - 1; y++) {
 			for (int x = 0; x < w - 1; x++) {
@@ -207,7 +206,6 @@ public class SixelConverter
 		int nch = pix.get_n_channels();
 		int stride = pix.get_rowstride();
 		int ybase = 0;
-		int dst = 0;
 
 		for (int y = 0; y < h - 1; y++) {
 			for (int x = 0; x < w - 1; x++) {
@@ -257,7 +255,6 @@ public class SixelConverter
 		int nch = pix.get_n_channels();
 		int stride = pix.get_rowstride();
 		int ybase = 0;
-		int dst = 0;
 
 		for (int y = 0; y < h - 1; y++) {
 			for (int x = 0; x < w - 1; x++) {
