@@ -62,7 +62,11 @@ public class SayakaMain
 		Verified,
 		Protected,
 		NG,
-		Max,
+		Max;
+
+		public string ToString() {
+			return "%d".printf((int)this);	// とりあえず
+		}
 	}
 
 	public bool opt_noimg;
@@ -513,53 +517,95 @@ public class SayakaMain
 		return new DateTime.utc(year, mon, mday, hour, min, (double)sec);
 	}
 
+	// テキスト整形用のタグ
+	public class TextTag
+	{
+		public int Start;
+		public int End;
+		public Color Type;
+		public string Text;
+	
+		public TextTag(int start, int end, Color type, string? text = null)
+		{
+			Start = start;
+			End = end;
+			Type = type;
+			Text = text;
+		}
+
+		public int length { get { return End - Start; } }
+
+		public string ToString()
+		{
+			return "(%d, %d, %s)".printf(Start, End, Type.ToString());
+		}
+	}
+
 	public string formatmsg(ULib.Json s,
 		ref Array<Dictionary<string, string>> mediainfo)
 	{
 		// 本文
 		var text = s.GetString("text");
 
-		// タグ情報を展開
-		// 文字位置しか指定されてないので、text に一切の変更を加える前に
-		// 調べないとタグが分からないというクソ仕様…。
+		// 1文字ずつに分解して配列に
+		var utext = new unichar[text.char_count()];
+		unichar uni;
+		for (var pos = 0, i = 0; text.get_next_char(ref pos, out uni); ) {
+			utext[i++] = uni;
+		}
+
+		// エンティティを調べる
+		var tags = new TextTag[utext.length];
 		if (s.Has("entities")) {
-			var hashtags = s.GetJson("entities")
-			                .GetArray("hashtags");
-			if (hashtags.length > 0) {
-				text = format_hashtags(text, hashtags);
+			var entities = s.GetJson("entities");
+			// ハッシュタグ情報を展開
+			var hashtags = entities.GetArray("hashtags");
+			for (var i = 0; i < hashtags.length; i++) {
+				var t = hashtags.index(i);
+				// t->indices[0] … 開始位置、1文字目からなら0
+				// t->indices[1] … 終了位置。この1文字前まで
+				var indices = t.GetArray("indices");
+				var start = indices.index(0).AsInt;
+				var end   = indices.index(1).AsInt;
+				tags[start] = new TextTag(start, end, Color.Tag);
+			}
+
+			// ユーザID情報を展開
+			var mentions = entities.GetArray("user_mentions");
+			for (var i = 0; i < mentions.length; i++) {
+				var t = mentions.index(i);
+				var indices = t.GetArray("indices");
+				var start = indices.index(0).AsInt;
+				var end   = indices.index(1).AsInt;
+				tags[start] = new TextTag(start, end, Color.UserId);
 			}
 		}
 
-		// ハッシュタグが済んでからエスケープを取り除く
+		// タグ情報をもとにテキストを整形
+		var newtext = new StringBuilder();
+		for (var i = 0; i < utext.length; ) {
+			if (tags[i] != null) {
+				switch (tags[i].Type) {
+				 case Color.Tag:
+				 case Color.UserId:
+					var sb = new StringBuilder();
+					for (var j = 0; j < tags[i].length; j++) {
+						sb.append_unichar(utext[i + j]);
+					}
+					newtext.append(coloring(sb.str, tags[i].Type));
+					i += tags[i].length;
+					break;
+				}
+			} else {
+				newtext.append_unichar(utext[i++]);
+			}
+		}
+		text = newtext.str;
+
+		// タグの整形が済んでからエスケープを取り除く
 		text = PHP.unescape(text);
 
 		return text;
-	}
-
-	public string format_hashtags(string text, Array<ULib.Json> hashtags)
-	{
-		var tags = new int[hashtags.length * 2];
-
-		for (var i = 0; i < hashtags.length; i++) {
-			var t = hashtags.index(i);
-			// t->indices[0] … 開始位置、1文字目からなら0
-			// t->indices[1] … 終了位置。この1文字前まで
-			var indices = t.GetArray("indices");
-			tags[i * 2 + 0] = indices.index(0).AsInt;
-			tags[i * 2 + 1] = indices.index(1).AsInt;
-		}
-
-		string[] splittext = utf8_split(text, tags);
-		var sb = new StringBuilder();
-		for (var i = 0; i < splittext.length; i++) {
-			if ((i & 1) != 0) {
-				sb.append(coloring(splittext[i], Color.Tag));
-			} else {
-				sb.append(splittext[i]);
-			}
-		}
-
-		return sb.str;
 	}
 
 	public void show_icon(string user, string img_url)
@@ -668,35 +714,6 @@ stderr.printf("img_file=%s\n", img_file);
 		var fsize = stream.tell();
 		stream.rewind();
 		return fsize;
-	}
-
-	// UTF-8 文字列を分割する。
-	//  utf8_split("abcdef", array(1, 3, 5, 6));
-	//  rv = array("a", "bc", "de", "f");
-	public string[] utf8_split(string text, int[] charpos)
-	{
-		var array = new Array<string>();
-
-		// 文字数で分割
-		var sb = new StringBuilder();
-		unichar uni;
-		int cnt = 0;
-		int pos = 0;
-		for (var i = 0; text.get_next_char(ref i, out uni); cnt++) {
-			if (cnt == charpos[pos]) {
-				array.append_val(sb.str);
-				sb.erase();
-				pos++;
-			}
-			sb.append_unichar(uni);
-		}
-		// 最後の文字の後ろ。タグが文字列の最後にあると、
-		// その後ろはループでは表現できないので、ここで処理。
-		if (cnt == charpos[pos]) {
-			array.append_val(sb.str);
-		}
-
-		return array.data;
 	}
 
 	public static void signal_handler(int signo)
