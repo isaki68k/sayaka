@@ -44,7 +44,7 @@ class PHP
 	}
 }
 
-class SayakaMain
+public class SayakaMain
 {
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
