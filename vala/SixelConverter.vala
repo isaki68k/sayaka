@@ -101,45 +101,98 @@ public class SixelConverter
 		PaletteCount = 256;
 	}
 
+	// ----- カラーパレットから色をさがす
+
+	// Find* のデリゲートです。
+	public delegate uint8 FindFunc(uint8 r, uint8 g, uint8 b);
+
+	// グレースケールパレット時に、最も近いパレット番号を返します。
+	public uint8 FindGray(uint8 r, uint8 g, uint8 b)
+	{
+		// NTSC 輝度
+		return (uint8)((((int)r * 76 + (int)g * 153 + (int)b * 26) / (PaletteCount - 1)) >> 8);
+	}
+
+	// 固定8色時に、最も近いパレット番号を返します。
+	public uint8 FindFixed8(uint8 r, uint8 g, uint8 b)
+	{
+		uint8 R = (uint8)(r >= 128);
+		uint8 G = (uint8)(g >= 128);
+		uint8 B = (uint8)(b >= 128);
+		return R + (G << 1) + (B << 2);
+	}
+
+	// 固定16色時に、最も近いパレット番号を返します。
+	public uint8 FindFixed16(uint8 r, uint8 g, uint8 b)
+	{
+		// TODO: 最適実装
+		return FindCustom(r, g, b);
+	}
+
+	// 固定256色時に、最も近いパレット番号を返します。
+	public uint8 FindFixed256(uint8 r, uint8 g, uint8 b)
+	{
+		// 0 1 2 3 4 5 6 7 8 9 a b c d e f
+		// 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7
+		uint8 R = r >> 5;
+		uint8 G = g >> 5;
+		uint8 B = b >> 6;
+		return (R << 5) + (G << 2) + B;
+	}
+
+	// カスタムパレット時に、最も近いパレット番号を返します。
+	public uint8 FindCustom(uint8 r, uint8 g, uint8 b)
+	{
+		// RGB の各色の距離の和が最小、にしてある。
+		// YCC で判断したほうが良好なのは知ってるけど、そこまで必要じゃない。
+		uint8 rv = 0;
+		int min_d = int.MAX;
+		for (int i = 0; i < PaletteCount; i++) {
+			int dR = (int)Palette[i, 0] - (int)r;
+			int dG = (int)Palette[i, 1] - (int)g;
+			int dB = (int)Palette[i, 2] - (int)b;
+			int d = dR.abs() + dG.abs() + dB.abs();
+			if (d < min_d) {
+				rv = (uint8)i;
+				min_d = d;
+				if (d == 0) break;
+			}
+		}
+		return rv;
+	}
+
 	// ----- カラー変換 (減色)
+
+	// ----- 単純減色法
+	// ----- 要は誤差拡散法ではなく、当該ピクセルのみの値で減色するアルゴリズム。
 
 	// 単純減色法で NTSC 輝度減色でグレースケールにします。
 	public void ConvertNTSCGray()
 	{
-		SimpleOp((r, g, b) => ((r * 76 + g * 153 + b * 26) / (PaletteCount - 1)) >> 8);
+		SimpleOp(FindGray);
 	}
 
+	// 単純減色法で 固定8色にします。
 	public void ConvertFixed8()
 	{
-		SimpleOp((r, g, b) => {
-			uint8 R = (uint8)(r >= 128);
-			uint8 G = (uint8)(g >= 128);
-			uint8 B = (uint8)(b >= 128);
-			return R + (G << 1) + (B << 2);
-		});
+		SimpleOp(FindFixed8);
 	}
 
+	// 単純減色法で 固定16色にします。
 	public void ConvertFixed16()
 	{
-		SimpleOp((r, g, b) => {
-			uint8 I = (uint8)((int)(r >= 170) + (int)(g >= 170) + (int)(b >= 170) >= 2);
-			uint8 R = (uint8)(satulate_sub(r, I * 85) >= 85);
-			uint8 G = (uint8)(satulate_sub(g, I * 85) >= 85);
-			uint8 B = (uint8)(satulate_sub(b, I * 85) >= 85);
-			return R + (G << 1) + (B << 2) + (I << 3);
-		});
+		SimpleOp(FindFixed16);
 	}
 
+	// 単純減色法で 固定256色にします。
 	public void ConvertFixed256()
 	{
-		// 固定 256 色
-		SimpleOp((r, g, b) => ((r & 0xe0) + ((g & 0xe0) >> 3) + ((b & 0xc0) >> 6)));
+		SimpleOp(FindFixed256);
 	}
 
-	public delegate uint8 ConverterFunc(uint8 r, uint8 g, uint8 b);
 
 	// 要は誤差拡散法ではなく、当該ピクセルのみの値で減色するアルゴリズム。
-	public void SimpleOp(ConverterFunc op)
+	public void SimpleOp(FindFunc op)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
 		int w = pix.get_width();
