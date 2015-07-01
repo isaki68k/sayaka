@@ -579,6 +579,33 @@ public class SayakaMain
 				var end   = indices.index(1).AsInt;
 				tags[start] = new TextTag(start, end, Color.UserId);
 			}
+
+			// URL を展開
+			var urls = entities.GetArray("urls");
+			for (var i = 0; i < urls.length; i++) {
+				var t = urls.index(i);
+				var indices = t.GetArray("indices");
+				var start = indices.index(0).AsInt;
+				var end   = indices.index(1).AsInt;
+
+				// url         本文中の短縮 URL (twitterから)
+				// display_url 差し替えて表示用の URL (twitterから)
+				// expanded_url 展開後の URL (twitterから)
+				var url = t.GetString("url");
+				var disp_url = t.GetString("display_url");
+				var expd_url = t.GetString("expanded_url");
+
+				// コメント付き RT の URL でなければ表示
+				var newurl = "";
+				var qid = s.GetString("quoted_status_id_str");
+				if (qid == "" || expd_url.contains(qid) == false) {
+					newurl = disp_url;
+				}
+
+				tags[start] = new TextTag(start, end, Color.Url, newurl);
+
+				// 外部画像サービス
+			}
 		}
 
 		// タグ情報をもとにテキストを整形
@@ -593,6 +620,10 @@ public class SayakaMain
 						sb.append_unichar(utext[i + j]);
 					}
 					newtext.append(coloring(sb.str, tags[i].Type));
+					i += tags[i].length;
+					break;
+				 case Color.Url:
+					newtext.append(coloring(tags[i].Text, tags[i].Type));
 					i += tags[i].length;
 					break;
 				}
