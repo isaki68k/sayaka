@@ -110,7 +110,7 @@ public class SixelConverter
 	public uint8 FindGray(uint8 r, uint8 g, uint8 b)
 	{
 		// NTSC 輝度
-		return (uint8)((((int)r * 76 + (int)g * 153 + (int)b * 26) / (PaletteCount - 1)) >> 8);
+		return (uint8)((((int)r * 76 + (int)g * 153 + (int)b * 26) / 255 * (PaletteCount - 1) / 255));
 	}
 
 	// 固定8色時に、最も近いパレット番号を返します。
@@ -206,145 +206,98 @@ public class SixelConverter
 				uint8 r = p0[ybase + x * nch + 0];
 				uint8 g = p0[ybase + x * nch + 1];
 				uint8 b = p0[ybase + x * nch + 2];
-				// 破壊書き
+				// パレット番号の列として、画像を破壊して書き込み
 				p0[dst++] = op(r, g, b);
 			}
 			ybase += pix.get_rowstride();
 		}
 	}
 
-	private uint8 satulate_add(uint8 a, uint8 b)
+	private uint8 satulate_add(uint8 a, int16 b)
 	{
 		int16 rv = (int16)a + b;
 		if (rv > 255) rv = 255;
-		return (uint8)rv;
-	}
-
-	private uint8 satulate_sub(uint8 a, uint8 b)
-	{
-		int16 rv = (int16)a - (int16)b;
 		if (rv < 0) rv = 0;
 		return (uint8)rv;
 	}
 
-	public void ReduceFixed8()
+	public void DiffuseReduceGray()
 	{
-		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
-		int nch = pix.get_n_channels();
-		int stride = pix.get_rowstride();
-		int ybase = 0;
-
-		for (int y = 0; y < h - 1; y++) {
-			for (int x = 0; x < w - 1; x++) {
-				uint8 r = p0[ybase + x * nch + 0];
-				uint8 g = p0[ybase + x * nch + 1];
-				uint8 b = p0[ybase + x * nch + 2];
-				// 破壊書き
-				p0[ybase + x * nch + 0] = (uint8)(r >= 128) * 128;
-				p0[ybase + x * nch + 1] = (uint8)(g >= 128) * 128;
-				p0[ybase + x * nch + 2] = (uint8)(b >= 128) * 128;
-
-				p0[ybase + (x + 1) * nch + 0] = satulate_add(
-					p0[ybase + (x + 1) * nch + 0], (r & 0x7f) >> 1);
-				p0[ybase + (x + 1) * nch + 1] = satulate_add(
-					p0[ybase + (x + 1) * nch + 1], (g & 0x7f) >> 1);
-				p0[ybase + (x + 1) * nch + 2] = satulate_add(
-					p0[ybase + (x + 1) * nch + 2], (b & 0x7f) >> 1);
-
-				p0[ybase + stride + x * nch + 0] = satulate_add(
-					p0[ybase + stride + x * nch + 0], (r & 0x7f) >> 1);
-				p0[ybase + stride + x * nch + 1] = satulate_add(
-					p0[ybase + stride + x * nch + 1], (g & 0x7f) >> 1);
-				p0[ybase + stride + x * nch + 2] = satulate_add(
-					p0[ybase + stride + x * nch + 2], (b & 0x7f) >> 1);
-			}
-			ybase += stride;
-		}
+		DiffuseReduceCustom(FindGray);
 	}
 
-	public void ReduceFixed16()
+	public void DiffuseReduceFixed8()
 	{
-		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
-		int nch = pix.get_n_channels();
-		int stride = pix.get_rowstride();
-		int ybase = 0;
-
-		for (int y = 0; y < h - 1; y++) {
-			for (int x = 0; x < w - 1; x++) {
-				uint8 r = p0[ybase + x * nch + 0];
-				uint8 g = p0[ybase + x * nch + 1];
-				uint8 b = p0[ybase + x * nch + 2];
-
-				uint8 I = (uint8)((int)(r >= 170) + (int)(g >= 170) + (int)(b >= 170) >= 2);
-				uint8 R = (uint8)(satulate_sub(r, I * 85) >= 85);
-				uint8 G = (uint8)(satulate_sub(g, I * 85) >= 85);
-				uint8 B = (uint8)(satulate_sub(b, I * 85) >= 85);
-
-				R = R * 170 + I * 85;
-				G = G * 170 + I * 85;
-				B = B * 170 + I * 85;
-				p0[ybase + x * nch + 0] = (uint8)(R);
-				p0[ybase + x * nch + 1] = (uint8)(G);
-				p0[ybase + x * nch + 2] = (uint8)(B);
-
-				R = satulate_sub(r, R);
-				G = satulate_sub(g, G);
-				B = satulate_sub(b, B);
-
-				p0[ybase + (x + 1) * nch + 0] = satulate_add(
-					p0[ybase + (x + 1) * nch + 0], R >> 1);
-				p0[ybase + (x + 1) * nch + 1] = satulate_add(
-					p0[ybase + (x + 1) * nch + 1], G >> 1);
-				p0[ybase + (x + 1) * nch + 2] = satulate_add(
-					p0[ybase + (x + 1) * nch + 2], B >> 1);
-
-				p0[ybase + stride + x * nch + 0] = satulate_add(
-					p0[ybase + stride + x * nch + 0], R >> 1);
-				p0[ybase + stride + x * nch + 1] = satulate_add(
-					p0[ybase + stride + x * nch + 1], G >> 1);
-				p0[ybase + stride + x * nch + 2] = satulate_add(
-					p0[ybase + stride + x * nch + 2], B >> 1);
-			}
-			ybase += stride;
-		}
+		DiffuseReduceCustom(FindFixed8);
 	}
 
-	public void ReduceFixed256()
+	public void DiffuseReduceFixed16()
 	{
+		DiffuseReduceCustom(FindFixed16);
+	}
+
+	public void DiffuseReduceFixed256()
+	{
+		DiffuseReduceCustom(FindFixed256);
+	}
+
+	public void DiffuseReduceCustom(FindFunc op)
+	{
+		const int16 REMAIN_SCALE = 3;
 		unowned uint8[] p0 = pix.get_pixels();
 		int w = pix.get_width();
 		int h = pix.get_height();
 		int nch = pix.get_n_channels();
 		int stride = pix.get_rowstride();
 		int ybase = 0;
+		int dst = 0;
 
-		for (int y = 0; y < h - 1; y++) {
-			for (int x = 0; x < w - 1; x++) {
+		for (int y = 0; y < h; y++) {
+			for (int x = 0; x < w; x++) {
 				uint8 r = p0[ybase + x * nch + 0];
 				uint8 g = p0[ybase + x * nch + 1];
 				uint8 b = p0[ybase + x * nch + 2];
-				// 破壊書き
-				p0[ybase + x * nch + 0] = r & 0xe0;
-				p0[ybase + x * nch + 1] = g & 0xe0;
-				p0[ybase + x * nch + 2] = b & 0xc0;
 
-				p0[ybase + (x + 1) * nch + 0] = satulate_add(
-					p0[ybase + (x + 1) * nch + 0], (r & 0x1f) >> 1);
-				p0[ybase + (x + 1) * nch + 1] = satulate_add(
-					p0[ybase + (x + 1) * nch + 1], (g & 0x1f) >> 1);
-				p0[ybase + (x + 1) * nch + 2] = satulate_add(
-					p0[ybase + (x + 1) * nch + 2], (b & 0x3f) >> 2);
+				uint8 C = op(r, g, b);
+				// パレット番号の列として、画像を破壊して書き込み
+				p0[dst++] = C;
 
-				p0[ybase + stride + x * nch + 0] = satulate_add(
-					p0[ybase + stride + x * nch + 0], (r & 0x1f) >> 1);
-				p0[ybase + stride + x * nch + 1] = satulate_add(
-					p0[ybase + stride + x * nch + 1], (g & 0x1f) >> 1);
-				p0[ybase + stride + x * nch + 2] = satulate_add(
-					p0[ybase + stride + x * nch + 2], (b & 0x3f) >> 2);
+				if (x < w - 1) {
+					// 右のピクセルに誤差を分散
+					p0[ybase + (x + 1) * nch + 0] = satulate_add(
+						p0[ybase + (x + 1) * nch + 0],
+						((int16)r - Palette[C, 0]) / REMAIN_SCALE);
+					p0[ybase + (x + 1) * nch + 1] = satulate_add(
+						p0[ybase + (x + 1) * nch + 1],
+						((int16)g - Palette[C, 1]) / REMAIN_SCALE);
+					p0[ybase + (x + 1) * nch + 2] = satulate_add(
+						p0[ybase + (x + 1) * nch + 2],
+						((int16)b - Palette[C, 2]) / REMAIN_SCALE);
+				}
+				if (y < h - 1) {
+					// 下のピクセルに誤差を分散
+					p0[ybase + stride + x * nch + 0] = satulate_add(
+						p0[ybase + stride + x * nch + 0],
+						((int16)r - Palette[C, 0]) / REMAIN_SCALE);
+					p0[ybase + stride + x * nch + 1] = satulate_add(
+						p0[ybase + stride + x * nch + 1],
+						((int16)g - Palette[C, 1]) / REMAIN_SCALE);
+					p0[ybase + stride + x * nch + 2] = satulate_add(
+						p0[ybase + stride + x * nch + 2],
+						((int16)b - Palette[C, 2]) / REMAIN_SCALE);
+				}
+				if (x < w - 1 && y < h - 1) {
+					// 右のピクセルに誤差を分散
+					p0[ybase + stride + (x + 1) * nch + 0] = satulate_add(
+						p0[ybase + stride + (x + 1) * nch + 0],
+						((int16)r - Palette[C, 0]) / REMAIN_SCALE);
+					p0[ybase + stride + (x + 1) * nch + 1] = satulate_add(
+						p0[ybase + stride + (x + 1) * nch + 1],
+						((int16)g - Palette[C, 1]) / REMAIN_SCALE);
+					p0[ybase + stride + (x + 1) * nch + 2] = satulate_add(
+						p0[ybase + stride + (x + 1) * nch + 2],
+						((int16)b - Palette[C, 2]) / REMAIN_SCALE);
+				}
 			}
 			ybase += stride;
 		}
