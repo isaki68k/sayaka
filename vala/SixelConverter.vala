@@ -430,6 +430,7 @@ public class SixelConverter
 #else
 		// 030 ターゲット
 
+		// カラー番号ごとの、X 座標の min, max を計算する
 		// short でいいよね。。
 		int16[] min_x = new int16[PaletteCount];
 		int16[] max_x = new int16[PaletteCount];
@@ -437,11 +438,15 @@ public class SixelConverter
 		for (int16 y = 0; y < h; y += 6) {
 			src = y * w;
 
+			// 配列をクリアするいい方法を知らない
 			for (int i = 0; i < min_x.length; i++) min_x[i] = -1;
 			for (int i = 0; i < max_x.length; i++) max_x[i] = 0;
 
+			// h が 6 の倍数でないときには溢れてしまうので、上界を計算する。
 			int16 max_dy = 6;
 			if (y + max_dy > h) max_dy = (int16)(h - y);
+
+			// 各カラーの X 座標範囲を計算する
 			for (int16 dy = 0; dy < max_dy; dy++) {
 				for (int16 x = 0; x < w; x++) {
 					uint8 I = p0[src++];
@@ -452,10 +457,12 @@ public class SixelConverter
 
 
 			do {
+				// 出力するべきカラーがなくなるまでのループ
 //				Diag.DEBUG("do1");
 				int16 mx = -1;
 
 				do {
+					// 1行の出力で出力できるカラーのループ
 //					Diag.DEBUG("do2");
 
 					uint8 min_color = 0;
@@ -473,12 +480,16 @@ public class SixelConverter
 
 //stderr.printf("min_color=%d min_x=%d max_x=%d mx=%d\n", min_color, min_x[min_color], max_x[min_color], mx);
 
+					// Sixel に色コードを出力
 					stream.printf("#%d", min_color);
+
+					// 相対 X シーク処理
 					int16 space = min_x[min_color] - (mx + 1);
 					if (space > 0) {
 						stream.puts(SixelRepunit(space, 0));
 					}
 
+					// パターンが変わったら、それまでのパターンを出していくアルゴリズム
 					uint8 prev_t = 0;
 					int16 n = 0;
 					for (int16 x = min_x[min_color]; x <= max_x[min_color]; x++) {
@@ -500,10 +511,12 @@ public class SixelConverter
 							n++;
 						}
 					}
+					// 最後のパターン
 					if (prev_t != 0 && n > 0) {
 						stream.puts(SixelRepunit(n, prev_t));
 					}
 
+					// X 位置を更新
 					mx = max_x[min_color];
 					// 済んだ印
 					min_x[min_color] = -1;
@@ -526,6 +539,7 @@ public class SixelConverter
 		stream.putc('\\');
 	}
 
+	// 繰り返しのコードを考慮して、Sixel パターン文字を返します。
 	private static string SixelRepunit(int n, uint8 ptn)
 	{
 		if (n >= 4) {
