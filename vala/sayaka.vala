@@ -5,34 +5,8 @@ class Program
 {
 	public static int main(string[] args)
 	{
-#if !false
 		var sayaka = new SayakaMain();
 		return sayaka.Main(args);
-#else
-		var sx = new SixelConverter();
-	//	sx.Load("x68k.bmp");
-		sx.Load("IMG_0284.JPG");
-//		sx.Load("snake.jpg");
-
-#if false
-		sx.SetPaletteFixed16();
-		sx.ReduceFixed16();
-		sx.SimpleReduceFixed16();
-#endif
-#if !false
-		sx.SetPaletteFixed8();
-		sx.ReduceFixed8();
-		sx.SimpleReduceFixed8();
-#endif
-#if false
-		sx.SetPaletteFixed256();
-		sx.ReduceFixed256();
-		sx.SimpleReduceFixed256();
-#endif
-
-		sx.SixelToStream(stdout);
-		return 0;
-#endif
 	}
 }
 
