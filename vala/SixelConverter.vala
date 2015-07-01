@@ -110,7 +110,7 @@ public class SixelConverter
 	public uint8 FindGray(uint8 r, uint8 g, uint8 b)
 	{
 		// NTSC 輝度
-		return (uint8)((((int)r * 76 + (int)g * 153 + (int)b * 26) / 255 * (PaletteCount - 1) / 255));
+		return (uint8)((((int)r * 76 + (int)g * 153 + (int)b * 26) * (PaletteCount - 1) / 255 / 255));
 	}
 
 	// 固定8色時に、最も近いパレット番号を返します。
