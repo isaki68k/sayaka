@@ -353,43 +353,32 @@ class SayakaMain
 		StringBuilder newtext = new StringBuilder();
 		newtext.append(indent);
 		var x = left;
-		for (var i = 0; i < text.length; ) {
-			uchar s = text[i];
+		unichar uni;
+		for (var i = 0; text.get_next_char(ref i, out uni); ) {
 			if (inescape) {
-				newtext.append(text.substring(i, 1));
-				if (s == 'm') {
+				newtext.append_unichar(uni);
+				if (uni == 'm') {
 					inescape = false;
 				}
-				i++;
 			} else {
-				if (s == ESC) {
+				if (uni == ESC) {
+					newtext.append_unichar(uni);
 					inescape = true;
-					continue;
-				} else if (s == '\n') {
-					newtext.append("\n");
+				} else if (uni == '\n') {
+					newtext.append_unichar(uni);
 					newtext.append(indent);
 					x = left;
-					i++;
-				} else if (s < 0x80) {
-					newtext.append(text.substring(i, 1));
-					x++;
-					i++;
-				} else if (s == 0xef && utf8_ishalfkana(text, i)) {
-					// 半角カナ
-					newtext.append(text.substring(i, 3));
-					x++;
-					i += 3;
-				} else {
-					// とりあえず全部全角扱い
+				} else if (uni.iswide()) {
 					if (x > screen_cols - 2) {
 						newtext.append("\n");
 						newtext.append(indent);
 						x = left;
 					}
-					var clen = utf8_charlen(s);
-					newtext.append(text.substring(i, clen));
-					i += clen;
+					newtext.append_unichar(uni);
 					x += 2;
+				} else {
+					newtext.append_unichar(uni);
+					x++;
 				}
 				if (x > screen_cols - 1) {
 					newtext.append("\n");
@@ -670,52 +659,6 @@ class SayakaMain
 		var fsize = stream.tell();
 		stream.rewind();
 		return fsize;
-	}
-
-	// UTF-8 文字の先頭バイトからこの文字のバイト数を返す
-	public int utf8_charlen(uint8 c)
-	{
-		// UTF-8 は1バイト目で1文字のバイト数が分かる
-		if (c <= 0x7f) {
-			return 1;
-		} else if (c < 0xc2) {
-			return 0;
-		} else if (c <= 0xdf) {
-			return 2;
-		} else if (c <= 0xef) {
-			return 3;
-		} else if (c <= 0xf7) {
-			return 4;
-		} else if (c <= 0xfb) {
-			return 5;
-		} else if (c <= 0xfd) {
-			return 6;
-		} else {
-			return 0;
-		}
-	}
-
-	// UTF-8 文字が半角カナなら真を返す。
-	// $s は UTF-8 文字列を1バイトごとに分解した配列。
-	// その $i 番目(から3バイト) を調べる。
-	// ただし先頭バイトが 0xef であることは調査済み。
-	public bool utf8_ishalfkana(string text, int i)
-	{
-		// UTF-8 の半角カナは次の2ブロック
-		// 0xef bd a1 - 0xef bd bf
-		// 0xef be 80 - 0xef be 9f
-
-		if (i + 2 >= text.length) {
-			return false;
-		}
-		var s1 = text[i + 1];
-		var s2 = text[i + 2];
-
-		if (s1 == 0xbd && (0xa1 <= s2 && s2 <= 0xbf))
-			return true;
-		if (s1 == 0xbe && (0x80 <= s2 && s2 <= 0x9f))
-			return true;
-		return false;
 	}
 
 	public static void signal_handler(int signo)
