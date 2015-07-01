@@ -26,6 +26,8 @@ public class SixelV
 	public ReduceMode opt_reduce = ReduceMode.Diffuse;
 	public int opt_diffusemultiplier = 1;
 	public int opt_diffusedivisor = 3;
+	public bool opt_custom = false;
+	public bool opt_graymean = false;
 
 	public void main2(string[] args)
 	{
@@ -45,6 +47,21 @@ public class SixelV
 					break;
 				case "-256":
 					opt_colormode = ColorMode.Fixed256;
+					break;
+
+				case "--custom":
+					opt_custom = true;
+					break;
+
+				case "--fixed":
+					opt_custom = false;
+					break;
+
+				case "--graymean":
+					opt_graymean = true;
+					break;
+				case "--grayntsc":
+					opt_graymean = false;
 					break;
 
 				case "-w":
@@ -90,7 +107,7 @@ public class SixelV
 				default:
 					int n = 0;
 					if (args[i].scanf("-g%d", &n) == 1) {
-						if (n < 0 || n > 256) {
+						if (n <= 1 || n > 256) {
 							usage();
 						}
 						opt_colormode = ColorMode.Gray;
@@ -112,10 +129,49 @@ public class SixelV
 	public void usage()
 	{
 		stdout.printf(
-"sixelv [-g[<gray_level>]] [-8] [-16] [-256] [-w {width}] [-h {height}] [-s] [-d] [--div {divisor}] file ...\n" +
-"   -d: diffuse\n" +
-"   -s: simple\n"
-		);
+"""sixelv [color] [size] [algorithm] [colorfind] file...
+
+ color
+   -g[graylevel]
+     Select grayscale mode.
+     graylevel allows 2 .. 256. default = 256
+   -8
+     Select 8 color (3bit) mode.
+   -16
+     Select 16 color (4bit) mode.
+   -256
+     Select 256 color (8bit) mode. This is default.
+
+ size
+   -w {width}
+     Resize width (pixel).
+     If omit -w, width = original image width.
+     If set -w but omit -h, height follows aspect ratio by width.
+   -h {height}
+     Resize height (pixel). Must need -w.
+
+ algorithm
+   -d
+     Diffusion algorithm. This is default.
+   -s
+     Simple algorithm.
+   --mul <int>
+     Diffusion multiplier. allows 1 .. 32768. default = 1
+   --div <int>
+     Diffusion divisor. allows 1 .. 32768. default = 3
+
+ colorfind
+   --fixed
+     Internal fixed color finder. Fast. This is default.
+   --custom
+     Internal custom color finder. Slow, but more high quarity (maybe.)
+   --grayntsc
+     Use NTSC Intensity like gray. This is default.
+     Only affects in grayscale mode.
+   --graymean
+     Use mean of RGB gray.
+     Only affects in grayscale mode.
+""");
 		Process.exit(1);
 	}
 
@@ -139,50 +195,40 @@ public class SixelV
 			sx.ResizeByWidth(opt_width);
 		}
 
+		unowned SixelConverter.FindFunc finder = sx.FindCustom;
+
 		switch (opt_colormode) {
 			case ColorMode.Gray:
 				sx.SetPaletteGray(opt_graylevel);
-				switch (opt_reduce) {
-					case ReduceMode.Simple:
-						sx.SimpleReduceGray();
-						break;
-					case ReduceMode.Diffuse:
-						sx.DiffuseReduceGray();
-						break;
+				finder = sx.FindGray;
+				if (opt_graymean) {
+					finder = sx.FindGrayMean;
 				}
 				break;
 			case ColorMode.Fixed8:
 				sx.SetPaletteFixed8();
-				switch (opt_reduce) {
-					case ReduceMode.Simple:
-						sx.SimpleReduceFixed8();
-						break;
-					case ReduceMode.Diffuse:
-						sx.DiffuseReduceFixed8();
-						break;
-				}
+				finder = sx.FindFixed8;
 				break;
 			case ColorMode.Fixed16:
 				sx.SetPaletteFixed16();
-				switch (opt_reduce) {
-					case ReduceMode.Simple:
-						sx.SimpleReduceFixed16();
-						break;
-					case ReduceMode.Diffuse:
-						sx.DiffuseReduceFixed16();
-						break;
-				}
+				finder = sx.FindFixed16;
 				break;
 			case ColorMode.Fixed256:
 				sx.SetPaletteFixed256();
-				switch (opt_reduce) {
-					case ReduceMode.Simple:
-						sx.SimpleReduceFixed256();
-						break;
-					case ReduceMode.Diffuse:
-						sx.DiffuseReduceFixed256();
-						break;
-				}
+				finder = sx.FindFixed256;
+				break;
+		}
+
+		if (opt_custom) {
+			finder = sx.FindCustom;
+		}
+
+		switch (opt_reduce) {
+			case ReduceMode.Simple:
+				sx.SimpleReduceCustom(finder);
+				break;
+			case ReduceMode.Diffuse:
+				sx.DiffuseReduceCustom(finder);
 				break;
 		}
 
