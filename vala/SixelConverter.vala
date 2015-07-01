@@ -34,7 +34,7 @@ public class SixelConverter
 	public void SetPaletteGray(int count)
 	{
 		for (int i = 0; i < count; i++) {
-			uint8 c = (uint8)(i * 100 / (count - 1));
+			uint8 c = (uint8)(i * 255 / (count - 1));
 			Palette[i, 0] = Palette[i, 1] = Palette[i, 2] = c;
 		}
 		PaletteCount = count;
@@ -48,9 +48,9 @@ public class SixelConverter
 			uint8 G = (uint8)(i & 0x02) * 255;
 			uint8 B = (uint8)(i & 0x04) * 255;
 
-			Palette[i, 0] = (uint8)(R * 100 / 255);
-			Palette[i, 1] = (uint8)(G * 100 / 255);
-			Palette[i, 2] = (uint8)(B * 100 / 255);
+			Palette[i, 0] = (uint8)(R);
+			Palette[i, 1] = (uint8)(G);
+			Palette[i, 2] = (uint8)(B);
 		}
 		PaletteCount = 8;
 	}
@@ -70,9 +70,9 @@ public class SixelConverter
 			G = satulate_add(G * 170, I * 85);
 			B = satulate_add(B * 170, I * 85);
 
-			Palette[i, 0] = (uint8)(R * 100 / 255);
-			Palette[i, 1] = (uint8)(G * 100 / 255);
-			Palette[i, 2] = (uint8)(B * 100 / 255);
+			Palette[i, 0] = (uint8)(R);
+			Palette[i, 1] = (uint8)(G);
+			Palette[i, 2] = (uint8)(B);
 		}
 		PaletteCount = 16;
 	}
@@ -81,9 +81,9 @@ public class SixelConverter
 	public void SetPaletteFixed256()
 	{
 		for (int i = 0; i < 256; i++) {
-			Palette[i, 0] = (uint8)(((i & 0xe0) >> 5) * 100 / 7);
-			Palette[i, 1] = (uint8)(((i & 0x1c) >> 2) * 100 / 7);
-			Palette[i, 2] = (uint8)(((i & 0x03)     ) * 100 / 3);
+			Palette[i, 0] = (uint8)(((i & 0xe0) >> 5) * 255 / 7);
+			Palette[i, 1] = (uint8)(((i & 0x1c) >> 2) * 255 / 7);
+			Palette[i, 2] = (uint8)(((i & 0x03)     ) * 255 / 3);
 		}
 		PaletteCount = 256;
 	}
@@ -347,9 +347,9 @@ public class SixelConverter
 		// パレットの出力
 		for (int i = 0; i < PaletteCount; i++) {
 			stream.printf("#%d;%d;%d;%d;%d", i, 2,
-				Palette[i, 0],
-				Palette[i, 1],
-				Palette[i, 2]);
+				Palette[i, 0] * 100 / 255,
+				Palette[i, 1] * 100 / 255,
+				Palette[i, 2] * 100 / 255);
 		}
 
 #if false
