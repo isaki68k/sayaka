@@ -151,13 +151,20 @@ public class SixelConverter
 	{
 		// RGB の各色の距離の和が最小、にしてある。
 		// YCC で判断したほうが良好なのは知ってるけど、そこまで必要じゃない。
+		// とおもったけどやっぱり品質わるいので色差も考えていく。
+
+		// 色差情報を重みにしていく。
+		int K1 = ((int)r*2 - (int)g - (int)b); if (K1 < 1) K1 = 1;
+		int K2 = ((int)g*2 - (int)r - (int)b); if (K2 < 1) K2 = 1;
+		int K3 = ((int)b*2 - (int)r - (int)g); if (K3 < 1) K3 = 1;
 		uint8 rv = 0;
 		int min_d = int.MAX;
 		for (int i = 0; i < PaletteCount; i++) {
 			int dR = (int)Palette[i, 0] - (int)r;
 			int dG = (int)Palette[i, 1] - (int)g;
 			int dB = (int)Palette[i, 2] - (int)b;
-			int d = dR.abs() + dG.abs() + dB.abs();
+			int d = dR.abs() * K1 + dG.abs() * K2 + dB.abs() * K3;
+
 			if (d < min_d) {
 				rv = (uint8)i;
 				min_d = d;
