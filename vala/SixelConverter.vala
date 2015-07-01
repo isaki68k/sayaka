@@ -61,9 +61,9 @@ public class SixelConverter
 			uint8 G = (uint8)(i & 0x02) * 255;
 			uint8 B = (uint8)(i & 0x04) * 255;
 
-			Palette[i, 0] = (uint8)(R);
-			Palette[i, 1] = (uint8)(G);
-			Palette[i, 2] = (uint8)(B);
+			Palette[i, 0] = R;
+			Palette[i, 1] = G;
+			Palette[i, 2] = B;
 		}
 		PaletteCount = 8;
 	}
@@ -79,13 +79,13 @@ public class SixelConverter
 			uint8 B = (uint8)(i & 0x04);
 			uint8 I = (uint8)(i & 0x08);
 
-			R = satulate_add(R * 170, I * 85);
-			G = satulate_add(G * 170, I * 85);
-			B = satulate_add(B * 170, I * 85);
+			R = R * 170 + I * 85;
+			G = G * 170 + I * 85;
+			B = B * 170 + I * 85;
 
-			Palette[i, 0] = (uint8)(R);
-			Palette[i, 1] = (uint8)(G);
-			Palette[i, 2] = (uint8)(B);
+			Palette[i, 0] = R;
+			Palette[i, 1] = G;
+			Palette[i, 2] = B;
 		}
 		PaletteCount = 16;
 	}
