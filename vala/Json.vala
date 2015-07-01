@@ -378,7 +378,6 @@ namespace ULib
 		public string ToString()
 		{
 			var sb = new StringBuilder();
-			sb.append("this=%p\n".printf(this));
 			if (IsNull) {
 				sb.append("null");
 			} else if (IsBool) {
@@ -403,7 +402,6 @@ namespace ULib
 				sb.append("]");
 			} else if (IsObject) {
 				Dictionary<string, Json> obj = ValueDictionary;
-				sb.append("obj=%p\n".printf(obj));
 				sb.append("{");
 				for (int i = 0; i < obj.Count; i++) {
 					if (i != 0) {
