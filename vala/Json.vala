@@ -498,11 +498,12 @@ namespace ULib
 			return "%s at position %d".printf(msg, Pos);
 		}
 
-		private unichar GetChar() throws JsonError
+		private uchar GetChar() throws JsonError
 		{
-			if (Pos >= Src.length)
+			if (Pos >= Src.length) {
 				throw new JsonError.Format(ErrorMsg("unexpected EOS"));
-			return Src.get_char(Pos++);
+			}
+			return Src[Pos++];
 		}
 
 		private void UnGetChar()
@@ -514,10 +515,10 @@ namespace ULib
 		/// JSON で定義されている White Space を読み飛ばして、次の1文字を返します。
 		/// </summary>
 		/// <returns></returns>
-		private unichar GetCharSkipSpace() throws JsonError
+		private uchar GetCharSkipSpace() throws JsonError
 		{
 			while (true) {
-				unichar c = GetChar();
+				uchar c = GetChar();
 				if ((c == ' ' || c == '\t' || c == '\r' || c == '\n') == false)
 					return c;
 			}
@@ -565,7 +566,7 @@ namespace ULib
 		private Json ParseValue() throws JsonError
 		{
 			TRACE("ParseValue");
-			unichar c = GetCharSkipSpace();
+			uchar c = GetCharSkipSpace();
 
 			if (c == '{') {
 				return ParseObject();
@@ -599,10 +600,11 @@ namespace ULib
 		/// <param name="compare"></param>
 		/// <param name="retval"></param>
 		/// <returns></returns>
-		private Json ParseLiteral(unichar firstchar, string compare, Json retval) throws JsonError
+		private Json ParseLiteral(uchar firstchar, string compare, Json retval) throws JsonError
 		{
 			TRACE("ParseLiteral");
-			if (firstchar.to_string() + GetString(compare.length - 1) == compare) {
+			UnGetChar();
+			if (GetString(compare.length) == compare) {
 				return retval;
 			} else {
 				throw new JsonError.Format(ErrorMsg("Syntax error in literal"));
@@ -629,7 +631,7 @@ namespace ULib
 			}
 
 			for (; ; ) {
-				unichar c;
+				uchar c;
 
 				// キー
 				c = GetCharSkipSpace();
@@ -679,9 +681,11 @@ namespace ULib
 			for (; ; ) {
 				list.append_val(ParseValue());
 
-				unichar c = GetCharSkipSpace();
+				uchar c = GetCharSkipSpace();
 				if (c == ',') continue;
-				if (c == ']') return new Json.Array(list);
+				if (c == ']') {
+					return new Json.Array(list);
+				}
 				throw new JsonError.Format(ErrorMsg("Syntax error in Array"));
 			}
 		}
@@ -700,7 +704,7 @@ namespace ULib
 			bool escape = false;
 
 			for (; ; ) {
-				unichar c = GetChar();
+				uchar c = GetChar();
 				if (escape) {
 					if (c == '"') {
 						obj.append("\"");
@@ -738,7 +742,7 @@ namespace ULib
 					return new Json.String(obj.str);
 				} else {
 					// 本当は制御コードは弾かなければいけないが、許容している。
-					obj.append_unichar(c);
+					obj.append_c((char)c);
 				}
 			}
 			// unreachable
@@ -883,7 +887,7 @@ namespace ULib
 					break;
 				} else {
 					// 状態遷移できたのでこの文字を追加
-					sb.append_unichar((unichar)c);
+					sb.append_c((char)c);
 					state = nextstate;
 				}
 			}
