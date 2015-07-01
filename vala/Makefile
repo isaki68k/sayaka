@@ -33,3 +33,6 @@ sayaka.c:	${SRCS}
 .PHONY:	clean
 clean:
 	rm -f sayaka ${CLEAN_FILES}
+
+sixelv: sixelv.vala SixelConverter.vala
+	valac ${VALAFLAGS} ${PKGS} sixelv.vala SixelConverter.vala
