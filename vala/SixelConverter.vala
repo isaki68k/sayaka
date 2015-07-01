@@ -28,6 +28,19 @@ public class SixelConverter
 		Diag.DEBUG("rowstride=%d", pix.get_rowstride());
 	}
 
+	// ----- 前処理
+
+	public void ResizeByWidth(int width)
+	{
+		int h = pix.get_height() * width / pix.get_width();
+		Resize(width, h);
+	}	
+
+	public void Resize(int width, int height)
+	{
+		pix = pix.scale_simple(width, height, InterpType.BILINEAR);
+	}
+
 	// ----- パレットの設定
 
 	// グレースケールパレットを生成します。
