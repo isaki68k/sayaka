@@ -94,9 +94,9 @@ public class SixelConverter
 	public void SetPaletteFixed256()
 	{
 		for (int i = 0; i < 256; i++) {
-			Palette[i, 0] = (uint8)(((i >> 5) & 0x03) * 255 / 7);
-			Palette[i, 1] = (uint8)(((i >> 2) & 0x03) * 255 / 7);
-			Palette[i, 2] = (uint8)(((i     ) & 0x02) * 255 / 3);
+			Palette[i, 0] = (uint8)(((i >> 5) & 0x07) * 255 / 7);
+			Palette[i, 1] = (uint8)(((i >> 2) & 0x07) * 255 / 7);
+			Palette[i, 2] = (uint8)(((i     ) & 0x03) * 255 / 3);
 		}
 		PaletteCount = 256;
 	}
