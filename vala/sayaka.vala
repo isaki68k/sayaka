@@ -5,8 +5,34 @@ class Program
 {
 	public static int main(string[] args)
 	{
+#if !false
 		var sayaka = new SayakaMain();
 		return sayaka.Main(args);
+#else
+		var sx = new SixelConverter();
+	//	sx.Load("x68k.bmp");
+		sx.Load("IMG_0284.JPG");
+//		sx.Load("snake.jpg");
+
+#if false
+		sx.SetPaletteFixed16();
+		sx.ReduceFixed16();
+		sx.ConvertFixed16();
+#endif
+#if !false
+		sx.SetPaletteFixed8();
+		sx.ReduceFixed8();
+		sx.ConvertFixed8();
+#endif
+#if false
+		sx.SetPaletteFixed256();
+		sx.ReduceFixed256();
+		sx.ConvertFixed256();
+#endif
+
+		sx.SixelToStream(stdout);
+		return 0;
+#endif
 	}
 }
 
@@ -577,6 +603,7 @@ class SayakaMain
 		var img_file =
 			@"icon-$(iconsize)x$(iconsize)$(col)-$(user)-$(filename).sixel";
 
+stderr.printf("img_file=%s\n", img_file);
 		if (show_image(img_file, img_url, @"$(iconsize)") == false) {
 			stdout.printf("\n\n\n");
 		}
@@ -616,6 +643,7 @@ class SayakaMain
 			stdout.printf(@"$(CSI)$(left)C");
 		}
 
+#if !false
 		// img2sixel 使わないモードならここで帰る
 		if (img2sixel == "") {
 			return false;
@@ -649,6 +677,54 @@ class SayakaMain
 		stream.read(buf);
 		stdout.write(buf);
 		stdout.flush();
+#else
+
+		var sx = new SixelConverter();
+
+		var img_file_tmp = cachedir + "/" + img_file;
+		img_file = img_file_tmp;
+
+	// width 非対応　まだね。
+		if (width != "") {
+			var width_tmp = @"-w $(width)";
+			width = width_tmp;
+		}
+
+		try {
+			sx.Load(img_file);
+		} catch {
+stderr.puts(@"curl $(img_url)");
+			Posix.system(@"(curl -Lks $(img_url) "
+				+ @" > $(img_file))");
+			try {
+				sx.Load(img_file);
+			} catch {
+				return false;
+			}
+		}
+
+		// XXX うーん…この辺
+#if false
+		size_t fsize = 0;
+		if ( (fsize = get_filesize(stream)) == 0) {
+			Posix.unlink(img_file);
+			return false;
+		}
+#endif
+
+#if false
+		sx.SetPaletteFixed8();
+		sx.ReduceFix8();
+		sx.ConvertFixed8();
+#else
+		sx.SetPaletteFixed256();
+		sx.ReduceFixed256();
+		sx.ConvertFixed256();
+#endif
+		sx.SixelToStream(stdout);
+		stdout.flush();
+
+#endif
 
 		return true;
 	}

@@ -1,12 +1,14 @@
 SRCS=	\
 	sayaka.vala \
 	Json.vala \
+	SixelConverter.vala \
 	System.OS.vala \
 	System.OS.native.c \
 	System.Collections.Generic.Dictionary.vala \
 
 PKGS=	\
 	--pkg posix \
+	--pkg gdk-pixbuf-2.0 \
 
 VALAFLAGS=	\
 	-X -Wno-incompatible-pointer-types \
@@ -14,6 +16,7 @@ VALAFLAGS=	\
 CLEAN_FILES=	\
 	sayaka.c \
 	Json.c \
+	SixelConverter.c \
 	System.OS.c \
 	System.Collections.Generic.Dictionary.c \
 
