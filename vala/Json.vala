@@ -219,6 +219,7 @@ namespace ULib
 		public string AsNumber { get { return ValueString; } }
 		public double AsDouble { get { return double.parse(ValueString); } }
 		public int64 AsInt64 { get { return int64.parse(ValueString); } }
+		public int AsInt { get { return int.parse(ValueString); } }
 
 		/// <summary>
 		/// この Json オブジェクトの値を string として取得します。
