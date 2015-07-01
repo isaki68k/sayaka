@@ -65,7 +65,7 @@ class SayakaMain
 		Max,
 	}
 
-	public string img2sixel;
+	public bool opt_noimg;
 	public int color_mode = 256;
 	public bool protect;
 	public bool debug;
@@ -94,7 +94,7 @@ class SayakaMain
 				color_mode = int.parse(args[++i]);
 				break;
 			 case "--noimg":
-				img2sixel = "none";
+				opt_noimg = true;
 				break;
 			 case "--white":
 				bg_white = true;
@@ -131,29 +131,6 @@ class SayakaMain
 	{
 		// 色の初期化
 		init_color();
-
-		// img2sixel
-		// --noimg オプションなら img2sixel を使わない
-		// そうでなければ探して使う。がなければ使わない
-		if (img2sixel == "none") {
-			img2sixel = "";
-		} else {
-			string output;
-			try {
-				Process.spawn_command_line_sync("which img2sixel",
-					out output);
-			} catch {
-			}
-			img2sixel = TrimEnd(output);
-		}
-		if (img2sixel != "") {
-			img2sixel += " -S";
-			if (color_mode == 2) {
-				img2sixel += " -e --quality=low";
-			} else if (color_mode <= 16) {
-				img2sixel += " -m colormap%d.png".printf(color_mode);
-			}
-		}
 
 		// シグナルハンドラを設定
 		Posix.@signal(SIGWINCH, signal_handler);
@@ -599,7 +576,7 @@ class SayakaMain
 			@"icon-$(iconsize)x$(iconsize)$(col)-$(user)-$(filename).sixel";
 
 stderr.printf("img_file=%s\n", img_file);
-		if (show_image(img_file, img_url, @"$(iconsize)") == false) {
+		if (show_image(img_file, img_url, iconsize) == false) {
 			stdout.printf("\n\n\n");
 		}
 	}
@@ -628,9 +605,10 @@ stderr.printf("img_file=%s\n", img_file);
 	// 画像をキャッシュして表示
 	//  $img_file はキャッシュディレクトリ内でのファイル名
 	//  $img_url は画像の URL
-	//  $width は画像の幅。ピクセルかパーセントで指定。
+	//  $width は画像の幅。ピクセルで指定。0 を指定すると、リサイズせず
+	//  オリジナルのサイズ。
 	// 表示できれば真を返す。
-	public bool show_image(string img_file, string img_url, string width)
+	public bool show_image(string img_file, string img_url, int width)
 	{
 		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
 		if (global_indent_level > 0) {
@@ -638,57 +616,16 @@ stderr.printf("img_file=%s\n", img_file);
 			stdout.printf(@"$(CSI)$(left)C");
 		}
 
-#if !false
-		// img2sixel 使わないモードならここで帰る
-		if (img2sixel == "") {
-			return false;
-		}
-
-		var img_file_tmp = cachedir + "/" + img_file;
-		img_file = img_file_tmp;
-
-		if (width != "") {
-			var width_tmp = @"-w $(width)";
-			width = width_tmp;
-		}
-
-		FileStream stream;
-		stream = FileStream.open(img_file, "r");
-		if (stream == null) {
-			var imgconv = @"$(img2sixel) $(width)";
-			Posix.system(@"(curl -Lks $(img_url) | "
-				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
-			stream = FileStream.open(img_file, "r");
-		}
-		// XXX うーん…この辺
-		size_t fsize = 0;
-		if (stream == null || (fsize = get_filesize(stream)) == 0) {
-			Posix.unlink(img_file);
-			return false;
-		}
-
-		// ファイルを読んで標準出力に吐き出す
-		uint8[] buf = new uint8[fsize];
-		stream.read(buf);
-		stdout.write(buf);
-		stdout.flush();
-#else
+		if (opt_noimg) return false;
 
 		var sx = new SixelConverter();
 
 		var img_file_tmp = cachedir + "/" + img_file;
 		img_file = img_file_tmp;
 
-	// width 非対応　まだね。
-		if (width != "") {
-			var width_tmp = @"-w $(width)";
-			width = width_tmp;
-		}
-
 		try {
 			sx.Load(img_file);
 		} catch {
-stderr.puts(@"curl $(img_url)");
 			Posix.system(@"(curl -Lks $(img_url) "
 				+ @" > $(img_file))");
 			try {
@@ -698,28 +635,29 @@ stderr.puts(@"curl $(img_url)");
 			}
 		}
 
-		// XXX うーん…この辺
-#if false
-		size_t fsize = 0;
-		if ( (fsize = get_filesize(stream)) == 0) {
-			Posix.unlink(img_file);
-			return false;
+		if (width != 0) {
+			sx.ResizeByWidth(width);
 		}
-#endif
 
-#if false
-		sx.SetPaletteFixed8();
-		sx.ReduceFix8();
-		sx.SimpleReduceFixed8();
-#else
-		sx.SetPaletteFixed256();
-		sx.ReduceFixed256();
-		sx.SimpleReduceFixed256();
-#endif
+		// color_modeでよしなに減色する
+		if (color_mode <= 2) {
+			sx.SetPaletteGray(2);
+			sx.DiffuseReduceGray();
+		} else if (color_mode < 8) {
+			sx.SetPaletteGray(color_mode);
+			sx.DiffuseReduceGray();
+		} else if (color_mode < 16) {
+			sx.SetPaletteFixed8();
+			sx.DiffuseReduceFixed8();
+		} else if (color_mode < 256) {
+			sx.SetPaletteFixed16();
+			sx.DiffuseReduceFixed16();
+		} else {
+			sx.SetPaletteFixed256();
+			sx.DiffuseReduceFixed256();
+		}
 		sx.SixelToStream(stdout);
 		stdout.flush();
-
-#endif
 
 		return true;
 	}
