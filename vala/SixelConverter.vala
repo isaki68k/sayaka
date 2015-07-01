@@ -40,19 +40,26 @@ public class SixelConverter
 		PaletteCount = count;
 	}
 
-	// 3,3,2 bit の256色固定パレットを生成します。
-	public void SetPaletteFixed256()
+	// デジタル8色の固定パレットを生成します。
+	public void SetPaletteFixed8()
 	{
-		for (int i = 0; i < 256; i++) {
-			Palette[i, 0] = (uint8)(((i & 0xe0) >> 5) * 100 / 7);
-			Palette[i, 1] = (uint8)(((i & 0x1c) >> 2) * 100 / 7);
-			Palette[i, 2] = (uint8)(((i & 0x03)     ) * 100 / 3);
+		for (int i = 0; i < 8; i++) {
+			uint8 R = (uint8)(i & 0x01) * 255;
+			uint8 G = (uint8)(i & 0x02) * 255;
+			uint8 B = (uint8)(i & 0x04) * 255;
+
+			Palette[i, 0] = (uint8)(R * 100 / 255);
+			Palette[i, 1] = (uint8)(G * 100 / 255);
+			Palette[i, 2] = (uint8)(B * 100 / 255);
 		}
-		PaletteCount = 256;
+		PaletteCount = 8;
 	}
 
+	// ANSI 16 色の固定パレットを生成します。
 	public void SetPaletteFixed16()
 	{
+		// ANSI 16 色といっても色実体は実装依存らしい。
+
 		for (int i = 0; i < 16; i++) {
 			uint8 R = (uint8)(i & 0x01);
 			uint8 G = (uint8)(i & 0x02);
@@ -70,18 +77,15 @@ public class SixelConverter
 		PaletteCount = 16;
 	}
 
-	public void SetPaletteFixed8()
+	// R3,G3,B2 bit の256色固定パレットを生成します。
+	public void SetPaletteFixed256()
 	{
-		for (int i = 0; i < 8; i++) {
-			uint8 R = (uint8)(i & 0x01) * 255;
-			uint8 G = (uint8)(i & 0x02) * 255;
-			uint8 B = (uint8)(i & 0x04) * 255;
-
-			Palette[i, 0] = (uint8)(R * 100 / 255);
-			Palette[i, 1] = (uint8)(G * 100 / 255);
-			Palette[i, 2] = (uint8)(B * 100 / 255);
+		for (int i = 0; i < 256; i++) {
+			Palette[i, 0] = (uint8)(((i & 0xe0) >> 5) * 100 / 7);
+			Palette[i, 1] = (uint8)(((i & 0x1c) >> 2) * 100 / 7);
+			Palette[i, 2] = (uint8)(((i & 0x03)     ) * 100 / 3);
 		}
-		PaletteCount = 8;
+		PaletteCount = 256;
 	}
 
 	// ----- カラー変換 (減色)
@@ -90,12 +94,6 @@ public class SixelConverter
 	public void ConvertNTSCGray()
 	{
 		SimpleOp((r, g, b) => ((r * 76 + g * 153 + b * 26) / (PaletteCount - 1)) >> 8);
-	}
-
-	public void ConvertFixed256()
-	{
-		// 固定 256 色
-		SimpleOp((r, g, b) => ((r & 0xe0) + ((g & 0xe0) >> 3) + ((b & 0xc0) >> 6)));
 	}
 
 	public void ConvertFixed8()
@@ -117,6 +115,12 @@ public class SixelConverter
 			uint8 B = (uint8)(satulate_sub(b, I * 85) >= 85);
 			return R + (G << 1) + (B << 2) + (I << 3);
 		});
+	}
+
+	public void ConvertFixed256()
+	{
+		// 固定 256 色
+		SimpleOp((r, g, b) => ((r & 0xe0) + ((g & 0xe0) >> 3) + ((b & 0xc0) >> 6)));
 	}
 
 	public delegate uint8 ConverterFunc(uint8 r, uint8 g, uint8 b);
