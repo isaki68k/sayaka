@@ -8,15 +8,18 @@ SRCS=	\
 PKGS=	\
 	--pkg posix \
 
+VALAFLAGS=	\
+	-X -Wno-incompatible-pointer-types \
+
 # disable make's builtin rules
 .SUFFIXES:
 
 sayaka:	${SRCS}
-	valac ${PKGS} ${SRCS}
+	valac ${VALAFLAGS} ${PKGS} ${SRCS}
 
 c:	sayaka.c
 sayaka.c:	${SRCS}
-	valac -C ${PKGS} ${SRCS}
+	valac -C ${VALAFLAGS} ${PKGS} ${SRCS}
 
 .PHONY:	clean
 clean:
