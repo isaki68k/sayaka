@@ -539,6 +539,20 @@ namespace ULib
 			return rv;
 		}
 
+		// 16進数4文字を数値に変換して返します。
+		private int GetHexString() throws JsonError
+		{
+			try {
+				int rv = 0;
+				string hex = GetString(4);
+				hex.scanf("%04X", &rv);
+				return rv;
+			} catch {
+				throw new JsonError.Format(ErrorMsg(
+					"Syntax error in String (invalid \\u format)"));
+			}
+		}
+
 		/// <summary>
 		/// JSON 文字列 src をデコード(パース)して Json を返します。
 		/// 途中で文法エラーなどが起きると例外を発生します。
@@ -721,12 +735,19 @@ namespace ULib
 					} else if (c == 't') {
 						obj.append("\t");
 					} else if (c == 'u') {
-						unichar uni = '\0';
-						try {
-							string hex = GetString(4);
-							hex.scanf("%04X", &uni);
-						} catch {
-							throw new JsonError.Format(ErrorMsg("Syntax error in String (invalid \\u format)"));
+						unichar uni = GetHexString();
+						if (uni.type() == UnicodeType.SURROGATE) {
+							// サロゲートペアの上位なら、下位も取得
+							if (GetChar() == '\\' && GetChar() == 'u') {
+								int hi = (int)uni;
+								int lo = GetHexString();
+								hi &= 0x3ff;
+								lo &= 0x3ff;
+								uni = ((hi << 10) | lo) + 0x10000;
+							} else {
+								throw new JsonError.Format(ErrorMsg(
+									"Syntax error in String (Bad surrogate pair)"));
+							}
 						}
 						obj.append_unichar(uni);
 					} else {
