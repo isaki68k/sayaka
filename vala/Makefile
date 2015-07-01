@@ -11,6 +11,12 @@ PKGS=	\
 VALAFLAGS=	\
 	-X -Wno-incompatible-pointer-types \
 
+CLEAN_FILES=	\
+	sayaka.c \
+	Json.c \
+	System.OS.c \
+	System.Collections.Generic.Dictionary.c \
+
 # disable make's builtin rules
 .SUFFIXES:
 
@@ -23,4 +29,4 @@ sayaka.c:	${SRCS}
 
 .PHONY:	clean
 clean:
-	rm -f sayaka sayaka.c
+	rm -f sayaka ${CLEAN_FILES}
