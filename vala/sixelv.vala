@@ -24,6 +24,8 @@ public class SixelV
 	public int opt_width = 0;
 	public int opt_height = 0;
 	public ReduceMode opt_reduce = ReduceMode.Diffuse;
+	public int opt_diffusemultiplier = 1;
+	public int opt_diffusedivisor = 3;
 
 	public void main2(string[] args)
 	{
@@ -66,6 +68,25 @@ public class SixelV
 					opt_reduce = ReduceMode.Diffuse;
 					break;
 
+				case "--mul":
+					if (i == args.length - 1) {
+						usage();
+					}
+					opt_diffusemultiplier = int.parse(args[++i]);
+					if (opt_diffusemultiplier <= 0 || opt_diffusemultiplier >= 32768) {
+						usage();
+					}
+					break;
+				case "--div":
+					if (i == args.length - 1) {
+						usage();
+					}
+					opt_diffusedivisor = int.parse(args[++i]);
+					if (opt_diffusedivisor <= 0 || opt_diffusedivisor >= 32768) {
+						usage();
+					}
+					break;
+
 				default:
 					int n = 0;
 					if (args[i].scanf("-g%d", &n) == 1) {
@@ -91,7 +112,7 @@ public class SixelV
 	public void usage()
 	{
 		stdout.printf(
-"sixelv [-g[<gray_level>]] [-8] [-16] [-256] [-w {width}] [-h {height}] [-s] [-d] file ...\n" +
+"sixelv [-g[<gray_level>]] [-8] [-16] [-256] [-w {width}] [-h {height}] [-s] [-d] [--div {divisor}] file ...\n" +
 "   -d: diffuse\n" +
 "   -s: simple\n"
 		);
@@ -108,6 +129,9 @@ public class SixelV
 			stderr.printf("File load error at %s\n", filename);
 			Process.exit(1);
 		}
+
+		sx.DiffuseMultiplier = (int16)opt_diffusemultiplier;
+		sx.DiffuseDivisor = (int16)opt_diffusedivisor;
 
 		if (opt_width != 0 && opt_height != 0) {
 			sx.Resize(opt_width, opt_height);

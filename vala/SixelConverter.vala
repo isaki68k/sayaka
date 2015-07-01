@@ -242,13 +242,14 @@ public class SixelConverter
 		DiffuseReduceCustom(FindFixed256);
 	}
 
+	public int16 DiffuseMultiplier = 1;
 	public int16 DiffuseDivisor = 3;
 
 	private void DiffusePixel(uint8 r, uint8 g, uint8 b, uint8* ptr, uint8 c)
 	{
-		ptr[0] = satulate_add(ptr[0], ((int16)r - Palette[c, 0]) / DiffuseDivisor);
-		ptr[1] = satulate_add(ptr[1], ((int16)g - Palette[c, 1]) / DiffuseDivisor);
-		ptr[2] = satulate_add(ptr[2], ((int16)b - Palette[c, 2]) / DiffuseDivisor);
+		ptr[0] = satulate_add(ptr[0], ((int16)r - Palette[c, 0]) * DiffuseMultiplier / DiffuseDivisor);
+		ptr[1] = satulate_add(ptr[1], ((int16)g - Palette[c, 1]) * DiffuseMultiplier / DiffuseDivisor);
+		ptr[2] = satulate_add(ptr[2], ((int16)b - Palette[c, 2]) * DiffuseMultiplier / DiffuseDivisor);
 	}
 
 	public void DiffuseReduceCustom(FindFunc op)
