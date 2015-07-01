@@ -587,7 +587,28 @@ class SayakaMain
 
 	public string format_hashtags(string text, Array<ULib.Json> hashtags)
 	{
-		return text;	/* XXX */
+		var tags = new int[hashtags.length * 2];
+
+		for (var i = 0; i < hashtags.length; i++) {
+			var t = hashtags.index(i);
+			// t->indices[0] … 開始位置、1文字目からなら0
+			// t->indices[1] … 終了位置。この1文字前まで
+			var indices = t.GetArray("indices");
+			tags[i * 2 + 0] = indices.index(0).AsInt;
+			tags[i * 2 + 1] = indices.index(1).AsInt;
+		}
+
+		string[] splittext = utf8_split(text, tags);
+		var sb = new StringBuilder();
+		for (var i = 0; i < splittext.length; i++) {
+			if ((i & 1) != 0) {
+				sb.append(coloring(splittext[i], Color.Tag));
+			} else {
+				sb.append(splittext[i]);
+			}
+		}
+
+		return sb.str;
 	}
 
 	public void show_icon(string user, string img_url)
@@ -735,6 +756,35 @@ stderr.puts(@"curl $(img_url)");
 		var fsize = stream.tell();
 		stream.rewind();
 		return fsize;
+	}
+
+	// UTF-8 文字列を分割する。
+	//  utf8_split("abcdef", array(1, 3, 5, 6));
+	//  rv = array("a", "bc", "de", "f");
+	public string[] utf8_split(string text, int[] charpos)
+	{
+		var array = new Array<string>();
+
+		// 文字数で分割
+		var sb = new StringBuilder();
+		unichar uni;
+		int cnt = 0;
+		int pos = 0;
+		for (var i = 0; text.get_next_char(ref i, out uni); cnt++) {
+			if (cnt == charpos[pos]) {
+				array.append_val(sb.str);
+				sb.erase();
+				pos++;
+			}
+			sb.append_unichar(uni);
+		}
+		// 最後の文字の後ろ。タグが文字列の最後にあると、
+		// その後ろはループでは表現できないので、ここで処理。
+		if (cnt == charpos[pos]) {
+			array.append_val(sb.str);
+		}
+
+		return array.data;
 	}
 
 	public static void signal_handler(int signo)
