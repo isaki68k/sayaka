@@ -2,11 +2,15 @@ using Gdk;
 
 public class Diag
 {
+	const bool _DEBUG = false;
+
 	public static void DEBUG(string fmt, ...)
 	{
-		va_list va = va_list();
-		stderr.vprintf(fmt, va);
-		stderr.puts("\n");
+		if (_DEBUG) {
+			va_list va = va_list();
+			stderr.vprintf(fmt, va);
+			stderr.puts("\n");
+		}
 	}
 }
 
