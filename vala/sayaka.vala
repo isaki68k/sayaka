@@ -948,14 +948,6 @@ stderr.printf("img_file=%s\n", img_file);
 		}
 	}
 
-	// chomp が使えない
-	public static string TrimEnd(string s)
-	{
-		var rv = s;
-		rv._chomp();
-		return rv;
-	}
-
 	public void usage()
 	{
 		stdout.printf(
