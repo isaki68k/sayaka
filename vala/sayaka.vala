@@ -631,6 +631,50 @@ public class SayakaMain
 			}
 		}
 
+		// メディア情報を展開
+		if (s.Has("extended_entities")
+		 && s.GetJson("extended_entities").Has("media")) {
+			var media = s.GetJson("extended_entities").GetArray("media");
+			for (var i = 0; i < media.length; i++) {
+				var m = media.index(i);
+
+				// 本文の短縮 URL を差し替える
+				var indices = m.GetArray("indices");
+				var start = indices.index(0).AsInt;
+				var end   = indices.index(1).AsInt;
+				tags[start] = new TextTag(start, end, Color.Url,
+					m.GetString("display_url"));
+
+				// 画像展開に使う
+				//   url         本文中の短縮 URL (twitterから)
+				//   display_url 差し替えて表示用の URL (twitterから)
+				//   media_url   指定の実ファイル URL (twitterから)
+				//   target_url  それを元に実際に使う URL
+				//   width       幅指定。ピクセルか割合で
+				var disp_url = m.GetString("display_url");
+				var media_url = m.GetString("media_url");
+
+				// pic.twitter.com の画像のうち :thumb は縮小ではなく切り抜き
+				// なので使わない。:small は縦横比に関わらず横 340px に縮小。
+				// 横長なら 340 x (340以下)、縦長なら 340 x (340以上) になって
+				// そのままでは縦長写真と横長写真で縮尺が揃わないクソ仕様なので
+				// ここでは長辺を基準に 40% に縮小する。
+				var small = m.GetJson("sizes").GetJson("small");
+				var w = small.GetInt("w");
+				var h = small.GetInt("h");
+				int width;
+				if (h > w) {
+					width = (int)((double)w / h * imagesize);
+				} else {
+					width = imagesize;
+				}
+
+				var target_url = @"$(media_url):small";
+				var minfo = new MediaInfo(target_url, disp_url, width);
+				mediainfo.append_val(minfo);	
+			}
+		}
+
 		// タグ情報をもとにテキストを整形
 		var newtext = new StringBuilder();
 		for (var i = 0; i < utext.length; ) {
