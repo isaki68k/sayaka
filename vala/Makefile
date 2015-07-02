@@ -34,7 +34,13 @@ sayaka.c:	${SRCS}
 
 .PHONY:	clean
 clean:
-	rm -f sayaka ${CLEAN_FILES}
+	rm -f sayaka sixelv ${CLEAN_FILES}
 
-sixelv: sixelv.vala SixelConverter.vala
-	valac ${VALAFLAGS} ${PKGS} sixelv.vala SixelConverter.vala
+SIXELV_SRCS = \
+	sixelv.vala \
+	SixelConverter.vala \
+	FileGetter.vala \
+	ParsedUri.vala \
+
+sixelv: ${SIXELV_SRCS}
+	valac ${VALAFLAGS} ${PKGS} ${SIXELV_SRCS}
