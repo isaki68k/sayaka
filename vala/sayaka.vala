@@ -778,7 +778,6 @@ public class SayakaMain
 			stderr.printf("%s\n", e.message);
 			return null;
 		}
-			
 
 		return new MediaInfo(target, disp_url, width);
 	}
