@@ -31,12 +31,12 @@ namespace ULib
 			// スキームとそれ以降を分離
 			var a = Split2(uriString, "://");
 			rv.Scheme = a[0];
-			var authority_PQF = a[1];
+			var APQF = a[1];
 
 			// オーソリティとそれ以降(PathQueryFragment)を分離
-			var b = Split2(authority_PQF, "/");
+			var b = Split2(APQF, "/");
 			var authority = b[0];
-			var path = b[1];
+			var PQF = b[1];
 
 			// オーソリティからユーザ情報とホストポートを分離
 			var c = Split2(authority, "@");
@@ -59,7 +59,7 @@ namespace ULib
 			rv.Port = e[1];
 
 			// PathQueryFragmentをパスとQFに分離
-			var f = Split2(path, "?");
+			var f = Split2(PQF, "?");
 			rv.Path = f[0];
 			var QF = f[1];
 
