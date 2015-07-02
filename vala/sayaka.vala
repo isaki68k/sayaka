@@ -49,6 +49,9 @@ public class SayakaMain
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
 
+	public const int DEFAULT_SCREEN_COLS = 80;
+	public const int DEFAULT_FONT_HEIGHT = 14;
+
 	public enum Color {
 		Username,
 		UserId,
@@ -96,6 +99,9 @@ public class SayakaMain
 			switch (args[i]) {
 			 case "--color":
 				color_mode = int.parse(args[++i]);
+				break;
+			 case "--font":
+				fontheight = int.parse(args[++i]);
 				break;
 			 case "--noimg":
 				opt_noimg = true;
@@ -756,24 +762,45 @@ stderr.printf("img_file=%s\n", img_file);
 	{
 		switch (signo) {
 		 case SIGWINCH:
-			// デフォルト値
-			screen_cols = 80;
-			fontheight = 14;
+			int ws_cols = 0;
+			int ws_height = 0;
 
 			winsize ws = winsize();
 			var r = ioctl.TIOCGWINSZ(Posix.STDOUT_FILENO, out ws);
 			if (r != 0) {
-				stdout.printf("TIOCGWINSZ failed.  Using default value.\n");
+				stdout.printf("TIOCGWINSZ failed.\n");
 			} else {
-				screen_cols = ws.ws_col;
+				ws_cols = ws.ws_col;
 
 				if (ws.ws_ypixel == 0) {
-					stdout.printf("TIOCCGWINSZ ws_ypixel not supported. "
-						+ "Using default font height.\n");
+					stdout.printf("TIOCCGWINSZ ws_ypixel not supported.\n");
 				} else {
 					if (ws.ws_row != 0) {
-						fontheight = ws.ws_ypixel / ws.ws_row;
+						ws_height = ws.ws_ypixel / ws.ws_row;
 					}
+				}
+			}
+
+			var msg_cols = "";
+			var msg_height = "";
+
+			// 指定されてない時だけ取得した値を使う
+			if (screen_cols == 0) {
+				if (ws_cols > 0) {
+					screen_cols = ws_cols;
+					msg_cols = " (from ioctl)";
+				} else {
+					screen_cols = DEFAULT_SCREEN_COLS;
+					msg_cols = " (DEFAULT)";
+				}
+			}
+			if (fontheight == 0) {
+				if (ws_height > 0) {
+					fontheight = ws_height;
+					msg_height = " (from ioctl)";
+				} else {
+					fontheight = DEFAULT_FONT_HEIGHT;
+					msg_height = " (DEFAULT)";
 				}
 			}
 
@@ -782,8 +809,8 @@ stderr.printf("img_file=%s\n", img_file);
 			imagesize = (int)(fontheight * 8.5);
 
 			if (debug) {
-				stdout.printf("screen columns=%d\n", screen_cols);
-				stdout.printf("font height=%d\n", fontheight);
+				stdout.printf("screen columns=%d%s\n", screen_cols, msg_cols);
+				stdout.printf("font height=%d%s\n", fontheight, msg_height);
 				stdout.printf("iconsize=%d\n", iconsize);
 				stdout.printf("imagesize=%d\n", imagesize);
 			}
