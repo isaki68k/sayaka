@@ -231,11 +231,9 @@ public class SayakaMain
 		}
 
 		var s_user = s.GetJson("user");
-		var userid = coloring(formatid(
-			s_user.GetString("screen_name")),
+		var userid = coloring(formatid(s_user.GetString("screen_name")),
 			Color.UserId);
-		var name = coloring(formatname(
-			s_user.GetString("name")),
+		var name = coloring(formatname(s_user.GetString("name")),
 			Color.Username);
 		var src = coloring(unescape(PHP.strip_tags(
 			s.GetString("source") + "から")),
