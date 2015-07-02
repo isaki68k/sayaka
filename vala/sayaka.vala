@@ -87,6 +87,7 @@ public class SayakaMain
 	public int imagesize;
 	public int global_indent_level;
 	public bool bg_white;
+	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
 
 	public string cachedir = "./cache";
@@ -107,8 +108,14 @@ public class SayakaMain
 			 case "--color":
 				color_mode = int.parse(args[++i]);
 				break;
+			 case "--eucjp":
+				iconv_tocode = "euc-jp";
+				break;
 			 case "--font":
 				fontheight = int.parse(args[++i]);
+				break;
+			 case "--jis":
+				iconv_tocode = "jis";
 				break;
 			 case "--noimg":
 				opt_noimg = true;
@@ -328,7 +335,16 @@ public class SayakaMain
 
 		// XXX 置換
 
-		// XXX 文字コード
+		// 出力文字コードの変換
+		if (iconv_tocode != "") {
+			try {
+				string rv2;
+				rv2 = convert(rv, -1, iconv_tocode, "utf-8");
+				rv = rv2;
+			} catch {
+				// nop
+			}
+		}
 
 		stdout.printf("%s", rv);
 	}
