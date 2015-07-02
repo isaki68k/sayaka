@@ -32,6 +32,11 @@ public class SixelConverter
 		Diag.DEBUG("rowstride=%d", pix.get_rowstride());
 	}
 
+	public void LoadFromStream(InputStream stream) throws Error
+	{
+		pix = new Pixbuf.from_stream(stream);
+	}
+
 	// ----- 前処理
 
 	public void ResizeByWidth(int width)
