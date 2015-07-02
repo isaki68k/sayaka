@@ -365,7 +365,7 @@ public class SixelConverter
 		// Sixel 開始
 		stream.puts(DCS);
 		// Pixel Aspect Ratio = 1:1, current color
-		stream.puts("7;1;q");
+		stream.puts(@"q\"1;1;$(w);$(h)");
 
 		// パレットの出力
 		for (int i = 0; i < PaletteCount; i++) {
