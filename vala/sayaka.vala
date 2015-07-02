@@ -386,7 +386,10 @@ public class SayakaMain
 	// 名前表示用に整形
 	public string formatname(string text)
 	{
-		return unescape(text);	/* XXX */
+		return unescape(text)
+			.replace("\r\n", " ")
+			.replace("\r", " ")
+			.replace("\n", " ");
 	}
 
 	// ID 表示用に整形
