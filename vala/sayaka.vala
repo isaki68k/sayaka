@@ -874,14 +874,6 @@ stderr.printf("img_file=%s\n", img_file);
 		return true;
 	}
 
-	public size_t get_filesize(FileStream stream)
-	{
-		stream.seek(0, FileSeek.END);
-		var fsize = stream.tell();
-		stream.rewind();
-		return fsize;
-	}
-
 	public static void signal_handler(int signo)
 	{
 		sayakaMain.signal_handler_2(signo);
