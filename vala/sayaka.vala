@@ -44,6 +44,20 @@ class PHP
 	}
 }
 
+public class MediaInfo
+{
+	public string target_url;
+	public string display_url;
+	public int width;
+
+	public MediaInfo(string t, string d, int w = 0)
+	{
+		target_url = t;
+		display_url = d;
+		width = w;
+	}
+}
+
 public class SayakaMain
 {
 	public const char ESC = '\x1b';
@@ -241,8 +255,8 @@ public class SayakaMain
 			return;
 		}
 
-		var mediainfo = new Array<Dictionary<string, string>>();
-		var msg = formatmsg(s, ref mediainfo);
+		var mediainfo = new Array<MediaInfo>();
+		var msg = formatmsg(s, mediainfo);
 
 		// 今のところローカルアカウントはない
 		var profile_image_url = s_user.GetString("profile_image_url");
@@ -258,13 +272,12 @@ public class SayakaMain
 		stdout.printf("\n");
 
 		// picture
-#if false
-		foreach (var m in mediainfo) {
+		for (var i = 0; i < mediainfo.length; i++) {
+			var m = mediainfo.index(i);
 			stdout.printf(CSI + "6C");
-			show_photo();
+			show_photo(m.target_url, m.width);
 			stdout.printf("\r");
 		}
-#endif
 
 		// コメント付きRT の引用部分
 		if (s.Has("quoted_status")) {
@@ -549,8 +562,7 @@ public class SayakaMain
 		}
 	}
 
-	public string formatmsg(ULib.Json s,
-		ref Array<Dictionary<string, string>> mediainfo)
+	public string formatmsg(ULib.Json s, Array<MediaInfo> mediainfo)
 	{
 		// 本文
 		var text = s.GetString("text");
@@ -599,7 +611,6 @@ public class SayakaMain
 				// url         本文中の短縮 URL (twitterから)
 				// display_url 差し替えて表示用の URL (twitterから)
 				// expanded_url 展開後の URL (twitterから)
-				var url = t.GetString("url");
 				var disp_url = t.GetString("display_url");
 				var expd_url = t.GetString("expanded_url");
 
@@ -612,7 +623,11 @@ public class SayakaMain
 
 				tags[start] = new TextTag(start, end, Color.Url, newurl);
 
-				// 外部画像サービス
+				// 外部画像サービスを解析
+				var minfo = format_image_url(expd_url, disp_url);
+				if (minfo != null) {
+					mediainfo.append_val(minfo);
+				}
 			}
 		}
 
@@ -647,6 +662,49 @@ public class SayakaMain
 		return text;
 	}
 
+	// 外部画像サービス URL を解析した結果を返す
+	public MediaInfo? format_image_url(string expd_url, string disp_url)
+	{
+		MatchInfo m;
+		string target;
+		int width = 0;
+
+		try {
+			if (new Regex("twitpic.com/(\\w+)")
+					.match(expd_url, 0, out m)) {
+				target = "http://twitpic.com/show/mini/%s".printf(m.fetch(1));
+
+			} else if (new Regex("movapic.com/(pic/)?(\\w+)")
+					.match(expd_url, 0, out m)) {
+				target = "http://image.movapic.com/pic/t_%s.jpeg"
+					.printf(m.fetch(2));
+
+			} else if (new Regex("p.twipple.jp/(\\w+)")
+					.match(expd_url, 0, out m)) {
+				target = "http://p.twpl.jp/show/thumb/%s".printf(m.fetch(1));
+
+			} else if (new Regex("(.*instagram.com/p/[\\w\\-]+)/?")
+					.match(expd_url, 0, out m)) {
+				target = "%s/media/?size=t".printf(m.fetch(1));
+
+			} else if (new Regex("\\.(jpg|jpeg|png|gif)$").
+					match(expd_url, 0, out m)) {
+				target = expd_url;
+				width = imagesize;
+
+			} else {
+				return null;
+
+			}
+		} catch (RegexError e) {
+			stderr.printf("%s\n", e.message);
+			return null;
+		}
+			
+
+		return new MediaInfo(target, disp_url, width);
+	}
+
 	public void show_icon(string user, string img_url)
 	{
 		string col;
@@ -666,26 +724,17 @@ stderr.printf("img_file=%s\n", img_file);
 		}
 	}
 
-#if false
-	public bool show_photo(string img_url, string width)
+	public bool show_photo(string img_url, int width)
 	{
-		// XXX regex は…
-		StringBuilder sb = new StringBuilder();
-		for (var i = 0; i < img_url.length; i++) {
-			var c = img_url[i];
-			if (c == ':' || c == '/' || c == '('
-			 || c == ')' || c == '?' || c == ' ')
-			{
-				sb.append("_");
-			} else {
-				sb.append(img_url.substring(i, 1));
-			}
-		}
-		var img_file = sb.str;
+		try {
+			var regex = new Regex("[:/\\(\\)\\? ]");
+			var img_file = regex.replace(img_url, img_url.length, 0, "_");
 
-		return show_image(img_file, img_url, width);
+			return show_image(img_file, img_url, width);
+		} catch {
+			return false;
+		}
 	}
-#endif
 
 	// 画像をキャッシュして表示
 	//  $img_file はキャッシュディレクトリ内でのファイル名
