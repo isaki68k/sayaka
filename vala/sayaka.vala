@@ -349,7 +349,7 @@ public class SayakaMain
 					newtext.append_unichar(uni);
 					newtext.append(indent);
 					x = left;
-				} else if (uni.iswide()) {
+				} else if (uni.iswide_cjk()) {
 					if (x > screen_cols - 2) {
 						newtext.append("\n");
 						newtext.append(indent);
