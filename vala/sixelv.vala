@@ -187,13 +187,10 @@ public class SixelV
 
 		if (filename.contains("://")) {
 			try {
+				var file = new FileGetter(filename);
 stderr.printf("%s\n", filename);
-				var file = new FileGetter();
-stderr.printf("%s file constructed\n", filename);
-				var stream = file.GET(filename);
-stderr.printf("%s GET called\n", filename);
+				var stream = file.GET();
 				sx.LoadFromStream(stream);
-stderr.printf("%s LoadFromStream called\n", filename);
 			} catch (Error e) {
 				stderr.printf("File error: %s\n", e.message);
 				Process.exit(1);
