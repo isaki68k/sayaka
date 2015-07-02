@@ -13,15 +13,6 @@ class Program
 // PHP 由来
 class PHP
 {
-	public static string unescape(string text)
-	{
-		// PHP の htmlspecialchars_decode(ENT_NOQUOTES) 相当品
-		return text
-			.replace("&lt;", "<")
-			.replace("&gt;", ">")
-			.replace("&amp;", "&");
-	}
-
 	public static string strip_tags(string text)
 	{
 		StringBuilder sb = new StringBuilder();
@@ -236,7 +227,7 @@ public class SayakaMain
 		var name = coloring(formatname(
 			s_user.GetString("name")),
 			Color.Username);
-		var src = coloring(PHP.unescape(PHP.strip_tags(
+		var src = coloring(unescape(PHP.strip_tags(
 			s.GetString("source") + "から")),
 			Color.Source);
 		var time = coloring(formattime(s), Color.Time);
@@ -261,7 +252,7 @@ public class SayakaMain
 		// 今のところローカルアカウントはない
 		var profile_image_url = s_user.GetString("profile_image_url");
 
-		show_icon(PHP.unescape(s_user.GetString("screen_name")),
+		show_icon(unescape(s_user.GetString("screen_name")),
 			profile_image_url);
 		stdout.printf("\r");
 		stdout.printf(CSI + "3A");
@@ -395,13 +386,21 @@ public class SayakaMain
 	// 名前表示用に整形
 	public string formatname(string text)
 	{
-		return PHP.unescape(text);	/* XXX */
+		return unescape(text);	/* XXX */
 	}
 
 	// ID 表示用に整形
 	public string formatid(string text)
 	{
-		return "@" + PHP.unescape(text);
+		return "@" + unescape(text);
+	}
+
+	public string unescape(string text)
+	{
+		return text
+			.replace("&lt;", "<")
+			.replace("&gt;", ">")
+			.replace("&amp;", "&");
 	}
 
 	// 色定数
@@ -701,7 +700,7 @@ public class SayakaMain
 		text = newtext.str;
 
 		// タグの整形が済んでからエスケープを取り除く
-		text = PHP.unescape(text);
+		text = unescape(text);
 
 		return text;
 	}
