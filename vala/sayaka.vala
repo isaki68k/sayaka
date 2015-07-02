@@ -785,42 +785,24 @@ public class SayakaMain
 
 	public void show_icon(string user, string img_url)
 	{
-		string col;
+		// XXX: user 名をキャッシュファイルに付けたかったようだ
 
-		var filename = Path.get_basename(img_url);
-		if (color_mode <= 16) {
-			col = @"-$(color_mode)";
-		} else {
-			col = "";
-		}
-		var img_file =
-			@"icon-$(iconsize)x$(iconsize)$(col)-$(user)-$(filename).sixel";
-
-stderr.printf("img_file=%s\n", img_file);
-		if (show_image(img_file, img_url, iconsize) == false) {
+		if (show_image(img_url, iconsize) == false) {
 			stdout.printf("\n\n\n");
 		}
 	}
 
 	public bool show_photo(string img_url, int width)
 	{
-		try {
-			var regex = new Regex("[:/\\(\\)\\? ]");
-			var img_file = regex.replace(img_url, img_url.length, 0, "_");
-
-			return show_image(img_file, img_url, width);
-		} catch {
-			return false;
-		}
+		return show_image(img_url, width);
 	}
 
 	// 画像をキャッシュして表示
-	//  $img_file はキャッシュディレクトリ内でのファイル名
 	//  $img_url は画像の URL
 	//  $width は画像の幅。ピクセルで指定。0 を指定すると、リサイズせず
 	//  オリジナルのサイズ。
 	// 表示できれば真を返す。
-	public bool show_image(string img_file, string img_url, int width)
+	public bool show_image(string img_url, int width)
 	{
 		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
 		if (global_indent_level > 0) {
@@ -832,15 +814,30 @@ stderr.printf("img_file=%s\n", img_file);
 
 		var sx = new SixelConverter();
 
-		var img_file_tmp = cachedir + "/" + img_file;
-		img_file = img_file_tmp;
+		FileGetter fg = new FileGetter(img_url); 
+
+		var img_file = Path.build_path(Path.DIR_SEPARATOR_S,
+			cachedir,
+			fg.uri.Path.replace(Path.DIR_SEPARATOR_S, "_"));
 
 		try {
 			sx.Load(img_file);
 		} catch {
 			try {
-				FileGetter fg = new FileGetter(); 
-				var stream = fg.GET(img_url);
+				var stream = fg.GET();
+
+				// イメージファイルそのままをキャッシュ
+				try {
+					(stream as Seekable).seek(0, SeekType.SET);
+					var f = File.new_for_path(img_file);
+					var fs = f.replace(null, false, FileCreateFlags.NONE);
+					fs.splice(stream, 0);
+					fs.close();
+				} catch (Error e) {
+					stderr.printf("%s\n", e.message);
+				}
+
+				(stream as Seekable).seek(0, SeekType.SET);
 				sx.LoadFromStream(stream);
 			} catch {
 				return false;

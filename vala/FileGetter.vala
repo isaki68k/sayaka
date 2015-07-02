@@ -21,12 +21,16 @@ namespace ULib
 		// パース前の URI
 		public string orig_uri;
 
-		// uri から GET して、ストリームを返します。
-		public InputStream GET(string uri) throws Error
+		// uri をターゲットにした FileGetter を作成します。
+		public FileGetter(string uri)
 		{
 			orig_uri = uri;
 			this.uri = ParsedUri.Parse(uri);
+		}
 
+		// uri から GET して、ストリームを返します。
+		public InputStream GET() throws Error
+		{
 			Connect();
 
 			var stream = RequestGET();
