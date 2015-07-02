@@ -54,7 +54,6 @@ public class SayakaMain
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
 
-	public const int DEFAULT_SCREEN_COLS = 80;
 	public const int DEFAULT_FONT_HEIGHT = 14;
 
 	public enum Color {
@@ -351,7 +350,7 @@ public class SayakaMain
 	public string make_indent(string text)
 	{
 		// 桁数が分からない場合は何もしない
-		if (screen_cols < 1) {
+		if (screen_cols == 0) {
 			return text;
 		}
 
@@ -898,16 +897,15 @@ stderr.printf("img_file=%s\n", img_file);
 			var msg_cols = "";
 			var msg_height = "";
 
-			// 指定されてない時だけ取得した値を使う
-			if (screen_cols == 0) {
-				if (ws_cols > 0) {
-					screen_cols = ws_cols;
-					msg_cols = " (from ioctl)";
-				} else {
-					screen_cols = DEFAULT_SCREEN_COLS;
-					msg_cols = " (DEFAULT)";
-				}
+			// 画面幅は常に更新
+			if (ws_cols > 0) {
+				screen_cols = ws_cols;
+				msg_cols = " (from ioctl)";
+			} else {
+				screen_cols = 0;
+				msg_cols = " (not detected)";
 			}
+			// フォント高さは指定されてない時だけ取得した値を使う
 			if (fontheight == 0) {
 				if (ws_height > 0) {
 					fontheight = ws_height;
