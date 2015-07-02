@@ -1,3 +1,4 @@
+using ULib;
 
 public class SixelV
 {
@@ -184,11 +185,26 @@ public class SixelV
 	{
 		SixelConverter sx = new SixelConverter();
 
-		try {
-			sx.Load(filename);
-		} catch {
-			stderr.printf("File load error at %s\n", filename);
-			Process.exit(1);
+		if (filename.contains("://")) {
+			try {
+stderr.printf("%s\n", filename);
+				var file = new FileGetter();
+stderr.printf("%s file constructed\n", filename);
+				var stream = file.GET(filename);
+stderr.printf("%s GET called\n", filename);
+				sx.LoadFromStream(stream);
+stderr.printf("%s LoadFromStream called\n", filename);
+			} catch (Error e) {
+				stderr.printf("File error: %s\n", e.message);
+				Process.exit(1);
+			}
+		} else {
+			try {
+				sx.Load(filename);
+			} catch {
+				stderr.printf("File load error at %s\n", filename);
+				Process.exit(1);
+			}
 		}
 
 		sx.DiffuseMultiplier = (int16)opt_diffusemultiplier;
@@ -252,5 +268,4 @@ public class SixelV
 		sx.SixelToStream(stdout);
 	}
 }
-
 
