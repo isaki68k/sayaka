@@ -1,5 +1,6 @@
 using System.OS;
 using System.Collections.Generic;
+using ULib;
 
 class Program
 {
@@ -837,10 +838,10 @@ stderr.printf("img_file=%s\n", img_file);
 		try {
 			sx.Load(img_file);
 		} catch {
-			Posix.system(@"(curl -Lks $(img_url) "
-				+ @" > $(img_file))");
 			try {
-				sx.Load(img_file);
+				FileGetter fg = new FileGetter(); 
+				var stream = fg.GET(img_url);
+				sx.LoadFromStream(stream);
 			} catch {
 				return false;
 			}
