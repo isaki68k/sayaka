@@ -309,7 +309,7 @@ public class SayakaMain
 			var rt_time   = formattime(status);
 			var rt_userid = formatid(user.GetString("screen_name"));
 			var rt_name   = formatname(user.GetString("name"));
-			print_(coloring(@"$rt_time $rt_name $rt_userid がリツイート",
+			print_(coloring(@"$(rt_time) $(rt_name) $(rt_userid) がリツイート",
 				Color.Retweet));
 			stdout.printf("\n");
 		}
@@ -320,7 +320,7 @@ public class SayakaMain
 			var fav_time   = formattime(obj);
 			var fav_userid = formatid(user.GetString("screen_name"));
 			var fav_name   = formatname(user.GetString("name"));
-			print_(coloring(@"$fav_time $fav_name $fav_userid がふぁぼ",
+			print_(coloring(@"$(fav_time) $(fav_name) $(fav_userid) がふぁぼ",
 				Color.Favorite));
 			stdout.printf("\n");
 		}
