@@ -958,7 +958,17 @@ stderr.printf("img_file=%s\n", img_file);
 
 	public void usage()
 	{
-		stdout.printf("usage...\n");
+		stdout.printf(
+"""usage: sayaka [<options>...]
+	--color <n> : color mode { 2 .. 256 }. default 256.
+	--font <n> : font height. default 14.
+	--white
+	--noimg
+	--jis
+	--eucjp
+	--protect : don't display protected user's tweet.
+"""
+		);
 		Process.exit(0);
 	}
 
