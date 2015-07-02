@@ -28,6 +28,7 @@ public class SixelV
 	public int opt_diffusedivisor = 3;
 	public bool opt_custom = false;
 	public bool opt_graymean = false;
+	public bool opt_x68k = false;
 
 	public void main2(string[] args)
 	{
@@ -83,6 +84,10 @@ public class SixelV
 
 				case "-d":
 					opt_reduce = ReduceMode.Diffuse;
+					break;
+
+				case "--x68k":
+					opt_x68k = !opt_x68k;
 					break;
 
 				case "--mul":
@@ -220,6 +225,18 @@ public class SixelV
 		}
 
 		if (opt_custom) {
+			finder = sx.FindCustom;
+		}
+
+		if (opt_x68k) {
+			sx.SetPaletteFixed8();
+			int[] tbl = new int[] { 0x600000, 0xa00000, 0x006000, 0x00a000, 0x000060, 0x0000a0, 0x606060, 0xa0a0a0};
+			for (int i = 0; i < 8; i++) {
+				sx.Palette[i + 8, 0] = (uint8)(tbl[i] >> 16);
+				sx.Palette[i + 8, 1] = (uint8)(tbl[i] >> 8);
+				sx.Palette[i + 8, 2] = (uint8)(tbl[i]);
+			}
+			sx.PaletteCount = 16;
 			finder = sx.FindCustom;
 		}
 
