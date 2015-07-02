@@ -73,7 +73,7 @@ public class SayakaMain
 	}
 
 	public bool opt_noimg;
-	public int color_mode = 256;
+	public int color_mode;
 	public bool protect;
 	public bool debug;
 	public int screen_cols;
@@ -95,6 +95,8 @@ public class SayakaMain
 
 	public int Main(string[] args)
 	{
+		color_mode = 256;
+
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
 			 case "--color":
