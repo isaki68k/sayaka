@@ -113,6 +113,9 @@ public class SayakaMain
 			 case "--noimg":
 				opt_noimg = true;
 				break;
+			 case "--protect":
+				protect = true;
+				break;
 			 case "--white":
 				bg_white = true;
 				break;
