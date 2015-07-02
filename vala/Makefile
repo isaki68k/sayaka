@@ -1,7 +1,9 @@
 SRCS=	\
 	sayaka.vala \
+	FileGetter.vala \
 	Json.vala \
 	SixelConverter.vala \
+	ParsedUri.vala \
 	System.OS.vala \
 	System.OS.native.c \
 	System.Collections.Generic.Dictionary.vala \
