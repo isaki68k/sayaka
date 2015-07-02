@@ -23,7 +23,7 @@ namespace ULib
 			do {
 				var s = dIn.read_line();
 				if (s == null) break;
-stderr.printf("HEADER %s\n", s);
+//stderr.printf("HEADER %s\n", s);
 				if (s == "\r") break;
 			} while (true);
 
@@ -51,7 +51,7 @@ stderr.printf("HEADER %s\n", s);
 			sb.append("Connection: close\r\n");
 			sb.append("\r\n");
 
-stderr.printf("RequestGET\n%s", sb.str);
+//stderr.printf("RequestGET\n%s", sb.str);
 
 			var msg = sb.str;
 
@@ -63,8 +63,8 @@ stderr.printf("RequestGET\n%s", sb.str);
 		public IOStream Connect() throws Error
 		{
 			int16 port = 80;
-stderr.printf("%s %s %s %s %s %s %s %s\n",
-	uri.Scheme, uri.Host, uri.Port, uri.User, uri.Password, uri.Path, uri.Query, uri.Fragment);
+//stderr.printf("%s %s %s %s %s %s %s %s\n",
+//	uri.Scheme, uri.Host, uri.Port, uri.User, uri.Password, uri.Path, uri.Query, uri.Fragment);
 
 			if (uri.Scheme == "https") {
 				port = 443;
