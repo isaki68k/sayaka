@@ -252,79 +252,79 @@ namespace ULib
 		/// </summary>
 		public Dictionary<string, Json> AsObject { get { return ValueDictionary; } }
 
-		public bool Has(string member)
+		public bool Has(string key)
 		{
-			return IsObject && AsObject.ContainsKey(member);
+			return IsObject && AsObject.ContainsKey(key);
 		}
 
-		public bool GetBool(string member, bool defval = false)
+		public bool GetBool(string key, bool defval = false)
 		{
-			var json = GetJson(member);
+			var json = GetJson(key);
 			if (json != null && json.IsBool) {
 				return json.AsBool;
 			} 
 			return defval;
 		}
 
-		public int GetInt(string member, int defval = 0)
+		public int GetInt(string key, int defval = 0)
 		{
-			var json = GetJson(member);
+			var json = GetJson(key);
 			if (json != null && json.IsNumber) {
 				return (int)json.AsInt64;
 			}
 			return defval;
 		}
 
-		public int64 GetInt64(string member, int64 defval = 0)
+		public int64 GetInt64(string key, int64 defval = 0)
 		{
-			var json = GetJson(member);
+			var json = GetJson(key);
 			if (json != null && json.IsNumber) {
 				return json.AsInt64;
 			}
 			return defval;
 		}
 
-		public double GetDouble(string member, double defval = 0d)
+		public double GetDouble(string key, double defval = 0d)
 		{
-			var json = GetJson(member);
+			var json = GetJson(key);
 			if (json != null && json.IsNumber) {
 				return json.AsDouble;
 			}
 			return defval;
 		}
 
-		public string GetString(string member, string defval = "")
+		public string GetString(string key, string defval = "")
 		{
-			var json = GetJson(member);
+			var json = GetJson(key);
 			if (json != null && json.IsString) {
 				return json.AsString;
 			}
 			return defval;
 		}
 
-		public Array<Json>? GetArray(string member)
+		public Array<Json>? GetArray(string key)
 		{
-			var json = GetJson(member);
+			var json = GetJson(key);
 			if (json != null && json.IsArray) {
 				return json.AsArray;
 			}
 			return null;
 		}
 
-		public Dictionary<string, Json>? GetObject(string member)
+		public Dictionary<string, Json>? GetObject(string key)
 		{
-			var json = GetJson(member);
+			var json = GetJson(key);
 			if (json != null && json.IsObject) {
 				return json.AsObject;
 			}
 			return null;
 		}
 
-		public Json? GetJson(string member)
+		public Json? GetJson(string key)
 		{
 			if (IsObject) {
-				// member がなければ null が返ってくる規約になっている。
-				return AsObject[member];
+				// key がなければ null が返ってくる規約になっている。
+				return AsObject[key];
 			}
 			return null;
 		}
