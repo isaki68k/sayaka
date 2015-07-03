@@ -6,8 +6,10 @@ SRCS=	\
 	SixelConverter.vala \
 	ParsedUri.vala \
 	System.OS.vala \
-	System.OS.native.c \
 	System.Collections.Generic.Dictionary.vala \
+
+SRCS_NATIVE= \
+	System.OS.native.c \
 
 PKGS=	\
 	--pkg posix \
@@ -16,18 +18,13 @@ PKGS=	\
 VALAFLAGS=	\
 	-X -w \
 
-CLEAN_FILES=	\
-	sayaka.c \
-	Json.c \
-	SixelConverter.c \
-	System.OS.c \
-	System.Collections.Generic.Dictionary.c \
+CLEAN_FILES=${SRCS:.vala=.c}
 
 # disable make's builtin rules
 .SUFFIXES:
 
-sayaka:	${SRCS}
-	valac ${VALAFLAGS} ${PKGS} ${SRCS}
+sayaka:	${SRCS} ${SRCS_NATIVE}
+	valac ${VALAFLAGS} ${PKGS} ${SRCS} ${SRCS_NATIVE}
 
 c:	sayaka.c
 sayaka.c:	${SRCS}
