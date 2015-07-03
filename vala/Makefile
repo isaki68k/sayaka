@@ -40,6 +40,7 @@ SIXELV_SRCS = \
 	sixelv.vala \
 	SixelConverter.vala \
 	FileGetter.vala \
+	OptArgs.vala \
 	ParsedUri.vala \
 
 sixelv: ${SIXELV_SRCS}
