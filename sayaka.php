@@ -723,41 +723,10 @@ function formatmsg($s)
 					coloring($disp, COLOR_URL), $text);
 			}
 
-			// 外部画像サービス
-			if (preg_match("|twitpic.com/(\w+)|", $exp, $m)) {
-				$target = "http://twitpic.com/show/mini/{$m[1]}";
-				$mediainfo[] = array(
-					"display_url" => $disp,
-					"target_url"  => $target,
-				);
-			} else
-			if (preg_match("|movapic.com/(pic/)?(\w+)|", $exp, $m)) {
-				$target = "http://image.movapic.com/pic/t_{$m[2]}.jpeg";
-				$mediainfo[] = array(
-					"display_url" => $disp,
-					"target_url"  => $target,
-				);
-			} else
-			if (preg_match("|p.twipple.jp/(\w+)|", $exp, $m)) {
-				$target = "http://p.twpl.jp/show/thumb/{$m[1]}";
-				$mediainfo[] = array(
-					"display_url" => $disp,
-					"target_url"  => $target,
-				);
-			} else
-			if (preg_match("|(.*instagram.com/p/[\w\-]+)/?|", $exp, $m)) {
-				$target = "{$m[1]}/media/?size=t";
-				$mediainfo[] = array(
-					"display_url" => $disp,
-					"target_url"  => $target,
-				);
-			} else
-			if (preg_match("/\.(jpg|jpeg|png|gif)$/", $exp)) {
-				$mediainfo[] = array(
-					"display_url" => $disp,
-					"target_url"  => $exp,
-					"width"       => $imagesize,
-				);
+			// 外部画像サービスを解析
+			$minfo = format_image_url($exp, $disp);
+			if ($minfo !== false) {
+				$mediainfo[] = $minfo;
 			}
 		}
 	}
@@ -803,6 +772,40 @@ function formatmsg($s)
 	}
 
 	return array($text, $mediainfo);
+}
+
+// 外部画像サービス URL を解析した結果を返す
+// なければ false を返す
+function format_image_url($exp, $disp)
+{
+	$target = "";
+	$width = "";
+
+	if (preg_match("|twitpic.com/(\w+)|", $exp, $m)) {
+		$target = "http://twitpic.com/show/mini/{$m[1]}";
+
+	} else if (preg_match("|movapic.com/(pic/)?(\w+)|", $exp, $m)) {
+		$target = "http://image.movapic.com/pic/t_{$m[2]}.jpeg";
+
+	} else if (preg_match("|p.twipple.jp/(\w+)|", $exp, $m)) {
+		$target = "http://p.twpl.jp/show/thumb/{$m[1]}";
+
+	} else if (preg_match("|(.*instagram.com/p/[\w\-]+)/?|", $exp, $m)) {
+		$target = "{$m[1]}/media/?size=t";
+
+	} else if (preg_match("/\.(jpg|jpeg|png|gif)$/", $exp)) {
+		$target = $exp;
+		$width = $imagesize;
+
+	} else {
+		return false;
+	}
+
+	return array(
+		"target_url" => $target,
+		"display_url" => $disp,
+		"width" => $width,
+	);
 }
 
 // インデントをつける
