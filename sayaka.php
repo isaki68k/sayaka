@@ -30,6 +30,21 @@
 	$version = "3.0.9 (2015/06/14)";
 	$progname = $_SERVER["argv"][0];
 
+	// 定数定義
+	define("ESC", "\x1b");
+	define("CSI", ESC."[");
+	define("COLOR_USERNAME",	"COLOR_USERNAME");
+	define("COLOR_USERID",		"COLOR_USERID");
+	define("COLOR_TIME",		"COLOR_TIME");
+	define("COLOR_SOURCE",		"COLOR_SOURCE");
+	define("COLOR_RETWEET",		"COLOR_RETWEET");
+	define("COLOR_FAVORITE",	"COLOR_FAVORITE");
+	define("COLOR_URL",			"COLOR_URL");
+	define("COLOR_TAG",			"COLOR_TAG");
+	define("COLOR_VERIFIED",	"COLOR_VERIFIED");
+	define("COLOR_PROTECTED",	"COLOR_PROTECTED");
+	define("COLOR_NG",			"COLOR_NG");
+
 	$fontheight = 0;
 	$color_mode = 256;
 
@@ -299,9 +314,6 @@ function showstatus_callback($object)
 {
 	global $mutelist;
 	global $record_file;
-
-	define("ESC", "\x1b");
-	define("CSI", ESC."[");
 
 	// $object が元オブジェクト (イベント or メッセージ)
 
