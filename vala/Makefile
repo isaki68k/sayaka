@@ -46,3 +46,15 @@ SIXELV_SRCS = \
 
 sixelv: ${SIXELV_SRCS}
 	valac ${VALAFLAGS} ${PKGS} ${SIXELV_SRCS}
+
+o_SRCS = \
+	o.vala \
+    ParsedUri.vala \
+	HttpClient.vala \
+	OAuth.vala \
+	StringUtil.vala \
+	Diag.vala \
+
+o: ${o_SRCS}
+	valac ${VALAFLAGS} ${PKGS} ${o_SRCS}
+
