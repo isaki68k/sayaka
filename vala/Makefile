@@ -13,7 +13,7 @@ PKGS=	\
 	--pkg gdk-pixbuf-2.0 \
 
 VALAFLAGS=	\
-	-X -Wno-incompatible-pointer-types \
+	-X -w \
 
 CLEAN_FILES=	\
 	sayaka.c \
