@@ -74,7 +74,7 @@ namespace ULib
 		{
 			var sb = new StringBuilder();
 
-			sb.append(@"GET /$(uri.Path) HTTP/1.1\r\n");
+			sb.append(@"GET $(uri.Path) HTTP/1.1\r\n");
 			sb.append(@"Host: $(uri.Host)\r\n");
 			sb.append("Connection: close\r\n");
 			sb.append("\r\n");
