@@ -28,12 +28,13 @@ class Program
 
 		var key = consumer_secret + "&";
 
-		var signature = OAuth.GenHash(OAuth.HashType.HMAC_SHA1, key, message);
+		var oauth = new OAuth();
+		var signature = oauth.HMAC_SHA1_Base64(key, message);
 
 		params += @"&oauth_signature=$(signature)";
 
-Process.exit(1);
 		var client = new HttpClient(@"$(url)?$(params)");
+Process.exit(1);
 		try {
 			var stream = client.GET();
 			var datastream = new DataInputStream(stream);
@@ -67,56 +68,3 @@ Process.exit(1);
 	}
 }
 
-public errordomain OAuthError
-{
-	Fatal,
-}
-
-public class OAuth
-{
-	public const string ConsumerKeyName = "oauth_consumer_key";
-
-	public enum HashType
-	{
-		HMAC_SHA1,
-		PlainText,
-		RSA_SHA1,
-	}
-
-//	public uint8[] key;
-
-	public static string GenHash(HashType hashType, string key, string message)
-//		throws OAuthError
-	{
-		var diag = new Diag("HASH");
-
-		if (hashType == HashType.HMAC_SHA1) {
-			// HMAC SHA1 して Base64 
-			diag.Debug(@"key=$(key)");
-			diag.Debug(@"msg=$(message)");
-			var hmstr = Hmac.compute_for_string(ChecksumType.SHA1,
-				key.data,
-				message);
-			diag.Debug(@"HMAC=$(hmstr)");
-			var rv = Base64.encode(hmstr.data);
-			diag.Debug(@"rv=$(rv)");
-			return rv;
-/*
-			var hm = new Hmac(ChecksumType.SHA1, key);
-			hm.update(s.data);
-			size_t len = 64;
-			uint8[] digest = new uint8[len];
-			hm.get_digest(digest, ref len);
-			if (len > digest.length) {
-				throw new OAuthError.Fatal("get_digest");
-			}
-			digest.resize((int)len);
-			var rv = Base64.encode(digest);
-			return rv;
-*/
-		} else {
-//			throw new OAuthError.Fatal("hashType");
-			return "";
-		}
-	}
-}
