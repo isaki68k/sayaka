@@ -1,5 +1,6 @@
 SRCS=	\
 	sayaka.vala \
+	Diag.vala \
 	HttpClient.vala \
 	Json.vala \
 	SixelConverter.vala \

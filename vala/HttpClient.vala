@@ -2,6 +2,8 @@ namespace ULib
 {
 	public class HttpClient
 	{
+		private Diag diag = new Diag("HttpClient");
+
 		// ソケット
 		public SocketClient Sock;
 
@@ -26,6 +28,7 @@ namespace ULib
 		{
 			orig_uri = uri;
 			this.uri = ParsedUri.Parse(uri);
+			diag.Debug(this.uri.to_string());
 		}
 
 		// uri から GET して、ストリームを返します。

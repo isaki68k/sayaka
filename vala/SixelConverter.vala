@@ -1,21 +1,9 @@
 using Gdk;
 
-public class Diag
-{
-	const bool _DEBUG = false;
-
-	public static void DEBUG(string fmt, ...)
-	{
-		if (_DEBUG) {
-			va_list va = va_list();
-			stderr.vprintf(fmt, va);
-			stderr.puts("\n");
-		}
-	}
-}
-
 public class SixelConverter
 {
+	private Diag diag = new Diag("SixelConverter");
+
 	private Pixbuf pix;
 
 	public uint8[,] Palette = new uint8[256, 3];
@@ -25,11 +13,11 @@ public class SixelConverter
 	public void Load(string filename) throws Error
 	{
 		pix = new Pixbuf.from_file(filename);
-		Diag.DEBUG("filename=%s", filename);
-		Diag.DEBUG("Size=(%d,%d)", pix.get_width(), pix.get_height());
-		Diag.DEBUG("bits=%d", pix.get_bits_per_sample());
-		Diag.DEBUG("nCh=%d", pix.get_n_channels());
-		Diag.DEBUG("rowstride=%d", pix.get_rowstride());
+		diag.Debug(@"filename=$(filename)");
+		diag.Debug(@"Size=($(pix.get_width()),$(pix.get_height()))");
+		diag.Debug(@"bits=$(pix.get_bits_per_sample())");
+		diag.Debug(@"nCh=$(pix.get_n_channels())");
+		diag.Debug(@"rowstride=$(pix.get_rowstride())");
 	}
 
 	public void LoadFromStream(InputStream stream) throws Error
