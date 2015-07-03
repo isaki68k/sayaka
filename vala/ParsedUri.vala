@@ -15,6 +15,53 @@ namespace ULib
 		public string Query;
 		public string Fragment;
 
+		// Path?Query#Fragment を返します。
+		public string PQF()
+		{
+			var sb = new StringBuilder();
+			sb.append(Path);
+			if (Query != "") {
+				sb.append("?");
+				sb.append(Query);
+			}
+			if (Fragment != "") {
+				sb.append("#");
+				sb.append(Fragment);
+			}
+			return sb.str;
+		}
+
+		// Scheme://AUTHORITY を返します。
+		public string SchemeAuthority()
+		{
+			var sb = new StringBuilder();
+			sb.append(Scheme);
+			sb.append("://");
+			if (User != "") {
+				sb.append(User);
+				if (Password != "") {
+					sb.append(":");
+					sb.append(Password);
+				}
+				sb.append("@");
+			}
+			if (Host != "") {
+				sb.append(Host);
+				if (Port != "") {
+					sb.append(":");
+					sb.append(Port);
+				}
+			}
+			return sb.str;
+		}
+
+		// URI 文字列を生成します。
+		public string to_string()
+		{
+			return SchemeAuthority() + PQF();
+		}
+
+
 		public ParsedUri()
 		{
 		}
