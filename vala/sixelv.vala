@@ -40,6 +40,14 @@ public class SixelV
 		foreach (var opt in new OptArgs(args)) {
 			if (opt.IsOption()) {
 				switch (opt.Opt()) {
+					case "--debug":
+						Diag.global_debug = true;
+						break;
+
+					case "--trace":
+						Diag.global_trace = true;
+						break;
+
 					case "-e":
 					case "--monochrome":
 						opt_colormode = ColorMode.Gray;
