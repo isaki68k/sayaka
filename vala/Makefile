@@ -1,6 +1,6 @@
 SRCS=	\
 	sayaka.vala \
-	FileGetter.vala \
+	HttpClient.vala \
 	Json.vala \
 	SixelConverter.vala \
 	ParsedUri.vala \
@@ -39,7 +39,7 @@ clean:
 SIXELV_SRCS = \
 	sixelv.vala \
 	SixelConverter.vala \
-	FileGetter.vala \
+	HttpClient.vala \
 	OptArgs.vala \
 	ParsedUri.vala \
 
