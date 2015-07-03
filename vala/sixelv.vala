@@ -255,7 +255,7 @@ public class SixelV
 
 		if (filename.contains("://")) {
 			try {
-				var file = new FileGetter(filename);
+				var file = new HttpClient(filename);
 stderr.printf("%s\n", filename);
 				var stream = file.GET();
 				sx.LoadFromStream(stream);

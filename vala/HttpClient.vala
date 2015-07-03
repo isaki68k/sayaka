@@ -1,6 +1,6 @@
 namespace ULib
 {
-	public class FileGetter
+	public class HttpClient
 	{
 		// ソケット
 		public SocketClient Sock;
@@ -21,8 +21,8 @@ namespace ULib
 		// パース前の URI
 		public string orig_uri;
 
-		// uri をターゲットにした FileGetter を作成します。
-		public FileGetter(string uri)
+		// uri をターゲットにした HttpClient を作成します。
+		public HttpClient(string uri)
 		{
 			orig_uri = uri;
 			this.uri = ParsedUri.Parse(uri);

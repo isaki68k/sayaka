@@ -814,7 +814,7 @@ public class SayakaMain
 
 		var sx = new SixelConverter();
 
-		FileGetter fg = new FileGetter(img_url); 
+		HttpClient fg = new HttpClient(img_url); 
 
 		var img_file = Path.build_path(Path.DIR_SEPARATOR_S,
 			cachedir,
