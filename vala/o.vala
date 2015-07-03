@@ -1,4 +1,5 @@
 using ULib;
+using StringUtil;
 
 class Program 
 {
@@ -21,8 +22,8 @@ class Program
 			+ @"&oauth_timestamp=$(unixtime)"
 			+ "&oauth_version=1.0";
 
-		var encoded_url = StringUtil.UrlEncode(url);
-		var encoded_params = StringUtil.UrlEncode(params);
+		var encoded_url = UrlEncode(url);
+		var encoded_params = UrlEncode(params);
 
 		var message = @"$(method)&$(encoded_url)&$(encoded_params)";
 

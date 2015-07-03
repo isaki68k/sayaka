@@ -1,6 +1,6 @@
-// 拡張メソッドさえあれば
-public class StringUtil
+namespace StringUtil
 {
+	// namespace 直下に static 関数は書ける
 
 	// 文字列をなんちゃって Url エンコードします。
 	public static string UrlEncode(string s)
