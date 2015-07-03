@@ -39,6 +39,7 @@ clean:
 
 SIXELV_SRCS = \
 	sixelv.vala \
+	Diag.vala \
 	SixelConverter.vala \
 	HttpClient.vala \
 	OptArgs.vala \
