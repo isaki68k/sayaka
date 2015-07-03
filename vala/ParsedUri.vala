@@ -107,7 +107,7 @@ namespace ULib
 
 			// PathQueryFragmentをパスとQFに分離
 			var f = Split2(PQF, "?");
-			rv.Path = f[0];
+			rv.Path = "/" + f[0];			// URI 定義では Path は / を含む。
 			var QF = f[1];
 
 			// QueryFragment をクエリとフラグメントに分離
