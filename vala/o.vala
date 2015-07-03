@@ -21,8 +21,8 @@ class Program
 			+ @"&oauth_timestamp=$(unixtime)"
 			+ "&oauth_version=1.0";
 
-		var encoded_url = UrlEncode(url);
-		var encoded_params = UrlEncode(params);
+		var encoded_url = StringUtil.UrlEncode(url);
+		var encoded_params = StringUtil.UrlEncode(params);
 
 		var message = @"$(method)&$(encoded_url)&$(encoded_params)";
 
@@ -47,24 +47,6 @@ Process.exit(1);
 		}
 		
 		return 0;
-	}
-
-	public static string UrlEncode(string s)
-	{
-		var sb = new StringBuilder();
-		// %xx に大文字の16進文字が要るとの情報が.
-		for (var i = 0; i < s.length; i++) {
-			var c = s[i];
-			if (('0' <= c && c <= '9')
-			 || ('A' <= c && c <= 'Z')
-			 || ('a' <= c && c <= 'z')
-			 || (c == '-' || c == '_' || c == '.' || c == '~')) {
-				sb.append_c(c);
-			} else {
-				sb.append("%%%02X".printf((int)c));
-			}
-		}
-		return sb.str;
 	}
 }
 
