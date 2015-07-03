@@ -4,6 +4,7 @@ SRCS=	\
 	HttpClient.vala \
 	Json.vala \
 	SixelConverter.vala \
+	StringUtil.vala \
 	ParsedUri.vala \
 	System.OS.vala \
 	System.Collections.Generic.Dictionary.vala \
@@ -38,6 +39,7 @@ SIXELV_SRCS = \
 	sixelv.vala \
 	Diag.vala \
 	SixelConverter.vala \
+	StringUtil.vala \
 	HttpClient.vala \
 	OptArgs.vala \
 	ParsedUri.vala \
