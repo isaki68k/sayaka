@@ -26,9 +26,9 @@ CLEAN_FILES=${SRCS:.vala=.c}
 sayaka:	${SRCS} ${SRCS_NATIVE}
 	valac ${VALAFLAGS} ${PKGS} ${SRCS} ${SRCS_NATIVE}
 
-c:	sayaka.c
-sayaka.c:	${SRCS}
-	valac -C ${VALAFLAGS} ${PKGS} ${SRCS}
+.PHONY: c
+c:
+	valac -g --save-temps ${VALAFLAGS} ${PKGS} ${SRCS} ${SRCS_NATIVE}
 
 .PHONY:	clean
 clean:
