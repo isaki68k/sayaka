@@ -1,43 +1,25 @@
 
-public errordomain OAuthError
-{
-	Fatal,
-}
-
 public class OAuth
 {
-	public const string ConsumerKeyName = "oauth_consumer_key";
+	private Diag diag = new Diag("OAuth");
 
-	public enum HashType
+	// HMAC-SHA1 してバイナリを Base64 した文字列を返します。
+	public string HMAC_SHA1_Base64(string key, string message)
 	{
-		HMAC_SHA1,
-		PlainText,
-		RSA_SHA1,
-	}
+		// HMAC SHA1 して Base64 
+		var hm = new Hmac(ChecksumType.SHA1, key.data);
+		hm.update(message.data);
 
-	public uint8[] key;
+		// バイナリのダイジェストを取り出す
+		size_t len = 64;
+		uint8[] digest = new uint8[len];
+		hm.get_digest(digest, ref len);
+		diag.ProgErr(len > digest.length, "HMAC_SHA1 digest buffer overflow");
 
-	public string GenHash(HashType hashType, string s) throws OAuthError
-	{
-		if (hashType == HashType.HMAC_SHA1) {
-			// HMAC SHA1 して Base64 
-			var hm = new Hmac(ChecksumType.SHA1, key);
-			hm.update(s.data);
-			size_t len = 64;
-			uint8[] digest = new uint8[len];
-			hm.get_digest(digest, ref len);
-			if (len > digest.length) {
-				throw new OAuthError.Fatal("get_digest");
-			}
-			digest.resize((int)len);
-			var rv = Base64.encode(digest);
-			return rv;
-		} else if (hashType == HashType.PlainText) {
-			return s;
-
-		} else {
-			throw new OAuthError.Fatal("hashType");
-		}
+		// バイナリを Base64 した文字列を返す
+		digest.resize((int)len);
+		var rv = Base64.encode(digest);
+		return rv;
 	}
 
 	public static string UrlEncode(string s)
