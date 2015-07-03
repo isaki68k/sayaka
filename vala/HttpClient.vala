@@ -45,7 +45,9 @@ namespace ULib
 			do {
 				var s = dIn.read_line();
 				if (s == null) break;
-//stderr.printf("HEADER %s\n", s);
+
+				diag.Debug(@"HEADER $(s)");
+
 				if (s == "\r") break;
 			} while (true);
 
@@ -82,7 +84,7 @@ namespace ULib
 			sb.append("Connection: close\r\n");
 			sb.append("\r\n");
 
-//stderr.printf("RequestGET\n%s", sb.str);
+			diag.Debug(@"RequestGET\n$(sb.str)");
 
 			var msg = sb.str;
 
@@ -96,8 +98,6 @@ namespace ULib
 		public IOStream Connect() throws Error
 		{
 			int16 port = 80;
-//stderr.printf("%s %s %s %s %s %s %s %s\n",
-//	uri.Scheme, uri.Host, uri.Port, uri.User, uri.Password, uri.Path, uri.Query, uri.Fragment);
 
 			// デフォルトポートの書き換え
 			if (uri.Scheme == "https") {
