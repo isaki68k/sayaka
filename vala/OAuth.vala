@@ -21,22 +21,4 @@ public class OAuth
 		var rv = Base64.encode(digest);
 		return rv;
 	}
-
-	public static string UrlEncode(string s)
-	{
-		var sb = new StringBuilder();
-		// %xx に大文字の16進文字が要るとの情報が.
-		foreach (char c in s) {
-			if (('0' <= c && c <= '9')
-			 || ('A' <= c && c <= 'Z')
-			 || ('a' <= c && c <= 'z')
-			 || (c == '-' || c == '_' || c == '.' || c == '~')) {
-				sb.append_c(c);
-			} else {
-				sb.append("%02X".printf((int)c));
-			}
-		}
-		return sb.str;
-	}
-
 }
