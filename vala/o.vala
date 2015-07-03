@@ -32,10 +32,9 @@ class Program
 		var oauth = new OAuth();
 		var signature = oauth.HMAC_SHA1_Base64(key, message);
 
-		params += @"&oauth_signature=$(signature)";
+		params += @"&oauth_signature=$(UrlEncode(signature))";
 
 		var client = new HttpClient(@"$(url)?$(params)");
-Process.exit(1);
 		try {
 			var stream = client.GET();
 			var datastream = new DataInputStream(stream);
