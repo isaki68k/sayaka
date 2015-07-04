@@ -778,6 +778,8 @@ function formatmsg($s)
 // なければ false を返す
 function format_image_url($exp, $disp)
 {
+	global $imagesize;
+
 	$target = "";
 	$width = "";
 
