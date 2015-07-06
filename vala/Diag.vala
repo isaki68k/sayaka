@@ -33,6 +33,21 @@ public class Diag
 		}
 	}
 
+	public void DebugHex(uchar[] d, int len)
+	{
+		if (opt_debug) {
+			stderr.puts(@"$(ClassName)");
+			for (int i = 0; i < len; i++) {
+				stderr.printf(" %02X", d[i]);
+				if (i % 16 == 15 && i < len - 1) {
+					stderr.putc('\n');
+				}
+			}
+			stderr.putc('\n');
+		}
+	}
+
+
 	// errIfTrue が true の時エラーメッセージを出力します。
 	public void ProgErr(bool errIfTrue, string s)
 	{
