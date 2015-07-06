@@ -58,5 +58,15 @@ public class Diag
 			}
 		}
 	}
+
+	public static void GlobalProgErr(bool errIfTrue, string s)
+	{
+		if (errIfTrue) {
+			stderr.puts(@"PROGERR!! $(s)\n");
+			if (global_errexit > 0) {
+				Process.exit(global_errexit);
+			}
+		}
+	}
 }
 
