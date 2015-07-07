@@ -1,5 +1,4 @@
 using System.OS;
-using System.Collections.Generic;
 using ULib;
 
 class Program

@@ -1,13 +1,13 @@
 SRCS=	\
 	sayaka.vala \
 	Diag.vala \
+	Dictionary.vala \
 	HttpClient.vala \
 	Json.vala \
 	SixelConverter.vala \
 	StringUtil.vala \
 	ParsedUri.vala \
 	System.OS.vala \
-	System.Collections.Generic.Dictionary.vala \
 
 SRCS_NATIVE= \
 	System.OS.native.c \

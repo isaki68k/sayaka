@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ULib
 {
 	public errordomain JsonError
