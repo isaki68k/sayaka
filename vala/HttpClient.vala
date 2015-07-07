@@ -18,17 +18,14 @@ namespace ULib
 		public weak IOStream Conn;
 
 		// パース後の URI
-		public ParsedUri uri;
-
-		// パース前の URI
-		public string orig_uri;
+		public ParsedUri Uri;
 
 		// uri をターゲットにした HttpClient を作成します。
 		public HttpClient(string uri)
 		{
-			orig_uri = uri;
-			this.uri = ParsedUri.Parse(uri);
-			diag.Debug(this.uri.to_string());
+ 			diag = new Diag("HttpClient");
+			Uri = ParsedUri.Parse(uri);
+			diag.Debug(Uri.to_string());
 		}
 
 		// uri から GET して、ストリームを返します。
@@ -79,8 +76,8 @@ namespace ULib
 		{
 			var sb = new StringBuilder();
 
-			sb.append(@"GET $(uri.PQF()) HTTP/1.1\r\n");
-			sb.append(@"Host: $(uri.Host)\r\n");
+			sb.append(@"GET $(Uri.PQF()) HTTP/1.1\r\n");
+			sb.append(@"Host: $(Uri.Host)\r\n");
 			sb.append("Connection: close\r\n");
 			sb.append("\r\n");
 
@@ -100,17 +97,17 @@ namespace ULib
 			int16 port = 80;
 
 			// デフォルトポートの書き換え
-			if (uri.Scheme == "https") {
+			if (Uri.Scheme == "https") {
 				port = 443;
 			}
 
-			if (uri.Port != "") {
-				port = (int16)int.parse(uri.Port);
+			if (Uri.Port != "") {
+				port = (int16)int.parse(Uri.Port);
 			}
 
 			// 名前解決
 			var resolver = Resolver.get_default();
-			var addressList = resolver.lookup_by_name(uri.Host, null);
+			var addressList = resolver.lookup_by_name(Uri.Host, null);
 
 			// １個目のアドレスへ接続。
 			var address = addressList.nth_data(0);
@@ -120,7 +117,7 @@ namespace ULib
 			// 基本コネクションの接続。
 			BaseConn = Sock.connect(new InetSocketAddress(address, port));
 
-			if (uri.Scheme == "https") {
+			if (Uri.Scheme == "https") {
 				// TLS コネクションに移行する。
 				Tls = TlsClientConnection.@new(BaseConn, null);
 
