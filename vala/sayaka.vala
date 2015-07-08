@@ -70,10 +70,6 @@ public class SayakaMain
 		Protected,
 		NG,
 		Max;
-
-		public string ToString() {
-			return "%d".printf((int)this);	// とりあえず
-		}
 	}
 
 	public bool opt_noimg;
@@ -576,7 +572,7 @@ public class SayakaMain
 
 		public string ToString()
 		{
-			return "(%d, %d, %s)".printf(Start, End, Type.ToString());
+			return @"($(Start), $(End), $(Type))";
 		}
 	}
 
