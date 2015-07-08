@@ -838,7 +838,7 @@ namespace ULib
 				if (c == '-') return Mi;
 				if (c == '.') return Pt;
 				if (c == 'e' || c == 'E') return Ex;
-				if (charsTe.contains(c.to_string())) return Te;
+				if (charsTe.contains(c.to_string("%c"))) return Te;
 				if (c == -1) return Te;
 				return __;
 			}
