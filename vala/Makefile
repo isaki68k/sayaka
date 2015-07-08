@@ -38,6 +38,7 @@ clean:
 SIXELV_SRCS = \
 	sixelv.vala \
 	Diag.vala \
+	Dictionary.vala \
 	SixelConverter.vala \
 	StringUtil.vala \
 	HttpClient.vala \
