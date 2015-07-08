@@ -142,6 +142,24 @@ namespace ULib
 			// がばがば
 			return true;
 		}
+
+		// 接続を閉じます。
+		public void Close() throws Error
+		{
+			diag.Trace("Close");
+			Conn = null;
+			if (Tls != null) {
+				Tls.close();
+				Tls = null;
+			}
+			if (BaseConn != null) {
+				BaseConn.close();
+				BaseConn = null;
+			}
+			if (Sock != null) {
+				Sock = null;
+			}
+		}
 	}
 }
 
