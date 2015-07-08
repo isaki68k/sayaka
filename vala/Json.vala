@@ -881,7 +881,7 @@ namespace ULib
 				if (ck == Ze && (ps == Begin_ || ps == Minus_)) {
 					return IntZer;
 				}
-				if ((ck == Ze && ps == Begin_)
+				if ((ck == Ze && ps == IntNum)
 				 || (ck == Di && (ps == Begin_ || ps == Minus_ || ps == IntNum))) {
 					return IntNum;
 				}
