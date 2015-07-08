@@ -250,6 +250,7 @@ namespace ULib
 			return new DictionaryIter(this);
 		}
 
+		// この内部クラスにジェネリック型を付加するとコンパイルが通らない。
 		public class DictionaryIter
 		{
 			private Dictionary Owner;
