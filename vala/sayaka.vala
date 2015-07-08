@@ -817,7 +817,7 @@ public class SayakaMain
 
 		var img_file = Path.build_path(Path.DIR_SEPARATOR_S,
 			cachedir,
-			fg.uri.Path.replace(Path.DIR_SEPARATOR_S, "_"));
+			fg.Uri.Path.replace(Path.DIR_SEPARATOR_S, "_"));
 
 		try {
 			sx.Load(img_file);
