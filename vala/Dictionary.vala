@@ -74,6 +74,14 @@ namespace ULib
 			data.insert(i, value);
 		}
 
+		// クリアします。
+		public void Clear()
+		{
+			if (Count > 0) {
+				data.remove_range(0, Count);
+			}
+		}
+
 		// 要素数を返します。
 		public int Count { get { return data.length; } }
 
@@ -200,6 +208,12 @@ namespace ULib
 				return data[index];
 			}
 			return null;
+		}
+
+		// クリアします。
+		public void Clear()
+		{
+			data.Clear();
 		}
 
 		// キーがあれば true を返す。
