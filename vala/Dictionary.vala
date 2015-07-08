@@ -189,6 +189,17 @@ namespace ULib
 				new GenericArray<KeyValuePair<TKey, TValue>>());
 		}
 
+		// なければ追加、あれば何もしない
+		public void AddIfMissing(TKey key, TValue value)
+		{
+			int index = data.FindIndex((item) => KeyComparer(item.Key, key));
+			if (index >= 0) {
+				return;
+			} else {
+				data.InternalInsert(~index, new KeyValuePair<TKey, TValue>(key, value));
+			}
+		}
+
 		// あれば更新、なければ追加
 		public void AddOrUpdate(TKey key, TValue value)
 	 	{
