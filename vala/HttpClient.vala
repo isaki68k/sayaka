@@ -20,33 +20,62 @@ namespace ULib
 		// パース後の URI
 		public ParsedUri Uri;
 
+		// リクエスト時にサーバへ送るヘッダ
+		// キーは小文字です。
+		public Dictionary<string, string> SendHeaders;
+
+		// 受け取ったヘッダ
+		// キーは小文字に変換されて格納されます。
+		public Dictionary<string, string> RecvHeaders;
+
+		// 受け取った応答行
+		public string ResultLine;
+
+		// 受け取った応答コード
+		public int ResultCode;
+
+
 		// uri をターゲットにした HttpClient を作成します。
 		public HttpClient(string uri)
 		{
  			diag = new Diag("HttpClient");
 			Uri = ParsedUri.Parse(uri);
 			diag.Debug(Uri.to_string());
+
+			SendHeaders = new Dictionary<string, string>();
+			RecvHeaders = new Dictionary<string, string>();
 		}
 
 		// uri から GET して、ストリームを返します。
 		public InputStream GET() throws Error
 		{
-			Connect();
+			DataInputStream dIn = null;
 
-			var stream = RequestGET();
+			while (true) {
 
-			var dIn = new DataInputStream(stream);
+				Connect();
 
-			// ヘッダを読み飛ばす。
-			// TODO: 200 OK かどうかの処理とか。
-			do {
-				var s = dIn.read_line();
-				if (s == null) break;
+				SendRequest("GET");
 
-				diag.Debug(@"HEADER $(s)");
+				dIn = new DataInputStream(Conn.input_stream);
 
-				if (s == "\r") break;
-			} while (true);
+				ReceiveHeader(dIn);
+
+				if (300 <= ResultCode && ResultCode < 400) {
+					Close();
+					var location = StringUtil.Trim(RecvHeaders["location"]);
+					diag.Debug(@"Redirect to $(location)");
+					if (location != null) {
+						Uri = ParsedUri.Parse(location);
+						diag.Debug(Uri.to_string());
+						SendHeaders.AddOrUpdate("host", Uri.Host);
+						continue;
+					}
+				}
+
+				break;
+			}
+
 
 			// ボディをメモリに読み込んで、そのメモリへのストリームを返す。
 			// https の時はストリームの終了で TlsConnection が例外を吐く。
@@ -70,29 +99,81 @@ namespace ULib
 			return rv;
 		}
 
-		// GET リクエストを発行します。
-		// TODO: private にする
-		public InputStream RequestGET() throws Error
+		// リクエストを発行します。
+		private void SendRequest(string verb) throws Error
 		{
 			var sb = new StringBuilder();
 
-			sb.append(@"GET $(Uri.PQF()) HTTP/1.1\r\n");
-			sb.append(@"Host: $(Uri.Host)\r\n");
-			sb.append("Connection: close\r\n");
+			sb.append(@"$(verb) $(Uri.PQF()) HTTP/1.1\r\n");
+
+			SendHeaders.AddIfMissing("host", Uri.Host);
+			SendHeaders.AddIfMissing("connection", "close");
+
+			foreach (KeyValuePair<string, string> h in SendHeaders) {
+				sb.append(@"$(h.Key): $(h.Value)\r\n");
+			}
 			sb.append("\r\n");
 
-			diag.Debug(@"RequestGET\n$(sb.str)");
+			diag.Debug(@"Request $(verb)\n$(sb.str)");
 
 			var msg = sb.str;
 
 			Conn.output_stream.write(msg.data);
+		}
 
-			return Conn.input_stream;
+		// ヘッダを受信します。
+		private void ReceiveHeader(DataInputStream dIn) throws Error
+		{
+			RecvHeaders.Clear();
+
+			string prevKey = "";
+
+			// ヘッダを読みこむ
+			// 1000 行で諦める
+			for (int i = 0; i < 1000; i++) {
+
+				var s = dIn.read_line();
+				// End of stream
+				if (s == null) break;
+
+				diag.Debug(@"HEADER $(s)");
+
+				// End of header
+				if (s == "\r") break;
+
+				if (i == 0) {
+					// 応答行
+					ResultLine = s;
+					var proto_arg = StringUtil.Split2(s, " ");
+					if (proto_arg[0] == "HTTP/1.1" || proto_arg[0] == "HTTP/1.0") {
+						var code_msg = StringUtil.Split2(proto_arg[1], " ");
+						ResultCode = int.parse(code_msg[0]);
+						diag.Debug(@"ResultCode=$(ResultCode)");
+					}
+				} else {
+					// ヘッダ行
+					if (s[0] == ' ') {
+						// 行継続
+						if (prevKey == "") {
+							throw new IOError.FAILED("Invalid Header");
+						}
+						RecvHeaders[prevKey] = RecvHeaders[prevKey] + s;
+					} else {
+						var kv = StringUtil.Split2(s, ":");
+						// キーは小文字にする。
+						prevKey = StringUtil.Trim(kv[0]).ascii_down();
+						RecvHeaders.AddOrUpdate(prevKey, kv[1]);
+					}
+				}
+			}
+
+			// XXX: 1000 行あったらどうすんの
+
+			diag.Debug(RecvHeaders.DumpString());
 		}
 
 		// uri へ接続します。
-		// TODO: private にする
-		public IOStream Connect() throws Error
+		private void Connect() throws Error
 		{
 			int16 port = 80;
 
@@ -131,8 +212,6 @@ namespace ULib
 			} else {
 				Conn = BaseConn;
 			}
-
-			return Conn;
 		}
 
 		// TLS の証明書を受け取った時のイベント。
