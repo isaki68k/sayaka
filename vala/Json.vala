@@ -813,6 +813,7 @@ namespace ULib
 			private const NumberCharKind __ = NumberCharKind.Other;
 			private const NumberCharKind Te = NumberCharKind.Terminate;
 
+#if USE_JSON_TABLE
 			// 文字から文字種への変換テーブル
 			public static NumberCharKind[] charTrans = new NumberCharKind[] {
 				// -1
@@ -827,6 +828,21 @@ namespace ULib
 				__, __, __, __, __, Ex, __, __, __, __, __, __, __, __, __, __,	// +60
 				__, __, __, __, __, __, __, __, __, __, __, __, __, Te, __, __,	// +70
 			};
+#else
+			public static const string charsTe = "\t\r\n ,]}";
+			public static NumberCharKind ToNumberCharKind(int c)
+			{
+				if ('1' <= c && c <= '9') return Di;
+				if (c == '0') return Ze;
+				if (c == '+') return Pl;
+				if (c == '-') return Mi;
+				if (c == '.') return Pt;
+				if (c == 'e' || c == 'E') return Ex;
+				if (charsTe.contains(c.to_string())) return Te;
+				if (c == -1) return Te;
+				return __;
+			}
+#endif
 
 			// 表のためのエイリアス
 			private const NumberStateKind Begin_ = NumberStateKind.Begin;
@@ -841,6 +857,7 @@ namespace ULib
 			private const NumberStateKind End___ = NumberStateKind.End;
 			private const NumberStateKind Error_ = NumberStateKind.Error;
 
+#if USE_JSON_TABLE
 			// 状態遷移表
 			// たとえば0行0列目は state が Begin の時に文字 Zero が来ると IntZero に遷移する
 			public static NumberStateKind[,] trans = new NumberStateKind[,] {
@@ -855,6 +872,40 @@ namespace ULib
 				{ ExpNum, ExpNum, Error_, Error_, Error_, Error_, Error_,	Error_ },	// ExpSign
 				{ ExpNum, ExpNum, Error_, Error_, Error_, Error_, Error_,	End___ },	// ExpNum
 			};
+#else
+			public static NumberStateKind Trans(NumberStateKind ps, NumberCharKind ck)
+			{
+				if (ck == Mi && ps == Begin_) {
+					return Minus_;
+				}
+				if (ck == Ze && (ps == Begin_ || ps == Minus_)) {
+					return IntZer;
+				}
+				if ((ck == Ze && ps == Begin_)
+				 || (ck == Di && (ps == Begin_ || ps == Minus_ || ps == IntNum))) {
+					return IntNum;
+				}
+				if (ck == Pt && (ps == IntZer || ps == IntNum)) {
+					return Point_;
+				}
+				if ((ck == Ze || ck == Di) && (ps == Point_ || ps == Frac__)) {
+					return Frac__;
+				}
+				if (ck == Ex && (ps == IntZer || ps == IntNum || ps == Frac__)) {
+					return Exp___;
+				}
+				if ((ck == Pl || ck == Mi) && ps == Exp___) {
+					return ExpSig;
+				}
+				if ((ck == Ze || ck == Di) && (ps == Exp___ || ps == ExpSig || ps == ExpNum)) {
+					return ExpNum;
+				}
+				if (ck == Te && (ps == IntZer || ps == IntNum || ps == Frac__ || ps == ExpNum)) {
+					return End___;
+				}
+				return Error_;
+			}
+#endif
 		}
 
 		/// <summary>
@@ -881,17 +932,25 @@ namespace ULib
 					// nop
 				}
 
+#if USE_JSON_TABLE
 				// 文字(c)から文字種(type)にマッピング
 				if (c < 0x80) {
 					type = ParseNumberHelper.charTrans[c + 1];
 				} else {
 					type = NumberCharKind.Other;
 				}
+#else
+				type = ParseNumberHelper.ToNumberCharKind(c);
+#endif
 
 				// 状態遷移テーブルを引く
+#if USE_JSON_TABLE
 				int s = (int)state;
 				int t = (int)type;
 				nextstate = ParseNumberHelper.trans[s, t];
+#else
+				nextstate = ParseNumberHelper.Trans(state, type);
+#endif
 				if (nextstate == NumberStateKind.Error) {
 					// 遷移できないので文法エラー
 					throw new JsonError.Format(ErrorMsg("Syntax error in Number (state={0}, type={1})",
