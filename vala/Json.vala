@@ -816,8 +816,6 @@ namespace ULib
 #if USE_JSON_TABLE
 			// 文字から文字種への変換テーブル
 			public static NumberCharKind[] charTrans = new NumberCharKind[] {
-				// -1
-				Te,
 				// +01 +02 +03 +04 +05 +06 +07 +08 +09 +0A +0B +0C +0D +0E +0F
 				__, __, __, __, __, __, __, __, __, Te, Te, __, __, Te, __, __,	// +00
 				__, __, __, __, __, __, __, __, __, __, __, __, __, __, __, __,	// +10
@@ -828,6 +826,18 @@ namespace ULib
 				__, __, __, __, __, Ex, __, __, __, __, __, __, __, __, __, __,	// +60
 				__, __, __, __, __, __, __, __, __, __, __, __, __, Te, __, __,	// +70
 			};
+
+			public static NumberCharKind ToNumberCharKind(int c)
+			{
+				// 文字(c)から文字種(type)にマッピング
+				if (c < 0) {
+					return Te;
+				} else if (c < 0x80) {
+					return ParseNumberHelper.charTrans[c];
+				} else {
+					return NumberCharKind.Other;
+				}
+			}
 #else
 			public static const string charsTe = "\t\r\n ,]}";
 			public static NumberCharKind ToNumberCharKind(int c)
@@ -872,6 +882,11 @@ namespace ULib
 				{ ExpNum, ExpNum, Error_, Error_, Error_, Error_, Error_,	Error_ },	// ExpSign
 				{ ExpNum, ExpNum, Error_, Error_, Error_, Error_, Error_,	End___ },	// ExpNum
 			};
+
+			public static NumberStateKind Trans(NumberStateKind ps, NumberCharKind ck)
+			{
+				return ParseNumberHelper.trans[(int)ps, (int)ck];
+			}
 #else
 			public static NumberStateKind Trans(NumberStateKind ps, NumberCharKind ck)
 			{
@@ -932,25 +947,12 @@ namespace ULib
 					// nop
 				}
 
-#if USE_JSON_TABLE
 				// 文字(c)から文字種(type)にマッピング
-				if (c < 0x80) {
-					type = ParseNumberHelper.charTrans[c + 1];
-				} else {
-					type = NumberCharKind.Other;
-				}
-#else
 				type = ParseNumberHelper.ToNumberCharKind(c);
-#endif
 
 				// 状態遷移テーブルを引く
-#if USE_JSON_TABLE
-				int s = (int)state;
-				int t = (int)type;
-				nextstate = ParseNumberHelper.trans[s, t];
-#else
 				nextstate = ParseNumberHelper.Trans(state, type);
-#endif
+
 				if (nextstate == NumberStateKind.Error) {
 					// 遷移できないので文法エラー
 					throw new JsonError.Format(ErrorMsg("Syntax error in Number (state={0}, type={1})",
