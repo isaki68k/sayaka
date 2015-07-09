@@ -192,7 +192,7 @@ public class SixelV
 
 	public void usage()
 	{
-		stdout.printf(
+		stderr.printf(
 """sixelv [color] [size] [algorithm] [colorfind] file...
 
  color
