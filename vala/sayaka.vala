@@ -73,6 +73,7 @@ public class SayakaMain
 	}
 
 	public bool opt_noimg;
+	public string sixel_cmd;
 	public int color_mode;
 	public bool protect;
 	public bool debug;
@@ -97,6 +98,7 @@ public class SayakaMain
 	public int Main(string[] args)
 	{
 		color_mode = 256;
+		sixel_cmd = "";
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -117,6 +119,9 @@ public class SayakaMain
 				break;
 			 case "--protect":
 				protect = true;
+				break;
+			 case "--sixel-cmd":
+				sixel_cmd = args[++i];
 				break;
 			 case "--white":
 				bg_white = true;
@@ -153,6 +158,34 @@ public class SayakaMain
 	{
 		// 色の初期化
 		init_color();
+
+		// 外部コマンド
+		var cmd = new StringBuilder();
+		cmd.append(sixel_cmd);
+		if (sixel_cmd.has_suffix("img2sixel")) {
+			cmd.append(" -S");
+			if (color_mode == 2) {
+				cmd.append(" -e --quality=low");
+			} else if (color_mode <= 16) {
+				cmd.append(@" -m colormap$(color_mode).png");
+			}
+
+		} else if (sixel_cmd.has_suffix("sixelv")) {
+			if (color_mode == 2) {
+				cmd.append(" -e");
+			} else {
+				cmd.append(@" -$(color_mode)");
+			}
+		}
+		sixel_cmd = cmd.str;
+		if (debug) {
+			stdout.printf("sixel_cmd=");
+			if (sixel_cmd == "") {
+				stdout.printf("<internal>\n");
+			} else {
+				stdout.printf("%s\n", sixel_cmd);
+			}
+		}
 
 		// シグナルハンドラを設定
 		Posix.@signal(SIGWINCH, signal_handler);
@@ -807,6 +840,15 @@ public class SayakaMain
 
 		if (opt_noimg) return false;
 
+		if (sixel_cmd == "") {
+			return show_image_internal(img_url, width);
+		} else {
+			return show_image_external(img_url, width);
+		}
+	}
+
+	public bool show_image_internal(string img_url, int width)
+	{
 		var sx = new SixelConverter();
 
 		HttpClient fg = new HttpClient(img_url); 
@@ -864,6 +906,50 @@ public class SayakaMain
 		stdout.flush();
 
 		return true;
+	}
+
+	// 外部プログラムを起動して画像を表示
+	public bool show_image_external(string img_url, int width)
+	{
+		var img_file_base = Path.get_basename(img_url);
+		var img_file = @"$(cachedir)/$(img_file_base).sixel";
+
+		string width_opt = "";
+		if (width != 0) {
+			width_opt = @" -w $(width)";
+		}
+
+		FileStream stream;
+		stream = FileStream.open(img_file, "r");
+		if (stream == null) {
+			var imgconv = @"$(sixel_cmd)$(width_opt)";
+			Posix.system(@"(curl -Lks $(img_url) | "
+				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
+			stream = FileStream.open(img_file, "r");
+		}
+		// XXX うーん…この辺
+		size_t fsize = 0;
+		if (stream == null || (fsize = get_filesize(stream)) == 0) {
+			Posix.unlink(img_file);
+			return false;
+		}
+
+		// ファイルを読んで標準出力に吐き出す
+		uint8[] buf = new uint8[fsize];
+		stream.read(buf);
+		stdout.write(buf);
+		stdout.flush();
+
+		return true;
+	}
+
+	// FileStream からファイルサイズを取得
+	public size_t get_filesize(FileStream stream)
+	{
+		stream.seek(0, FileSeek.END);
+		var fsize = stream.tell();
+		stream.rewind();
+		return fsize;
 	}
 
 	public static void signal_handler(int signo)
@@ -943,6 +1029,8 @@ public class SayakaMain
 	--jis
 	--eucjp
 	--protect : don't display protected user's tweet.
+	--sixel-cmd <fullpath>: external 'img2sixel' or 'sixelv'.
+		or an internal sixel converter if not specified.
 """
 		);
 		Process.exit(0);
