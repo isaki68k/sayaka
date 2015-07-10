@@ -169,13 +169,6 @@ public class SayakaMain
 			} else if (color_mode <= 16) {
 				cmd.append(@" -m colormap$(color_mode).png");
 			}
-
-		} else if (sixel_cmd.has_suffix("sixelv")) {
-			if (color_mode == 2) {
-				cmd.append(" -e");
-			} else {
-				cmd.append(@" -$(color_mode)");
-			}
 		}
 		sixel_cmd = cmd.str;
 		if (debug) {
@@ -1029,7 +1022,7 @@ public class SayakaMain
 	--jis
 	--eucjp
 	--protect : don't display protected user's tweet.
-	--sixel-cmd <fullpath>: external 'img2sixel' or 'sixelv'.
+	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.
 """
 		);
