@@ -667,13 +667,20 @@ public class SayakaMain
 				// url         本文中の短縮 URL (twitterから)
 				// display_url 差し替えて表示用の URL (twitterから)
 				// expanded_url 展開後の URL (twitterから)
+				var url      = t.GetString("url");
 				var disp_url = t.GetString("display_url");
 				var expd_url = t.GetString("expanded_url");
 
-				// コメント付き RT の URL でなければ表示
-				var newurl = "";
+				// 本文の短縮 URL を差し替える
+				string newurl;
 				var qid = s.GetString("quoted_status_id_str");
-				if (qid == "" || expd_url.contains(qid) == false) {
+				if (qid != ""
+				 && expd_url.contains(qid) == true
+				 && text.chomp().has_suffix(url) == true)
+				{
+					// この場合はコメント付き RT の URL なので取り除く
+					newurl = "";
+				} else {
 					newurl = disp_url;
 				}
 
