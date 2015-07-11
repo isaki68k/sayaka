@@ -34,11 +34,19 @@ namespace ULib
 		// 受け取った応答コード
 		public int ResultCode;
 
+		// コネクションに使用するプロトコルファミリ
+		// IPv4/IPv6 only にしたい場合はコンストラクタ後に指定?
+		public SocketFamily Family;
+
 
 		// uri をターゲットにした HttpClient を作成します。
 		public HttpClient(string uri)
 		{
  			diag = new Diag("HttpClient");
+
+			// XXX AF_UNSPEC がなさげなのでとりあえず代用
+			Family = SocketFamily.INVALID;
+
 			Uri = ParsedUri.Parse(uri);
 			diag.Debug(Uri.to_string());
 
@@ -190,13 +198,29 @@ namespace ULib
 			// 名前解決
 			var resolver = Resolver.get_default();
 			var addressList = resolver.lookup_by_name(Uri.Host, null);
+
 			for (var i = 0; i < addressList.length(); i++) {
 				var a = addressList.nth_data(i);
 				diag.Debug(@"Connect: addressList[$(i)]=$(a)");
 			}
 
-			// １個目のアドレスへ接続。
-			var address = addressList.nth_data(0);
+			InetAddress address = null;
+			if (Family == SocketFamily.INVALID) {
+				// 1個目のアドレスへ接続
+				address = addressList.nth_data(0);
+			} else {
+				// 指定のアドレスファミリの1個目
+				for (var i = 0; i < addressList.length(); i++) {
+					var a = addressList.nth_data(i);
+					if (a.get_family() == Family) {
+						address = a;
+						break;
+					}
+				}
+			}
+			if (address == null) {
+				throw new IOError.HOST_NOT_FOUND(@"$(Uri.Host)");
+			}
 
 			Sock = new SocketClient();
 

@@ -72,6 +72,7 @@ public class SayakaMain
 		Max;
 	}
 
+	public SocketFamily address_family;
 	public bool opt_noimg;
 	public string sixel_cmd;
 	public int color_mode;
@@ -97,11 +98,18 @@ public class SayakaMain
 
 	public int Main(string[] args)
 	{
+		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
 		sixel_cmd = "";
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
+			 case "-4":
+				address_family = SocketFamily.IPV4;
+				break;
+			 case "-6":
+				address_family = SocketFamily.IPV6;
+				break;
 			 case "--color":
 				color_mode = int.parse(args[++i]);
 				break;
@@ -852,6 +860,7 @@ public class SayakaMain
 		var sx = new SixelConverter();
 
 		HttpClient fg = new HttpClient(img_url); 
+		fg.Family = address_family;
 
 		var img_file = Path.build_path(Path.DIR_SEPARATOR_S,
 			cachedir,
