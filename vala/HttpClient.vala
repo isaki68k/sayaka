@@ -49,6 +49,7 @@ namespace ULib
 		// uri から GET して、ストリームを返します。
 		public InputStream GET() throws Error
 		{
+			diag.Trace("GET()");
 			DataInputStream dIn = null;
 
 			while (true) {
@@ -189,6 +190,10 @@ namespace ULib
 			// 名前解決
 			var resolver = Resolver.get_default();
 			var addressList = resolver.lookup_by_name(Uri.Host, null);
+			for (var i = 0; i < addressList.length(); i++) {
+				var a = addressList.nth_data(i);
+				diag.Debug(@"Connect: addressList[$(i)]=$(a)");
+			}
 
 			// １個目のアドレスへ接続。
 			var address = addressList.nth_data(0);
@@ -196,6 +201,7 @@ namespace ULib
 			Sock = new SocketClient();
 
 			// 基本コネクションの接続。
+			diag.Debug(@"Connect: address=$(address) port=$(port)");
 			BaseConn = Sock.connect(new InetSocketAddress(address, port));
 
 			if (Uri.Scheme == "https") {
