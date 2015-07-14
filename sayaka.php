@@ -1254,6 +1254,7 @@ function signal_handler($signo)
 	global $tput;
 	global $cellsize;
 	global $fontheight;
+	global $fontwidth;
 	global $iconsize;
 	global $imagesize;
 	global $debug;
@@ -1266,10 +1267,15 @@ function signal_handler($signo)
 		}
 		$screen_cols += 0;
 
+		$fontwidth = 0;
 		// ターミナルのフォントの高さを取得
 		if ($cellsize != "") {
 			$fontheight = rtrim(`{$cellsize} -h`);
 			$fontheight += 0;
+
+			// 幅も取ってみる
+			$fontwidth = rtrim(`{$cellsize} -v`);
+			$fontwidth += 0;
 		}
 
 		// cellsize が無かった時や、値がとれなかった時は
@@ -1282,9 +1288,16 @@ function signal_handler($signo)
 		$iconsize = intval($fontheight * 2.5);
 		$imagesize = intval($fontheight * 8.5);
 
+		// フォントの幅が取れた場合はアイコンサイズがインデント量より
+		// 大きくならないように調整する
+		if ($fontwidth > 0 && $iconsize > $fontwidth * 6 - 2) {
+			$iconsize = $fontwidth * 6 - 2;
+		}
+
 		if ($debug) {
 			print "screen columns={$screen_cols}\n";
 			print "font height=${fontheight}\n";
+			print "font width=${fontwidth}\n";
 			print "iconsize={$iconsize}\n";
 			print "imagesize={$imagesize}\n";
 		}
