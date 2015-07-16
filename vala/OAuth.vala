@@ -20,13 +20,21 @@ public class OAuth
 	// 呼び出すたびに異なる文字列が生成されます。
 	public string GetNonce()
 	{
-		var sb = new StringBuilder();
-		for (int i = 0; i < 5; i++) {
-			// TODO: twitter のドキュメントには alphanumeric って書いてある
-			sb.append_c((char)(rand.int_range(32, 127)));
+		var sb = new StringBuilder.sized(4);
+		for (int i = 0; i < 4; i++) {
+			// twitter のドキュメントには alphanumeric って書いてある
+			// 0x30-39, 41-5a, 61-7a  個数 = 10+26+26 = 62
+			// 0 .. 61 の乱数を求める
+			var c = (char)(rand.int_range(0, 62));
+			if (c < 10) {
+				c += '0';
+			} else if (c < 10 + 26) {
+				c += 'A' - 10;
+			} else {
+				c += 'a' - 36;
+			}
+			sb.append_c(c);
 		}
-		diag.Debug("rv:");
-		diag.DebugHex(sb.data, (int)sb.len);
 		return sb.str;
 	}
 
