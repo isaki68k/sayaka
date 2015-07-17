@@ -28,6 +28,9 @@ int main(int argc, char *argv[])
 	case 2:
 		if (*argv[1]++ == '-') {
 			switch (*argv[1]) {
+			case 'a':
+				printf("%d %d %d %d\n", ws.ws_col, ws.ws_row, width, height);
+				break;
 			case 'h':
 				printf("%d\n", height);
 				break;

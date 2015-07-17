@@ -33,6 +33,8 @@
 	// 定数定義
 	define("ESC", "\x1b");
 	define("CSI", ESC."[");
+	define("DEFAULT_FONT_WIDTH",	"7");
+	define("DEFAULT_FONT_HEIGHT",	"14");
 	define("COLOR_USERNAME",	"COLOR_USERNAME");
 	define("COLOR_USERID",		"COLOR_USERID");
 	define("COLOR_TIME",		"COLOR_TIME");
@@ -91,7 +93,12 @@
 			$eucjp = true;
 		}
 		if (isset($opts["font"])) {
-			$fontheight = $opts["font"];
+			$metric = preg_split("/x/", $opts["font"]);
+			if (count($metric) != 2) {
+				usage();
+			}
+			$opt_fontwidth = $metric[0];
+			$opt_fontheight = $metric[1];
 		}
 		if (isset($opts["jis"]) && function_exists("mb_convert_encoding")) {
 			$jis = true;
@@ -1263,8 +1270,10 @@ function signal_handler($signo)
 	global $screen_cols;
 	global $tput;
 	global $cellsize;
-	global $fontheight;
+	global $opt_fontwidth;
+	global $opt_fontheight;
 	global $fontwidth;
+	global $fontheight;
 	global $indent_cols;
 	global $iconsize;
 	global $imagesize;
@@ -1272,31 +1281,48 @@ function signal_handler($signo)
 
 	switch ($signo) {
 	 case SIGWINCH:
-		// ターミナル1行の桁数を取得
-		if ($tput != "") {
-			$screen_cols = rtrim(`{$tput} cols`);
-		}
-		$screen_cols += 0;
-
-		$fontwidth = 0;
-		// ターミナルのフォントの高さを取得
+		// 付属の cellsize か、なければ tput を試す
 		if ($cellsize != "") {
-			$fontheight = rtrim(`{$cellsize} -h`);
-			$fontheight += 0;
+			$metric = preg_split("/\s+/", `{$cellsize} -a`);
+			$ws_cols   = $metric[0];
+			$ws_width  = $metric[2];
+			$ws_height = $metric[3];
 
-			// 幅も取ってみる
-			$fontwidth = rtrim(`{$cellsize} -w`);
-			$fontwidth += 0;
+		} else if ($tput != "") {
+			// ターミナル1行の桁数を取得
+			$ws_cols = rtrim(`{$tput} cols`);
+		}
+		$ws_cols += 0;
+		$ws_width += 0;
+		$ws_height += 0;
+
+		// 画面幅は常に更新
+		$screen_cols = 0;
+		if ($ws_cols > 0) {
+			$screen_cols = $ws_cols;
 		}
 
-		// cellsize が無かった時や、値がとれなかった時は
-		// デフォルト値として 7x14 を使う。
-		if ($fontwidth <= 0) {
-			$fontwidth = 7;
+		// フォント幅と高さは指定されてない時だけ取得した値を使う
+		if ($opt_fontwidth != "") {
+			$fontwidth = $opt_fontwidth;
+		} else {
+			if ($ws_width > 0) {
+				$fontwidth = $ws_width;
+			} else {
+				$fontwidth = DEFAULT_FONT_WIDTH;
+			}
 		}
-		if ($fontheight <= 0) {
-			$fontheight = 14;
+		if ($opt_fontheight != "") {
+			$fontheight = $opt_fontheight;
+		} else {
+			if ($ws_height > 0) {
+				$fontheight = $ws_height;
+			} else {
+				$fontheight = DEFAULT_FONT_HEIGHT;
+			}
 		}
+		$fontwidth  = intval($fontwidth + 0);
+		$fontheight = intval($fontheight + 0);
 
 		// フォント高さからアイコンの大きさを決定
 		$iconsize = intval($fontheight * 2.5);
@@ -1336,7 +1362,7 @@ usage:
  {$progname} --stream
 	streaming mode.
 		--color <n>: color mode { 2, 16, 256 }. default 256.
-		--font <n>: font height. default 14.
+		--font <w>x<h>: font height x width. default 7x14.
 		--white
 		--noimg
 		--jis
