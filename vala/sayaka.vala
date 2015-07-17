@@ -84,6 +84,7 @@ public class SayakaMain
 	public int fontwidth;
 	public int iconsize;
 	public int imagesize;
+	public int indent_cols;
 	public int indent_depth;
 	public bool bg_white;
 	public string iconv_tocode = "";
@@ -310,7 +311,7 @@ public class SayakaMain
 		// picture
 		for (var i = 0; i < mediainfo.length; i++) {
 			var m = mediainfo.index(i);
-			stdout.printf(CSI + "6C");
+			stdout.printf(@"$(CSI)$(indent_cols)C");
 			show_photo(m.target_url, m.width);
 			stdout.printf("\r");
 		}
@@ -393,7 +394,7 @@ public class SayakaMain
 		}
 
 		// インデント階層
-		var left = 6 * (indent_depth + 1);
+		var left = indent_cols * (indent_depth + 1);
 		string indent = CSI + @"$(left)C";
 
 		bool inescape = false;
@@ -850,7 +851,7 @@ public class SayakaMain
 	{
 		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
 		if (indent_depth > 0) {
-			var left = indent_depth * 6;
+			var left = indent_cols * indent_depth;
 			stdout.printf(@"$(CSI)$(left)C");
 		}
 
@@ -1041,11 +1042,15 @@ public class SayakaMain
 			iconsize = (int)(fontheight * 2.5);
 			imagesize = (int)(fontheight * 8.5);
 
+			// そこからインデント幅を決定
+			indent_cols = ((int)(iconsize / fontwidth)) + 1;
+
 			if (debug) {
 				stdout.printf("screen columns=%d%s\n", screen_cols, msg_cols);
 				stdout.printf("font height=%d%s\n", fontheight, msg_height);
 				stdout.printf("font width=%d%s\n", fontwidth, msg_width);
 				stdout.printf("iconsize=%d\n", iconsize);
+				stdout.printf("indent columns=%d\n", indent_cols);
 				stdout.printf("imagesize=%d\n", imagesize);
 			}
 			break;
