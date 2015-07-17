@@ -46,6 +46,7 @@
 	define("COLOR_NG",			"COLOR_NG");
 
 	$fontheight = 0;
+	$indent_cols = 6;
 	$color_mode = 256;
 
 	// まず引数のチェックをする
@@ -418,6 +419,7 @@ function showstatus_callback($object)
 // 1ツイートを表示
 function showstatus($status)
 {
+	global $indent_cols;
 	global $indent_level;
 	global $protect;
 
@@ -472,7 +474,7 @@ function showstatus($status)
 
 	// picture
 	foreach ($mediainfo as $m) {
-		print CSI."6C";
+		print CSI."{$indent_cols}C";
 		show_photo($m["target_url"], $m["width"]);
 		print "\r";
 	}
@@ -821,6 +823,7 @@ function format_image_url($exp, $disp)
 function make_indent($text)
 {
 	global $screen_cols;
+	global $indent_cols;
 	global $indent_level;
 
 	// 桁数が分からない場合は何もしない
@@ -829,7 +832,7 @@ function make_indent($text)
 	}
 
 	// インデント階層
-	$left = 6 * ($indent_level + 1);
+	$left = $indent_cols * ($indent_level + 1);
 	$indent = CSI."{$left}C";
 
 	$state = "";
@@ -923,11 +926,12 @@ function show_image($img_file, $img_url, $width)
 {
 	global $cachedir;
 	global $img2sixel;
+	global $indent_cols;
 	global $indent_level;
 
 	// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
 	if ($indent_level > 0) {
-		$left = $indent_level * 6;
+		$left = $indent_cols * $indent_level;
 		print CSI."{$left}C";
 	}
 
@@ -1261,6 +1265,7 @@ function signal_handler($signo)
 	global $cellsize;
 	global $fontheight;
 	global $fontwidth;
+	global $indent_cols;
 	global $iconsize;
 	global $imagesize;
 	global $debug;
@@ -1285,7 +1290,10 @@ function signal_handler($signo)
 		}
 
 		// cellsize が無かった時や、値がとれなかった時は
-		// デフォルト値として 14 を使う。
+		// デフォルト値として 7x14 を使う。
+		if ($fontwidth <= 0) {
+			$fontwidth = 7;
+		}
 		if ($fontheight <= 0) {
 			$fontheight = 14;
 		}
@@ -1294,11 +1302,15 @@ function signal_handler($signo)
 		$iconsize = intval($fontheight * 2.5);
 		$imagesize = intval($fontheight * 8.5);
 
+		// そこからインデント幅を決定
+		$indent_cols = intval($iconsize / $fontwidth) + 1;
+
 		if ($debug) {
 			print "screen columns={$screen_cols}\n";
 			print "font height={$fontheight}\n";
 			print "font width={$fontwidth}\n";
 			print "iconsize={$iconsize}\n";
+			print "indent columns={$indent_cols}\n";
 			print "imagesize={$imagesize}\n";
 		}
 		break;
