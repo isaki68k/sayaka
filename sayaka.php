@@ -1260,6 +1260,7 @@ function signal_handler($signo)
 	global $tput;
 	global $cellsize;
 	global $fontheight;
+	global $fontwidth;
 	global $iconsize;
 	global $imagesize;
 	global $debug;
@@ -1272,10 +1273,15 @@ function signal_handler($signo)
 		}
 		$screen_cols += 0;
 
+		$fontwidth = 0;
 		// ターミナルのフォントの高さを取得
 		if ($cellsize != "") {
 			$fontheight = rtrim(`{$cellsize} -h`);
 			$fontheight += 0;
+
+			// 幅も取ってみる
+			$fontwidth = rtrim(`{$cellsize} -w`);
+			$fontwidth += 0;
 		}
 
 		// cellsize が無かった時や、値がとれなかった時は
@@ -1291,6 +1297,7 @@ function signal_handler($signo)
 		if ($debug) {
 			print "screen columns={$screen_cols}\n";
 			print "font height={$fontheight}\n";
+			print "font width={$fontwidth}\n";
 			print "iconsize={$iconsize}\n";
 			print "imagesize={$imagesize}\n";
 		}
