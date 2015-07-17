@@ -289,10 +289,16 @@ public class SayakaMain
 		// 今のところローカルアカウントはない
 		var profile_image_url = s_user.GetString("profile_image_url");
 
+		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを発生させ
+		// アイコン表示時にスクロールしないようにしてからカーソル位置を保存する
+		// (スクロールするとカーソル位置復元時に位置が合わない)
+		stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
 		show_icon(unescape(s_user.GetString("screen_name")),
 			profile_image_url);
 		stdout.printf("\r");
-		stdout.printf(CSI + "3A");
+		// カーソル位置保存/復元に対応していない端末でも動作するように
+		// カーソル位置復元前にカーソル上移動x3を行う
+		stdout.printf(CSI + "3A" + @"$(ESC)8");
 
 		print_(name + " " + userid + verified + protected);
 		stdout.printf("\n");
