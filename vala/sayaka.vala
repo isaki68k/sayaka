@@ -54,6 +54,7 @@ public class SayakaMain
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
 
+	public const int DEFAULT_FONT_WIDTH  = 7;
 	public const int DEFAULT_FONT_HEIGHT = 14;
 
 	public enum Color {
@@ -80,6 +81,7 @@ public class SayakaMain
 	public bool debug;
 	public int screen_cols;
 	public int fontheight;
+	public int fontwidth;
 	public int iconsize;
 	public int imagesize;
 	public int indent_depth;
@@ -977,6 +979,7 @@ public class SayakaMain
 		switch (signo) {
 		 case SIGWINCH:
 			int ws_cols = 0;
+			int ws_width = 0;
 			int ws_height = 0;
 
 			winsize ws = winsize();
@@ -986,6 +989,13 @@ public class SayakaMain
 			} else {
 				ws_cols = ws.ws_col;
 
+				if (ws.ws_xpixel == 0) {
+					stdout.printf("TIOCCGWINSZ ws_xpixel not supported.\n");
+				} else {
+					if (ws.ws_col != 0) {
+						ws_width = ws.ws_xpixel / ws.ws_col;
+					}
+				}
 				if (ws.ws_ypixel == 0) {
 					stdout.printf("TIOCCGWINSZ ws_ypixel not supported.\n");
 				} else {
@@ -996,6 +1006,7 @@ public class SayakaMain
 			}
 
 			var msg_cols = "";
+			var msg_width = "";
 			var msg_height = "";
 
 			// 画面幅は常に更新
@@ -1006,7 +1017,16 @@ public class SayakaMain
 				screen_cols = 0;
 				msg_cols = " (not detected)";
 			}
-			// フォント高さは指定されてない時だけ取得した値を使う
+			// フォント幅と高さは指定されてない時だけ取得した値を使う
+			if (fontwidth == 0) {
+				if (ws_width > 0) {
+					fontwidth = ws_width;
+					msg_width = " (from ioctl)";
+				} else {
+					fontwidth = DEFAULT_FONT_WIDTH;
+					msg_width = " (DEFAULT)";
+				}
+			}
 			if (fontheight == 0) {
 				if (ws_height > 0) {
 					fontheight = ws_height;
@@ -1024,6 +1044,7 @@ public class SayakaMain
 			if (debug) {
 				stdout.printf("screen columns=%d%s\n", screen_cols, msg_cols);
 				stdout.printf("font height=%d%s\n", fontheight, msg_height);
+				stdout.printf("font width=%d%s\n", fontwidth, msg_width);
 				stdout.printf("iconsize=%d\n", iconsize);
 				stdout.printf("imagesize=%d\n", imagesize);
 			}
