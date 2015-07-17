@@ -82,7 +82,7 @@ public class SayakaMain
 	public int fontheight;
 	public int iconsize;
 	public int imagesize;
-	public int global_indent_level;
+	public int indent_depth;
 	public bool bg_white;
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
@@ -317,9 +317,9 @@ public class SayakaMain
 		if (s.Has("quoted_status")) {
 			// この中はインデントを一つ下げる
 			stdout.printf("\n");
-			global_indent_level++;
+			indent_depth++;
 			showstatus(s.GetJson("quoted_status"));
-			global_indent_level--;
+			indent_depth--;
 		}
 
 		// このステータスの既 RT、既ふぁぼ数
@@ -391,7 +391,7 @@ public class SayakaMain
 		}
 
 		// インデント階層
-		var left = 6 * (global_indent_level + 1);
+		var left = 6 * (indent_depth + 1);
 		string indent = CSI + @"$(left)C";
 
 		bool inescape = false;
@@ -847,8 +847,8 @@ public class SayakaMain
 	public bool show_image(string img_url, int width)
 	{
 		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
-		if (global_indent_level > 0) {
-			var left = global_indent_level * 6;
+		if (indent_depth > 0) {
+			var left = indent_depth * 6;
 			stdout.printf(@"$(CSI)$(left)C");
 		}
 
