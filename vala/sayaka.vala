@@ -80,6 +80,8 @@ public class SayakaMain
 	public bool protect;
 	public bool debug;
 	public int screen_cols;
+	public int opt_fontwidth;
+	public int opt_fontheight;
 	public int fontheight;
 	public int fontwidth;
 	public int iconsize;
@@ -120,7 +122,12 @@ public class SayakaMain
 				iconv_tocode = "euc-jp";
 				break;
 			 case "--font":
-				fontheight = int.parse(args[++i]);
+				var metric = args[++i].split("x");
+				if (metric.length != 2) {
+					usage();
+				}
+				opt_fontwidth = int.parse(metric[0]);
+				opt_fontheight = int.parse(metric[1]);
 				break;
 			 case "--jis":
 				iconv_tocode = "jis";
@@ -1019,7 +1026,9 @@ public class SayakaMain
 				msg_cols = " (not detected)";
 			}
 			// フォント幅と高さは指定されてない時だけ取得した値を使う
-			if (fontwidth == 0) {
+			if (opt_fontwidth > 0) {
+				fontwidth = opt_fontwidth;
+			} else {
 				if (ws_width > 0) {
 					fontwidth = ws_width;
 					msg_width = " (from ioctl)";
@@ -1028,7 +1037,9 @@ public class SayakaMain
 					msg_width = " (DEFAULT)";
 				}
 			}
-			if (fontheight == 0) {
+			if (opt_fontheight > 0) {
+				fontheight = opt_fontheight;
+			} else {
 				if (ws_height > 0) {
 					fontheight = ws_height;
 					msg_height = " (from ioctl)";
@@ -1064,7 +1075,7 @@ public class SayakaMain
 		stdout.printf(
 """usage: sayaka [<options>...]
 	--color <n> : color mode { 2 .. 256 }. default 256.
-	--font <n> : font height. default 14.
+	--font <w>x<h> : font width x height. default 7x14.
 	--white
 	--noimg
 	--jis
