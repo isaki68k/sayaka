@@ -420,7 +420,7 @@ function showstatus_callback($object)
 function showstatus($status)
 {
 	global $indent_cols;
-	global $indent_level;
+	global $indent_depth;
 	global $protect;
 
 	if (isset($status->object)) {
@@ -483,9 +483,9 @@ function showstatus($status)
 	if (isset($s->quoted_status)) {
 		// この中はインデントを一つ下げる
 		print "\n";
-		$indent_level++;
+		$indent_depth++;
 		showstatus($s->quoted_status);
-		$indent_level--;
+		$indent_depth--;
 	}
 
 	// このステータスの既 RT、既ふぁぼ数
@@ -824,7 +824,7 @@ function make_indent($text)
 {
 	global $screen_cols;
 	global $indent_cols;
-	global $indent_level;
+	global $indent_depth;
 
 	// 桁数が分からない場合は何もしない
 	if ($screen_cols == 0) {
@@ -832,7 +832,7 @@ function make_indent($text)
 	}
 
 	// インデント階層
-	$left = $indent_cols * ($indent_level + 1);
+	$left = $indent_cols * ($indent_depth + 1);
 	$indent = CSI."{$left}C";
 
 	$state = "";
@@ -927,11 +927,11 @@ function show_image($img_file, $img_url, $width)
 	global $cachedir;
 	global $img2sixel;
 	global $indent_cols;
-	global $indent_level;
+	global $indent_depth;
 
 	// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
-	if ($indent_level > 0) {
-		$left = $indent_cols * $indent_level;
+	if ($indent_depth > 0) {
+		$left = $indent_cols * $indent_depth;
 		print CSI."{$left}C";
 	}
 
