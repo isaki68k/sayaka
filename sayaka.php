@@ -1290,7 +1290,7 @@ function signal_handler($signo)
 
 		if ($debug) {
 			print "screen columns={$screen_cols}\n";
-			print "font height=${fontheight}\n";
+			print "font height={$fontheight}\n";
 			print "iconsize={$iconsize}\n";
 			print "imagesize={$imagesize}\n";
 		}
