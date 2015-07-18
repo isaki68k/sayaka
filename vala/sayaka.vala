@@ -1049,9 +1049,18 @@ public class SayakaMain
 				}
 			}
 
-			// フォント高さからアイコンの大きさを決定
-			iconsize = (int)(fontheight * 2.5);
-			imagesize = (int)(fontheight * 8.5);
+			// フォントの高さからアイコンサイズを決定する。
+			//
+			// SIXEL 表示後のカーソル位置は、
+			// o xterm 等では SIXEL 最終ラスタを含む行の次の行、
+			// o VT382 等では SIXEL 最終ラスタの次のラスタを含む行
+			// になる。
+			// アイコンは2行以上3行未満にする必要があり、
+			// かつ6の倍数だと SIXEL 的に都合がいい。
+			iconsize  = ((fontheight * 3 - 1) / 6) * 6;
+			// 画像サイズにはアイコンのような行制約はないので計算は適当。
+			// XXX まだ縦横について考慮してない
+			imagesize = ((fontheight * 9 - 1) / 6) * 6;
 
 			// そこからインデント幅を決定
 			indent_cols = ((int)(iconsize / fontwidth)) + 1;
