@@ -4,10 +4,15 @@ public class Diag
 {
 	public static bool global_trace = false;
 	public static bool global_debug = false;
+	public static bool global_warn  = false;
+	public static bool global_error = true;
+
 	public static int global_errexit = 1;
 
 	public bool opt_trace;
 	public bool opt_debug;
+	public bool opt_warn;
+	public bool opt_error;
 	public int opt_errexit;
 	public string ClassName;
 
@@ -16,6 +21,8 @@ public class Diag
 		ClassName = className;
 		opt_trace = global_trace;
 		opt_debug = global_debug;
+		opt_warn = global_warn;
+		opt_error = global_error;
 		opt_errexit = global_errexit;
 	}
 
@@ -29,6 +36,20 @@ public class Diag
 	public void Debug(string s)
 	{
 		if (opt_debug) {
+			stderr.puts(@"$(ClassName) $(s)\n");
+		}
+	}
+
+	public void Warn(string s)
+	{
+		if (opt_warn) {
+			stderr.puts(@"$(ClassName) $(s)\n");
+		}
+	}
+
+	public void Error(string s)
+	{
+		if (opt_error) {
 			stderr.puts(@"$(ClassName) $(s)\n");
 		}
 	}
