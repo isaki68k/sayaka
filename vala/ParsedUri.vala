@@ -63,9 +63,17 @@ namespace ULib
 			return SchemeAuthority() + PQF();
 		}
 
-
+		// 空の ParsedUri オブジェクトを生成します。
 		public ParsedUri()
 		{
+			Scheme = "";
+			Host = "";
+			Port = "";
+			User = "";
+			Password = "";
+			Path = "";
+			Query = "";
+			Fragment = "";
 		}
 
 		/// <summary>
