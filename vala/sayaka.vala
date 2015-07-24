@@ -1026,6 +1026,7 @@ public class SayakaMain
 				msg_cols = " (not detected)";
 			}
 			// フォント幅と高さは指定されてない時だけ取得した値を使う
+			var use_default_font = false;
 			if (opt_fontwidth > 0) {
 				fontwidth = opt_fontwidth;
 			} else {
@@ -1035,6 +1036,7 @@ public class SayakaMain
 				} else {
 					fontwidth = DEFAULT_FONT_WIDTH;
 					msg_width = " (DEFAULT)";
+					use_default_font = true;
 				}
 			}
 			if (opt_fontheight > 0) {
@@ -1046,7 +1048,13 @@ public class SayakaMain
 				} else {
 					fontheight = DEFAULT_FONT_HEIGHT;
 					msg_height = " (DEFAULT)";
+					use_default_font = true;
 				}
+			}
+			if (use_default_font) {
+				stdout.printf("sayaka: Fontsize not detected. "
+					+ @"Application default $(fontwidth)x$(fontheight) "
+					+ "is used");
 			}
 
 			// フォントの高さからアイコンサイズを決定する。
