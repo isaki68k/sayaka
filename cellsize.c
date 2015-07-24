@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
 	height = width = -1;
 
-	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) != -1) {
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) != -1) {
 		if (ws.ws_row != 0) {
 			height = ws.ws_ypixel / ws.ws_row;
 		}
