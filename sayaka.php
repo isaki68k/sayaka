@@ -1303,6 +1303,7 @@ function signal_handler($signo)
 		}
 
 		// フォント幅と高さは指定されてない時だけ取得した値を使う
+		$use_default_size = false;
 		if ($opt_fontwidth != "") {
 			$fontwidth = $opt_fontwidth;
 		} else {
@@ -1310,6 +1311,7 @@ function signal_handler($signo)
 				$fontwidth = $ws_width;
 			} else {
 				$fontwidth = DEFAULT_FONT_WIDTH;
+				$use_default_size = true;
 			}
 		}
 		if ($opt_fontheight != "") {
@@ -1319,10 +1321,15 @@ function signal_handler($signo)
 				$fontheight = $ws_height;
 			} else {
 				$fontheight = DEFAULT_FONT_HEIGHT;
+				$use_default_size = true;
 			}
 		}
 		$fontwidth  = intval($fontwidth + 0);
 		$fontheight = intval($fontheight + 0);
+		if ($use_default_size) {
+			print "sayaka: Fontsize not detected. ";
+			print "Application default {$fontwidth}x{$fontheight} is used.\n";
+		}
 
 		// フォントの高さからアイコンサイズを決定する。
 		//
