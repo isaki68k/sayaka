@@ -5,6 +5,7 @@ twitter クライアント sayaka ちゃん version 3.1.0 (2015/07/26)
 
 * ユーザストリームの垂れ流しが出来ます。
 * mlterm などの sixel 対応ターミナル用です。
+	(RLogin は sixel 画像を勝手にリサイズするので非推奨)
 * PHP スクリプトです。
 * ruby じゃないので遅マシンでも快適 (たぶん)
 
@@ -189,7 +190,6 @@ Input PIN code:
 % php -S localhost:8000
 % curl localhost:8000/sayaka.php
 ```
-
 
 TODO
 ---
