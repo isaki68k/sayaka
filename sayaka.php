@@ -27,7 +27,7 @@
  * SUCH DAMAGE.
  */
 
-	$version = "3.0.9 (2015/06/14)";
+	$version = "3.1.0 (2015/07/26)";
 	$progname = $_SERVER["argv"][0];
 
 	// 定数定義
