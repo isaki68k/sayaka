@@ -32,6 +32,7 @@ public class SixelV
 	public bool opt_x68k = false;
 	public bool opt_ignoreerror = false;
 	public ColorMode opt_findfunc = ColorMode.Custom;
+	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 
 	public void main2(string[] args)
 	{
@@ -174,6 +175,14 @@ public class SixelV
 						opt_ignoreerror = !opt_ignoreerror;
 						break;
 
+					case "--ipv4":
+						opt_address_family = SocketFamily.IPV4;
+						break;
+
+					case "--ipv6":
+						opt_address_family = SocketFamily.IPV6;
+						break;
+
 					default:
 						usage();
 						break;
@@ -264,6 +273,7 @@ public class SixelV
 		if (filename.contains("://")) {
 			try {
 				var file = new HttpClient(filename);
+				file.Family = opt_address_family;
 stderr.printf("%s\n", filename);
 				var stream = file.GET();
 				sx.LoadFromStream(stream);
