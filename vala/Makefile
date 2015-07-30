@@ -55,6 +55,7 @@ o_SRCS = \
 	OAuth.vala \
 	StringUtil.vala \
 	Diag.vala \
+	Dictionary.vala \
 
 o: ${o_SRCS}
 	valac ${VALAFLAGS} ${PKGS} ${o_SRCS}
