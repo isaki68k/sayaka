@@ -1,12 +1,18 @@
+using ULib;
+using StringUtil;
 
 public class OAuth
 {
 	private Diag diag = new Diag("OAuth");
 
 
+	// OBSOLETE
 	public string URL { get; set; }
 
+	public string ConsumerKey { get; set; }
 	public string ConsumerSecret { get; set; }
+
+	public Dictionary<string, string> Params;
 
 	private Rand rand;
 
@@ -56,4 +62,109 @@ public class OAuth
 		var rv = Base64.encode(digest);
 		return rv;
 	}
+
+	// URI の Query 句がまだ使えないので。
+	public Dictionary<string, string> AdditionalParams = new Dictionary<string, string>();
+
+	// パラメータを作ってアクセス URI を返す
+	public string CreateParams(string method, string uri)
+	{
+		Params = new Dictionary<string, string>();
+
+		// 追加パラメータで初期化
+		foreach (KeyValuePair<string, string> kv in AdditionalParams) {
+			Params[kv.Key] = kv.Value;
+		}
+
+		var nonce = GetNonce();
+		var unixtime = new DateTime.now_utc().to_unix();
+
+		Params["oauth_version"] = "1.0";
+		Params["oauth_signature_method"] = "HMAC-SHA1";
+		Params["oauth_nonce"] = nonce;
+		Params["oauth_timestamp"] = unixtime.to_string();
+		Params["oauth_consumer_key"] = ConsumerKey;
+		Params["oauth_version"] = "1.0";
+
+		if (token != null) {
+			Params["oauth_token"] = token;
+		}
+
+		var encoded_uri = UrlEncode(uri);
+		var encoded_params = UrlEncode(MakeQuery(Params));
+		var message = @"$(method)&$(encoded_uri)&$(encoded_params)";
+
+		var key = ConsumerSecret + "&" + (token_secret ?? "");
+
+		var signature = HMAC_SHA1_Base64(key, message);
+
+		Params["oauth_signature"] = signature;
+
+		// アクセス URI を返す
+		return @"$(uri)?$(MakeQuery(Params))";
+	}
+	
+	// dict を key1=value1&key2=value2 にする
+	public static string MakeQuery(Dictionary<string, string> paramdict)
+	{
+		var sb = new StringBuilder();
+		bool f_first = true;
+		foreach (KeyValuePair<string, string> p in paramdict) {
+			if (f_first == false) {
+				sb.append_c('&');
+			} else {
+				f_first = false;
+			}
+			sb.append("%s=%s".printf(p.Key, UrlEncode(p.Value)));
+		}
+		return sb.str;
+	}
+
+	// key1=val1&key2=val2 のパース
+	public static void ParseQuery(Dictionary<string, string> dict, string s)
+	{
+		var keyvalues = s.split("&");
+		for (int i = 0; i < keyvalues.length; i++) {
+			var kv = StringUtil.Split2(keyvalues[i], "=");
+			dict[kv[0]] = kv[1];
+		}
+	}
+
+	public void RequestToken(string uri_request_token)
+	{
+		var uri = CreateParams("GET", uri_request_token);
+
+		var client = new HttpClient(uri);
+
+		Dictionary<string, string> resultDict = new Dictionary<string, string>();
+
+		try {
+			var stream = client.GET();
+			// TODO: content-encoding とかに応じた処理
+			var datastream = new DataInputStream(stream);
+			datastream.set_newline_type(DataStreamNewlineType.CR_LF);
+			string buf;
+			while ((buf = datastream.read_line()) != null) {
+				ParseQuery(resultDict, buf);
+			}
+		} catch (Error e) {
+			stderr.printf("%s\n", e.message);
+		}
+
+		token = resultDict["oauth_token"];
+		token_secret = resultDict["oauth_token_secret"];
+	}
+
+	public string token;
+	public string token_secret;
+
+	public InputStream RequestAPI(string uri_api) throws Error
+	{
+		var uri = CreateParams("GET", uri_api);
+
+		var client = new HttpClient(uri);
+
+		return client.GET();
+	}
 }
+

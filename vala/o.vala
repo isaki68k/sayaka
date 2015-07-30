@@ -10,9 +10,6 @@ class Program
 {
 	public static int main(string[] args)
 	{
-		var consumer_key = "key";
-		var consumer_secret = "secret";
-
 		var uri_request_token = "http://term.ie/oauth/example/request_token.php";
 		var uri_access_token = "http://term.ie/oauth/example/access_token.php";
 		var uri_api = "http://term.ie/oauth/example/echo_api.php";
@@ -22,49 +19,58 @@ class Program
 		var diag = new Diag("main");
 		var oauth = new OAuth();
 
-		var paramdict = new Dictionary<string, string>();
+		oauth.ConsumerKey = "key";
+		oauth.ConsumerSecret = "secret";
 
-		var nonce = oauth.GetNonce();
-		var unixtime = new DateTime.now_utc().to_unix();
+		diag.Debug("------ REQUEST_TOKEN ------");
+		oauth.RequestToken(uri_request_token);
 
-		paramdict["oauth_version"] = "1.0";
-		paramdict["oauth_signature_method"] = "HMAC-SHA1";
-		paramdict["oauth_nonce"] = nonce;
-		paramdict["oauth_timestamp"] = unixtime.to_string();
-		paramdict["oauth_consumer_key"] = consumer_key;
-		paramdict["oauth_version"] = "1.0";
-
-		var method = "GET";
-		var encoded_uri = UrlEncode(uri_request_token);
-		var encoded_params = UrlEncode(MakeQuery(paramdict));
-		var message = @"$(method)&$(encoded_uri)&$(encoded_params)";
-
-		var key = consumer_secret + "&";
-
-		var signature = oauth.HMAC_SHA1_Base64(key, message);
-
-		paramdict["oauth_signature"] = signature;
-
-		var client = new HttpClient(@"$(uri_request_token)?$(MakeQuery(paramdict))");
-		try {
-			var stream = client.GET();
-			var datastream = new DataInputStream(stream);
-			string buf;
-			while ((buf = datastream.read_line()) != null) {
-				stdout.printf("%s", buf);
-			}
-		} catch (Error e) {
-			stderr.printf("%s\n", e.message);
-		}
-		
-
-
-		foreach (KeyValuePair<string, string> p in paramdict) {
+		diag.Debug("oauth.Params\n");
+		foreach (KeyValuePair<string, string> p in oauth.Params) {
 			diag.Debug(@"$(p.Key)=$(p.Value)");
 		}
-
 		stdout.printf("\n");
 
+		diag.Debug("result");
+		diag.Debug(@"token=$(oauth.token)");
+		diag.Debug(@"token_secret=$(oauth.token_secret)");
+
+		diag.Debug("------ ACCESS_TOKEN ------");
+		oauth.RequestToken(uri_access_token);
+
+		diag.Debug("oauth.Params\n");
+		foreach (KeyValuePair<string, string> p in oauth.Params) {
+			diag.Debug(@"$(p.Key)=$(p.Value)");
+		}
+		stdout.printf("\n");
+
+		diag.Debug("result");
+		diag.Debug(@"token=$(oauth.token)");
+		diag.Debug(@"token_secret=$(oauth.token_secret)");
+
+		diag.Debug("------ API ------");
+		try {
+			oauth.AdditionalParams["hoge"] = "fuga";
+			oauth.AdditionalParams["foo"] = "bar";
+
+			var resultStream = oauth.RequestAPI(uri_api);
+
+			diag.Debug("oauth.Params\n");
+			foreach (KeyValuePair<string, string> p in oauth.Params) {
+				diag.Debug(@"$(p.Key)=$(p.Value)");
+			}
+			stdout.printf("\n");
+
+			var datastream = new DataInputStream(resultStream);
+			datastream.set_newline_type(DataStreamNewlineType.CR_LF);
+			string buf;
+			while ((buf = datastream.read_line()) != null) {
+				stdout.printf(buf);
+			}
+		} catch (Error e) {
+			stderr.printf("ERROR: %s\n", e.message);
+		}
+		
 		return 0;
 
 	}
@@ -82,6 +88,16 @@ class Program
 			sb.append("%s=%s".printf(p.Key, UrlEncode(p.Value)));
 		}
 		return sb.str;
+	}
+
+	public static void ParseQuery(Dictionary<string, string> dict, string s)
+	{
+		// key1=val1&key2=val2 のパース
+		var keyvalues = s.split("&");
+		for (int i = 0; i < keyvalues.length; i++) {
+			var kv = StringUtil.Split2(keyvalues[i], "=");
+			dict[kv[0]] = kv[1];
+		}
 	}
 
 
