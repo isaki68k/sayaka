@@ -1,3 +1,8 @@
+//
+// 参考資料
+// http://techno-st.net/2009/11/26/twitter-api-oauth-0.html
+//
+
 using ULib;
 using StringUtil;
 
