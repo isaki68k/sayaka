@@ -18,9 +18,6 @@ class Program
 
 	public static int main_twitter(string[] args)
 	{
-		token = "97356294-JUyVQlu2uXjYuN6nO2odY3Oo5Wa4YSMIlbtrAzgNH";
-		token_secret = "IMXpMBFl1BBeVJTzLxZpjIHtCaqIWvMPRRWnd3Yumg36e";
-
 		var uri_request_token = "https://twitter.com/oauth/request_token";
 		var uri_access_token = "https://twitter.com/oauth/access_token";
 	//	var uri_api = "https://stream.twitter.com/1.1/statuses/sample.json";
