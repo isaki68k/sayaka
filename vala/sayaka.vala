@@ -1102,7 +1102,7 @@ stdout.printf("%s\n", "|" + line + "|");
 			if (use_default_font) {
 				stdout.printf("sayaka: Fontsize not detected. "
 					+ @"Application default $(fontwidth)x$(fontheight) "
-					+ "is used");
+					+ "is used\n");
 			}
 
 			// フォントの高さからアイコンサイズを決定する。
