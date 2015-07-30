@@ -2,10 +2,13 @@ SRCS=	\
 	sayaka.vala \
 	Diag.vala \
 	Dictionary.vala \
+	FileUtil.vala \
 	HttpClient.vala \
 	Json.vala \
+	OAuth.vala \
 	SixelConverter.vala \
 	StringUtil.vala \
+	Twitter.vala \
 	ParsedUri.vala \
 	System.OS.vala \
 

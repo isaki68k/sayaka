@@ -91,6 +91,7 @@ public class SayakaMain
 	public bool bg_white;
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
+	public bool opt_play;
 
 	public string cachedir = "./cache";
 
@@ -135,6 +136,9 @@ public class SayakaMain
 			 case "--noimg":
 				opt_noimg = true;
 				break;
+			 case "--play":
+				opt_play = true;
+				break;
 			 case "--protect":
 				protect = true;
 				break;
@@ -155,19 +159,63 @@ public class SayakaMain
 
 		init_stream();
 
+		Twitter tw;
+		DataInputStream userStream = null;
+		
+		if (opt_play == false) {
+			tw = new Twitter();
+			try {
+				tw.AccessToken.LoadFromFile("token.json");
+			} catch {
+				tw.GetAccessToken();
+				if (tw.AccessToken.Token == "") {
+					stderr.printf("GIVE UP\n");
+					Process.exit(1);
+				}
+				try {
+					tw.AccessToken.SaveToFile("token.json");
+				} catch {
+					stderr.printf("Token save error\n");
+					Process.exit(1);
+				}
+			}
+
+			try {
+				userStream = tw.UserStreamAPI("user");
+			} catch (Error e) {
+				stderr.printf("userstream: %s\n", e.message);
+				Process.exit(1);
+			}
+		}
+
 		string line;
-		while ((line = stdin.read_line()) != null) {
+
+		do {
+			if (opt_play) {
+				line = stdin.read_line();
+			} else {
+				try {
+					line = userStream.read_line();
+				} catch (Error e) {
+					stderr.printf("userstream.read_line: %s\n", e.message);
+					Process.exit(1);
+				}
+			}
+			if (line == null) break;
+
+stdout.printf("%s\n", "|" + line + "|");
+
 			var parser = new ULib.JsonParser();
 			try {
 				var obj = parser.Parse(line);
 				TRACE("obj=%p".printf(obj));
 				TRACE("obj=%s\n".printf(obj.ToString()));
 				showstatus_callback(obj);
-			} catch {
-				stdout.printf("error\n");
+			} catch (Error e) {
+				stdout.printf("error: %s\n", e.message);
 				return 0;
 			}
-		}
+		} while (true);
 		return 0;
 	}
 

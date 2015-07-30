@@ -135,6 +135,7 @@ public class OAuth
 		var uri = CreateParams("GET", uri_request_token);
 
 		var client = new HttpClient(uri);
+		client.SendHeaders["authorization"] = "OAuth";
 
 		Dictionary<string, string> resultDict = new Dictionary<string, string>();
 
@@ -163,6 +164,7 @@ public class OAuth
 		var uri = CreateParams("GET", uri_api);
 
 		var client = new HttpClient(uri);
+		client.SendHeaders["authorization"] = "OAuth";
 
 		return client.GET();
 	}
