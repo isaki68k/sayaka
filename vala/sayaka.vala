@@ -972,7 +972,19 @@ stdout.printf("%s\n", "|" + line + "|");
 			sx.Load(img_file);
 		} catch {
 			try {
-				var stream = fg.GET();
+				var basestream = fg.GET();
+				var ms = new MemoryOutputStream.resizable();
+				try {
+					ms.splice(basestream, 0);
+				} catch {
+					// ignore
+				}
+				ms.close();
+
+				// ms のバックエンドバッファの所有権を移す。
+				var msdata = ms.steal_data();
+				msdata.length = (int)ms.get_data_size();
+				var stream = new MemoryInputStream.from_data(msdata, null);
 
 				// イメージファイルそのままをキャッシュ
 				try {
