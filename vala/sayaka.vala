@@ -169,6 +169,7 @@ public class SayakaMain
 
 		Twitter tw;
 		DataInputStream userStream = null;
+		ChunkedReader chunk = null;
 		
 		if (opt_play == false) {
 			tw = new Twitter();
@@ -191,7 +192,7 @@ public class SayakaMain
 			try {
 				diag.Trace("UserStreamAPI call");
 				userStream = tw.UserStreamAPI("user");
-				userStream.set_newline_type(DataStreamNewlineType.CR_LF);
+				chunk = new ChunkedReader(userStream);
 			} catch (Error e) {
 				stderr.printf("userstream: %s\n", e.message);
 				Process.exit(1);
@@ -205,31 +206,7 @@ public class SayakaMain
 				line = stdin.read_line();
 			} else {
 				try {
-					diag.Trace("read_line call");
-					// XXX chunked 固定
-					var len = userStream.read_line();
-					diag.Trace(@"read_line len returned: $(len)");
-					if (len == "") {
-						diag.Debug("empty line of len");
-						continue;
-					}
-					int chunkLen = 0;
-					len.scanf("%x", &chunkLen);
-					if (chunkLen == 0) {
-						stderr.printf("End Of Chunk");
-						break;
-					}
-					uint8[] linebuf = new uint8[chunkLen];
-					userStream.read(linebuf);
-					line = (string)linebuf;
-
-					line = StringUtil.Trim(line);
-
-					diag.Trace(@"read_line returned: $(line)");
-
-					// 終わりの CRLF を読み飛ばす
-					userStream.read_line();
-
+					line = chunk.read_line();
 				} catch (Error e) {
 					stderr.printf("userstream.read_line: %s\n", e.message);
 					Process.exit(1);
@@ -240,8 +217,6 @@ public class SayakaMain
 				diag.Debug("empty line");
 				continue;
 			}
-
-stdout.printf("%s\n", "|" + line + "|");
 
 			var parser = new ULib.JsonParser();
 			try {
@@ -256,6 +231,128 @@ stdout.printf("%s\n", "|" + line + "|");
 		} while (true);
 		return 0;
 	}
+
+public class ChunkedReader
+{
+	private Diag diag = new Diag("ChunkedReader");
+
+	private DataInputStream Src;
+
+	private MemoryInputStream Chunks;
+
+	public ChunkedReader(DataInputStream stream)
+	{
+		Src = stream;
+		Src.set_newline_type(DataStreamNewlineType.CR_LF);
+
+		Chunks = new MemoryInputStream();
+	}
+
+	// チャンクを読み込みます。
+	// 読み込めたら true を返します。
+	private bool ReadChunk() throws Error
+	{
+		var intlen = 0;
+		var len = Src.read_line();
+		len.scanf("%x", &intlen);
+		diag.Debug(@"intlen = $(intlen)");
+		if (intlen == 0) {
+			return false;
+		}
+
+		uint8[] buf = new uint8[intlen];
+		size_t redlen;
+		bool r = Src.read_all(buf, out redlen);
+		if (r == false) {
+			diag.Debug("read_all false");
+			return false;
+		}
+		if (redlen != intlen) {
+			diag.Debug(@"redlen=$(redlen) intlen=$(intlen)");
+			return false;
+		}
+
+		Chunks.add_data(buf, null);
+
+		// 最後の CRLF を読み捨てる
+		Src.read_line();
+		
+		return true;
+	}
+
+	private bool TryReadLine(out string rv) throws Error
+	{
+		diag.Trace("TryReadLine");
+		int64 chunksLength;
+		Chunks.seek(0, SeekType.END);
+		chunksLength = Chunks.tell();
+
+		if (chunksLength == 0) {
+			diag.Debug("chunksLength=0");
+			rv = null;
+			return false;
+		}
+
+		Chunks.seek(0, SeekType.SET);
+
+		var sb = new StringBuilder();
+
+		bool f_crlf = false;
+		uint8[] b = new uint8[1];
+		for (int i = 0; i < chunksLength; i++) {
+			Chunks.read(b);
+//stderr.printf("%02X ", b[0]);
+			char c = (char)b[0];
+			sb.append_c(c);
+			if (c == '\n') {
+				if (sb.len > 1 && (char)sb.data[sb.len - 2] == '\r') {
+					f_crlf = true;
+					break;
+				}
+			}
+		}
+
+		if (f_crlf) {
+			diag.Debug("CRLF found");
+			int remain = (int)chunksLength - (int)sb.len;
+			if (remain > 0) {
+				// 読み込み終わった部分を Chunks を作りなおすことで破棄する。
+				uint8[] tmp = new uint8[remain];
+				Chunks.read(tmp);
+				Chunks = null;
+				Chunks = new MemoryInputStream();
+				Chunks.add_data(tmp, null);
+			} else {
+				// きっかりだったので空にする。
+				Chunks = null;
+				Chunks = new MemoryInputStream();
+			}
+			// CRLF は取り除く。
+			sb.erase(sb.len - 2);
+			rv = sb.str;
+//stderr.printf("\nrv=%s\n", rv);
+			return true;
+		} else {
+			diag.Debug("No line");
+			rv = null;
+			return false;
+		}
+	}
+
+	public string? read_line() throws Error
+	{
+		for (;;) {
+			string rv;
+			if (TryReadLine(out rv)) {
+				return rv;
+			} else {
+				if (ReadChunk() == false) {
+					return null;
+				}
+			}
+		}
+	}
+}
 
 	// ユーザストリームモードのための準備
 	public void init_stream()
