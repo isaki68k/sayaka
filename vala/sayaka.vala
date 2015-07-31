@@ -226,6 +226,10 @@ public class SayakaMain
 					line = StringUtil.Trim(line);
 
 					diag.Trace(@"read_line returned: $(line)");
+
+					// 終わりの CRLF を読み飛ばす
+					userStream.read_line();
+
 				} catch (Error e) {
 					stderr.printf("userstream.read_line: %s\n", e.message);
 					Process.exit(1);
