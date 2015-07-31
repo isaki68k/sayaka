@@ -85,7 +85,7 @@ namespace ULib
 				break;
 			}
 
-
+#if 0
 			// ボディをメモリに読み込んで、そのメモリへのストリームを返す。
 			// https の時はストリームの終了で TlsConnection が例外を吐く。
 			// そのため、ストリームを直接外部に渡すと、予期しないタイミングで
@@ -104,6 +104,9 @@ namespace ULib
 			var msdata = ms.steal_data();
 			msdata.length = (int)ms.get_data_size();
 			var rv = new MemoryInputStream.from_data(msdata, null);
+#else
+			var rv = dIn;
+#endif
 
 			return rv;
 		}

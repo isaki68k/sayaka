@@ -98,8 +98,9 @@ public class Twitter
 			}
 		}
 
+		diag.Trace("RequestAPI call");
 		var baseStream = oauth.RequestAPI(apiRoot + api + ".json");
-
+		diag.Trace("RequestAPI return");
 		return new DataInputStream(baseStream);
 	}
 

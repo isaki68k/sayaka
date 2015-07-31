@@ -51,6 +51,8 @@ public class MediaInfo
 
 public class SayakaMain
 {
+	private static Diag diag;
+
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
 
@@ -150,12 +152,18 @@ public class SayakaMain
 				break;
 			 case "--debug":
 				debug = true;
+				Diag.global_trace = true;
+				Diag.global_debug = true;
+				Diag.global_warn = true;
 				break;
 			 default:
 				usage();
 				break;
 			}
 		}
+
+		diag  = new Diag("SayakaMain");
+		diag.Trace("TRACE CHECK");
 
 		init_stream();
 
@@ -181,7 +189,9 @@ public class SayakaMain
 			}
 
 			try {
+				diag.Trace("UserStreamAPI call");
 				userStream = tw.UserStreamAPI("user");
+				userStream.set_newline_type(DataStreamNewlineType.CR_LF);
 			} catch (Error e) {
 				stderr.printf("userstream: %s\n", e.message);
 				Process.exit(1);
@@ -195,13 +205,37 @@ public class SayakaMain
 				line = stdin.read_line();
 			} else {
 				try {
-					line = userStream.read_line();
+					diag.Trace("read_line call");
+					// XXX chunked 固定
+					var len = userStream.read_line();
+					diag.Trace(@"read_line len returned: $(len)");
+					if (len == "") {
+						diag.Debug("empty line of len");
+						continue;
+					}
+					int chunkLen = 0;
+					len.scanf("%x", &chunkLen);
+					if (chunkLen == 0) {
+						stderr.printf("End Of Chunk");
+						break;
+					}
+					uint8[] linebuf = new uint8[chunkLen];
+					userStream.read(linebuf);
+					line = (string)linebuf;
+
+					line = StringUtil.Trim(line);
+
+					diag.Trace(@"read_line returned: $(line)");
 				} catch (Error e) {
 					stderr.printf("userstream.read_line: %s\n", e.message);
 					Process.exit(1);
 				}
 			}
 			if (line == null) break;
+			if (line == "") {
+				diag.Debug("empty line");
+				continue;
+			}
 
 stdout.printf("%s\n", "|" + line + "|");
 

@@ -10,12 +10,24 @@ public class OAuth
 
 	public Dictionary<string, string> Params;
 
+	// リクエストのパラメータ。
+	// URI の Query 句がまだ使えないので。
+	public Dictionary<string, string> AdditionalParams = new Dictionary<string, string>();
+
+	// OAuth ヘッダモードでは true を設定してください。
+	public bool UseOAuthHeader;
+
+	// アクセストークンとアクセスシークレット。
+	public string token;
+	public string token_secret;
+
 	private Rand rand;
 
 	public OAuth()
 	{
 		//rand = new Rand.with_seed((uint32)(new Datetime.now_utc().to_unix()));
 		rand = new Rand();
+		UseOAuthHeader = true;
 	}
 
 	// Nonce のための文字列を取得します。
@@ -59,9 +71,6 @@ public class OAuth
 		return rv;
 	}
 
-	// URI の Query 句がまだ使えないので。
-	public Dictionary<string, string> AdditionalParams = new Dictionary<string, string>();
-
 	// パラメータを作ってアクセス URI を返す
 	public string CreateParams(string method, string uri)
 	{
@@ -97,7 +106,11 @@ public class OAuth
 		Params["oauth_signature"] = signature;
 
 		// アクセス URI を返す
-		return @"$(uri)?$(MakeQuery(Params))";
+		if (UseOAuthHeader) {
+			return @"$(uri)?$(MakeQuery(AdditionalParams))";
+		} else {
+			return @"$(uri)?$(MakeQuery(Params))";
+		}
 	}
 	
 	// dict を key1=value1&key2=value2 にする
@@ -126,12 +139,36 @@ public class OAuth
 		}
 	}
 
+	public static string MakeOAuthHeader(Dictionary<string, string> dict)
+	{
+		var sb = new StringBuilder();
+		bool f_first = true;
+		sb.append("OAuth ");
+		foreach (KeyValuePair<string, string> p in dict) {
+			if (f_first == false) {
+				sb.append_c(',');
+			} else {
+				f_first = false;
+			}
+			sb.append("%s=\"%s\"".printf(p.Key, UrlEncode(p.Value)));
+		}
+		return sb.str;
+	}
+
+	private HttpClient CreateHttp(string method, string uri)
+	{
+		var conn_uri = CreateParams(method, uri);
+
+		var client = new HttpClient(conn_uri);
+		if (UseOAuthHeader) {
+			client.SendHeaders["authorization"] = MakeOAuthHeader(Params);
+		}
+		return client;
+	}
+
 	public void RequestToken(string uri_request_token)
 	{
-		var uri = CreateParams("GET", uri_request_token);
-
-		var client = new HttpClient(uri);
-		client.SendHeaders["authorization"] = "OAuth";
+		var client = CreateHttp("GET", uri_request_token);
 
 		Dictionary<string, string> resultDict = new Dictionary<string, string>();
 
@@ -152,17 +189,18 @@ public class OAuth
 		token_secret = resultDict["oauth_token_secret"];
 	}
 
-	public string token;
-	public string token_secret;
+	private HttpClient RequestAPIClient;
 
 	public InputStream RequestAPI(string uri_api) throws Error
 	{
-		var uri = CreateParams("GET", uri_api);
+		diag.Trace("CreateHttp call");
+		RequestAPIClient = CreateHttp("GET", uri_api);
+		diag.Trace("CreateHttp return");
 
-		var client = new HttpClient(uri);
-		client.SendHeaders["authorization"] = "OAuth";
-
-		return client.GET();
+		diag.Trace("client.Get call");
+		var rv = RequestAPIClient.GET();
+		diag.Trace("client.Get return");
+		return rv;
 	}
 }
 
