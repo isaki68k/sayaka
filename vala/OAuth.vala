@@ -5,10 +5,6 @@ public class OAuth
 {
 	private Diag diag = new Diag("OAuth");
 
-
-	// OBSOLETE
-	public string URL { get; set; }
-
 	public string ConsumerKey { get; set; }
 	public string ConsumerSecret { get; set; }
 
