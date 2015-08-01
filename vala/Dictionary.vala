@@ -314,7 +314,9 @@ namespace ULib
 		{
 			var sb = new StringBuilder();
 			for (int i = 0; i < Count; i++) {
-				sb.append(@"[$(i)] $((string)(data[i].Key))=$((string)(data[i].Value))\n");
+				sb.append("[%d] |%s|=|%s|\n".printf(i,
+					(string)data[i].Key,
+					(string)data[i].Value));
 			}
 			return sb.str;
 		}

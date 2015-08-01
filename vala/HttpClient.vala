@@ -168,7 +168,7 @@ namespace ULib
 					throw new IOError.CONNECTION_CLOSED("");
 				}
 
-				diag.Debug(@"HEADER $(s)");
+				diag.Debug(@"HEADER |$(s)|");
 
 				// End of header
 				if (s == "") break;
