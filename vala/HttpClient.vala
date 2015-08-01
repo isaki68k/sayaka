@@ -85,28 +85,32 @@ namespace ULib
 				break;
 			}
 
-#if 0
-			// ボディをメモリに読み込んで、そのメモリへのストリームを返す。
-			// https の時はストリームの終了で TlsConnection が例外を吐く。
-			// そのため、ストリームを直接外部に渡すと、予期しないタイミングで
-			// 例外になるので、一旦メモリに読み込む。
-			var ms = new MemoryOutputStream.resizable();
-			try {
-				ms.splice(dIn, 0);
-			} catch {
-				// ignore
+			InputStream rv;
+			var transfer_encoding = RecvHeaders["Transfer-Encoding"] ?? "";
+			if (transfer_encoding == "chunked") {
+				// XXX とりあえずストリームをそのまま返して
+				// 呼び出し側で処理してもらう。
+				rv = dIn;
+			} else {
+				// ボディをメモリに読み込んで、そのメモリへのストリームを返す。
+				// https の時はストリームの終了で TlsConnection が例外を吐く。
+				// そのため、ストリームを直接外部に渡すと、予期しないタイミングで
+				// 例外になるので、一旦メモリに読み込む。
+				var ms = new MemoryOutputStream.resizable();
+				try {
+					ms.splice(dIn, 0);
+				} catch {
+					// ignore
+				}
+				ms.close();
+
+				// TODO: ソケットのクローズ
+
+				// ms のバックエンドバッファの所有権を移す。
+				var msdata = ms.steal_data();
+				msdata.length = (int)ms.get_data_size();
+				rv = new MemoryInputStream.from_data(msdata, null);
 			}
-			ms.close();
-
-			// TODO: ソケットのクローズ
-
-			// ms のバックエンドバッファの所有権を移す。
-			var msdata = ms.steal_data();
-			msdata.length = (int)ms.get_data_size();
-			var rv = new MemoryInputStream.from_data(msdata, null);
-#else
-			var rv = dIn;
-#endif
 
 			return rv;
 		}
