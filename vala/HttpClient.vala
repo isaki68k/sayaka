@@ -89,9 +89,8 @@ namespace ULib
 			InputStream rv;
 			var transfer_encoding = RecvHeaders["transfer-encoding"] ?? "";
 			if (transfer_encoding == "chunked") {
-				// XXX とりあえずストリームをそのまま返して
-				// 呼び出し側で処理してもらう。
-				rv = dIn;
+				// チャンク
+				rv = new ChunkedInputStream(dIn);
 			} else {
 				// ボディをメモリに読み込んで、そのメモリへのストリームを返す。
 				// https の時はストリームの終了で TlsConnection が例外を吐く。
@@ -284,15 +283,17 @@ namespace ULib
 		}
 	}
 
-	public class ChunkedReader
+	public class ChunkedInputStream
+		: DataInputStream
 	{
-		private Diag diag = new Diag("ChunkedReader");
+		private Diag diag = new Diag("ChunkedInputStream");
 
+		// 入力ストリーム
 		private DataInputStream Src;
 
 		private MemoryInputStream Chunks;
 
-		public ChunkedReader(DataInputStream stream)
+		public ChunkedInputStream(DataInputStream stream)
 		{
 			Src = stream;
 			Src.set_newline_type(DataStreamNewlineType.CR_LF);
@@ -300,6 +301,7 @@ namespace ULib
 			Chunks = new MemoryInputStream();
 		}
 
+#if 0
 		// チャンクを読み込みます。
 		// 読み込めたら true を返します。
 		private bool ReadChunk() throws Error
@@ -403,6 +405,90 @@ namespace ULib
 					}
 				}
 			}
+		}
+#endif
+
+		public override bool close(Cancellable? cancellable = null)
+			throws IOError
+		{
+			// XXX Not implemented
+			return false;
+		}
+
+		public override ssize_t read(uint8[] buffer,
+			Cancellable? cancellable = null) throws IOError
+		{
+			diag.Debug("read %d".printf(buffer.length));
+
+			// 内部バッファの長さ
+			int64 chunksLength;
+			try {
+				Chunks.seek(0, SeekType.END);
+				chunksLength = Chunks.tell();
+			} catch (Error e) {
+				diag.Debug(@"Chunks.seek/tell $(e.message)");
+				chunksLength = 0;
+			}
+			diag.Debug(@"chunksLength=$(chunksLength)");
+
+			if (chunksLength == 0) {
+				// 内部バッファが空なら、チャンクを読み込み
+				var intlen = 0;
+				var len = Src.read_line();
+				len.scanf("%x", &intlen);
+				diag.Debug(@"intlen = $(intlen)");
+				if (intlen == 0) {
+					return -1;
+				}
+
+				uint8[] buf = new uint8[intlen];
+				size_t redlen;
+				bool r = Src.read_all(buf, out redlen);
+				if (r == false) {
+					diag.Debug("read_all false");
+					return -1;
+				}
+				diag.Debug(@"redlen=$(redlen)");
+				if (redlen != intlen) {
+					diag.Debug(@"redlen=$(redlen) intlen=$(intlen)");
+					return -1;
+				}
+
+				Chunks.add_data(buf, null);
+				// 長さを再計算
+				try {
+					Chunks.seek(0, SeekType.END);
+					chunksLength = Chunks.tell();
+				} catch (Error e) {
+					diag.Debug(@"Chunks.seek/tell(2) $(e.message)");
+					chunksLength = 0;
+				}
+				diag.Debug(@"chunksLength2=$(chunksLength)");
+
+				// 最後の CRLF を読み捨てる
+				Src.read_line();
+			}
+
+			// 内部バッファがあれば、buffer に入るだけコピー
+			var copylen = chunksLength;
+			if (copylen > buffer.length) {
+				copylen = buffer.length;
+			}
+			diag.Debug(@"copylen=$(copylen)");
+			Chunks.read(buffer);
+
+			// 今書き出した部分を取り除いた Chunks を再構築
+			// 全部書き出したら空になってるので何もしなくていい
+			if (copylen < chunksLength) {
+				diag.Debug("reconst chunk");
+				uint8[] tmp = new uint8[chunksLength - buffer.length];
+				Chunks.read(tmp);
+				Chunks = null;
+				Chunks = new MemoryInputStream();
+				Chunks.add_data(tmp, null);
+			}
+
+			return (ssize_t)copylen;
 		}
 	}
 }

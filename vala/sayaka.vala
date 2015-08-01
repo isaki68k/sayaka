@@ -169,7 +169,6 @@ public class SayakaMain
 
 		Twitter tw;
 		DataInputStream userStream = null;
-		ChunkedReader chunk = null;
 		
 		if (opt_play == false) {
 			tw = new Twitter();
@@ -192,7 +191,6 @@ public class SayakaMain
 			try {
 				diag.Trace("UserStreamAPI call");
 				userStream = tw.UserStreamAPI("user");
-				chunk = new ChunkedReader(userStream);
 			} catch (Error e) {
 				stderr.printf("userstream: %s\n", e.message);
 				Process.exit(1);
@@ -206,7 +204,8 @@ public class SayakaMain
 				line = stdin.read_line();
 			} else {
 				try {
-					line = chunk.read_line();
+diag.Trace("userStream.read_line");
+					line = userStream.read_line();
 				} catch (Error e) {
 					stderr.printf("userstream.read_line: %s\n", e.message);
 					Process.exit(1);
