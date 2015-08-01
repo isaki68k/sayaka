@@ -222,7 +222,7 @@ namespace ULib
 					BaseConn = Sock.connect(
 						new InetSocketAddress(address, port));
 				} catch (Error e) {
-					diag.debug(@"Sock.connect: $(e.message)");
+					diag.Debug(@"Sock.connect: $(e.message)");
 					continue;
 				}
 
