@@ -67,6 +67,7 @@ namespace ULib
 				SendRequest("GET");
 
 				dIn = new DataInputStream(Conn.input_stream);
+				dIn.set_newline_type(DataStreamNewlineType.CR_LF);
 
 				ReceiveHeader(dIn);
 
@@ -142,46 +143,48 @@ namespace ULib
 		{
 			RecvHeaders.Clear();
 
+			// 1行目は応答行
+			ResultLine  = dIn.read_line();
+			if (ResultLine == null || ResultLine == "") {
+				throw new IOError.CONNECTION_CLOSED("");
+			}
+			diag.Debug(@"HEADER $(ResultLine)");
+
+			var proto_arg = StringUtil.Split2(ResultLine, " ");
+			if (proto_arg[0] == "HTTP/1.1" || proto_arg[0] == "HTTP/1.0") {
+				var code_msg = StringUtil.Split2(proto_arg[1], " ");
+				ResultCode = int.parse(code_msg[0]);
+				diag.Debug(@"ResultCode=$(ResultCode)");
+			}
+
 			string prevKey = "";
 
-			// ヘッダを読みこむ
+			// 2行目以降のヘッダを読みこむ
 			// 1000 行で諦める
 			for (int i = 0; i < 1000; i++) {
 
 				var s = dIn.read_line();
-				// End of stream
-				if (s == null) break;
+				if (s == null) {
+					throw new IOError.CONNECTION_CLOSED("");
+				}
 
 				diag.Debug(@"HEADER $(s)");
 
 				// End of header
-				if (s == "\r") break;
+				if (s == "") break;
 
-				if (i == 0) {
-					// 応答行
-					ResultLine = s;
-					var proto_arg = StringUtil.Split2(s, " ");
-					if (proto_arg[0] == "HTTP/1.1"
-					  || proto_arg[0] == "HTTP/1.0")
-					{
-						var code_msg = StringUtil.Split2(proto_arg[1], " ");
-						ResultCode = int.parse(code_msg[0]);
-						diag.Debug(@"ResultCode=$(ResultCode)");
+				// ヘッダ行
+				if (s[0] == ' ') {
+					// 行継続
+					if (prevKey == "") {
+						throw new IOError.FAILED("Invalid Header");
 					}
+					RecvHeaders[prevKey] = RecvHeaders[prevKey] + s;
 				} else {
-					// ヘッダ行
-					if (s[0] == ' ') {
-						// 行継続
-						if (prevKey == "") {
-							throw new IOError.FAILED("Invalid Header");
-						}
-						RecvHeaders[prevKey] = RecvHeaders[prevKey] + s;
-					} else {
-						var kv = StringUtil.Split2(s, ":");
-						// キーは小文字にする。
-						prevKey = StringUtil.Trim(kv[0]).ascii_down();
-						RecvHeaders.AddOrUpdate(prevKey, kv[1]);
-					}
+					var kv = StringUtil.Split2(s, ":");
+					// キーは小文字にする。
+					prevKey = StringUtil.Trim(kv[0]).ascii_down();
+					RecvHeaders.AddOrUpdate(prevKey, kv[1]);
 				}
 			}
 
