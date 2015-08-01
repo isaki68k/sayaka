@@ -202,48 +202,48 @@ namespace ULib
 			var resolver = Resolver.get_default();
 			var addressList = resolver.lookup_by_name(Uri.Host, null);
 
-			for (var i = 0; i < addressList.length(); i++) {
-				var a = addressList.nth_data(i);
-				diag.Debug(@"Connect: addressList[$(i)]=$(a)");
-			}
-
 			InetAddress address = null;
-			if (Family == SocketFamily.INVALID) {
-				// 1個目のアドレスへ接続
-				address = addressList.nth_data(0);
-			} else {
-				// 指定のアドレスファミリの1個目
-				for (var i = 0; i < addressList.length(); i++) {
-					var a = addressList.nth_data(i);
-					if (a.get_family() == Family) {
-						address = a;
-						break;
+			for (var i = 0; i < addressList.length(); i++) {
+				address = addressList.nth_data(i);
+				diag.Debug(@"Connect: address[$(i)]=$(address) port=$(port)");
+
+				// アドレスファミリのチェック
+				if (Family != SocketFamily.INVALID) {
+					if (address.get_family() != Family) {
+						diag.Debug(@"Connect: $(address) is not $(Family),"
+							+ " skip");
+						continue;
 					}
 				}
+
+				// 基本コネクションの接続
+				Sock = new SocketClient();
+				try {
+					BaseConn = Sock.connect(
+						new InetSocketAddress(address, port));
+				} catch (Error e) {
+					diag.debug(@"Sock.connect: $(e.message)");
+					continue;
+				}
+
+				if (Uri.Scheme == "https") {
+					// TLS コネクションに移行する。
+					Tls = TlsClientConnection.@new(BaseConn, null);
+
+					// どんな証明書でも受け入れる。
+					// 本当は、Tls.validation_flags で制御できるはずだが
+					// うまくいかない。
+					// accept_certificate signal (C# の event 相当)
+					// を接続して対処したらうまく行った。
+					Tls.accept_certificate.connect(Tls_Accept);
+					Conn = Tls;
+				} else {
+					Conn = BaseConn;
+				}
 			}
-			if (address == null) {
+
+			if (Conn == null) {
 				throw new IOError.HOST_NOT_FOUND(@"$(Uri.Host)");
-			}
-
-			Sock = new SocketClient();
-
-			// 基本コネクションの接続。
-			diag.Debug(@"Connect: address=$(address) port=$(port)");
-			BaseConn = Sock.connect(new InetSocketAddress(address, port));
-
-			if (Uri.Scheme == "https") {
-				// TLS コネクションに移行する。
-				Tls = TlsClientConnection.@new(BaseConn, null);
-
-				// どんな証明書でも受け入れる。
-				// 本当は、Tls.validation_flags で制御できるはずだが
-				// うまくいかない。
-				// accept_certificate signal (C# の event 相当)
-				// を接続して対処したらうまく行った。
-				Tls.accept_certificate.connect(Tls_Accept);
-				Conn = Tls;
-			} else {
-				Conn = BaseConn;
 			}
 		}
 
