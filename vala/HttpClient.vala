@@ -87,7 +87,7 @@ namespace ULib
 			}
 
 			InputStream rv;
-			var transfer_encoding = RecvHeaders["Transfer-Encoding"] ?? "";
+			var transfer_encoding = RecvHeaders["transfer-encoding"] ?? "";
 			if (transfer_encoding == "chunked") {
 				// XXX とりあえずストリームをそのまま返して
 				// 呼び出し側で処理してもらう。
