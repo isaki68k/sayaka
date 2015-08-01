@@ -184,7 +184,7 @@ namespace ULib
 					var kv = StringUtil.Split2(s, ":");
 					// キーは小文字にする。
 					prevKey = StringUtil.Trim(kv[0]).ascii_down();
-					RecvHeaders.AddOrUpdate(prevKey, kv[1]);
+					RecvHeaders.AddOrUpdate(prevKey, StringUtil.Trim(kv[1]));
 				}
 			}
 
