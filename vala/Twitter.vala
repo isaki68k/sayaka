@@ -80,12 +80,14 @@ public class Twitter
 	}
 
 	// UserStreamAPI("user", dictionary)
-	public DataInputStream UserStreamAPI(string api, Dictionary<string, string>? options = null) throws Error
+	public DataInputStream UserStreamAPI(string api,
+		Dictionary<string, string>? options = null) throws Error
 	{
 		return API(StreamAPIRoot, api, options);
 	}
 
-	public DataInputStream API(string apiRoot, string api, Dictionary<string, string>? options = null) throws Error
+	public DataInputStream API(string apiRoot, string api,
+		Dictionary<string, string>? options = null) throws Error
 	{
 		oauth.token = AccessToken.Token;
 		oauth.token_secret = AccessToken.Secret;
@@ -103,6 +105,4 @@ public class Twitter
 		diag.Trace("RequestAPI return");
 		return new DataInputStream(baseStream);
 	}
-
-
 }

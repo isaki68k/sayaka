@@ -94,8 +94,8 @@ namespace ULib
 			} else {
 				// ボディをメモリに読み込んで、そのメモリへのストリームを返す。
 				// https の時はストリームの終了で TlsConnection が例外を吐く。
-				// そのため、ストリームを直接外部に渡すと、予期しないタイミングで
-				// 例外になるので、一旦メモリに読み込む。
+				// そのため、ストリームを直接外部に渡すと、予期しないタイミング
+				// で例外になるので、一旦メモリに読み込む。
 				var ms = new MemoryOutputStream.resizable();
 				try {
 					ms.splice(dIn, 0);
@@ -161,7 +161,9 @@ namespace ULib
 					// 応答行
 					ResultLine = s;
 					var proto_arg = StringUtil.Split2(s, " ");
-					if (proto_arg[0] == "HTTP/1.1" || proto_arg[0] == "HTTP/1.0") {
+					if (proto_arg[0] == "HTTP/1.1"
+					  || proto_arg[0] == "HTTP/1.0")
+					{
 						var code_msg = StringUtil.Split2(proto_arg[1], " ");
 						ResultCode = int.parse(code_msg[0]);
 						diag.Debug(@"ResultCode=$(ResultCode)");
@@ -252,7 +254,8 @@ namespace ULib
 		}
 
 		// TLS の証明書を受け取った時のイベント。
-		private bool Tls_Accept(TlsCertificate peer_cert, TlsCertificateFlags errors)
+		private bool Tls_Accept(TlsCertificate peer_cert,
+			TlsCertificateFlags errors)
 		{
 			// true を返すと、その証明書を受け入れる。
 			// がばがば

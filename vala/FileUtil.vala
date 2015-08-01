@@ -17,7 +17,8 @@ namespace ULib
 	}
 
 	// .Net File.WriteAllText 相当品です。
-	public static void FileWriteAllText(string filename, string text) throws Error
+	public static void FileWriteAllText(string filename, string text)
+		throws Error
 	{
 		var f = File.new_for_path(filename);
 		var stream = new DataOutputStream(f.create(FileCreateFlags.PRIVATE));

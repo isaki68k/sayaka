@@ -12,7 +12,8 @@ public class OAuth
 
 	// リクエストのパラメータ。
 	// URI の Query 句がまだ使えないので。
-	public Dictionary<string, string> AdditionalParams = new Dictionary<string, string>();
+	public Dictionary<string, string> AdditionalParams =
+		new Dictionary<string, string>();
 
 	// OAuth ヘッダモードでは true を設定してください。
 	public bool UseOAuthHeader;

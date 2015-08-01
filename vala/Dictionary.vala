@@ -47,8 +47,9 @@ namespace ULib
 		public CompareDataFunc<T> Comparer;
 
 #if false
-		// 本当はこう書きたいが、vala がジェネリックの中のジェネリックをうまくコンパイル出来ないので
-		// コンストラクタに呼び出し側が生成したオブジェクトを渡さないとコンパイル出来ない。
+		// 本当はこう書きたいが、vala がジェネリックの中のジェネリックを
+		// うまくコンパイル出来ないので、コンストラクタに呼び出し側が
+		// 生成したオブジェクトを渡さないとコンパイル出来ない。
 		// オワットル
 		public SortedArray(owned CompareDataFunc<T> comparer)
 		{
@@ -57,7 +58,8 @@ namespace ULib
 		}
 #endif
 
-		public SortedArray.backend(owned CompareDataFunc<T> comparer, owned GenericArray<T> backend)
+		public SortedArray.backend(owned CompareDataFunc<T> comparer,
+			owned GenericArray<T> backend)
 		{
 			data = (owned) backend;
 			Comparer = (owned) comparer;
@@ -166,15 +168,17 @@ namespace ULib
 		public CompareFunc<TKey> KeyComparer { get; set; }
 
 		// KeyValuePair の キーで比較する
-		public int KeyValuePairKeyCmp(KeyValuePair<TKey, TValue> a, KeyValuePair<TKey, TValue> b)
+		public int KeyValuePairKeyCmp(KeyValuePair<TKey, TValue> a,
+			KeyValuePair<TKey, TValue> b)
 		{
 			return KeyComparer(a.Key, b.Key);
 		}
 
 		public Dictionary()
 		{
-			// 比較演算子のオーバーロードも IComparer も vala はサポートしていないので、
-			// ジェネリックの型チェックが甘いことを逆用して、可変比較演算を実装する。
+			// 比較演算子のオーバーロードも IComparer も vala はサポート
+			// していないので、ジェネリックの型チェックが甘いことを逆用して
+			// 可変比較演算を実装する。
 
 			if (typeof(TKey) == typeof(string)) {
 				KeyComparer = (CompareFunc<TKey>)strcmp;
@@ -196,7 +200,8 @@ namespace ULib
 			if (index >= 0) {
 				return;
 			} else {
-				data.InternalInsert(~index, new KeyValuePair<TKey, TValue>(key, value));
+				data.InternalInsert(~index,
+					new KeyValuePair<TKey, TValue>(key, value));
 			}
 		}
 
@@ -207,7 +212,8 @@ namespace ULib
 			if (index >= 0) {
 				data[index].Value = value;
 			} else {
-				data.InternalInsert(~index, new KeyValuePair<TKey, TValue>(key, value));
+				data.InternalInsert(~index,
+					new KeyValuePair<TKey, TValue>(key, value));
 			}
 		}
 
