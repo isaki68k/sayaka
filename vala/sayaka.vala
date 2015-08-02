@@ -101,6 +101,9 @@ public class SayakaMain
 	public bool bg_white;
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
+	public Twitter tw;
+	public Dictionary<string, string> mutelist
+		= new Dictionary<string, string>();
 
 	public string cachedir = "./cache";
 
@@ -144,6 +147,9 @@ public class SayakaMain
 			 case "--jis":
 				iconv_tocode = "jis";
 				break;
+			 case "--mutelist":
+				cmd = SayakaCmd.MutelistMode;
+				break;
 			 case "--noimg":
 				opt_noimg = true;
 				break;
@@ -182,6 +188,9 @@ public class SayakaMain
 			break;
 		 case SayakaCmd.PlayMode:
 			cmd_play();
+			break;
+		 case SayakaCmd.MutelistMode:
+			cmd_mutelist();
 			break;
 		 default:
 			usage();
@@ -228,30 +237,13 @@ public class SayakaMain
 	// ユーザストリーム
 	public void cmd_stream()
 	{
-		Twitter tw;
 		DataInputStream userStream = null;
 
 		// 古いキャッシュを削除
 
 		// アクセストークンを取得
 		tw = new Twitter();
-		try {
-			// ファイルからトークンを取得
-			tw.AccessToken.LoadFromFile("token.json");
-		} catch {
-			// なければトークンを取得してファイルに保存
-			tw.GetAccessToken();
-			if (tw.AccessToken.Token == "") {
-				stderr.printf("GIVE UP\n");
-				Process.exit(1);
-			}
-			try {
-				tw.AccessToken.SaveToFile("token.json");
-			} catch {
-				stderr.printf("Token save error\n");
-				Process.exit(1);
-			}
-		}
+		get_access_token();
 
 		// ミュートユーザ取得
 
@@ -289,6 +281,28 @@ public class SayakaMain
 			line = stdin.read_line();
 			if (showstatus_callback_line(line) == false) {
 				break;
+			}
+		}
+	}
+
+	// アクセストークンを取得する
+	public void get_access_token()
+	{
+		try {
+			// ファイルからトークンを取得
+			tw.AccessToken.LoadFromFile("token.json");
+		} catch {
+			// なければトークンを取得してファイルに保存
+			tw.GetAccessToken();
+			if (tw.AccessToken.Token == "") {
+				stderr.printf("GIVE UP\n");
+				Process.exit(1);
+			}
+			try {
+				tw.AccessToken.SaveToFile("token.json");
+			} catch {
+				stderr.printf("Token save error\n");
+				Process.exit(1);
 			}
 		}
 	}
@@ -1104,6 +1118,72 @@ public class SayakaMain
 		var fsize = stream.tell();
 		stream.rewind();
 		return fsize;
+	}
+
+	// ミュートユーザ一覧の読み込み
+	public void get_mute_list()
+	{
+		// ミュートユーザ一覧は一度に20人分しか送られてこず、
+		// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
+		// これを cursor に指定してもう一度リクエストを送る。
+
+		tw = new Twitter();
+		get_access_token();
+
+		mutelist.Clear();
+		var cursor = "0";
+
+		do {
+			var options = new Dictionary<string, string>();
+			options["include_entities"] = "false";
+			options["skip_status"] = "false";
+			if (cursor != "0") {
+				options["cursor"] = cursor;
+			}
+
+			// JSON を取得
+			var stream = tw.API(Twitter.APIRoot, "mutes/users/list", options);
+			var line = stream.read_line();
+			if (line == null || line == "") {
+				continue;	// ?
+			}
+			var parser = new ULib.JsonParser();
+			Json json;
+			try {
+				json = parser.Parse(line);
+			} catch (Error e) {
+				stderr.printf(@"Parser failed: $(e.message)");
+				break;
+			}
+			diag.Debug(@"json=|$(json)|");
+
+			var errors = json.GetJson("errors");
+			if (errors != null) {
+				stderr.printf(@"get(mutes/users/list) failed: $(errors)");
+				return;
+			}
+
+			var users = json.GetArray("users");
+			for (var i = 0; i < users.length; i++) {
+				var user = users.index(i);
+				var id_str = user.GetString("id_str");
+				var screen_name = user.GetString("screen_name");
+				mutelist[id_str] = screen_name;
+			}
+
+			cursor = json.GetString("next_cursor_str");
+			diag.Debug(@"cursor=|$(cursor)|");
+		} while (cursor != "0");
+	}
+
+	public void cmd_mutelist()
+	{
+		get_mute_list();
+
+		for (var i = 0; i < mutelist.Count; i++) {
+			var kv = mutelist.At(i);
+			stdout.printf("%s: %s\n".printf(kv.Key, kv.Value));
+		}
 	}
 
 	public static void signal_handler(int signo)

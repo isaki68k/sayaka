@@ -33,6 +33,7 @@ public class Twitter
 	public static const string authorizeURL    = "https://twitter.com/oauth/authorize";
 	public static const string requestTokenURL = "https://api.twitter.com/oauth/request_token";
 
+	public static const string APIRoot = "https://api.twitter.com/1.1/";
 	public static const string StreamAPIRoot = "https://userstream.twitter.com/1.1/";
 
 	private static const string ConsumerKey = "jPY9PU5lvwb6s9mqx3KjRA";
