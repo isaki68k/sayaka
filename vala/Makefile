@@ -20,9 +20,9 @@ PKGS=	\
 	--pkg gdk-pixbuf-2.0 \
 
 VALAFLAGS=	\
-	-X -w \
+	-g -X -w \
 
-CLEAN_FILES=${SRCS:.vala=.c}
+CLEAN_FILES=${SRCS:.vala=.vala.c}
 
 # disable make's builtin rules
 .SUFFIXES:
@@ -63,3 +63,13 @@ o_SRCS = \
 o: ${o_SRCS}
 	valac ${VALAFLAGS} ${PKGS} ${o_SRCS}
 
+h_SRCS=	\
+	h.vala \
+    ParsedUri.vala \
+	HttpClient.vala \
+	StringUtil.vala \
+	Diag.vala \
+	Dictionary.vala \
+
+h: ${h_SRCS}
+	valac ${VALAFLAGS} ${PKGS} ${h_SRCS}
