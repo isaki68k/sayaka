@@ -470,7 +470,7 @@ namespace ULib
 					diag.Debug(@"Chunks.seek/tell(2) $(e.message)");
 					chunksLength = 0;
 				}
-				diag.Debug(@"chunksLength2=$(chunksLength)");
+				diag.Debug(@"chunksLength=$(chunksLength)");
 
 				// 最後の CRLF を読み捨てる
 				Src.read_line();
