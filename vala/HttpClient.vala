@@ -429,7 +429,7 @@ namespace ULib
 				Chunks.seek(0, SeekType.END);
 				chunksLength = Chunks.tell();
 			} catch (Error e) {
-				diag.Debug(@"Chunks.seek/tell $(e.message)");
+				diag.Debug(@"seek(END) failed: $(e.message)");
 				chunksLength = 0;
 			}
 			diag.Debug(@"chunksLength=$(chunksLength)");
@@ -468,11 +468,10 @@ namespace ULib
 				// 長さを再計算
 				try {
 					Chunks.seek(0, SeekType.END);
-					chunksLength = Chunks.tell();
 				} catch (Error e) {
-					diag.Debug(@"Chunks.seek/tell(2) $(e.message)");
-					chunksLength = 0;
+					diag.Debug(@"seek(END) failed: $(e.message)");
 				}
+				chunksLength = Chunks.tell();
 				diag.Debug(@"chunksLength=$(chunksLength)");
 
 				// 最後の CRLF を読み捨てる
@@ -485,7 +484,11 @@ namespace ULib
 				copylen = buffer.length;
 			}
 			diag.Debug(@"copylen=$(copylen)");
-			Chunks.seek(0, SeekType.SET);
+			try {
+				Chunks.seek(0, SeekType.SET);
+			} catch (Error e) {
+				diag.Debug(@"seek(SET) failed: $(e.message)");
+			}
 			Chunks.read(buffer);
 
 			var remain = chunksLength - copylen;
@@ -493,7 +496,11 @@ namespace ULib
 			if (remain > 0) {
 				// 読み込み終わった部分を Chunks を作りなおすことで破棄する
 				uint8[] tmp = new uint8[remain];
-				Chunks.seek(copylen, SeekType.SET);
+				try {
+					Chunks.seek(copylen, SeekType.SET);
+				} catch (Error e) {
+					diag.Debug(@"seek(SET) failed: $(e.message)");
+				}
 				Chunks.read(tmp);
 				Chunks = null;
 				Chunks = new MemoryInputStream();
