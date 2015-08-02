@@ -431,14 +431,16 @@ namespace ULib
 			}
 			diag.Debug(@"chunksLength=$(chunksLength)");
 
-			if (chunksLength == 0) {
+			while (chunksLength == 0) {
 				// 内部バッファが空なら、チャンクを読み込み
 				var intlen = 0;
 				var len = Src.read_line();
 				len.scanf("%x", &intlen);
 				diag.Debug(@"intlen = $(intlen)");
 				if (intlen == 0) {
-					return -1;
+					// データ終わり。CRLF を読み捨てる
+					Src.read_line();
+					break;
 				}
 
 				uint8[] buf = new uint8[intlen];
@@ -469,7 +471,7 @@ namespace ULib
 				Src.read_line();
 			}
 
-			// 内部バッファがあれば、buffer に入るだけコピー
+			// buffer に入るだけコピー
 			var copylen = chunksLength;
 			if (copylen > buffer.length) {
 				copylen = buffer.length;
