@@ -419,6 +419,11 @@ namespace ULib
 			return sb.str;
 		}
 
+		public string to_string()
+		{
+			return ToString();
+		}
+
 		/// <summary>
 		/// src を JSON の String としてエンコード(エスケープ)します。
 		/// 開始、終了のダブルクォートも付加します。
