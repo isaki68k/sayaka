@@ -103,6 +103,10 @@ public class Twitter
 		diag.Trace("RequestAPI call");
 		var baseStream = oauth.RequestAPI(apiRoot + api + ".json");
 		diag.Trace("RequestAPI return");
-		return new DataInputStream(baseStream);
+
+		var stream = new DataInputStream(baseStream);
+		stream.set_newline_type(DataStreamNewlineType.CR_LF);
+
+		return stream;
 	}
 }
