@@ -191,6 +191,40 @@ public class SayakaMain
 		return 0;
 	}
 
+	// ユーザストリームモードのための準備
+	public void init_stream()
+	{
+		// 色の初期化
+		init_color();
+
+		// 外部コマンド
+		var cmd = new StringBuilder();
+		cmd.append(sixel_cmd);
+		if (sixel_cmd.has_suffix("img2sixel")) {
+			cmd.append(" -S");
+			if (color_mode == 2) {
+				cmd.append(" -e --quality=low");
+			} else if (color_mode <= 16) {
+				cmd.append(@" -m colormap$(color_mode).png");
+			}
+		}
+		sixel_cmd = cmd.str;
+		if (debug) {
+			stdout.printf("sixel_cmd=");
+			if (sixel_cmd == "") {
+				stdout.printf("<internal>\n");
+			} else {
+				stdout.printf("%s\n", sixel_cmd);
+			}
+		}
+
+		// シグナルハンドラを設定
+		Posix.@signal(SIGWINCH, signal_handler);
+
+		// 一度手動で呼び出して桁数を取得
+		signal_handler(SIGWINCH);
+	}
+
 	// ユーザストリーム
 	public void cmd_stream()
 	{
@@ -286,40 +320,6 @@ public class SayakaMain
 			return false;
 		}
 		return true;
-	}
-
-	// ユーザストリームモードのための準備
-	public void init_stream()
-	{
-		// 色の初期化
-		init_color();
-
-		// 外部コマンド
-		var cmd = new StringBuilder();
-		cmd.append(sixel_cmd);
-		if (sixel_cmd.has_suffix("img2sixel")) {
-			cmd.append(" -S");
-			if (color_mode == 2) {
-				cmd.append(" -e --quality=low");
-			} else if (color_mode <= 16) {
-				cmd.append(@" -m colormap$(color_mode).png");
-			}
-		}
-		sixel_cmd = cmd.str;
-		if (debug) {
-			stdout.printf("sixel_cmd=");
-			if (sixel_cmd == "") {
-				stdout.printf("<internal>\n");
-			} else {
-				stdout.printf("%s\n", sixel_cmd);
-			}
-		}
-
-		// シグナルハンドラを設定
-		Posix.@signal(SIGWINCH, signal_handler);
-
-		// 一度手動で呼び出して桁数を取得
-		signal_handler(SIGWINCH);
 	}
 
 	// 1ツイートを表示するコールバック関数
