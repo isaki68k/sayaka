@@ -75,6 +75,14 @@ public class SayakaMain
 		Max;
 	}
 
+	public enum SayakaCmd {
+		StreamMode,
+		PlayMode,
+		TweetMode,
+		MutelistMode,
+		Max;
+	}
+
 	public SocketFamily address_family;
 	public bool opt_noimg;
 	public string sixel_cmd;
@@ -93,7 +101,6 @@ public class SayakaMain
 	public bool bg_white;
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
-	public bool opt_play;
 
 	public string cachedir = "./cache";
 
@@ -106,6 +113,8 @@ public class SayakaMain
 
 	public int Main(string[] args)
 	{
+		SayakaCmd cmd = SayakaCmd.StreamMode;
+
 		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
 		sixel_cmd = "";
@@ -139,7 +148,7 @@ public class SayakaMain
 				opt_noimg = true;
 				break;
 			 case "--play":
-				opt_play = true;
+				cmd = SayakaCmd.PlayMode;
 				break;
 			 case "--protect":
 				protect = true;
@@ -165,75 +174,118 @@ public class SayakaMain
 		diag  = new Diag("SayakaMain");
 		diag.Trace("TRACE CHECK");
 
-		init_stream();
+		// コマンド別処理
+		switch (cmd) {
+		 case SayakaCmd.StreamMode:
+			init_stream();
+			cmd_stream();
+			break;
+		 case SayakaCmd.PlayMode:
+			cmd_play();
+			break;
+		 default:
+			usage();
+			break;
+		}
 
+		return 0;
+	}
+
+	// ユーザストリーム
+	public void cmd_stream()
+	{
 		Twitter tw;
 		DataInputStream userStream = null;
-		
-		if (opt_play == false) {
-			tw = new Twitter();
-			try {
-				// ファイルからトークンを取得
-				tw.AccessToken.LoadFromFile("token.json");
-			} catch {
-				// なければトークンを取得してファイルに保存
-				tw.GetAccessToken();
-				if (tw.AccessToken.Token == "") {
-					stderr.printf("GIVE UP\n");
-					Process.exit(1);
-				}
-				try {
-					tw.AccessToken.SaveToFile("token.json");
-				} catch {
-					stderr.printf("Token save error\n");
-					Process.exit(1);
-				}
-			}
 
-			// ユーザストリーム開始
+		// 古いキャッシュを削除
+
+		// アクセストークンを取得
+		tw = new Twitter();
+		try {
+			// ファイルからトークンを取得
+			tw.AccessToken.LoadFromFile("token.json");
+		} catch {
+			// なければトークンを取得してファイルに保存
+			tw.GetAccessToken();
+			if (tw.AccessToken.Token == "") {
+				stderr.printf("GIVE UP\n");
+				Process.exit(1);
+			}
 			try {
-				diag.Trace("UserStreamAPI call");
-				userStream = tw.UserStreamAPI("user");
-			} catch (Error e) {
-				stderr.printf("userstream: %s\n", e.message);
+				tw.AccessToken.SaveToFile("token.json");
+			} catch {
+				stderr.printf("Token save error\n");
 				Process.exit(1);
 			}
 		}
 
+		// ミュートユーザ取得
+
+		// Ready...
+
+		// ストリーミング開始
+		try {
+			diag.Trace("UserStreamAPI call");
+			userStream = tw.UserStreamAPI("user");
+		} catch (Error e) {
+			stderr.printf("userstream: %s\n", e.message);
+			Process.exit(1);
+		}
+
+		while (true) {
+			string line;
+			try {
+				line = userStream.read_line();
+			} catch (Error e) {
+				stderr.printf("userstream.read_line: %s\n", e.message);
+				Process.exit(1);
+			}
+			if (showstatus_callback_line(line) == false) {
+				break;
+			}
+		}
+	}
+
+	// 再生モード
+	public void cmd_play()
+	{
 		while (true) {
 			string line;
 
-			if (opt_play) {
-				line = stdin.read_line();
-			} else {
-				try {
-					line = userStream.read_line();
-				} catch (Error e) {
-					stderr.printf("userstream.read_line: %s\n", e.message);
-					Process.exit(1);
-				}
-			}
-			if (line == null) {
+			line = stdin.read_line();
+			if (showstatus_callback_line(line) == false) {
 				break;
 			}
-			// 空行がちょくちょく送られてくるようだ
-			if (line == "") {
-				diag.Debug("empty line");
-				continue;
-			}
-
-			var parser = new ULib.JsonParser();
-			try {
-				var obj = parser.Parse(line);
-				TRACE("obj=%p".printf(obj));
-				TRACE("obj=%s\n".printf(obj.ToString()));
-				showstatus_callback(obj);
-			} catch (Error e) {
-				stdout.printf("error: %s\n", e.message);
-				return 0;
-			}
 		}
-		return 0;
+	}
+
+	// 1行を受け取ってから callback に呼ぶまでの共通部分。
+	// true でループ継続、false でループ終了。
+	// ファイルかソケットかで全部 read_line() が使えてれば
+	// こんなことにはならないんだが…。
+	public bool showstatus_callback_line(string line)
+	{
+		if (line == null) {
+			return false;
+		}
+
+		// 空行がちょくちょく送られてくるようだ
+		if (line == "") {
+			diag.Debug("empty line");
+			return true;
+		}
+
+		var parser = new ULib.JsonParser();
+		try {
+			var obj = parser.Parse(line);
+			TRACE("obj=%p".printf(obj));
+			TRACE("obj=%s\n".printf(obj.ToString()));
+			showstatus_callback(obj);
+		} catch (Error e) {
+			stdout.printf("error: %s\n", e.message);
+			return false;
+		}
+		return true;
 	}
 
 	// ユーザストリームモードのための準備
