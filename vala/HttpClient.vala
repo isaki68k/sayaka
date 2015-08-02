@@ -435,6 +435,11 @@ namespace ULib
 				// 内部バッファが空なら、チャンクを読み込み
 				var intlen = 0;
 				var len = Src.read_line();
+				if (len == null) {
+					// EOF
+					diag.Debug("Src is EOF");
+					return -1;
+				}
 				len.scanf("%x", &intlen);
 				diag.Debug(@"intlen = $(intlen)");
 				if (intlen == 0) {
