@@ -246,6 +246,7 @@ public class SayakaMain
 		get_access_token();
 
 		// ミュートユーザ取得
+		get_mute_list();
 
 		// Ready...
 
@@ -381,7 +382,18 @@ public class SayakaMain
 			return;
 		}
 
-		// ミュート...
+		// ミュートしてるユーザも stream には流れてきてしまうので、ここで弾く
+		var id_str = status.GetJson("user").GetString("id_str");
+		if (mutelist.ContainsKey(id_str)) {
+			return;
+		}
+		if (status.Has("retweeted_status")) {
+			var retweeted_status = status.GetJson("retweeted_status");
+			id_str = retweeted_status.GetJson("user").GetString("id_str");
+			if (mutelist.ContainsKey(id_str)) {
+				return;
+			}
+		}
 
 		// NGワード...
 
