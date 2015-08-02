@@ -482,6 +482,7 @@ namespace ULib
 				copylen = buffer.length;
 			}
 			diag.Debug(@"copylen=$(copylen)");
+			Chunks.seek(0, SeekType.SET);
 			Chunks.read(buffer);
 
 			// 今書き出した部分を取り除いた Chunks を再構築
