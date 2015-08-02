@@ -173,8 +173,10 @@ public class SayakaMain
 		if (opt_play == false) {
 			tw = new Twitter();
 			try {
+				// ファイルからトークンを取得
 				tw.AccessToken.LoadFromFile("token.json");
 			} catch {
+				// なければトークンを取得してファイルに保存
 				tw.GetAccessToken();
 				if (tw.AccessToken.Token == "") {
 					stderr.printf("GIVE UP\n");
@@ -188,6 +190,7 @@ public class SayakaMain
 				}
 			}
 
+			// ユーザストリーム開始
 			try {
 				diag.Trace("UserStreamAPI call");
 				userStream = tw.UserStreamAPI("user");
@@ -197,21 +200,23 @@ public class SayakaMain
 			}
 		}
 
-		string line;
+		while (true) {
+			string line;
 
-		do {
 			if (opt_play) {
 				line = stdin.read_line();
 			} else {
 				try {
-diag.Trace("userStream.read_line");
 					line = userStream.read_line();
 				} catch (Error e) {
 					stderr.printf("userstream.read_line: %s\n", e.message);
 					Process.exit(1);
 				}
 			}
-			if (line == null) break;
+			if (line == null) {
+				break;
+			}
+			// 空行がちょくちょく送られてくるようだ
 			if (line == "") {
 				diag.Debug("empty line");
 				continue;
@@ -227,7 +232,7 @@ diag.Trace("userStream.read_line");
 				stdout.printf("error: %s\n", e.message);
 				return 0;
 			}
-		} while (true);
+		}
 		return 0;
 	}
 
