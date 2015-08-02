@@ -485,15 +485,22 @@ namespace ULib
 			Chunks.seek(0, SeekType.SET);
 			Chunks.read(buffer);
 
-			// 今書き出した部分を取り除いた Chunks を再構築
-			// 全部書き出したら空になってるので何もしなくていい
-			if (copylen < chunksLength) {
-				diag.Debug("reconst chunk");
-				uint8[] tmp = new uint8[chunksLength - buffer.length];
+			var remain = chunksLength - copylen;
+			diag.Debug(@"remain=$(remain)");
+			if (remain > 0) {
+				// 読み込み終わった部分を Chunks を作りなおすことで破棄する
+				uint8[] tmp = new uint8[remain];
+				Chunks.seek(copylen, SeekType.SET);
 				Chunks.read(tmp);
 				Chunks = null;
 				Chunks = new MemoryInputStream();
 				Chunks.add_data(tmp, null);
+				chunksLength = Chunks.tell();
+				diag.Debug(@"new ChunkLength=$(chunksLength)");
+			} else {
+				// きっかりだったので空にする。
+				Chunks = null;
+				Chunks = new MemoryInputStream();
 			}
 
 			return (ssize_t)copylen;
