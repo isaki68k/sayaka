@@ -150,7 +150,7 @@
 	require_once "TwistOAuth.php";
 	require_once "subr.php";
 	setTimeZone();
-	declare(ticks = 1);
+	declare(ticks = 1);	// for pcntl_signal()
 
 	// DB からアクセストークンを取得
 	$db = new sayakaSQLite3($configdb);
