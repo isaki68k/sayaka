@@ -365,8 +365,37 @@ public class SayakaMain
 				}
 				break;
 			 case "follow":
+				var time = coloring(formattime(obj), Color.Time);
+
+				var u = obj.GetJson("source");
+				var src_userid = coloring(formatid(u.GetString("screen_name")),
+					Color.UserId);
+				var src_name   = coloring(formatname(u.GetString("name")),
+					Color.Username);
+
+				u = obj.GetJson("target");
+				var dst_userid = coloring(formatid(u.GetString("screen_name")),
+					Color.UserId);
+				var dst_name   = coloring(formatname(u.GetString("name")),
+					Color.Username);
+				var src = coloring("sayakaちゃんからお知らせ", Color.Source);
+
+				print_(@"$(src_name) $(src_userid) が "
+				     + @"$(dst_name) $(dst_userid) をフォローしました。");
+				stdout.printf("\n");
+				print_(@"$(time) $(src)");
+				stdout.printf("\n");
+				stdout.printf("\n");
+				return;
+
 			 case "mute":
+				add_mute_list(obj.GetJson("target"));
+				return;
+
 			 case "unmute":
+				del_mute_list(obj.GetJson("target"));
+				return;
+
 			 default:
 				return;
 			}
@@ -1188,6 +1217,24 @@ public class SayakaMain
 		} while (cursor != "0");
 	}
 
+	// ミュートユーザを追加
+	public void add_mute_list(Json user)
+	{
+		var id_str = user.GetString("id_str");
+		var screen_name = user.GetString("screen_name");
+		mutelist[id_str] = screen_name;
+	}
+
+	// ミュートユーザを削除
+	public void del_mute_list(Json user)
+	{
+		//var id_str = user.GetString("id_str");
+
+		// not yet
+		// mutelist.Delete ? (id_str);
+	}
+
+	// 取得したミュートユーザの一覧を表示する
 	public void cmd_mutelist()
 	{
 		get_mute_list();
