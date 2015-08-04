@@ -239,8 +239,7 @@ function init_stream()
 	// --font が未指定の時のみ cellsize を使う
 	if ($fontheight == 0 && file_exists("./cellsize")) {
 		$cellsize = "./cellsize";
-	}
-	else {
+	} else {
 		$cellsize = "";
 	}
 
