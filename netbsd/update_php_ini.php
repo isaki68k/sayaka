@@ -13,7 +13,7 @@
 		cmd_notice($filename);
 		break;
 	 case "ext":
-		cmd_rehash($filename);
+		cmd_ext($filename);
 		break;
 	 default:
 		print "usage: {$_SERVER['argv'][0]} [ext | -notice]\n";
