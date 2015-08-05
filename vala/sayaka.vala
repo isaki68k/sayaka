@@ -1164,7 +1164,7 @@ public class SayakaMain
 	// ミュートユーザ一覧の読み込み
 	public void get_mute_list()
 	{
-		// ミュートユーザ一覧は一度に20人分しか送られてこず、
+		// ミュートユーザ一覧は一度に全部送られてくるとは限らず、
 		// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
 		// これを cursor に指定してもう一度リクエストを送る。
 
@@ -1176,14 +1176,12 @@ public class SayakaMain
 
 		do {
 			var options = new Dictionary<string, string>();
-			options["include_entities"] = "false";
-			options["skip_status"] = "false";
 			if (cursor != "0") {
 				options["cursor"] = cursor;
 			}
 
 			// JSON を取得
-			var stream = tw.API(Twitter.APIRoot, "mutes/users/list", options);
+			var stream = tw.API(Twitter.APIRoot, "mutes/users/ids", options);
 			var line = stream.read_line();
 			if (line == null || line == "") {
 				continue;	// ?
@@ -1200,16 +1198,15 @@ public class SayakaMain
 
 			var errors = json.GetJson("errors");
 			if (errors != null) {
-				stderr.printf(@"get(mutes/users/list) failed: $(errors)");
+				stderr.printf(@"get(mutes/users/ids) failed: $(errors)");
 				return;
 			}
 
-			var users = json.GetArray("users");
+			var users = json.GetArray("ids");
 			for (var i = 0; i < users.length; i++) {
-				var user = users.index(i);
-				var id_str = user.GetString("id_str");
-				var screen_name = user.GetString("screen_name");
-				mutelist[id_str] = screen_name;
+				var id_json = users.index(i);
+				var id_str = id_json.AsNumber;
+				mutelist[id_str] = id_str;
 			}
 
 			cursor = json.GetString("next_cursor_str");
@@ -1221,8 +1218,7 @@ public class SayakaMain
 	public void add_mute_list(Json user)
 	{
 		var id_str = user.GetString("id_str");
-		var screen_name = user.GetString("screen_name");
-		mutelist[id_str] = screen_name;
+		mutelist[id_str] = id_str;
 	}
 
 	// ミュートユーザを削除
@@ -1241,7 +1237,7 @@ public class SayakaMain
 
 		for (var i = 0; i < mutelist.Count; i++) {
 			var kv = mutelist.At(i);
-			stdout.printf("%s: %s\n".printf(kv.Key, kv.Value));
+			stdout.printf("%s\n".printf(kv.Key));
 		}
 	}
 
