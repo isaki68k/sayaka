@@ -22,7 +22,7 @@ PKGS=	\
 VALAFLAGS=	\
 	-g -X -w \
 
-CLEAN_FILES=${SRCS:.vala=.vala.c}
+CLEAN_FILES=${SRCS:.vala=.c}
 
 # disable make's builtin rules
 .SUFFIXES:
