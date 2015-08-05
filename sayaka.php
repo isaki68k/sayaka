@@ -971,14 +971,14 @@ function show_image($img_file, $img_url, $width)
 }
 
 // ミュートユーザ一覧の読み込み。
-// $mutelist は "id_str" => "screen_name" の連想配列。
+// $mutelist は "id_str" => "id_str" の連想配列。
 // 今は毎回 twitter から取得しているだけ。
 function get_mute_list()
 {
 	global $tw;
 	global $mutelist;
 
-	// ミュートユーザ一覧は一度に20人分しか送られてこず、
+	// ミュートユーザ一覧は一度に全部送られてくるとは限らず、
 	// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
 	// これを cursor に指定してもう一度リクエストを送る。
 
@@ -987,19 +987,17 @@ function get_mute_list()
 
 	do {
 		$options = array();
-		$options["include_entities"] = false;
-		$options["skip_status"] = false;
 		if ($cursor != "0") {
 			$options["cursor"] = $cursor;
 		}
-		$json = $tw->get("mutes/users/list", $options);
+		$json = $tw->get("mutes/users/ids", $options);
 		if (isset($json->error)) {
-			print "get(mutes/users/list) failed: {$json->error}\n";
+			print "get(mutes/users/ids) failed: {$json->error}\n";
 			return;
 		}
 
-		foreach ($json->users as $user) {
-			$mutelist[$user->id_str] = $user->screen_name;
+		foreach ($json->ids as $id) {
+			$mutelist[$id] = $id;
 		}
 
 		$cursor = $json->next_cursor_str;
@@ -1011,7 +1009,7 @@ function add_mute_list($user)
 {
 	global $mutelist;
 
-	$mutelist[$user->id_str] = $user->screen_name;
+	$mutelist[$user->id_str] = $user->id_str;
 }
 
 // ミュートユーザを削除
@@ -1029,8 +1027,8 @@ function cmd_mutelist()
 
 	get_mute_list();
 
-	foreach ($mutelist as $id => $scr) {
-		print "{$id}: {$scr}\n";
+	foreach ($mutelist as $id => $value) {
+		print "{$id}\n";
 	}
 }
 
