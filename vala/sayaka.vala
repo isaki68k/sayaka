@@ -187,6 +187,7 @@ public class SayakaMain
 			cmd_stream();
 			break;
 		 case SayakaCmd.PlayMode:
+			init_stream();
 			cmd_play();
 			break;
 		 case SayakaCmd.MutelistMode:
