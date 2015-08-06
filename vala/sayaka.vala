@@ -145,7 +145,7 @@ public class SayakaMain
 				opt_fontheight = int.parse(metric[1]);
 				break;
 			 case "--jis":
-				iconv_tocode = "jis";
+				iconv_tocode = "iso-2022-jp";
 				break;
 			 case "--mutelist":
 				cmd = SayakaCmd.MutelistMode;
