@@ -25,11 +25,11 @@ public class Stopwatch
 	{
 #if !STOPWATCH_DISABLE
 		Stop();
-		stderr.printf("%s %"+ int64.FORMAT + "us\n", msg, Ellapsed);
+		stderr.printf("%s %"+ int64.FORMAT + "us\n", msg, Elapsed);
 #endif
 	}
 
-	public int64 Ellapsed
+	public int64 Elapsed
 	{
 		get {
 #if !STOPWATCH_DISABLE
