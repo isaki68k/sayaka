@@ -20,8 +20,8 @@ namespace ULib
 		// パース後の URI
 		public ParsedUri Uri;
 
-		// リクエスト時にサーバへ送るヘッダ
-		// キーは小文字です。
+		// リクエスト時にサーバへ送る追加のヘッダ
+		// Host: はこちらで生成するので呼び出し側が指定しないでください。
 		public Dictionary<string, string> SendHeaders;
 
 		// 受け取ったヘッダ
@@ -77,7 +77,6 @@ namespace ULib
 					if (location != null) {
 						Uri = ParsedUri.Parse(location);
 						diag.Debug(Uri.to_string());
-						SendHeaders.AddOrUpdate("host", Uri.Host);
 						continue;
 					}
 				}
@@ -124,12 +123,12 @@ namespace ULib
 
 			sb.append(@"$(verb) $(Uri.PQF()) HTTP/1.1\r\n");
 
-			SendHeaders.AddIfMissing("host", Uri.Host);
 			SendHeaders.AddIfMissing("connection", "close");
 
 			foreach (KeyValuePair<string, string> h in SendHeaders) {
 				sb.append(@"$(h.Key): $(h.Value)\r\n");
 			}
+			sb.append("Host: %s\r\n".printf(Uri.Host));
 			sb.append("\r\n");
 
 			diag.Debug(@"Request $(verb)\n$(sb.str)");
