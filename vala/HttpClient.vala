@@ -25,8 +25,7 @@ namespace ULib
 		public Dictionary<string, string> SendHeaders;
 
 		// 受け取ったヘッダ
-		// キーは小文字に変換されて格納されます。
-		public Dictionary<string, string> RecvHeaders;
+		public Array<string> RecvHeaders;
 
 		// 受け取った応答行
 		public string ResultLine;
@@ -51,7 +50,7 @@ namespace ULib
 			diag.Debug(Uri.to_string());
 
 			SendHeaders = new Dictionary<string, string>();
-			RecvHeaders = new Dictionary<string, string>();
+			RecvHeaders = new Array<string>();
 		}
 
 		// uri から GET して、ストリームを返します。
@@ -73,7 +72,7 @@ namespace ULib
 
 				if (300 <= ResultCode && ResultCode < 400) {
 					Close();
-					var location = StringUtil.Trim(RecvHeaders["location"]);
+					var location = GetHeader(RecvHeaders, "Location");
 					diag.Debug(@"Redirect to $(location)");
 					if (location != null) {
 						Uri = ParsedUri.Parse(location);
@@ -87,7 +86,7 @@ namespace ULib
 			}
 
 			DataInputStream rv;
-			var transfer_encoding = RecvHeaders["transfer-encoding"] ?? "";
+			var transfer_encoding = GetHeader(RecvHeaders, "Transfer-Encoding");
 			if (transfer_encoding == "chunked") {
 				// チャンク
 				diag.Debug("use ChunkedInputStream");
@@ -143,7 +142,8 @@ namespace ULib
 		// ヘッダを受信します。
 		private void ReceiveHeader(DataInputStream dIn) throws Error
 		{
-			RecvHeaders.Clear();
+			RecvHeaders = null;
+			RecvHeaders = new Array<string>();
 
 			// 1行目は応答行
 			ResultLine  = dIn.read_line();
@@ -158,8 +158,6 @@ namespace ULib
 				ResultCode = int.parse(code_msg[0]);
 				diag.Debug(@"ResultCode=$(ResultCode)");
 			}
-
-			string prevKey = "";
 
 			// 2行目以降のヘッダを読みこむ
 			// 1000 行で諦める
@@ -178,21 +176,30 @@ namespace ULib
 				// ヘッダ行
 				if (s[0] == ' ') {
 					// 行継続
-					if (prevKey == "") {
-						throw new IOError.FAILED("Invalid Header");
-					}
-					RecvHeaders[prevKey] = RecvHeaders[prevKey] + s;
+					var lastidx = RecvHeaders.length - 1;
+					var prev = RecvHeaders.index(lastidx);
+					RecvHeaders.remove_index(lastidx);
+					prev += s.chomp();
+					RecvHeaders.append_val(prev);
 				} else {
-					var kv = StringUtil.Split2(s, ":");
-					// キーは小文字にする。
-					prevKey = StringUtil.Trim(kv[0]).ascii_down();
-					RecvHeaders.AddOrUpdate(prevKey, StringUtil.Trim(kv[1]));
+					RecvHeaders.append_val(s.chomp());
 				}
 			}
 
 			// XXX: 1000 行あったらどうすんの
+		}
 
-			diag.Debug(RecvHeaders.DumpString());
+		// ヘッダ配列から指定のヘッダを検索してボディを返します。
+		private string GetHeader(Array<string> header, string key)
+		{
+			var key2 = key.ascii_down();
+			for (var i = 0; i < header.length; i++) {
+				var kv = StringUtil.Split2(header.index(i), ":");
+				if (key2 == kv[0].ascii_down()) {
+					return kv[1].chug();
+				}
+			}
+			return "";
 		}
 
 		// uri へ接続します。
