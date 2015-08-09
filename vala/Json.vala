@@ -844,7 +844,6 @@ namespace ULib
 				}
 			}
 #else
-			public static const string charsTe = "\t\r\n ,]}";
 			public static NumberCharKind ToNumberCharKind(int c)
 			{
 				if ('1' <= c && c <= '9') return Di;
@@ -853,7 +852,9 @@ namespace ULib
 				if (c == '-') return Mi;
 				if (c == '.') return Pt;
 				if (c == 'e' || c == 'E') return Ex;
-				if (charsTe.contains(c.to_string("%c"))) return Te;
+				if (c == '\t' || c == '\r' || c == '\n' || c == ' '
+				 || c == ',' || c == ']' || c == '}')
+					return Te;
 				if (c == -1) return Te;
 				return __;
 			}
