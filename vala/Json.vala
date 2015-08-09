@@ -941,6 +941,32 @@ namespace ULib
 			TRACE("ParseNumber");
 
 			StringBuilder sb = new StringBuilder();
+#if USE_JSON_SIMPLE_NUMBER
+			// 文法チェックは行わずに数字の構成要素が続くところまでを
+			// Number とする簡易法。正しい数値が来てるうちはこれで動く。
+			// 正しくない数値("1e0e"とか)はここで処理が中断するか、
+			// 使う時に変換できないエラーになるか程度の違いでしかない。
+			for (; ; ) {
+				int c = -1;
+				try {
+					c = (int)GetChar();
+				} catch {
+					// nop
+				}
+				if (c == -1)
+					break;
+
+				if (c == '.' || c == '+' || c == '-' || c == 'E' || c == 'e'
+				 || ('0' <= c && c <= '9')) {
+					// 数字っぽいので追加
+					sb.append_c((char)c);
+				} else {
+					// それ以外のものが取り出せたので戻して終了
+					UnGetChar();
+					break;
+				}
+			}
+#else
 			NumberCharKind type;
 			NumberStateKind state = NumberStateKind.Begin;
 			NumberStateKind nextstate;
@@ -976,6 +1002,7 @@ namespace ULib
 					state = nextstate;
 				}
 			}
+#endif
 			TRACE("ParseNumber=%s".printf(sb.str));
 
 			return new Json.Number(sb.str);
