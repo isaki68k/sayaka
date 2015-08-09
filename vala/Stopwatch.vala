@@ -6,6 +6,18 @@ public class Stopwatch
 	private TimeVal tv_start;
 	private TimeVal tv_stop;
 	private TimeVal tv_total;
+
+	// 何回 Stop() を通過したかを保持するカウンタ。
+	// .Net の Stopwatch にはないけど、プロファイラを作るため。
+	public int Count {
+		get {
+			return Count_;
+		}
+		protected set {
+			Count_ = value;
+		}
+	}
+	private int Count_;
 #endif
 
 	public Stopwatch()
@@ -18,6 +30,7 @@ public class Stopwatch
 #if !STOPWATCH_DISABLE
 		tv_total.tv_sec = 0;
 		tv_total.tv_usec = 0;
+		Count = 0;
 #endif
 	}
 
@@ -55,6 +68,8 @@ public class Stopwatch
 			tv_total.tv_sec++;
 			tv_total.tv_usec -= 1000000;
 		}
+
+		Count_++;
 #endif
 	}
 
