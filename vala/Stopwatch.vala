@@ -8,6 +8,11 @@ public class Stopwatch
 	private TimeVal tv_total;
 #endif
 
+	public Stopwatch()
+	{
+		Reset();
+	}
+
 	public void Reset()
 	{
 #if !STOPWATCH_DISABLE
