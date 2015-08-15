@@ -136,6 +136,7 @@ namespace ULib
 			var msg = sb.str;
 
 			Conn.output_stream.write(msg.data);
+			diag.Trace("SendRequest() request sent");
 		}
 
 		// ヘッダを受信します。
@@ -143,6 +144,8 @@ namespace ULib
 		{
 			RecvHeaders = null;
 			RecvHeaders = new Array<string>();
+
+			diag.Trace("ReceiveHeader()");
 
 			// 1行目は応答行
 			ResultLine  = dIn.read_line();
@@ -245,6 +248,7 @@ namespace ULib
 
 				if (Uri.Scheme == "https") {
 					// TLS コネクションに移行する。
+					diag.Trace("Connect(): TlsClientConnecton.new");
 					Tls = TlsClientConnection.@new(BaseConn, null);
 
 					// どんな証明書でも受け入れる。
@@ -268,6 +272,7 @@ namespace ULib
 		private bool Tls_Accept(TlsCertificate peer_cert,
 			TlsCertificateFlags errors)
 		{
+			diag.Trace("Tls_Accept");
 			// true を返すと、その証明書を受け入れる。
 			// がばがば
 			return true;
