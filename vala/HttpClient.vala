@@ -225,7 +225,7 @@ namespace ULib
 			InetAddress address = null;
 			for (var i = 0; i < addressList.length(); i++) {
 				address = addressList.nth_data(i);
-				diag.Debug(@"Connect: address[$(i)]=$(address) port=$(port)");
+				diag.Debug(@"Connect(): try [$(i)]=$(address) port=$(port)");
 
 				// アドレスファミリのチェック
 				if (Family != SocketFamily.INVALID) {
