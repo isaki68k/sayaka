@@ -4,13 +4,15 @@
 //
 
 // 使い方
-//	vala-make -o <target> [-c <vala-cmd>] <vala-srcs...>
+//	vala-make [-c <vala-cmd>] <srcs...>
 //
-//	<vala-srcs...> のいずれか一つでもが <target> より新しければ
+//	<srcs...> について、拡張子 .vala のファイルが
+//	拡張子 .c のファイルより新しいものが1つでもあれば、
 //	"<vala-cmd> <vala-srcs>" コマンドを実行します。
 //	<vala-cmd> のデフォルトは "valac"。
 
 #include <err.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,8 +26,8 @@ int debug;
 int
 main(int ac, char *av[])
 {
-	struct stat st;
-	const char *target_file;
+	struct stat stv;
+	struct stat stc;
 	const char *vala_cmd;
 	time_t target_mtime;
 	int updated;
@@ -33,20 +35,16 @@ main(int ac, char *av[])
 	int i;
 	int r;
 
-	target_file = NULL;
 	vala_cmd = "valac";
 	updated = 0;
 
-	while ((c = getopt(ac, av, "c:do:")) != -1) {
+	while ((c = getopt(ac, av, "c:d")) != -1) {
 		switch (c) {
 		 case 'c':
 			vala_cmd = optarg;
 			break;
 		 case 'd':
 			debug = 1;
-			break;
-		 case 'o':
-			target_file = optarg;
 			break;
 		 default:
 			usage();
@@ -56,34 +54,36 @@ main(int ac, char *av[])
 	ac -= optind;
 	av += optind;
 
-	if (target_file == NULL) {
-		usage();
-	}
 	if (vala_cmd[0] == '\0') {
 		usage();
 	}
 
-	// target_file のタイムスタンプを取得
-	r = stat(target_file, &st);
-	if (r == -1) {
-		err(1, "stat: %s", target_file);
-	}
-	target_mtime = st.st_mtime;
-	if (debug) {
-		printf("target_mtime = %u\n", (int)target_mtime);
-	}
-
-	// srcs... のタイムスタンプと比較
+	// srcs... についてタイムスタンプを比較
 	for (i = 0; i < ac; i++) {
-		const char *file = av[i];
+		const char *valafile = av[i];
+		char cfile[PATH_MAX];
+
+		// foo.vala -> foo.c
+		strlcpy(cfile, valafile, sizeof(cfile));
+		char *p = strstr(cfile, ".vala");
+		if (p == NULL) {
+			errx(1, "<srcs> should have .vala extension");
+		}
+		strcpy(p, ".c");
 		if (debug) {
-			printf("checking %s\n", file);
+			printf("checking %s and %s\n", valafile, cfile);
 		}
-		r = stat(file, &st);
+
+		r = stat(valafile, &stv);
 		if (r == -1) {
-			err(1, "stat: %s", file);
+			err(1, "stat: %s", valafile);
 		}
-		if (st.st_mtime > target_mtime) {
+		r = stat(cfile, &stc);
+		if (r == -1) {
+			err(1, "stat: %s", cfile);
+		}
+
+		if (stv.st_mtime > stc.st_mtime) {
 			updated = 1;
 			break;
 		}
