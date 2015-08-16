@@ -22,17 +22,19 @@ PKGS=	\
 VALAFLAGS=	\
 	-g -X -w \
 
+VALAC=	valac ${VALAFLAGS} ${PKGS}
+
 CLEAN_FILES=${SRCS:.vala=.c}
 
 # disable make's builtin rules
 .SUFFIXES:
 
 sayaka:	${SRCS} ${SRCS_NATIVE}
-	valac ${VALAFLAGS} ${PKGS} ${SRCS} ${SRCS_NATIVE}
+	${VALAC} ${SRCS} ${SRCS_NATIVE}
 
 .PHONY: c
 c:
-	valac -g --save-temps ${VALAFLAGS} ${PKGS} ${SRCS} ${SRCS_NATIVE}
+	${VALAC} -g --save-temps ${SRCS} ${SRCS_NATIVE}
 
 .PHONY:	clean
 clean:
@@ -49,7 +51,7 @@ SIXELV_SRCS = \
 	ParsedUri.vala \
 
 sixelv: ${SIXELV_SRCS}
-	valac ${VALAFLAGS} ${PKGS} ${SIXELV_SRCS}
+	${VALAC} ${SIXELV_SRCS}
 
 o_SRCS = \
 	o.vala \
@@ -61,7 +63,7 @@ o_SRCS = \
 	Dictionary.vala \
 
 o: ${o_SRCS}
-	valac ${VALAFLAGS} ${PKGS} ${o_SRCS}
+	${VALAC} ${o_SRCS}
 
 h_SRCS=	\
 	h.vala \
@@ -72,4 +74,4 @@ h_SRCS=	\
 	Dictionary.vala \
 
 h: ${h_SRCS}
-	valac ${VALAFLAGS} ${PKGS} ${h_SRCS}
+	${VALAC} ${h_SRCS}
