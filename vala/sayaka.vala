@@ -92,8 +92,6 @@ public class SayakaMain
 	public int screen_cols;
 	public int opt_fontwidth;
 	public int opt_fontheight;
-	public int fontheight;
-	public int fontwidth;
 	public int iconsize;
 	public int imagesize;
 	public int indent_cols;
@@ -1261,6 +1259,8 @@ public class SayakaMain
 			int ws_cols = 0;
 			int ws_width = 0;
 			int ws_height = 0;
+			int fontheight;
+			int fontwidth;
 
 			winsize ws = winsize();
 			var r = ioctl.TIOCGWINSZ(Posix.STDOUT_FILENO, out ws);
