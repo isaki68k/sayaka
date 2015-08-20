@@ -1037,6 +1037,12 @@ function invalidate_cache()
 {
 	global $cachedir;
 
+	// そもそもキャッシュディレクトリがあるか
+	if (!is_dir($cachedir)) {
+		print "No cachedir found!!: {$cachedir}\n";
+		return;
+	}
+
 	// アイコンは7日分くらいか
 	system("find {$cachedir} -name icon-\* -type f -atime +7 -exec rm {} +");
 
