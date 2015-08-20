@@ -1182,8 +1182,15 @@ public class SayakaMain
 			}
 
 			// JSON を取得
-			var stream = tw.API(Twitter.APIRoot, "mutes/users/ids", options);
-			var line = stream.read_line();
+			DataInputStream stream = null;
+			string line = null;
+			try {
+				stream = tw.API(Twitter.APIRoot, "mutes/users/ids", options);
+				line = stream.read_line();
+			} catch (Error e) {
+				diag.Debug("mutes/users/id: $(e.message)");
+				// nop
+			}
 			if (line == null || line == "") {
 				continue;	// ?
 			}
