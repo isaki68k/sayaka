@@ -239,6 +239,7 @@ public class SayakaMain
 		DataInputStream userStream = null;
 
 		// 古いキャッシュを削除
+		invalidate_cache();
 
 		// アクセストークンを取得
 		tw = new Twitter();
@@ -1245,6 +1246,18 @@ public class SayakaMain
 			var kv = mutelist.At(i);
 			stdout.printf("%s\n".printf(kv.Key));
 		}
+	}
+
+	// 古いキャッシュを破棄する
+	public void invalidate_cache()
+	{
+		// アイコンは7日分くらいか
+		Posix.system(
+			@"find $(cachedir) -name icon-\\* -type f -atime +7 -exec rm {} +");
+
+		// 写真は24時間分くらいか
+		Posix.system(
+			@"find $(cachedir) -name http-\\* -type f -atime +1 -exec rm {} +");
 	}
 
 	public static void signal_handler(int signo)
