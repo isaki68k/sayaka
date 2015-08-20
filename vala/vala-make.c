@@ -12,6 +12,7 @@
 //	<vala-cmd> のデフォルトは "valac"。
 
 #include <err.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,7 +81,9 @@ main(int ac, char *av[])
 		}
 		r = stat(cfile, &stc);
 		if (r == -1) {
-			err(1, "stat: %s", cfile);
+			if (errno != ENOENT) {
+				err(1, "stat: %s", cfile);
+			}
 		}
 
 		if (stv.st_mtime > stc.st_mtime) {
