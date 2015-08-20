@@ -29,14 +29,20 @@ public class Diag
 	public void Trace(string s)
 	{
 		if (opt_trace) {
-			stderr.puts(@"$(ClassName) $(s)\n");
+			TimeVal tv = TimeVal();
+			DateTime dt = new DateTime.from_timeval_local(tv);
+			var time = dt.format("%T") + ".%03d".printf((int)tv.tv_usec / 1000);
+			stderr.puts(@"[$(time)] $(ClassName) $(s)\n");
 		}
 	}
 
 	public void Debug(string s)
 	{
 		if (opt_debug) {
-			stderr.puts(@"$(ClassName) $(s)\n");
+			TimeVal tv = TimeVal();
+			DateTime dt = new DateTime.from_timeval_local(tv);
+			var time = dt.format("%T") + ".%03d".printf((int)tv.tv_usec / 1000);
+			stderr.puts(@"[$(time)] $(ClassName) $(s)\n");
 		}
 	}
 
