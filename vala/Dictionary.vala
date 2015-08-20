@@ -42,7 +42,7 @@ namespace ULib
 	// ソート済み配列
 	public class SortedArray<T>
 	{
-		private Diag diag = new Diag("SortedArray");
+//		private Diag diag = new Diag("SortedArray");
 		private GenericArray<T> data;
 		public CompareDataFunc<T> Comparer;
 
@@ -72,7 +72,7 @@ namespace ULib
 			if (i < 0) {
 				i = ~i;
 			}
-			diag.Debug(@"Add $(i)");
+//			diag.Debug(@"Add $(i)");
 			data.insert(i, value);
 		}
 
@@ -105,7 +105,7 @@ namespace ULib
 				M = (L + R) / 2;
 				c = finder(data[M]);
 				if (c == 0) {
-					diag.Debug(@"FindIndex c=0 M=$(M)");
+//					diag.Debug(@"FindIndex c=0 M=$(M)");
 					return M;
 				}
 				if (c < 0) {
@@ -116,10 +116,10 @@ namespace ULib
 			}
 			// 挿入するべき位置を not で返す
 			if (c < 0) {
-				diag.Debug(@"FindIndex c<0 M=$(M)");
+//				diag.Debug(@"FindIndex c<0 M=$(M)");
 				return ~(M + 1);
 			} else {
-				diag.Debug(@"FindIndex c>=0 M=$(M)");
+//				diag.Debug(@"FindIndex c>=0 M=$(M)");
 				return ~(M);
 			}
 		}
@@ -128,7 +128,7 @@ namespace ULib
 		// 見つからない時は挿入するべき位置の not を返します。
 		public int IndexOf(T value)
 		{
-			diag.Debug("IndexOf");
+//			diag.Debug("IndexOf");
 			return FindIndex((item) => Comparer(item, value));
 		}
 
@@ -162,7 +162,7 @@ namespace ULib
 	// 中身は SortedDictionary にする。O(logN) で上等。
 	public class Dictionary<TKey, TValue>
 	{
-		private Diag diag = new Diag("Dictionary");
+		//private Diag diag = new Diag("Dictionary");
 		private SortedArray<KeyValuePair<TKey, TValue>> data;
 
 		public CompareFunc<TKey> KeyComparer { get; set; }
@@ -245,7 +245,7 @@ namespace ULib
 		// key のインデックスを返す。なければ -1 を返す。
 		public int IndexOf(TKey key)
 		{
-			diag.Debug("IndexOf");
+//			diag.Debug("IndexOf");
 			int index = data.FindIndex((item) => KeyComparer(item.Key, key));
 			if (index >= 0) return index;
 			return -1;
