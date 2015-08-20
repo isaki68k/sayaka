@@ -210,7 +210,7 @@ function init_stream()
 	global $cachedir;
 	global $tput;
 	global $cellsize;
-	global $fontheight;
+	global $opt_fontheight;
 
 	// 色の初期化
 	init_color();
@@ -237,7 +237,7 @@ function init_stream()
 
 	// cellsize
 	// --font が未指定の時のみ cellsize を使う
-	if ($fontheight == 0 && file_exists("./cellsize")) {
+	if ($opt_fontheight == 0 && file_exists("./cellsize")) {
 		$cellsize = "./cellsize";
 	} else {
 		$cellsize = "";
