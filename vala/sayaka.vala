@@ -1009,24 +1009,35 @@ public class SayakaMain
 
 	public void show_icon(string user, string img_url)
 	{
-		// XXX: user 名をキャッシュファイルに付けたかったようだ
+		// URLのファイル名部分をキャッシュのキーにする
+		var filename = Path.get_basename(img_url);
+		var img_file = @"icon-$(iconsize)x$(iconsize)-$(user)-$(filename)";
 
-		if (show_image(img_url, iconsize) == false) {
+		if (show_image(img_file, img_url, iconsize) == false) {
 			stdout.printf("\n\n\n");
 		}
 	}
 
 	public bool show_photo(string img_url, int width)
 	{
-		return show_image(img_url, width);
+		string img_file = img_url;
+		try {
+			Regex regex = new Regex("[:/()? ]");
+			img_file = regex.replace(img_url, img_url.length, 0, "_");
+		} catch (Error e) {
+			stdout.printf(@"show_photo: regex: $(e.message)\n");
+		}
+
+		return show_image(img_file, img_url, width);
 	}
 
 	// 画像をキャッシュして表示
+	//  $img_file はキャッシュディレクトリ内でのファイル名
 	//  $img_url は画像の URL
 	//  $width は画像の幅。ピクセルで指定。0 を指定すると、リサイズせず
 	//  オリジナルのサイズ。
 	// 表示できれば真を返す。
-	public bool show_image(string img_url, int width)
+	public bool show_image(string img_file, string img_url, int width)
 	{
 		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
 		if (indent_depth > 0) {
@@ -1036,28 +1047,30 @@ public class SayakaMain
 
 		if (opt_noimg) return false;
 
+		var tmp = Path.build_path(Path.DIR_SEPARATOR_S,
+			cachedir, img_file);
+		img_file = tmp;
+
+		diag.Debug(@"show_image: img_file=$(img_file), img_url=$(img_url)");
+
 		if (sixel_cmd == "") {
-			return show_image_internal(img_url, width);
+			return show_image_internal(img_file, img_url, width);
 		} else {
-			return show_image_external(img_url, width);
+			return show_image_external(img_file, img_url, width);
 		}
 	}
 
-	public bool show_image_internal(string img_url, int width)
+	public bool show_image_internal(string img_file, string img_url, int width)
 	{
 		var sx = new SixelConverter();
-
-		HttpClient fg = new HttpClient(img_url); 
-		fg.Family = address_family;
-
-		var img_file = Path.build_path(Path.DIR_SEPARATOR_S,
-			cachedir,
-			fg.Uri.Path.replace(Path.DIR_SEPARATOR_S, "_"));
 
 		try {
 			sx.Load(img_file);
 		} catch {
+			diag.Debug("no cache found");
 			try {
+				HttpClient fg = new HttpClient(img_url); 
+				fg.Family = address_family;
 				var basestream = fg.GET();
 				var ms = new MemoryOutputStream.resizable();
 				try {
@@ -1118,10 +1131,10 @@ public class SayakaMain
 	}
 
 	// 外部プログラムを起動して画像を表示
-	public bool show_image_external(string img_url, int width)
+	public bool show_image_external(string img_file, string img_url, int width)
 	{
-		var img_file_base = Path.get_basename(img_url);
-		var img_file = @"$(cachedir)/$(img_file_base).sixel";
+		var tmp = @"$(img_file).sixel";
+		img_file = tmp;
 
 		string width_opt = "";
 		if (width != 0) {
@@ -1131,6 +1144,7 @@ public class SayakaMain
 		FileStream stream;
 		stream = FileStream.open(img_file, "r");
 		if (stream == null) {
+			diag.Debug("no cache found");
 			var imgconv = @"$(sixel_cmd)$(width_opt)";
 			Posix.system(@"(curl -Lks $(img_url) | "
 				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
