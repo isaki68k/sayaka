@@ -1251,6 +1251,12 @@ public class SayakaMain
 	// 古いキャッシュを破棄する
 	public void invalidate_cache()
 	{
+		// そもそもキャッシュディレクトリがあるか
+		if (FileUtils.test(cachedir, FileTest.IS_DIR) == false) {
+			stdout.printf(@"No cachedir found!!: $(cachedir)\n");
+			return;
+		}
+
 		// アイコンは7日分くらいか
 		Posix.system(
 			@"find $(cachedir) -name icon-\\* -type f -atime +7 -exec rm {} +");
