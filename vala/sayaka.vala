@@ -552,6 +552,21 @@ public class SayakaMain
 
 		// 出力文字コードの変換
 		if (iconv_tocode != "") {
+			if (iconv_tocode == "iso-2022-jp") {
+				var sb = new StringBuilder();
+				unichar c;
+				for (var i = 0; rv.get_next_char(ref i, out c); ) {
+					if (0xff61 <= c && c < 0xffa0) {
+						sb.append(@"$(ESC)(I");
+						sb.append_unichar(c - 0xff60 + 0x20);
+						sb.append(@"$(ESC)(B");
+					} else {
+						sb.append_unichar(c);
+					}
+				}
+				rv = sb.str;
+			}
+
 			try {
 				string rv2;
 				rv2 = convert(rv, -1, iconv_tocode, "utf-8");
