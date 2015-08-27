@@ -1108,7 +1108,7 @@ public class SayakaMain
 					fs.splice(stream, 0);
 					fs.close();
 				} catch (Error e) {
-					stderr.printf("%s\n", e.message);
+					stderr.printf("sayaka: %s\n", e.message);
 				}
 
 				(stream as Seekable).seek(0, SeekType.SET);
