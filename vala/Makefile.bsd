@@ -1,0 +1,49 @@
+#
+# BSD Make 用の Makefile です
+#
+
+SRCS.sayaka=	\
+	sayaka.vala \
+	Diag.vala \
+	Dictionary.vala \
+	FileUtil.vala \
+	HttpClient.vala \
+	Json.vala \
+	OAuth.vala \
+	SixelConverter.vala \
+	StringUtil.vala \
+	Twitter.vala \
+	ParsedUri.vala \
+	System.OS.vala \
+
+SRCS_NATIVE= \
+	System.OS.native.c \
+
+VALA_PKGS=	\
+	--pkg posix \
+	--pkg gdk-pixbuf-2.0 \
+
+PKGS= \
+	glib-2.0 \
+	gdk-pixbuf-2.0 \
+	gio-2.0
+
+CFLAGS=	-w `pkg-config --cflags ${PKGS}`
+LIBS=	`pkg-config --libs ${PKGS}`
+
+.PHONY:	sayaka-vala
+
+all:	sayaka
+
+sayaka:	sayaka-vala ${SRCS.sayaka:.vala=.o} ${SRCS_NATIVE:.c=.o}
+	${CC} -o ${.TARGET} ${.ALLSRC:Nsayaka-vala} ${LIBS}
+
+sayaka-vala:
+	./vala-make -c "valac -C ${VALA_PKGS}" ${SRCS.sayaka}
+
+.for f in ${SRCS.sayaka:.vala=.c}
+${f:.c=.o}:	${f}
+	${CC} ${CFLAGS} -c ${.ALLSRC} -o ${.TARGET}
+.endfor
+
+vala-make:	vala-make.c
