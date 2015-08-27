@@ -31,19 +31,20 @@ PKGS= \
 CFLAGS=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 
-.PHONY:	sayaka-vala
+VALA_FLAGS=	\
+
+VALAC=	valac ${VALA_FLAGS} ${VALA_PKGS}
 
 all:	sayaka
 
-sayaka:	sayaka-vala ${SRCS.sayaka:.vala=.o} ${SRCS_NATIVE:.c=.o}
-	${CC} -o ${.TARGET} ${.ALLSRC:Nsayaka-vala} ${LIBS}
+sayaka:	${SRCS.sayaka:.vala=.o} ${SRCS_NATIVE:.c=.o}
+	${CC} -o $@ ${.ALLSRC} ${LIBS}
 
-sayaka-vala:
-	./vala-make -c "valac -C ${VALA_PKGS}" ${SRCS.sayaka}
-
-.for f in ${SRCS.sayaka:.vala=.c}
-${f:.c=.o}:	${f}
+.for X in ${SRCS.sayaka:.vala=} ${SRCS_NATIVE:.c=}
+${X}.o: ${X}.c
 	${CC} ${CFLAGS} -c ${.ALLSRC} -o ${.TARGET}
 .endfor
 
-vala-make:	vala-make.c
+${SRCS.sayaka:.vala=.c} : ${SRCS.sayaka}
+	${VALAC} -C ${SRCS.sayaka}
+
