@@ -10,6 +10,9 @@
 //	拡張子 .c のファイルより新しいものが1つでもあれば、
 //	"<vala-cmd> <vala-srcs>" コマンドを実行します。
 //	<vala-cmd> のデフォルトは "valac"。
+//
+//	-e はコマンドを実行する際にそのコマンドラインを表示します。
+//	make で @./vala-make と組み合わせるとそれっぽくなるかも。
 
 #include <err.h>
 #include <errno.h>
@@ -36,18 +39,23 @@ main(int ac, char *av[])
 	int i;
 	int r;
 	int dry_run;
+	int echocmd;
 
 	vala_cmd = "valac";
 	updated = 0;
 	dry_run = 0;
+	echocmd = 0;
 
-	while ((c = getopt(ac, av, "c:dn")) != -1) {
+	while ((c = getopt(ac, av, "c:den")) != -1) {
 		switch (c) {
 		 case 'c':
 			vala_cmd = optarg;
 			break;
 		 case 'd':
 			debug = 1;
+			break;
+		 case 'e':
+			echocmd = 1;
 			break;
 		 case 'n':
 			dry_run = 1;
@@ -118,6 +126,9 @@ main(int ac, char *av[])
 	if (dry_run) {
 		printf("%s\n", cmd);
 	} else {
+		if (echocmd) {
+			printf("%s\n", cmd);
+		}
 		system(cmd);
 	}
 	return 0;
