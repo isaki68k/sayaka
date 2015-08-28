@@ -85,7 +85,8 @@ main(int ac, char *av[])
 		}
 		strcpy(p, ".c");
 		if (debug) {
-			printf("checking %s and %s\n", valafile, cfile);
+			printf("checking %s and %s .. ", valafile, cfile);
+			fflush(stdout);
 		}
 
 		r = stat(valafile, &stv);
@@ -101,11 +102,14 @@ main(int ac, char *av[])
 
 		if (stv.st_mtime > stc.st_mtime) {
 			updated = 1;
+			if (debug) {
+				printf("need-to-update\n");
+			}
 			break;
 		}
-	}
-	if (debug) {
-		printf("%supdated\n", updated ? "" : "no ");
+		if (debug) {
+			printf("no-update\n");
+		}
 	}
 
 	// 更新なければここで終わり
