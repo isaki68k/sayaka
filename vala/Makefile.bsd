@@ -35,17 +35,15 @@ VALA_FLAGS=	\
 
 VALAC=	valac ${VALA_FLAGS} ${VALA_PKGS}
 
-.PHONY:	sayaka-vala
+.PHONY:	sayaka
 
 all:	sayaka
 
-sayaka:	sayaka-vala ${SRCS.sayaka:.vala=.o} ${SRCS_NATIVE:.c=.o}
-	${CC} -o $@ ${.ALLSRC:Nsayaka-vala} ${LIBS}
-
-sayaka-vala:	${SRCS.sayaka}
-	@./vala-make -e -c "${VALAC} -C" ${.ALLSRC}
-
-.for X in ${SRCS.sayaka:.vala=} ${SRCS_NATIVE:.c=}
-${X}.o: ${X}.c
-	${CC} ${CFLAGS} -c ${.ALLSRC} -o ${.TARGET}
-.endfor
+sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
+	@./vala-make -d -e \
+		-a "${VALAC} -C" \
+		-c "${CC} ${CFLAGS}" \
+		-l "${CC} " \
+		-L "${SRCS_NATIVE:.c=.o} ${LIBS}" \
+		-o ${.TARGET} \
+		${SRCS.sayaka}
