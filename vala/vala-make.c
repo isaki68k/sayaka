@@ -35,17 +35,22 @@ main(int ac, char *av[])
 	int c;
 	int i;
 	int r;
+	int dry_run;
 
 	vala_cmd = "valac";
 	updated = 0;
+	dry_run = 0;
 
-	while ((c = getopt(ac, av, "c:d")) != -1) {
+	while ((c = getopt(ac, av, "c:dn")) != -1) {
 		switch (c) {
 		 case 'c':
 			vala_cmd = optarg;
 			break;
 		 case 'd':
 			debug = 1;
+			break;
+		 case 'n':
+			dry_run = 1;
 			break;
 		 default:
 			usage();
@@ -106,10 +111,15 @@ main(int ac, char *av[])
 		strlcat(cmd, " ", sizeof(cmd));
 		strlcat(cmd, av[i], sizeof(cmd));
 	}
+
 	if (debug) {
 		printf("cmd=|%s|\n", cmd);
 	}
-	system(cmd);
+	if (dry_run) {
+		printf("%s\n", cmd);
+	} else {
+		system(cmd);
+	}
 	return 0;
 }
 
