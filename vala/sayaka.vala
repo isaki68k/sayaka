@@ -80,6 +80,7 @@ public class SayakaMain
 		PlayMode,
 		TweetMode,
 		MutelistMode,
+		StreamRelayMode,
 		Max;
 	}
 
@@ -160,6 +161,9 @@ public class SayakaMain
 			 case "--sixel-cmd":
 				sixel_cmd = args[++i];
 				break;
+			 case "--relay-server":
+				cmd = SayakaCmd.StreamRelayMode;
+				break;
 			 case "--white":
 				bg_white = true;
 				break;
@@ -190,6 +194,9 @@ public class SayakaMain
 			break;
 		 case SayakaCmd.MutelistMode:
 			cmd_mutelist();
+			break;
+		 case SayakaCmd.StreamRelayMode:
+			cmd_userstream_relay();
 			break;
 		 default:
 			usage();
@@ -283,6 +290,39 @@ public class SayakaMain
 			if (showstatus_callback_line(line) == false) {
 				break;
 			}
+		}
+	}
+
+	// 中継サーバモード
+	public void cmd_userstream_relay()
+	{
+		DataInputStream userStream = null;
+
+		// アクセストークンを取得
+		// XXX すでにあることが前提
+		tw = new Twitter();
+		get_access_token();
+
+		// ストリーミング開始
+		try {
+			diag.Trace("UserStreamAPI call");
+			userStream = tw.UserStreamAPI("user");
+		} catch (Error e) {
+			stderr.printf("userstream: %s\n", e.message);
+			Process.exit(1);
+		}
+
+		while (true) {
+			string line;
+			try {
+				line = userStream.read_line();
+			} catch (Error e) {
+				stderr.printf("userstream.read_line: %s\n", e.message);
+				Process.exit(1);
+			}
+
+			stdout.printf("%s\n", line);
+			stdout.flush();
 		}
 	}
 
@@ -1414,6 +1454,7 @@ public class SayakaMain
 	--jis
 	--eucjp
 	--protect : don't display protected user's tweet.
+	--relay-server
 	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.
 """
