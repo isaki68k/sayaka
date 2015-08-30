@@ -196,7 +196,7 @@ public class SayakaMain
 			cmd_mutelist();
 			break;
 		 case SayakaCmd.StreamRelayMode:
-			cmd_userstream_relay();
+			cmd_userstream_relay(args[0]);
 			break;
 		 default:
 			usage();
@@ -294,9 +294,13 @@ public class SayakaMain
 	}
 
 	// 中継サーバモード
-	public void cmd_userstream_relay()
+	public void cmd_userstream_relay(string progname)
 	{
 		DataInputStream userStream = null;
+
+		// 実行ファイルのあるところへ chdir
+		var progdir = Path.get_dirname(progname);
+		Posix.chdir(progdir);
 
 		// アクセストークンを取得
 		// XXX すでにあることが前提
