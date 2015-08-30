@@ -325,6 +325,11 @@ public class SayakaMain
 				Process.exit(1);
 			}
 
+			// 空行がちょくちょく送られてくるようだ
+			if (line == "") {
+				continue;
+			}
+
 			stdout.printf("%s\n", line);
 			stdout.flush();
 		}
