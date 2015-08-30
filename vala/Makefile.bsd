@@ -4,7 +4,9 @@
 
 ALL_TARGET=	\
 	sayaka \
+	sixelv \
 	h \
+	o \
 
 SRCS.sayaka=	\
 	sayaka.vala \
