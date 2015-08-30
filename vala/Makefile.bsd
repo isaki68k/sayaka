@@ -20,6 +20,16 @@ SRCS.sayaka=	\
 	ParsedUri.vala \
 	System.OS.vala \
 
+SRCS.sixelv=	\
+	sixelv.vala \
+	Diag.vala \
+	Dictionary.vala \
+	SixelConverter.vala \
+	StringUtil.vala \
+	HttpClient.vala \
+	OptArgs.vala \
+	ParsedUri.vala \
+
 SRCS.h=	\
 	h.vala \
 	Diag.vala \
@@ -27,6 +37,15 @@ SRCS.h=	\
 	HttpClient.vala \
 	StringUtil.vala \
 	ParsedUri.vala \
+
+SRCS.o=\
+	o.vala \
+    ParsedUri.vala \
+	HttpClient.vala \
+	OAuth.vala \
+	StringUtil.vala \
+	Diag.vala \
+	Dictionary.vala \
 
 SRCS_NATIVE= \
 	System.OS.native.c \
@@ -51,7 +70,7 @@ VALAC=	valac ${VALA_FLAGS} ${VALA_PKGS}
 
 .PHONY:	${ALL_TARGET}
 
-all:	sayaka
+all:	sayaka sixelv
 
 System.OS.native.o:	System.OS.native.c
 	${CC} -c ${.ALLSRC} -o ${.TARGET}
@@ -65,7 +84,25 @@ sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 		-o ${.TARGET} \
 		${SRCS.sayaka}
 
+sixelv:	${SRCS.sixelv}
+	@./vala-make -d -e \
+		-a "${VALAC} -C" \
+		-c "${CC} ${CFLAGS}" \
+		-l "${CC} " \
+		-L "${LIBS}" \
+		-o ${.TARGET} \
+		${.ALLSRC}
+
 h:	${SRCS.h}
+	@./vala-make -d -e \
+		-a "${VALAC} -C" \
+		-c "${CC} ${CFLAGS}" \
+		-l "${CC} " \
+		-L "${LIBS}" \
+		-o ${.TARGET} \
+		${.ALLSRC}
+
+o:	${SRCS.o}
 	@./vala-make -d -e \
 		-a "${VALAC} -C" \
 		-c "${CC} ${CFLAGS}" \
