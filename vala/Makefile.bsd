@@ -2,6 +2,10 @@
 # BSD Make 用の Makefile です
 #
 
+ALL_TARGET=	\
+	sayaka \
+	h \
+
 SRCS.sayaka=	\
 	sayaka.vala \
 	Diag.vala \
@@ -15,6 +19,14 @@ SRCS.sayaka=	\
 	Twitter.vala \
 	ParsedUri.vala \
 	System.OS.vala \
+
+SRCS.h=	\
+	h.vala \
+	Diag.vala \
+	Dictionary.vala \
+	HttpClient.vala \
+	StringUtil.vala \
+	ParsedUri.vala \
 
 SRCS_NATIVE= \
 	System.OS.native.c \
@@ -37,7 +49,7 @@ VALAC=	valac ${VALA_FLAGS} ${VALA_PKGS}
 
 .SUFFIXES:
 
-.PHONY:	sayaka
+.PHONY:	${ALL_TARGET}
 
 all:	sayaka
 
@@ -52,3 +64,12 @@ sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 		-L "${SRCS_NATIVE:.c=.o} ${LIBS}" \
 		-o ${.TARGET} \
 		${SRCS.sayaka}
+
+h:	${SRCS.h}
+	@./vala-make -d -e \
+		-a "${VALAC} -C" \
+		-c "${CC} ${CFLAGS}" \
+		-l "${CC} " \
+		-L "${LIBS}" \
+		-o ${.TARGET} \
+		${.ALLSRC}
