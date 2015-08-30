@@ -112,3 +112,23 @@ o:	${SRCS.o}
 		-L "${LIBS}" \
 		-o ${.TARGET} \
 		${.ALLSRC}
+
+.PHONY:	clean
+.for x in ${ALL_TARGET}
+.PHONY: clean-$x
+.endfor
+
+clean:	clean-sayaka clean-sixelv clean-h clean-o
+
+clean-sayaka:
+	-rm -f sayaka ${SRCS.sayaka:.vala=.c} ${SRCS.sayaka:.vala=.o}
+	-rm -f ${SRCS_NATIVE:.c=.o}
+
+clean-sixelv:
+	-rm -f sixelv ${SRCS.sixelv:.vala=.c} ${SRCS.sixelv:.vala=.o}
+
+clean-h:
+	-rm -f h ${SRCS.h:.vala=.c} ${SRCS.h:.vala=.o}
+
+clean-o:
+	-rm -f o ${SRCS.o:.vala=.c} ${SRCS.o:.vala=.o}
