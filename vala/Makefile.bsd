@@ -35,9 +35,14 @@ VALA_FLAGS=	\
 
 VALAC=	valac ${VALA_FLAGS} ${VALA_PKGS}
 
+.SUFFIXES:
+
 .PHONY:	sayaka
 
 all:	sayaka
+
+System.OS.native.o:	System.OS.native.c
+	${CC} -c ${.ALLSRC} -o ${.TARGET}
 
 sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 	@./vala-make -d -e \
