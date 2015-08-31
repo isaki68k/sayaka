@@ -65,6 +65,26 @@ public class SixelConverter
 		PaletteCount = 8;
 	}
 
+	// x68k 16 色の固定パレットを生成します。
+	public void SetPaletteX68k()
+	{
+		// 0-7 はデジタル8色と同じ
+		SetPaletteFixed8();
+
+		// 8-15 は独自パレット
+		int[] tbl = new int[] {
+			0xbdbdbd, 0x7b0000, 0x007b00, 0x7b7b00,
+			0x00007b, 0x7b007b, 0x007b7b, 0x7b7b7b };
+		for (int i = 0; i < 8; i++) {
+			Palette[i + 8, 0] = (uint8)(tbl[i] >> 16);
+			Palette[i + 8, 1] = (uint8)(tbl[i] >> 8);
+			Palette[i + 8, 2] = (uint8)(tbl[i]);
+		}
+
+		PaletteCount = 16;
+	}
+
+
 	// ANSI 16 色の固定パレットを生成します。
 	public void SetPaletteFixed16()
 	{

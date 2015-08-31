@@ -103,6 +103,7 @@ public class SayakaMain
 	public Twitter tw;
 	public Dictionary<string, string> mutelist
 		= new Dictionary<string, string>();
+	public bool opt_x68k;
 
 	public string cachedir = "./cache";
 
@@ -120,6 +121,7 @@ public class SayakaMain
 		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
 		sixel_cmd = "";
+		opt_x68k = false;
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -166,6 +168,13 @@ public class SayakaMain
 				break;
 			 case "--white":
 				bg_white = true;
+				break;
+			 case "--x68k":
+				opt_x68k = true;
+				// "--font 8x16 --jis" を指定したのと同じ
+				opt_fontwidth = 8;
+				opt_fontheight = 16;
+				iconv_tocode = "iso-2022-jp";
 				break;
 			 case "--debug":
 				debug = true;
@@ -1172,7 +1181,10 @@ public class SayakaMain
 		}
 
 		// color_modeでよしなに減色する
-		if (color_mode <= 2) {
+		if (opt_x68k) {
+			sx.SetPaletteX68k();
+			sx.DiffuseReduceCustom(sx.FindCustom);
+		} else if (color_mode <= 2) {
 			sx.SetPaletteGray(2);
 			sx.DiffuseReduceGray();
 		} else if (color_mode < 8) {
