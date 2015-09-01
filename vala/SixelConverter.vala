@@ -578,7 +578,6 @@ public class SixelConverter
 		stream.putc('\\');
 
 		stream.flush();
-		sw.StopLog("\n\nSixel");
 	}
 
 	// 繰り返しのコードを考慮して、Sixel パターン文字を返します。
