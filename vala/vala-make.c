@@ -25,6 +25,8 @@
 
 void usage(void) __attribute__((__noreturn__));
 
+void run_cmd(const char *);
+
 int debug;
 int dry_run;
 int echocmd;
