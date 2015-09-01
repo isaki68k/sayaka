@@ -10,11 +10,17 @@ public class SixelConverter
 
 	public int PaletteCount;
 
+	// 画像の幅と高さ。Resize すると変更されます。
+	public int Width { get; private set; }
+	public int Height { get; private set; }
+
 	public void Load(string filename) throws Error
 	{
 		pix = new Pixbuf.from_file(filename);
+		Width = pix.get_width();
+		Height = pix.get_height();
 		diag.Debug(@"filename=$(filename)");
-		diag.Debug(@"Size=($(pix.get_width()),$(pix.get_height()))");
+		diag.Debug(@"Size=($(Width),$(Height))");
 		diag.Debug(@"bits=$(pix.get_bits_per_sample())");
 		diag.Debug(@"nCh=$(pix.get_n_channels())");
 		diag.Debug(@"rowstride=$(pix.get_rowstride())");
@@ -23,19 +29,23 @@ public class SixelConverter
 	public void LoadFromStream(InputStream stream) throws Error
 	{
 		pix = new Pixbuf.from_stream(stream);
+		Width = pix.get_width();
+		Height = pix.get_height();
 	}
 
 	// ----- 前処理
 
 	public void ResizeByWidth(int width)
 	{
-		int h = pix.get_height() * width / pix.get_width();
+		int h = Height * width / Width;
 		Resize(width, h);
 	}	
 
 	public void Resize(int width, int height)
 	{
 		pix = pix.scale_simple(width, height, InterpType.BILINEAR);
+		Width = pix.get_width();
+		Height = pix.get_height();
 	}
 
 	// ----- パレットの設定
@@ -225,8 +235,8 @@ public class SixelConverter
 	public void SimpleReduceCustom(FindFunc op)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 		int nch = pix.get_n_channels();
 		int ybase = 0;
 		int dst = 0;
@@ -285,8 +295,8 @@ public class SixelConverter
 	public void DiffuseReduceCustom(FindFunc op)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 		int nch = pix.get_n_channels();
 		int stride = pix.get_rowstride();
 		int ybase = 0;
@@ -330,8 +340,8 @@ public class SixelConverter
 	public void RawHexToStream(FileStream stream)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 		int ybase = 0;
 		int stride = pix.get_rowstride();
 
@@ -352,8 +362,8 @@ public class SixelConverter
 	public void MonoCharToStream(FileStream stream)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 		int src = 0;
 
 		// モノクロキャラクタ
@@ -373,8 +383,8 @@ public class SixelConverter
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 		int src = 0;
 
 		// Sixel 開始
