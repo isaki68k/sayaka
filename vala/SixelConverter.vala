@@ -377,20 +377,16 @@ public class SixelConverter
 		}
 	}
 
-	// Sixel 出力
-	public void SixelToStream(FileStream stream)
+	// ----- Sixel 出力
+
+	// Sixel の開始コードとパレットを文字列で返します。
+	public string SixelPreamble()
 	{
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
-		unowned uint8[] p0 = pix.get_pixels();
-		int w = Width;
-		int h = Height;
-		int src = 0;
-
-		// Sixel 開始
+		// Sixel 開始コード
 		linebuf.append(DCS);
-		// Pixel Aspect Ratio = 1:1, current color
-		linebuf.append_printf("q\"1;1;%d;%d", w, h);
+		linebuf.append_printf("q\"1;1;%d;%d", Width, Height);
 
 		// パレットの出力
 		for (int i = 0; i < PaletteCount; i++) {
@@ -400,25 +396,48 @@ public class SixelConverter
 				Palette[i, 2] * 100 / 255);
 		}
 
-		stream.puts(linebuf.str);
-		linebuf.len = 0;
+		return linebuf.str;
+	}
 
-#if false
+	// Sixel コア部分を stream に出力します。
+	// 一番効率の良くない方法。
+	private void SixelToStreamCore_v1(FileStream stream)
+	{
+		StringBuilder linebuf = new StringBuilder.sized(1024);
+
+		unowned uint8[] p0 = pix.get_pixels();
+		int w = pix.get_width();
+		int h = pix.get_height();
+		int src = 0;
+
 		// 一番効率のよくない方法。
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
 				int I = p0[src++];
-				stream.printf("#%d", I);
-				stream.putc(SixelChars[1 << (y % 6)]);
+				linebuf.append_printf("#%d", I);
+				linebuf.append(SixelRepunit(1, 1 << (y % 6)));
 			}
 			if (y % 6 == 5) {
-				stream.putc('-');
+				linebuf.append_c('-');
 			} else {
-				stream.putc('$');
+				linebuf.append_c('$');
 			}
+			stream.puts(linebuf.str);
+			linebuf.len = 0;
+			stream.flush();
 		}
+	}
 
-#elif false
+	// Sixel コア部分を stream に出力します。
+	// おおきな(といっても今どきなら小さい)バッファが要るが性能はまあまあ良い
+	private void SixelToStreamCore_v2(FileStream stream)
+	{
+		StringBuilder linebuf = new StringBuilder.sized(1024);
+
+		unowned uint8[] p0 = pix.get_pixels();
+		int w = pix.get_width();
+		int h = pix.get_height();
+
 		// おおきな(といっても今どきなら小さい)バッファが要るが性能はまあまあ良い
 
 		uint8[,] buf = new uint8[PaletteCount, w + 1];
@@ -445,12 +464,12 @@ public class SixelConverter
 			}
 			for (int c = 0; c < PaletteCount; c++) {
 				if (buf[c, w] == 0) continue;
-				stream.printf("#%d", c);
+				linebuf.append_printf("#%d", c);
 				int n = 1;
 				uint8 t = buf[c, 0];
 				for (int x = 1; x < w; x++) {
 					if (t != buf[c, x]) {
-						stream.puts(SixelRepunit(n, t));
+						linebuf.append(SixelRepunit(n, t));
 						n = 1;
 						t = buf[c, x];
 					} else {
@@ -458,11 +477,11 @@ public class SixelConverter
 					}
 				}
 				if (t != 0) {
-					stream.puts(SixelRepunit(n, t));
+					linebuf.append(SixelRepunit(n, t));
 				}
 
 				if (c != PaletteCount - 1) {
-					stream.putc('$');
+					linebuf.append_c('$');
 				}
 
 				// clear
@@ -470,11 +489,25 @@ public class SixelConverter
 					buf[c, i] = 0;
 				}
 			}
-			stream.putc('-');
-		}
+			linebuf.append_c('-');
 
-#else
+			stream.puts(linebuf.str);
+			linebuf.len = 0;
+			stream.flush();
+		}
+	}
+
+	// Sixel コア部分を stream に出力します。
+	private void SixelToStreamCore_v3(FileStream stream)
+	{
 		// 030 ターゲット
+
+		StringBuilder linebuf = new StringBuilder.sized(1024);
+
+		unowned uint8[] p0 = pix.get_pixels();
+		int w = pix.get_width();
+		int h = pix.get_height();
+		int src = 0;
 
 		// カラー番号ごとの、X 座標の min, max を計算する
 		// short でいいよね。。
@@ -582,12 +615,31 @@ public class SixelConverter
 			linebuf.len = 0;
 			stream.flush();
 		}
+	}
+
+
+	// Sixel を stream に出力します。
+	public void SixelToStream(FileStream stream)
+	{
+		// 開始コードとかの出力。
+		stream.puts(SixelPreamble());
+
+#if false
+		SixelToStreamCore_v1(stream);
+#elif false
+		SixelToStreamCore_v2(stream);
+#else
+		SixelToStreamCore_v3(stream);
 #endif
 
-		stream.puts(ESC);
-		stream.putc('\\');
-
+		stream.puts(SixelPostamble());
 		stream.flush();
+	}
+
+	// Sixel の終了コードを文字列で返します。
+	private string SixelPostamble()
+	{
+		return ESC + "\\";
 	}
 
 	// 繰り返しのコードを考慮して、Sixel パターン文字を返します。
