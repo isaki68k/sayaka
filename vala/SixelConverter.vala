@@ -370,23 +370,28 @@ public class SixelConverter
 	// Sixel 出力
 	public void SixelToStream(FileStream stream)
 	{
+		StringBuilder linebuf = new StringBuilder.sized(1024);
+
 		unowned uint8[] p0 = pix.get_pixels();
 		int w = pix.get_width();
 		int h = pix.get_height();
 		int src = 0;
 
 		// Sixel 開始
-		stream.puts(DCS);
+		linebuf.append(DCS);
 		// Pixel Aspect Ratio = 1:1, current color
-		stream.puts(@"q\"1;1;$(w);$(h)");
+		linebuf.append_printf("q\"1;1;%d;%d", w, h);
 
 		// パレットの出力
 		for (int i = 0; i < PaletteCount; i++) {
-			stream.printf("#%d;%d;%d;%d;%d", i, 2,
+			linebuf.append_printf("#%d;%d;%d;%d;%d", i, 2,
 				Palette[i, 0] * 100 / 255,
 				Palette[i, 1] * 100 / 255,
 				Palette[i, 2] * 100 / 255);
 		}
+
+		stream.puts(linebuf.str);
+		linebuf.len = 0;
 
 #if false
 		// 一番効率のよくない方法。
@@ -512,12 +517,12 @@ public class SixelConverter
 //stderr.printf("min_color=%d min_x=%d max_x=%d mx=%d\n", min_color, min_x[min_color], max_x[min_color], mx);
 
 					// Sixel に色コードを出力
-					stream.printf("#%d", min_color);
+					linebuf.append_printf("#%d", min_color);
 
 					// 相対 X シーク処理
 					int16 space = min_x[min_color] - (mx + 1);
 					if (space > 0) {
-						stream.puts(SixelRepunit(space, 0));
+						linebuf.append(SixelRepunit(space, 0));
 					}
 
 					// パターンが変わったら、それまでのパターンを出していくアルゴリズム
@@ -534,7 +539,7 @@ public class SixelConverter
 
 						if (prev_t != t) {
 							if (n > 0) {
-								stream.puts(SixelRepunit(n, prev_t));
+								linebuf.append(SixelRepunit(n, prev_t));
 							}
 							prev_t = t;
 							n = 1;
@@ -544,7 +549,7 @@ public class SixelConverter
 					}
 					// 最後のパターン
 					if (prev_t != 0 && n > 0) {
-						stream.puts(SixelRepunit(n, prev_t));
+						linebuf.append(SixelRepunit(n, prev_t));
 					}
 
 					// X 位置を更新
@@ -554,20 +559,26 @@ public class SixelConverter
 
 				} while (true);
 
-				stream.putc('$');
+				linebuf.append_c('$');
 
 				// 最後までやったら抜ける
 				if (mx == -1) break;
 
 			} while (true);
 
-			stream.putc('-');
+			linebuf.append_c('-');
 
+			stream.puts(linebuf.str);
+			linebuf.len = 0;
+			stream.flush();
 		}
 #endif
 
 		stream.puts(ESC);
 		stream.putc('\\');
+
+		stream.flush();
+		sw.StopLog("\n\nSixel");
 	}
 
 	// 繰り返しのコードを考慮して、Sixel パターン文字を返します。
