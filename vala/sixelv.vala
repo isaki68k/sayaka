@@ -344,17 +344,7 @@ stderr.printf("%s\n", filename);
 		}
 
 		if (opt_x68k) {
-			sx.SetPaletteFixed8();
-			// 独自パレット
-			int[] tbl = new int[] {
-				0xbdbdbd, 0x7b0000, 0x007b00, 0x7b7b00,
-				0x00007b, 0x7b007b, 0x007b7b, 0x7b7b7b };
-			for (int i = 0; i < 8; i++) {
-				sx.Palette[i + 8, 0] = (uint8)(tbl[i] >> 16);
-				sx.Palette[i + 8, 1] = (uint8)(tbl[i] >> 8);
-				sx.Palette[i + 8, 2] = (uint8)(tbl[i]);
-			}
-			sx.PaletteCount = 16;
+			sx.SetPaletteX68k();
 			finder = sx.FindCustom;
 		}
 
