@@ -181,9 +181,9 @@ public class SixelConverter
 		// とおもったけどやっぱり品質わるいので色差も考えていく。
 
 		// 色差情報を重みにしていく。
-		int K1 = ((int)r*2 - (int)g - (int)b); if (K1 < 1) K1 = 1;
-		int K2 = ((int)g*2 - (int)r - (int)b); if (K2 < 1) K2 = 1;
-		int K3 = ((int)b*2 - (int)r - (int)g); if (K3 < 1) K3 = 1;
+		int K1 = ((int)r*2 - (int)g - (int)b); if (K1 < 1) K1 = 1; if (K1 > 8) K1 = 4;
+		int K2 = ((int)g*2 - (int)r - (int)b); if (K2 < 1) K2 = 1; if (K2 > 8) K2 = 4;
+		int K3 = ((int)b*2 - (int)r - (int)g); if (K3 < 1) K3 = 1; if (K3 > 8) K3 = 4;
 		uint8 rv = 0;
 		int min_d = int.MAX;
 		for (int i = 0; i < PaletteCount; i++) {
