@@ -261,6 +261,8 @@ namespace ULib
 				} else {
 					Conn = BaseConn;
 				}
+				// つながったら OK なのでループ抜ける。
+				break;
 			}
 
 			if (Conn == null) {
