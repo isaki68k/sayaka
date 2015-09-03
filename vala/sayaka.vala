@@ -264,7 +264,8 @@ public class SayakaMain
 		// ミュートユーザ取得
 		get_mute_list();
 
-		// Ready...
+		stdout.printf("Ready..");
+		stdout.flush();
 
 		// ストリーミング開始
 		try {
@@ -274,6 +275,8 @@ public class SayakaMain
 			stderr.printf("userstream: %s\n", e.message);
 			Process.exit(1);
 		}
+
+		stdout.printf("Connected.\n");
 
 		while (true) {
 			string line;
