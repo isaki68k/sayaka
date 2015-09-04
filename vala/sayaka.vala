@@ -1381,15 +1381,11 @@ public class SayakaMain
 			} else {
 				ws_cols = ws.ws_col;
 
-				if (ws.ws_xpixel == 0 || ws.ws_ypixel == 0) {
-					stdout.printf("TIOCCGWINSZ ws_{x,y}pixel not supported.\n");
-				} else {
-					if (ws.ws_col != 0) {
-						ws_width = ws.ws_xpixel / ws.ws_col;
-					}
-					if (ws.ws_row != 0) {
-						ws_height = ws.ws_ypixel / ws.ws_row;
-					}
+				if (ws.ws_col != 0) {
+					ws_width = ws.ws_xpixel / ws.ws_col;
+				}
+				if (ws.ws_row != 0) {
+					ws_height = ws.ws_ypixel / ws.ws_row;
 				}
 			}
 
