@@ -66,7 +66,8 @@ public class Twitter
 		stdout.printf(
 			@"PLEASE GO TO\n" +
 			@"$(authorizeURL)?oauth_token=$(oauth.token)\n");
-		stdout.printf("AND INPUT PIN\n");
+		stdout.printf("AND INPUT PIN: ");
+		stdout.flush();
 
 		var pin_str = stdin.read_line();
 
