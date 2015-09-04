@@ -166,6 +166,10 @@ public class SayakaMain
 			 case "--relay-server":
 				cmd = SayakaCmd.StreamRelayMode;
 				break;
+			 case "--userstream":
+				var p = args[++i];
+				HttpClient.ProxyMap = @"userstream.twitter.com=$(p)";
+				break;
 			 case "--white":
 				bg_white = true;
 				break;

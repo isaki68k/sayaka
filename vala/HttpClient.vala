@@ -37,6 +37,11 @@ namespace ULib
 		// IPv4/IPv6 only にしたい場合はコンストラクタ後に指定?
 		public SocketFamily Family;
 
+		// 特定サーバだけの透過プロキシモード?
+		// "userstream.twitter.com=http://127.0.0.1:10080/"
+		// みたいに指定する
+		public static string ProxyMap;
+
 
 		// uri をターゲットにした HttpClient を作成します。
 		public HttpClient(string uri)
@@ -218,9 +223,28 @@ namespace ULib
 				port = (int16)int.parse(Uri.Port);
 			}
 
+			// 透過プロキシ(?)設定があれば対応。
+			var proxyTarget = "";
+			ParsedUri proxyUri = new ParsedUri();
+			if (ProxyMap != "") {
+				var map = ProxyMap.split("=");
+				proxyTarget = map[0];
+				proxyUri = ParsedUri.Parse(map[1]);
+			}
+
 			// 名前解決
-			var resolver = Resolver.get_default();
-			var addressList = resolver.lookup_by_name(Uri.Host, null);
+			List<InetAddress> addressList;
+			if (Uri.Host == proxyTarget) {
+				// プロキシサーバのアドレスを設定
+				diag.Debug(@"Use ProxyMap: $(Uri.Host) -> $(proxyUri)\n");
+				addressList = new List<InetAddress>();
+				addressList.append(new InetAddress.from_string(proxyUri.Host));
+				port = (int16)int.parse(proxyUri.Port);
+			} else {
+				// 普通に名前解決
+				var resolver = Resolver.get_default();
+				addressList = resolver.lookup_by_name(Uri.Host, null);
+			}
 
 			InetAddress address = null;
 			for (var i = 0; i < addressList.length(); i++) {
@@ -246,7 +270,9 @@ namespace ULib
 					continue;
 				}
 
-				if (Uri.Scheme == "https") {
+				var scheme = proxyUri.Scheme != ""
+					? proxyUri.Scheme : Uri.Scheme;
+				if (scheme == "https") {
 					// TLS コネクションに移行する。
 					diag.Trace("Connect(): TlsClientConnecton.new");
 					Tls = TlsClientConnection.@new(BaseConn, null);
