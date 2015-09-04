@@ -8,6 +8,9 @@
 
 all:	sayaka sixelv
 
+vala-make:	vala-make.c
+	${CC} ${COPTS} ${.ALLSRC} -o ${.TARGET}
+
 System.OS.native.o:	System.OS.native.c
 	${CC} ${COPTS} -c ${.ALLSRC} -o ${.TARGET}
 
