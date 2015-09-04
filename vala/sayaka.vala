@@ -753,7 +753,9 @@ public class SayakaMain
 		}
 
 		// リツイートは緑色。出来れば濃い目にしたい
-		if (color_mode > 16) {
+		if (opt_x68k) {
+			green = "92";
+		} else if (color_mode > 16) {
 			green = "38;5;28";
 		} else {
 			green = GREEN;
