@@ -9,7 +9,7 @@
 all:	sayaka sixelv
 
 System.OS.native.o:	System.OS.native.c
-	${CC} -c ${.ALLSRC} -o ${.TARGET}
+	${CC} ${COPTS} -c ${.ALLSRC} -o ${.TARGET}
 
 sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 	@./vala-make -d -e \
