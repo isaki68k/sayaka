@@ -8,7 +8,7 @@ sayaka:	${SRCS.sayaka:.vala=.o} ${SRCS_NATIVE:.c=.o}
 	${CC} -o $@ $^ ${LIBS}
 
 ${SRCS.sayaka:.vala=.o} ${SRCS_NATIVE:.c=.o}: %.o : %.c
-	${CC} ${CFLAGS} -c $^ -o $@
+	${CC} ${COPTS} ${CFLAGS} -c $^ -o $@
 
 ${SRCS.sayaka:.vala=.c}: %.c : %.vala
 	if [ -e $@ ] && [ $@ = `ls -dt $@ $+ | head -1` ]; then :; \

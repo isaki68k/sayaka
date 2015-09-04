@@ -14,7 +14,7 @@ System.OS.native.o:	System.OS.native.c
 sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 	@./vala-make -d -e \
 		-a "${VALAC} -C" \
-		-c "${CC} ${CFLAGS}" \
+		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
 		-L "${SRCS_NATIVE:.c=.o} ${LIBS}" \
 		-o ${.TARGET} \
@@ -23,7 +23,7 @@ sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 sixelv:	${SRCS.sixelv}
 	@./vala-make -d -e \
 		-a "${VALAC} -C" \
-		-c "${CC} ${CFLAGS}" \
+		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
 		-L "${LIBS}" \
 		-o ${.TARGET} \
@@ -32,7 +32,7 @@ sixelv:	${SRCS.sixelv}
 h:	${SRCS.h}
 	@./vala-make -d -e \
 		-a "${VALAC} -C" \
-		-c "${CC} ${CFLAGS}" \
+		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
 		-L "${LIBS}" \
 		-o ${.TARGET} \
@@ -41,7 +41,7 @@ h:	${SRCS.h}
 o:	${SRCS.o}
 	@./vala-make -d -e \
 		-a "${VALAC} -C" \
-		-c "${CC} ${CFLAGS}" \
+		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
 		-L "${LIBS}" \
 		-o ${.TARGET} \
