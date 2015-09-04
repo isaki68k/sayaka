@@ -373,7 +373,7 @@ public class SayakaMain
 	// true でループ継続、false でループ終了。
 	// ファイルかソケットかで全部 read_line() が使えてれば
 	// こんなことにはならないんだが…。
-	public bool showstatus_callback_line(string line)
+	public bool showstatus_callback_line(string? line)
 	{
 		if (line == null) {
 			return false;
