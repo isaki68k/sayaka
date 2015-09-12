@@ -56,6 +56,7 @@
 	$record_file = "";
 	$play_file = "";
 	$bg_white = false;
+	$opt_x68k = false;
 
 	if ($_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
 		header("Connection: Keep-alive");
@@ -79,6 +80,7 @@
 			"pipe",
 			"debug",
 			"mutelist",
+			"x68k",
 			"help",
 			"version",
 		);
@@ -136,6 +138,14 @@
 		}
 		if (isset($opts["mutelist"])) {
 			$cmd = "mutelist";
+		}
+		if (isset($opts["x68k"])) {
+			$opt_x68k = true;
+			// "--font 8x16 --jis --color 16" を指定したのと同じ
+			$opt_fontwidth = 8;
+			$opt_fontheight = 16;
+			$jis = true;
+			$color_mode = 16;
 		}
 		if (isset($opts["version"])) {
 			cmd_version();
@@ -225,7 +235,9 @@ function init_stream()
 	}
 	if ($img2sixel != "") {
 		$img2sixel .= " -S";
-		if ($color_mode == 2) {
+		if ($opt_x68k) {
+			$img2sixel .= " -m colormapx68k16.png";
+		} else if ($color_mode == 2) {
 			$img2sixel .= " -e --quality=low";
 		} else if ($color_mode <= 16) {
 			$img2sixel .= " -m colormap{$color_mode}.png";
