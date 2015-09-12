@@ -598,6 +598,7 @@ function init_color()
 	global $color2esc;
 	global $color_mode;
 	global $bg_white;
+	global $opt_x68k;
 
 	define("BOLD",		"1");
 	define("UNDERSCORE","4");
@@ -628,7 +629,9 @@ function init_color()
 
 	// リツイートは緑色。出来れば濃い目にしたい
 	$green = GREEN;
-	if ($color_mode > 16) {
+	if ($opt_x68k) {
+		$green = "92";
+	} else if ($color_mode > 16) {
 		$green = "38;5;28";
 	}
 
