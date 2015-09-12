@@ -23,14 +23,14 @@ sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 		-o ${.TARGET} \
 		${SRCS.sayaka}
 
-sixelv:	${SRCS.sixelv}
+sixelv:	${SRCS.sixelv} ${SRCS_NATIVE:.c=.o}
 	@./vala-make -d -e \
 		-a "${VALAC} -C" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
-		-L "${LIBS}" \
+		-L "${SRCS_NATIVE:.c=.o} ${LIBS}" \
 		-o ${.TARGET} \
-		${.ALLSRC}
+		${SRCS.sixelv}
 
 h:	${SRCS.h}
 	@./vala-make -d -e \
@@ -63,6 +63,7 @@ clean-sayaka:
 
 clean-sixelv:
 	-rm -f sixelv ${SRCS.sixelv:.vala=.c} ${SRCS.sixelv:.vala=.o}
+	-rm -f ${SRCS_NATIVE:.c=.o}
 
 clean-h:
 	-rm -f h ${SRCS.h:.vala=.c} ${SRCS.h:.vala=.o}

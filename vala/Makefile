@@ -32,6 +32,7 @@ SRCS.sixelv=	\
 	HttpClient.vala \
 	OptArgs.vala \
 	ParsedUri.vala \
+	System.OS.vala \
 
 SRCS.h=	\
 	h.vala \

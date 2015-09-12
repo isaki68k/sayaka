@@ -1,4 +1,5 @@
 using Gdk;
+using System.OS;
 
 public class SixelConverter
 {
@@ -78,22 +79,26 @@ public class SixelConverter
 	// x68k 16 色の固定パレットを生成します。
 	public void SetPaletteX68k()
 	{
-		// 0-7 はデジタル8色と同じ
-		SetPaletteFixed8();
+		for (var i = 0; i < 16; i++) {
+			int val;
+			int r, g, b;
+			var sname = "hw.ite.tpalette%X".printf(i);
+			if (sysctl.getbyname_int(sname, out val) == -1) {
+				// エラーになったらとりあえず固定8色モードで…
+				SetPaletteFixed8();
+				return;
+			}
+			// x68k のパレットは GGGG_GRRR_RRBB_BBBI
+			g = (((val >> 11) & 0x1f) << 1) | (val & 1);
+			r = (((val >>  6) & 0x1f) << 1) | (val & 1);
+			b = (((val >>  1) & 0x1f) << 1) | (val & 1);
 
-		// 8-15 は独自パレット
-		int[] tbl = new int[] {
-			0xbdbdbd, 0x7b0000, 0x007b00, 0x7b7b00,
-			0x00007b, 0x7b007b, 0x007b7b, 0x7b7b7b };
-		for (int i = 0; i < 8; i++) {
-			Palette[i + 8, 0] = (uint8)(tbl[i] >> 16);
-			Palette[i + 8, 1] = (uint8)(tbl[i] >> 8);
-			Palette[i + 8, 2] = (uint8)(tbl[i]);
+			Palette[i, 0] = (uint8)(r * 255 / 63);
+			Palette[i, 1] = (uint8)(g * 255 / 63);
+			Palette[i, 2] = (uint8)(b * 255 / 63);
 		}
-
 		PaletteCount = 16;
 	}
-
 
 	// ANSI 16 色の固定パレットを生成します。
 	public void SetPaletteFixed16()
