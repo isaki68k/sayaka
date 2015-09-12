@@ -221,6 +221,7 @@ function init_stream()
 	global $tput;
 	global $cellsize;
 	global $opt_fontheight;
+	global $opt_x68k;
 
 	// 色の初期化
 	init_color();
