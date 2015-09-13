@@ -22,7 +22,7 @@ sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 		-a "${VALAC} -C" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
-		-L "${SRCS_NATIVE:.c=.o} ${LIBS}" \
+		-L "${LIBS} ${SRCS_NATIVE:.c=.o}" \
 		-o ${.TARGET} \
 		${SRCS.sayaka}
 
@@ -31,7 +31,7 @@ sixelv:	${SRCS.sixelv} ${SRCS_NATIVE:.c=.o}
 		-a "${VALAC} -C" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
-		-L "${SRCS_NATIVE:.c=.o} ${LIBS}" \
+		-L "${LIBS} ${SRCS_NATIVE:.c=.o}" \
 		-o ${.TARGET} \
 		${SRCS.sixelv}
 
