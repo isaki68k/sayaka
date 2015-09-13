@@ -9,7 +9,7 @@ ALL_TARGET=	\
 	h \
 	o \
 
-SRCS.sayaka=	\
+SRCS_sayaka=	\
 	sayaka.vala \
 	Diag.vala \
 	Dictionary.vala \
@@ -23,7 +23,7 @@ SRCS.sayaka=	\
 	ParsedUri.vala \
 	System.OS.vala \
 
-SRCS.sixelv=	\
+SRCS_sixelv=	\
 	sixelv.vala \
 	Diag.vala \
 	Dictionary.vala \
@@ -34,7 +34,7 @@ SRCS.sixelv=	\
 	ParsedUri.vala \
 	System.OS.vala \
 
-SRCS.h=	\
+SRCS_h=	\
 	h.vala \
 	Diag.vala \
 	Dictionary.vala \
@@ -42,7 +42,7 @@ SRCS.h=	\
 	StringUtil.vala \
 	ParsedUri.vala \
 
-SRCS.o=\
+SRCS_o=\
 	o.vala \
     ParsedUri.vala \
 	HttpClient.vala \
