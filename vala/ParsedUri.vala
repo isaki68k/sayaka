@@ -63,6 +63,21 @@ namespace ULib
 			return SchemeAuthority() + PQF();
 		}
 
+		// デバッグ用文字列を返します。
+		public string to_debug_string()
+		{
+			var sb = new StringBuilder();
+			sb.append(@"Scheme=|$(Scheme)|");
+			sb.append(@",Host=|$(Host)|");
+			sb.append(@",Port=|$(Port)|");
+			sb.append(@",User=|$(User)|");
+			sb.append(@",Password=|$(Password)|");
+			sb.append(@",Path=|$(Path)|");
+			sb.append(@",Query=|$(Query)|");
+			sb.append(@",Fragment=|$(Fragment)|");
+			return sb.str;
+		}
+
 		// 空の ParsedUri オブジェクトを生成します。
 		public ParsedUri()
 		{
