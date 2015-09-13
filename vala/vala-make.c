@@ -41,6 +41,10 @@
 //	  -o <exefile>
 //		実行ファイル名です。
 //
+//	  -O <objdir>
+//		中間ファイルである .c と .o を置くディレクトリを指定します。
+//		デフォルトは "." (カレントディレクトリ) です。
+//
 
 #include <err.h>
 #include <errno.h>
@@ -68,6 +72,7 @@ main(int ac, char *av[])
 	const char *ld_cmd;
 	const char *libs;
 	const char *exefile;
+	const char *objdir;
 	char **cfiles;
 	char **ofiles;
 	time_t target_mtime;
@@ -85,8 +90,9 @@ main(int ac, char *av[])
 	updated = 0;
 	dry_run = 0;
 	echocmd = 0;
+	objdir = NULL;
 
-	while ((c = getopt(ac, av, "a:c:del:L:no:")) != -1) {
+	while ((c = getopt(ac, av, "a:c:del:L:no:O:")) != -1) {
 		switch (c) {
 		 case 'a':
 			vala_cmd = optarg;
@@ -112,6 +118,9 @@ main(int ac, char *av[])
 		 case 'o':
 			exefile = optarg;
 			break;
+		 case 'O':
+			objdir = optarg;
+			break;
 		 default:
 			usage();
 			break;
@@ -122,6 +131,12 @@ main(int ac, char *av[])
 
 	if (vala_cmd[0] == '\0') {
 		usage();
+	}
+	// -O <objdir> なら valac にも -d <objdir> を追加
+	if (objdir != NULL) {
+		char tmp[1024];	// 適当
+		snprintf(tmp, sizeof(tmp), "%s -d %s", vala_cmd, objdir);
+		vala_cmd = strdup(tmp);
 	}
 
 	cfiles = malloc(ac * sizeof(char*));
@@ -141,6 +156,7 @@ main(int ac, char *av[])
 	for (i = 0; i < ac; i++) {
 		const char *valafile = av[i];
 		char filename[PATH_MAX];
+		char pathname[PATH_MAX];
 
 		// foo.vala -> foo.c
 		strlcpy(filename, valafile, sizeof(filename));
@@ -150,10 +166,20 @@ main(int ac, char *av[])
 		}
 
 		strcpy(p, ".c");
-		cfiles[i] = strdup(filename);
+		if (objdir == NULL) {
+			cfiles[i] = strdup(filename);
+		} else {
+			snprintf(pathname, sizeof(pathname), "%s/%s", objdir, filename);
+			cfiles[i] = strdup(pathname);
+		}
 
 		strcpy(p, ".o");
-		ofiles[i] = strdup(filename);
+		if (objdir == NULL) {
+			ofiles[i] = strdup(filename);
+		} else {
+			snprintf(pathname, sizeof(pathname), "%s/%s", objdir, filename);
+			ofiles[i] = strdup(pathname);
+		}
 	}
 
 	//

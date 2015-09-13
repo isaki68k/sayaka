@@ -2,7 +2,7 @@
 # BSD Make 用の Makefile です
 #
 
-VALAMAKE=	./vala-make -d -e
+VALAMAKE=	./vala-make -d -e -O objdir
 
 .SUFFIXES:
 
