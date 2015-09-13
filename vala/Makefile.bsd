@@ -2,7 +2,8 @@
 # BSD Make 用の Makefile です
 #
 
-VALAMAKE=	./vala-make -d -e -O objdir
+OBJDIR=		objdir
+VALAMAKE=	./vala-make -d -e -O ${OBJDIR}
 
 .SUFFIXES:
 
@@ -61,16 +62,20 @@ clean:	clean-sayaka clean-sixelv clean-h clean-o
 
 clean-sayaka:
 	-rm -f sayaka
-	-rm -f ${SRCS.sayaka:.vala=.c} ${SRCS.sayaka:.vala=.o}
+	-rm -f ${SRCS.sayaka:C/(.*).vala/${OBJDIR}\/\\1.c/}
+	-rm -f ${SRCS.sayaka:C/(.*).vala/${OBJDIR}\/\\1.o/}
 	-rm -f ${SRCS_NATIVE:.c=.o}
 
 clean-sixelv:
 	-rm -f sixelv
-	-rm -f ${SRCS.sixelv:.vala=.c} ${SRCS.sixelv:.vala=.o}
+	-rm -f ${SRCS.sixelv:C/(.*).vala/${OBJDIR}\/\\1.c/}
+	-rm -f ${SRCS.sixelv:C/(.*).vala/${OBJDIR}\/\\1.o/}
 	-rm -f ${SRCS_NATIVE:.c=.o}
 
 clean-h:
-	-rm -f h ${SRCS.h:.vala=.c} ${SRCS.h:.vala=.o}
+	-rm -f ${SRCS.h:C/(.*).vala/${OBJDIR}\/\\1.c/}
+	-rm -f ${SRCS.h:C/(.*).vala/${OBJDIR}\/\\1.o/}
 
 clean-o:
-	-rm -f o ${SRCS.o:.vala=.c} ${SRCS.o:.vala=.o}
+	-rm -f ${SRCS.o:C/(.*).vala/${OBJDIR}\/\\1.c/}
+	-rm -f ${SRCS.o:C/(.*).vala/${OBJDIR}\/\\1.o/}
