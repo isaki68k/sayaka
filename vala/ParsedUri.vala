@@ -48,7 +48,14 @@ namespace ULib
 				sb.append("@");
 			}
 			if (Host != "") {
-				sb.append(Host);
+				if (Host.contains(":") || Host.contains("%")) {
+					// IPv6
+					sb.append("[");
+					sb.append(Host);
+					sb.append("]");
+				} else {
+					sb.append(Host);
+				}
 				if (Port != "") {
 					sb.append(":");
 					sb.append(Port);
@@ -126,9 +133,18 @@ namespace ULib
 			rv.Password = d[1];
 
 			// ホストポートをホストとポートに分離
-			var e = Split2(hostport, ":");
-			rv.Host = e[0];
-			rv.Port = e[1];
+			if (hostport[0] == '[') {
+				// IPv6 アドレス
+				// XXX 色々手抜き
+				var e = Split2(hostport, "]");
+				rv.Host = e[0].substring(1);
+				var p = Split2(e[1], ":");
+				rv.Port = p[1];
+			} else {
+				var e = Split2(hostport, ":");
+				rv.Host = e[0];
+				rv.Port = e[1];
+			}
 
 			// PathQueryFragmentをパスとQFに分離
 			var f = Split2(PQF, "?");
