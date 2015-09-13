@@ -60,11 +60,13 @@ o:	${SRCS.o}
 clean:	clean-sayaka clean-sixelv clean-h clean-o
 
 clean-sayaka:
-	-rm -f sayaka ${SRCS.sayaka:.vala=.c} ${SRCS.sayaka:.vala=.o}
+	-rm -f sayaka
+	-rm -f ${SRCS.sayaka:.vala=.c} ${SRCS.sayaka:.vala=.o}
 	-rm -f ${SRCS_NATIVE:.c=.o}
 
 clean-sixelv:
-	-rm -f sixelv ${SRCS.sixelv:.vala=.c} ${SRCS.sixelv:.vala=.o}
+	-rm -f sixelv
+	-rm -f ${SRCS.sixelv:.vala=.c} ${SRCS.sixelv:.vala=.o}
 	-rm -f ${SRCS_NATIVE:.c=.o}
 
 clean-h:
