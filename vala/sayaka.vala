@@ -104,6 +104,7 @@ public class SayakaMain
 	public Dictionary<string, string> mutelist
 		= new Dictionary<string, string>();
 	public bool opt_x68k;
+	public bool opt_nomute;
 
 	public string cachedir = "./cache";
 
@@ -153,6 +154,9 @@ public class SayakaMain
 				break;
 			 case "--noimg":
 				opt_noimg = true;
+				break;
+			 case "--nomute":
+				opt_nomute = true;
 				break;
 			 case "--play":
 				cmd = SayakaCmd.PlayMode;
@@ -266,7 +270,9 @@ public class SayakaMain
 		get_access_token();
 
 		// ミュートユーザ取得
-		get_mute_list();
+		if (opt_nomute == false) {
+			get_mute_list();
+		}
 
 		stdout.printf("Ready..");
 		stdout.flush();
@@ -1477,6 +1483,7 @@ public class SayakaMain
 	--font <w>x<h> : font width x height. default 7x14.
 	--white
 	--noimg
+	--nomute : don't fetch mute list
 	--jis
 	--eucjp
 	--protect : don't display protected user's tweet.
