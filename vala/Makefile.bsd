@@ -2,6 +2,8 @@
 # BSD Make 用の Makefile です
 #
 
+VALAMAKE=	./vala-make -d -e
+
 .SUFFIXES:
 
 .PHONY:	${ALL_TARGET}
@@ -15,7 +17,7 @@ System.OS.native.o:	System.OS.native.c
 	${CC} ${COPTS} -c ${.ALLSRC} -o ${.TARGET}
 
 sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
-	@./vala-make -d -e \
+	@${VALAMAKE} \
 		-a "${VALAC} -C" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
@@ -24,7 +26,7 @@ sayaka:	${SRCS.sayaka} ${SRCS_NATIVE:.c=.o}
 		${SRCS.sayaka}
 
 sixelv:	${SRCS.sixelv} ${SRCS_NATIVE:.c=.o}
-	@./vala-make -d -e \
+	@${VALAMAKE} \
 		-a "${VALAC} -C" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
@@ -33,7 +35,7 @@ sixelv:	${SRCS.sixelv} ${SRCS_NATIVE:.c=.o}
 		${SRCS.sixelv}
 
 h:	${SRCS.h}
-	@./vala-make -d -e \
+	@${VALAMAKE} \
 		-a "${VALAC} -C" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
@@ -42,7 +44,7 @@ h:	${SRCS.h}
 		${.ALLSRC}
 
 o:	${SRCS.o}
-	@./vala-make -d -e \
+	@${VALAMAKE} \
 		-a "${VALAC} -C" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
