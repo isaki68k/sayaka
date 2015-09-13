@@ -1483,6 +1483,8 @@ public class SayakaMain
 	--relay-server
 	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.
+	--userstream <url>
+	--x68k
 """
 		);
 		Process.exit(0);
