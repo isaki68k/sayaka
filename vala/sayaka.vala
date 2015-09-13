@@ -1286,7 +1286,7 @@ public class SayakaMain
 				stream = tw.API(Twitter.APIRoot, "mutes/users/ids", options);
 				line = stream.read_line();
 			} catch (Error e) {
-				diag.Debug("mutes/users/id: $(e.message)");
+				diag.Debug(@"mutes/users/id: $(e.message)");
 				// nop
 			}
 			if (line == null || line == "") {
