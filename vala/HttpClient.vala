@@ -240,6 +240,10 @@ namespace ULib
 				addressList = new List<InetAddress>();
 				addressList.append(new InetAddress.from_string(proxyUri.Host));
 				port = (int16)int.parse(proxyUri.Port);
+				// アドレスファミリ指定を無効にする。
+				// そもそもこれは名前を解決した時用のオプションであって、
+				// ここではプロキシ指定したアドレスを優先してほしいはず。
+				Family = SocketFamily.INVALID;
 			} else {
 				// 普通に名前解決
 				var resolver = Resolver.get_default();
