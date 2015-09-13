@@ -226,7 +226,7 @@ namespace ULib
 			// 透過プロキシ(?)設定があれば対応。
 			var proxyTarget = "";
 			ParsedUri proxyUri = new ParsedUri();
-			if (ProxyMap != "") {
+			if (ProxyMap != null && ProxyMap != "") {
 				var map = ProxyMap.split("=");
 				proxyTarget = map[0];
 				proxyUri = ParsedUri.Parse(map[1]);
