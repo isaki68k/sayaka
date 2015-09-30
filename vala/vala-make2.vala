@@ -115,7 +115,7 @@ public class Program
 		for (int i = 1; i < args.length; i++) {
 			switch (args[i]) {
 			 case "-a":
-				opt_vala_cmd = args[++i];
+				opt_vala_cmd = args[++i].replace("-C", "");
 				break;
 			 case "-c":
 				opt_cc_cmd = args[++i];
@@ -198,7 +198,7 @@ public class Program
 				return 1;
 			}
 
-			var vapifile = opt_workdir + ChangeExt(valafile, ".vapi");
+			var vapifile = workfile(valafile, ".vapi");
 
 			if (need_update(valafile, vapifile)) {
 				var cmd = @"$(opt_vala_cmd) --fast-vapi=$(vapifile) $(valafile)";
@@ -211,14 +211,51 @@ public class Program
 		// .vala .vapi -> .c
 		for (int i = 0; i < src_vala.length; i++) {
 			var valafile = src_vala.data[i];
-			var cfile = ChangeExt(valafile, ".c");
+			var cfile = workfile(valafile, ".c");
+			var depfile = workfile(valafile, ".dep");
 
+			// .vala が更新されていれば当然コンパイルする。
+			// depfile がない場合は常にコンパイルする。
+			// depfile がある場合は depfile に出てくるファイルのタイムスタンプに従う。
+
+			bool need_compile = false;
 			if (need_update(valafile, cfile)) {
-				var cmd = @"$(opt_vala_cmd) $(opt_vala_opt) -C";
+				// .vala が更新されている。
+				need_compile = true;
+			} else if (FileUtils.test(depfile, FileTest.EXISTS) == false) {
+				// depfile がない。
+				need_compile = true;
+				if (opt_debug) {
+					stdout.puts(@"$(depfile) is not exists... need to compile\n");
+				}
+			} else {
+				// depfile の中身で日付比較
+				try {
+					string depline;
+					FileUtils.get_contents(depfile, out depline);
+					string[]? deps = null;
+					Shell.parse_argv(depline, out deps);
+					// av[0] 相当を飛ばす
+					for (int j = 1; j < deps.length; j++) {
+						// 自分より他の vapi が新しければコンパイルする。
+						if (need_update(deps[j], cfile)) {
+							need_compile = true;
+							break;
+						}
+					}
+				} catch (Error e) {
+					stdout.puts(@"$(depfile) can not parse, force re-compile.\n");
+					need_compile = true;
+				}
+			}
+
+			if (need_compile) {
+				var cmd = @"$(opt_vala_cmd) $(opt_vala_opt) -C -d $(opt_workdir) --deps=$(depfile)";
+				// 自分以外の vapi を列挙する
 				foreach (var f in src_vala.data) {
 					if (f == valafile) continue;
 
-					var vapifile = opt_workdir + ChangeExt(f, ".vapi");
+					var vapifile = workfile(f, ".vapi");
 					cmd += @" --use-fast-vapi=$(vapifile)";
 				}
 				cmd += @" $(valafile)";
@@ -229,10 +266,21 @@ public class Program
 			}
 		}
 
-		// .c -> .o
-		for (int i = 0; i < srcfiles.length; i++) {
-			var cfile = ChangeExt(srcfiles.data[i], ".c");
-			var ofile = ChangeExt(cfile, ".o");
+		// src_vala .c -> .o
+		for (int i = 0; i < src_vala.length; i++) {
+			var cfile = workfile(src_vala.data[i], ".c");
+			var ofile = workfile(src_vala.data[i], ".o");
+
+			if (need_update(cfile, ofile)) {
+				var cmd = @"$(opt_cc_cmd) -c $(cfile) -o $(ofile)";
+				run_cmd(cmd);
+			}
+		}
+
+		// --cfile .c -> .o
+		for (int i = 0; i < src_c.length; i++) {
+			var cfile = src_c.data[i];
+			var ofile = workfile(src_c.data[i], ".o");
 
 			if (need_update(cfile, ofile)) {
 				var cmd = @"$(opt_cc_cmd) -c $(cfile) -o $(ofile)";
@@ -243,14 +291,14 @@ public class Program
 		// .o -> target_exe
 		var need_exe_update = false;
 		for (int i = 0; i < srcfiles.length; i++) {
-			var ofile = ChangeExt(srcfiles.data[i], ".o");
+			var ofile = workfile(srcfiles.data[i], ".o");
 			need_exe_update = need_update(ofile, opt_exefile);
 			if (need_exe_update) break;
 		}
 		if (need_exe_update) {
 			var cmd = @"$(opt_ld_cmd) -o $(opt_exefile)";
 			for (int i = 0; i < srcfiles.length; i++) {
-				var ofile = ChangeExt(srcfiles.data[i], ".o");
+				var ofile = workfile(srcfiles.data[i], ".o");
 				cmd += " " + ofile;
 			}
 			cmd += " " + opt_libs;
@@ -267,6 +315,7 @@ public class Program
 		return st.st_mtime;
 	}
 
+	// srcfile が dstfile より新しければ true
 	private bool need_update(string srcfile, string dstfile)
 	{
 		bool rv = false;
@@ -329,6 +378,11 @@ public class Program
 			return s + ext;
 		}
 		return s.substring(0, i) + ext;
+	}
+
+	private string workfile(string filename, string ext)
+	{
+		return opt_workdir + ChangeExt(filename.replace("/", "_"), ext);
 	}
 }
 
