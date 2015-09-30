@@ -72,17 +72,6 @@ public class Program
 		return "\"" + s + "\"";
 	}
 
-	// s の拡張子を ext に変更します。ext にピリオドが無いと拡張子が
-	// つながって無くなってしまいます。
-	public static string ChangeExt(string s, string ext)
-	{
-		int i = s.last_index_of(".");
-		if (i == -1) {
-			return s + ext;
-		}
-		return s.substring(0, i) + ext;
-	}
-
 	private string opt_vala_cmd;
 	private string opt_vala_opt;
 	private string opt_cc_cmd;
@@ -318,6 +307,17 @@ public class Program
 				Process.exit(1);
 			}
 		}
+	}
+
+	// s の拡張子を ext に変更します。ext にピリオドが無いと拡張子が
+	// つながって無くなってしまいます。
+	public static string ChangeExt(string s, string ext)
+	{
+		int i = s.last_index_of(".");
+		if (i == -1) {
+			return s + ext;
+		}
+		return s.substring(0, i) + ext;
 	}
 }
 
