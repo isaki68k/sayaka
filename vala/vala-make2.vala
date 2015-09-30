@@ -11,8 +11,10 @@ public class Program
 		return new Program().main2(args);
 	}
 
-	public static void usage()
+	public void usage()
 	{
+		SetDefaultOpt();
+
 		var msg =
 @"
  使い方
@@ -24,12 +26,12 @@ public class Program
 
 	  -a <valac_cmd>
 		vala コンパイラのコマンド(とオプション)を指定します。
-		デフォルトは \"valac\" です。
+		デフォルトは $(Q(opt_vala_cmd)) です。
 		互換性: オプションのうち -C は取り除かれます。
 
 	  -c <cc_cmd>
 		C コンパイラのコマンド(とオプション)を指定します。
-		デフォルトは \"cc\" です。
+		デフォルトは $(Q(opt_cc_cmd)) です。
 
 	  -d
 		デバッグ表示をします。
@@ -41,7 +43,7 @@ public class Program
 
 	  -l <ld_cmd>
 		C リンカのコマンド(とオプション)を指定します。
-		デフォルトは \"cc\" です。
+		デフォルトは $(Q(opt_ld_cmd)) です。
 
 	  -L <libs>
 		リンカに指定するライブラリ等を指定します。
@@ -53,14 +55,21 @@ public class Program
 
 	  -o <exefile>
 		実行ファイル名です。
+		デフォルトは $(Q(opt_exefile)) です。
 
 	  -O <objdir>
 		中間ファイルである .c と .o を置くディレクトリを指定します。
-		デフォルトは \".\" (カレントディレクトリ) です。
+		デフォルトは $(Q(opt_workdir)) です。
 ";
 
 
 		stdout.printf("%s\n", msg);
+	}
+
+	// usage 中のクォート用
+	public string Q(string s)
+	{
+		return "\"" + s + "\"";
 	}
 
 	// s の拡張子を ext に変更します。ext にピリオドが無いと拡張子が
@@ -84,9 +93,11 @@ public class Program
 	private bool opt_debug;
 	private bool opt_dry_run;
 	private bool opt_echocmd;
+
 	private Array<string> srcfiles;
 
-	public int main2(string[] args)
+	// オプションのデフォルト値を(再)設定します。
+	public void SetDefaultOpt()
 	{
 		opt_vala_cmd = "valac";
 		opt_vala_opt = "";
@@ -98,6 +109,11 @@ public class Program
 		opt_debug = false;
 		opt_dry_run = false;
 		opt_echocmd = false;
+	}
+
+	public int main2(string[] args)
+	{
+		SetDefaultOpt();
 
 		srcfiles = new Array<string>();
 
@@ -131,6 +147,8 @@ public class Program
 			 case "--valaopt":
 				opt_vala_opt = args[++i];
 				break;
+
+			 case "-O":
 			 case "--workdir":
 				opt_workdir = args[++i];
 				break;
