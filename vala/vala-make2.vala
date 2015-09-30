@@ -84,6 +84,10 @@ public class Program
 	private bool opt_echocmd;
 
 	private Array<string> srcfiles;
+	// srcfiles のうち .vala なファイル名。
+	private Array<string> src_vala;
+	// srcfiles のうち .c なファイル名。
+	private Array<string> src_c;
 
 	// オプションのデフォルト値を(再)設定します。
 	public void SetDefaultOpt()
@@ -105,6 +109,8 @@ public class Program
 		SetDefaultOpt();
 
 		srcfiles = new Array<string>();
+		src_vala = new Array<string>();
+		src_c = new Array<string>();
 
 		for (int i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -142,11 +148,19 @@ public class Program
 				opt_workdir = args[++i];
 				break;
 
+			 case "--cfile":
+				src_c.append_val(args[++i]);
+				// srcfiles にも足しておく。
+				srcfiles.append_val(args[i]);
+				break;
+
 			 default:
 				if (args[i][0] == '-') {
 					usage();
 					return 1;
 				}
+				src_vala.append_val(args[i]);
+				// srcfiles にも足しておく。
 				srcfiles.append_val(args[i]);
 				break;
 			}
@@ -176,15 +190,14 @@ public class Program
 
 		// .vala -> .vapi
 
-		for (int i = 0; i < srcfiles.length; i++) {
-			var valafile = srcfiles.data[i];
+		for (int i = 0; i < src_vala.length; i++) {
+			var valafile = src_vala.data[i];
 
 			if (FileUtils.test(valafile, FileTest.EXISTS) == false) {
 				stdout.puts(@"$(valafile) not exists.\n");
 				return 1;
 			}
 
-			if (valafile.has_suffix(".vala") == false) continue;
 			var vapifile = opt_workdir + ChangeExt(valafile, ".vapi");
 
 			if (need_update(valafile, vapifile)) {
@@ -196,15 +209,13 @@ public class Program
 		}
 
 		// .vala .vapi -> .c
-		for (int i = 0; i < srcfiles.length; i++) {
-			var valafile = srcfiles.data[i];
-			if (valafile.has_suffix(".vala") == false) continue;
+		for (int i = 0; i < src_vala.length; i++) {
+			var valafile = src_vala.data[i];
 			var cfile = ChangeExt(valafile, ".c");
 
 			if (need_update(valafile, cfile)) {
 				var cmd = @"$(opt_vala_cmd) $(opt_vala_opt) -C";
-				foreach (var f in srcfiles.data) {
-					if (f.has_suffix(".vala") == false) continue;
+				foreach (var f in src_vala.data) {
 					if (f == valafile) continue;
 
 					var vapifile = opt_workdir + ChangeExt(f, ".vapi");
