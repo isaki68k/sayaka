@@ -28,6 +28,9 @@
  * SUCH DAMAGE.
  */
 
+	$bindir = dirname($_SERVER["argv"][0]);
+	set_include_path($bindir);
+
 	require_once "subr.php";
 
 	// XXX TwistOAUth に一本化したい

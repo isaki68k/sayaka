@@ -30,6 +30,9 @@
 	$version = "3.1.0 (2015/07/26)";
 	$progname = $_SERVER["argv"][0];
 
+	$bindir = dirname($_SERVER["argv"][0]);
+	set_include_path($bindir);
+
 	// 定数定義
 	define("ESC", "\x1b");
 	define("CSI", ESC."[");
@@ -222,6 +225,7 @@ function init_stream()
 	global $cellsize;
 	global $opt_fontheight;
 	global $opt_x68k;
+	global $bindir;
 
 	// 色の初期化
 	init_color();
@@ -250,7 +254,11 @@ function init_stream()
 
 	// cellsize
 	// --font が未指定の時のみ cellsize を使う
-	if ($opt_fontheight == 0 && file_exists("./cellsize")) {
+	if ($opt_fontheight != 0) {
+		$cellsize = "";
+	} else if (file_exists("{$bindir}/cellsize")) {
+		$cellsize = "{$bindir}/cellsize";
+	} else if (file_exists("./cellsize")) {
 		$cellsize = "./cellsize";
 	} else {
 		$cellsize = "";

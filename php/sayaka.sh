@@ -36,18 +36,18 @@ cmd=$1
 [ $# -ne 0 ] && shift
 case $cmd in
  init)
-	php config.php init
+	php php/config.php init
 	;;
 
  authorize)
-	php config.php authorize
+	php php/config.php authorize
 	;;
 
  stream|s)
-	php sayaka.php --stream $*
+	php php/sayaka.php --stream $*
 	;;
 
  *)
-	php sayaka.php $cmd $*
+	php php/sayaka.php $cmd $*
 	;;
 esac
