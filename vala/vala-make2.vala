@@ -147,6 +147,8 @@ public class Program
 			var srcfile = srcfiles.data[i];
 			unlink(workfile(srcfile, ".o"));
 		}
+
+		unlink(opt_exefile);
 	}
 
 	private void unlink(string filename)
