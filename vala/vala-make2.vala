@@ -83,6 +83,9 @@ public class Program
 	  -O <objdir>
 		中間ファイルである .c と .o を置くディレクトリを指定します。
 		デフォルトは $(Q(opt_workdir)) です。
+
+	  --clean
+		中間ファイルと、実行ファイルを削除します。
 ";
 
 
@@ -105,6 +108,7 @@ public class Program
 	private bool opt_debug;
 	private bool opt_dry_run;
 	private bool opt_echocmd;
+	private bool opt_clean;
 
 	private Array<string> srcfiles;
 	// srcfiles のうち .vala なファイル名。
@@ -125,6 +129,7 @@ public class Program
 		opt_debug = false;
 		opt_dry_run = false;
 		opt_echocmd = false;
+		opt_clean = false;
 	}
 
 	public int main2(string[] args)
@@ -175,6 +180,10 @@ public class Program
 				src_c.append_val(args[++i]);
 				// srcfiles にも足しておく。
 				srcfiles.append_val(args[i]);
+				break;
+
+			 case "--clean":
+				opt_clean = true;
 				break;
 
 			 default:
