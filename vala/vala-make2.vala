@@ -221,7 +221,11 @@ public class Program
 					usage();
 					return 1;
 				}
-				src_vala.append_val(args[i]);
+				if (GetPathExt(args[i]).ascii_down() == ".c") {
+					src_c.append_val(args[i]);
+				} else {
+					src_vala.append_val(args[i]);
+				}
 				// srcfiles にも足しておく。
 				srcfiles.append_val(args[i]);
 				break;
@@ -447,6 +451,16 @@ public class Program
 			return s + ext;
 		}
 		return s.substring(0, i) + ext;
+	}
+
+	// s の拡張子を返します。ピリオドを含みます。
+	public static string GetPathExt(string s)
+	{
+		int i = s.last_index_of(".");
+		if (i == -1) {
+			return "";
+		}
+		return s.substring(i);
 	}
 
 	private string workfile(string filename, string ext)
