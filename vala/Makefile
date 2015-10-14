@@ -1,6 +1,4 @@
 #
-# 共通 Makefile です。
-# 変数宣言だけ行ってください。
 #
 
 ALL_TARGET=	\
@@ -22,6 +20,7 @@ SRCS_sayaka=	\
 	Twitter.vala \
 	ParsedUri.vala \
 	System.OS.vala \
+	System.OS.native.c \
 
 SRCS_sixelv=	\
 	sixelv.vala \
@@ -33,6 +32,7 @@ SRCS_sixelv=	\
 	OptArgs.vala \
 	ParsedUri.vala \
 	System.OS.vala \
+	System.OS.native.c \
 
 SRCS_h=	\
 	h.vala \
@@ -51,9 +51,6 @@ SRCS_o=\
 	Diag.vala \
 	Dictionary.vala \
 
-SRCS_NATIVE= \
-	System.OS.native.c \
-
 VALA_PKGS=	\
 	--pkg posix \
 	--pkg gdk-pixbuf-2.0 \
@@ -69,17 +66,71 @@ LIBS=	`pkg-config --libs ${PKGS}`
 
 VALA_FLAGS=	\
 
-VALAC=	valac ${VALA_FLAGS} ${VALA_PKGS}
+VALAC=	valac
 
+OBJDIR=		objdir
+VALAMAKE=	./vala-make2 -d -e -O ${OBJDIR}
 
-# gnumake か bsdmake かを判別して include ファイルの拡張子を切り替える。
-# gnumake では MAKE_COMMAND という変数が定義される。
-# bsdmake ではこの変数はないので、判別できる(?)
+.SUFFIXES:
 
-ISGNU=bsd${MAKE_COMMAND:%=gnu}
-MAKEEXT=${ISGNU:bsdgnu=gnu}
+.PHONY:	${ALL_TARGET}
 
-# include 文の引数をクォートしなければ、どちらでも動く
+all:	sayaka sixelv
 
-include Makefile.${MAKEEXT}
+vala-make2:	vala-make2.vala
+	${VALAC} -X -w --pkg posix vala-make2.vala
+
+VALAMAKE_COMMON_OPTS= \
+		-a "${VALAC}" \
+		--valaopt "${VALA_PKGS} ${VALA_FLAGS}" \
+		-c "${CC} ${COPTS} ${CFLAGS}" \
+		-l "${CC} " \
+		-L "${LIBS} " \
+
+sayaka:
+	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
+		-o sayaka \
+		${SRCS_sayaka}
+
+.PHONY:	clean-sayaka
+clean-sayaka:
+	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
+		-o sayaka \
+		${SRCS_sayaka}
+
+sixelv:
+	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
+		-o sixelv \
+		${SRCS_sixelv}
+
+.PHONY:	clean-sixelv
+clean-sixelv:
+	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
+		-o sixelv \
+		${SRCS_sixelv}
+
+h:
+	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
+		-o h \
+		${SRCS_h}
+
+.PHONY:	clean-h
+clean-h:
+	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
+		-o h  \
+		${SRCS_h}
+
+o:
+	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
+		-o o \
+		${SRCS_o}
+
+.PHONY:	clean-o
+clean-o:
+	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
+		-o o \
+		${SRCS_o}
+
+.PHONY:	clean
+clean:	clean-sayaka clean-sixelv clean-h clean-o
 
