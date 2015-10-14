@@ -132,6 +132,36 @@ public class Program
 		opt_clean = false;
 	}
 
+	// clean 処理を実行します。
+	private void Clean()
+	{
+		for (int i = 0; i < src_vala.length; i++) {
+			var valafile = src_vala.data[i];
+
+			unlink(workfile(valafile, ".vapi"));
+			unlink(workfile(valafile, ".c"));
+			unlink(workfile(valafile, ".dep"));
+		}
+
+		for (int i = 0; i < srcfiles.length; i++) {
+			var srcfile = srcfiles.data[i];
+			unlink(workfile(srcfile, ".o"));
+		}
+	}
+
+	private void unlink(string filename)
+	{
+		if (opt_dry_run) {
+			stdout.printf("unlink %s\n", filename);
+		} else {
+			if (opt_echocmd) {
+				stdout.printf("unlink %s\n", filename);
+			}
+			// エラー処理はしない
+			FileUtils.unlink(filename);
+		}
+	}
+
 	public int main2(string[] args)
 	{
 		SetDefaultOpt();
@@ -216,6 +246,13 @@ public class Program
 			opt_workdir = "./";
 		} else if (opt_workdir.has_suffix("/") == false) {
 			opt_workdir += "/";
+		}
+
+		// 中間ファイル名リストを生成
+		// --clean の場合
+		if (opt_clean) {
+			Clean();
+			return 0;
 		}
 
 		Posix.mkdir(opt_workdir, 0777);
