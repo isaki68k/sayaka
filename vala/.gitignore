@@ -3,7 +3,6 @@ cache
 objdir
 sayaka
 sixelv
-System.OS.native.o
 test.json
 token.json
-vala-make
+vala-make2
