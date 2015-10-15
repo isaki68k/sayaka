@@ -1,8 +1,4 @@
-CXXFLAGS+=	-std=gnu++11
-
-ssldump:	ssldump.o stream.o
+readdump:	readdump.o
 	${CXX} -o $@ $>
 
-ssldump.o:	ssldump.cpp stream.h
-
-stream.o:	stream.cpp stream.h
+readdump.o:	readdump.cpp
