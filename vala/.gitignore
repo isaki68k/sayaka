@@ -1,0 +1,8 @@
+.gitignore
+cache
+objdir
+sayaka
+sixelv
+test.json
+token.json
+vala-make2
