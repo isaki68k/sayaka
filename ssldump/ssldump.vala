@@ -35,17 +35,15 @@ class SSLDump
 		version.Read(st);
 		length = st.read_int16();
 
-		uint8[] fragment = new uint8[length];
-		st.read(fragment);
+		MemoryStream ms = new MemoryStream();
+		ms.AppendFromInputStream(st, length);
 
 		stdout.printf(@"TLSPlaintext: ContentType=$(type) "
 			+ @"version=$(version) Length=$(length)\n");
 
-		var ms = new MemoryInputStream.from_data(fragment, null);
-		var ds = new DataInputStream(ms);
 		switch (type.value) {
 		 case ContentTypeKind.handshake:
-			DumpHandshake(ds);
+			DumpHandshake(ms);
 			break;
 		 default:
 			stdout.printf(@"TLSPlainText: type=$(type) not supported\n");
@@ -56,13 +54,13 @@ class SSLDump
 	//
 	// Handshake
 	//
-	public void DumpHandshake(DataInputStream st)
+	public void DumpHandshake(MemoryStream st)
 	{
 		var msg_type = new HandshakeType();
-		var length = new uint24();
+		int length;
 
 		msg_type.Read(st);
-		length.Read(st);
+		length = st.read_uint24();
 
 		stdout.printf(@"Handshake: msg_type=$(msg_type) length=$(length)\n");
 
@@ -82,7 +80,7 @@ class SSLDump
 	//
 	// Handshake: client_hello / server_hello
 	//
-	public void DumpHandshake_ClientHello(string name, DataInputStream st)
+	public void DumpHandshake_ClientHello(string name, MemoryStream st)
 	{
 		var version = new ProtocolVersion();
 		var random = new Random();
@@ -96,7 +94,7 @@ class SSLDump
 		session_id.Read(st);
 		cipher_suites.Read(st);
 		compression_methods.Read(st);
-		if (st.get_available() > 0) {
+		if (st.EOF() == false) {
 			extensions.Read(st);
 		}
 
@@ -118,6 +116,7 @@ class SSLDump
 	}
 }
 
+/*
 class uint24
 {
 	public uint value;
@@ -141,6 +140,7 @@ class uint24
 		return @"$(value)";
 	}
 }
+*/
 
 //
 // 可変長フィールドの基底クラス
@@ -148,7 +148,7 @@ class uint24
 class VLField
 {
 	// 可変長フィールドを読み込んで、DataInputStream を返す。
-	public DataInputStream? ReadVL(DataInputStream st)
+	public MemoryStream? ReadVL(MemoryStream st)
 	{
 		uint8 n;
 
@@ -159,34 +159,27 @@ class VLField
 		// フィールドが65534(?)バイトまでならフィールド長は2バイト。
 		// という具合。ややこしすぎる。
 		length = 0;
-		for (int i = 0; i < len_bytes; i++) {
-			try {
-				n = st.read_byte();
-				length = (length << 8) + n;
-			} catch {
-				return null;
-			}
+		if (len_bytes == 1) {
+			length = st.read_uint8();
+		} else if (len_bytes == 2) {
+			length = st.read_uint16();
+		} else {
+			// ???
+			return null;
 		}
 
 		// データフィールドを用意して、そこに読み込む
 		data = new uint8[length];
-		try {
-			st.read(data);
-		} catch {
+		int read_len = st.Read(data);
+		if (read_len != length) {
 			return null;
 		}
 
 		// データフィールドからメモリストリームを作成。
-		// データが空なら、空のメモリストリームを作成。
-		MemoryInputStream ms;
-		if (data != null) {
-			ms = new MemoryInputStream.from_data(data, null);
-		} else {
-			ms = new MemoryInputStream();
-		}
+		MemoryStream rv = new MemoryStream();
+		rv.Append(data);
 
-		// そこからデータストリームを作ってそれを返す。
-		return new DataInputStream(ms);
+		return rv;
 	}
 
 	// 長さ(自身を含まない)
@@ -211,7 +204,7 @@ class ContentType
 {
 	public uint8 value;
 
-	public bool Read(DataInputStream st)
+	public bool Read(MemoryStream st)
 	{
 		try {
 			value = st.read_byte();
