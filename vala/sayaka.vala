@@ -77,6 +77,15 @@ public class MediaInfo
 	}
 }
 
+public class NGStatus
+{
+	public bool match;
+	public string screen_name;
+	public string name;
+	public string time;
+	public string ngword;
+}
+
 public class SayakaMain
 {
 	private static Diag diag;
@@ -133,6 +142,7 @@ public class SayakaMain
 		= new Dictionary<string, string>();
 	public bool opt_x68k;
 	public bool opt_nomute;
+	public ULib.Json ngword_file;
 
 	public string cachedir = "./cache";
 
@@ -283,6 +293,9 @@ public class SayakaMain
 
 		// 一度手動で呼び出して桁数を取得
 		signal_handler(SIGWINCH);
+
+		// NGワード取得
+		get_ngword();
 	}
 
 	// ユーザストリーム
@@ -523,7 +536,22 @@ public class SayakaMain
 			}
 		}
 
-		// NGワード...
+		// NGワード
+		var ngstat = match_ngword(status);
+		if (ngstat.match) {
+			// マッチしたらここで表示
+			var userid = coloring(formatid(ngstat.screen_name), Color.NG);
+			var name = coloring(formatname(ngstat.name), Color.NG);
+			var time = coloring(ngstat.time, Color.NG);
+
+			var msg = coloring(@"NG:$(ngstat.ngword)", Color.NG);
+
+			print_(@"$(name) $(userid)\n"
+			     + @"$(time) $(msg)");
+			stdout.printf("\n");
+			stdout.printf("\n");
+			return;
+		}
 
 		showstatus(status);
 		stdout.printf("\n");
@@ -1397,6 +1425,97 @@ public class SayakaMain
 		// 写真は24時間分くらいか
 		Posix.system(
 			@"find $(cachedir) -name http-\\* -type f -atime +1 -exec rm {} +");
+	}
+
+	// NG ワードを読み込む
+	public void get_ngword()
+	{
+		try {
+			ngword_file = Json.FromString(FileReadAllText("ngword.json"));
+		} catch {
+			ngword_file = new Json.Object(new Dictionary<string, Json>());
+		}
+	}
+
+	// NG ワードと照合し、結果を NGStatus で返す。
+	// 一致したら match = true で、他のすべてのパラメータを埋めて返す。
+	// 一致しなければ match = false で、他のパラメータは不定で返す。
+	public NGStatus match_ngword(ULib.Json status)
+	{
+		var ngstat = new NGStatus();
+
+		if (ngword_file.Has("ngword_list") == false) {
+			return ngstat;
+		}
+		var ngarray = ngword_file.GetArray("ngword_list");
+		for (int i = 0; i < ngarray.length; i++) {
+			var ng = ngarray.index(i);
+
+			var ng_user_id = ng.GetString("user_id");
+			if (ng_user_id != "") {
+				// ユーザ指定があれば、ユーザが一致した時だけワード比較
+				var u = status.GetJson("user");
+				var st_user_id = u.GetString("id_str");
+				if (ng_user_id == st_user_id) {
+					ngstat = match_ngword_main(ng, status);
+				}
+				// RTならRT先も比較
+				if (status.Has("retweeted_status")) {
+					var s = status.GetJson("retweeted_status");
+					u = s.GetJson("user");
+					st_user_id = u.GetString("id_str");
+					if (ng_user_id == st_user_id) {
+						ngstat = match_ngword_main(ng, status);
+					}
+				}
+			} else {
+				// ユーザ指定がなければ直接ワード比較
+				ngstat = match_ngword_main(ng, status);
+			}
+
+			// いずれかで一致すれば帰る
+			if (ngstat.match) {
+				return ngstat;
+			}
+		}
+		return ngstat;
+	}
+
+	public NGStatus match_ngword_main(ULib.Json ng, ULib.Json status)
+	{
+		var ngstat = new NGStatus();
+
+		var ngword = ng.GetString("ngword");
+		var user = status.GetJson("user");
+
+		// 生実況 NG
+
+		// クライアント名
+		if (ngword.has_prefix("%SOURCE,")) {
+			var tmp = ngword.split(",", 2);
+			if (tmp.length > 1 && tmp[1] != null) {
+				var match = tmp[1];
+				if (match in status.GetString("source")) {
+					match_ngword_set(ref ngstat, status, user, ngword);
+					return ngstat;
+				}
+			}
+		}
+
+		// 単純ワード比較
+
+		return ngstat;
+	}
+
+	// マッチした NGワード関連情報を ngstat に一括セットする
+	public void match_ngword_set(ref NGStatus ngstat,
+		ULib.Json status, ULib.Json user, string ngword)
+	{
+		ngstat.match = true;
+		ngstat.screen_name = user.GetString("screen_name");
+		ngstat.name = user.GetString("name");
+		ngstat.time = formattime(status);
+		ngstat.ngword = ngword;
 	}
 
 	public static void signal_handler(int signo)
