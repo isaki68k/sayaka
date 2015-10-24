@@ -1432,7 +1432,9 @@ public class SayakaMain
 	{
 		try {
 			ngword_file = Json.FromString(FileReadAllText("ngword.json"));
-		} catch {
+		} catch (Error e) {
+			// 本当は NOT_FOUND の時は表示しなくてもいいとかしたい
+			stderr.printf(@"Warning: ngword ignored: $(e.message)\n");
 			ngword_file = new Json.Object(new Dictionary<string, Json>());
 		}
 	}
