@@ -1505,6 +1505,10 @@ public class SayakaMain
 		}
 
 		// 単純ワード比較
+		if (Regex.match_simple(ngword, status.GetString("text"))) {
+			match_ngword_set(ref ngstat, status, user, ngword);
+			return ngstat;
+		}
 
 		return ngstat;
 	}
