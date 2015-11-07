@@ -173,6 +173,12 @@ public class SayakaMain
 			 case "--color":
 				color_mode = int.parse(args[++i]);
 				break;
+			 case "--debug":
+				debug = true;
+				Diag.global_trace = true;
+				Diag.global_debug = true;
+				Diag.global_warn = true;
+				break;
 			 case "--eucjp":
 				iconv_tocode = "euc-jp";
 				break;
@@ -202,11 +208,11 @@ public class SayakaMain
 			 case "--protect":
 				protect = true;
 				break;
-			 case "--sixel-cmd":
-				sixel_cmd = args[++i];
-				break;
 			 case "--relay-server":
 				cmd = SayakaCmd.StreamRelayMode;
+				break;
+			 case "--sixel-cmd":
+				sixel_cmd = args[++i];
 				break;
 			 case "--userstream":
 				var p = args[++i];
@@ -221,12 +227,6 @@ public class SayakaMain
 				opt_fontwidth = 8;
 				opt_fontheight = 16;
 				iconv_tocode = "iso-2022-jp";
-				break;
-			 case "--debug":
-				debug = true;
-				Diag.global_trace = true;
-				Diag.global_debug = true;
-				Diag.global_warn = true;
 				break;
 			 default:
 				usage();
