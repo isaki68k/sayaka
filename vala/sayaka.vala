@@ -143,6 +143,7 @@ public class SayakaMain
 	public bool opt_x68k;
 	public bool opt_nomute;
 	public ULib.Json ngword_file;
+	public bool opt_evs;
 
 	public string cachedir = "./cache";
 
@@ -160,6 +161,7 @@ public class SayakaMain
 		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
 		sixel_cmd = "";
+		opt_evs = false;
 		opt_x68k = false;
 
 		for (var i = 1; i < args.length; i++) {
@@ -213,6 +215,9 @@ public class SayakaMain
 				break;
 			 case "--sixel-cmd":
 				sixel_cmd = args[++i];
+				break;
+			 case "--support-evs":
+				opt_evs = true;
 				break;
 			 case "--userstream":
 				var p = args[++i];
@@ -730,6 +735,17 @@ public class SayakaMain
 					inescape = false;
 				}
 			} else {
+				if (opt_evs == false) {
+					// ここで EVS 文字を抜く。
+					// 絵文字セレクタらしいけど、mlterm + sayaka14 フォント
+					// だと U+FE0E とかの文字が前の文字に上書き出力されて
+					// ぐちゃぐちゃになってしまうので、mlterm が対応する
+					// まではこっちでパッチ対応。
+					if (uni == 0xfe0e || uni == 0xfe0f) {
+						continue;
+					}
+				}
+
 				if (uni == ESC) {
 					newtext.append_unichar(uni);
 					inescape = true;
@@ -1643,6 +1659,7 @@ public class SayakaMain
 	--relay-server
 	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.
+	--support-evs
 	--userstream <url>
 	--x68k
 """
