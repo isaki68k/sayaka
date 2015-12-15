@@ -753,7 +753,9 @@ public class SayakaMain
 					newtext.append_unichar(uni);
 					newtext.append(indent);
 					x = left;
-				} else if (uni.iswide_cjk()) {
+				} else if (uni.iswide_cjk()
+				        || (0x1f000 <= uni && uni <= 0x1ffff))	// 絵文字
+				{
 					if (x > screen_cols - 2) {
 						newtext.append("\n");
 						newtext.append(indent);
