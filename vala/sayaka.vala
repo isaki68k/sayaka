@@ -1119,8 +1119,10 @@ public class SayakaMain
 		}
 		text = newtext.str;
 
-		// タグの整形が済んでからエスケープを取り除く
-		text = unescape(text);
+		// タグの整形が済んでからエスケープと改行を整形
+		text = unescape(text)
+			. replace("\r\n", "\n")
+			. replace("\r", "\n");
 
 		return text;
 	}

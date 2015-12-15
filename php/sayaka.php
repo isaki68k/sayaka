@@ -731,8 +731,10 @@ function formatmsg($s)
 		}
 	}
 
-	// ハッシュタグが済んでからエスケープ取り除く
+	// ハッシュタグが済んでからエスケープと改行を整形
 	$text = unescape($text);
+	$text = str_replace("\r\n", "\n", $text);
+	$text = str_replace("\r", "\n", $text);
 
 	// ユーザID
 	$text = preg_replace_callback(
