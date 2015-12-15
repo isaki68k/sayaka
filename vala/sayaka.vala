@@ -787,7 +787,7 @@ public class SayakaMain
 	// ID 表示用に整形
 	public string formatid(string text)
 	{
-		return "@" + unescape(text);
+		return "@" + text;
 	}
 
 	public string unescape(string text)

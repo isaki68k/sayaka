@@ -593,7 +593,7 @@ function formatname($text)
 // ID 表示用に整形
 function formatid($text)
 {
-	return "@".unescape($text);
+	return "@" . $text;
 }
 
 function unescape($text)
