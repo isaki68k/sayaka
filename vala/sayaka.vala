@@ -1473,20 +1473,16 @@ public class SayakaMain
 		for (int i = 0; i < ngarray.length; i++) {
 			var ng = ngarray.index(i);
 
-			var ng_user_id = ng.GetString("user_id");
-			if (ng_user_id != "") {
+			var ng_user = ng.GetString("user");
+			if (ng_user != "") {
 				// ユーザ指定があれば、ユーザが一致した時だけワード比較
-				var u = status.GetJson("user");
-				var st_user_id = u.GetString("id_str");
-				if (ng_user_id == st_user_id) {
+				if (match_ngword_user(ng_user, status)) {
 					ngstat = match_ngword_main(ng, status);
 				}
 				// RTならRT先も比較
 				if (status.Has("retweeted_status")) {
 					var s = status.GetJson("retweeted_status");
-					u = s.GetJson("user");
-					st_user_id = u.GetString("id_str");
-					if (ng_user_id == st_user_id) {
+					if (match_ngword_user(ng_user, s)) {
 						ngstat = match_ngword_main(ng, status);
 					}
 				}
@@ -1501,6 +1497,23 @@ public class SayakaMain
 			}
 		}
 		return ngstat;
+	}
+
+	// ツイート status がユーザ ng_user のものか調べる。
+	// ng_user は "id:<numeric_id>" 形式。
+	public bool match_ngword_user(string ng_user, ULib.Json status)
+	{
+		var u = status.GetJson("user");
+		var user_id = u.GetString("id_str");
+
+		if (ng_user.has_prefix("id:")) {
+			var ng_user_id = ng_user.substring(3);
+			if (ng_user_id == user_id) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	public NGStatus match_ngword_main(ULib.Json ng, ULib.Json status)
