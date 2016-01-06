@@ -144,6 +144,7 @@ public class SayakaMain
 	public bool opt_nomute;
 	public ULib.Json ngword_file;
 	public bool opt_evs;
+	public bool opt_show_ng;
 
 	public string cachedir = "./cache";
 
@@ -162,6 +163,7 @@ public class SayakaMain
 		color_mode = 256;
 		sixel_cmd = "";
 		opt_evs = false;
+		opt_show_ng = false;
 		opt_x68k = false;
 
 		for (var i = 1; i < args.length; i++) {
@@ -215,6 +217,9 @@ public class SayakaMain
 				break;
 			 case "--sixel-cmd":
 				sixel_cmd = args[++i];
+				break;
+			 case "--show-ng":
+				opt_show_ng = true;
 				break;
 			 case "--support-evs":
 				opt_evs = true;
@@ -545,16 +550,18 @@ public class SayakaMain
 		var ngstat = match_ngword(status);
 		if (ngstat.match) {
 			// マッチしたらここで表示
-			var userid = coloring(formatid(ngstat.screen_name), Color.NG);
-			var name = coloring(formatname(ngstat.name), Color.NG);
-			var time = coloring(ngstat.time, Color.NG);
+			if (opt_show_ng) {
+				var userid = coloring(formatid(ngstat.screen_name), Color.NG);
+				var name = coloring(formatname(ngstat.name), Color.NG);
+				var time = coloring(ngstat.time, Color.NG);
 
-			var msg = coloring(@"NG:$(ngstat.ngword)", Color.NG);
+				var msg = coloring(@"NG:$(ngstat.ngword)", Color.NG);
 
-			print_(@"$(name) $(userid)\n"
-			     + @"$(time) $(msg)");
-			stdout.printf("\n");
-			stdout.printf("\n");
+				print_(@"$(name) $(userid)\n"
+				     + @"$(time) $(msg)");
+				stdout.printf("\n");
+				stdout.printf("\n");
+			}
 			return;
 		}
 
@@ -1676,6 +1683,7 @@ public class SayakaMain
 	--relay-server
 	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.
+	--show-ng
 	--support-evs
 	--userstream <url>
 	--x68k
