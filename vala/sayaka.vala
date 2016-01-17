@@ -314,15 +314,29 @@ public class SayakaMain
 		DataInputStream userStream = null;
 
 		// 古いキャッシュを削除
+		if (debug) {
+			stdout.printf("Deleting expired cache files...");
+			stdout.flush();
+		}
 		invalidate_cache();
+		if (debug) {
+			stdout.printf("done");
+		}
 
 		// アクセストークンを取得
 		tw = new Twitter();
 		get_access_token();
 
 		// ミュートユーザ取得
+		if (debug) {
+			stdout.printf("Getting mute users list...");
+			stdout.flush();
+		}
 		if (opt_nomute == false) {
 			get_mute_list();
+		}
+		if (debug) {
+			stdout.printf("done");
 		}
 
 		stdout.printf("Ready..");
