@@ -1579,8 +1579,13 @@ public class SayakaMain
 		}
 
 		// 単純ワード比較
-		if (Regex.match_simple(ngword, status.GetString("text"))) {
-			return true;
+		try {
+			var regex = new Regex(ngword, RegexCompileFlags.DOTALL);
+			if (regex.match(status.GetString("text"))) {
+				return true;
+			}
+		} catch (RegexError e) {
+			stderr.printf("Regex failed: %s\n", e.message);
 		}
 
 		return false;
