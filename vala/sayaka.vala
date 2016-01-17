@@ -130,10 +130,14 @@ public class SayakaMain
 	public int screen_cols;
 	public int opt_fontwidth;
 	public int opt_fontheight;
+	public int fontheight;
+	public int fontwidth;
 	public int iconsize;
 	public int imagesize;
 	public int indent_cols;
 	public int indent_depth;
+	public int last_image_cols;
+	public int last_image_rows;
 	public bool bg_white;
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
@@ -644,7 +648,7 @@ public class SayakaMain
 		for (var i = 0; i < mediainfo.length; i++) {
 			var m = mediainfo.index(i);
 			stdout.printf(@"$(CSI)$(indent_cols)C");
-			show_photo(m.target_url, m.width);
+			show_photo(m.target_url, m.width, i);
 			stdout.printf("\r");
 		}
 
@@ -1198,12 +1202,13 @@ public class SayakaMain
 		var filename = Path.get_basename(img_url);
 		var img_file = @"icon-$(iconsize)x$(iconsize)-$(user)-$(filename)";
 
-		if (show_image(img_file, img_url, iconsize) == false) {
+		if (show_image(img_file, img_url, iconsize, -1) == false) {
 			stdout.printf("\n\n\n");
 		}
 	}
 
-	public bool show_photo(string img_url, int width)
+	// index は画像の番号 (位置決めに使用する)
+	public bool show_photo(string img_url, int width, int index)
 	{
 		string img_file = img_url;
 		try {
@@ -1213,7 +1218,7 @@ public class SayakaMain
 			stdout.printf(@"show_photo: regex: $(e.message)\n");
 		}
 
-		return show_image(img_file, img_url, width);
+		return show_image(img_file, img_url, width, index);
 	}
 
 	// 画像をキャッシュして表示
@@ -1221,8 +1226,10 @@ public class SayakaMain
 	//  $img_url は画像の URL
 	//  $width は画像の幅。ピクセルで指定。0 を指定すると、リサイズせず
 	//  オリジナルのサイズ。
+	//  $index は添付写真の位置決めに使用する画像番号。-1 なら位置不要。
 	// 表示できれば真を返す。
-	public bool show_image(string img_file, string img_url, int width)
+	public bool show_image(string img_file, string img_url, int width,
+		int index)
 	{
 		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
 		if (indent_depth > 0) {
@@ -1239,15 +1246,24 @@ public class SayakaMain
 		diag.Debug(@"show_image: img_file=$(img_file), img_url=$(img_url)");
 
 		if (sixel_cmd == "") {
-			return show_image_internal(img_file, img_url, width);
+			// インデントはあっちで行っている
+
+			return show_image_internal(img_file, img_url, width, index);
 		} else {
 			return show_image_external(img_file, img_url, width);
 		}
 	}
 
-	public bool show_image_internal(string img_file, string img_url, int width)
+	public bool show_image_internal(string img_file, string img_url, int width,
+		int index)
 	{
 		var sx = new SixelConverter();
+
+		// 画像を横にも並べるためのインデント調整
+		if (index == 1 || index == 3) {
+			stdout.printf(@"$(CSI)$(last_image_rows)A");
+			stdout.printf(@"$(CSI)$(last_image_cols)C");
+		}
 
 		try {
 			sx.Load(img_file);
@@ -1291,6 +1307,11 @@ public class SayakaMain
 		if (width != 0) {
 			sx.ResizeByWidth(width);
 		}
+
+		// 画像の幅x高さ(キャラクタ単位)を記憶
+		// ここでは使わず次の画像を同じ列に表示する場合に使うため
+		last_image_cols = (sx.Width + fontwidth - 1) / fontwidth;
+		last_image_rows = (sx.Height + fontheight - 1) / fontheight;
 
 		// color_modeでよしなに減色する
 		if (opt_x68k) {
@@ -1603,8 +1624,6 @@ public class SayakaMain
 			int ws_cols = 0;
 			int ws_width = 0;
 			int ws_height = 0;
-			int fontheight;
-			int fontwidth;
 
 			winsize ws = winsize();
 			var r = ioctl.TIOCGWINSZ(Posix.STDOUT_FILENO, out ws);
