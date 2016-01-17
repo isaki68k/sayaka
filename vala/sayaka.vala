@@ -1491,32 +1491,54 @@ public class SayakaMain
 			return ngstat;
 		}
 		var ngarray = ngword_file.GetArray("ngword_list");
+
+		ULib.Json user = null;	// マッチしたユーザ
 		for (int i = 0; i < ngarray.length; i++) {
 			var ng = ngarray.index(i);
 
 			var ng_user = ng.GetString("user");
-			if (ng_user != "") {
-				// ユーザ指定があれば、ユーザが一致した時だけワード比較
-				if (match_ngword_user(ng_user, status)) {
-					ngstat = match_ngword_main(ng, status);
-				}
-				// RTならRT先も比較
-				if (status.Has("retweeted_status")) {
-					var s = status.GetJson("retweeted_status");
-					if (match_ngword_user(ng_user, s)) {
-						ngstat = match_ngword_main(ng, status);
+			if (status.Has("retweeted_status")) {
+				var s = status.GetJson("retweeted_status");
+
+				if (ng_user == "") {
+					// ユーザ指定がなければ、RT先本文を比較
+					if (match_ngword_main(ng, s)) {
+						user = s.GetJson("user");
+					}
+				} else {
+					// ユーザ指定があって、RT元かRT先のユーザと一致すれば
+					// RT先本文を比較。ただしユーザ情報はマッチしたほう。
+					if (match_ngword_user(ng_user, status)) {
+						if (match_ngword_main(ng, s)) {
+							user = status.GetJson("user");
+						}
+					} else if (match_ngword_user(ng_user, s)) {
+						if (match_ngword_main(ng, s)) {
+							user = s.GetJson("user");
+						}
 					}
 				}
 			} else {
-				// ユーザ指定がなければ直接ワード比較
-				ngstat = match_ngword_main(ng, status);
+				// RT でないステータス
+				// ユーザ指定がないか、あって一致すれば、本文を比較
+				if (ng_user == "" || match_ngword_user(ng_user, status)) {
+					if (match_ngword_main(ng, status)) {
+						user = status.GetJson("user");
+					}
+				}
 			}
 
-			// いずれかで一致すれば帰る
-			if (ngstat.match) {
+			if (user != null) {
+				ngstat.match = true;
+				ngstat.screen_name = user.GetString("screen_name");
+				ngstat.name = user.GetString("name");
+				ngstat.time = formattime(status);
+				ngstat.ngword = ng.GetString("ngword");
 				return ngstat;
 			}
 		}
+
+		ngstat.match = false;
 		return ngstat;
 	}
 
@@ -1537,12 +1559,11 @@ public class SayakaMain
 		return false;
 	}
 
-	public NGStatus match_ngword_main(ULib.Json ng, ULib.Json status)
+	// status の本文その他を NGワード ng と照合する。
+	// マッチしたかどうかを返す。
+	public bool match_ngword_main(ULib.Json ng, ULib.Json status)
 	{
-		var ngstat = new NGStatus();
-
 		var ngword = ng.GetString("ngword");
-		var user = status.GetJson("user");
 
 		// 生実況 NG
 
@@ -1552,30 +1573,17 @@ public class SayakaMain
 			if (tmp.length > 1 && tmp[1] != null) {
 				var match = tmp[1];
 				if (match in status.GetString("source")) {
-					match_ngword_set(ref ngstat, status, user, ngword);
-					return ngstat;
+					return true;
 				}
 			}
 		}
 
 		// 単純ワード比較
 		if (Regex.match_simple(ngword, status.GetString("text"))) {
-			match_ngword_set(ref ngstat, status, user, ngword);
-			return ngstat;
+			return true;
 		}
 
-		return ngstat;
-	}
-
-	// マッチした NGワード関連情報を ngstat に一括セットする
-	public void match_ngword_set(ref NGStatus ngstat,
-		ULib.Json status, ULib.Json user, string ngword)
-	{
-		ngstat.match = true;
-		ngstat.screen_name = user.GetString("screen_name");
-		ngstat.name = user.GetString("name");
-		ngstat.time = formattime(status);
-		ngstat.ngword = ngword;
+		return false;
 	}
 
 	public static void signal_handler(int signo)
