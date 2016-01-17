@@ -1465,7 +1465,7 @@ public class SayakaMain
 
 		// 写真は24時間分くらいか
 		Posix.system(
-			@"find $(cachedir) -name http-\\* -type f -atime +1 -exec rm {} +");
+			@"find $(cachedir) -name http\\* -type f -atime +1 -exec rm {} +");
 	}
 
 	// NG ワードを読み込む
