@@ -1308,11 +1308,6 @@ public class SayakaMain
 			sx.ResizeByWidth(width);
 		}
 
-		// 画像の幅x高さ(キャラクタ単位)を記憶
-		// ここでは使わず次の画像を同じ列に表示する場合に使うため
-		last_image_cols = (sx.Width + fontwidth - 1) / fontwidth;
-		last_image_rows = (sx.Height + fontheight - 1) / fontheight;
-
 		// color_modeでよしなに減色する
 		if (opt_x68k) {
 			sx.SetPaletteX68k();
@@ -1335,6 +1330,24 @@ public class SayakaMain
 		}
 		sx.SixelToStream(stdout);
 		stdout.flush();
+
+		// すでに同じ列に表示した画像のほうが自分より縦に長ければ
+		// カーソル位置を下で揃える。
+		var image_rows = (sx.Height + fontheight - 1) / fontheight;
+		if (last_image_rows > image_rows) {
+			var row = last_image_rows - image_rows;
+			stdout.printf(@"$(CSI)$(row)B");
+		}
+
+		if (index % 2 == 0) {
+			// 横1枚目なら画像の幅x高さ(キャラクタ単位)を記憶
+			last_image_cols = (sx.Width + fontwidth - 1) / fontwidth;
+			last_image_rows = image_rows;
+		} else {
+			// 横の最後ならリセットしておく
+			last_image_cols = 0;
+			last_image_rows = 0;
+		}
 
 		return true;
 	}
