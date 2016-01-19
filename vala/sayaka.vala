@@ -136,8 +136,10 @@ public class SayakaMain
 	public int imagesize;
 	public int indent_cols;
 	public int indent_depth;
-	public int last_image_cols;
-	public int last_image_rows;
+	public int max_image_count;		// この列に表示する最大の画像の数
+	public int image_count;			// この列に表示している画像の数
+	public int image_next_cols;		// この列の次に表示する画像の位置(文字単位)
+	public int image_max_rows;		// この列で最大の画像の高さ(文字単位)
 	public bool bg_white;
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
@@ -200,6 +202,12 @@ public class SayakaMain
 				break;
 			 case "--jis":
 				iconv_tocode = "iso-2022-jp";
+				break;
+			 case "--max-image-cols":
+				max_image_count = int.parse(args[++i]);
+				if (max_image_count < 1) {
+					max_image_count = 0;
+				}
 				break;
 			 case "--mutelist":
 				cmd = SayakaCmd.MutelistMode;
@@ -645,6 +653,9 @@ public class SayakaMain
 		stdout.printf("\n");
 
 		// picture
+		image_count = 0;
+		image_next_cols = 0;
+		image_max_rows = 0;
 		for (var i = 0; i < mediainfo.length; i++) {
 			var m = mediainfo.index(i);
 			stdout.printf(@"$(CSI)$(indent_cols)C");
@@ -1259,12 +1270,6 @@ public class SayakaMain
 	{
 		var sx = new SixelConverter();
 
-		// 画像を横にも並べるためのインデント調整
-		if (index == 1 || index == 3) {
-			stdout.printf(@"$(CSI)$(last_image_rows)A");
-			stdout.printf(@"$(CSI)$(last_image_cols)C");
-		}
-
 		try {
 			sx.Load(img_file);
 		} catch {
@@ -1308,6 +1313,35 @@ public class SayakaMain
 			sx.ResizeByWidth(width);
 		}
 
+		// この画像が占める文字数
+		var image_rows = (sx.Height + fontheight - 1) / fontheight;
+		var image_cols = (sx.Width + fontwidth - 1) / fontwidth;
+
+		// 表示位置などの計算
+		if (index >= 0) {
+			var indent = (indent_depth + 1) * indent_cols;
+			if (image_count >= max_image_count ||
+				(indent + image_next_cols + image_cols >= screen_cols))
+			{
+				// 指定された枚数を越えるか、画像が入らない場合は折り返す
+				stdout.printf("\r");
+				stdout.printf(@"$(CSI)$(indent)C");
+				image_count = 0;
+				image_max_rows = 0;
+				image_next_cols = 0;
+			} else {
+				// 前の画像の横に並べる
+				if (image_count > 0) {
+					if (image_max_rows > 0) {
+						stdout.printf(@"$(CSI)$(image_max_rows)A");
+					}
+					if (image_next_cols > 0) {
+						stdout.printf(@"$(CSI)$(image_next_cols)C");
+					}
+				}
+			}
+		}
+
 		// color_modeでよしなに減色する
 		if (opt_x68k) {
 			sx.SetPaletteX68k();
@@ -1331,22 +1365,17 @@ public class SayakaMain
 		sx.SixelToStream(stdout);
 		stdout.flush();
 
-		// すでに同じ列に表示した画像のほうが自分より縦に長ければ
-		// カーソル位置を下で揃える。
-		var image_rows = (sx.Height + fontheight - 1) / fontheight;
-		if (last_image_rows > image_rows) {
-			var row = last_image_rows - image_rows;
-			stdout.printf(@"$(CSI)$(row)B");
-		}
+		if (index >= 0) {
+			image_count++;
+			image_next_cols += image_cols;
 
-		if (index % 2 == 0) {
-			// 横1枚目なら画像の幅x高さ(キャラクタ単位)を記憶
-			last_image_cols = (sx.Width + fontwidth - 1) / fontwidth;
-			last_image_rows = image_rows;
-		} else {
-			// 横の最後ならリセットしておく
-			last_image_cols = 0;
-			last_image_rows = 0;
+			// カーソル位置は同じ列に表示した画像の中で最長のものの下端に揃える
+			if (image_max_rows > image_rows) {
+				var down = image_max_rows - image_rows;
+				stdout.printf(@"$(CSI)$(down)B");
+			} else {
+				image_max_rows = image_rows;
+			}
 		}
 
 		return true;
@@ -1734,6 +1763,7 @@ public class SayakaMain
 	--color <n> : color mode { 2 .. 256 }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
 	--white
+	--max-image-cols <n>
 	--noimg
 	--nomute : don't fetch mute list
 	--jis
