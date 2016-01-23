@@ -1320,7 +1320,7 @@ public class SayakaMain
 		// 表示位置などの計算
 		if (index >= 0) {
 			var indent = (indent_depth + 1) * indent_cols;
-			if (image_count >= max_image_count ||
+			if ((max_image_count > 0 && image_count >= max_image_count) ||
 				(indent + image_next_cols + image_cols >= screen_cols))
 			{
 				// 指定された枚数を越えるか、画像が入らない場合は折り返す
