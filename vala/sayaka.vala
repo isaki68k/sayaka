@@ -939,16 +939,36 @@ public class SayakaMain
 			dt = conv_twtime_to_datetime(created_at);
 		}
 
+		// なぜかワルシャワ時間に対応 :-)
+		string time_zone = null;
+		var user = obj.GetJson("user");
+		var zone = user.GetString("time_zone");
+		if (zone == "Warsaw") {
+			utc_offset = obj.GetInt("utc_offset");
+			time_zone = zone;
+		}
+
 		// dt は UTC で作ったらローカルタイムに出来ないっぽいので
 		// ここで時差分を追加してやる? 嘘だろ…。
 		dt = dt.add_hours(utc_offset / 3600);
 
+		var sb = new StringBuilder();
+
 		if (dt.format("%F") == now.format("%F")) {
 			// 今日なら時刻のみ
-			return dt.format("%T");
+			sb.append(dt.format("%T"));
 		} else {
-			return dt.format("%F %T");
+			sb.append(dt.format("%F %T"));
 		}
+
+		// タイムゾーンがあれば追加
+		if (time_zone != null) {
+			sb.append("(");
+			sb.append(time_zone);
+			sb.append(")");
+		}
+
+		return sb.str;
 	}
 
 	// twitter 書式の日付時刻から DateTime を作って返す。
