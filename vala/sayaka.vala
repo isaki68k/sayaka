@@ -633,20 +633,7 @@ public class SayakaMain
 		var mediainfo = new Array<MediaInfo>();
 		var msg = formatmsg(s, mediainfo);
 
-		// 今のところローカルアカウントはない
-		var profile_image_url = s_user.GetString("profile_image_url");
-
-		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを発生させ
-		// アイコン表示時にスクロールしないようにしてからカーソル位置を保存する
-		// (スクロールするとカーソル位置復元時に位置が合わない)
-		stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
-		show_icon(unescape(s_user.GetString("screen_name")),
-			profile_image_url);
-		stdout.printf("\r");
-		// カーソル位置保存/復元に対応していない端末でも動作するように
-		// カーソル位置復元前にカーソル上移動x3を行う
-		stdout.printf(CSI + "3A" + @"$(ESC)8");
-
+		show_icon(s_user);
 		print_(name + " " + userid + verified + protected);
 		stdout.printf("\n");
 		print_(msg);
@@ -1229,15 +1216,31 @@ public class SayakaMain
 		return new MediaInfo(target, disp_url, width);
 	}
 
-	public void show_icon(string user, string img_url)
+	// 現在のカーソル位置に user のアイコンを表示。
+	// アイコン表示後にカーソル位置を表示前の位置に戻す。
+	public void show_icon(ULib.Json user)
 	{
-		// URLのファイル名部分をキャッシュのキーにする
-		var filename = Path.get_basename(img_url);
-		var img_file = @"icon-$(iconsize)x$(iconsize)-$(user)-$(filename)";
+		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを発生させ
+		// アイコン表示時にスクロールしないようにしてからカーソル位置を保存する
+		// (スクロールするとカーソル位置復元時に位置が合わない)
+		stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
 
-		if (show_image(img_file, img_url, iconsize, -1) == false) {
+		var screen_name = unescape(user.GetString("screen_name"));
+		var image_url = user.GetString("profile_image_url");
+
+		// URLのファイル名部分をキャッシュのキーにする
+		var filename = Path.get_basename(image_url);
+		var img_file =
+			@"icon-$(iconsize)x$(iconsize)-$(screen_name)-$(filename)";
+
+		if (show_image(img_file, image_url, iconsize, -1) == false) {
 			stdout.printf("\n\n\n");
 		}
+
+		stdout.printf("\r");
+		// カーソル位置保存/復元に対応していない端末でも動作するように
+		// カーソル位置復元前にカーソル上移動x3を行う
+		stdout.printf(CSI + "3A" + @"$(ESC)8");
 	}
 
 	// index は画像の番号 (位置決めに使用する)
