@@ -941,11 +941,13 @@ public class SayakaMain
 
 		// なぜかワルシャワ時間に対応 :-)
 		string time_zone = null;
-		var user = obj.GetJson("user");
-		var zone = user.GetString("time_zone");
-		if (zone == "Warsaw") {
-			utc_offset = obj.GetInt("utc_offset");
-			time_zone = zone;
+		if (obj.Has("user")) {
+			var user = obj.GetJson("user");
+			var zone = user.GetString("time_zone");
+			if (zone == "Warsaw") {
+				utc_offset = obj.GetInt("utc_offset");
+				time_zone = zone;
+			}
 		}
 
 		// dt は UTC で作ったらローカルタイムに出来ないっぽいので
