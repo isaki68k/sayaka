@@ -515,19 +515,20 @@ public class SayakaMain
 			 case "follow":
 				var time = coloring(formattime(obj), Color.Time);
 
-				var u = obj.GetJson("source");
-				var src_userid = coloring(formatid(u.GetString("screen_name")),
+				var s = obj.GetJson("source");
+				var src_userid = coloring(formatid(s.GetString("screen_name")),
 					Color.UserId);
-				var src_name   = coloring(formatname(u.GetString("name")),
+				var src_name   = coloring(formatname(s.GetString("name")),
 					Color.Username);
 
-				u = obj.GetJson("target");
-				var dst_userid = coloring(formatid(u.GetString("screen_name")),
+				var t = obj.GetJson("target");
+				var dst_userid = coloring(formatid(t.GetString("screen_name")),
 					Color.UserId);
-				var dst_name   = coloring(formatname(u.GetString("name")),
+				var dst_name   = coloring(formatname(t.GetString("name")),
 					Color.Username);
 				var src = coloring("sayakaちゃんからお知らせ", Color.Source);
 
+				show_icon(s);
 				print_(@"$(src_name) $(src_userid) が "
 				     + @"$(dst_name) $(dst_userid) をフォローしました。");
 				stdout.printf("\n");
