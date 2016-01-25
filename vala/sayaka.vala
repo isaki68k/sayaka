@@ -1632,15 +1632,20 @@ public class SayakaMain
 	}
 
 	// ツイート status がユーザ ng_user のものか調べる。
-	// ng_user は "id:<numeric_id>" 形式。
+	// ng_user は "id:<numeric_id>" か "@<screen_name>" 形式。
 	public bool match_ngword_user(string ng_user, ULib.Json status)
 	{
 		var u = status.GetJson("user");
-		var user_id = u.GetString("id_str");
 
 		if (ng_user.has_prefix("id:")) {
 			var ng_user_id = ng_user.substring(3);
-			if (ng_user_id == user_id) {
+			if (ng_user_id == u.GetString("id_str")) {
+				return true;
+			}
+		}
+		if (ng_user.has_prefix("@")) {
+			var ng_screen_name = ng_user.substring(1);
+			if (ng_screen_name == u.GetString("screen_name")) {
 				return true;
 			}
 		}
