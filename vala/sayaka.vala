@@ -933,7 +933,7 @@ public class SayakaMain
 			var user = obj.GetJson("user");
 			var zone = user.GetString("time_zone");
 			if (zone == "Warsaw") {
-				utc_offset = obj.GetInt("utc_offset");
+				utc_offset = user.GetInt("utc_offset");
 				time_zone = zone;
 			}
 		}
