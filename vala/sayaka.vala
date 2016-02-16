@@ -1598,7 +1598,7 @@ public class SayakaMain
 					// ユーザ指定があって、RT元かRT先のユーザと一致すれば
 					// RT先本文を比較。ただしユーザ情報はマッチしたほう。
 					if (match_ngword_user(ng_user, status)) {
-						if (match_ngword_main(ng, s)) {
+						if (match_ngword_main_rt(ng, s)) {
 							user = status.GetJson("user");
 						}
 					} else if (match_ngword_user(ng_user, s)) {
@@ -1684,6 +1684,36 @@ public class SayakaMain
 
 		return false;
 	}
+
+	// status の本文その他を NG ワード ng と照合する。
+	// リツイートメッセージ用。
+	public bool match_ngword_main_rt(ULib.Json ng, ULib.Json status)
+	{
+		// まず通常比較
+		if (match_ngword_main(ng, status)) {
+			return true;
+		}
+
+		// 名前も比較
+		var user = status.GetJson("user");
+		var ngword = ng.GetString("ngword");
+		Regex regex;
+		try {
+			regex = new Regex(ngword, RegexCompileFlags.CASELESS);
+		} catch (RegexError e) {
+			stderr.printf("Regex failed: %s\n", e.message);
+			return false;
+		}
+		if (regex.match(user.GetString("screen_name"))) {
+			return true;
+		}
+		if (regex.match(user.GetString("name"))) {
+			return true;
+		}
+
+		return false;
+	}
+
 
 	public static void signal_handler(int signo)
 	{
