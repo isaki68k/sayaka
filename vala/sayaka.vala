@@ -152,7 +152,9 @@ public class SayakaMain
 	public bool opt_evs;
 	public bool opt_show_ng;
 
-	public string cachedir = "./cache";
+	public string cachedir;
+	public string tokenfile;
+	public string colormapdir;
 
 	static SayakaMain sayakaMain;
 
@@ -164,6 +166,11 @@ public class SayakaMain
 	public int Main(string[] args)
 	{
 		SayakaCmd cmd = SayakaCmd.StreamMode;
+
+		var sayakadir = ".";
+		cachedir = sayakadir + "/cache";
+		tokenfile = sayakadir + "/token.json";
+		colormapdir = sayakadir;
 
 		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
@@ -297,7 +304,7 @@ public class SayakaMain
 			if (color_mode == 2) {
 				cmd.append(" -e --quality=low");
 			} else if (color_mode <= 16) {
-				cmd.append(@" -m colormap$(color_mode).png");
+				cmd.append(@" -m $(colormapdir)/colormap$(color_mode).png");
 			}
 		}
 		sixel_cmd = cmd.str;
@@ -439,7 +446,7 @@ public class SayakaMain
 	{
 		try {
 			// ファイルからトークンを取得
-			tw.AccessToken.LoadFromFile("token.json");
+			tw.AccessToken.LoadFromFile(tokenfile);
 		} catch {
 			// なければトークンを取得してファイルに保存
 			tw.GetAccessToken();
@@ -448,7 +455,7 @@ public class SayakaMain
 				Process.exit(1);
 			}
 			try {
-				tw.AccessToken.SaveToFile("token.json");
+				tw.AccessToken.SaveToFile(tokenfile);
 			} catch {
 				stderr.printf("Token save error\n");
 				Process.exit(1);
