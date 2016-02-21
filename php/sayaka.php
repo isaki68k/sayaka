@@ -1187,40 +1187,73 @@ function match_ngword($status)
 {
 	global $ngwords;
 
-	foreach ($ngwords as $ng) {
-		$user = false;
-		if ($ng->user != "") {
-			// ユーザ指定があれば、ユーザが一致した時だけワード比較に進む
-			// XXX 後で直す
-			if ($ng->user == $status->user->id_str) {
-				$user = match_ngword_main($ng, $status);
-			}
-			// RTならRT先も比較
-			if (isset($status->retweeted_status)) {
-				$s = $status->retweeted_status;
-				if ($ng->user == $s->user->id_str) {
-					$user = match_ngword_main($ng, $s);
+	$user = false;	// マッチしたユーザ
+	foreach ($ngwords->ngword_list as $ng) {
+		if (isset($status->retweeted_status)) {
+			$s = $status->retweeted_status;
+
+			if ($ng->user == "") {
+				// ユーザ指定がなければ、RT先本文を比較
+				if (match_ngword_main($ng, $s)) {
+					$user = $s->user;
+				}
+			} else {
+				// ユーザ指定があって、RT元かRT先のユーザと一致すれば
+				// RT先本文を比較。ただしユーザ情報はマッチしたほう。
+				if (match_ngword_user($ng->user, $status)) {
+					if (match_ngword_main_rt($ng, $s)) {
+						$user = $status->user;
+					}
+				} else if (match_ngword_user($ng->user, $s)) {
+					if (match_ngword_main($ng, $s)) {
+						$user = $s->user;
+					}
 				}
 			}
 		} else {
-			// ユーザ指定がなければ直接ワード比較
-			$user = match_ngword_main($ng, $status);
+			// RT でないステータス
+			// ユーザ指定がないか、あって一致すれば、本文を比較
+			if ($ng->user == "" || match_ngword_user($ng->user, $status)) {
+				if (match_ngword_main($ng, $status)) {
+					$user = $status->user;
+				}
+			}
 		}
 
-		// いずれかで一致すれば帰る
 		if ($user !== false) {
-			return array(
-				"ngword" => $ng->ngword,
+			$rv = array(
 				"user" => $user,
+				"ngword" => $ng->ngword,
 			);
+			return $rv;
 		}
 	}
+
 	return false;
 }
 
-// $status の本文その他を NGワード $ng と照合する。
-// マッチしたら該当ツイートユーザのオブジェクトを返す。
-// マッチしなければ false を返す。
+// ツイート status がユーザ ng_user のものか調べる。
+// ng_user は "id:<numeric_id>" か "@<screen_name>" 形式。
+function match_ngword_user($ng_user, $status)
+{
+	if (preg_match("/^id:(\d+)$/", $ng_user, $m)) {
+		$ng_user_id = $m[1];
+		if ($ng_user_id == $status->user->id_str) {
+			return true;
+		}
+	}
+	if (preg_match("/^@(\S+)/", $ng_user, $m)) {
+		$ng_screen_name = $m[1];
+		if ($ng_screen_name == $status->user->screen_name) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// status の本文その他を NGワード ng と照合する。
+// マッチしたかどうかを返す。
 function match_ngword_main($ng, $status)
 {
 	// 生実況 NG
@@ -1263,7 +1296,7 @@ function match_ngword_main($ng, $status)
 
 		// 指定曜日の時間の範囲内ならアウト
 		if ($tm['tm_wday'] == $wday && $start <= $tmmin && $tmmin < $end) {
-			return $status->user;
+			return true;
 		}
 		// 終了時刻が24時を越える場合は、越えたところも比較
 		if ($t4 !== false) {
@@ -1271,7 +1304,7 @@ function match_ngword_main($ng, $status)
 			$start = 0;
 			$end = $t4['tm_hour'] * 60 + $t4['tm_min'];
 			if ($tm['tm_wday'] == $wday && $start <= $tmmin && $tmmin < $end) {
-				return $status->user;
+				return true;
 			}
 		}
 	}
@@ -1279,17 +1312,38 @@ function match_ngword_main($ng, $status)
 	// クライアント名
 	if (preg_match("/%SOURCE,(.*)/", $ng->ngword, $match)) {
 		if (preg_match("/{$match[1]}/", $status->source)) {
-			return $status->user;
+			return true;
 		}
 	}
 
 	// 単純ワード比較
-	if (preg_match("/{$ng->ngword}/", $status->text)) {
+	if (preg_match("/{$ng->ngword}/si", $status->text)) {
 		return $status->user;
 	}
 
 	return false;
 }
+
+// status の本文その他を NG ワード ng と照合する。
+// リツイートメッセージ用。
+function match_ngword_main_rt($ng, $status)
+{
+	// まず通常比較
+	if (match_ngword_main($ng, $status)) {
+		return true;
+	}
+
+	// 名前も比較
+	if (preg_match("/{$ng->ngword}/i", $status->user->screen_name)) {
+		return true;
+	}
+	if (preg_match("/{$ng->ngword}/i", $status->user->name)) {
+		return true;
+	}
+
+	return false;
+}
+
 
 // シグナルハンドラ
 function signal_handler($signo)
