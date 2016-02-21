@@ -301,8 +301,8 @@ function stream()
 	@fflush(STDOUT);
 
 	// Start streaming
-	$tw->streaming("user", showstatus_callback,
-		headerfunction_callback);
+	$tw->streaming("user", "showstatus_callback",
+		"headerfunction_callback");
 }
 
 function headerfunction_callback($ch, $text)
