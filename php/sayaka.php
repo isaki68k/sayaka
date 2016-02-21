@@ -482,18 +482,7 @@ function showstatus($status)
 
 	list ($msg, $mediainfo) = formatmsg($s);
 
-	// 今のところローカルアカウントはない
-	$profile_image_url = $s->user->profile_image_url;
-
-	// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを発生させ
-	// アイコン表示時にスクロールしないようにしてからカーソル位置を保存する
-	// (スクロールするとカーソル位置復元時に位置が合わない)
-	print "\n\n\n".CSI."3A".ESC."7";
-	show_icon(unescape($s->user->screen_name), $profile_image_url);
-	print "\r";
-	// カーソル位置保存/復元に対応していない端末でも動作するように
-	// カーソル位置復元前にカーソル上移動x3を行う
-	print CSI."3A".ESC."8";
+	show_icon($s->user);
 
 	print_("{$name} {$userid}{$verified}{$protected}");
 	print "\n";
@@ -924,29 +913,38 @@ function make_indent($text)
 	return $newtext;
 }
 
-function show_icon($user, $img_url)
+// 現在のカーソル位置に user のアイコンを表示。
+// アイコン表示後にカーソル位置を表示前の位置に戻す。
+function show_icon($user)
 {
 	global $iconsize;
 	global $color_mode;
 
-	// URLのファイル名部分をキャッシュのキーにする
-	$filename = basename($img_url);
-	if ($color_mode <= 16) {
-		$col = "-{$color_mode}";
-	} else {
-		$col = "";
-	}
-	$img_file = "icon-{$iconsize}x{$iconsize}{$col}-{$user}-{$filename}.sixel";
+	// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを発生させ
+	// アイコン表示時にスクロールしないようにしてからカーソル位置を保存する
+	// (スクロールするとカーソル位置復元時に位置が合わない)
+	print "\n\n\n".CSI."3A".ESC."7";
 
-	if (show_image($img_file, $img_url, $iconsize) === false) {
+	$screen_name = unescape($user->screen_name);
+	$image_url = $user->profile_image_url;
+
+	// URLのファイル名部分をキャッシュのキーにする
+	$filename = basename($image_url);
+	$img_file = "icon-{$iconsize}x{$iconsize}-{$screen_name}-{$filename}";
+
+	if (show_image($img_file, $image_url, $iconsize, -1) === false) {
 		print "\n\n\n";
 	}
+
+	print "\r";
+	// カーソル位置保存/復元に対応していない端末でも動作するように
+	// カーソル位置復元前にカーソル上移動x3を行う
+	print CSI."3A".ESC."8";
 }
 
 function show_photo($img_url, $percent)
 {
 	$img_file = preg_replace("|[:/\(\)\? ]|", "_", $img_url);
-	$img_file .= ".sixel";
 	show_image($img_file, $img_url, $percent);
 }
 
@@ -973,7 +971,7 @@ function show_image($img_file, $img_url, $width)
 		return false;
 	}
 
-	$img_file = "{$cachedir}/{$img_file}";
+	$img_file = "{$cachedir}/{$img_file}.sixel";
 
 	if (strlen($width) > 0) {
 		$width = "-w {$width}";
