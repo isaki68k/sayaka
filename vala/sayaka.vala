@@ -168,7 +168,7 @@ public class SayakaMain
 	{
 		SayakaCmd cmd = SayakaCmd.StreamMode;
 
-		var basedir = ".";
+		var basedir = Environment.get_home_dir() + "/.sayaka/";
 		cachedir    = basedir + "cache";
 		tokenfile   = basedir + "token.json";
 		ngwordfile  = basedir + "ngword.json";
