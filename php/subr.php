@@ -33,57 +33,27 @@
 	$consumer_secret = "faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw";
 
 	// どうするかね
-	$datadir  = "./data";
-	$cachedir = "./cache";
-	$datadb   = "{$datadir}/data.sq3";
-	$configdb = "{$datadir}/config.sq3";
+	$basedir    = "{$_SERVER['HOME']}/.sayaka/";
+	$cachedir   = "{$basedir}/cache";
+	$tokenfile  = "{$basedir}/token.json";
+	$ngwordfile = "{$basedir}/ngword.json";
+	$debugfile  = "{$basedir}/log.txt";
 
 	// タイムゾーン XXX どうするかね
 	$tz = "Asia/Tokyo";
 
 	define("DEBUG", 0);
-	define("DEBUGFILE", "{$datadir}/log.txt");
+	define("DEBUGFILE", $debugfile);
 
-//
-// DB 関係
-//
-class sayakaSQLite3 extends SQLite3
-{
-	function __construct($dbfile) {
-		$db = parent::__construct($dbfile);
-		return $db;
-	}
-
-	function begin()
-	{
-		$this->exec("begin immediate;");
-	}
-
-	function commit()
-	{
-		$this->exec("commit;");
-	}
-}
 
 // タイムゾーン設定
-function setTimeZone($db = null)
+function setTimeZone()
 {
-	global $configdb;
-
-	$opendb = false;
-	if (is_null($db)) {
-		$db = new sayakaSQLite3($configdb);
-		$opendb = true;
-	}
+	global $tz;
 
 	// タイムゾーンを取得
-	$tz = @$db->querySingle("select timezone from t_config where id=1");
-	if ($tz === false || !date_default_timezone_set($tz)) {
+	if (!date_default_timezone_set($tz)) {
 		print "setTimeZone failed\n";
-	}
-
-	if ($opendb) {
-		$db->close();
 	}
 }
 

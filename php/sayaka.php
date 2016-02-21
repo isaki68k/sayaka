@@ -165,15 +165,16 @@
 	setTimeZone();
 	declare(ticks = 1);	// for pcntl_signal()
 
-	// DB からアクセストークンを取得
-	$db = new sayakaSQLite3($configdb);
-	$result = $db->query("select token, secret from t_token where id=1");
-	$access = $result->fetcharray(SQLITE3_ASSOC);
-	$db->close();
+	// アクセストークンを取得
+	if (!file_exists($tokenfile)) {
+		print "{$tokenfile} not found!\n";
+		exit(1);
+	}
+	$access = json_decode(file_get_contents($tokenfile));
 
 	// OAuth オブジェクト作成
 	$tw = new TwistOAuth($consumer_key, $consumer_secret,
-		$access["token"], $access["secret"]);
+		$access->token, $access->secret);
 
 	// コマンド別処理
 	switch ($cmd) {
@@ -1167,17 +1168,13 @@ function utf8_ishalfkana($s, $i)
 // NG ワードをデータベースから読み込む
 function get_ngword()
 {
-	global $configdb;
+	global $ngwordfile;
 	global $ngwords;
 
 	$ngwords = array();
-
-	$db = new sayakaSQLite3($configdb);
-	$result = $db->query("select * from t_ngword");
-	while (($buf = $result->fetcharray(SQLITE3_ASSOC))) {
-		$ngwords[$buf['id']] = $buf;
+	if (file_exists($ngwordfile)) {
+		$ngwords = json_decode(file_get_contents($ngwordfile));
 	}
-	$db->close();
 }
 
 // NG ワードと照合する。
@@ -1192,15 +1189,16 @@ function match_ngword($status)
 
 	foreach ($ngwords as $ng) {
 		$user = false;
-		if ($ng['user_id'] > 1) {
+		if ($ng->user != "") {
 			// ユーザ指定があれば、ユーザが一致した時だけワード比較に進む
-			if ($ng['user_id'] == $status->user->id_str) {
+			// XXX 後で直す
+			if ($ng->user == $status->user->id_str) {
 				$user = match_ngword_main($ng, $status);
 			}
 			// RTならRT先も比較
 			if (isset($status->retweeted_status)) {
 				$s = $status->retweeted_status;
-				if ($ng['user_id'] == $s->user->id_str) {
+				if ($ng->user == $s->user->id_str) {
 					$user = match_ngword_main($ng, $s);
 				}
 			}
@@ -1212,7 +1210,7 @@ function match_ngword($status)
 		// いずれかで一致すれば帰る
 		if ($user !== false) {
 			return array(
-				"ngword" => $ng['ngword'],
+				"ngword" => $ng->ngword,
 				"user" => $user,
 			);
 		}
@@ -1229,7 +1227,7 @@ function match_ngword_main($ng, $status)
 	// %LIVE,www,hh:mm,HH:MM,comment
 	// www曜日、hh:mmからHH:MMまでの間、該当ユーザのツイートを非表示にする
 	// HH:MM は24時を越えることが出来る
-	if (preg_match("/\%LIVE,(\w+),([\d:]+),([\d:]+)/", $ng['ngword'], $match)) {
+	if (preg_match("/\%LIVE,(\w+),([\d:]+),([\d:]+)/", $ng->ngword, $match)) {
 		// 曜日と時刻2つを取り出す
 		$t1 = strptime($match[1], "%a");
 		$t2 = strptime($match[2], "%R");
@@ -1279,14 +1277,14 @@ function match_ngword_main($ng, $status)
 	}
 
 	// クライアント名
-	if (preg_match("/%SOURCE,(.*)/", $ng['ngword'], $match)) {
+	if (preg_match("/%SOURCE,(.*)/", $ng->ngword, $match)) {
 		if (preg_match("/{$match[1]}/", $status->source)) {
 			return $status->user;
 		}
 	}
 
 	// 単純ワード比較
-	if (preg_match("/{$ng['ngword']}/", $status->text)) {
+	if (preg_match("/{$ng->ngword}/", $status->text)) {
 		return $status->user;
 	}
 

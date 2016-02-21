@@ -117,11 +117,6 @@ function upgrade_files()
 	$ver = get_config_version();
 	print "current version is {$ver}\n";
 
-	if ($ver > 0) {
-		backup_datafile($configdb);
-		backup_datafile($datadb);
-	}
-
 	$db = new sayakaSQLite3($configdb);
 	$db->begin();
 
@@ -156,6 +151,44 @@ __EOM__;
 			$db->exec("insert into t_config values (1, 0, '{$tz}')");
 			setversion($db, 1);
 			// FALLTHROUGH
+
+		 case 1:
+			// ver 1->2: SQLite3 から JSON に移行…
+			// ただし概ねすでに vala 版で出来てるファイルのはずなので
+			// ファイルがあれば何もしない。
+
+			// トークンを token.json に保存
+			$res = $db->query("select token, secret from t_token where id=1");
+			$access = $res->fetchArray(SQLITE3_ASSOC);
+			if (file_exists("token.json") === FALSE) {
+				file_put_contents("token.json", json_encode($access));
+				print "token.json created\n";
+			}
+
+			// NGワード情報を ngword.json に保存
+			$res = $db->query("select * from t_ngword");
+			$ngword = array();
+			while (($data = $res->fetchArray(SQLITE3_ASSOC)) !== FALSE) {
+				if ($data['user_id'] > 0) {
+					$user = "id:{$data['user_id']}";
+				} else {
+					$user = "";
+				}
+				$ngword[] = array(
+					"id" => $data['id'],
+					"ngword" => $data['ngword'],
+					"user" => $user,
+				);
+			}
+			if (file_exists("ngword.json") === FALSE) {
+				file_put_contents("ngword.json", json_encode($ngword));
+				print "ngword.json created\n";
+			}
+
+			print "'{$configdb}' and '{$datadb}' is now obsoleted.\n";
+			print "Please rmdir ./data manually.\n";
+			// バージョンを上げたわけではないのでここで抜ける
+			break;
 
 		 default:
 			// 最新バージョン
