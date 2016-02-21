@@ -61,7 +61,7 @@
 	$bg_white = false;
 	$opt_x68k = false;
 
-	if ($_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
+	if (isset($_SERVER["SERVER_PROTOCOL"]) && $_SERVER["SERVER_PROTOCOL"] === "HTTP/1.1") {
 		header("Connection: Keep-alive");
 		$cmd = "stream";
 	} else {
