@@ -1087,7 +1087,7 @@ public class SayakaMain
 				// 本文の短縮 URL を差し替える
 				string newurl;
 				var qid = s.GetString("quoted_status_id_str");
-				if (qid != ""
+				if (s.Has("quoted_status")
 				 && expd_url.contains(qid) == true
 				 && text.chomp().has_suffix(url) == true)
 				{
