@@ -373,14 +373,17 @@ function showstatus_callback($object)
 			break;
 		 case "follow":
 			$time = coloring(formattime($object), COLOR_TIME);
-			$u = $object->source;
-			$src_userid = coloring(formatid($u->screen_name), COLOR_USERID);
-			$src_name   = coloring(formatname($u->name), COLOR_USERNAME);
-			$u = $object->target;
-			$dst_userid = coloring(formatid($u->screen_name), COLOR_USERID);
-			$dst_name   = coloring(formatname($u->name), COLOR_USERNAME);
+
+			$s = $object->source;
+			$src_userid = coloring(formatid($s->screen_name), COLOR_USERID);
+			$src_name   = coloring(formatname($s->name), COLOR_USERNAME);
+
+			$t = $object->target;
+			$dst_userid = coloring(formatid($t->screen_name), COLOR_USERID);
+			$dst_name   = coloring(formatname($t->name), COLOR_USERNAME);
 			$src        = coloring("sayakaちゃんからお知らせ", COLOR_SOURCE);
 
+			show_icon($s);
 			print_("{$src_name} ${src_userid} が "
 				.  "{$dst_name} {$dst_userid} をフォローしました。");
 			print "\n";
