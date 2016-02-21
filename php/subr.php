@@ -4,7 +4,7 @@
  */
 
 /*
- * Copyright (C) 2011-2014 Tetsuya Isaki
+ * Copyright (C) 2011-2016 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
