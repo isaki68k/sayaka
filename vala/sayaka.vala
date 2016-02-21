@@ -154,6 +154,7 @@ public class SayakaMain
 
 	public string cachedir;
 	public string tokenfile;
+	public string ngwordfile;
 	public string colormapdir;
 
 	static SayakaMain sayakaMain;
@@ -167,10 +168,11 @@ public class SayakaMain
 	{
 		SayakaCmd cmd = SayakaCmd.StreamMode;
 
-		var sayakadir = ".";
-		cachedir = sayakadir + "/cache";
-		tokenfile = sayakadir + "/token.json";
-		colormapdir = sayakadir;
+		var basedir = ".";
+		cachedir    = basedir + "cache";
+		tokenfile   = basedir + "token.json";
+		ngwordfile  = basedir + "ngword.json";
+		colormapdir = basedir;
 
 		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
@@ -1568,7 +1570,7 @@ public class SayakaMain
 	public void get_ngword()
 	{
 		try {
-			ngword_file = Json.FromString(FileReadAllText("ngword.json"));
+			ngword_file = Json.FromString(FileReadAllText(ngwordfile));
 		} catch (Error e) {
 			// 本当は NOT_FOUND の時は表示しなくてもいいとかしたい
 			stderr.printf(@"Warning: ngword ignored: $(e.message)\n");
