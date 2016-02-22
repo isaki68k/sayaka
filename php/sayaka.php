@@ -1018,10 +1018,12 @@ function get_mute_list()
 		if ($cursor != "0") {
 			$options["cursor"] = $cursor;
 		}
-		$json = $tw->get("mutes/users/ids", $options);
-		if (isset($json->error)) {
-			print "get(mutes/users/ids) failed: {$json->error}\n";
-			return;
+		try {
+			$json = $tw->get("mutes/users/ids", $options);
+		} catch (TwistException $e) {
+			$message = $e->GetMessage();
+			print "get_mute_list failed: {$message}\n";
+			exit(1);
 		}
 
 		foreach ($json->ids as $id) {

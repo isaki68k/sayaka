@@ -1503,10 +1503,13 @@ public class SayakaMain
 			}
 			diag.Debug(@"json=|$(json)|");
 
-			var errors = json.GetJson("errors");
-			if (errors != null) {
-				stderr.printf(@"get(mutes/users/ids) failed: $(errors)\n");
-				return;
+			if (json.Has("errors")) {
+				var errorlist = json.GetArray("errors");
+				// エラーが複数返ってきたらどうするかね
+				var code = errorlist.index(0).GetInt("code");
+				var message = errorlist.index(0).GetString("message");
+				stderr.printf(@"get_mute_list failed: $(message)($(code))\n");
+				Process.exit(1);
 			}
 
 			var users = json.GetArray("ids");
