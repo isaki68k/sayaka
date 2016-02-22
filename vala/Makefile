@@ -87,7 +87,7 @@ VALAMAKE=	./vala-make2 -d -e -O ${OBJDIR}
 
 .PHONY:	${ALL_TARGET}
 
-all:	sayaka sixelv
+all:	sayaka
 
 vala-make2:	vala-make2.vala
 	${VALAC} -X -w --pkg posix vala-make2.vala
