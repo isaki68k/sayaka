@@ -172,3 +172,4 @@ Input PIN code:
 TODO
 ---
 * 認証も TwistOAuth.php に一本化したい (置き換え方が分からなかった)
+* コマンドラインオプションを vala 版と統合したい。
