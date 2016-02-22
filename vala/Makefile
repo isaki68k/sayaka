@@ -27,7 +27,6 @@ ALL_TARGET=	\
 	sayaka \
 	sixelv \
 	h \
-	o \
 
 SRCS_sayaka=	\
 	sayaka.vala \
@@ -63,15 +62,6 @@ SRCS_h=	\
 	HttpClient.vala \
 	StringUtil.vala \
 	ParsedUri.vala \
-
-SRCS_o=\
-	o.vala \
-    ParsedUri.vala \
-	HttpClient.vala \
-	OAuth.vala \
-	StringUtil.vala \
-	Diag.vala \
-	Dictionary.vala \
 
 VALA_PKGS=	\
 	--pkg posix \
@@ -142,17 +132,6 @@ clean-h:
 		-o h  \
 		${SRCS_h}
 
-o:
-	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
-		-o o \
-		${SRCS_o}
-
-.PHONY:	clean-o
-clean-o:
-	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
-		-o o \
-		${SRCS_o}
-
 .PHONY:	clean
-clean:	clean-sayaka clean-sixelv clean-h clean-o
+clean:	clean-sayaka clean-sixelv clean-h
 
