@@ -88,6 +88,7 @@
 			"pipe",
 			"debug",
 			"mutelist",
+			"token:",
 			"x68k",
 			"help",
 			"version",
@@ -146,6 +147,13 @@
 		}
 		if (isset($opts["mutelist"])) {
 			$cmd = "mutelist";
+		}
+		if (isset($opts["token"])) {
+			if ($opts["token"][0] == "/") {
+				$tokenfile = $opts["token"];
+			} else {
+				$tokenfile = "{$basedir}/{$opts["token"]}";
+			}
 		}
 		if (isset($opts["x68k"])) {
 			$opt_x68k = true;
@@ -1474,6 +1482,7 @@ usage:
 		--eucjp
 		--protect : don't display protected user's tweet
 		--record <file>
+		--token <file> : token file (default: ~/.sayaka/token.json)
  {$progname} [ --pipe | --post "msg" ]
 	tweet from stdin or "msg"(without quote)
  {$progname} --play <file>

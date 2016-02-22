@@ -245,6 +245,19 @@ public class SayakaMain
 			 case "--support-evs":
 				opt_evs = true;
 				break;
+			 case "--token":
+			 {
+				var path = args[++i];
+				if (path == null) {
+					usage();
+				}
+				if (path.has_prefix("/")) {
+					tokenfile = path;
+				} else {
+					tokenfile = basedir + path;
+				}
+				break;
+			 }
 			 case "--userstream":
 				var p = args[++i];
 				HttpClient.ProxyMap = @"userstream.twitter.com=$(p)";
@@ -1847,6 +1860,7 @@ public class SayakaMain
 		or an internal sixel converter if not specified.
 	--show-ng
 	--support-evs
+	--token <file> : token file (default: ~/.sayaka/token.json)
 	--userstream <url>
 	--x68k
 """
