@@ -148,7 +148,7 @@ public class SayakaMain
 		= new Dictionary<string, string>();
 	public bool opt_x68k;
 	public bool opt_nomute;
-	public ULib.Json ngword_file;
+	public ULib.Json ngwords;
 	public bool opt_evs;
 	public bool opt_show_ng;
 
@@ -1570,11 +1570,11 @@ public class SayakaMain
 	public void get_ngword()
 	{
 		try {
-			ngword_file = Json.FromString(FileReadAllText(ngwordfile));
+			ngwords = Json.FromString(FileReadAllText(ngwordfile));
 		} catch (Error e) {
 			// 本当は NOT_FOUND の時は表示しなくてもいいとかしたい
 			stderr.printf(@"Warning: ngword ignored: $(e.message)\n");
-			ngword_file = new Json.Object(new Dictionary<string, Json>());
+			ngwords = new Json.Object(new Dictionary<string, Json>());
 		}
 	}
 
@@ -1585,10 +1585,10 @@ public class SayakaMain
 	{
 		var ngstat = new NGStatus();
 
-		if (ngword_file.Has("ngword_list") == false) {
+		if (ngwords.Has("ngword_list") == false) {
 			return ngstat;
 		}
-		var ngarray = ngword_file.GetArray("ngword_list");
+		var ngarray = ngwords.GetArray("ngword_list");
 
 		ULib.Json user = null;	// マッチしたユーザ
 		for (int i = 0; i < ngarray.length; i++) {
