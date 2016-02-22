@@ -152,6 +152,7 @@ public class SayakaMain
 	public bool opt_evs;
 	public bool opt_show_ng;
 
+	public string basedir;
 	public string cachedir;
 	public string tokenfile;
 	public string ngwordfile;
@@ -168,7 +169,7 @@ public class SayakaMain
 	{
 		SayakaCmd cmd = SayakaCmd.StreamMode;
 
-		var basedir = Environment.get_home_dir() + "/.sayaka/";
+		basedir = Environment.get_home_dir() + "/.sayaka/";
 		cachedir    = basedir + "cache";
 		tokenfile   = basedir + "token.json";
 		ngwordfile  = basedir + "ngword.json";
@@ -281,6 +282,8 @@ public class SayakaMain
 		diag  = new Diag("SayakaMain");
 		diag.Trace("TRACE CHECK");
 
+		init();
+
 		// コマンド別処理
 		switch (cmd) {
 		 case SayakaCmd.StreamMode:
@@ -303,6 +306,30 @@ public class SayakaMain
 		}
 
 		return 0;
+	}
+
+	// 初期化
+	public void init()
+	{
+		// ~/.sayaka がなければ作る
+		if (FileUtils.test(basedir, FileTest.IS_DIR) == false) {
+			var r = Posix.mkdir(basedir, 0755);
+			if (r != 0) {
+				stdout.printf(@"sayaka: init: mkdir $(basedir) failed.\n");
+				Process.exit(1);
+			}
+			stdout.printf(@"sayaka: init: $(basedir) is created.\n");
+		}
+
+		// キャッシュディレクトリを作る
+		if (FileUtils.test(cachedir, FileTest.IS_DIR) == false) {
+			var r = Posix.mkdir(cachedir, 0755);
+			if (r != 0) {
+				stdout.printf(@"sayaka: init: mkdir $(cachedir) failed.\n");
+				Process.exit(1);
+			}
+			stdout.printf(@"sayaka: init: $(cachedir) is created.\n");
+		}
 	}
 
 	// ユーザストリームモードのための準備
@@ -1567,12 +1594,6 @@ public class SayakaMain
 	// 古いキャッシュを破棄する
 	public void invalidate_cache()
 	{
-		// そもそもキャッシュディレクトリがあるか
-		if (FileUtils.test(cachedir, FileTest.IS_DIR) == false) {
-			stdout.printf(@"No cachedir found!!: $(cachedir)\n");
-			return;
-		}
-
 		// アイコンは7日分くらいか
 		Posix.system(
 			@"find $(cachedir) -name icon-\\* -type f -atime +7 -exec rm {} +");
