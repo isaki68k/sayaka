@@ -1606,12 +1606,16 @@ public class SayakaMain
 	// NG ワードを読み込む
 	public void get_ngword()
 	{
+		ngwords = new Json.Object(new Dictionary<string, Json>());
+
+		// ファイルがないのは構わない
+		if (FileUtils.test(ngwordfile, FileTest.EXISTS) == false) {
+			return;
+		}
 		try {
 			ngwords = Json.FromString(FileReadAllText(ngwordfile));
 		} catch (Error e) {
-			// 本当は NOT_FOUND の時は表示しなくてもいいとかしたい
 			stderr.printf(@"Warning: ngword ignored: $(e.message)\n");
-			ngwords = new Json.Object(new Dictionary<string, Json>());
 		}
 	}
 
