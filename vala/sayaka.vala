@@ -1498,14 +1498,14 @@ public class SayakaMain
 			try {
 				json = parser.Parse(line);
 			} catch (Error e) {
-				stderr.printf(@"Parser failed: $(e.message)");
+				stderr.printf(@"Parser failed: $(e.message)\n");
 				break;
 			}
 			diag.Debug(@"json=|$(json)|");
 
 			var errors = json.GetJson("errors");
 			if (errors != null) {
-				stderr.printf(@"get(mutes/users/ids) failed: $(errors)");
+				stderr.printf(@"get(mutes/users/ids) failed: $(errors)\n");
 				return;
 			}
 
