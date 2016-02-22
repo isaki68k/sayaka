@@ -50,6 +50,11 @@
 	define("COLOR_PROTECTED",	"COLOR_PROTECTED");
 	define("COLOR_NG",			"COLOR_NG");
 
+	$basedir    = "{$_SERVER['HOME']}/.sayaka/";
+	$cachedir   = "{$basedir}/cache";
+	$tokenfile  = "{$basedir}/token.json";
+	$ngwordfile = "{$basedir}/ngword.json";
+
 	$fontheight = 0;
 	$indent_cols = 6;
 	$color_mode = 256;

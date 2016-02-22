@@ -32,18 +32,11 @@
 	$consumer_key = "jPY9PU5lvwb6s9mqx3KjRA";
 	$consumer_secret = "faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw";
 
-	// どうするかね
-	$basedir    = "{$_SERVER['HOME']}/.sayaka/";
-	$cachedir   = "{$basedir}/cache";
-	$tokenfile  = "{$basedir}/token.json";
-	$ngwordfile = "{$basedir}/ngword.json";
-	$debugfile  = "{$basedir}/log.txt";
-
 	// タイムゾーン XXX どうするかね
 	$tz = "Asia/Tokyo";
 
 	define("DEBUG", 0);
-	define("DEBUGFILE", $debugfile);
+	define("DEBUGFILE", "log.txt");
 
 
 // タイムゾーン設定
