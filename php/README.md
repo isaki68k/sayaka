@@ -109,9 +109,10 @@ URL が表示されるのでブラウザで接続してください。
 表示された PIN コードを入力します。
 ```
 % sayaka authorize
-Authroize URL is: https://twitter.com/...
+Please go to:
+https://twitter.com/...
 
-Input PIN code:
+And input PIN code:
 ```
 
 これでユーザストリームが表示できるようになります。

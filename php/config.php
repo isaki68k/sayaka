@@ -265,9 +265,9 @@ function authorize()
 	$secret = $request_token["oauth_token_secret"];
 	unset($tw);
 
-	print "Authroize URL is: {$url}\n";
+	print "Please go to:\n{$url}\n";
 	print "\n";
-	print "Input PIN code:";
+	print "And input PIN code: ";
 	fflush(STDOUT);
 
 	$pin = fgets(STDIN);
