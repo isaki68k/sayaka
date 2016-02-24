@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん (vala版)
+twitter クライアント sayaka ちゃん (vala版) ver 3.2.0 (2016/02/24)
 ======
 
 vala版に必要なもの

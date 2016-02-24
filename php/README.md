@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん (PHP版)
+twitter クライアント sayaka ちゃん (PHP版) ver 3.2.0 (2016/02/24)
 ======
 
 PHP版に必要なもの
