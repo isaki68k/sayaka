@@ -27,7 +27,7 @@
  * SUCH DAMAGE.
  */
 
-	$version = "3.1.0 (2015/07/26)";
+	$version = "3.2.0 (2016/02/24)";
 	$progname = $_SERVER["argv"][0];
 
 	$bindir = dirname($_SERVER["argv"][0]);
@@ -1462,7 +1462,7 @@ function cmd_version()
 {
 	global $version;
 
-	print "sayaka ${version}\n";
+	print "sayaka.php ${version}\n";
 }
 
 function usage()

@@ -88,6 +88,8 @@ public class NGStatus
 
 public class SayakaMain
 {
+	public const string version = "3.2.0 (2016/02/24)";
+
 	private static Diag diag;
 
 	public const char ESC = '\x1b';
@@ -118,6 +120,7 @@ public class SayakaMain
 		TweetMode,
 		MutelistMode,
 		StreamRelayMode,
+		Version,
 		Max;
 	}
 
@@ -263,6 +266,9 @@ public class SayakaMain
 				var p = args[++i];
 				HttpClient.ProxyMap = @"userstream.twitter.com=$(p)";
 				break;
+			 case "--version":
+				cmd = SayakaCmd.Version;
+				break;
 			 case "--white":
 				bg_white = true;
 				break;
@@ -299,6 +305,9 @@ public class SayakaMain
 			break;
 		 case SayakaCmd.StreamRelayMode:
 			cmd_userstream_relay(args[0]);
+			break;
+		 case SayakaCmd.Version:
+			cmd_version();
 			break;
 		 default:
 			usage();
@@ -1865,6 +1874,11 @@ public class SayakaMain
 		 default:
 			break;
 		}
+	}
+
+	public void cmd_version()
+	{
+		stdout.printf(@"sayaka.vala $(version)\n");
 	}
 
 	public void usage()
