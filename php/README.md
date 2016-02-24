@@ -6,13 +6,13 @@ PHP版に必要なもの
 * PHP
   - version 5.3 以上 (5.2 以上なら動くかも)
   - CLI 版が必要です。シェルから `php -v` でバージョンとか出れば OK です。
-  - curl, json, pdo_sqlite モジュールが必要です。
+  - curl, json (, pdo_sqlite) モジュールが必要です。
   - `--jis`, `--eucjp` オプションを使うには mbstring モジュールも必要です。
   - X window で SIGWINCH によるターミナルサイズ変更に追従したい場合は pcntl モジュールが必要です。コンソールなどターミナルサイズが変わらないところで使うなら不要です。
 
 * pkgsrc なら
-lang/php, www/php-curl, textproc/php-json,
-databases/php-pdo、databases/php-pdo_sqlite
+lang/php, www/php-curl, textproc/php-json
+(, databases/php-pdo, databases/php-pdo_sqlite)
 をインストールしてください。
 converters/php-mbstring、devel/php-pcntl は必要なら追加してください。
 NetBSD の場合パッケージを追加しただけではモジュールは有効にならないので、
@@ -32,9 +32,9 @@ NetBSD の場合パッケージを追加しただけではモジュールは有�
    --disable-cgi
    --enable-json
    --enable-filter
-   --enable-pdo
-   --with-sqlite3(=/usr/pkg)
    --with-curl(=/usr/pkg)
+  (--enable-pdo)
+  (--with-sqlite3(=/usr/pkg))
   (--enable-hash)
   (--enable-libxml)
   (--enable-mbstring)
@@ -61,6 +61,12 @@ libsixel 1.3 以上を make して img2sixel をパスの通ったところに�
 img2sixel がない場合、アイコンや画像が表示できないだけです。
 `./configure` に `--with-gdk-pixbuf2`
 オプションをつけると、より多くの画像がデコードできそうです。
+
+* ver 3.2.0 以降 SQLite3 を使わなくなったので、
+ver 3.2.0 以降の sayaka ちゃんから使い始める場合は PHP
+の SQLite3 モジュールはなくても動きます。
+ver 3.2.0 未満の設定データベースを ver 3.2.0 仕様の設定ファイルに変換する
+config.php を動かすためには SQLite3 が必要です…。
 
 
 インストール方法
@@ -95,6 +101,19 @@ cellsize が実行できないか、あるいは端末がフォントの高さ�
 NetBSD + pkgsrc の php は、モジュールを pkgsrc で入れただけでは有効になりません。make install や pkg_add した時に手動で php.ini を更新するようにメッセージが出たはずです。~/.sayaka/netbsd/update_php_ini.php は現在インストールされている php モジュールを有効にするよう php.ini を更新しますので、root になって以下を実行してください。
 `# ~(yourname)/.sayaka/netbsd/update_php_ini.php ext`
 このスクリプトは extension= 行以外には触れませんので副作用はないと思いますが、その辺を独自に編集している人や機械編集されるのが怖い人は pkg_add した時に表示されるメッセージのとおり、手動で編集してください。
+
+
+ver 3.1.0 以前から ver 3.2.0 への移行
+---
+ver 3.1.0 以前は設定を SQLite3 データベース (./data/config.sq3)
+に保持していましたが、ver 3.2.0 以降では ~/.sayaka 以下の JSON
+ファイルに保存するようになりました。
+旧来の設定を引き継ぎたい場合は以下のコマンドを実行してください。
+```
+% cd ~/.sayaka
+% php (path/to/)config.php upgrade
+```
+アップグレードに成功したら ./data はディレクトリごと削除して構いません。
 
 
 とりあえず使ってみる
