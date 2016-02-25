@@ -1187,7 +1187,7 @@ function get_ngword()
 	global $ngwordfile;
 	global $ngwords;
 
-	$ngwords = array();
+	$ngwords = NULL;
 	if (file_exists($ngwordfile)) {
 		$ngwords = json_decode(file_get_contents($ngwordfile));
 	}
@@ -1202,6 +1202,10 @@ function get_ngword()
 function match_ngword($status)
 {
 	global $ngwords;
+
+	if (!isset($ngwords->ngword_list)) {
+		return false;
+	}
 
 	$user = false;	// マッチしたユーザ
 	foreach ($ngwords->ngword_list as $ng) {
