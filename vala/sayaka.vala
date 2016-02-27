@@ -151,7 +151,7 @@ public class SayakaMain
 		= new Dictionary<string, string>();
 	public bool opt_x68k;
 	public bool opt_nomute;
-	public ULib.Json ngwords;
+	public Array<ULib.Json> ngwords;
 	public bool opt_evs;
 	public bool opt_show_ng;
 
@@ -375,7 +375,7 @@ public class SayakaMain
 		signal_handler(SIGWINCH);
 
 		// NGワード取得
-		get_ngword();
+		read_ngword_file();
 	}
 
 	// ユーザストリーム
@@ -1613,16 +1613,20 @@ public class SayakaMain
 	}
 
 	// NG ワードを読み込む
-	public void get_ngword()
+	public void read_ngword_file()
 	{
-		ngwords = new Json.Object(new Dictionary<string, Json>());
+		ngwords = new Array<ULib.Json>();
 
 		// ファイルがないのは構わない
 		if (FileUtils.test(ngwordfile, FileTest.EXISTS) == false) {
 			return;
 		}
+
 		try {
-			ngwords = Json.FromString(FileReadAllText(ngwordfile));
+			var file = Json.FromString(FileReadAllText(ngwordfile));
+			if (file.Has("ngword_list")) {
+				ngwords = file.GetArray("ngword_list");
+			}
 		} catch (Error e) {
 			stderr.printf(@"Warning: ngword ignored: $(e.message)\n");
 		}
@@ -1635,14 +1639,9 @@ public class SayakaMain
 	{
 		var ngstat = new NGStatus();
 
-		if (ngwords.Has("ngword_list") == false) {
-			return ngstat;
-		}
-		var ngarray = ngwords.GetArray("ngword_list");
-
 		ULib.Json user = null;	// マッチしたユーザ
-		for (int i = 0; i < ngarray.length; i++) {
-			var ng = ngarray.index(i);
+		for (int i = 0; i < ngwords.length; i++) {
+			var ng = ngwords.index(i);
 
 			var ng_user = ng.GetString("user");
 			if (status.Has("retweeted_status")) {

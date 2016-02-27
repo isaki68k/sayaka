@@ -288,7 +288,7 @@ function init_stream()
 	signal_handler(SIGWINCH);
 
 	// NGワード取得
-	get_ngword();
+	read_ngword_file();
 }
 
 // ユーザストリーム
@@ -1182,14 +1182,18 @@ function utf8_ishalfkana($s, $i)
 }
 
 // NG ワードをデータベースから読み込む
-function get_ngword()
+function read_ngword_file()
 {
 	global $ngwordfile;
 	global $ngwords;
 
-	$ngwords = NULL;
+	$ngwords = array();
+
 	if (file_exists($ngwordfile)) {
-		$ngwords = json_decode(file_get_contents($ngwordfile));
+		$file = json_decode(file_get_contents($ngwordfile));
+		if (isset($file->ngword_list)) {
+			$ngwords = $file->ngword_list;
+		}
 	}
 }
 
@@ -1203,12 +1207,8 @@ function match_ngword($status)
 {
 	global $ngwords;
 
-	if (!isset($ngwords->ngword_list)) {
-		return false;
-	}
-
 	$user = false;	// マッチしたユーザ
-	foreach ($ngwords->ngword_list as $ng) {
+	foreach ($ngwords as $ng) {
 		if (isset($status->retweeted_status)) {
 			$s = $status->retweeted_status;
 
