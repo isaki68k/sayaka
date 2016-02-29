@@ -88,7 +88,11 @@
 			"pipe",
 			"debug",
 			"mutelist",
+			"ngword-add:",
+			"ngword-del:",
+			"ngword-list",
 			"token:",
+			"user:",
 			"x68k",
 			"help",
 			"version",
@@ -148,12 +152,26 @@
 		if (isset($opts["mutelist"])) {
 			$cmd = "mutelist";
 		}
+		if (isset($opts["ngword-add"])) {
+			$cmd = "ngword-add";
+			$opt_ngword = $opts["ngword-add"];
+		}
+		if (isset($opts["ngword-del"])) {
+			$cmd = "ngword-del";
+			$opt_ngword = $opts["ngword-del"];
+		}
+		if (isset($opts["ngword-list"])) {
+			$cmd = "ngword-list";
+		}
 		if (isset($opts["token"])) {
 			if ($opts["token"][0] == "/") {
 				$tokenfile = $opts["token"];
 			} else {
 				$tokenfile = "{$basedir}/{$opts["token"]}";
 			}
+		}
+		if (isset($opts["user"])) {
+			$opt_ngword_user = $opts["user"];
 		}
 		if (isset($opts["x68k"])) {
 			$opt_x68k = true;
@@ -204,6 +222,15 @@
 		break;
 	 case "mutelist":
 		cmd_mutelist();
+		break;
+	 case "ngword-add":
+		cmd_ngword_add();
+		break;
+	 case "ngword-del":
+		cmd_ngword_del();
+		break;
+	 case "ngword-list":
+		cmd_ngword_list();
 		break;
 	}
 	exit(0);
@@ -1181,7 +1208,7 @@ function utf8_ishalfkana($s, $i)
 	return false;
 }
 
-// NG ワードをデータベースから読み込む
+// NG ワードをファイルから読み込む
 function read_ngword_file()
 {
 	global $ngwordfile;
@@ -1195,6 +1222,20 @@ function read_ngword_file()
 			$ngwords = $file->ngword_list;
 		}
 	}
+}
+
+// NG ワードをファイルに保存する
+function write_ngword_file()
+{
+	global $ngwordfile;
+	global $ngwords;
+
+	// 再構成
+	$root = array(
+		"ngword_list" => $ngwords,
+	);
+
+	file_put_contents($ngwordfile, json_encode($root));
 }
 
 // NG ワードと照合する。
@@ -1364,6 +1405,76 @@ function match_ngword_main_rt($ng, $status)
 	return false;
 }
 
+// NGワードを追加する
+function cmd_ngword_add()
+{
+	global $ngwords;
+	global $opt_ngword;
+	global $opt_ngword_user;
+
+	read_ngword_file();
+
+	// もっとも新しい ID を探す (int が一周することはないだろう)
+	$new_id = -1;
+	foreach ($ngwords as $ng) {
+		if ($ng->id > $new_id) {
+			$new_id = $ng->id;
+		}
+	}
+	$new_id++;
+
+	$obj = json_decode("{\"id\":{$new_id},"
+		. "\"ngword\":\"{$opt_ngword}\","
+		. "\"user\":\"{$opt_ngword_user}\"}");
+	$ngwords[] = $obj;
+
+	write_ngword_file();
+}
+
+// NGワードを削除する
+function cmd_ngword_del()
+{
+	global $ngwords;
+	global $opt_ngword;
+
+	// XXX まだ動かない
+	print "not implemented\n";
+	return;
+
+	read_ngword_file();
+
+	$found = false;
+	foreach ($ngwords as $idx => $ng) {
+		if ($opt_ngword == $ng->id) {
+			$found = $idx;
+			break;
+		}
+	}
+	if ($found !== false) {
+		unset($ngwords[$idx]);
+		print "id {$opt_ngword} removed\n";
+	} else {
+		print "id {$opt_ngword} not found\n";
+	}
+
+	write_ngword_file();
+}
+
+// NGワード一覧を表示する
+function cmd_ngword_list()
+{
+	global $ngwords;
+
+	read_ngword_file();
+
+	foreach ($ngwords as $ng) {
+		print "{$ng->id}\t{$ng->ngword}";
+		if ($ng->user != "") {
+			print "\t{$ng->user}";
+		}
+		print "\n";
+	}
+}
 
 // シグナルハンドラ
 function signal_handler($signo)

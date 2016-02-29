@@ -120,6 +120,9 @@ public class SayakaMain
 		TweetMode,
 		MutelistMode,
 		StreamRelayMode,
+		NgwordAdd,
+		NgwordDel,
+		NgwordList,
 		Version,
 		Max;
 	}
@@ -154,6 +157,8 @@ public class SayakaMain
 	public Array<ULib.Json> ngwords;
 	public bool opt_evs;
 	public bool opt_show_ng;
+	public string opt_ngword;
+	public string opt_ngword_user;
 
 	public string basedir;
 	public string cachedir;
@@ -225,6 +230,17 @@ public class SayakaMain
 			 case "--mutelist":
 				cmd = SayakaCmd.MutelistMode;
 				break;
+			 case "--ngword-add":
+				cmd = SayakaCmd.NgwordAdd;
+				opt_ngword = args[++i];
+				break;
+			 case "--ngword-del":
+				cmd = SayakaCmd.NgwordDel;
+				opt_ngword = args[++i];
+				break;
+			 case "--ngword-list":
+				cmd = SayakaCmd.NgwordList;
+				break;
 			 case "--noimg":
 				opt_noimg = true;
 				break;
@@ -262,6 +278,9 @@ public class SayakaMain
 				}
 				break;
 			 }
+			 case "--user":
+				opt_ngword_user = args[++i];
+				break;
 			 case "--userstream":
 				var p = args[++i];
 				HttpClient.ProxyMap = @"userstream.twitter.com=$(p)";
@@ -305,6 +324,15 @@ public class SayakaMain
 			break;
 		 case SayakaCmd.StreamRelayMode:
 			cmd_userstream_relay(args[0]);
+			break;
+		 case SayakaCmd.NgwordAdd:
+			cmd_ngword_add();
+			break;
+		 case SayakaCmd.NgwordDel:
+			cmd_ngword_del();
+			break;
+		 case SayakaCmd.NgwordList:
+			cmd_ngword_list();
 			break;
 		 case SayakaCmd.Version:
 			cmd_version();
@@ -1612,7 +1640,7 @@ public class SayakaMain
 			@"find $(cachedir) -name http\\* -type f -atime +1 -exec rm {} +");
 	}
 
-	// NG ワードを読み込む
+	// NG ワードをファイルから読み込む
 	public void read_ngword_file()
 	{
 		ngwords = new Array<ULib.Json>();
@@ -1629,6 +1657,22 @@ public class SayakaMain
 			}
 		} catch (Error e) {
 			stderr.printf(@"Warning: ngword ignored: $(e.message)\n");
+		}
+	}
+
+	// NG ワードをファイルに保存する
+	public void write_ngword_file()
+	{
+		// 再構成
+		var ngword_list = new Json.Array(ngwords);
+		var rootdict = new Dictionary<string, ULib.Json>();
+		rootdict.set("ngword_list", ngword_list);
+		var root = new Json.Object(rootdict);
+
+		try {
+			FileWriteAllText(ngwordfile, root.to_string());
+		} catch (Error e) {
+			stderr.printf(@"write_ngword_file: Error: $(e.message)\n");
 		}
 	}
 
@@ -1770,6 +1814,82 @@ public class SayakaMain
 		}
 
 		return false;
+	}
+
+	// NGワードを追加する
+	public void cmd_ngword_add()
+	{
+		read_ngword_file();
+
+		// もっとも新しい ID を探す (int が一周することはないだろう)
+		var new_id = 0;
+		for (int i = 0; i < ngwords.length; i++) {
+			var ng = ngwords.index(i);
+			var id = ng.GetInt("id");
+
+			if (id > new_id) {
+				new_id = id;
+			}
+		}
+		new_id++;
+
+		var dict = new Dictionary<string, ULib.Json>();
+		dict.set("id", new Json.Number(@"$(new_id)"));
+		dict.set("ngword", new Json.String(opt_ngword));
+		dict.set("user", new Json.String(opt_ngword_user ?? ""));
+		var obj = new Json.Object(dict);
+
+		ngwords.append_val(obj);
+		stdout.printf(@"id $(new_id) added\n");
+
+		write_ngword_file();
+	}
+
+	// NGワードを削除する
+	public void cmd_ngword_del()
+	{
+		read_ngword_file();
+
+		var opt_id = int.parse(opt_ngword);
+		var removed = false;
+
+		for (int i = 0; i < ngwords.length; i++) {
+			var ng = ngwords.index(i);
+			var id = ng.GetInt("id");
+
+			if (opt_id == id) {
+				ngwords.remove_index(i);
+				removed = true;
+				break;
+			}
+		}
+
+		if (removed) {
+			stdout.printf(@"id $(opt_id) removed\n");
+		} else {
+			stdout.printf(@"id $(opt_id) not found\n");
+		}
+
+		write_ngword_file();
+	}
+
+	// NGワード一覧を表示する
+	public void cmd_ngword_list()
+	{
+		read_ngword_file();
+
+		for (int i = 0; i < ngwords.length; i++) {
+			var ng = ngwords.index(i);
+			var id = ng.GetInt("id");
+			var word = ng.GetString("ngword");
+			var user = ng.GetString("user");
+
+			stdout.printf("%d\t%s", id, word);
+			if (user != "") {
+				stdout.printf("\t%s", user);
+			}
+			stdout.printf("\n");
+		}
 	}
 
 
