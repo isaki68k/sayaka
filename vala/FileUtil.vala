@@ -46,7 +46,8 @@ namespace ULib
 		throws Error
 	{
 		var f = File.new_for_path(filename);
-		var stream = new DataOutputStream(f.create(FileCreateFlags.PRIVATE));
+		var outputstream = f.replace(null, false, FileCreateFlags.PRIVATE);
+		var stream = new DataOutputStream(outputstream);
 		stream.put_string(text);
 	}
 
