@@ -1653,7 +1653,13 @@ public class SayakaMain
 		try {
 			var file = Json.FromString(FileReadAllText(ngwordfile));
 			if (file.Has("ngword_list")) {
-				ngwords = file.GetArray("ngword_list");
+				// 簡単にチェック
+				var ngword_list = file.GetJson("ngword_list");
+				if (ngword_list.IsArray == false) {
+					stderr.printf(@"Error: ngword file broken\n");
+					Process.exit(1);
+				}
+				ngwords = ngword_list.AsArray;
 			}
 		} catch (Error e) {
 			stderr.printf(@"Warning: ngword ignored: $(e.message)\n");
