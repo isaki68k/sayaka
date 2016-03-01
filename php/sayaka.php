@@ -1412,6 +1412,10 @@ function cmd_ngword_add()
 	global $opt_ngword;
 	global $opt_ngword_user;
 
+	// XXX add はたぶん動いてるが del がまだなのでこっちも無効にしとく
+	print "not implemented\n";
+	return;
+
 	read_ngword_file();
 
 	// もっとも新しい ID を探す (int が一周することはないだろう)
