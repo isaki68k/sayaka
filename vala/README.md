@@ -4,7 +4,7 @@ twitter クライアント sayaka ちゃん (vala版) ver 3.2.0 (2016/02/24)
 vala版に必要なもの
 ---
 * vala-0.28 くらい以上
-* glib2
+* glib2-2.44 以上
 * gdk-pixbuf2
 * (glib-networking)
 
