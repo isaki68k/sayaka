@@ -697,6 +697,29 @@ public class SayakaMain
 			s = status.GetJson("retweeted_status");
 		}
 
+		// --protect オプションなら鍵ユーザのツイートを表示しない
+		if (protect == true) {
+			var match = false;
+			var user = status.GetJson("user");
+			if (user.GetBool("protected")) {
+				match = true;
+			} else if (status.Has("retweeted_status")) {
+				// リツイート先も調べる
+				var rt = status.GetJson("retweeted_status");
+				user = rt.GetJson("user");
+				if (user.GetBool("protected")) {
+					match = true;
+				}
+			}
+			// どちらかで一致すれば非表示
+			if (match) {
+				print_(coloring("鍵垢", Color.NG) + "\n"
+					+ coloring(formattime(status), Color.Time));
+				stdout.printf("\n");
+				return;
+			}
+		}
+
 		var s_user = s.GetJson("user");
 		var userid = coloring(formatid(s_user.GetString("screen_name")),
 			Color.UserId);
@@ -712,14 +735,6 @@ public class SayakaMain
 		var protected = s_user.GetBool("protected")
 			? coloring(" ■", Color.Protected)
 			: "";
-
-		// --protect オプションなら鍵ユーザのツイートを表示しない
-		if (protect == true && protected != "") {
-			print_(coloring("鍵垢", Color.NG) + "\n"
-				+ time);
-			stdout.printf("\n");
-			return;
-		}
 
 		var mediainfo = new Array<MediaInfo>();
 		var msg = formatmsg(s, mediainfo);
