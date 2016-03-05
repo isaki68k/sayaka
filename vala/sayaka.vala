@@ -186,6 +186,7 @@ public class SayakaMain
 		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
 		sixel_cmd = "";
+		bg_white = true;
 		opt_evs = false;
 		opt_show_ng = false;
 		opt_x68k = false;
@@ -197,6 +198,9 @@ public class SayakaMain
 				break;
 			 case "-6":
 				address_family = SocketFamily.IPV6;
+				break;
+			 case "--black":
+				bg_white = false;
 				break;
 			 case "--color":
 				color_mode = int.parse(args[++i]);
@@ -2012,7 +2016,7 @@ public class SayakaMain
 """usage: sayaka [<options>...]
 	--color <n> : color mode { 2 .. 256 }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
-	--white
+	--white / --black : darken/lighten the text color. (default: --white)
 	--max-image-cols <n>
 	--noimg
 	--nomute : don't fetch mute list
