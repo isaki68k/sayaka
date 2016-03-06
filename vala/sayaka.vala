@@ -159,6 +159,7 @@ public class SayakaMain
 	public bool opt_show_ng;
 	public string opt_ngword;
 	public string opt_ngword_user;
+	public string record_file;
 
 	public string basedir;
 	public string cachedir;
@@ -256,6 +257,9 @@ public class SayakaMain
 				break;
 			 case "--protect":
 				protect = true;
+				break;
+			 case "--record":
+				record_file = args[++i];
 				break;
 			 case "--relay-server":
 				cmd = SayakaCmd.StreamRelayMode;
@@ -584,6 +588,17 @@ public class SayakaMain
 		// obj が元オブジェクト (イベント or メッセージ)
 
 		// 録画
+		if (record_file != null) {
+			try {
+				var f = File.new_for_path(record_file);
+				var outputstream = f.append_to(FileCreateFlags.NONE);
+				var stream = new DataOutputStream(outputstream);
+				stream.put_string(obj.ToString());
+				stream.put_string("\n");
+			} catch (Error e) {
+				// ignore ?
+			}
+		}
 
 		if (obj.Has("event")) {
 			// event => イベント種別
