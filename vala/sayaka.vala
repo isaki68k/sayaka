@@ -426,7 +426,7 @@ public class SayakaMain
 		}
 		invalidate_cache();
 		if (debug) {
-			stdout.printf("done");
+			stdout.printf("done\n");
 		}
 
 		// アクセストークンを取得
@@ -442,7 +442,7 @@ public class SayakaMain
 			get_mute_list();
 		}
 		if (debug) {
-			stdout.printf("done");
+			stdout.printf("done\n");
 		}
 
 		stdout.printf("Ready..");
