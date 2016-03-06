@@ -156,7 +156,7 @@ public class SayakaMain
 	public Dictionary<string, string> nortlist
 		= new Dictionary<string, string>();
 	public bool opt_x68k;
-	public bool opt_nomute;
+	public bool opt_norest;
 	public Array<ULib.Json> ngwords;
 	public bool opt_evs;
 	public bool opt_show_ng;
@@ -252,8 +252,8 @@ public class SayakaMain
 			 case "--noimg":
 				opt_noimg = true;
 				break;
-			 case "--nomute":
-				opt_nomute = true;
+			 case "--norest":
+				opt_norest = true;
 				break;
 			 case "--nortlist":
 				cmd = SayakaCmd.NortlistMode;
@@ -442,26 +442,26 @@ public class SayakaMain
 		tw = new Twitter();
 		get_access_token();
 
-		// ミュートユーザ取得
-		if (debug) {
-			stdout.printf("Getting mute users list...");
-			stdout.flush();
-		}
-		if (opt_nomute == false) {
+		if (opt_norest == false) {
+			// ミュートユーザ取得
+			if (debug) {
+				stdout.printf("Getting mute users list...");
+				stdout.flush();
+			}
 			get_mute_list();
-		}
-		if (debug) {
-			stdout.printf("done\n");
-		}
+			if (debug) {
+				stdout.printf("done\n");
+			}
 
-		// RT非表示ユーザ取得
-		if (debug) {
-			stdout.printf("Getting nort users list...");
-			stdout.flush();
-		}
-		get_nort_list();
-		if (debug) {
-			stdout.printf("done\n");
+			// RT非表示ユーザ取得
+			if (debug) {
+				stdout.printf("Getting nort users list...");
+				stdout.flush();
+			}
+			get_nort_list();
+			if (debug) {
+				stdout.printf("done\n");
+			}
 		}
 
 		stdout.printf("Ready..");
@@ -2132,7 +2132,6 @@ public class SayakaMain
 	--white / --black : darken/lighten the text color. (default: --white)
 	--max-image-cols <n>
 	--noimg
-	--nomute : don't fetch mute list
 	--jis
 	--eucjp
 	--protect : don't display protected user's tweet.
