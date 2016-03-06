@@ -123,6 +123,7 @@ public class SayakaMain
 		NgwordAdd,
 		NgwordDel,
 		NgwordList,
+		NortlistMode,
 		Version,
 		Max;
 	}
@@ -151,6 +152,8 @@ public class SayakaMain
 	public string[] color2esc = new string[Color.Max];
 	public Twitter tw;
 	public Dictionary<string, string> mutelist
+		= new Dictionary<string, string>();
+	public Dictionary<string, string> nortlist
 		= new Dictionary<string, string>();
 	public bool opt_x68k;
 	public bool opt_nomute;
@@ -252,6 +255,9 @@ public class SayakaMain
 			 case "--nomute":
 				opt_nomute = true;
 				break;
+			 case "--nortlist":
+				cmd = SayakaCmd.NortlistMode;
+				break;
 			 case "--play":
 				cmd = SayakaCmd.PlayMode;
 				break;
@@ -341,6 +347,9 @@ public class SayakaMain
 			break;
 		 case SayakaCmd.NgwordList:
 			cmd_ngword_list();
+			break;
+		 case SayakaCmd.NortlistMode:
+			cmd_nortlist();
 			break;
 		 case SayakaCmd.Version:
 			cmd_version();
@@ -441,6 +450,16 @@ public class SayakaMain
 		if (opt_nomute == false) {
 			get_mute_list();
 		}
+		if (debug) {
+			stdout.printf("done\n");
+		}
+
+		// RT非表示ユーザ取得
+		if (debug) {
+			stdout.printf("Getting nort users list...");
+			stdout.flush();
+		}
+		get_nort_list();
 		if (debug) {
 			stdout.printf("done\n");
 		}
@@ -676,6 +695,11 @@ public class SayakaMain
 			if (mutelist.ContainsKey(id_str)) {
 				return;
 			}
+		}
+
+		// RT非表示ユーザのRTも stream には流れてきてしまうので、ここで弾く
+		if (nortlist.ContainsKey(id_str) && status.Has("retweeted_status")) {
+			return;
 		}
 
 		// NGワード
@@ -1658,6 +1682,65 @@ public class SayakaMain
 
 		for (var i = 0; i < mutelist.Count; i++) {
 			var kv = mutelist.At(i);
+			stdout.printf("%s\n".printf(kv.Key));
+		}
+	}
+
+	// RT非表示ユーザ一覧の読み込み
+	public void get_nort_list()
+	{
+		// ミュートユーザ一覧とは違って、リスト一発で送られてくるっぽい。
+		// なんであっちこっちで仕様が違うんだよ…。
+
+		tw = new Twitter();
+		get_access_token();
+
+		nortlist.Clear();
+
+		// JSON を取得
+		DataInputStream stream = null;
+		string line = null;
+		try {
+			stream = tw.API(Twitter.APIRoot, "friendships/no_retweets/ids");
+			line = stream.read_line();
+		} catch (Error e) {
+			diag.Debug(@"friendships/no_retweets/ids: $(e.message)");
+			// nop
+		}
+		if (line == null || line == "") {
+			return;
+		}
+
+		var parser = new ULib.JsonParser();
+		Json json;
+		try {
+			json = parser.Parse(line);
+		} catch (Error e) {
+			stderr.printf(@"get_nort_list: Parser failed: $(e.message)\n");
+			return;
+		}
+		diag.Debug(@"json=|$(json)|");
+
+		if (json.IsArray == false) {
+			// どうするかね
+			return;
+		}
+
+		var users = json.AsArray;
+		for (var i = 0; i < users.length; i++) {
+			var id_json = users.index(i);
+			var id_str = id_json.AsNumber;
+			nortlist[id_str] = id_str;
+		}
+	}
+
+	// 取得した RT 非表示ユーザの一覧を表示する
+	public void cmd_nortlist()
+	{
+		get_nort_list();
+
+		for (var i = 0; i < nortlist.Count; i++) {
+			var kv = nortlist.At(i);
 			stdout.printf("%s\n".printf(kv.Key));
 		}
 	}
