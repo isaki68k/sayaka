@@ -1603,9 +1603,6 @@ public class SayakaMain
 		// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
 		// これを cursor に指定してもう一度リクエストを送る。
 
-		tw = new Twitter();
-		get_access_token();
-
 		mutelist.Clear();
 		var cursor = "0";
 
@@ -1678,6 +1675,9 @@ public class SayakaMain
 	// 取得したミュートユーザの一覧を表示する
 	public void cmd_mutelist()
 	{
+		tw = new Twitter();
+		get_access_token();
+
 		get_mute_list();
 
 		for (var i = 0; i < mutelist.Count; i++) {
@@ -1691,9 +1691,6 @@ public class SayakaMain
 	{
 		// ミュートユーザ一覧とは違って、リスト一発で送られてくるっぽい。
 		// なんであっちこっちで仕様が違うんだよ…。
-
-		tw = new Twitter();
-		get_access_token();
 
 		nortlist.Clear();
 
@@ -1737,6 +1734,9 @@ public class SayakaMain
 	// 取得した RT 非表示ユーザの一覧を表示する
 	public void cmd_nortlist()
 	{
+		tw = new Twitter();
+		get_access_token();
+
 		get_nort_list();
 
 		for (var i = 0; i < nortlist.Count; i++) {
