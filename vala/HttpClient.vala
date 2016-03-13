@@ -147,11 +147,11 @@ namespace ULib
 		}
 
 		// リクエストを発行します。
-		private void SendRequest(string verb) throws Error
+		private void SendRequest(string method) throws Error
 		{
 			var sb = new StringBuilder();
 
-			sb.append(@"$(verb) $(Uri.PQF()) HTTP/1.1\r\n");
+			sb.append(@"$(method) $(Uri.PQF()) HTTP/1.1\r\n");
 
 			SendHeaders.AddIfMissing("connection", "close");
 
@@ -161,7 +161,7 @@ namespace ULib
 			sb.append("Host: %s\r\n".printf(Uri.Host));
 			sb.append("\r\n");
 
-			diag.Debug(@"Request $(verb)\n$(sb.str)");
+			diag.Debug(@"Request $(method)\n$(sb.str)");
 
 			var msg = sb.str;
 
