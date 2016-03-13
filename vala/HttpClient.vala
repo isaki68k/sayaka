@@ -182,7 +182,7 @@ namespace ULib
 			if (ResultLine == null || ResultLine == "") {
 				throw new IOError.CONNECTION_CLOSED("");
 			}
-			diag.Debug(@"HEADER $(ResultLine)");
+			diag.Debug(@"HEADER |$(ResultLine)|");
 
 			var proto_arg = StringUtil.Split2(ResultLine, " ");
 			if (proto_arg[0] == "HTTP/1.1" || proto_arg[0] == "HTTP/1.0") {
