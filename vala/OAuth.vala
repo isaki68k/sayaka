@@ -49,6 +49,11 @@ public class OAuth
 
 	private Rand rand;
 
+	// HTTP クライアント。
+	// ローカル変数に出来そうに見えるが、HTTP コネクション張ってる間
+	// ずっと生存してる必要があるのでメンバ変数でなければならない。
+	private HttpClient RequestAPIClient;
+
 	public OAuth()
 	{
 		//rand = new Rand.with_seed((uint32)(new Datetime.now_utc().to_unix()));
@@ -220,8 +225,6 @@ public class OAuth
 		token = resultDict["oauth_token"];
 		token_secret = resultDict["oauth_token_secret"];
 	}
-
-	private HttpClient RequestAPIClient;
 
 	public InputStream RequestAPI(string uri_api) throws Error
 	{
