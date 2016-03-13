@@ -56,7 +56,6 @@ public class OAuth
 
 	public OAuth()
 	{
-		//rand = new Rand.with_seed((uint32)(new Datetime.now_utc().to_unix()));
 		rand = new Rand();
 		UseOAuthHeader = true;
 	}
