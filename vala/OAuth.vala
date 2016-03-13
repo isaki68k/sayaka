@@ -139,7 +139,7 @@ public class OAuth
 		}
 	}
 	
-	// dict を key1=value1&key2=value2 にする
+	// paramdict を "key1=value1&key2=value2&..." 形式にエンコードします。
 	public static string MakeQuery(Dictionary<string, string> paramdict)
 	{
 		var sb = new StringBuilder();
@@ -155,7 +155,7 @@ public class OAuth
 		return sb.str;
 	}
 
-	// key1=val1&key2=val2 のパース
+	// "key1=val1&key2=val2&..." 形式の s をパースして dict に代入します。
 	public static void ParseQuery(Dictionary<string, string> dict, string s)
 	{
 		var keyvalues = s.split("&");
@@ -165,6 +165,7 @@ public class OAuth
 		}
 	}
 
+	// dict から OAuth ヘッダコンテンツを作成します。
 	public static string MakeOAuthHeader(Dictionary<string, string> dict)
 	{
 		var sb = new StringBuilder();
@@ -181,6 +182,9 @@ public class OAuth
 		return sb.str;
 	}
 
+	// method と url から HttpClient を生成して返します。
+	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意します。
+	// 接続はまだ行いません。
 	private HttpClient CreateHttp(string method, string uri)
 	{
 		var conn_uri = CreateParams(method, uri);
@@ -192,6 +196,8 @@ public class OAuth
 		return client;
 	}
 
+	// uri_request_token に接続しトークンを取得します。
+	// 取得したトークンは token, token_secret に格納します。
 	public void RequestToken(string uri_request_token)
 	{
 		var client = CreateHttp("GET", uri_request_token);
