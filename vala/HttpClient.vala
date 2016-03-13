@@ -109,6 +109,8 @@ namespace ULib
 						diag.Debug(Uri.to_string());
 						continue;
 					}
+				} else if (ResultCode >= 400) {
+					throw new IOError.NOT_CONNECTED(ResultLine);
 				}
 
 				break;
