@@ -592,7 +592,7 @@ public class SayakaMain
 			TRACE("obj=%s\n".printf(obj.ToString()));
 			showstatus_callback(obj);
 		} catch (Error e) {
-			stdout.printf("error: %s\n", e.message);
+			stdout.printf("showstatus_callback_line: %s\n", e.message);
 			return false;
 		}
 		return true;
