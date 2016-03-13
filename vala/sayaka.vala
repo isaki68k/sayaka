@@ -684,22 +684,24 @@ public class SayakaMain
 			return;
 		}
 
-		// ミュートしてるユーザも stream には流れてきてしまうので、ここで弾く
+		// ミュートしてるユーザ、RT 非表示のユーザの RT も
+		// ストリームには流れてきてしまうので、ここで弾く。
 		var id_str = status.GetJson("user").GetString("id_str");
 		if (mutelist.ContainsKey(id_str)) {
 			return;
 		}
 		if (status.Has("retweeted_status")) {
+			// RT があって RT 元ユーザが該当すれば弾く
+			if (nortlist.ContainsKey(id_str)) {
+				return;
+			}
+
+			// RT 先ユーザがミュートユーザでも弾く
 			var retweeted_status = status.GetJson("retweeted_status");
 			id_str = retweeted_status.GetJson("user").GetString("id_str");
 			if (mutelist.ContainsKey(id_str)) {
 				return;
 			}
-		}
-
-		// RT非表示ユーザのRTも stream には流れてきてしまうので、ここで弾く
-		if (nortlist.ContainsKey(id_str) && status.Has("retweeted_status")) {
-			return;
 		}
 
 		// NGワード
