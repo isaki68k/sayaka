@@ -1618,7 +1618,7 @@ public class SayakaMain
 			DataInputStream stream = null;
 			string line = null;
 			try {
-				stream = tw.API(Twitter.APIRoot, "mutes/users/ids", options);
+				stream = tw.GetAPI(Twitter.APIRoot, "mutes/users/ids", options);
 				line = stream.read_line();
 			} catch (Error e) {
 				diag.Debug(@"mutes/users/id: $(e.message)");
@@ -1700,7 +1700,7 @@ public class SayakaMain
 		DataInputStream stream = null;
 		string line = null;
 		try {
-			stream = tw.API(Twitter.APIRoot, "friendships/no_retweets/ids");
+			stream = tw.GetAPI(Twitter.APIRoot, "friendships/no_retweets/ids");
 			line = stream.read_line();
 		} catch (Error e) {
 			diag.Debug(@"friendships/no_retweets/ids: $(e.message)");

@@ -111,10 +111,10 @@ public class Twitter
 	public DataInputStream UserStreamAPI(string api,
 		Dictionary<string, string>? options = null) throws Error
 	{
-		return API(StreamAPIRoot, api, options);
+		return GetAPI(StreamAPIRoot, api, options);
 	}
 
-	public DataInputStream API(string apiRoot, string api,
+	public DataInputStream GetAPI(string apiRoot, string api,
 		Dictionary<string, string>? options = null) throws Error
 	{
 		oauth.token = AccessToken.Token;
