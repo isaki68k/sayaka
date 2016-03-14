@@ -64,7 +64,7 @@ namespace StringUtil
 			 || (c == '-' || c == '_' || c == '.' || c == '~')) {
 				sb.append_c(c);
 			} else {
-				sb.append("%%%02X".printf((int)c));
+				sb.append("%%%02X".printf((uint8)c));
 			}
 		}
 		return sb.str;
