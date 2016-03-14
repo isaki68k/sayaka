@@ -86,14 +86,27 @@ namespace ULib
 		// uri から GET して、ストリームを返します。
 		public DataInputStream GET() throws Error
 		{
-			diag.Trace("GET()");
+			return Act("GET");
+		}
+
+		// uri へ POST して、ストリームを返します。
+		public DataInputStream POST() throws Error
+		{
+			return Act("POST");
+		}
+
+		// uri へ GET/POST して、ストリームを返します。
+		// GET と POST の共通部です。
+		public DataInputStream Act(string method) throws Error
+		{
+			diag.Trace(@"$(method)()");
 			DataInputStream dIn = null;
 
 			while (true) {
 
 				Connect();
 
-				SendRequest("GET");
+				SendRequest(method);
 
 				dIn = new DataInputStream(Conn.input_stream);
 				dIn.set_newline_type(DataStreamNewlineType.CR_LF);
@@ -148,12 +161,13 @@ namespace ULib
 			return rv;
 		}
 
-		// リクエストを発行します。
+		// GET/POST リクエストを発行します。
 		private void SendRequest(string method) throws Error
 		{
 			var sb = new StringBuilder();
 
-			sb.append(@"$(method) $(Uri.PQF()) HTTP/1.1\r\n");
+			string path = (method == "POST") ? Uri.Path : Uri.PQF();
+			sb.append(@"$(method) $(path) HTTP/1.1\r\n");
 
 			SendHeaders.AddIfMissing("connection", "close");
 
@@ -161,7 +175,15 @@ namespace ULib
 				sb.append(@"$(h.Key): $(h.Value)\r\n");
 			}
 			sb.append("Host: %s\r\n".printf(Uri.Host));
-			sb.append("\r\n");
+
+			if (method == "POST") {
+				var body = Uri.Query + "\n";
+				sb.append(@"Content-Length: $(body.length)\r\n");
+				sb.append("\r\n");
+				sb.append(body);
+			} else {
+				sb.append("\r\n");
+			}
 
 			diag.Debug(@"Request $(method)\n$(sb.str)");
 

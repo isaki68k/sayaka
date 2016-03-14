@@ -33,7 +33,9 @@ public class OAuth
 	public string ConsumerKey { get; set; }
 	public string ConsumerSecret { get; set; }
 
-	public Dictionary<string, string> Params;
+	// OAuth ヘッダに書き出すパラメータ
+	public Dictionary<string, string> OAuthParams =
+		new Dictionary<string, string>();
 
 	// リクエストのパラメータ。
 	// URI の Query 句がまだ使えないので。
@@ -104,42 +106,59 @@ public class OAuth
 	// パラメータを作ってアクセス URI を返す
 	public string CreateParams(string method, string uri)
 	{
-		Params = new Dictionary<string, string>();
+		// 1. 署名キーを作成
+		var key = ConsumerSecret + "&" + (token_secret ?? "");
 
-		// 追加パラメータで初期化
-		foreach (KeyValuePair<string, string> kv in AdditionalParams) {
-			Params[kv.Key] = kv.Value;
-		}
+		// 2. Signature Base String (署名対象文字列) を作成
+		// これは、HTTPメソッド、URL、(oauth_signature以外のすべてのクエリ)
+		// を & でつないだもの。
 
+		// Params は oauth_signature 以外のすべての (つまり署名対象の) クエリ
+		var Params = new Dictionary<string, string>();
 		var nonce = GetNonce();
 		var unixtime = new DateTime.now_utc().to_unix();
-
 		Params["oauth_version"] = "1.0";
 		Params["oauth_signature_method"] = "HMAC-SHA1";
 		Params["oauth_nonce"] = nonce;
 		Params["oauth_timestamp"] = unixtime.to_string();
 		Params["oauth_consumer_key"] = ConsumerKey;
 		Params["oauth_version"] = "1.0";
-
 		if (token != null) {
 			Params["oauth_token"] = token;
 		}
+		// ここまでが OAuth ヘッダに書き出すべきパラメータなので、
+		// この時点でコピーをとる
+		foreach (KeyValuePair<string, string> kv in Params) {
+			OAuthParams[kv.Key] = kv.Value;
+		}
+
+		// 追加パラメータは署名対象だが OAuth ヘッダには含まない
+		foreach (KeyValuePair<string, string> kv in AdditionalParams) {
+			Params[kv.Key] = kv.Value;
+		}
+		var encoded_params = UrlEncode(MakeQuery(Params));
 
 		var encoded_uri = UrlEncode(uri);
-		var encoded_params = UrlEncode(MakeQuery(Params));
-		var message = @"$(method)&$(encoded_uri)&$(encoded_params)";
+		var sig_base_string = @"$(method)&$(encoded_uri)&$(encoded_params)";
 
-		var key = ConsumerSecret + "&" + (token_secret ?? "");
-
-		var signature = HMAC_SHA1_Base64(key, message);
-
-		Params["oauth_signature"] = signature;
+		// 3. 署名
+		var signature = HMAC_SHA1_Base64(key, sig_base_string);
+		OAuthParams["oauth_signature"] = signature;
 
 		// アクセス URI を返す
+		Dictionary<string, string> p;
 		if (UseOAuthHeader) {
-			return @"$(uri)?$(MakeQuery(AdditionalParams))";
+			p = AdditionalParams;
 		} else {
-			return @"$(uri)?$(MakeQuery(Params))";
+			// XXX ここは Params + oauth_signature だと思うけどどうしたもんか
+			Params["oauth_signature"] = signature;
+			p = Params;
+		}
+		if (p.Count == 0) {
+			return uri;
+		} else {
+			var query = MakeQuery(p);
+			return @"$(uri)?$(query)";
 		}
 	}
 	
@@ -169,13 +188,15 @@ public class OAuth
 		}
 	}
 
-	// dict から OAuth ヘッダコンテンツを作成します。
-	public static string MakeOAuthHeader(Dictionary<string, string> dict)
+	// OAuthParams から OAuth ヘッダコンテンツを作成します。
+	// OAuthParams には authorization: OAuth ヘッダに載せるすべての
+	// パラメータを代入しておいてください。
+	public string MakeOAuthHeader()
 	{
 		var sb = new StringBuilder();
 		bool f_first = true;
 		sb.append("OAuth ");
-		foreach (KeyValuePair<string, string> p in dict) {
+		foreach (KeyValuePair<string, string> p in OAuthParams) {
 			if (f_first == false) {
 				sb.append_c(',');
 			} else {
@@ -195,7 +216,7 @@ public class OAuth
 
 		var client = new HttpClient(conn_uri);
 		if (UseOAuthHeader) {
-			client.SendHeaders["authorization"] = MakeOAuthHeader(Params);
+			client.SendHeaders["authorization"] = MakeOAuthHeader();
 		}
 		return client;
 	}
@@ -225,15 +246,22 @@ public class OAuth
 		token_secret = resultDict["oauth_token_secret"];
 	}
 
-	public InputStream RequestAPI(string uri_api) throws Error
+	// uri_api に method (GET/POST) で接続します。
+	public InputStream RequestAPI(string method, string uri_api) throws Error
 	{
 		diag.Trace("CreateHttp call");
-		RequestAPIClient = CreateHttp("GET", uri_api);
+		RequestAPIClient = CreateHttp(method, uri_api);
 		diag.Trace("CreateHttp return");
 
-		diag.Trace("client.Get call");
-		var rv = RequestAPIClient.GET();
-		diag.Trace("client.Get return");
+		// XXX どこでやる話だこれ
+		if (method == "POST") {
+			RequestAPIClient.SendHeaders.AddIfMissing("Content-Type",
+				"application/x-www-form-urlencoded");
+		}
+
+		diag.Trace(@"client.$(method) call");
+		var rv = RequestAPIClient.Act(method);
+		diag.Trace(@"client.$(method) return");
 		return rv;
 	}
 }

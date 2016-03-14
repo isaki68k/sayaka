@@ -163,6 +163,7 @@ public class SayakaMain
 	public string opt_ngword;
 	public string opt_ngword_user;
 	public string record_file;
+	public string opt_filter;
 
 	public string basedir;
 	public string cachedir;
@@ -194,6 +195,7 @@ public class SayakaMain
 		opt_evs = false;
 		opt_show_ng = false;
 		opt_x68k = false;
+		opt_filter = "";
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -217,6 +219,9 @@ public class SayakaMain
 				break;
 			 case "--eucjp":
 				iconv_tocode = "euc-jp";
+				break;
+			 case "--filter":
+				opt_filter = args[++i];
 				break;
 			 case "--font":
 				var metric = args[++i].split("x");
@@ -468,12 +473,26 @@ public class SayakaMain
 		stdout.flush();
 
 		// ストリーミング開始
-		try {
+		if (opt_filter != "") {
+			// --filter 指定があればキーワード検索モード
+			diag.Trace("PostAPI call");
+			try {
+				var dict = new Dictionary<string, string>();
+				dict.AddOrUpdate("track", opt_filter);
+				userStream = tw.PostAPI(Twitter.PublicAPIRoot,
+					"statuses/filter", dict);
+			} catch (Error e) {
+				stderr.printf("statuses/filter: %s\n", e.message);
+				Process.exit(1);
+			}
+		} else {
 			diag.Trace("UserStreamAPI call");
-			userStream = tw.UserStreamAPI("user");
-		} catch (Error e) {
-			stderr.printf("userstream: %s\n", e.message);
-			Process.exit(1);
+			try {
+				userStream = tw.UserStreamAPI("user");
+			} catch (Error e) {
+				stderr.printf("userstream: %s\n", e.message);
+				Process.exit(1);
+			}
 		}
 
 		stdout.printf("Connected.\n");

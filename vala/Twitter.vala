@@ -60,6 +60,7 @@ public class Twitter
 
 	public static const string APIRoot = "https://api.twitter.com/1.1/";
 	public static const string StreamAPIRoot = "https://userstream.twitter.com/1.1/";
+	public static const string PublicAPIRoot = "https://stream.twitter.com/1.1/";
 
 	private static const string ConsumerKey = "jPY9PU5lvwb6s9mqx3KjRA";
 	private static const string ConsumerSecret = "faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw";
@@ -117,6 +118,18 @@ public class Twitter
 	public DataInputStream GetAPI(string apiRoot, string api,
 		Dictionary<string, string>? options = null) throws Error
 	{
+		return API("GET", apiRoot, api, options);
+	}
+
+	public DataInputStream PostAPI(string apiRoot, string api,
+		Dictionary<string, string>? options = null) throws Error
+	{
+		return API("POST", apiRoot, api, options);
+	}
+
+	private DataInputStream API(string method, string apiRoot, string api,
+		Dictionary<string, string>? options = null) throws Error
+	{
 		oauth.token = AccessToken.Token;
 		oauth.token_secret = AccessToken.Secret;
 
@@ -129,7 +142,7 @@ public class Twitter
 		}
 
 		diag.Trace("RequestAPI call");
-		var baseStream = oauth.RequestAPI(apiRoot + api + ".json");
+		var baseStream = oauth.RequestAPI(method, apiRoot + api + ".json");
 		diag.Trace("RequestAPI return");
 
 		var stream = new DataInputStream(baseStream);
