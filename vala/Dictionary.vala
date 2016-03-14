@@ -329,6 +329,18 @@ namespace ULib
 			}
 		}
 
+		// -----
+		public string to_string()
+		{
+			var sb = new StringBuilder();
+			for (int i = 0; i < Count; i++) {
+				sb.append("%s%s=%s".printf((i == 0) ? "" : ", ",
+					(string)data[i].Key,
+					(string)data[i].Value));
+			}
+			return sb.str;
+		}
+
 		// ----- debug
 
 		public void Dump()
