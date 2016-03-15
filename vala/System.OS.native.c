@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Tetsuya Isaki
+ * Copyright (C) 2015-2016 Tetsuya Isaki
  * Copyright (C) 2015 Y.Sugahara (moveccr)
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,5 +41,9 @@ native_sysctlbyname(const char *sname,
 	void *oldp, size_t *oldlenp,
 	const void *newp, size_t newlen)
 {
+#if defined(__NetBSD__)	/* とりあえず */
 	return sysctlbyname(sname, oldp, oldlenp, newp, newlen);
+#else
+	return 0;
+#endif
 }
