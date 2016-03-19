@@ -1636,28 +1636,9 @@ public class SayakaMain
 			}
 
 			// JSON を取得
-			DataInputStream stream = null;
-			string line = null;
-			try {
-				stream = tw.GetAPI(Twitter.APIRoot, "mutes/users/ids", options);
-				line = stream.read_line();
-			} catch (Error e) {
-				diag.Debug(@"mutes/users/id: $(e.message)");
-				// nop
-			}
-			if (line == null || line == "") {
-				continue;	// ?
-			}
-			var parser = new ULib.JsonParser();
-			Json json;
-			try {
-				json = parser.Parse(line);
-			} catch (Error e) {
-				stderr.printf(@"Parser failed: $(e.message)\n");
-				break;
-			}
+			var json = tw.API2Json("GET", Twitter.APIRoot, "mutes/users/ids",
+				options);
 			diag.Debug(@"json=|$(json)|");
-
 			if (json.Has("errors")) {
 				var errorlist = json.GetArray("errors");
 				// エラーが複数返ってきたらどうするかね
@@ -1718,27 +1699,8 @@ public class SayakaMain
 		nortlist.Clear();
 
 		// JSON を取得
-		DataInputStream stream = null;
-		string line = null;
-		try {
-			stream = tw.GetAPI(Twitter.APIRoot, "friendships/no_retweets/ids");
-			line = stream.read_line();
-		} catch (Error e) {
-			diag.Debug(@"friendships/no_retweets/ids: $(e.message)");
-			// nop
-		}
-		if (line == null || line == "") {
-			return;
-		}
-
-		var parser = new ULib.JsonParser();
-		Json json;
-		try {
-			json = parser.Parse(line);
-		} catch (Error e) {
-			stderr.printf(@"get_nort_list: Parser failed: $(e.message)\n");
-			return;
-		}
+		var json = tw.API2Json("GET", Twitter.APIRoot,
+			"friendships/no_retweets/ids");
 		diag.Debug(@"json=|$(json)|");
 
 		if (json.IsArray == false) {

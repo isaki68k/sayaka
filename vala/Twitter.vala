@@ -150,4 +150,35 @@ public class Twitter
 
 		return stream;
 	}
+
+	// API に接続し、結果の JSON を返します。
+	// 接続が失敗、あるいは JSON が正しく受け取れなかった場合は
+	// 空の JSON を返します。
+	public Json API2Json(string method, string apiRoot, string api,
+		Dictionary<string, string>? options = null)
+	{
+		DataInputStream stream = null;
+		string line = null;
+		Json json = new Json();
+		try {
+			stream = API(method, apiRoot, api, options);
+			line = stream.read_line();
+		} catch (Error e) {
+			diag.Debug(@"$(api): $(e.message)");
+			// nop
+		}
+		if (line == null || line == "") {
+			return json;
+		}
+
+		var parser = new JsonParser();
+		try {
+			json = parser.Parse(line);
+		} catch (Error e) {
+			diag.Debug(@"$(api): Json parser failed: $(e.message)");
+			// fall through
+		}
+		// どちらにしても json を返す
+		return json;
+	}
 }
