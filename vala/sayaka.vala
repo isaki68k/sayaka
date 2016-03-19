@@ -326,6 +326,8 @@ public class SayakaMain
 		diag  = new Diag("SayakaMain");
 		diag.Trace("TRACE CHECK");
 
+		diag.Debug(@"tokenfile = $(tokenfile)\n");
+
 		init();
 
 		// コマンド別処理
