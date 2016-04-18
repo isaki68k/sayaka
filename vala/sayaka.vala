@@ -1367,6 +1367,12 @@ public class SayakaMain
 					.match(expd_url, 0, out m)) {
 				target = "%s/media/?size=t".printf(m.fetch(1));
 
+			} else if (new Regex("shindanmaker.com/pic/s_(\\d+)/(....).*")
+					.match(expd_url, 0, out m)) {
+				target = "http://pic.shindanmaker.com/s/%s/%s.jpg"
+					.printf(m.fetch(1), m.fetch(2));
+				width = imagesize;
+
 			} else if (new Regex("\\.(jpg|jpeg|png|gif)$").
 					match(expd_url, 0, out m)) {
 				target = expd_url;
