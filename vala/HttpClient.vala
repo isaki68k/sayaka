@@ -176,6 +176,9 @@ namespace ULib
 			}
 			sb.append("Host: %s\r\n".printf(Uri.Host));
 
+			// User-Agent は SHOULD
+			sb.append("User-Agent: HttpClient.vala\r\n");
+
 			if (method == "POST") {
 				var body = Uri.Query + "\n";
 				sb.append(@"Content-Length: $(body.length)\r\n");
