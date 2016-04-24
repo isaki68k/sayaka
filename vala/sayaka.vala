@@ -924,9 +924,20 @@ public class SayakaMain
 				for (var j = 0; text2.get_next_char(ref j, out uni); ) {
 					textarray.append(uni);
 				}
-			} else {
-				textarray.append(uni);
+				continue;
 			}
+			if (uni == 0xfe0e || uni == 0xfe0f) {
+				// ここで EVS 文字を抜く。
+				// 絵文字セレクタらしいけど、mlterm + sayaka14 フォント
+				// だと U+FE0E とかの文字が前の文字に上書き出力されて
+				// ぐちゃぐちゃになってしまうので、mlterm が対応するまでは
+				// こっちでパッチ対応。
+				if (opt_evs == false) {
+					continue;
+				}
+			}
+
+			textarray.append(uni);
 		}
 
 		bool inescape = false;
@@ -942,17 +953,6 @@ public class SayakaMain
 					inescape = false;
 				}
 			} else {
-				if (opt_evs == false) {
-					// ここで EVS 文字を抜く。
-					// 絵文字セレクタらしいけど、mlterm + sayaka14 フォント
-					// だと U+FE0E とかの文字が前の文字に上書き出力されて
-					// ぐちゃぐちゃになってしまうので、mlterm が対応する
-					// まではこっちでパッチ対応。
-					if (uni == 0xfe0e || uni == 0xfe0f) {
-						continue;
-					}
-				}
-
 				if (uni == ESC) {
 					newtext.append_unichar(uni);
 					inescape = true;
