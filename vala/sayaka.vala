@@ -940,11 +940,11 @@ public class SayakaMain
 			textarray.append(uni);
 		}
 
+		// 1文字ずつ文字幅を数えながら出力用に整形していく
 		bool inescape = false;
 		StringBuilder newtext = new StringBuilder();
 		newtext.append(indent);
 		var x = left;
-
 		for (var i = 0; i < textarray.length(); i++) {
 			uni = textarray.nth_data(i);
 			if (inescape) {
