@@ -164,6 +164,9 @@ public class SayakaMain
 	public string opt_ngword_user;
 	public string record_file;
 	public string opt_filter;
+	public string last_id;			// 直前に表示したツイート
+	public int last_id_count;		// 連続回数
+	public int last_id_max;			// 連続回数の上限
 
 	public string basedir;
 	public string cachedir;
@@ -196,6 +199,9 @@ public class SayakaMain
 		opt_show_ng = false;
 		opt_x68k = false;
 		opt_filter = "";
+		last_id = "";
+		last_id_count = 0;
+		last_id_max = 10;
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -233,6 +239,9 @@ public class SayakaMain
 				break;
 			 case "--jis":
 				iconv_tocode = "iso-2022-jp";
+				break;
+			 case "--max-cont":
+				last_id_max = int.parse(args[++i]);
 				break;
 			 case "--max-image-cols":
 				max_image_count = int.parse(args[++i]);
@@ -784,6 +793,35 @@ public class SayakaMain
 			}
 		}
 
+		// 直前のツイートの RT なら簡略表示
+		if (has_retweet && last_id == s.GetString("id_str")) {
+			if (last_id_count++ < last_id_max) {
+				var rtmsg = format_rt_owner(status);
+				var rtcnt = format_rt_cnt(s);
+				var favcnt = format_fav_cnt(s);
+				print_(rtmsg + rtcnt + favcnt);
+				stdout.printf("\n");
+				return;
+			}
+		}
+
+		// 直前のツイートのふぁぼなら簡略表示
+		if (obj != null && obj.GetString("event") == "favorite"
+		 && last_id == status.GetString("id_str")) {
+			if (last_id_count++ < last_id_max) {
+				var favmsg = format_fav_owner(obj);
+				var rtcnt = format_rt_cnt(s);
+				var favcnt = format_fav_cnt(s);
+				print_(favmsg + rtcnt + favcnt);
+				stdout.printf("\n");
+				return;
+			}
+		}
+
+		// 表示確定
+		last_id = s.GetString("id_str");
+		last_id_count = 0;
+
 		var s_user = s.GetJson("user");
 		var userid = coloring(formatid(s_user.GetString("screen_name")),
 			Color.UserId);
@@ -830,42 +868,64 @@ public class SayakaMain
 		}
 
 		// このステータスの既 RT、既ふぁぼ数
-		var rtmsg = "";
-		var favmsg = "";
-		// RT
-		var rtcnt = s.GetInt("retweet_count");
-		if (rtcnt > 0) {
-			rtmsg = coloring(" %dRT".printf(rtcnt), Color.Retweet);
-		}
-		// Fav
-		var favcnt = s.GetInt("favorite_count");
-		if (favcnt > 0) {
-			favmsg = coloring(" %dFav".printf(favcnt), Color.Favorite);
-		}
+		var rtmsg = format_rt_cnt(s);
+		var favmsg = format_fav_cnt(s);
 		print_("%s %s%s%s".printf(time, src, rtmsg, favmsg));
 		stdout.printf("\n");
 
 		// リツイート元
 		if (has_retweet) {
-			var user = status.GetJson("user");
-			var rt_time   = formattime(status);
-			var rt_userid = formatid(user.GetString("screen_name"));
-			var rt_name   = formatname(user.GetString("name"));
-			print_(coloring(@"$(rt_time) $(rt_name) $(rt_userid) がリツイート",
-				Color.Retweet));
+			print_(format_rt_owner(status));
 			stdout.printf("\n");
 		}
 
 		// ふぁぼ元
 		if (obj != null && obj.GetString("event") == "favorite") {
-			var user = obj.GetJson("source");
-			var fav_time   = formattime(obj);
-			var fav_userid = formatid(user.GetString("screen_name"));
-			var fav_name   = formatname(user.GetString("name"));
-			print_(coloring(@"$(fav_time) $(fav_name) $(fav_userid) がふぁぼ",
-				Color.Favorite));
+			print_(format_fav_owner(obj));
 			stdout.printf("\n");
 		}
+	}
+
+	// リツイート元通知を整形して返す
+	public string format_rt_owner(ULib.Json status)
+	{
+		var user = status.GetJson("user");
+		var rt_time   = formattime(status);
+		var rt_userid = formatid(user.GetString("screen_name"));
+		var rt_name   = formatname(user.GetString("name"));
+		var str = coloring(@"$(rt_time) $(rt_name) $(rt_userid) がリツイート",
+			Color.Retweet);
+		return str;
+	}
+
+	// ふぁぼ元通知を整形して返す
+	public string format_fav_owner(ULib.Json obj)
+	{
+		var user = obj.GetJson("source");
+		var fav_time   = formattime(obj);
+		var fav_userid = formatid(user.GetString("screen_name"));
+		var fav_name   = formatname(user.GetString("name"));
+		var str = coloring(@"$(fav_time) $(fav_name) $(fav_userid) がふぁぼ",
+			Color.Favorite);
+		return str;
+	}
+
+	// リツイート数を整形して返す
+	public string format_rt_cnt(ULib.Json s)
+	{
+		var rtcnt = s.GetInt("retweet_count");
+		return (rtcnt > 0)
+			? coloring(" %dRT".printf(rtcnt), Color.Retweet)
+			: "";
+	}
+
+	// ふぁぼ数を整形して返す
+	public string format_fav_cnt(ULib.Json s)
+	{
+		var favcnt = s.GetInt("favorite_count");
+		return (favcnt > 0)
+			? coloring(" %dFav".printf(favcnt), Color.Favorite)
+			: "";
 	}
 
 	public void print_(string msg)
@@ -2123,6 +2183,7 @@ public class SayakaMain
 	--color <n> : color mode { 2 .. 256 }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
 	--white / --black : darken/lighten the text color. (default: --white)
+	--max-cont <n>
 	--max-image-cols <n>
 	--noimg
 	--jis
