@@ -755,8 +755,10 @@ public class SayakaMain
 
 		// RT なら、RT 元を $status、RT先を $s
 		ULib.Json s = status;
+		bool has_retweet = false;
 		if (status.Has("retweeted_status")) {
 			s = status.GetJson("retweeted_status");
+			has_retweet = true;
 		}
 
 		// --protect オプションなら鍵ユーザのツイートを表示しない
@@ -765,7 +767,7 @@ public class SayakaMain
 			var user = status.GetJson("user");
 			if (user.GetBool("protected")) {
 				match = true;
-			} else if (status.Has("retweeted_status")) {
+			} else if (has_retweet) {
 				// リツイート先も調べる
 				var rt = status.GetJson("retweeted_status");
 				user = rt.GetJson("user");
@@ -844,7 +846,7 @@ public class SayakaMain
 		stdout.printf("\n");
 
 		// リツイート元
-		if (status.Has("retweeted_status")) {
+		if (has_retweet) {
 			var user = status.GetJson("user");
 			var rt_time   = formattime(status);
 			var rt_userid = formatid(user.GetString("screen_name"));
