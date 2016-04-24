@@ -914,12 +914,28 @@ public class SayakaMain
 		var left = indent_cols * (indent_depth + 1);
 		string indent = CSI + @"$(left)C";
 
+		// 文字列を分解。
+		var textarray = new List<unichar>();
+		unichar uni;
+		for (var i = 0; text.get_next_char(ref i, out uni); ) {
+			if (0xe000 <= uni && uni <= 0xf8ff) {
+				// Private Use Area (外字) をコードポイント形式(?)にする
+				var text2 = "<U+%04X>".printf(uni);
+				for (var j = 0; text2.get_next_char(ref j, out uni); ) {
+					textarray.append(uni);
+				}
+			} else {
+				textarray.append(uni);
+			}
+		}
+
 		bool inescape = false;
 		StringBuilder newtext = new StringBuilder();
 		newtext.append(indent);
 		var x = left;
-		unichar uni;
-		for (var i = 0; text.get_next_char(ref i, out uni); ) {
+
+		for (var i = 0; i < textarray.length(); i++) {
+			uni = textarray.nth_data(i);
 			if (inescape) {
 				newtext.append_unichar(uni);
 				if (uni == 'm') {
