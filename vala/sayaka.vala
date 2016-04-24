@@ -980,9 +980,12 @@ public class SayakaMain
 		var textarray = new List<unichar>();
 		unichar uni;
 		for (var i = 0; text.get_next_char(ref i, out uni); ) {
-			if (0xe000 <= uni && uni <= 0xf8ff) {
+			if ((  0xe000 <= uni && uni <=   0xf8ff)	// BMP
+			 || ( 0xf0000 <= uni && uni <=  0xffffd)	// 第15面
+			 || (0x100000 <= uni && uni <= 0x10fffd)) 	// 第16面
+			{
 				// Private Use Area (外字) をコードポイント形式(?)にする
-				var text2 = "<U+%04X>".printf(uni);
+				var text2 = "<U+%X>".printf(uni);
 				for (var j = 0; text2.get_next_char(ref j, out uni); ) {
 					textarray.append(uni);
 				}
