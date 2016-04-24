@@ -88,7 +88,7 @@ public class NGStatus
 
 public class SayakaMain
 {
-	public const string version = "3.2.0 (2016/02/24)";
+	public const string version = "3.2.1 (2016/04/24)";
 
 	private static Diag diag;
 
