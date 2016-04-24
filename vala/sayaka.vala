@@ -753,12 +753,12 @@ public class SayakaMain
 			return;
 		}
 
-		showstatus(status);
+		showstatus(status, false);
 		stdout.printf("\n");
 	}
 
 	// 1ツイートを表示
-	public void showstatus(ULib.Json status)
+	public void showstatus(ULib.Json status, bool is_quoted)
 	{
 		ULib.Json obj = status.GetJson("object");
 
@@ -793,34 +793,37 @@ public class SayakaMain
 			}
 		}
 
-		// 直前のツイートの RT なら簡略表示
-		if (has_retweet && last_id == s.GetString("id_str")) {
-			if (last_id_count++ < last_id_max) {
-				var rtmsg = format_rt_owner(status);
-				var rtcnt = format_rt_cnt(s);
-				var favcnt = format_fav_cnt(s);
-				print_(rtmsg + rtcnt + favcnt);
-				stdout.printf("\n");
-				return;
+		// 簡略表示の判定。QT 側では行わない
+		if (is_quoted == false) {
+			// 直前のツイートの RT なら簡略表示
+			if (has_retweet && last_id == s.GetString("id_str")) {
+				if (last_id_count++ < last_id_max) {
+					var rtmsg = format_rt_owner(status);
+					var rtcnt = format_rt_cnt(s);
+					var favcnt = format_fav_cnt(s);
+					print_(rtmsg + rtcnt + favcnt);
+					stdout.printf("\n");
+					return;
+				}
 			}
-		}
 
-		// 直前のツイートのふぁぼなら簡略表示
-		if (obj != null && obj.GetString("event") == "favorite"
-		 && last_id == status.GetString("id_str")) {
-			if (last_id_count++ < last_id_max) {
-				var favmsg = format_fav_owner(obj);
-				var rtcnt = format_rt_cnt(s);
-				var favcnt = format_fav_cnt(s);
-				print_(favmsg + rtcnt + favcnt);
-				stdout.printf("\n");
-				return;
+			// 直前のツイートのふぁぼなら簡略表示
+			if (obj != null && obj.GetString("event") == "favorite"
+			 && last_id == status.GetString("id_str")) {
+				if (last_id_count++ < last_id_max) {
+					var favmsg = format_fav_owner(obj);
+					var rtcnt = format_rt_cnt(s);
+					var favcnt = format_fav_cnt(s);
+					print_(favmsg + rtcnt + favcnt);
+					stdout.printf("\n");
+					return;
+				}
 			}
-		}
 
-		// 表示確定
-		last_id = s.GetString("id_str");
-		last_id_count = 0;
+			// 表示確定
+			last_id = s.GetString("id_str");
+			last_id_count = 0;
+		}
 
 		var s_user = s.GetJson("user");
 		var userid = coloring(formatid(s_user.GetString("screen_name")),
@@ -863,7 +866,7 @@ public class SayakaMain
 			// この中はインデントを一つ下げる
 			stdout.printf("\n");
 			indent_depth++;
-			showstatus(s.GetJson("quoted_status"));
+			showstatus(s.GetJson("quoted_status"), true);
 			indent_depth--;
 		}
 
