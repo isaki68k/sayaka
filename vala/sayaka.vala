@@ -1198,22 +1198,6 @@ public class SayakaMain
 		var utext = new unichar[text.char_count()];
 		unichar uni;
 		for (var pos = 0, i = 0; text.get_next_char(ref pos, out uni); ) {
-			// ここで文字を置換
-
-			// 全角チルダ(U+FF5E)はおそらく全角チルダを表示したいのではなく、
-			// Windows が波ダッシュ(U+301C)を表示しようとしたものだと解釈した
-			// ほうが適用範囲が広いので、U+FF5E はすべて U+301C に変換してみる。
-			if (uni == 0xff5e) {
-				uni = 0x301c;
-			}
-
-			// 全角ハイフンマイナス(U+FF0D)は環境によって表示出来ない可能性が
-			// あるので、マイナス記号(U+2212)に置換しておく。
-			// 困るようなシチュエーションはないだろう。
-			if (uni == 0xff0d) {
-				uni = 0x2212;
-			}
-
 			utext[i++] = uni;
 		}
 
