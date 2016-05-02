@@ -23,6 +23,7 @@
  * SUCH DAMAGE.
  */
 
+using System.OS;
 using ULib;
 
 public class SixelV
@@ -58,6 +59,12 @@ public class SixelV
 	public bool opt_ignoreerror = false;
 	public ColorMode opt_findfunc = ColorMode.Custom;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
+	static SixelV this_sixelv;
+
+	public SixelV()
+	{
+		this_sixelv = this;
+	}
 
 	public void main2(string[] args)
 	{
@@ -382,7 +389,25 @@ stderr.printf("%s\n", filename);
 				break;
 		}
 
+		Posix.@signal(SIGINT, signal_handler);
+
 		sx.SixelToStream(stdout);
+	}
+
+	public static void signal_handler(int signo)
+	{
+		this_sixelv.signal_handler_2(signo);
+	}
+
+	public void signal_handler_2(int signo)
+	{
+		switch (signo) {
+		 case SIGINT:
+			// SIXEL 出力を中断する (CAN + ST)
+			stdout.printf("\x18\x1b\\");
+			stdout.flush();
+			break;
+		}
 	}
 }
 

@@ -29,6 +29,8 @@ extern int native_sysctlbyname(string sname,
 	void *oldp, size_t *oldlenp,
 	void *newp, size_t newlen);
 
+[CCode(cname="SIGINT")]
+extern const int native_SIGINT;
 [CCode(cname="SIGWINCH")]
 extern const int native_SIGWINCH;
 
@@ -49,6 +51,7 @@ namespace System.OS
 		}
 	}
 
+	public const int SIGINT = native_SIGINT;
 	public const int SIGWINCH = native_SIGWINCH;
 
 	public class sysctl

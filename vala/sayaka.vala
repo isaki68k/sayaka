@@ -92,6 +92,7 @@ public class SayakaMain
 
 	private static Diag diag;
 
+	public const char CAN = '\x18';
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
 
@@ -167,6 +168,7 @@ public class SayakaMain
 	public string last_id;			// 直前に表示したツイート
 	public int last_id_count;		// 連続回数
 	public int last_id_max;			// 連続回数の上限
+	public bool in_sixel;			// SIXEL 出力中なら true
 
 	public string basedir;
 	public string cachedir;
@@ -400,6 +402,10 @@ public class SayakaMain
 			}
 			stdout.printf(@"sayaka: init: $(cachedir) is created.\n");
 		}
+
+		// シグナルハンドラを設定
+		Posix.@signal(SIGINT, signal_handler);
+		Posix.@signal(SIGWINCH, signal_handler);
 	}
 
 	// ユーザストリームモードのための準備
@@ -428,9 +434,6 @@ public class SayakaMain
 				stdout.printf("%s\n", sixel_cmd);
 			}
 		}
-
-		// シグナルハンドラを設定
-		Posix.@signal(SIGWINCH, signal_handler);
 
 		// 一度手動で呼び出して桁数を取得
 		signal_handler(SIGWINCH);
@@ -1629,8 +1632,10 @@ public class SayakaMain
 			sx.SetPaletteFixed256();
 			sx.DiffuseReduceFixed256();
 		}
+		in_sixel = true;
 		sx.SixelToStream(stdout);
 		stdout.flush();
+		in_sixel = false;
 
 		if (index >= 0) {
 			image_count++;
@@ -1678,8 +1683,10 @@ public class SayakaMain
 		// ファイルを読んで標準出力に吐き出す
 		uint8[] buf = new uint8[fsize];
 		stream.read(buf);
+		in_sixel = true;
 		stdout.write(buf);
 		stdout.flush();
+		in_sixel = false;
 
 		return true;
 	}
@@ -2083,6 +2090,14 @@ public class SayakaMain
 	public void signal_handler_2(int signo)
 	{
 		switch (signo) {
+		 case SIGINT:
+			// SIXEL 出力中なら中断する (CAN + ST)
+			if (in_sixel) {
+				stdout.printf("%c%c%c", CAN, ESC, '\\');
+				stdout.flush();
+			}
+			break;
+
 		 case SIGWINCH:
 			int ws_cols = 0;
 			int ws_width = 0;
