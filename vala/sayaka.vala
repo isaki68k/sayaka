@@ -2095,6 +2095,8 @@ public class SayakaMain
 			if (in_sixel) {
 				stdout.printf("%c%c%c", CAN, ESC, '\\');
 				stdout.flush();
+			} else {
+				Process.exit(0);
 			}
 			break;
 
