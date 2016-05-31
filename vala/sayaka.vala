@@ -125,6 +125,7 @@ public class SayakaMain
 		NgwordDel,
 		NgwordList,
 		NortlistMode,
+		BlocklistMode,
 		Version,
 		Max;
 	}
@@ -152,6 +153,8 @@ public class SayakaMain
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
 	public Twitter tw;
+	public Dictionary<string, string> blocklist
+		= new Dictionary<string, string>();
 	public Dictionary<string, string> mutelist
 		= new Dictionary<string, string>();
 	public Dictionary<string, string> nortlist
@@ -215,6 +218,9 @@ public class SayakaMain
 				break;
 			 case "--black":
 				bg_white = false;
+				break;
+			 case "--blocklist":
+				cmd = SayakaCmd.BlocklistMode;
 				break;
 			 case "--color":
 				color_mode = int.parse(args[++i]);
@@ -369,6 +375,9 @@ public class SayakaMain
 		 case SayakaCmd.NortlistMode:
 			cmd_nortlist();
 			break;
+		 case SayakaCmd.BlocklistMode:
+			cmd_blocklist();
+			break;
 		 case SayakaCmd.Version:
 			cmd_version();
 			break;
@@ -462,6 +471,16 @@ public class SayakaMain
 		get_access_token();
 
 		if (opt_norest == false) {
+			// ブロックユーザ取得
+			if (debug) {
+				stdout.printf("Getting block users list...");
+				stdout.flush();
+			}
+			get_block_list();
+			if (debug) {
+				stdout.printf("done\n");
+			}
+
 			// ミュートユーザ取得
 			if (debug) {
 				stdout.printf("Getting mute users list...");
@@ -717,9 +736,12 @@ public class SayakaMain
 			return;
 		}
 
-		// ミュートしてるユーザ、RT 非表示のユーザの RT も
+		// ブロックユーザ、ミュートユーザ、RT 非表示のユーザの RT も
 		// ストリームには流れてきてしまうので、ここで弾く。
 		var id_str = status.GetJson("user").GetString("id_str");
+		if (blocklist.ContainsKey(id_str)) {
+			return;
+		}
 		if (mutelist.ContainsKey(id_str)) {
 			return;
 		}
@@ -729,9 +751,12 @@ public class SayakaMain
 				return;
 			}
 
-			// RT 先ユーザがミュートユーザでも弾く
+			// RT 先ユーザがブロック/ミュートユーザでも弾く
 			var retweeted_status = status.GetJson("retweeted_status");
 			id_str = retweeted_status.GetJson("user").GetString("id_str");
+			if (blocklist.ContainsKey(id_str)) {
+				return;
+			}
 			if (mutelist.ContainsKey(id_str)) {
 				return;
 			}
@@ -1698,6 +1723,58 @@ public class SayakaMain
 		var fsize = stream.tell();
 		stream.rewind();
 		return fsize;
+	}
+
+	// ブロックユーザ一覧の読み込み
+	public void get_block_list()
+	{
+		// ブロックユーザ一覧は一度に全部送られてくるとは限らず、
+		// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
+		// これを cursor に指定してもう一度リクエストを送る。
+
+		blocklist.Clear();
+		var cursor = "-1";
+
+		do {
+			var options = new Dictionary<string, string>();
+			options["cursor"] = cursor;
+
+			// JSON を取得
+			var json = tw.API2Json("GET", Twitter.APIRoot, "blocks/ids",
+				options);
+			diag.Debug(@"json=|$(json)|");
+			if (json.Has("errors")) {
+				var errorlist = json.GetArray("errors");
+				// エラーが複数返ってきたらどうするかね
+				var code = errorlist.index(0).GetInt("code");
+				var message = errorlist.index(0).GetString("message");
+				stderr.printf(@"get_block_list failed: $(message)($(code))\n");
+				Process.exit(1);
+			}
+
+			var users = json.GetArray("ids");
+			for (var i = 0; i < users.length; i++) {
+				var id_str = users.index(i).AsNumber;
+				blocklist[id_str] = id_str;
+			}
+
+			cursor = json.GetString("next_cursor_str");
+			diag.Debug(@"cursor=|$(cursor)|");
+		} while (cursor != "0");
+	}
+
+	// 取得したブロックユーザの一覧を表示する
+	public void cmd_blocklist()
+	{
+		tw = new Twitter();
+		get_access_token();
+
+		get_block_list();
+
+		for (var i = 0; i < blocklist.Count; i++) {
+			var kv = blocklist.At(i);
+			stdout.printf("%s\n".printf(kv.Key));
+		}
 	}
 
 	// ミュートユーザ一覧の読み込み
