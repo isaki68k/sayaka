@@ -1195,16 +1195,8 @@ public class SayakaMain
 		DateTime now = new DateTime.now_local();
 		int utc_offset = (int)((int64)now.get_utc_offset() / 1000 / 1000);
 
-		DateTime dt;
-		if (obj.Has("timestamp_ms")) {
-			// 数値のようにみえる文字列で格納されている
-			var timestamp_ms = obj.GetString("timestamp_ms");
-			var unixtime = int64.parse(timestamp_ms) / 1000;
-			dt = new DateTime.from_unix_utc(unixtime);
-		} else {
-			var created_at = obj.GetString("created_at");
-			dt = conv_twtime_to_datetime(created_at);
-		}
+		// object の日時を取得
+		var dt = get_datetime(obj);
 
 		// なぜかワルシャワ時間に対応 :-)
 		string time_zone = null;
@@ -1238,6 +1230,26 @@ public class SayakaMain
 		}
 
 		return sb.str;
+	}
+
+	// status の日付時刻を返す。
+	// timestamp_ms があれば使い、なければ created_at を使う。
+	// 今のところ、timestamp_ms はたぶん新しめのツイート/イベント通知には
+	// 付いてるはずだが、リツイートされた側は created_at しかない模様。
+	public DateTime get_datetime(ULib.Json status)
+	{
+		DateTime dt;
+
+		if (status.Has("timestamp_ms")) {
+			// 数値のようにみえる文字列で格納されている
+			var timestamp_ms = status.GetString("timestamp_ms");
+			var unixtime = int64.parse(timestamp_ms) / 1000;
+			dt = new DateTime.from_unix_utc(unixtime);
+		} else {
+			var created_at = status.GetString("created_at");
+			dt = conv_twtime_to_datetime(created_at);
+		}
+		return dt;
 	}
 
 	// twitter 書式の日付時刻から DateTime を作って返す。
@@ -2028,6 +2040,38 @@ public class SayakaMain
 		var ngword = ng.GetString("ngword");
 
 		// 生実況 NG
+		if (ngword.has_prefix("%LIVE,")) {
+			var tmp = ngword.split(",", 5);
+			// 曜日と時刻2つを取り出す
+			var wday  = my_strptime(tmp[1], "%a");
+			var start = my_strptime(tmp[2], "%R");
+			var end1  = my_strptime(tmp[3], "%R");
+			var end2  = -1;
+			if (end1 > 1440) {
+				end2 = end1 - 1440;
+				end1 = 1440;
+			}
+
+			// 発言時刻
+			var dt = get_datetime(status).to_local();
+			var tmwday = dt.get_day_of_week();
+			if (tmwday == 7) {
+				tmwday = 0;
+			}
+			var tmmin = dt.get_hour() * 60 + dt.get_minute();
+
+			// 指定曜日の時間の範囲内ならアウト
+			if (tmwday == wday && start <= tmmin && tmmin < end1) {
+				return true;
+			}
+			// 終了時刻が24時を越える場合は、越えたところも比較
+			if (end2 != -1) {
+				wday = (wday + 1) % 7;
+				if (tmwday == wday && 0 <= tmmin && tmmin < end2) {
+					return true;
+				}
+			}
+		}
 
 		// クライアント名
 		if (ngword.has_prefix("%SOURCE,")) {
@@ -2080,6 +2124,37 @@ public class SayakaMain
 		}
 
 		return false;
+	}
+
+	// strptime() によく似た俺様版。
+	// "%a" と "%R" だけ対応。戻り値は int。
+	private int my_strptime(string buf, string fmt)
+	{
+		if (fmt == "%a") {
+			string[] wdays = {
+				"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+			};
+
+			for (int i = 0; i < wdays.length; i++) {
+				var wday = wdays[i];
+				if (buf.ascii_casecmp(wday) == 0) {
+					return i;
+				}
+			}
+			return -1;
+		}
+
+		if (fmt == "%R") {
+			var hhmm = buf.split(":");
+			if (hhmm.length != 2) {
+				return -1;
+			}
+			var hh = int.parse(hhmm[0]);
+			var mm = int.parse(hhmm[1]);
+			return (hh * 60) + mm;
+		}
+
+		return -1;
 	}
 
 	// NGワードを追加する
