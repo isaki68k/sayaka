@@ -70,7 +70,7 @@ VALA_PKGS=	\
 PKGS= \
 	glib-2.0 \
 	gdk-pixbuf-2.0 \
-	gio-2.0
+	gio-2.0 \
 
 COPTS=	-O2
 CFLAGS=	-w `pkg-config --cflags ${PKGS}`
