@@ -2357,21 +2357,36 @@ public class SayakaMain
 """usage: sayaka [<options>...]
 	--color <n> : color mode { 2 .. 256 }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
+	--filter <keyword>
 	--white / --black : darken/lighten the text color. (default: --white)
-	--max-cont <n>
-	--max-image-cols <n>
 	--noimg
 	--jis
 	--eucjp
+	--play : read JSON from stdin.
 	--protect : don't display protected user's tweet.
-	--relay-server
 	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.
 	--show-ng
 	--support-evs
 	--token <file> : token file (default: ~/.sayaka/token.json)
-	--userstream <url>
+	--version
 	--x68k
+
+	-4
+	-6
+	--blocklist
+	--debug
+	--max-cont <n>
+	--max-image-cols <n>
+	--mutelist
+	--ngword-add
+	--ngword-del
+	--ngword-list
+	--norest
+	--nortlist
+	--relay-server
+	--user
+	--userstream <url>
 """
 		);
 		Process.exit(0);
