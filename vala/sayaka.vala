@@ -1755,6 +1755,10 @@ public class SayakaMain
 			var json = tw.API2Json("GET", Twitter.APIRoot, "blocks/ids",
 				options);
 			diag.Debug(@"json=|$(json)|");
+			if (json == null) {
+				stderr.printf("get_block_list failed: json == null\n");
+				break;
+			}
 			if (json.Has("errors")) {
 				var errorlist = json.GetArray("errors");
 				// エラーが複数返ってきたらどうするかね
@@ -1809,6 +1813,10 @@ public class SayakaMain
 			var json = tw.API2Json("GET", Twitter.APIRoot, "mutes/users/ids",
 				options);
 			diag.Debug(@"json=|$(json)|");
+			if (json == null) {
+				stderr.printf("get_mute_list failed: json == null\n");
+				break;
+			}
 			if (json.Has("errors")) {
 				var errorlist = json.GetArray("errors");
 				// エラーが複数返ってきたらどうするかね
@@ -1872,6 +1880,10 @@ public class SayakaMain
 		var json = tw.API2Json("GET", Twitter.APIRoot,
 			"friendships/no_retweets/ids");
 		diag.Debug(@"json=|$(json)|");
+		if (json == null) {
+			stderr.printf("get_nort_list failed: json == null\n");
+			return;
+		}
 
 		if (json.IsArray == false) {
 			// どうするかね
