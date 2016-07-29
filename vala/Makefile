@@ -57,6 +57,7 @@ SRCS_sixelv=	\
 
 SRCS_h=	\
 	h.vala \
+	Curl.vala \
 	Diag.vala \
 	Dictionary.vala \
 	HttpClient.vala \
@@ -71,12 +72,14 @@ PKGS= \
 	glib-2.0 \
 	gdk-pixbuf-2.0 \
 	gio-2.0 \
+	libcurl \
 
 COPTS=	-O2
 CFLAGS=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 
 VALA_FLAGS=	\
+	libcurl.vapi \
 
 VALAC=	valac
 
