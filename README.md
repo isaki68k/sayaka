@@ -54,6 +54,7 @@ lang/vala, devel/glib2, graphics/gdk-pixbuf2, net/glib-networking
 コンパイルは以下のようにします。
 
 ```
+% cd vala
 % make vala-make2
 % make
 ```
