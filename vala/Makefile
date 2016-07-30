@@ -102,35 +102,35 @@ VALAMAKE_COMMON_OPTS= \
 		-l "${CC} " \
 		-L "${LIBS} " \
 
-sayaka:
+sayaka:	vala-make2
 	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
 		-o sayaka \
 		${SRCS_sayaka}
 
 .PHONY:	clean-sayaka
-clean-sayaka:
+clean-sayaka:	vala-make2
 	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
 		-o sayaka \
 		${SRCS_sayaka}
 
-sixelv:
+sixelv:	vala-make2
 	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
 		-o sixelv \
 		${SRCS_sixelv}
 
 .PHONY:	clean-sixelv
-clean-sixelv:
+clean-sixelv:	vala-make2
 	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
 		-o sixelv \
 		${SRCS_sixelv}
 
-h:
+h:	vala-make2
 	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
 		-o h \
 		${SRCS_h}
 
 .PHONY:	clean-h
-clean-h:
+clean-h:	vala-make2
 	@${VALAMAKE} --clean ${VALAMAKE_COMMON_OPTS} \
 		-o h  \
 		${SRCS_h}
