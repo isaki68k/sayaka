@@ -23,6 +23,10 @@ namespace ULib
 		// Host: はこちらで生成するので呼び出し側が指定しないでください。
 		public Dictionary<string, string> SendHeaders;
 
+		// コネクションに使用するプロトコルファミリ
+		// IPv4/IPv6 only にしたい場合はコンストラクタ後に指定?
+		public SocketFamily Family;
+
 		public Curl(string uri)
 		{
 			MH = new MultiHandle();
