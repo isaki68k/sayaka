@@ -317,10 +317,6 @@ public class SayakaMain
 			 case "--user":
 				opt_ngword_user = args[++i];
 				break;
-			 case "--userstream":
-				var p = args[++i];
-				//Curl.ProxyMap = @"userstream.twitter.com=$(p)";
-				break;
 			 case "--version":
 				cmd = SayakaCmd.Version;
 				break;
@@ -2398,7 +2394,6 @@ public class SayakaMain
 	--nortlist
 	--relay-server
 	--user
-	--userstream <url>
 """
 		);
 		Process.exit(0);
