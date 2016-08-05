@@ -79,6 +79,18 @@ stderr.printf("Curl destruct\n");
 
 stderr.printf(@"path=$(path)\n");
 
+			// プロトコル
+			switch (Family) {
+			 case SocketFamily.IPV4:
+				EH.setopt(Option.IPRESOLVE, IPRESOLVE_V4);
+				break;
+			 case SocketFamily.IPV6:
+				EH.setopt(Option.IPRESOLVE, IPRESOLVE_V6);
+				break;
+			 default:
+				break;
+			}
+
 			// URI セット
 			EH.setopt(Option.URL, path);
 
