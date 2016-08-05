@@ -176,11 +176,11 @@ namespace Native.Curl {
 		[CCode (cname = "curl_formget")]
 		public int get (void* arg, Curl.FormGetCallback append);
 	}
-	[CCode (cheader_filename = "curl/curl.h", cname = "struct curl_slist", free_function = "slist_free_all")]
+	[CCode (cheader_filename = "curl/curl.h", cname = "struct curl_slist", free_function = "curl_slist_free_all")]
 	[Compact]
 	public class SList {
 		[CCode (cname = "curl_slist_append")]
-		public static SList append (SList? p1, string p2);
+		public static SList append (owned SList? p1, string p2);
 		[CCode (cname = "curl_slist_free_all")]
 		public void free_all ();
 	}
