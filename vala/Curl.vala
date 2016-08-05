@@ -91,7 +91,7 @@ stderr.printf(@"path=$(path)\n");
 				list = Native.Curl.SList.append((owned)list, @"$(h.Key): $(h.Value)");
 			}
 			list = Native.Curl.SList.append((owned)list, @"connection: close");
-			list = Native.Curl.SList.append((owned)list, @"User-Agent: HttpClient.vala");
+			list = Native.Curl.SList.append((owned)list, @"User-Agent: Curl.vala");
 			var r = EH.setopt(Option.HTTPHEADER, list);
 			if (r != Code.OK) {
 				throw new GLib.IOError.FAILED(@"HTTPHEADER: $(r)");
