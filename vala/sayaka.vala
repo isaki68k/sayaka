@@ -319,7 +319,7 @@ public class SayakaMain
 				break;
 			 case "--userstream":
 				var p = args[++i];
-				HttpClient.ProxyMap = @"userstream.twitter.com=$(p)";
+				//Curl.ProxyMap = @"userstream.twitter.com=$(p)";
 				break;
 			 case "--version":
 				cmd = SayakaCmd.Version;
@@ -1582,7 +1582,7 @@ public class SayakaMain
 		} catch {
 			diag.Debug("no cache found");
 			try {
-				HttpClient fg = new HttpClient(img_url); 
+				Curl fg = new Curl(img_url);
 				fg.Family = address_family;
 				var basestream = fg.GET();
 				var ms = new MemoryOutputStream.resizable();

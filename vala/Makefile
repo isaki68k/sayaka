@@ -30,10 +30,10 @@ ALL_TARGET=	\
 
 SRCS_sayaka=	\
 	sayaka.vala \
+	Curl.vala \
 	Diag.vala \
 	Dictionary.vala \
 	FileUtil.vala \
-	HttpClient.vala \
 	Json.vala \
 	OAuth.vala \
 	SixelConverter.vala \
@@ -45,11 +45,11 @@ SRCS_sayaka=	\
 
 SRCS_sixelv=	\
 	sixelv.vala \
+	Curl.vala \
 	Diag.vala \
 	Dictionary.vala \
 	SixelConverter.vala \
 	StringUtil.vala \
-	HttpClient.vala \
 	OptArgs.vala \
 	ParsedUri.vala \
 	System.OS.vala \
@@ -60,7 +60,6 @@ SRCS_h=	\
 	Curl.vala \
 	Diag.vala \
 	Dictionary.vala \
-	HttpClient.vala \
 	StringUtil.vala \
 	ParsedUri.vala \
 
@@ -74,7 +73,7 @@ PKGS= \
 	gio-2.0 \
 	libcurl \
 
-COPTS=	-O2
+COPTS=	-O2 -g
 CFLAGS=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 

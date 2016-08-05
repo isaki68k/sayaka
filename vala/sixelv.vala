@@ -304,7 +304,7 @@ public class SixelV
 
 		if (filename.contains("://")) {
 			try {
-				var file = new HttpClient(filename);
+				var file = new Curl(filename);
 				file.Family = opt_address_family;
 stderr.printf("%s\n", filename);
 				var stream = file.GET();
