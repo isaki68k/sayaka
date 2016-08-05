@@ -96,7 +96,7 @@ namespace Native.Curl {
 		[CCode (cname = "curl_multi_init")]
 		public MultiHandle();
 		[CCode (cname = "curl_multi_perform")]
-		public Curl.MultiCode perform (int running_handles);
+		public Curl.MultiCode perform (ref int running_handles);
 		[CCode (cname = "curl_multi_remove_handle")]
 		public Curl.MultiCode remove_handle (Curl.EasyHandle curl_handle);
 		[CCode (cname = "curl_multi_setopt")]
