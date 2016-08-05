@@ -94,6 +94,9 @@ stderr.printf(@"path=$(path)\n");
 			// URI セット
 			EH.setopt(Option.URL, path);
 
+			// 証明書のベリファイとか無視。セキュリティガバガバ
+			EH.setopt(Option.SSL_VERIFYPEER, false);
+
 			// ヘッダのセット
 			if (list != null) {
 				list.free_all();
