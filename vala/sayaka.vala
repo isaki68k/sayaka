@@ -258,6 +258,9 @@ public class SayakaMain
 			 case "--play":
 				cmd = SayakaCmd.PlayMode;
 				break;
+			 case "--post":
+				cmd = SayakaCmd.TweetMode;
+				break;
 			 case "--protect":
 				protect = true;
 				break;
@@ -349,6 +352,9 @@ public class SayakaMain
 		 case SayakaCmd.BlocklistMode:
 			cmd_blocklist();
 			break;
+		 case SayakaCmd.TweetMode:
+			cmd_tweet();
+			break;
 		 case SayakaCmd.Version:
 			cmd_version();
 			break;
@@ -386,6 +392,43 @@ public class SayakaMain
 		// シグナルハンドラを設定
 		Posix.@signal(SIGINT, signal_handler);
 		Posix.@signal(SIGWINCH, signal_handler);
+	}
+
+	// 投稿する
+	public void cmd_tweet()
+	{
+		// 標準入力から受け取る。UTF-8 前提。
+		var sb = new StringBuilder();
+		while (stdin.eof() == false) {
+			var line = stdin.read_line();
+			if (line != null) {
+				sb.append(line);
+				sb.append("\n");
+			}
+		}
+		var text = sb.str.chomp();
+
+		// アクセストークンを取得
+		tw = new Twitter();
+		get_access_token();
+
+		// 投稿するパラメータを用意
+		var options = new Dictionary<string, string>();
+		options.AddOrUpdate("status", text);
+		options.AddOrUpdate("trim_user", "1");
+
+		// 投稿
+		var json = tw.API2Json("POST", Twitter.APIRoot, "statuses/update",
+			options);
+		if (json.Has("errors")) {
+			var errorlist = json.GetArray("errors");
+			// エラーが複数返ってきたらどうするかね
+			var code = errorlist.index(0).GetInt("code");
+			var message = errorlist.index(0).GetString("message");
+			stderr.printf(@"statuses/update failed: $(message)($(code))\n");
+			Process.exit(1);
+		}
+		stdout.printf("Posted.\n");
 	}
 
 	// ユーザストリームモードのための準備
@@ -2346,6 +2389,7 @@ public class SayakaMain
 	--jis
 	--eucjp
 	--play : read JSON from stdin.
+	--post : post tweet from stdin (utf-8 is expected).
 	--protect : don't display protected user's tweet.
 	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.

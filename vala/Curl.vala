@@ -145,8 +145,7 @@ namespace ULib
 
 			// POST データ
 			if (method == "POST") {
-				var body = Uri.Query + "\n";
-				EH.setopt(Option.COPYPOSTFIELDS, body);
+				EH.setopt(Option.COPYPOSTFIELDS, Uri.Query);
 			}
 
 			// コールバックの設定
