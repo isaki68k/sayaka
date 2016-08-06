@@ -165,7 +165,7 @@ namespace ULib
 		public override ssize_t read(uint8[] buffer,
 			Cancellable? cancellable = null) throws GLib.IOError
 		{
-			do {
+			while (true) {
 				int running_handles = 1;
 				var r = MH.perform(ref running_handles);
 				if (r == MultiCode.OK) {
@@ -191,7 +191,7 @@ namespace ULib
 					return -1;
 					//throw new GLib.IOError.FAILED(r.to_string());
 				}
-			} while (true);
+			}
 		}
 	}
 }
