@@ -38,10 +38,10 @@ twitter クライアント sayaka ちゃん version 3.2.1 (2016/04/24)
 * vala-0.28 くらい以上
 * glib2-2.44 以上
 * gdk-pixbuf2
-* (glib-networking)
+* libcurl
 
 pkgsrc なら
-lang/vala, devel/glib2, graphics/gdk-pixbuf2, net/glib-networking
+lang/vala, devel/glib2, graphics/gdk-pixbuf2, www/curl
 をインストールしてください。
 
 
@@ -161,7 +161,6 @@ TODO
 ---
 * --pipe モードの移植
 * タイムアウトの実装
-* glib-networking 廃止計画
 
 
 PHP 版について
