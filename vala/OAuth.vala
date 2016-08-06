@@ -66,8 +66,8 @@ public class OAuth
 	// 呼び出すたびに異なる文字列が生成されます。
 	public string GetNonce()
 	{
-		var sb = new StringBuilder.sized(4);
-		for (int i = 0; i < 4; i++) {
+		var sb = new StringBuilder.sized(16);
+		for (int i = 0; i < 16; i++) {
 			// twitter のドキュメントには alphanumeric って書いてある
 			// 0x30-39, 41-5a, 61-7a  個数 = 10+26+26 = 62
 			// 0 .. 61 の乱数を求める
