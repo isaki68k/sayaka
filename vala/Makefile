@@ -36,6 +36,7 @@ SRCS_sayaka=	\
 	FileUtil.vala \
 	Json.vala \
 	OAuth.vala \
+	PHP.vala \
 	SixelConverter.vala \
 	StringUtil.vala \
 	Twitter.vala \

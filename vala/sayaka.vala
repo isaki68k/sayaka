@@ -38,31 +38,6 @@ class Program
 	}
 }
 
-// PHP 由来
-class PHP
-{
-	public static string strip_tags(string text)
-	{
-		StringBuilder sb = new StringBuilder();
-		bool intag = false;
-		for (var i = 0; i < text.length; i++) {
-			var c = text[i];
-			if (intag) {
-				if (c == '>') {
-					intag = false;
-				}
-			} else {
-				if (c == '<') {
-					intag = true;
-				} else {
-					sb.append_c(c);
-				}
-			}
-		}
-		return sb.str;
-	}
-}
-
 public class MediaInfo
 {
 	public string target_url;
