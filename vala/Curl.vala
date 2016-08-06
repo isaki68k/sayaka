@@ -5,6 +5,8 @@ namespace ULib
 	public class Curl
 		: InputStream
 	{
+		private Diag diag = new Diag("Curl");
+
 		// Curl ハンドル
 		private MultiHandle MH;
 		private EasyHandle EH;
@@ -78,6 +80,11 @@ stderr.printf("Curl destruct\n");
 			string path = (method == "POST") ? Uri.SchemeAuthority() + Uri.Path + Uri.Fragment : Uri.to_string();
 
 stderr.printf(@"path=$(path)\n");
+
+			// XXX とりあえず連動させておく
+			if (Diag.global_debug) {
+				EH.setopt(Option.VERBOSE, (long)1);
+			}
 
 			// プロトコル
 			switch (Family) {
