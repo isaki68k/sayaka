@@ -253,16 +253,9 @@ public class OAuth
 		RequestAPIClient = CreateHttp(method, uri_api);
 		diag.Trace("CreateHttp return");
 
-		// XXX どこでやる話だこれ
-		if (method == "POST") {
-			RequestAPIClient.SendHeaders.AddIfMissing("Content-Type",
-				"application/x-www-form-urlencoded");
-		}
-
 		diag.Trace(@"client.$(method) call");
 		var rv = RequestAPIClient.Act(method);
 		diag.Trace(@"client.$(method) return");
 		return rv;
 	}
 }
-
