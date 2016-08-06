@@ -203,9 +203,7 @@ namespace ULib
 					}
 				}
 
-				int n = (int) queue.length;
-				if (n > buffer.length) n = buffer.length;
-
+				int n = int.min((int)queue.length, buffer.length);
 				for (int i = 0; i < n; i++) {
 					buffer[i] = queue.pop_head();
 				}
