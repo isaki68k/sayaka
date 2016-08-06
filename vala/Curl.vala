@@ -150,12 +150,9 @@ namespace ULib
 			}
 
 			// コールバックの設定
-			// WRITEDATA はダミーをセット。これで stdout には出なくなる
-
-			EH.setopt(Option.WRITEDATA, queue);
-
 			// curl からみて write するときのコールバック関数を設定。
 			EH.setopt(Option.WRITEFUNCTION, writecallback);
+			EH.setopt(Option.WRITEDATA, queue);
 
 			return MH.add_handle(EH);
 		}
