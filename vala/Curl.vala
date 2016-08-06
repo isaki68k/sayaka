@@ -188,29 +188,29 @@ namespace ULib
 			while (true) {
 				int running_handles = 1;
 				var r = MH.perform(ref running_handles);
-				if (r == MultiCode.OK) {
-					if (queue.length == 0) {
-						if (running_handles == 0) {
-							// EOF
-							return 0;
-						} else {
-							GLib.Thread.usleep(10000);
-							continue;
-						}
-					}
-
-					int n = (int) queue.length;
-					if (n > buffer.length) n = buffer.length;
-
-					for (int i = 0; i < n; i++) {
-						buffer[i] = queue.pop_head();
-					}
-
-					return (ssize_t)n;
-				} else {
-					return -1;
+				if (r != MultiCode.OK) {
 					//throw new GLib.IOError.FAILED(r.to_string());
+					return -1;
 				}
+
+				if (queue.length == 0) {
+					if (running_handles == 0) {
+						// EOF
+						return 0;
+					} else {
+						GLib.Thread.usleep(10000);
+						continue;
+					}
+				}
+
+				int n = (int) queue.length;
+				if (n > buffer.length) n = buffer.length;
+
+				for (int i = 0; i < n; i++) {
+					buffer[i] = queue.pop_head();
+				}
+
+				return (ssize_t)n;
 			}
 		}
 	}
