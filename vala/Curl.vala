@@ -76,7 +76,9 @@ namespace ULib
 		{
 			EH = new EasyHandle();
 
-			string path = (method == "POST") ? Uri.SchemeAuthority() + Uri.Path + Uri.Fragment : Uri.to_string();
+			string path = (method == "POST")
+				? Uri.SchemeAuthority() + Uri.Path + Uri.Fragment
+				: Uri.to_string();
 
 			// XXX とりあえず連動させておく
 			if (Diag.global_debug) {
@@ -107,10 +109,12 @@ namespace ULib
 			}
 			// TODO: User-Agent とか Connection close とか。
 			foreach (KeyValuePair<string, string> h in SendHeaders) {
-				list = Native.Curl.SList.append((owned)list, @"$(h.Key): $(h.Value)");
+				list = Native.Curl.SList.append((owned)list,
+					@"$(h.Key): $(h.Value)");
 			}
 			list = Native.Curl.SList.append((owned)list, @"connection: close");
-			list = Native.Curl.SList.append((owned)list, @"User-Agent: Curl.vala");
+			list = Native.Curl.SList.append((owned)list,
+				@"User-Agent: Curl.vala");
 			var r = EH.setopt(Option.HTTPHEADER, list);
 			if (r != Code.OK) {
 				throw new GLib.IOError.FAILED(@"HTTPHEADER: $(r)");
@@ -134,7 +138,8 @@ namespace ULib
 		}
 
 		// curl からのコールバックです。
-		private static size_t writecallback(char* buffer, size_t size, size_t nitems, void* x_queue)
+		private static size_t writecallback(char* buffer, size_t size,
+			size_t nitems, void* x_queue)
 		{
 			unowned Queue<char> q = (Queue<char>) x_queue;
 
@@ -148,7 +153,8 @@ namespace ULib
 
 		// ----- InputStream 実装
 
-		public override bool close(Cancellable? cancellable = null) throws GLib.IOError
+		public override bool close(Cancellable? cancellable = null)
+			throws GLib.IOError
 		{
 			//MH.cleanup();
 			// TODO: ほかのハンドルも。
@@ -157,7 +163,8 @@ namespace ULib
 		}
 
 		// 内部メモリストリームから recv します。
-		public override ssize_t read(uint8[] buffer, Cancellable? cancellable = null) throws GLib.IOError
+		public override ssize_t read(uint8[] buffer,
+			Cancellable? cancellable = null) throws GLib.IOError
 		{
 			do {
 				int running_handles = 1;
