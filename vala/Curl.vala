@@ -76,10 +76,6 @@ namespace ULib
 		{
 			EH = new EasyHandle();
 
-			string path = (method == "POST")
-				? Uri.SchemeAuthority() + Uri.Path + Uri.Fragment
-				: Uri.to_string();
-
 			// XXX とりあえず連動させておく
 			if (Diag.global_debug) {
 				EH.setopt(Option.VERBOSE, (long)1);
@@ -98,6 +94,9 @@ namespace ULib
 			}
 
 			// URI セット
+			string path = (method == "POST")
+				? Uri.SchemeAuthority() + Uri.Path + Uri.Fragment
+				: Uri.to_string();
 			EH.setopt(Option.URL, path);
 
 			// 証明書のベリファイとか無視。セキュリティガバガバ
