@@ -42,7 +42,6 @@ namespace ULib
 
 		virtual ~Curl()
 		{
-stderr.printf("Curl destruct\n");
 			MH.remove_handle(EH);
 			EH = null;
 			MH = null;
@@ -78,8 +77,6 @@ stderr.printf("Curl destruct\n");
 			EH = new EasyHandle();
 
 			string path = (method == "POST") ? Uri.SchemeAuthority() + Uri.Path + Uri.Fragment : Uri.to_string();
-
-stderr.printf(@"path=$(path)\n");
 
 			// XXX とりあえず連動させておく
 			if (Diag.global_debug) {
@@ -127,7 +124,6 @@ stderr.printf(@"path=$(path)\n");
 
 			// コールバックの設定
 			// WRITEDATA はダミーをセット。これで stdout には出なくなる
-stderr.printf("addr of queue=%p\n", queue);
 
 			EH.setopt(Option.WRITEDATA, queue);
 
@@ -140,8 +136,6 @@ stderr.printf("addr of queue=%p\n", queue);
 		// curl からのコールバックです。
 		private static size_t writecallback(char* buffer, size_t size, size_t nitems, void* x_queue)
 		{
-stderr.printf(@"writecallback size=$(size) nitems=$(nitems) addrof x_queue=%p\n", x_queue);
-
 			unowned Queue<char> q = (Queue<char>) x_queue;
 
 			// 内部バッファに蓄積します。
@@ -149,7 +143,6 @@ stderr.printf(@"writecallback size=$(size) nitems=$(nitems) addrof x_queue=%p\n"
 			for (int i = 0; i < len ; i++) {
 				q.push_tail(buffer[i]);
 			}
-stderr.printf(@"writecallback $(len)\n");
 			return len;
 		}
 
@@ -166,17 +159,13 @@ stderr.printf(@"writecallback $(len)\n");
 		// 内部メモリストリームから recv します。
 		public override ssize_t read(uint8[] buffer, Cancellable? cancellable = null) throws GLib.IOError
 		{
-stderr.printf("read\n");
 			do {
 				int running_handles = 1;
-//stderr.printf("read 1\n");
 				var r = MH.perform(ref running_handles);
-//stderr.printf("read 2\n");
 				if (r == MultiCode.OK) {
 					if (queue.length == 0) {
 						if (running_handles == 0) {
 							// EOF
-stderr.printf("read EOF\n");
 							return 0;
 						} else {
 							GLib.Thread.usleep(10000);
@@ -191,10 +180,8 @@ stderr.printf("read EOF\n");
 						buffer[i] = queue.pop_head();
 					}
 
-stderr.printf(@"recv OK: $(r) $(n)\n");
 					return (ssize_t)n;
 				} else {
-stderr.printf(@"recv ERR: $(r)\n");
 					return -1;
 					//throw new GLib.IOError.FAILED(r.to_string());
 				}
