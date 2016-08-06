@@ -23,7 +23,7 @@ namespace ULib
 
 		// リクエスト時にサーバへ送る追加のヘッダ
 		// Host: はこちらで生成するので呼び出し側が指定しないでください。
-		public Dictionary<string, string> SendHeaders;
+		public List<string> SendHeaders;
 
 		// コネクションに使用するプロトコルファミリ
 		// IPv4/IPv6 only にしたい場合はコンストラクタ後に指定?
@@ -37,7 +37,7 @@ namespace ULib
 
 			Uri = ParsedUri.Parse(uri);
 
-			SendHeaders = new Dictionary<string, string>();
+			SendHeaders = new List<string>();
 		}
 
 		virtual ~Curl()
@@ -107,11 +107,10 @@ namespace ULib
 				list.free_all();
 			}
 			// TODO: User-Agent とか Connection close とか。
-			foreach (KeyValuePair<string, string> h in SendHeaders) {
-				list = Native.Curl.SList.append((owned)list,
-					@"$(h.Key): $(h.Value)");
+			foreach (string h in SendHeaders) {
+				list = Native.Curl.SList.append((owned)list, h);
 			}
-			list = Native.Curl.SList.append((owned)list, @"connection: close");
+			list = Native.Curl.SList.append((owned)list, @"Connection: close");
 			list = Native.Curl.SList.append((owned)list,
 				@"User-Agent: Curl.vala");
 			var r = EH.setopt(Option.HTTPHEADER, list);

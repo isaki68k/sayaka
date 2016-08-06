@@ -188,14 +188,14 @@ public class OAuth
 		}
 	}
 
-	// OAuthParams から OAuth ヘッダコンテンツを作成します。
+	// OAuthParams から OAuth ヘッダを作成します。
 	// OAuthParams には authorization: OAuth ヘッダに載せるすべての
 	// パラメータを代入しておいてください。
 	public string MakeOAuthHeader()
 	{
 		var sb = new StringBuilder();
 		bool f_first = true;
-		sb.append("OAuth ");
+		sb.append("Authorization: OAuth ");
 		foreach (KeyValuePair<string, string> p in OAuthParams) {
 			if (f_first == false) {
 				sb.append_c(',');
@@ -216,7 +216,7 @@ public class OAuth
 
 		var client = new Curl(conn_uri);
 		if (UseOAuthHeader) {
-			client.SendHeaders["authorization"] = MakeOAuthHeader();
+			client.SendHeaders.append(MakeOAuthHeader());
 		}
 		return client;
 	}
