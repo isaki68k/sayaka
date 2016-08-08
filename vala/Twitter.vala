@@ -81,6 +81,15 @@ public class Twitter
 		oauth.ConsumerSecret = ConsumerSecret;
 	}
 
+	// Ciphers を設定します。
+	// 実際には OAuth に指示するだけです。
+	public void SetCiphers(string ciphers)
+	{
+		if (oauth != null) {
+			oauth.SetCiphers(ciphers);
+		}
+	}
+
 	// Access Token を取得するところまで
 	public void GetAccessToken()
 	{

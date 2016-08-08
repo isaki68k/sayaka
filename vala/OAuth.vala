@@ -56,10 +56,20 @@ public class OAuth
 	// ずっと生存してる必要があるのでメンバ変数でなければならない。
 	private Curl RequestAPIClient;
 
+	// TLS で使用する cipher list。null ならデフォルト。
+	private string Ciphers;
+
 	public OAuth()
 	{
 		rand = new Rand();
 		UseOAuthHeader = true;
+		Ciphers = null;
+	}
+
+	// Ciphers を設定します。
+	public void SetCiphers(string ciphers)
+	{
+		Ciphers = ciphers;
 	}
 
 	// Nonce のための文字列を取得します。
@@ -252,6 +262,11 @@ public class OAuth
 		diag.Trace("CreateHttp call");
 		RequestAPIClient = CreateHttp(method, uri_api);
 		diag.Trace("CreateHttp return");
+
+		// Ciphers 指定があれば指示
+		if (Ciphers != null) {
+			RequestAPIClient.SetCiphers(Ciphers);
+		}
 
 		diag.Trace(@"client.$(method) call");
 		var rv = RequestAPIClient.Act(method);

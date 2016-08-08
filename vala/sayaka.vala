@@ -147,6 +147,7 @@ public class SayakaMain
 	public int last_id_count;		// 連続回数
 	public int last_id_max;			// 連続回数の上限
 	public bool in_sixel;			// SIXEL 出力中なら true
+	public string ciphers;
 
 	public string basedir;
 	public string cachedir;
@@ -182,6 +183,7 @@ public class SayakaMain
 		last_id = "";
 		last_id_count = 0;
 		last_id_max = 10;
+		ciphers = null;
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -196,6 +198,9 @@ public class SayakaMain
 				break;
 			 case "--blocklist":
 				cmd = SayakaCmd.BlocklistMode;
+				break;
+			 case "--ciphers":
+				ciphers = args[++i];
 				break;
 			 case "--color":
 				color_mode = int.parse(args[++i]);
@@ -483,6 +488,10 @@ public class SayakaMain
 		// アクセストークンを取得
 		tw = new Twitter();
 		get_access_token();
+
+		if (ciphers != null) {
+			tw.SetCiphers(ciphers);
+		}
 
 		if (opt_norest == false) {
 			// ブロックユーザ取得
@@ -2402,6 +2411,7 @@ public class SayakaMain
 	-4
 	-6
 	--blocklist
+	--ciphers <ciphers>
 	--debug
 	--max-cont <n>
 	--max-image-cols <n>

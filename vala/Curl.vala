@@ -169,6 +169,14 @@ namespace ULib
 			return len;
 		}
 
+		// Ciphers を設定します。
+		public void SetCiphers(string ciphers)
+		{
+			if (EH != null) {
+				EH.setopt(Option.SSL_CIPHER_LIST, ciphers);
+			}
+		}
+
 		// ----- InputStream 実装
 
 		public override bool close(Cancellable? cancellable = null)
