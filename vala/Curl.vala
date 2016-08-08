@@ -56,6 +56,7 @@ namespace ULib
 
 		public Curl(string uri)
 		{
+			EH = new EasyHandle();
 			MH = new MultiHandle();
 
 			queue = new Queue<char>();
@@ -99,8 +100,6 @@ namespace ULib
 		// 接続処理を開始します。
 		private MultiCode Connect(string method) throws Error
 		{
-			EH = new EasyHandle();
-
 			// XXX とりあえず連動させておく
 			if (Diag.global_debug) {
 				EH.setopt(Option.VERBOSE, (long)1);
