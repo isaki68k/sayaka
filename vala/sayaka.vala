@@ -1239,10 +1239,15 @@ public class SayakaMain
 		var sb = new StringBuilder();
 
 		if (dt.format("%F") == now.format("%F")) {
-			// 今日なら時刻のみ
+			// 今日なら時刻のみ(HH:MM:SS)
 			sb.append(dt.format("%T"));
+		} else if (dt.format("%Y") == now.format("%Y")) {
+			// 昨日以前で今年中なら年省略(mm/dd HH:MM:SS)
+			// XXX 半年以内ならくらいのほうがいいのか?
+			sb.append(dt.format("%m/%d %T"));
 		} else {
-			sb.append(dt.format("%F %T"));
+			// 去年以前なら yyyy/mm/dd HH:MM (秒はもういいだろ…)
+			sb.append(dt.format("%Y/%m/%d %R"));
 		}
 
 		// タイムゾーンがあれば追加
