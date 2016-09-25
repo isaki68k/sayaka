@@ -399,6 +399,7 @@ namespace ULib
 			return parser.Parse(src);
 		}
 
+		// JSON を文字列にします。
 		public string ToString()
 		{
 			var sb = new StringBuilder();
@@ -444,9 +445,81 @@ namespace ULib
 			return sb.str;
 		}
 
+		// JSON を文字列にします。
 		public string to_string()
 		{
 			return ToString();
+		}
+
+		// JSON をインデント付きの文字列にします。
+		// 通常 JSON 文字列のパーサは余分な空白文字を読み飛ばすため
+		// ここで出力された JSON 文字列は正しく解釈できるはずです。
+		public string ToStringIndent(int indent = 0)
+		{
+			var sb = new StringBuilder();
+			if (IsNull) {
+				sb.append("null");
+			} else if (IsBool) {
+				if (AsBool) {
+					sb.append("true");
+				} else {
+					sb.append("false");
+				}
+			} else if (IsString) {
+				sb.append(EncodeJsonString(AsString));
+			} else if (IsNumber) {
+				sb.append(AsNumber);
+			} else if (IsArray) {
+				Array<Json> ar = ValueArray;
+				sb.append("[");
+				if (ar.length > 0 && ar.data[0].IsObject) {
+					// 配列の要素がオブジェクトならインデントする
+					sb.append("\n");
+					indent++;
+					for (int i = 0; i < ar.length; i++) {
+						for (int j = 0; j < indent; j++) sb.append("  ");
+						sb.append(ar.data[i].ToStringIndent(indent));
+						if (i != ar.length - 1) {
+							sb.append(",");
+						}
+						sb.append("\n");
+					}
+					indent--;
+					for (int j = 0; j < indent; j++) sb.append("  ");
+				} else {
+					// 配列が空か、オブジェクト以外ならインデントしない
+					// このほうが間延びしなくて読みやすい
+					for (int i = 0; i < ar.length; i++) {
+						sb.append(ar.data[i].ToStringIndent(indent));
+						if (i != ar.length - 1) {
+							sb.append(", ");
+						}
+					}
+				}
+				sb.append("]");
+			} else if (IsObject) {
+				Dictionary<string, Json> obj = ValueDictionary;
+				sb.append("{\n");
+				indent++;
+				for (int i = 0; i < obj.Count; i++) {
+					for (int j = 0; j < indent; j++) sb.append("  ");
+					var kv = obj.At(i);
+					sb.append("\"");
+					sb.append(kv.Key);
+					sb.append("\":");
+					sb.append(kv.Value.ToStringIndent(indent));
+					if (i != obj.Count - 1) {
+						sb.append(",");
+					}
+					sb.append("\n");
+				}
+				indent--;
+				for (int j = 0; j < indent; j++) sb.append("  ");
+				sb.append("}");
+			} else {
+				sb.append("<invalid object?> type=%d".printf((int)Type));
+			}
+			return sb.str;
 		}
 
 		/// <summary>
