@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.2.1 (2016/04/24)
+twitter クライアント sayaka ちゃん version 3.2.2 (2016/09/25)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -9,6 +9,9 @@ twitter クライアント sayaka ちゃん version 3.2.1 (2016/04/24)
 
 更新履歴
 ---
+* 3.2.2 (2016/09/25) … glib-networking ではなく libcurl に移行してみる。
+	--post オプション、--ciphers オプションを実装。
+	extended_tweet の表示に対応。
 * 3.2.1 (2016/04/24) … --filter オプション、--record オプションを実装。
 	NGワード編集機能実装。
 	「リツイートを非表示」にしたユーザに対応。
