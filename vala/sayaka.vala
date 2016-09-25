@@ -544,7 +544,9 @@ public class SayakaMain
 		} else {
 			diag.Trace("UserStreamAPI call");
 			try {
-				userStream = tw.UserStreamAPI("user");
+				var dict = new Dictionary<string, string>();
+				dict.AddOrUpdate("tweet_mode", "extended");
+				userStream = tw.UserStreamAPI("user", dict);
 			} catch (Error e) {
 				stderr.printf("userstream: %s\n", e.message);
 				Process.exit(1);
@@ -1325,10 +1327,41 @@ public class SayakaMain
 		}
 	}
 
+	// 本文を整形して返す
+	// (そのためにここでハッシュタグ、メンション、URL を展開)
+	//
+	// 従来はこうだった(↓)が
+	//   "text":本文,
+	//   "entities":{
+	//     "hashtag":[..]
+	//     "user_mentions":[..]
+	//     "urls":[..]
+	//   },
+	//   "extended_entities":{
+	//     "media":[..]
+	//   }
+	// extended_tweet 形式ではこれに加えて
+	//   "extended_tweet":{
+	//     "full_text":本文,
+	//     "entities":{
+	//     "hashtag":[..]
+	//     "user_mentions":[..]
+	//     "urls":[..]
+	//     "media":[..]
+	//   }
+	// が追加されている。media の位置に注意。
 	public string formatmsg(ULib.Json s, Array<MediaInfo> mediainfo)
 	{
+		ULib.Json extw = null;
+		string text;
+
 		// 本文
-		var text = s.GetString("text");
+		if (s.Has("extended_tweet")) {
+			extw = s.GetJson("extended_tweet");
+			text = extw.GetString("full_text");
+		} else {
+			text = s.GetString("text");
+		}
 
 		// 1文字ずつに分解して配列に
 		var utext = new unichar[text.char_count()];
@@ -1337,10 +1370,20 @@ public class SayakaMain
 			utext[i++] = uni;
 		}
 
+		// エンティティの位置が新旧で微妙に違うのを吸収
+		ULib.Json entities;
+		ULib.Json media_entities;
+		if (extw != null) {
+			entities = extw.GetJson("entities");
+			media_entities = entities;
+		} else {
+			entities = s.GetJson("entities");
+			media_entities = s.GetJson("extended_entities");
+		}
+
 		// エンティティを調べる
 		var tags = new TextTag[utext.length];
-		if (s.Has("entities")) {
-			var entities = s.GetJson("entities");
+		if (entities != null) {
 			// ハッシュタグ情報を展開
 			var hashtags = entities.GetArray("hashtags");
 			for (var i = 0; i < hashtags.length; i++) {
@@ -1402,9 +1445,8 @@ public class SayakaMain
 		}
 
 		// メディア情報を展開
-		if (s.Has("extended_entities")
-		 && s.GetJson("extended_entities").Has("media")) {
-			var media = s.GetJson("extended_entities").GetArray("media");
+		if (media_entities != null) {
+			var media = media_entities.GetArray("media");
 			for (var i = 0; i < media.length; i++) {
 				var m = media.index(i);
 
@@ -1446,8 +1488,16 @@ public class SayakaMain
 		}
 
 		// タグ情報をもとにテキストを整形
+		// 表示区間が指定されていたらそれに従う
+		// XXX 後ろは添付画像 URL とかなので削るとして
+		// XXX 前はメンションがどうなるか分からないのでとりあえず後回し
+		var display_end = utext.length;
+		if (extw != null && extw.Has("display_text_range")) {
+			var range = extw.GetArray("display_text_range");
+			display_end = range.data[1].AsInt;
+		}
 		var newtext = new StringBuilder();
-		for (var i = 0; i < utext.length; ) {
+		for (var i = 0; i < display_end; ) {
 			if (tags[i] != null) {
 				switch (tags[i].Type) {
 				 case Color.Tag:
@@ -2126,8 +2176,14 @@ public class SayakaMain
 
 		// 単純ワード比較
 		try {
+			string text;
+			if (status.Has("full_text")) {
+				text = status.GetString("full_text");
+			} else {
+				text = status.GetString("text");
+			}
 			var regex = new Regex(ngword, RegexCompileFlags.DOTALL);
-			if (regex.match(status.GetString("text"))) {
+			if (regex.match(text)) {
 				return true;
 			}
 		} catch (RegexError e) {
