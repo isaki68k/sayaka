@@ -1445,7 +1445,7 @@ public class SayakaMain
 		}
 
 		// メディア情報を展開
-		if (media_entities != null) {
+		if (media_entities != null && media_entities.Has("media")) {
 			var media = media_entities.GetArray("media");
 			for (var i = 0; i < media.length; i++) {
 				var m = media.index(i);
