@@ -308,10 +308,11 @@ public class SayakaMain
 				break;
 			 case "--x68k":
 				opt_x68k = true;
-				// "--font 8x16 --jis" を指定したのと同じ
+				// "--font 8x16 --jis --black" を指定したのと同じ
 				opt_fontwidth = 8;
 				opt_fontheight = 16;
 				iconv_tocode = "iso-2022-jp";
+				bg_white = false;
 				break;
 			 default:
 				usage();
