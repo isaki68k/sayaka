@@ -398,6 +398,16 @@ public class SayakaMain
 		// シグナルハンドラを設定
 		Posix.@signal(SIGINT, signal_handler);
 		Posix.@signal(SIGWINCH, signal_handler);
+
+		Posix.@signal(SIGHUP,	signal_handler);
+		Posix.@signal(SIGPIPE,	signal_handler);
+		Posix.@signal(SIGALRM,	signal_handler);
+		Posix.@signal(SIGXCPU,	signal_handler);
+		Posix.@signal(SIGXFSZ,	signal_handler);
+		Posix.@signal(SIGVTALRM, signal_handler);
+		Posix.@signal(SIGPROF,	signal_handler);
+		Posix.@signal(SIGUSR1,	signal_handler);
+		Posix.@signal(SIGUSR2,	signal_handler);
 	}
 
 	// 投稿する
@@ -2439,6 +2449,7 @@ public class SayakaMain
 			}
 			break;
 		 default:
+			stderr.printf(@"sayaka caught signal $(signo)\n");
 			break;
 		}
 	}
