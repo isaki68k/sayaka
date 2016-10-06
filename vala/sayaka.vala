@@ -319,6 +319,17 @@ public class SayakaMain
 				break;
 			}
 		}
+		// --x68k ならそれを展開したコマンドラインを表示してみるか
+		if (opt_x68k) {
+			stdout.printf("%s", args[0]);
+			for (var i = 1; i < args.length; i++) {
+				stdout.printf(@" $(args[i])");
+				if (args[i] == "--x68k") {
+					stdout.printf(" --font 8x16 --jis --black");
+				}
+			}
+			stdout.printf("\n");
+		}
 
 		diag  = new Diag("SayakaMain");
 		diag.Trace("TRACE CHECK");
