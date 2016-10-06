@@ -148,6 +148,7 @@ public class SayakaMain
 	public int last_id_max;			// 連続回数の上限
 	public bool in_sixel;			// SIXEL 出力中なら true
 	public string ciphers;
+	public bool opt_full_url;
 
 	public string basedir;
 	public string cachedir;
@@ -184,6 +185,7 @@ public class SayakaMain
 		last_id_count = 0;
 		last_id_max = 10;
 		ciphers = null;
+		opt_full_url = false;
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -224,6 +226,9 @@ public class SayakaMain
 				}
 				opt_fontwidth = int.parse(metric[0]);
 				opt_fontheight = int.parse(metric[1]);
+				break;
+			 case "--full-url":
+				opt_full_url = true;
 				break;
 			 case "--jis":
 				iconv_tocode = "iso-2022-jp";
@@ -1455,6 +1460,10 @@ public class SayakaMain
 				} else {
 					newurl = disp_url;
 				}
+				// --full-url モードなら短縮 URL ではなく元 URL を使う
+				if (opt_full_url && newurl.has_suffix("…")) {
+					newurl = expd_url.replace("http://", "");
+				}
 
 				tags[start] = new TextTag(start, end, Color.Url, newurl);
 
@@ -2477,6 +2486,7 @@ public class SayakaMain
 	--color <n> : color mode { 2 .. 256 }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
 	--filter <keyword>
+	--full-url : display full URL even if the URL is abbreviated.
 	--white / --black : darken/lighten the text color. (default: --white)
 	--noimg
 	--jis
