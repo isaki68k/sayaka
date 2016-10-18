@@ -40,6 +40,14 @@ public class SixelConverter
 	public int Width { get; private set; }
 	public int Height { get; private set; }
 
+	// Sixel のカラーモード値
+	// 1 : 通常
+	// 5 : X68k OR-ed Mode
+	public int OutputColorMode = 1;
+
+	// Sixel にパレットを出力する場合 true
+	public bool OutputPalette = true;
+
 	public void Load(string filename) throws Error
 	{
 		pix = new Pixbuf.from_file(filename);
@@ -416,14 +424,16 @@ public class SixelConverter
 
 		// Sixel 開始コード
 		linebuf.append(DCS);
-		linebuf.append_printf("q\"1;1;%d;%d", Width, Height);
+		linebuf.append_printf("7;%d;q\"1;1;%d;%d", OutputColorMode, Width, Height);
 
 		// パレットの出力
-		for (int i = 0; i < PaletteCount; i++) {
-			linebuf.append_printf("#%d;%d;%d;%d;%d", i, 2,
-				Palette[i, 0] * 100 / 255,
-				Palette[i, 1] * 100 / 255,
-				Palette[i, 2] * 100 / 255);
+		if (OutputPalette) {
+			for (int i = 0; i < PaletteCount; i++) {
+				linebuf.append_printf("#%d;%d;%d;%d;%d", i, 2,
+					Palette[i, 0] * 100 / 255,
+					Palette[i, 1] * 100 / 255,
+					Palette[i, 2] * 100 / 255);
+			}
 		}
 
 		return linebuf.str;
@@ -519,6 +529,83 @@ public class SixelConverter
 					buf[c, i] = 0;
 				}
 			}
+			linebuf.append_c('-');
+
+			stream.puts(linebuf.str);
+			linebuf.len = 0;
+			stream.flush();
+		}
+	}
+
+
+	// 切り上げする整数の log2
+	private int MyLog2(int n)
+	{
+		for (int i = 0; i < 8; i++) {
+			if (n <= (1 << i)) {
+				return i;
+			}
+		}
+		return 8;
+	}
+
+	// OR-ed Mode で Sixel コア部分を stream に出力します。
+	private void SixelToStreamCore_ORedMode(FileStream stream)
+	{
+		StringBuilder linebuf = new StringBuilder.sized(1024);
+
+		unowned uint8[] p0 = pix.get_pixels();
+		int w = pix.get_width();
+		int h = pix.get_height();
+
+		// パレットのビット数
+		int bcnt = MyLog2(PaletteCount);
+stderr.printf("bcnt=%d\n", bcnt);
+		uint8[] buf = new uint8[w];
+
+		for (int y = 0; y < h; y += 6) {
+
+			int max_dy = y + 6;
+			if (max_dy > h) max_dy = h;
+
+			uint8 mC = 1;	// カラーマスク
+			for (int b = 0; b < bcnt; b++) {
+				uint8 mY = 1;	// Y マスク
+
+				Memory.@set(buf, 0, buf.length);
+
+				for (int dy = y; dy < max_dy; dy++) {
+					for (int x = 0; x < w; x++) {
+						uint8 I = p0[dy * w + x];
+						if ((I & mC) != 0) {
+							buf[x] |= mY;
+						}
+					}
+					mY <<= 1;
+				}
+
+				// TODO: 書き込みが無い時のcontinue 条件
+
+				linebuf.append_printf("#%d", mC);
+				int n = 1;
+				uint8 t = buf[0];
+				for (int x = 1; x < w; x++) {
+					if (t != buf[x]) {
+						linebuf.append(SixelRepunit(n, t));
+						n = 1;
+						t = buf[x];
+					} else {
+						n++;
+					}
+				}
+				if (t != 0) {
+					linebuf.append(SixelRepunit(n, t));
+				}
+				linebuf.append_c('$');
+
+				mC <<= 1;
+			}
+
 			linebuf.append_c('-');
 
 			stream.puts(linebuf.str);
@@ -659,7 +746,11 @@ public class SixelConverter
 #elif false
 		SixelToStreamCore_v2(stream);
 #else
-		SixelToStreamCore_v3(stream);
+		if (OutputColorMode == 5) {
+			SixelToStreamCore_ORedMode(stream);
+		} else {
+			SixelToStreamCore_v3(stream);
+		}
 #endif
 
 		stream.puts(SixelPostamble());

@@ -58,6 +58,7 @@ public class SixelV
 	public bool opt_x68k = false;
 	public bool opt_ignoreerror = false;
 	public ColorMode opt_findfunc = ColorMode.Custom;
+	public bool opt_ormode = false;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 	static SixelV this_sixelv;
 
@@ -213,6 +214,10 @@ public class SixelV
 
 					case "--ipv6":
 						opt_address_family = SocketFamily.IPV6;
+						break;
+
+					case "--ormode":
+						opt_ormode = !opt_ormode;
 						break;
 
 					default:
@@ -387,6 +392,10 @@ stderr.printf("%s\n", filename);
 			case ReduceMode.Diffuse:
 				sx.DiffuseReduceCustom(finder);
 				break;
+		}
+
+		if (opt_ormode) {
+			sx.OutputColorMode = 5;
 		}
 
 		Posix.@signal(SIGINT, signal_handler);
