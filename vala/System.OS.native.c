@@ -44,6 +44,6 @@ native_sysctlbyname(const char *sname,
 #if defined(__NetBSD__)	/* とりあえず */
 	return sysctlbyname(sname, oldp, oldlenp, newp, newlen);
 #else
-	return 0;
+	return -1;
 #endif
 }
