@@ -58,6 +58,9 @@ SRCS_sixelv=	\
 	ParsedUri.vala \
 	System.OS.vala \
 	System.OS.native.c \
+	mtls.c \
+	IHttpClient.vala \
+	HttpClientmTLS.vala \
 
 SRCS_h=	\
 	h.vala \
