@@ -54,7 +54,7 @@ public class OAuth
 	// HTTP クライアント。
 	// ローカル変数に出来そうに見えるが、HTTP コネクション張ってる間
 	// ずっと生存してる必要があるのでメンバ変数でなければならない。
-	private Curl RequestAPIClient;
+	private IHttpClient RequestAPIClient;
 
 	// TLS で使用する cipher list。null ならデフォルト。
 	private string Ciphers;
@@ -220,13 +220,17 @@ public class OAuth
 	// method と url から Curl を生成して返します。
 	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意します。
 	// 接続はまだ行いません。
-	private Curl CreateHttp(string method, string uri)
+	private IHttpClient CreateHttp(string method, string uri)
 	{
 		var conn_uri = CreateParams(method, uri);
 
+#if 0 //defined(USE_CURL)
 		var client = new Curl(conn_uri);
+#else
+		var client = new HttpClient(conn_uri);
+#endif
 		if (UseOAuthHeader) {
-			client.SendHeaders.append(MakeOAuthHeader());
+			client.AddHeader(MakeOAuthHeader());
 		}
 		return client;
 	}

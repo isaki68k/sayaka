@@ -28,7 +28,7 @@ using Native.Curl;
 namespace ULib
 {
 	public class Curl
-		: InputStream
+		: InputStream, IHttpClient
 	{
 		private Diag diag = new Diag("Curl");
 
@@ -95,6 +95,11 @@ namespace ULib
 				throw new GLib.IOError.FAILED(@"Curl Connect Failed: $(r)");
 			}
 			return new DataInputStream(this);
+		}
+
+		public void AddHeader(string s)
+		{
+			SendHeaders.append(s);
 		}
 
 		// 接続処理を開始します。

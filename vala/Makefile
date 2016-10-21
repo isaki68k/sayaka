@@ -43,6 +43,9 @@ SRCS_sayaka=	\
 	ParsedUri.vala \
 	System.OS.vala \
 	System.OS.native.c \
+	mtls.c \
+	IHttpClient.vala \
+	HttpClientmTLS.vala \
 
 SRCS_sixelv=	\
 	sixelv.vala \
@@ -78,8 +81,12 @@ COPTS=	-O2 -g
 CFLAGS=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 
+CFLAGS+= -I../mbedtls/include -I./
+LIBS+= -L../mbedtls/library -lmbedtls -lmbedcrypto -lmbedx509
+
 VALA_FLAGS=	\
 	libcurl.vapi \
+	mtlsv.vapi \
 
 VALAC=	valac
 
@@ -138,3 +145,5 @@ clean-h:
 .PHONY:	clean
 clean:	clean-sayaka clean-sixelv clean-h
 
+mtlstest: mtls.c
+	${CC} ${CFLAGS} ${LIBS} -DTEST mtls.c -o mtlstest
