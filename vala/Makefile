@@ -82,7 +82,10 @@ CFLAGS=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 
 CFLAGS+= -I../mbedtls/include -I./
-LIBS+= -L../mbedtls/library -lmbedtls -lmbedcrypto -lmbedx509
+LIBS+=	\
+	../mbedtls/library/libmbedx509.a \
+	../mbedtls/library/libmbedtls.a \
+	../mbedtls/library/libmbedcrypto.a \
 
 VALA_FLAGS=	\
 	libcurl.vapi \
