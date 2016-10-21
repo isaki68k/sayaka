@@ -203,27 +203,49 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 //#define TEST
 #if defined(TEST)
 
+#include <err.h>
+#include <getopt.h>
+
 int
 main(int ac, char *av[])
 {
 	mtlsctx_t* ctx = mtls_alloc();
+	const char* hostname = "www.google.com";
+	const char* servname = "443";
 	int r;
+	int c;
+
+	while ((c = getopt(ac, av, "p:")) != -1) {
+		switch (c) {
+		 case 'p':
+			servname = optarg;
+			break;
+		 default:
+			printf("usage: [-p servname] [hostname]\n");
+			break;
+		}
+	}
+	ac -= optind;
+	av += optind;
+	if (ac > 0) {
+		hostname = av[0];
+	}
+	printf("Test to %s:%s\n", hostname, servname);
 
 	if (mtls_init(ctx) != 0) {
-		return 1;
+		errx(1, "mtls_init");
 	}
 
 	printf("init ok\n");
 
-	const char* hostname = "www.google.com";
-	const char* servname = "443";
 	if (mtls_connect(ctx, hostname, servname) != 0) {
-		return 1;
+		errx(1, "mtls_connect");
 	}
 
 	printf("connect ok\n");
 
-	const char* req = "GET / HTTP/1.1\r\nHost: www.google.com\r\nConnection: close\r\n\r\n";
+	char req[128];
+	sprintf(req, "GET / HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", hostname);
 	printf("write=%s\n", req);
 
 	r = mtls_write(ctx, req, strlen(req));
