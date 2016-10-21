@@ -45,9 +45,17 @@
 	fprintf(stderr, fmt);	\
 } while (0)
 #else
-#define ERRORLOG(fmt...)	/**/
-#define verbose(fmt...)		/**/
-#define verbose_tv(fmt...)	/**/
+# if 0
+#  define ERRORLOG(fmt...)	fprintf(stderr, fmt)
+#  define verbose(fmt...)	fprintf(stderr, fmt)
+# else
+#  define ERRORLOG(fmt...)	/**/
+#  define verbose(fmt...)	/**/
+# endif
+# define verbose_tv(tvp, fmt...)	do { \
+	gettimeofday(tvp, NULL);	\
+	verbose(fmt);	\
+  } while(0)
 #endif
 
 
