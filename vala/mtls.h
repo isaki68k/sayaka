@@ -32,7 +32,7 @@
 typedef struct mtlsctx
 {
 	// internal contexts
-	mbedtls_net_context fd;
+	mbedtls_net_context net;
 	mbedtls_ssl_context ssl;
 	mbedtls_ssl_config conf;
 	mbedtls_x509_crt cacert;

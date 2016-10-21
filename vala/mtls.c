@@ -85,7 +85,7 @@ mtls_init(mtlsctx_t* ctx)
 
 	verbose("start\n");
 
-	mbedtls_net_init(&ctx->fd);
+	mbedtls_net_init(&ctx->net);
 	mbedtls_ssl_init(&ctx->ssl);
 	mbedtls_ssl_config_init(&ctx->conf);
 	mbedtls_x509_crt_init(&ctx->cacert);
@@ -129,7 +129,7 @@ mtls_init(mtlsctx_t* ctx)
 		goto errexit;
 	}
 
-	mbedtls_ssl_set_bio(&ctx->ssl, &ctx->fd, mbedtls_net_send, mbedtls_net_recv, NULL);
+	mbedtls_ssl_set_bio(&ctx->ssl, &ctx->net, mbedtls_net_send, mbedtls_net_recv, NULL);
 
 	verbose("done\n");
 	return 0;
@@ -146,7 +146,7 @@ errexit:
 int
 mtls_internal_free(mtlsctx_t* ctx)
 {
-	mbedtls_net_free(&ctx->fd);
+	mbedtls_net_free(&ctx->net);
 	mbedtls_x509_crt_free(&ctx->cacert);
 	mbedtls_ssl_free(&ctx->ssl);
 	mbedtls_ssl_config_free(&ctx->conf);
@@ -175,7 +175,7 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 	verbose_tv(&start, "connect called: %s:%s\n", hostname, servname);
 	int r;
 
-	r = mbedtls_net_connect(&ctx->fd, hostname, servname,
+	r = mbedtls_net_connect(&ctx->net, hostname, servname,
 			MBEDTLS_NET_PROTO_TCP);
 	if (r != 0) {
 		ERRORLOG("mbedtls_net_connect failed %d\n", r);
