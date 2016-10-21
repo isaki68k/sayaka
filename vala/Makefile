@@ -82,10 +82,12 @@ CFLAGS=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 
 CFLAGS+= -I../mbedtls/include -I./
-LIBS+=	\
+LIBS_MBEDTLS=	\
 	../mbedtls/library/libmbedx509.a \
 	../mbedtls/library/libmbedtls.a \
 	../mbedtls/library/libmbedcrypto.a \
+
+LIBS+=	${LIBS_MBEDTLS}
 
 VALA_FLAGS=	\
 	libcurl.vapi \
@@ -148,5 +150,5 @@ clean-h:
 .PHONY:	clean
 clean:	clean-sayaka clean-sixelv clean-h
 
-mtlstest: mtls.c
-	${CC} ${CFLAGS} -DTEST mtls.c -o mtlstest ${LIBS}
+mtlstest: mtls.c ${LIBS_MBEDTLS}
+	${CC} ${CFLAGS} -DTEST mtls.c -o mtlstest ${LIBS_MBEDTLS}
