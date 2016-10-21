@@ -177,6 +177,15 @@ mtls_close(mtlsctx_t* ctx)
 	return 0;
 }
 
+// HTTPS かどうかを設定します。
+// mtls_connect() より先に設定しておく必要があります。
+void
+mtls_setssl(mtlsctx_t* ctx, int value)
+{
+	ctx->usessl = value;
+}
+
+
 // 接続します。
 int
 mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
@@ -185,10 +194,6 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 
 	verbose_tv(&start, "connect called: %s:%s\n", hostname, servname);
 	int r;
-
-	if (strcmp(servname, "https") == 0 || strcmp(servname, "443") == 0) {
-		ctx->usessl = 1;
-	}
 
 	r = mbedtls_net_connect(&ctx->net, hostname, servname,
 			MBEDTLS_NET_PROTO_TCP);
@@ -287,6 +292,10 @@ main(int ac, char *av[])
 
 	if (mtls_init(ctx) != 0) {
 		errx(1, "mtls_init");
+	}
+
+	if (strcmp(servname, "443") == 0) {
+		mtls_setssl(ctx, 1);
 	}
 
 	if (mtls_connect(ctx, hostname, servname) != 0) {

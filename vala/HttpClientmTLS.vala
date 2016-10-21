@@ -272,74 +272,38 @@ namespace ULib
 		// uri へ接続します。
 		private void Connect() throws Error
 		{
-			int16 port = 80;
-
-			// デフォルトポートの書き換え
-			if (Uri.Scheme == "https") {
-				port = 443;
-			}
-
-			if (Uri.Port != "") {
-				port = (int16)int.parse(Uri.Port);
-			}
-
 			// 透過プロキシ(?)設定があれば対応。
 			var proxyTarget = "";
-			ParsedUri proxyUri = new ParsedUri();
+			var proxyUri = new ParsedUri();
 			if (ProxyMap != null && ProxyMap != "") {
 				var map = ProxyMap.split("=");
 				proxyTarget = map[0];
 				proxyUri = ParsedUri.Parse(map[1]);
-			}
 
-			// 名前解決
-			List<InetAddress> addressList;
-			if (Uri.Host == proxyTarget) {
-				// プロキシサーバのアドレスを設定
-				diag.Debug(@"Use ProxyMap: $(Uri.Host) -> $(proxyUri)\n");
-				addressList = new List<InetAddress>();
-				addressList.append(new InetAddress.from_string(proxyUri.Host));
-				port = (int16)int.parse(proxyUri.Port);
-				// アドレスファミリ指定を無効にする。
-				// そもそもこれは名前を解決した時用のオプションであって、
-				// ここではプロキシ指定したアドレスを優先してほしいはず。
-				Family = SocketFamily.INVALID;
-			} else {
-				// 普通に名前解決
-				var resolver = Resolver.get_default();
-				addressList = resolver.lookup_by_name(Uri.Host, null);
-			}
-
-			InetAddress address = null;
-			for (var i = 0; i < addressList.length(); i++) {
-				address = addressList.nth_data(i);
-				diag.Debug(@"Connect(): try [$(i)]=$(address) port=$(port)");
-
-				// アドレスファミリのチェック
-				if (Family != SocketFamily.INVALID) {
-					if (address.get_family() != Family) {
-						diag.Debug(@"Connect: $(address) is not $(Family),"
-							+ " skip");
-						continue;
-					}
+				// 宛先がプロキシサーバのアドレスなら、差し替える
+				if (Uri.Host == proxyTarget) {
+					Uri = proxyUri;
 				}
-
-				var scheme = proxyUri.Scheme != ""
-					? proxyUri.Scheme : Uri.Scheme;
-
-				// HTTP/HTTPS 接続
-				Conn = new mTLSIOStream(Tls);
-				diag.Trace("Connect(): TLS");
-				if (Native.mTLS.connect(Tls, address.to_string(), port.to_string()) != 0) {
-					diag.Debug(@"Tls.connect: failed");
-					continue;
-				}
-
-				// つながったら OK なのでループ抜ける。
-				break;
 			}
 
-			if (Conn == null) {
+			// デフォルトポート番号の処理。
+			// ParsedUri はポート番号がない URL だと Port = "" になる。
+			if (Uri.Port == "") {
+				if (Uri.Scheme == "https") {
+					Uri.Port = "443";
+				} else {
+					Uri.Port = "80";
+				}
+			}
+
+			// 接続
+			Conn = new mTLSIOStream(Tls);
+			if (Uri.Scheme == "https") {
+				Native.mTLS.setssl(Tls, true);
+			}
+			diag.Trace(@"Connect(): $(Uri)");
+			if (Native.mTLS.connect(Tls, Uri.Host, Uri.Port) != 0) {
+				diag.Debug(@"Tls.connect: failed");
 				throw new IOError.HOST_NOT_FOUND(@"$(Uri.Host)");
 			}
 		}
