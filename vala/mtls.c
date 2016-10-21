@@ -33,17 +33,21 @@
 #define ERRORLOG(fmt...)	verbose(fmt)
 #define verbose(fmt...)	do { \
 	struct timeval tv;	\
-	gettimeofday(&tv, NULL); \
+	verbose_tv(&tv, fmt);	\
+} while (0)
+#define verbose_tv(tvp, fmt...)	do { \
+	gettimeofday((tvp), NULL); \
 	fprintf(stderr, "[%02d:%02d.%06d] %s: ",	\
-		(int)(tv.tv_sec / 60) % 60,	\
-		(int)(tv.tv_sec) % 60,	\
-		(int)tv.tv_usec,	\
+		(int)((tvp)->tv_sec / 60) % 60,	\
+		(int)((tvp)->tv_sec) % 60,	\
+		(int)((tvp)->tv_usec),	\
 		 __FUNCTION__);	\
 	fprintf(stderr, fmt);	\
 } while (0)
 #else
 #define ERRORLOG(fmt...)	/**/
 #define verbose(fmt...)		/**/
+#define verbose_tv(fmt...)	/**/
 #endif
 
 
@@ -166,7 +170,9 @@ mtls_close(mtlsctx_t* ctx)
 int
 mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 {
-	verbose("connect called: %s:%s\n", hostname, servname);
+	struct timeval start, end, result;
+
+	verbose_tv(&start, "connect called: %s:%s\n", hostname, servname);
 	int r;
 
 	r = mbedtls_net_connect(&ctx->fd, hostname, servname,
@@ -183,7 +189,11 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 		}
 	}
 
-	verbose("connect OK\n");
+	verbose_tv(&end, "connect OK\n");
+	timersub(&end, &start, &result);
+	verbose("connect time = %d.%03d msec\n",
+		(int)result.tv_sec * 1000 + result.tv_usec / 1000,
+		(int)result.tv_usec % 1000);
 	return 0;
 }
 
@@ -247,25 +257,19 @@ main(int ac, char *av[])
 	if (mtls_init(ctx) != 0) {
 		errx(1, "mtls_init");
 	}
-	fprintf(stderr, "init ok\n");
 
 	if (mtls_connect(ctx, hostname, servname) != 0) {
 		errx(1, "mtls_connect");
 	}
-	fprintf(stderr, "connect ok\n");
 
 	char req[128];
 	sprintf(req, "GET / HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", hostname);
-	printf("write=%s\n", req);
 
 	r = mtls_write(ctx, req, strlen(req));
 	if (r < 0) {
 		ERRORLOG("write failed %d\n", r);
 		return 1;
 	}
-
-	fprintf(stderr, "write ok\n");
-
 
 	for (;;) {
 		char buf[1024];
@@ -283,7 +287,7 @@ main(int ac, char *av[])
 		if (r == 0) {
 			break;
 		}
-		fwrite(buf, r, 1, stdout);
+		// mtls_read() 内のデバッグルーチンが表示しているのでここでは表示不要
 	}
 
 	mtls_close(ctx);
