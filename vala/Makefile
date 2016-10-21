@@ -149,4 +149,4 @@ clean-h:
 clean:	clean-sayaka clean-sixelv clean-h
 
 mtlstest: mtls.c
-	${CC} ${CFLAGS} ${LIBS} -DTEST mtls.c -o mtlstest
+	${CC} ${CFLAGS} -DTEST mtls.c -o mtlstest ${LIBS}
