@@ -28,10 +28,22 @@
 #include <string.h>
 #include "mtls.h"
 
-#if 0
-#define ERRORLOG(x...)	fprintf(stderr, x)
+#if defined(TEST)
+#include <sys/time.h>
+#define ERRORLOG(fmt...)	verbose(fmt)
+#define verbose(fmt...)	do { \
+	struct timeval tv;	\
+	gettimeofday(&tv, NULL); \
+	fprintf(stderr, "[%02d:%02d.%06d] %s: ",	\
+		(int)(tv.tv_sec / 60) % 60,	\
+		(int)(tv.tv_sec) % 60,	\
+		(int)tv.tv_usec,	\
+		 __FUNCTION__);	\
+	fprintf(stderr, fmt);	\
+} while (0)
 #else
-#define ERRORLOG(x...)	(void)0
+#define ERRORLOG(fmt...)	/**/
+#define verbose(fmt...)		/**/
 #endif
 
 
@@ -67,6 +79,8 @@ mtls_init(mtlsctx_t* ctx)
 {
 	int r;
 
+	verbose("start\n");
+
 	mbedtls_net_init(&ctx->fd);
 	mbedtls_ssl_init(&ctx->ssl);
 	mbedtls_ssl_config_init(&ctx->conf);
@@ -78,7 +92,7 @@ mtls_init(mtlsctx_t* ctx)
 	r = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func,
 			&ctx->entropy, "a", 1);
 	if (r != 0) {
-		ERRORLOG("mbedtls_entropy_init=%d", r);
+		ERRORLOG("mbedtls_entropy_init failed %d\n", r);
 		goto errexit;
 	}
 
@@ -87,7 +101,7 @@ mtls_init(mtlsctx_t* ctx)
 			(const unsigned char*)mbedtls_test_cas_pem,
 			mbedtls_test_cas_pem_len);
 	if (r < 0) {
-		ERRORLOG("mbedtls_x509_crt_parse=%d", r);
+		ERRORLOG("mbedtls_x509_crt_parse failed %d\n", r);
 		goto errexit;
 	}
 
@@ -97,7 +111,7 @@ mtls_init(mtlsctx_t* ctx)
 			MBEDTLS_SSL_TRANSPORT_STREAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
 	if (r != 0) {
-		ERRORLOG("mbedtls_ssl_config_defaults=%d", r);
+		ERRORLOG("mbedtls_ssl_config_defaults failed %d\n", r);
 		goto errexit;
 	}
 
@@ -107,13 +121,13 @@ mtls_init(mtlsctx_t* ctx)
 
 	r = mbedtls_ssl_setup(&ctx->ssl, &ctx->conf);
 	if (r != 0) {
-		ERRORLOG("mbedtls_ssl_setup=%d", r);
+		ERRORLOG("mbedtls_ssl_setup failed %d\n", r);
 		goto errexit;
 	}
 
 	mbedtls_ssl_set_bio(&ctx->ssl, &ctx->fd, mbedtls_net_send, mbedtls_net_recv, NULL);
 
-	ERRORLOG("init OK\n");
+	verbose("done\n");
 	return 0;
 
 errexit:
@@ -152,25 +166,24 @@ mtls_close(mtlsctx_t* ctx)
 int
 mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 {
-	ERRORLOG("connect called: %s,%s\n", hostname, servname);
+	verbose("connect called: %s:%s\n", hostname, servname);
 	int r;
 
 	r = mbedtls_net_connect(&ctx->fd, hostname, servname,
 			MBEDTLS_NET_PROTO_TCP);
 	if (r != 0) {
-		ERRORLOG("mbedtls_net_connect=%d", r);
+		ERRORLOG("mbedtls_net_connect failed %d\n", r);
 		return -1;
 	}
 
 	while ((r = mbedtls_ssl_handshake(&ctx->ssl)) != 0) {
 		if (r != MBEDTLS_ERR_SSL_WANT_READ && r != MBEDTLS_ERR_SSL_WANT_WRITE) {
-			ERRORLOG("mbedtls_ssl_handshake=%d", r);
+			ERRORLOG("mbedtls_ssl_handshake failed %d\n", r);
 			return -1;
 		}
 	}
 
-	ERRORLOG("connect OK\n");
-
+	verbose("connect OK\n");
 	return 0;
 }
 
@@ -200,7 +213,6 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 }
 #endif
 
-//#define TEST
 #if defined(TEST)
 
 #include <err.h>
@@ -230,19 +242,17 @@ main(int ac, char *av[])
 	if (ac > 0) {
 		hostname = av[0];
 	}
-	printf("Test to %s:%s\n", hostname, servname);
+	fprintf(stderr, "Test to %s:%s\n", hostname, servname);
 
 	if (mtls_init(ctx) != 0) {
 		errx(1, "mtls_init");
 	}
-
-	printf("init ok\n");
+	fprintf(stderr, "init ok\n");
 
 	if (mtls_connect(ctx, hostname, servname) != 0) {
 		errx(1, "mtls_connect");
 	}
-
-	printf("connect ok\n");
+	fprintf(stderr, "connect ok\n");
 
 	char req[128];
 	sprintf(req, "GET / HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", hostname);
@@ -250,11 +260,11 @@ main(int ac, char *av[])
 
 	r = mtls_write(ctx, req, strlen(req));
 	if (r < 0) {
-		ERRORLOG("write=%d", r);
+		ERRORLOG("write failed %d\n", r);
 		return 1;
 	}
 
-	printf("write ok\n");
+	fprintf(stderr, "write ok\n");
 
 
 	for (;;) {
