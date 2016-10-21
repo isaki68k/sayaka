@@ -32,20 +32,10 @@ namespace ULib
 	{
 		private Diag diag = new Diag("HttpClient");
 
-		// ソケット
-		public SocketClient Sock;
-
-		// 基本コネクション。
-		public SocketConnection BaseConn;
-
 		// https の時の mTLS コンテキスト
 		private Native.mTLS.mtlsctx* Tls;
 
-		private mTLSIOStream TlsConn;
-
-		// 最終的に選択されたコネクション。
-		// uri.Scheme に応じて設定される。
-		public weak IOStream Conn;
+		private mTLSIOStream Conn;
 
 		// パース後の URI
 		public ParsedUri Uri;
@@ -336,27 +326,15 @@ namespace ULib
 
 				var scheme = proxyUri.Scheme != ""
 					? proxyUri.Scheme : Uri.Scheme;
-				if (scheme == "http") {
-					// 基本コネクションの接続
-					Sock = new SocketClient();
-					try {
-						BaseConn = Sock.connect(
-							new InetSocketAddress(address, port));
-						Conn = BaseConn;
-					} catch (Error e) {
-						diag.Debug(@"Sock.connect: $(e.message)");
-						continue;
-					}
-				} else if (scheme == "https") {
-					// TLS 接続
-					TlsConn = new mTLSIOStream(Tls);
-					diag.Trace("Connect(): TLS");
-					if (Native.mTLS.connect(Tls, address.to_string(), port.to_string()) != 0) {
-						diag.Debug(@"Tls.connect: failed");
-						continue;
-					}
-					Conn = TlsConn;
+
+				// HTTP/HTTPS 接続
+				Conn = new mTLSIOStream(Tls);
+				diag.Trace("Connect(): TLS");
+				if (Native.mTLS.connect(Tls, address.to_string(), port.to_string()) != 0) {
+					diag.Debug(@"Tls.connect: failed");
+					continue;
 				}
+
 				// つながったら OK なのでループ抜ける。
 				break;
 			}
@@ -370,17 +348,9 @@ namespace ULib
 		public void Close() throws Error
 		{
 			diag.Trace("Close");
-			Conn = null;
-			if (TlsConn != null) {
-				TlsConn.close();
-				TlsConn = null;
-			}
-			if (BaseConn != null) {
-				BaseConn.close();
-				BaseConn = null;
-			}
-			if (Sock != null) {
-				Sock = null;
+			if (Conn != null) {
+				Conn.close();
+				Conn = null;
 			}
 		}
 

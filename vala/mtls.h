@@ -31,6 +31,7 @@
 
 typedef struct mtlsctx
 {
+	int usessl;
 	// internal contexts
 	mbedtls_net_context net;
 	mbedtls_ssl_context ssl;

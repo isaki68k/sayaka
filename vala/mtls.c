@@ -85,6 +85,7 @@ mtls_init(mtlsctx_t* ctx)
 
 	verbose("start\n");
 
+	ctx->usessl = 0;
 	mbedtls_net_init(&ctx->net);
 	mbedtls_ssl_init(&ctx->ssl);
 	mbedtls_ssl_config_init(&ctx->conf);
@@ -160,7 +161,9 @@ mtls_internal_free(mtlsctx_t* ctx)
 int
 mtls_close(mtlsctx_t* ctx)
 {
-	mbedtls_ssl_close_notify(&ctx->ssl);
+	if (&ctx->usessl) {
+		mbedtls_ssl_close_notify(&ctx->ssl);
+	}
 	mtls_internal_free(ctx);
 	ERRORLOG("close OK\n");
 	return 0;
@@ -175,11 +178,20 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 	verbose_tv(&start, "connect called: %s:%s\n", hostname, servname);
 	int r;
 
+	if (strcmp(servname, "https") == 0 || strcmp(servname, "443") == 0) {
+		ctx->usessl = 1;
+	}
+
 	r = mbedtls_net_connect(&ctx->net, hostname, servname,
 			MBEDTLS_NET_PROTO_TCP);
 	if (r != 0) {
 		ERRORLOG("mbedtls_net_connect failed %d\n", r);
 		return -1;
+	}
+
+	if (ctx->usessl == 0) {
+		verbose("connect (plain) OK\n");
+		return 0;
 	}
 
 	while ((r = mbedtls_ssl_handshake(&ctx->ssl)) != 0) {
@@ -202,7 +214,14 @@ int
 mtls_read(mtlsctx_t* ctx, void* buf, int len)
 {
 	ERRORLOG("read called\n");
-	int rv = mbedtls_ssl_read(&ctx->ssl, buf, len);
+	int rv;
+
+	if (ctx->usessl == 0) {
+		rv = mbedtls_net_recv(&ctx->net, buf, len);
+	} else {
+		rv = mbedtls_ssl_read(&ctx->ssl, buf, len);
+	}
+
 	if (rv > 0) {
 		((char*)buf)[rv] = 0;
 		ERRORLOG("read=%s\n", buf);
@@ -219,7 +238,11 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 	ERRORLOG("write called\n");
 	((char*)buf)[len] = 0;
 	ERRORLOG("write=%s\n", buf);
-	return mbedtls_ssl_write(&ctx->ssl, buf, len);
+	if (ctx->usessl == 0) {
+		return mbedtls_net_send(&ctx->net, buf, len);
+	} else {
+		return mbedtls_ssl_write(&ctx->ssl, buf, len);
+	}
 }
 #endif
 
