@@ -30,7 +30,6 @@ ALL_TARGET=	\
 
 SRCS_sayaka=	\
 	sayaka.vala \
-	Curl.vala \
 	Diag.vala \
 	Dictionary.vala \
 	FileUtil.vala \
@@ -49,7 +48,6 @@ SRCS_sayaka=	\
 
 SRCS_sixelv=	\
 	sixelv.vala \
-	Curl.vala \
 	Diag.vala \
 	Dictionary.vala \
 	SixelConverter.vala \
@@ -64,7 +62,6 @@ SRCS_sixelv=	\
 
 SRCS_h=	\
 	h.vala \
-	Curl.vala \
 	Diag.vala \
 	Dictionary.vala \
 	StringUtil.vala \
@@ -78,7 +75,6 @@ PKGS= \
 	glib-2.0 \
 	gdk-pixbuf-2.0 \
 	gio-2.0 \
-	libcurl \
 
 COPTS=	-O2 -g
 CFLAGS=	-w `pkg-config --cflags ${PKGS}`
@@ -93,7 +89,6 @@ LIBS_MBEDTLS=	\
 LIBS+=	${LIBS_MBEDTLS}
 
 VALA_FLAGS=	\
-	libcurl.vapi \
 	mtlsv.vapi \
 
 VALAC=	valac

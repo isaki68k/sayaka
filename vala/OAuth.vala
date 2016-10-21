@@ -217,18 +217,14 @@ public class OAuth
 		return sb.str;
 	}
 
-	// method と url から Curl を生成して返します。
+	// method と url から IHttpClient を生成して返します。
 	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意します。
 	// 接続はまだ行いません。
 	private IHttpClient CreateHttp(string method, string uri)
 	{
 		var conn_uri = CreateParams(method, uri);
 
-#if 0 //defined(USE_CURL)
-		var client = new Curl(conn_uri);
-#else
 		var client = new HttpClient(conn_uri);
-#endif
 		if (UseOAuthHeader) {
 			client.AddHeader(MakeOAuthHeader());
 		}

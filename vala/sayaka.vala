@@ -1691,7 +1691,7 @@ public class SayakaMain
 		} catch {
 			diag.Debug("no cache found");
 			try {
-				Curl fg = new Curl(img_url);
+				var fg = new HttpClient(img_url);
 				fg.Family = address_family;
 				var basestream = fg.GET();
 				var ms = new MemoryOutputStream.resizable();
