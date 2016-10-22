@@ -42,7 +42,7 @@ namespace ULib
 
 		// リクエスト時にサーバへ送る追加のヘッダ
 		// Host: はこちらで生成するので呼び出し側が指定しないでください。
-		public Dictionary<string, string> SendHeaders;
+		public Array<string> SendHeaders;
 
 		// 受け取ったヘッダ
 		public Array<string> RecvHeaders;
@@ -81,7 +81,7 @@ namespace ULib
 			Uri = ParsedUri.Parse(uri);
 			diag.Debug(Uri.to_string());
 
-			SendHeaders = new Dictionary<string, string>();
+			SendHeaders = new Array<string>();
 			RecvHeaders = new Array<string>();
 		}
 
@@ -165,8 +165,7 @@ namespace ULib
 
 		public void AddHeader(string s)
 		{
-			var kv = StringUtil.Split2(s, ":");
-			SendHeaders.AddIfMissing(kv[0], kv[1]);
+			SendHeaders.append_val(s);
 		}
 
 		// GET/POST リクエストを発行します。
@@ -177,11 +176,11 @@ namespace ULib
 			string path = (method == "POST") ? Uri.Path : Uri.PQF();
 			sb.append(@"$(method) $(path) HTTP/1.1\r\n");
 
-			SendHeaders.AddIfMissing("connection", "close");
-
-			foreach (KeyValuePair<string, string> h in SendHeaders) {
-				sb.append(@"$(h.Key): $(h.Value)\r\n");
+			for (var i = 0; i < SendHeaders.length; i++) {
+				var h = SendHeaders.index(i);
+				sb.append(@"$(h)\r\n");
 			}
+			sb.append("Connection: close\r\n");
 			sb.append("Host: %s\r\n".printf(Uri.Host));
 
 			// User-Agent は SHOULD
