@@ -241,6 +241,10 @@ mtls_read(mtlsctx_t* ctx, void* buf, int len)
 		rv = mbedtls_ssl_read(&ctx->ssl, buf, len);
 	}
 
+	if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+		// EOF
+		return 0;
+	}
 	if (rv < 0) {
 		ERROR("mtls_read failed: %s\n", mtls_errmsg(rv));
 		return rv;
