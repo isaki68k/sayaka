@@ -61,6 +61,16 @@ int mtls_internal_free(mtlsctx_t* ctx);
 
 ////////////////////////////////////
 
+// mbedTLS のエラーコードを表示用の文字列にして返します。
+static const char *
+mtls_errmsg(int errcode)
+{
+	static char buf[128];
+
+	mbedtls_strerror(errcode, buf, sizeof(buf));
+	return buf;
+}
+
 // mtlsctx_t のメモリを確保します。
 // alloc と init を分離しないと、エラー通知が難しいので
 // 分離されています。
@@ -101,7 +111,7 @@ mtls_init(mtlsctx_t* ctx)
 	r = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func,
 			&ctx->entropy, "a", 1);
 	if (r != 0) {
-		ERROR("mbedtls_entropy_init failed %d\n", r);
+		ERROR("mbedtls_entropy_init failed: %s\n", mtls_errmsg(r));
 		goto errexit;
 	}
 
@@ -110,7 +120,7 @@ mtls_init(mtlsctx_t* ctx)
 			(const unsigned char*)mbedtls_test_cas_pem,
 			mbedtls_test_cas_pem_len);
 	if (r < 0) {
-		ERROR("mbedtls_x509_crt_parse failed %d\n", r);
+		ERROR("mbedtls_x509_crt_parse failed: %s\n", mtls_errmsg(r));
 		goto errexit;
 	}
 
@@ -120,7 +130,7 @@ mtls_init(mtlsctx_t* ctx)
 			MBEDTLS_SSL_TRANSPORT_STREAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
 	if (r != 0) {
-		ERROR("mbedtls_ssl_config_defaults failed %d\n", r);
+		ERROR("mbedtls_ssl_config_defaults failed: %s\n", mtls_errmsg(r));
 		goto errexit;
 	}
 
@@ -130,7 +140,7 @@ mtls_init(mtlsctx_t* ctx)
 
 	r = mbedtls_ssl_setup(&ctx->ssl, &ctx->conf);
 	if (r != 0) {
-		ERROR("mbedtls_ssl_setup failed %d\n", r);
+		ERROR("mbedtls_ssl_setup failed: %s\n", mtls_errmsg(r));
 		goto errexit;
 	}
 
@@ -194,7 +204,7 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 	r = mbedtls_net_connect(&ctx->net, hostname, servname,
 			MBEDTLS_NET_PROTO_TCP);
 	if (r != 0) {
-		ERROR("mbedtls_net_connect failed %d\n", r);
+		ERROR("mbedtls_net_connect failed: %s\n", mtls_errmsg(r));
 		return -1;
 	}
 
@@ -205,7 +215,7 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 
 	while ((r = mbedtls_ssl_handshake(&ctx->ssl)) != 0) {
 		if (r != MBEDTLS_ERR_SSL_WANT_READ && r != MBEDTLS_ERR_SSL_WANT_WRITE) {
-			ERROR("mbedtls_ssl_handshake failed %d\n", r);
+			ERROR("mbedtls_ssl_handshake failed: %s\n", mtls_errmsg(r));
 			return -1;
 		}
 	}
@@ -232,7 +242,7 @@ mtls_read(mtlsctx_t* ctx, void* buf, int len)
 	}
 
 	if (rv < 0) {
-		ERROR("mtls_read failed %d\n", rv);
+		ERROR("mtls_read failed: %s\n", mtls_errmsg(rv));
 		return rv;
 	}
 
@@ -253,7 +263,7 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 	}
 
 	if (rv < 0) {
-		ERROR("mtls_write failed %d\n", rv);
+		ERROR("mtls_write failed: %s\n", mtls_errmsg(rv));
 		return rv;
 	}
 	return rv;
