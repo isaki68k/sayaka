@@ -76,8 +76,15 @@ static void
 debug_callback(void *aux, int level, const char *file, int line,
 	const char *msg)
 {
+	struct timeval tv;
 	FILE *out = (FILE *)aux;
-	fprintf(out, "%d|%s|%4d|%s", level, file, line, msg);
+
+	gettimeofday(&tv, NULL);
+	fprintf(out, " %02d:%02d.%06d %d|%s|%4d|%s",
+		(int)(tv.tv_sec / 60) % 60,
+		(int)(tv.tv_sec) % 60,
+		(int)(tv.tv_usec),
+		level, file, line, msg);
 }
 
 
