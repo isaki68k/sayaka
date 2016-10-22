@@ -55,6 +55,7 @@ namespace ULib
 
 		// コネクションに使用するプロトコルファミリ
 		// IPv4/IPv6 only にしたい場合はコンストラクタ後に指定?
+		// ただし mbedTLS 版は API が指定に対応していないので、未対応。
 		public SocketFamily Family;
 
 		// 特定サーバだけの透過プロキシモード?
