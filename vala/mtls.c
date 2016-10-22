@@ -222,7 +222,6 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 	return 0;
 }
 
-#if !defined(INLINE_RW)
 int
 mtls_read(mtlsctx_t* ctx, void* buf, int len)
 {
@@ -257,7 +256,7 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 		return mbedtls_ssl_write(&ctx->ssl, buf, len);
 	}
 }
-#endif
+
 
 #if defined(TEST)
 

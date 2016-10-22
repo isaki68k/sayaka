@@ -47,23 +47,6 @@ void mtls_free(mtlsctx_t* ctx);
 int mtls_init(mtlsctx_t* ctx);
 int mtls_close(mtlsctx_t* ctx);
 int mtls_connect(mtlsctx_t* ctx, const char* hostname, const char* servname);
-
-#if defined(INLINE_RW)
-inline
-int
-mtls_read(mtlsctx_t* ctx, void* buf, int len)
-{
-	return mbedtls_ssl_read(&ctx->ssl, buf, len);
-}
-
-inline
-int
-mtls_write(mtlsctx_t* ctx, const void* buf, int len)
-{
-	return mbedtls_ssl_write(&ctx->ssl, buf, len);
-}
-#else
 int mtls_read(mtlsctx_t* ctx, void* buf, int len);
 int mtls_write(mtlsctx_t* ctx, const void* buf, int len);
-#endif
 
