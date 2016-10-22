@@ -40,6 +40,11 @@ namespace ULib
 		// Ciphers を設定します。
 		public abstract void SetCiphers(string ciphers);
 
+		// 追加の送信ヘッダを指定します。
+		// ヘッダは "Header: content" の形式で改行は不要です。
+		// 同じヘッダを複数回追加した場合の動作は不定です。
+		// Connection:、Host:、User-Agent: はこちらで出力するので
+		// 指定しないでください。
 		public abstract void AddHeader(string s);
 	}
 }
