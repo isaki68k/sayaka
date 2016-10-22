@@ -71,6 +71,16 @@ mtls_errmsg(int errcode)
 	return buf;
 }
 
+// デバッグメッセージ表示用のコールバックです。
+static void
+debug_callback(void *aux, int level, const char *file, int line,
+	const char *msg)
+{
+	FILE *out = (FILE *)aux;
+	fprintf(out, "%d|%s|%4d|%s", level, file, line, msg);
+}
+
+
 // mtlsctx_t のメモリを確保します。
 // alloc と init を分離しないと、エラー通知が難しいので
 // 分離されています。
@@ -137,6 +147,7 @@ mtls_init(mtlsctx_t* ctx)
 	mbedtls_ssl_conf_authmode(&ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
 	mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->cacert, NULL);
 	mbedtls_ssl_conf_rng(&ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg);
+	mbedtls_ssl_conf_dbg(&ctx->conf, debug_callback, stderr);
 
 	r = mbedtls_ssl_setup(&ctx->ssl, &ctx->conf);
 	if (r != 0) {
@@ -290,9 +301,14 @@ main(int ac, char *av[])
 	const char* servname = "443";
 	int r;
 	int c;
+	int debuglevel;
 
-	while ((c = getopt(ac, av, "p:")) != -1) {
+	debuglevel = 0;
+	while ((c = getopt(ac, av, "d:p:")) != -1) {
 		switch (c) {
+		 case 'd':
+			debuglevel = atoi(optarg);
+			break;
 		 case 'p':
 			servname = optarg;
 			break;
@@ -306,6 +322,8 @@ main(int ac, char *av[])
 	if (ac > 0) {
 		hostname = av[0];
 	}
+	mbedtls_debug_set_threshold(debuglevel);
+
 	fprintf(stderr, "Test to %s:%s\n", hostname, servname);
 
 	if (mtls_init(ctx) != 0) {
