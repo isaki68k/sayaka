@@ -149,4 +149,4 @@ clean-h:
 clean:	clean-sayaka clean-sixelv clean-h
 
 mtlstest: mtls.c ${LIBS_MBEDTLS}
-	${CC} ${CFLAGS} -DTEST mtls.c -o mtlstest ${LIBS_MBEDTLS}
+	${CC} ${CFLAGS} -DTEST -DDEBUG mtls.c -o mtlstest ${LIBS_MBEDTLS}

@@ -28,34 +28,30 @@
 #include <string.h>
 #include "mtls.h"
 
-#if defined(TEST)
+//#define DEBUG
+
+#if defined(DEBUG)
 #include <sys/time.h>
-#define ERRORLOG(fmt...)	verbose(fmt)
-#define verbose(fmt...)	do { \
+#define TRACE(fmt...)	do { \
 	struct timeval tv;	\
-	verbose_tv(&tv, fmt);	\
+	TRACE_tv(&tv, fmt);	\
 } while (0)
-#define verbose_tv(tvp, fmt...)	do { \
+#define TRACE_tv(tvp, fmt...)	do { \
 	gettimeofday((tvp), NULL); \
-	fprintf(stderr, "[%02d:%02d.%06d] %s: ",	\
+	fprintf(stderr, "[%02d:%02d.%06d] %s() ",	\
 		(int)((tvp)->tv_sec / 60) % 60,	\
 		(int)((tvp)->tv_sec) % 60,	\
 		(int)((tvp)->tv_usec),	\
 		 __FUNCTION__);	\
 	fprintf(stderr, fmt);	\
 } while (0)
+#define ERROR(fmt...)	TRACE(fmt)
 #else
-# if 0
-#  define ERRORLOG(fmt...)	fprintf(stderr, fmt)
-#  define verbose(fmt...)	fprintf(stderr, fmt)
-# else
-#  define ERRORLOG(fmt...)	/**/
-#  define verbose(fmt...)	/**/
-# endif
-# define verbose_tv(tvp, fmt...)	do { \
-	gettimeofday(tvp, NULL);	\
-	verbose(fmt);	\
-  } while(0)
+#define TRACE(fmt...)			(void)0
+#define TRACE_tv(tvp, fmt...)	(void)0
+#define ERROR(fmt...)	do { \
+	fprintf(stderr, fmt);	\
+} while (0)	/* XXX とりあえず */
 #endif
 
 
@@ -72,7 +68,7 @@ int mtls_internal_free(mtlsctx_t* ctx);
 mtlsctx_t*
 mtls_alloc()
 {
-	ERRORLOG("alloc called\n");
+	TRACE("called\n");
 	return (mtlsctx_t*)malloc(sizeof(mtlsctx_t));
 }
 
@@ -91,7 +87,7 @@ mtls_init(mtlsctx_t* ctx)
 {
 	int r;
 
-	verbose("start\n");
+	TRACE("start\n");
 
 	ctx->usessl = 0;
 	mbedtls_net_init(&ctx->net);
@@ -105,7 +101,7 @@ mtls_init(mtlsctx_t* ctx)
 	r = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func,
 			&ctx->entropy, "a", 1);
 	if (r != 0) {
-		ERRORLOG("mbedtls_entropy_init failed %d\n", r);
+		ERROR("mbedtls_entropy_init failed %d\n", r);
 		goto errexit;
 	}
 
@@ -114,7 +110,7 @@ mtls_init(mtlsctx_t* ctx)
 			(const unsigned char*)mbedtls_test_cas_pem,
 			mbedtls_test_cas_pem_len);
 	if (r < 0) {
-		ERRORLOG("mbedtls_x509_crt_parse failed %d\n", r);
+		ERROR("mbedtls_x509_crt_parse failed %d\n", r);
 		goto errexit;
 	}
 
@@ -124,7 +120,7 @@ mtls_init(mtlsctx_t* ctx)
 			MBEDTLS_SSL_TRANSPORT_STREAM,
 			MBEDTLS_SSL_PRESET_DEFAULT);
 	if (r != 0) {
-		ERRORLOG("mbedtls_ssl_config_defaults failed %d\n", r);
+		ERROR("mbedtls_ssl_config_defaults failed %d\n", r);
 		goto errexit;
 	}
 
@@ -134,19 +130,19 @@ mtls_init(mtlsctx_t* ctx)
 
 	r = mbedtls_ssl_setup(&ctx->ssl, &ctx->conf);
 	if (r != 0) {
-		ERRORLOG("mbedtls_ssl_setup failed %d\n", r);
+		ERROR("mbedtls_ssl_setup failed %d\n", r);
 		goto errexit;
 	}
 
 	mbedtls_ssl_set_bio(&ctx->ssl, &ctx->net, mbedtls_net_send, mbedtls_net_recv, NULL);
 
-	verbose("done\n");
+	TRACE("done\n");
 	return 0;
 
 errexit:
 	// cleanup
 	mtls_internal_free(ctx);
-	ERRORLOG("init NG\n");
+	TRACE("NG\n");
 	return -1;
 }
 
@@ -161,7 +157,7 @@ mtls_internal_free(mtlsctx_t* ctx)
 	mbedtls_ssl_config_free(&ctx->conf);
 	mbedtls_ctr_drbg_free(&ctx->ctr_drbg);
 	mbedtls_entropy_free(&ctx->entropy);
-	ERRORLOG("internal_free OK\n");
+	TRACE("internal_free OK\n");
 	return 0;
 }
 
@@ -173,7 +169,7 @@ mtls_close(mtlsctx_t* ctx)
 		mbedtls_ssl_close_notify(&ctx->ssl);
 	}
 	mtls_internal_free(ctx);
-	ERRORLOG("close OK\n");
+	TRACE("OK\n");
 	return 0;
 }
 
@@ -192,31 +188,31 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 {
 	struct timeval start, end, result;
 
-	verbose_tv(&start, "connect called: %s:%s\n", hostname, servname);
+	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
 	int r;
 
 	r = mbedtls_net_connect(&ctx->net, hostname, servname,
 			MBEDTLS_NET_PROTO_TCP);
 	if (r != 0) {
-		ERRORLOG("mbedtls_net_connect failed %d\n", r);
+		ERROR("mbedtls_net_connect failed %d\n", r);
 		return -1;
 	}
 
 	if (ctx->usessl == 0) {
-		verbose("connect (plain) OK\n");
+		TRACE("connect (plain) OK\n");
 		return 0;
 	}
 
 	while ((r = mbedtls_ssl_handshake(&ctx->ssl)) != 0) {
 		if (r != MBEDTLS_ERR_SSL_WANT_READ && r != MBEDTLS_ERR_SSL_WANT_WRITE) {
-			ERRORLOG("mbedtls_ssl_handshake failed %d\n", r);
+			ERROR("mbedtls_ssl_handshake failed %d\n", r);
 			return -1;
 		}
 	}
 
-	verbose_tv(&end, "connect OK\n");
+	TRACE_tv(&end, "connect OK\n");
 	timersub(&end, &start, &result);
-	verbose("connect time = %d.%03d msec\n",
+	TRACE("connect time = %d.%03d msec\n",
 		(int)result.tv_sec * 1000 + result.tv_usec / 1000,
 		(int)result.tv_usec % 1000);
 	return 0;
@@ -225,8 +221,9 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 int
 mtls_read(mtlsctx_t* ctx, void* buf, int len)
 {
-	ERRORLOG("read called\n");
 	int rv;
+
+	TRACE("called\n");
 
 	if (ctx->usessl == 0) {
 		rv = mbedtls_net_recv(&ctx->net, buf, len);
@@ -234,27 +231,32 @@ mtls_read(mtlsctx_t* ctx, void* buf, int len)
 		rv = mbedtls_ssl_read(&ctx->ssl, buf, len);
 	}
 
-	if (rv > 0) {
-		((char*)buf)[rv] = 0;
-		ERRORLOG("read=%s\n", buf);
-	} else {
-		// error to close
-		rv = 0;
+	if (rv < 0) {
+		ERROR("mtls_read failed %d\n", rv);
+		return rv;
 	}
+
 	return rv;
 }
 
 int
 mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 {
-	ERRORLOG("write called\n");
-	((char*)buf)[len] = 0;
-	ERRORLOG("write=%s\n", buf);
+	int rv;
+
+	TRACE("called\n");
+
 	if (ctx->usessl == 0) {
-		return mbedtls_net_send(&ctx->net, buf, len);
+		rv = mbedtls_net_send(&ctx->net, buf, len);
 	} else {
-		return mbedtls_ssl_write(&ctx->ssl, buf, len);
+		rv = mbedtls_ssl_write(&ctx->ssl, buf, len);
 	}
+
+	if (rv < 0) {
+		ERROR("mtls_write failed %d\n", rv);
+		return rv;
+	}
+	return rv;
 }
 
 
@@ -290,7 +292,7 @@ main(int ac, char *av[])
 	fprintf(stderr, "Test to %s:%s\n", hostname, servname);
 
 	if (mtls_init(ctx) != 0) {
-		errx(1, "mtls_init");
+		errx(1, "mtls_init failed");
 	}
 
 	if (strcmp(servname, "443") == 0) {
@@ -298,21 +300,21 @@ main(int ac, char *av[])
 	}
 
 	if (mtls_connect(ctx, hostname, servname) != 0) {
-		errx(1, "mtls_connect");
+		errx(1, "mtls_connect failed");
 	}
 
 	char req[128];
 	sprintf(req, "GET / HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n", hostname);
+	TRACE("write buf=|%s|", req);
 
 	r = mtls_write(ctx, req, strlen(req));
 	if (r < 0) {
-		ERRORLOG("write failed %d\n", r);
-		return 1;
+		errx(1, "write failed %d", r);
 	}
 
 	for (;;) {
 		char buf[1024];
-		r = mtls_read(ctx, buf, sizeof(buf));
+		r = mtls_read(ctx, buf, sizeof(buf) - 1);
 		if (r == MBEDTLS_ERR_SSL_WANT_READ || r == MBEDTLS_ERR_SSL_WANT_WRITE) {
 			continue;
 		}
@@ -320,13 +322,13 @@ main(int ac, char *av[])
 			break;
 		}
 		if (r < 0) {
-			ERRORLOG("read=%d", r);
-			return 1;
+			errx(1, "mtls_read failed %d", r);
 		}
 		if (r == 0) {
 			break;
 		}
-		// mtls_read() 内のデバッグルーチンが表示しているのでここでは表示不要
+		buf[r] = '\0';
+		fprintf(stderr, "%s", buf);
 	}
 
 	mtls_close(ctx);
