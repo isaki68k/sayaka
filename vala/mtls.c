@@ -243,6 +243,7 @@ mtls_read(mtlsctx_t* ctx, void* buf, int len)
 
 	if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
 		// EOF
+		TRACE("EOF\n");
 		return 0;
 	}
 	if (rv < 0) {
@@ -250,6 +251,7 @@ mtls_read(mtlsctx_t* ctx, void* buf, int len)
 		return rv;
 	}
 
+	TRACE("%d bytes\n", rv);
 	return rv;
 }
 
@@ -270,6 +272,7 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 		ERROR("mtls_write failed: %s\n", mtls_errmsg(rv));
 		return rv;
 	}
+	TRACE("%d bytes\n", rv);
 	return rv;
 }
 
