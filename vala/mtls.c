@@ -300,6 +300,11 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 #include <err.h>
 #include <getopt.h>
 
+int my_ciphersuites[] = {
+	MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
+	0,
+};
+
 int
 main(int ac, char *av[])
 {
@@ -309,15 +314,20 @@ main(int ac, char *av[])
 	int r;
 	int c;
 	int debuglevel;
+	int use_rsa_only;
 
 	debuglevel = 0;
-	while ((c = getopt(ac, av, "d:p:")) != -1) {
+	use_rsa_only = 0;
+	while ((c = getopt(ac, av, "d:p:r")) != -1) {
 		switch (c) {
 		 case 'd':
 			debuglevel = atoi(optarg);
 			break;
 		 case 'p':
 			servname = optarg;
+			break;
+		 case 'r':
+			use_rsa_only = 1;
 			break;
 		 default:
 			printf("usage: [-p servname] [hostname]\n");
@@ -335,6 +345,11 @@ main(int ac, char *av[])
 
 	if (mtls_init(ctx) != 0) {
 		errx(1, "mtls_init failed");
+	}
+
+	if (use_rsa_only) {
+		// オレオレ ciphersuite リストを指定する。
+		mbedtls_ssl_conf_ciphersuites(&ctx->conf, my_ciphersuites);
 	}
 
 	if (strcmp(servname, "443") == 0) {
