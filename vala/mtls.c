@@ -151,7 +151,7 @@ mtls_init(mtlsctx_t* ctx)
 		goto errexit;
 	}
 
-	mbedtls_ssl_conf_authmode(&ctx->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+	mbedtls_ssl_conf_authmode(&ctx->conf, MBEDTLS_SSL_VERIFY_NONE);
 	mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->cacert, NULL);
 	mbedtls_ssl_conf_rng(&ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg);
 	mbedtls_ssl_conf_dbg(&ctx->conf, debug_callback, stderr);
