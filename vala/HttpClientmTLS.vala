@@ -272,6 +272,11 @@ namespace ULib
 		// uri へ接続します。
 		private void Connect() throws Error
 		{
+			// XXX とりあえず連動させておく
+			if (Diag.global_debug) {
+				Native.mTLS.set_debuglevel(3);
+			}
+
 			// 透過プロキシ(?)設定があれば対応。
 			var proxyTarget = "";
 			var proxyUri = new ParsedUri();

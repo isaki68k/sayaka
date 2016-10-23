@@ -33,6 +33,9 @@ namespace Native.mTLS
 		// internal
 	}
 
+	[CCode(cname="mtls_set_debuglevel")]
+	public static void set_debuglevel(int level);
+
 	[CCode(cname="mtls_alloc")]
 	public static mtlsctx* alloc();
 	[CCode(cname="mtls_free")]

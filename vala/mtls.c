@@ -87,6 +87,12 @@ debug_callback(void *aux, int level, const char *file, int line,
 		level, file, line, msg);
 }
 
+// デバッグレベルを指定します。
+void
+mtls_set_debuglevel(int level)
+{
+	mbedtls_debug_set_threshold(level);
+}
 
 // mtlsctx_t のメモリを確保します。
 // alloc と init を分離しないと、エラー通知が難しいので
@@ -339,7 +345,7 @@ main(int ac, char *av[])
 	if (ac > 0) {
 		hostname = av[0];
 	}
-	mbedtls_debug_set_threshold(debuglevel);
+	mtls_set_debuglevel(debuglevel);
 
 	fprintf(stderr, "Test to %s:%s\n", hostname, servname);
 
