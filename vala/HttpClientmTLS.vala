@@ -58,6 +58,10 @@ namespace ULib
 		// ただし mbedTLS 版は API が指定に対応していないので、未対応。
 		public SocketFamily Family;
 
+		// 使用する CipherSuites
+		// ただし null(デフォルト) と "RSA" しか対応してない。
+		public string Ciphers;
+
 		// 特定サーバだけの透過プロキシモード?
 		// "userstream.twitter.com=http://127.0.0.1:10080/"
 		// みたいに指定する
@@ -84,6 +88,7 @@ namespace ULib
 
 			SendHeaders = new Array<string>();
 			RecvHeaders = new Array<string>();
+			Ciphers = null;
 		}
 
 		// uri から GET して、ストリームを返します。
@@ -306,6 +311,10 @@ namespace ULib
 			if (Uri.Scheme == "https") {
 				Native.mTLS.setssl(Tls, true);
 			}
+			if (Ciphers != null && Ciphers == "RSA") {
+				// XXX RSA 専用
+				Native.mTLS.usersa(Tls);
+			}
 			diag.Trace(@"Connect(): $(Uri)");
 			if (Native.mTLS.connect(Tls, Uri.Host, Uri.Port) != 0) {
 				diag.Debug(@"Tls.connect: failed");
@@ -326,7 +335,7 @@ namespace ULib
 		// Ciphers を設定します。
 		public void SetCiphers(string ciphers)
 		{
-			// not implemented
+			Ciphers = ciphers;
 		}
 	}
 

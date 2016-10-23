@@ -61,6 +61,12 @@ int mtls_internal_free(mtlsctx_t* ctx);
 
 ////////////////////////////////////
 
+// --ciphers RSA 用の ciphersuites。
+static int ciphersuites_RSA[] = {
+	MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
+	0,
+};
+
 // mbedTLS のエラーコードを表示用の文字列にして返します。
 static const char *
 mtls_errmsg(int errcode)
@@ -215,6 +221,15 @@ mtls_setssl(mtlsctx_t* ctx, int value)
 	ctx->usessl = value;
 }
 
+// 接続に使用する ciphersuites を RSA_WITH_AES_128_CBC_SHA に限定します。
+// mtls_connect() より先に設定しておく必要があります。
+// XXX どういう API にすべか
+void
+mtls_usersa(mtlsctx_t* ctx)
+{
+	mbedtls_ssl_conf_ciphersuites(&ctx->conf, ciphersuites_RSA);
+}
+
 
 // 接続します。
 int
@@ -306,11 +321,6 @@ mtls_write(mtlsctx_t* ctx, const void* buf, int len)
 #include <err.h>
 #include <getopt.h>
 
-int my_ciphersuites[] = {
-	MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
-	0,
-};
-
 int
 main(int ac, char *av[])
 {
@@ -354,8 +364,7 @@ main(int ac, char *av[])
 	}
 
 	if (use_rsa_only) {
-		// オレオレ ciphersuite リストを指定する。
-		mbedtls_ssl_conf_ciphersuites(&ctx->conf, my_ciphersuites);
+		mtls_usersa(ctx);
 	}
 
 	if (strcmp(servname, "443") == 0) {
