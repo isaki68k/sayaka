@@ -4,5 +4,5 @@ all:
 	$(MAKE) -C vala
 
 clean:
-	$(MAKE) -C mbedtls/lib clean
+	$(MAKE) -C mbedtls/library clean
 	$(MAKE) -C vala clean
