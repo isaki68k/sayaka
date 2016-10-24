@@ -149,6 +149,7 @@ public class SayakaMain
 	public bool in_sixel;			// SIXEL 出力中なら true
 	public string ciphers;
 	public bool opt_full_url;
+	public bool opt_progress;
 
 	public string basedir;
 	public string cachedir;
@@ -186,6 +187,7 @@ public class SayakaMain
 		last_id_max = 10;
 		ciphers = null;
 		opt_full_url = false;
+		opt_progress = false;
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -271,6 +273,9 @@ public class SayakaMain
 			 case "--post":
 				cmd = SayakaCmd.TweetMode;
 				break;
+			 case "--progress":
+				opt_progress = true;
+				break;
 			 case "--protect":
 				protect = true;
 				break;
@@ -313,11 +318,12 @@ public class SayakaMain
 				break;
 			 case "--x68k":
 				opt_x68k = true;
-				// "--font 8x16 --jis --black" を指定したのと同じ
+				// "--font 8x16 --jis --black --progress" を指定したのと同じ
 				opt_fontwidth = 8;
 				opt_fontheight = 16;
 				iconv_tocode = "iso-2022-jp";
 				bg_white = false;
+				opt_progress = true;
 				break;
 			 default:
 				usage();
@@ -503,12 +509,12 @@ public class SayakaMain
 		DataInputStream userStream = null;
 
 		// 古いキャッシュを削除
-		if (debug) {
+		if (debug || opt_progress) {
 			stdout.printf("Deleting expired cache files...");
 			stdout.flush();
 		}
 		invalidate_cache();
-		if (debug) {
+		if (debug || opt_progress) {
 			stdout.printf("done\n");
 		}
 
@@ -522,32 +528,32 @@ public class SayakaMain
 
 		if (opt_norest == false) {
 			// ブロックユーザ取得
-			if (debug) {
+			if (debug || opt_progress) {
 				stdout.printf("Getting block users list...");
 				stdout.flush();
 			}
 			get_block_list();
-			if (debug) {
+			if (debug || opt_progress) {
 				stdout.printf("done\n");
 			}
 
 			// ミュートユーザ取得
-			if (debug) {
+			if (debug || opt_progress) {
 				stdout.printf("Getting mute users list...");
 				stdout.flush();
 			}
 			get_mute_list();
-			if (debug) {
+			if (debug || opt_progress) {
 				stdout.printf("done\n");
 			}
 
 			// RT非表示ユーザ取得
-			if (debug) {
+			if (debug || opt_progress) {
 				stdout.printf("Getting nort users list...");
 				stdout.flush();
 			}
 			get_nort_list();
-			if (debug) {
+			if (debug || opt_progress) {
 				stdout.printf("done\n");
 			}
 		}
@@ -2493,6 +2499,7 @@ public class SayakaMain
 	--eucjp
 	--play : read JSON from stdin.
 	--post : post tweet from stdin (utf-8 is expected).
+	--progress: show start up progress.
 	--protect : don't display protected user's tweet.
 	--sixel-cmd <fullpath>: external 'img2sixel'.
 		or an internal sixel converter if not specified.
