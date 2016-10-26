@@ -59,6 +59,7 @@ SRCS_sixelv=	\
 	mtls.c \
 	IHttpClient.vala \
 	HttpClientmTLS.vala \
+	sixel.native.c \
 
 SRCS_h=	\
 	h.vala \
@@ -76,7 +77,7 @@ PKGS= \
 	gdk-pixbuf-2.0 \
 	gio-2.0 \
 
-COPTS=	-O2 -g
+COPTS=	-O2 -g -std=c99
 CFLAGS=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 

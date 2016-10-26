@@ -26,6 +26,9 @@
 using Gdk;
 using System.OS;
 
+extern int sixel_image_to_sixel_h6_ormode(
+  uint8* dst, uint8* src, int w, int h);
+
 public class SixelConverter
 {
 	private Diag diag = new Diag("SixelConverter");
@@ -118,6 +121,7 @@ public class SixelConverter
 			var sname = "hw.ite.tpalette%X".printf(i);
 			if (sysctl.getbyname_int(sname, out val) == -1) {
 				// エラーになったらとりあえず固定8色モードで…
+stderr.printf("sysctl error\n");
 				SetPaletteFixed8();
 				return;
 			}
@@ -549,6 +553,7 @@ public class SixelConverter
 		return 8;
 	}
 
+#if false
 	// OR-ed Mode で Sixel コア部分を stream に出力します。
 	private void SixelToStreamCore_ORedMode(FileStream stream)
 	{
@@ -613,6 +618,39 @@ stderr.printf("bcnt=%d\n", bcnt);
 			stream.flush();
 		}
 	}
+
+#else
+	// OR-ed Mode で Sixel コア部分を stream に出力します。
+	private void SixelToStreamCore_ORedMode(FileStream stream)
+	{
+		StringBuilder linebuf = new StringBuilder.sized(1024);
+
+		unowned uint8[] p0 = pix.get_pixels();
+		int w = pix.get_width();
+		int h = pix.get_height();
+
+		uint8[] sixelbuf = new uint8[w * 16 + 12];
+
+		// パレットのビット数
+		int bcnt = MyLog2(PaletteCount);
+stderr.printf("bcnt=%d\n", bcnt);
+
+		uint8* p = p0;
+		int y;
+		for (y = 0; y < h - 6; y += 6) {
+
+			int len = sixel_image_to_sixel_h6_ormode(
+				sixelbuf, p, w, 6);
+			stream.write(sixelbuf[0 : len]);
+			stream.flush();
+			p += w * 6;
+		}
+		int len = sixel_image_to_sixel_h6_ormode(
+			sixelbuf, p, w, h - y);
+		stream.write(sixelbuf[0 : len]);
+		stream.flush();
+	}
+#endif
 
 	// Sixel コア部分を stream に出力します。
 	private void SixelToStreamCore_v3(FileStream stream)

@@ -23,6 +23,31 @@
  * SUCH DAMAGE.
  */
 
+/* Sixel 変換 for X680x0 */
+
+#include <stdint.h>
+#include <stdio.h>
+
+// for X68k
+#define SIXEL_MAX_WIDTH		(768)
+#define SIXEL_PLANE_COUNT	(4)
+
+static uint8_t sixelbuf[SIXEL_MAX_WIDTH * SIXEL_PLANE_COUNT];
+
+static const uint8_t decimal_table[] = {
+0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,
+0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,
+0x20,0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,
+0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,
+0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,
+0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57,0x58,0x59,
+0x60,0x61,0x62,0x63,0x64,0x65,0x66,0x67,0x68,0x69,
+0x70,0x71,0x72,0x73,0x74,0x75,0x76,0x77,0x78,0x79,
+0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,0x88,0x89,
+0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,
+};
+
+
 inline int
 sixel_putc(uint8_t *dst, char c)
 {
@@ -34,56 +59,54 @@ sixel_putc(uint8_t *dst, char c)
 inline int
 sixel_putd(uint8_t *dst, int n)
 {
+	// 小さい数優先で、255 までを高速に出力できればそれでいい
 	int m;
 	int rv = 0;
 	if (n < 10) {
-		goto d1;
+		return sixel_putc(dst, n + 0x30);
 	} else if (n < 100) {
-		goto d2;
-	} else if (n < 1000) {
-		goto d3;
+		sixel_putc(dst, (decimal_table[n] >> 4) + 0x30);
+		sixel_putc(dst + 1, (decimal_table[n] & 0xf) + 0x30);
+		return 2;
+	} else if (n < 200) {
+		sixel_putc(dst, 1 + 0x30);
+		m = n - 100;
+		sixel_putc(dst + 1, (decimal_table[m] >> 4) + 0x30);
+		sixel_putc(dst + 2, (decimal_table[m] & 0xf) + 0x30);
+		return 3;
+	} else if (n < 300) {
+		sixel_putc(dst, 2 + 0x30);
+		m = n - 200;
+		sixel_putc(dst + 1, (decimal_table[m] >> 4) + 0x30);
+		sixel_putc(dst + 2, (decimal_table[m] & 0xf) + 0x30);
+		return 3;
 	} else {
 		return snprintf(dst, "%d", n);
 	}
-
- d3:
-	m = n / 100;
-	rv += sixel_putc(dst, m + 0x30);
-	n = n - m * 100;
- d2:
-	m = n / 10;
-	rv += sixel_putc(dst, m + 0x30);
-	n = n - m * 10;
- d1:
-	rv += sixel_putc(dst, n + 0x30);
-	return rv;
 }
 
 inline int
 sixel_put_repunit(uint8_t *dst, int rep, uint8_t ptn)
 {
-	int rv = 0;
 	if (rep == 1) {
-		goto d1;
+		return sixel_putc(dst, ptn + 0x3f);
 	} else if (rep == 2) {
-		goto d2;
+		sixel_putc(dst, ptn + 0x3f);
+		sixel_putc(dst + 1, ptn + 0x3f);
+		return 2;
 	} else if (rep == 3) {
-		goto d3;
+		sixel_putc(dst, ptn + 0x3f);
+		sixel_putc(dst + 1, ptn + 0x3f);
+		sixel_putc(dst + 2, ptn + 0x3f);
+		return 3;
 	} else {
-		rv = sixel_putc('!');
-		rv += sixel_putd(rep);
-		rv += sixel_putc(ptn + 0x3f);
-		return rv;
+		sixel_putc(dst, '!');
+		dst++;
+		int len = sixel_putd(dst, rep);
+		dst += len;
+		sixel_putc(dst, ptn + 0x3f);
+		return len + 2;
 	}
-
- d3:
-	rv += sixel_putc(ptn + 0x3f);
- d2:
-	rv += sixel_putc(ptn + 0x3f);
- d1:
-	rv += sixel_putc(ptn + 0x3f);
-
-	return rv;
 }
 
 
@@ -103,7 +126,7 @@ sixel_put_repunit(uint8_t *dst, int rep, uint8_t ptn)
  * m68k での速度を優先するため、範囲チェックなどは行いません。
  */
 int
-sixel_image_to_sixel_ormode_6(
+sixel_image_to_sixel_h6_ormode(
 	uint8_t* dst,
 	uint8_t* src,
 	int w,
@@ -125,7 +148,7 @@ sixel_image_to_sixel_ormode_6(
 	// y=0 のケースで初期化も同時に実行する
 	for (int x = 0; x < w; x++) {
 		uint8_t b = *src++;
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < SIXEL_PLANE_COUNT; i++) {
 			*buf++ = (b & 1);
 			b >>= 1;
 		}
@@ -133,9 +156,10 @@ sixel_image_to_sixel_ormode_6(
 
 	// y >= 1
 	for (int y = 1; y < h; y++) {
+		buf = sixelbuf;
 		for (int x = 0; x < w; x++) {
 			uint8_t b = *src++;
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < SIXEL_PLANE_COUNT; i++) {
 				*buf++ |= (b & 1) << y;
 				b >>= 1;
 			}
@@ -146,14 +170,17 @@ sixel_image_to_sixel_ormode_6(
 
 	uint8_t *dst0 = dst;
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < SIXEL_PLANE_COUNT; i++) {
 		buf = sixelbuf + i;
 		int rep = 1;
 		uint8_t ptn = *buf;
+		buf += SIXEL_PLANE_COUNT;
+
 		dst += sixel_putc(dst, '#');
 		dst += sixel_putd(dst, 1 << i);
+
 		// 1 から
-		for (int x = 1; x < w; x++, buf += 4) {
+		for (int x = 1; x < w; x++, buf += SIXEL_PLANE_COUNT) {
 			if (ptn == *buf) {
 				rep++;
 			} else {
@@ -162,9 +189,14 @@ sixel_image_to_sixel_ormode_6(
 				ptn = *buf;
 			}
 		}
-		dst += sixel_put_repunit(dst, rep, ptn);
+		// 末尾の 0 パターンは出力しなくていい
+		if (ptn != 0) {
+			dst += sixel_put_repunit(dst, rep, ptn);
+		}
 		dst += sixel_putc(dst, '$');
 	}
+	// 復帰を改行に書き換える
+	sixel_putc(dst - 1, '-');
 
 	return dst - dst0;
 }
