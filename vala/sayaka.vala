@@ -1690,54 +1690,56 @@ public class SayakaMain
 	public bool show_image_internal(string img_file, string img_url, int width,
 		int index)
 	{
-		var sx = new SixelConverter();
-
-		try {
-			sx.Load(img_file);
-		} catch {
-			diag.Debug("no cache found");
-			try {
-				var fg = new HttpClient(img_url);
-				fg.Family = address_family;
-				var basestream = fg.GET();
-				var ms = new MemoryOutputStream.resizable();
-				try {
-					ms.splice(basestream, 0);
-				} catch {
-					// ignore
-				}
-				ms.close();
-
-				// ms のバックエンドバッファの所有権を移す。
-				var msdata = ms.steal_data();
-				msdata.length = (int)ms.get_data_size();
-				var stream = new MemoryInputStream.from_data(msdata, null);
-
-				// イメージファイルそのままをキャッシュ
-				try {
-					(stream as Seekable).seek(0, SeekType.SET);
-					var f = File.new_for_path(img_file);
-					var fs = f.replace(null, false, FileCreateFlags.NONE);
-					fs.splice(stream, 0);
-					fs.close();
-				} catch (Error e) {
-					stderr.printf("sayaka: %s\n", e.message);
-				}
-
-				(stream as Seekable).seek(0, SeekType.SET);
-				sx.LoadFromStream(stream);
-			} catch {
+		var cache_filename = img_file + ".sixel";
+		var cache_file = FileStream.open(cache_filename, "r");
+		if (cache_file == null) {
+			// キャッシュファイルがないので、画像を取得
+			diag.Debug("sixel cache is not found");
+			cache_file = show_image_internal_makesixel(cache_filename,
+				img_url, width);
+			if (cache_file == null) {
 				return false;
 			}
 		}
 
-		if (width != 0) {
-			sx.ResizeByWidth(width);
+		// SIXEL の先頭付近から幅と高さを取得
+		var sx_width = 0;
+		var sx_height = 0;
+		uint8[] buf = new uint8[4096];
+		var n = cache_file.read(buf);
+		if (n < 32) {
+			return false;
 		}
+		// " <Pan>; <Pad>; <Ph>; <Pv>
+		int i;
+		// Search "
+		for (i = 0; i < buf.length && buf[i] != '\x22' ; i++)
+			;
+		// Skip Pad;
+		for (i++; i < buf.length && buf[i] != ';'; i++)
+			;
+		// Skip Pad;
+		for (i++; i < buf.length && buf[i] != ';'; i++)
+			;
+		// Ph
+		var sb = new StringBuilder();
+		for (i++; i < buf.length && ('0' <= buf[i] && buf[i] <= '9'); i++) {
+			sb.append_unichar(buf[i]);
+		}
+		sx_width = int.parse(sb.str);
+		// Pv
+		sb = new StringBuilder();
+		for (i++; i < buf.length && ('0' <= buf[i] && buf[i] <= '9'); i++) {
+			sb.append_unichar(buf[i]);
+		}
+		sx_height = int.parse(sb.str);
+
+		if (sx_width == 0 || sx_height == 0)
+			return false;
 
 		// この画像が占める文字数
-		var image_rows = (sx.Height + fontheight - 1) / fontheight;
-		var image_cols = (sx.Width + fontwidth - 1) / fontwidth;
+		var image_rows = (sx_height + fontheight - 1) / fontheight;
+		var image_cols = (sx_width + fontwidth - 1) / fontwidth;
 
 		// 表示位置などの計算
 		if (index >= 0) {
@@ -1764,6 +1766,72 @@ public class SayakaMain
 			}
 		}
 
+		// 最初の1回はすでに buf に入っているのでまず出力して、
+		// 次からは順次読みながら最後まで出力。
+		do {
+			in_sixel = true;
+			stdout.write(buf[0:n]);
+			stdout.flush();
+			in_sixel = false;
+
+			n = cache_file.read(buf);
+		} while (n > 0);
+
+		if (index >= 0) {
+			image_count++;
+			image_next_cols += image_cols;
+
+			// カーソル位置は同じ列に表示した画像の中で最長のものの下端に揃える
+			if (image_max_rows > image_rows) {
+				var down = image_max_rows - image_rows;
+				stdout.printf(@"$(CSI)$(down)B");
+			} else {
+				image_max_rows = image_rows;
+			}
+		}
+		return true;
+	}
+
+	// 画像をダウンロードして SIXEL に変換してキャッシュする。
+	// 成功すれば、書き出したキャッシュファイルの FileStream クラス
+	// (位置は先頭) を返す。失敗すれば null を返す。
+	// cache_filename はキャッシュするファイルのファイル名
+	// img_url は画像 URL
+	// width はリサイズすべき幅を指定、0 ならリサイズしない
+	public FileStream? show_image_internal_makesixel(string cache_filename,
+		string img_url, int width)
+	{
+		var sx = new SixelConverter();
+		var fg = new HttpClient(img_url);
+		fg.Family = address_family;
+		DataInputStream basestream;
+		MemoryOutputStream ms;
+		try {
+			basestream = fg.GET();
+			ms = new MemoryOutputStream.resizable();
+			ms.splice(basestream, 0);
+			ms.close();
+		} catch {
+			return null;
+		}
+
+		// ms のバックエンドバッファの所有権を移す。
+		var msdata = ms.steal_data();
+		msdata.length = (int)ms.get_data_size();
+		var stream = new MemoryInputStream.from_data(msdata, null);
+
+		try {
+			(stream as Seekable).seek(0, SeekType.SET);
+			sx.LoadFromStream(stream);
+		} catch (Error e) {
+			diag.Warn(@"Sixel LoadFromStream failed: $(e.message)");
+			return null;
+		}
+
+		if (width != 0) {
+			sx.ResizeByWidth(width);
+		}
+
 		// color_modeでよしなに減色する
 		if (opt_x68k) {
 			sx.SetPaletteX68k();
@@ -1784,25 +1852,11 @@ public class SayakaMain
 			sx.SetPaletteFixed256();
 			sx.DiffuseReduceFixed256();
 		}
-		in_sixel = true;
-		sx.SixelToStream(stdout);
-		stdout.flush();
-		in_sixel = false;
 
-		if (index >= 0) {
-			image_count++;
-			image_next_cols += image_cols;
-
-			// カーソル位置は同じ列に表示した画像の中で最長のものの下端に揃える
-			if (image_max_rows > image_rows) {
-				var down = image_max_rows - image_rows;
-				stdout.printf(@"$(CSI)$(down)B");
-			} else {
-				image_max_rows = image_rows;
-			}
-		}
-
-		return true;
+		var file = FileStream.open(cache_filename, "w+");
+		sx.SixelToStream(file);
+		file.seek(0, FileSeek.SET);
+		return file;
 	}
 
 	// 外部プログラムを起動して画像を表示
