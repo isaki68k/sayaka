@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.2.2 (2016/09/25)
+twitter クライアント sayaka ちゃん version 3.2.2+ (2016/10/26)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -9,6 +9,8 @@ twitter クライアント sayaka ちゃん version 3.2.2 (2016/09/25)
 
 更新履歴
 ---
+* 3.2.x (2016/10/26) … libcurl ではなく mbedTLS に移行してみる。
+	--full-url オプション、--progress オプションを実装。
 * 3.2.2 (2016/09/25) … glib-networking ではなく libcurl に移行してみる。
 	--post オプション、--ciphers オプションを実装。
 	extended_tweet の表示に対応。
@@ -41,10 +43,10 @@ twitter クライアント sayaka ちゃん version 3.2.2 (2016/09/25)
 * vala-0.28 くらい以上
 * glib2-2.44 以上
 * gdk-pixbuf2
-* libcurl
+* GNU make
 
 pkgsrc なら
-lang/vala, devel/glib2, graphics/gdk-pixbuf2, www/curl
+lang/vala, devel/glib2, graphics/gdk-pixbuf2, devel/gmake
 をインストールしてください。
 
 
@@ -57,9 +59,7 @@ lang/vala, devel/glib2, graphics/gdk-pixbuf2, www/curl
 コンパイルは以下のようにします。
 
 ```
-% cd vala
-% make vala-make2
-% make
+% gmake
 ```
 
 make install はないので、出来上がった vala/sayaka (実行ファイル) をパスの通ったところにインストールするとかしてください。
@@ -175,6 +175,7 @@ PIN を入力するとただちにユーザストリームモードになりま�
 
 TODO
 ---
+* バンドルでなくシステムの mbedTLS を使うケースへの対応
 * タイムアウトの実装
 
 
