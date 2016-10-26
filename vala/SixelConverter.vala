@@ -33,15 +33,15 @@ public class SixelConverter
 {
 	private Diag diag = new Diag("SixelConverter");
 
-	private Pixbuf pix;
+	public Pixbuf pix;
 
 	public uint8[,] Palette = new uint8[256, 3];
 
 	public int PaletteCount;
 
 	// 画像の幅と高さ。Resize すると変更されます。
-	public int Width { get; private set; }
-	public int Height { get; private set; }
+	public int Width { get; set; }
+	public int Height { get; set; }
 
 	// Sixel のカラーモード値
 	// 1 : 通常
@@ -450,8 +450,8 @@ stderr.printf("sysctl error\n");
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 		int src = 0;
 
 		// 一番効率のよくない方法。
@@ -479,8 +479,8 @@ stderr.printf("sysctl error\n");
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 
 		// おおきな(といっても今どきなら小さい)バッファが要るが性能はまあまあ良い
 
@@ -560,8 +560,8 @@ stderr.printf("sysctl error\n");
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 
 		// パレットのビット数
 		int bcnt = MyLog2(PaletteCount);
@@ -626,8 +626,8 @@ stderr.printf("bcnt=%d\n", bcnt);
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 
 		uint8[] sixelbuf = new uint8[w * 16 + 12];
 
@@ -660,8 +660,8 @@ stderr.printf("bcnt=%d\n", bcnt);
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
 		unowned uint8[] p0 = pix.get_pixels();
-		int w = pix.get_width();
-		int h = pix.get_height();
+		int w = Width;
+		int h = Height;
 		int src = 0;
 
 		// カラー番号ごとの、X 座標の min, max を計算する

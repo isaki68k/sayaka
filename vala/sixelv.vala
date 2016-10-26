@@ -46,6 +46,7 @@ public class SixelV
 	public enum ReduceMode {
 		Diffuse,
 		Simple,
+		Tile,
 	}
 
 	public ColorMode opt_colormode = ColorMode.Fixed256;
@@ -180,6 +181,9 @@ public class SixelV
 								break;
 							case "none":
 								opt_reduce = ReduceMode.Simple;
+								break;
+							case "tile":
+								opt_reduce = ReduceMode.Tile;
 								break;
 							default:
 								usage();
@@ -335,12 +339,20 @@ stderr.printf("%s\n", filename);
 
 		sx.DiffuseMultiplier = (int16)opt_diffusemultiplier;
 		sx.DiffuseDivisor = (int16)opt_diffusedivisor;
-
+if (opt_reduce == ReduceMode.Tile) {
+	if (opt_width == 0) {
+		opt_width = sx.Width;
+	}
+	if (opt_height == 0) {
+		opt_height = (int)((double)sx.Height * opt_width / sx.Width);
+	}
+} else {
 		if (opt_width != 0 && opt_height != 0) {
 			sx.Resize(opt_width, opt_height);
 		} else if (opt_width != 0) {
 			sx.ResizeByWidth(opt_width);
 		}
+}
 
 		unowned SixelConverter.FindFunc finder = sx.FindCustom;
 
@@ -391,6 +403,18 @@ stderr.printf("%s\n", filename);
 				break;
 			case ReduceMode.Diffuse:
 				sx.DiffuseReduceCustom(finder);
+				break;
+
+			case ReduceMode.Tile:
+				ImageReductor rd = new ImageReductor();
+				rd.Pix = sx.pix;
+				rd.Palette = sx.Palette;
+				rd.PaletteCount = sx.PaletteCount;
+				rd.ExternFixed8(opt_width, opt_height);
+				Memory.copy(sx.pix.get_pixels(), rd.output, rd.output.length); 
+				sx.Width = opt_width;
+				sx.Height = opt_height;
+				
 				break;
 		}
 

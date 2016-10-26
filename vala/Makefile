@@ -60,6 +60,8 @@ SRCS_sixelv=	\
 	IHttpClient.vala \
 	HttpClientmTLS.vala \
 	sixel.native.c \
+	ImageReductor.vala \
+	imagereductor.native.c \
 
 SRCS_h=	\
 	h.vala \
