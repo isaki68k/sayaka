@@ -377,9 +377,9 @@ mbedtls_aes_setkey_dec:
 	moveal	%sp@(44+12),%a1		| bits
 
 	/* first, start with an encryption schedule */
-	movel	%a3,%sp@-
 	movel	%a1,%sp@-
 	movel	%a0,%sp@-
+	movel	%a3,%sp@-
 	bsr	_mbedtls_aes_setkey_enc
 	lea	%sp@(12),%sp
 	bmi	pdk_return
