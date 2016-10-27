@@ -107,7 +107,6 @@ public class SayakaMain
 
 	public SocketFamily address_family;
 	public bool opt_noimg;
-	public string sixel_cmd;
 	public int color_mode;
 	public bool protect;
 	public bool debug;
@@ -176,7 +175,6 @@ public class SayakaMain
 
 		address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 		color_mode = 256;
-		sixel_cmd = "";
 		bg_white = true;
 		opt_evs = false;
 		opt_show_ng = false;
@@ -284,9 +282,6 @@ public class SayakaMain
 				break;
 			 case "--relay-server":
 				cmd = SayakaCmd.StreamRelayMode;
-				break;
-			 case "--sixel-cmd":
-				sixel_cmd = args[++i];
 				break;
 			 case "--show-ng":
 				opt_show_ng = true;
@@ -474,27 +469,6 @@ public class SayakaMain
 	{
 		// 色の初期化
 		init_color();
-
-		// 外部コマンド
-		var cmd = new StringBuilder();
-		cmd.append(sixel_cmd);
-		if (sixel_cmd.has_suffix("img2sixel")) {
-			cmd.append(" -S");
-			if (color_mode == 2) {
-				cmd.append(" -e --quality=low");
-			} else if (color_mode <= 16) {
-				cmd.append(@" -m $(colormapdir)/colormap$(color_mode).png");
-			}
-		}
-		sixel_cmd = cmd.str;
-		if (debug) {
-			stdout.printf("sixel_cmd=");
-			if (sixel_cmd == "") {
-				stdout.printf("<internal>\n");
-			} else {
-				stdout.printf("%s\n", sixel_cmd);
-			}
-		}
 
 		// 一度手動で呼び出して桁数を取得
 		signal_handler(SIGWINCH);
@@ -1678,13 +1652,8 @@ public class SayakaMain
 
 		diag.Debug(@"show_image: img_file=$(img_file), img_url=$(img_url)");
 
-		if (sixel_cmd == "") {
-			// インデントはあっちで行っている
-
-			return show_image_internal(img_file, img_url, width, index);
-		} else {
-			return show_image_external(img_file, img_url, width);
-		}
+		// インデントはあっちで行っている
+		return show_image_internal(img_file, img_url, width, index);
 	}
 
 	public bool show_image_internal(string img_file, string img_url, int width,
@@ -1861,44 +1830,6 @@ public class SayakaMain
 		sx.SixelToStream(file);
 		file.seek(0, FileSeek.SET);
 		return file;
-	}
-
-	// 外部プログラムを起動して画像を表示
-	public bool show_image_external(string img_file, string img_url, int width)
-	{
-		var tmp = @"$(img_file).sixel";
-		img_file = tmp;
-
-		string width_opt = "";
-		if (width != 0) {
-			width_opt = @" -w $(width)";
-		}
-
-		FileStream stream;
-		stream = FileStream.open(img_file, "r");
-		if (stream == null) {
-			diag.Debug("no cache found");
-			var imgconv = @"$(sixel_cmd)$(width_opt)";
-			Posix.system(@"(curl -Lks $(img_url) | "
-				+ @"$(imgconv) > $(img_file)) 2> /dev/null");
-			stream = FileStream.open(img_file, "r");
-		}
-		// XXX うーん…この辺
-		size_t fsize = 0;
-		if (stream == null || (fsize = get_filesize(stream)) == 0) {
-			Posix.unlink(img_file);
-			return false;
-		}
-
-		// ファイルを読んで標準出力に吐き出す
-		uint8[] buf = new uint8[fsize];
-		stream.read(buf);
-		in_sixel = true;
-		stdout.write(buf);
-		stdout.flush();
-		in_sixel = false;
-
-		return true;
 	}
 
 	// FileStream からファイルサイズを取得
@@ -2559,8 +2490,6 @@ public class SayakaMain
 	--post : post tweet from stdin (utf-8 is expected).
 	--progress: show start up progress.
 	--protect : don't display protected user's tweet.
-	--sixel-cmd <fullpath>: external 'img2sixel'.
-		or an internal sixel converter if not specified.
 	--show-ng
 	--support-evs
 	--token <file> : token file (default: ~/.sayaka/token.json)
