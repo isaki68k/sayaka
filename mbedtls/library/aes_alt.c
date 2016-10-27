@@ -57,27 +57,12 @@ mbedtls_aes_crypt_ecb(mbedtls_aes_context *ctx,
 	const unsigned char input[16],
 	unsigned char output[16])
 {
-#if defined(MBEDTLS_AESNI_C) && defined(MBEDTLS_HAVE_X86_64)
-	if( mbedtls_aesni_has_support( MBEDTLS_AESNI_AES ) )
-		return( mbedtls_aesni_crypt_ecb( ctx, mode, input, output ) );
-#endif
-
-#if defined(MBEDTLS_PADLOCK_C) && defined(MBEDTLS_HAVE_X86)
-	if( aes_padlock_ace ) {
-		if( mbedtls_padlock_xcryptecb( ctx, mode, input, output ) == 0 )
-			return 0;
-
-		// If padlock data misaligned, we just fall back to
-		// unaccelerated mode
-	}
-#endif
-
-	if( mode == MBEDTLS_AES_ENCRYPT )
-		mbedtls_aes_encrypt( ctx, input, output );
+	if (mode == MBEDTLS_AES_ENCRYPT)
+		mbedtls_aes_encrypt(ctx, input, output);
 	else
-		mbedtls_aes_decrypt( ctx, input, output );
+		mbedtls_aes_decrypt(ctx, input, output);
 
-	return( 0 );
+	return 0;
 }
 
 #if defined(MBEDTLS_CIPHER_MODE_CBC)
@@ -94,18 +79,6 @@ mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
 
 	if( length % 16 )
 		return( MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH );
-
-#if defined(MBEDTLS_PADLOCK_C) && defined(MBEDTLS_HAVE_X86)
-	if( aes_padlock_ace )
-	{
-		if( mbedtls_padlock_xcryptcbc( ctx, mode, length, iv, input, output ) == 0 )
-			return( 0 );
-
-		// If padlock data misaligned, we just fall back to
-		// unaccelerated mode
-		//
-	}
-#endif
 
 	if( mode == MBEDTLS_AES_DECRYPT )
 	{
