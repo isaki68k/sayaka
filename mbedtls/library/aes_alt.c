@@ -52,36 +52,6 @@ mbedtls_aes_free(mbedtls_aes_context *ctx)
 }
 
 int
-mbedtls_aes_setkey_enc(mbedtls_aes_context *ctx,
-	const unsigned char *key,
-	unsigned int bits)
-{
-	return -1;
-}
-
-int
-mbedtls_aes_setkey_dec(mbedtls_aes_context *ctx,
-	const unsigned char *key,
-	unsigned int bits)
-{
-	return -1;
-}
-
-void
-mbedtls_aes_encrypt(mbedtls_aes_context *ctx,
-	const unsigned char input[16],
-	unsigned char output[16])
-{
-}
-
-void
-mbedtls_aes_decrypt(mbedtls_aes_context *ctx,
-	const unsigned char input[16],
-	unsigned char output[16])
-{
-}
-
-int
 mbedtls_aes_crypt_ecb(mbedtls_aes_context *ctx,
 	int mode,
 	const unsigned char input[16],

@@ -8,15 +8,17 @@
 #define rd_key	(0)
 #define rounds	(60 * 4)
 
-|int private_AES_set_encrypt_key(const unsigned char *userKey,
-| const int bits, AES_KEY *key)
-.global private_AES_set_encrypt_key
-private_AES_set_encrypt_key:
-_private_AES_set_encrypt_key:
+| int
+| mbedtls_aes_setkey_enc(mbedtls_aes_context *ctx,
+|  const unsigned char *key,
+|  unsigned int bits)
+.global	mbedtls_aes_setkey_enc
+mbedtls_aes_setkey_enc:
+_mbedtls_aes_setkey_enc:
 	moveml	%d2-%d7/%a2-%a6,%sp@-
-	moveal	%sp@(44+4),%a0		| userKey
-	moveal	%sp@(44+8),%a1		| bits
-	moveal	%sp@(44+12),%a3		| key
+	moveal	%sp@(44+4),%a3		| key (ctx in mbedTLS)
+	moveal	%sp@(44+8),%a0		| userKey (key in mbedTLS)
+	moveal	%sp@(44+12),%a1		| bits
 
 	tstl	%a0
 	beq	pek_return1		| return -1 if userKey == NULL
@@ -359,20 +361,22 @@ pek_return2:
 	bra	pek_return
 
 
-| int private_AES_set_decrypt_key(const unsigned char *userKey,
-|  const int bits, AES_KEY *key)
-.global private_AES_set_decrypt_key
-private_AES_set_decrypt_key:
+| int
+| mbedtls_aes_setkey_dec(mbedtls_aes_context *ctx,
+|  const unsigned char *key,
+|  unsigned int bits)
+.global	mbedtls_aes_setkey_dec
+mbedtls_aes_setkey_dec:
 	moveml	%d2-%d7/%a2-%a6,%sp@-
-	moveal	%sp@(44+4),%a0		| userKey
-	moveal	%sp@(44+8),%a1		| bits
-	moveal	%sp@(44+12),%a3		| key
+	moveal	%sp@(44+4),%a3		| key (ctx in mbedTLS)
+	moveal	%sp@(44+8),%a0		| userKey (key in mbedTLS)
+	moveal	%sp@(44+12),%a1		| bits
 
 	/* first, start with an encryption schedule */
 	movel	%a3,%sp@-
 	movel	%a1,%sp@-
 	movel	%a0,%sp@-
-	bsr	_private_AES_set_encrypt_key
+	bsr	_mbedtls_aes_setkey_enc
 	lea	%sp@(12),%sp
 	bmi	pdk_return
 
@@ -452,10 +456,12 @@ pdk_return:
 	rts
 
 
-| void AES_encrypt(const unsigned char *in, unsigned char *out,
-|  const AES_KEY *key)
-.global AES_encrypt
-AES_encrypt:
+| void
+| mbedtls_aes_encrypt(mbedtls_aes_context *ctx,
+|  const unsigned char input[16],
+|  unsigned char output[16])
+.global	mbedtls_aes_encrypt
+mbedtls_aes_encrypt:
 	| %a0  in,  Te0
 	| %a1  out, Te1
 	| %a2       Te2
@@ -463,8 +469,8 @@ AES_encrypt:
 	| %a4  loop end
 	| %a5  rk
 	moveml	%d2-%d7/%a2-%a5,%sp@-
-	moveal	%sp@(40+4),%a0		| in
-	moveal	%sp@(40+12),%a3		| key
+	moveal	%sp@(40+4),%a3		| key (ctx in mbedTLS)
+	moveal	%sp@(40+8),%a0		| in
 
 	lea	%a3@(rd_key),%a5
 	movel	%a3@(rounds),%d0
@@ -696,7 +702,7 @@ enc_last:
 	 * apply last round and
 	 * map cipher state to byte array block:
 	 */
-	moveal	%sp@(40+8),%a4		| out
+	moveal	%sp@(40+12),%a4		| out
 	addql	#2,%a0			| Te0 += 2
 	addql	#3,%a1			| Te1 += 3
 	addql	#1,%a3			| Te3 += 1
@@ -799,10 +805,12 @@ enc_last:
 	moveml	%sp@+,%d2-%d7/%a2-%a5
 	rts
 
-| void AES_decrypt(const unsigned char *in, unsigned char *out,
-|  const AES_KEY *key)
-.global AES_decrypt
-AES_decrypt:
+| void
+| mbedtls_aes_decrypt(mbedtls_aes_context *ctx,
+|  const unsigned char input[16],
+|  unsigned char output[16])
+.global mbedtls_aes_decrypt
+mbedtls_aes_decrypt:
 	| %a0  in,  Td0
 	| %a1  out, Td1
 	| %a2       Td2
@@ -810,8 +818,8 @@ AES_decrypt:
 	| %a4  loop end, Td4
 	| %a5  rk
 	moveml	%d2-%d7/%a2-%a5,%sp@-
-	moveal	%sp@(40+4),%a0		| in
-	moveal	%sp@(40+12),%a3		| key
+	moveal	%sp@(40+4),%a3		| key (ctx in mbedTLS)
+	moveal	%sp@(40+8),%a0		| in
 
 	lea	%a3@(rd_key),%a5
 	movel	%a3@(rounds),%d0
@@ -1136,7 +1144,7 @@ dec_loop_start:
 	moveb	%a4@(%d7),%d3		| d3=$22110033
 	rorl	#8,%d3			| d3=$33221100
 
-	moveal	%sp@(40+8),%a4		| out
+	moveal	%sp@(40+12),%a4		| out
 
 	movel	%a5@+,%d4
 	eorl	%d4,%d0
