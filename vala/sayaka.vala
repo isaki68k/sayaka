@@ -1615,7 +1615,7 @@ public class SayakaMain
 	}
 
 	// index は画像の番号 (位置決めに使用する)
-	public bool show_photo(string img_url, int width, int index)
+	public bool show_photo(string img_url, int resize_width, int index)
 	{
 		string img_file = img_url;
 		try {
@@ -1625,17 +1625,17 @@ public class SayakaMain
 			stdout.printf(@"show_photo: regex: $(e.message)\n");
 		}
 
-		return show_image(img_file, img_url, width, index);
+		return show_image(img_file, img_url, resize_width, index);
 	}
 
 	// 画像をキャッシュして表示
 	//  $img_file はキャッシュディレクトリ内でのファイル名
 	//  $img_url は画像の URL
-	//  $width は画像の幅。ピクセルで指定。0 を指定すると、リサイズせず
-	//  オリジナルのサイズ。
+	//  $resize_width はリサイズ後の画像の幅。ピクセルで指定。0 を指定すると
+	//  リサイズせずオリジナルのサイズ。
 	//  $index は添付写真の位置決めに使用する画像番号。-1 なら位置不要。
 	// 表示できれば真を返す。
-	public bool show_image(string img_file, string img_url, int width,
+	public bool show_image(string img_file, string img_url, int resize_width,
 		int index)
 	{
 		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
@@ -1653,10 +1653,10 @@ public class SayakaMain
 		diag.Debug(@"show_image: img_file=$(img_file), img_url=$(img_url)");
 
 		// インデントはあっちで行っている
-		return show_image_internal(img_file, img_url, width, index);
+		return show_image_internal(img_file, img_url, resize_width, index);
 	}
 
-	public bool show_image_internal(string img_file, string img_url, int width,
+	public bool show_image_internal(string img_file, string img_url, int resize_width,
 		int index)
 	{
 		var cache_filename = img_file + ".sixel";
@@ -1665,7 +1665,7 @@ public class SayakaMain
 			// キャッシュファイルがないので、画像を取得
 			diag.Debug("sixel cache is not found");
 			cache_file = show_image_internal_makesixel(cache_filename,
-				img_url, width);
+				img_url, resize_width);
 			if (cache_file == null) {
 				return false;
 			}
@@ -1766,9 +1766,9 @@ public class SayakaMain
 	// (位置は先頭) を返す。失敗すれば null を返す。
 	// cache_filename はキャッシュするファイルのファイル名
 	// img_url は画像 URL
-	// width はリサイズすべき幅を指定、0 ならリサイズしない
+	// resize_width はリサイズすべき幅を指定、0 ならリサイズしない
 	public FileStream? show_image_internal_makesixel(string cache_filename,
-		string img_url, int width)
+		string img_url, int resize_width)
 	{
 		var sx = new SixelConverter();
 		var fg = new HttpClient(img_url);
@@ -1824,7 +1824,7 @@ public class SayakaMain
 		}
 
 		// インデックスカラー変換
-		sx.ConvertToIndexed(width);
+		sx.ConvertToIndexed(resize_width);
 
 		var file = FileStream.open(cache_filename, "w+");
 		sx.SixelToStream(file);
