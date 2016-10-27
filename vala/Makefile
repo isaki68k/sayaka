@@ -45,6 +45,7 @@ SRCS_sayaka=	\
 	mtls.c \
 	IHttpClient.vala \
 	HttpClientmTLS.vala \
+	sixel.native.c \
 
 SRCS_sixelv=	\
 	sixelv.vala \
