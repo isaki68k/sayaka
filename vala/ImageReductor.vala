@@ -19,7 +19,7 @@ public struct ColorRGBint
 	int b;
 }
 
-extern int imagereductor_resize_reduce_fixed8(
+extern int imagereductor_resize_reduce_fast_fixed8(
 	uint8[] dst,
 	int dstWidth, int dstHeight,
 	uint8[] src,
@@ -429,7 +429,7 @@ public class ImageReductor
 
 	/////////////////////////////
 
-	public void ExternFixed8(int toWidth, int toHeight)
+	public void FastFixed8(int toWidth, int toHeight)
 	{
 		unowned uint8[] p0 = Pix.get_pixels();
 		int w = Pix.get_width();
@@ -438,7 +438,7 @@ public class ImageReductor
 		int stride = Pix.get_rowstride();
 
 		output = new uint8[toWidth * toHeight];
-		imagereductor_resize_reduce_fixed8(output, toWidth, toHeight, p0, w, h, nch, stride);
+		imagereductor_resize_reduce_fast_fixed8(output, toWidth, toHeight, p0, w, h, nch, stride);
 	}
 
 }

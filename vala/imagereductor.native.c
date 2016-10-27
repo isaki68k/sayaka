@@ -61,7 +61,7 @@ saturate_byte(int x)
 }
 
 int
-imagereductor_resize_reduce_fixed8(
+imagereductor_resize_reduce_fast_fixed8(
 	uint8_t *dst, int dstLen,
 	int dstWidth, int dstHeight,
 	uint8_t *src, int srcLen,
