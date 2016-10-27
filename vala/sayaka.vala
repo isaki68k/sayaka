@@ -1651,21 +1651,12 @@ public class SayakaMain
 		img_file = tmp;
 
 		diag.Debug(@"show_image: img_file=$(img_file), img_url=$(img_url)");
-
-		// インデントはあっちで行っている
-		return show_image_internal(img_file, img_url, resize_width, index);
-	}
-
-	public bool show_image_internal(string img_file, string img_url, int resize_width,
-		int index)
-	{
 		var cache_filename = img_file + ".sixel";
 		var cache_file = FileStream.open(cache_filename, "r");
 		if (cache_file == null) {
 			// キャッシュファイルがないので、画像を取得
 			diag.Debug("sixel cache is not found");
-			cache_file = show_image_internal_makesixel(cache_filename,
-				img_url, resize_width);
+			cache_file = fetch_image(cache_filename, img_url, resize_width);
 			if (cache_file == null) {
 				return false;
 			}
@@ -1767,8 +1758,8 @@ public class SayakaMain
 	// cache_filename はキャッシュするファイルのファイル名
 	// img_url は画像 URL
 	// resize_width はリサイズすべき幅を指定、0 ならリサイズしない
-	public FileStream? show_image_internal_makesixel(string cache_filename,
-		string img_url, int resize_width)
+	public FileStream? fetch_image(string cache_filename, string img_url,
+		int resize_width)
 	{
 		var sx = new SixelConverter();
 		var fg = new HttpClient(img_url);
