@@ -63,7 +63,7 @@ OBJS_CRYPTO=	aes.o		aesni.o		arc4.o		\
 		sha256.o	sha512.o	threading.o	\
 		timing.o	version.o			\
 		version_features.o		xtea.o
-OBJS_CRYPTO+= aes_alt.o
+OBJS_CRYPTO+= aes_alt.o aes_m68k.o
 
 OBJS_X509=	certs.o		pkcs11.o	x509.o		\
 		x509_create.o	x509_crl.o	x509_crt.o	\
@@ -160,6 +160,10 @@ libmbedcrypto.dll: $(OBJS_CRYPTO)
 
 .c.o:
 	echo "  CC    $<"
+	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) -c $<
+
+.S.o:
+	echo "  AS    $<"
 	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) -c $<
 
 clean:
