@@ -112,6 +112,32 @@ public class SixelConverter
 		PaletteCount = 8;
 	}
 
+	private void SetPaletteFixedX68kInternal()
+	{
+		for (int i = 0; i < 8; i++) {
+			uint8 R = (uint8)((i     ) & 0x01) * 255;
+			uint8 G = (uint8)((i >> 1) & 0x01) * 255;
+			uint8 B = (uint8)((i >> 2) & 0x01) * 255;
+
+			Palette[i, 0] = R;
+			Palette[i, 1] = G;
+			Palette[i, 2] = B;
+		}
+		for (int i = 0; i < 8; i++) {
+			uint8 R = (uint8)((i     ) & 0x01) * 128;
+			uint8 G = (uint8)((i >> 1) & 0x01) * 128;
+			uint8 B = (uint8)((i >> 2) & 0x01) * 128;
+
+			if (i == 0) {
+				R = G = B = 192;
+			}
+			Palette[i + 8, 0] = R;
+			Palette[i + 8, 1] = G;
+			Palette[i + 8, 2] = B;
+		}
+		PaletteCount = 16;
+	}
+
 	// x68k 16 色の固定パレットを生成します。
 	public void SetPaletteX68k()
 	{
@@ -120,9 +146,9 @@ public class SixelConverter
 			int r, g, b;
 			var sname = "hw.ite.tpalette%X".printf(i);
 			if (sysctl.getbyname_int(sname, out val) == -1) {
-				// エラーになったらとりあえず固定8色モードで…
+				// エラーになったらとりあえず内蔵固定16色
 stderr.printf("sysctl error\n");
-				SetPaletteFixed8();
+				SetPaletteFixedX68kInternal();
 				return;
 			}
 			// x68k のパレットは GGGG_GRRR_RRBB_BBBI
@@ -140,18 +166,30 @@ stderr.printf("sysctl error\n");
 	// ANSI 16 色の固定パレットを生成します。
 	public void SetPaletteFixed16()
 	{
-		// ANSI 16 色といっても色実体は実装依存らしい。
-
 		for (int i = 0; i < 16; i++) {
 			uint8 R = (uint8)((i     ) & 0x01);
 			uint8 G = (uint8)((i >> 1) & 0x01);
 			uint8 B = (uint8)((i >> 2) & 0x01);
 			uint8 I = (uint8)((i >> 3) & 0x01);
 
+#if ANSI_PALETTE
+			// ANSI 16 色といっても色実体は実装依存らしい。
+
 			R = R * 170 + I * 85;
 			G = G * 170 + I * 85;
 			B = B * 170 + I * 85;
+#else
+			// Windows XP CMD カラーテーブル
 
+			R = R * 128 + I * 127;
+			G = G * 128 + I * 127;
+			B = B * 128 + I * 127;
+			if (i == 7) {
+				R = G = B = 192;
+			} else if (i == 8) {
+				R = G = B = 128;
+			}
+#endif
 			Palette[i, 0] = R;
 			Palette[i, 1] = G;
 			Palette[i, 2] = B;

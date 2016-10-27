@@ -26,6 +26,13 @@ extern int imagereductor_resize_reduce_fast_fixed8(
 	int srcWidth, int srcHeight,
 	int srcNch, int srcStride);
 
+extern int imagereductor_resize_reduce_fast_fixed16(
+	uint8[] dst,
+	int dstWidth, int dstHeight,
+	uint8[] src,
+	int srcWidth, int srcHeight,
+	int srcNch, int srcStride);
+
 
 public class ImageReductor
 {
@@ -291,7 +298,7 @@ public class ImageReductor
 
 	/////////////////////////////
 
-	public void FastFixed8(int toWidth, int toHeight)
+	public void FastFixed(int toWidth, int toHeight)
 	{
 		unowned uint8[] p0 = Pix.get_pixels();
 		int w = Pix.get_width();
@@ -300,8 +307,16 @@ public class ImageReductor
 		int stride = Pix.get_rowstride();
 
 		output = new uint8[toWidth * toHeight];
-		imagereductor_resize_reduce_fast_fixed8(output, toWidth, toHeight, p0, w, h, nch, stride);
+stderr.printf("PaletteCount=%d\n", PaletteCount);
+		switch (PaletteCount) {
+			case 8:
+				imagereductor_resize_reduce_fast_fixed8(output, toWidth, toHeight, p0, w, h, nch, stride);
+				break;
+			case 16:
+			default:
+				imagereductor_resize_reduce_fast_fixed16(output, toWidth, toHeight, p0, w, h, nch, stride);
+				break;
+		}
 	}
-
 }
 
