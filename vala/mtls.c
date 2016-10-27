@@ -54,6 +54,18 @@
 } while (0)	/* XXX とりあえず */
 #endif
 
+// Mac OS X 10.8 には timersub がない
+#if !defined(timersub)
+#define timersub(a, b, res)	do {			\
+	(res)->tv_sec = (a)->tv_sec - (b)->tv_sec;	\
+	(res)->tv_usec = (a)->tv_usec - (b)->tv_usec;	\
+	if ((res)->tv_usec < 0) {			\
+		(res)->tv_sec--;			\
+		(res)->tv_usec += 1000000;		\
+	}						\
+} while (0)
+#endif
+
 
 // private
 int mtls_internal_free(mtlsctx_t* ctx);
