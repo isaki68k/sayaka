@@ -411,7 +411,7 @@ if (opt_reduce == ReduceMode.Fast) {
 				rd.Palette = sx.Palette;
 				rd.PaletteCount = sx.PaletteCount;
 				rd.FastFixed(opt_width, opt_height);
-				Memory.copy(sx.pix.get_pixels(), rd.output, rd.output.length); 
+				sx.IndexedBuffer = rd.output;
 				sx.Width = opt_width;
 				sx.Height = opt_height;
 				

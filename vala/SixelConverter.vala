@@ -51,6 +51,9 @@ public class SixelConverter
 	// Sixel にパレットを出力する場合 true
 	public bool OutputPalette = true;
 
+	// インデックスカラー画像データへのポインタ
+	public uint8[] IndexedBuffer;
+
 	public void Load(string filename) throws Error
 	{
 		pix = new Pixbuf.from_file(filename);
@@ -315,6 +318,7 @@ stderr.printf("sysctl error\n");
 	public void SimpleReduceCustom(FindFunc op)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
+		IndexedBuffer = p0;
 		int w = Width;
 		int h = Height;
 		int nch = pix.get_n_channels();
@@ -375,6 +379,7 @@ stderr.printf("sysctl error\n");
 	public void DiffuseReduceCustom(FindFunc op)
 	{
 		unowned uint8[] p0 = pix.get_pixels();
+		IndexedBuffer = p0;
 		int w = Width;
 		int h = Height;
 		int nch = pix.get_n_channels();
@@ -487,7 +492,7 @@ stderr.printf("sysctl error\n");
 	{
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
-		unowned uint8[] p0 = pix.get_pixels();
+		unowned uint8[] p0 = IndexedBuffer;
 		int w = Width;
 		int h = Height;
 		int src = 0;
@@ -516,7 +521,7 @@ stderr.printf("sysctl error\n");
 	{
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
-		unowned uint8[] p0 = pix.get_pixels();
+		unowned uint8[] p0 = IndexedBuffer;
 		int w = Width;
 		int h = Height;
 
@@ -597,7 +602,7 @@ stderr.printf("sysctl error\n");
 	{
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
-		unowned uint8[] p0 = pix.get_pixels();
+		unowned uint8[] p0 = IndexedBuffer;
 		int w = Width;
 		int h = Height;
 
@@ -663,7 +668,7 @@ stderr.printf("bcnt=%d\n", bcnt);
 	{
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
-		unowned uint8[] p0 = pix.get_pixels();
+		unowned uint8[] p0 = IndexedBuffer;
 		int w = Width;
 		int h = Height;
 
@@ -697,7 +702,7 @@ stderr.printf("bcnt=%d\n", bcnt);
 
 		StringBuilder linebuf = new StringBuilder.sized(1024);
 
-		unowned uint8[] p0 = pix.get_pixels();
+		unowned uint8[] p0 = IndexedBuffer;
 		int w = Width;
 		int h = Height;
 		int src = 0;
