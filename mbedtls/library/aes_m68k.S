@@ -8,6 +8,10 @@
 #define rd_key	(0)
 #define rounds	(60 * 4)
 
+/* from mbedtls/aes.h */
+#define MBEDTLS_ERR_AES_INVALID_KEY_LENGTH                -0x0020  /**< Invalid key length. */
+#define MBEDTLS_ERR_AES_INVALID_INPUT_LENGTH              -0x0022  /**< Invalid data input length. */
+
 | int
 | mbedtls_aes_setkey_enc(mbedtls_aes_context *ctx,
 |  const unsigned char *key,
@@ -357,7 +361,7 @@ pek_return1:
 	moveql	#-1,%d0
 	bra	pek_return
 pek_return2:
-	moveql	#-2,%d0
+	moveql	#MBEDTLS_ERR_AES_INVALID_KEY_LENGTH,%d0
 	bra	pek_return
 
 
