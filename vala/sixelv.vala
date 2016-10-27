@@ -46,7 +46,7 @@ public class SixelV
 	public enum ReduceMode {
 		Diffuse,
 		Simple,
-		Tile,
+		Fast,
 	}
 
 	public ColorMode opt_colormode = ColorMode.Fixed256;
@@ -182,8 +182,8 @@ public class SixelV
 							case "none":
 								opt_reduce = ReduceMode.Simple;
 								break;
-							case "tile":
-								opt_reduce = ReduceMode.Tile;
+							case "fast":
+								opt_reduce = ReduceMode.Fast;
 								break;
 							default:
 								usage();
@@ -339,7 +339,7 @@ stderr.printf("%s\n", filename);
 
 		sx.DiffuseMultiplier = (int16)opt_diffusemultiplier;
 		sx.DiffuseDivisor = (int16)opt_diffusedivisor;
-if (opt_reduce == ReduceMode.Tile) {
+if (opt_reduce == ReduceMode.Fast) {
 	if (opt_width == 0) {
 		opt_width = sx.Width;
 	}
@@ -405,7 +405,7 @@ if (opt_reduce == ReduceMode.Tile) {
 				sx.DiffuseReduceCustom(finder);
 				break;
 
-			case ReduceMode.Tile:
+			case ReduceMode.Fast:
 				ImageReductor rd = new ImageReductor();
 				rd.Pix = sx.pix;
 				rd.Palette = sx.Palette;
