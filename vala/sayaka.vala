@@ -1828,14 +1828,27 @@ public class SayakaMain
 			return null;
 		}
 
-		if (width != 0) {
+		if (opt_x68k == false && width != 0) {
 			sx.ResizeByWidth(width);
 		}
 
 		// color_modeでよしなに減色する
 		if (opt_x68k) {
 			sx.SetPaletteX68k();
-			sx.DiffuseReduceCustom(sx.FindCustom);
+			sx.OutputColorMode = 5;	// OR mode
+			if (width == 0) {
+				width = sx.Width;
+			}
+			int h = sx.Height * width / sx.Width;
+			// XXX ImageReductor とか Sixel 関係のクラス整理を予定
+			ImageReductor rd = new ImageReductor();
+			rd.Pix = sx.pix;
+			rd.Palette = sx.Palette;
+			rd.PaletteCount = sx.PaletteCount;
+			rd.FastFixed(width, h);
+			sx.IndexedBuffer = rd.output;
+			sx.Width = width;
+			sx.Height = h;
 		} else if (color_mode <= 2) {
 			sx.SetPaletteGray(2);
 			sx.DiffuseReduceGray();
