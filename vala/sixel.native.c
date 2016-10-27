@@ -81,7 +81,7 @@ sixel_putd(uint8_t *dst, int n)
 		sixel_putc(dst + 2, (decimal_table[m] & 0xf) + 0x30);
 		return 3;
 	} else {
-		return snprintf(dst, "%d", n);
+		return sprintf(dst, "%d", n);
 	}
 }
 
