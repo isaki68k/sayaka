@@ -63,7 +63,9 @@ OBJS_CRYPTO=	aes.o		aesni.o		arc4.o		\
 		sha256.o	sha512.o	threading.o	\
 		timing.o	version.o			\
 		version_features.o		xtea.o
+ifdef __m68k__
 OBJS_CRYPTO+= aes_alt.o aes_m68k.o
+endif
 
 OBJS_X509=	certs.o		pkcs11.o	x509.o		\
 		x509_create.o	x509_crl.o	x509_crt.o	\
