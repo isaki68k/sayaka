@@ -85,7 +85,7 @@ mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
 		while( length > 0 )
 		{
 			memcpy( temp, input, 16 );
-			mbedtls_aes_crypt_ecb( ctx, mode, input, output );
+			mbedtls_aes_decrypt(ctx, input, output);
 
 			for( i = 0; i < 16; i++ )
 				output[i] = (unsigned char)( output[i] ^ iv[i] );
@@ -104,7 +104,7 @@ mbedtls_aes_crypt_cbc(mbedtls_aes_context *ctx,
 			for( i = 0; i < 16; i++ )
 				output[i] = (unsigned char)( input[i] ^ iv[i] );
 
-			mbedtls_aes_crypt_ecb( ctx, mode, output, output );
+			mbedtls_aes_encrypt(ctx, output, output);
 			memcpy( iv, output, 16 );
 
 			input  += 16;
@@ -135,7 +135,7 @@ mbedtls_aes_crypt_cfb128( mbedtls_aes_context *ctx,
 		while( length-- )
 		{
 			if( n == 0 )
-				mbedtls_aes_crypt_ecb( ctx, MBEDTLS_AES_ENCRYPT, iv, iv );
+				mbedtls_aes_encrypt(ctx, iv, iv);
 
 			c = *input++;
 			*output++ = (unsigned char)( c ^ iv[n] );
@@ -149,7 +149,7 @@ mbedtls_aes_crypt_cfb128( mbedtls_aes_context *ctx,
 		while( length-- )
 		{
 			if( n == 0 )
-				mbedtls_aes_crypt_ecb( ctx, MBEDTLS_AES_ENCRYPT, iv, iv );
+				mbedtls_aes_encrypt(ctx, iv, iv);
 
 			iv[n] = *output++ = (unsigned char)( iv[n] ^ *input++ );
 
@@ -179,7 +179,7 @@ mbedtls_aes_crypt_ctr(mbedtls_aes_context *ctx,
 	while( length-- )
 	{
 		if( n == 0 ) {
-			mbedtls_aes_crypt_ecb( ctx, MBEDTLS_AES_ENCRYPT, nonce_counter, stream_block );
+			mbedtls_aes_encrypt(ctx, nonce_counter, stream_block);
 
 			for( i = 16; i > 0; i-- )
 				if( ++nonce_counter[i - 1] != 0 )
