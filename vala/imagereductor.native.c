@@ -1,3 +1,28 @@
+/*
+ * Copyright (C) 2016 Y.Sugahara (moveccr)
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 
@@ -8,7 +33,10 @@ typedef struct colorRGBint_t
 	int b;
 } colorRGBint;
 
+
+//////////////// 分数計算機
 // DDA 計算の基礎となる I + N / D 型の分数ステップ加減算計算機です。
+
 typedef struct StepRational_t
 {
 	// 整数項です。
@@ -48,7 +76,9 @@ StepRationalAdd(StepRational* sr, StepRational* x)
 	}
 }
 
+//////////////// 色探索
 
+// 固定 8 色パレットコードへ色を変換します。
 static int
 imagereductor_findfixed8(uint8_t r, uint8_t g, uint8_t b)
 {
@@ -57,6 +87,8 @@ imagereductor_findfixed8(uint8_t r, uint8_t g, uint8_t b)
 	uint8_t B = (uint8_t)(b >= 128);
 	return R + (G << 1) + (B << 2);
 }
+
+//////////////// その他のサブルーチン
 
 static uint8_t
 saturate_byte(int x)
@@ -78,6 +110,20 @@ RoundDownPow2(int x)
 	return x >> 1;
 }
 
+//////////////// 変換関数
+
+// 画像を縮小しながら減色して変換します。
+// 出来る限り高速に、それなりの品質で変換します。
+// 色は固定 8 色です。
+// dst : 色コードを出力するバッファです。
+//       dstWidth * dstHeight バイト以上を保証してください。
+// dstWidth : 出力の幅です。
+// dstHeight : 出力の高さです。
+// src : 入力ピクセルデータ (R,G,B または R,G,B,A) です。
+// srcWidth : 入力の幅です。
+// srcHeight : 入力の高さです。
+// srcNch : 入力のチャンネル数です。3 か 4 を保証してください。
+// srcStride : 入力のストライドのバイト長さです。
 int
 imagereductor_resize_reduce_fast_fixed8(
 	uint8_t *dst, int dstLen,
