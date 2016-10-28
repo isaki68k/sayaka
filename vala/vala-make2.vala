@@ -86,6 +86,9 @@ public class Program
 
 	  --clean
 		中間ファイルと、実行ファイルを削除します。
+
+	  --valac-only
+	    valac の実行までで停止します。
 ";
 
 
@@ -109,6 +112,7 @@ public class Program
 	private bool opt_dry_run;
 	private bool opt_echocmd;
 	private bool opt_clean;
+	private bool opt_valac_only;
 
 	private Array<string> srcfiles;
 	// srcfiles のうち .vala なファイル名。
@@ -130,6 +134,7 @@ public class Program
 		opt_dry_run = false;
 		opt_echocmd = false;
 		opt_clean = false;
+		opt_valac_only = false;
 	}
 
 	// clean 処理を実行します。
@@ -216,6 +221,9 @@ public class Program
 
 			 case "--clean":
 				opt_clean = true;
+				break;
+			 case "--valac-only":
+				opt_valac_only = true;
 				break;
 
 			 default:
@@ -339,6 +347,11 @@ public class Program
 				// vala は変更がないとき日付を更新しないので touch
 				FileUtils.utime(cfile);
 			}
+		}
+
+		// 手動クロスビルド用、valac でやめるモード
+		if (opt_valac_only) {
+			return 0;
 		}
 
 		// src_vala .c -> .o

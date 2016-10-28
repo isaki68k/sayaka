@@ -117,6 +117,7 @@ VALAMAKE_COMMON_OPTS= \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
 		-L "${LIBS} " \
+		${VALAMAKE_OPTS} \
 
 sayaka:
 	@${VALAMAKE} ${VALAMAKE_COMMON_OPTS} \
