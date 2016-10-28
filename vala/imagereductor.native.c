@@ -96,6 +96,26 @@ imagereductor_findfixed8(uint8_t r, uint8_t g, uint8_t b)
 	return R + (G << 1) + (B << 2);
 }
 
+const colorRGBint palette_fixed16[] =
+{
+ {  0,   0,   0},
+ {255,   0,   0},
+ {  0, 255,   0},
+ {255, 255,   0},
+ {  0,   0, 255},
+ {255,   0, 255},
+ {  0, 255, 255},
+ {255, 255, 255},
+ {192, 192, 192},
+ {128,   0,   0},
+ {  0, 128,   0},
+ {128, 128,   0},
+ {  0,   0, 128},
+ {128,   0, 128},
+ {  0, 128, 128},
+ {128, 128, 128},
+};
+
 // 固定 8 色パレットコードへ色を変換します。
 // P0 = (0, 0, 0)		Black
 //		色差 r-g, g-b = 0, 0
@@ -132,6 +152,7 @@ imagereductor_findfixed8(uint8_t r, uint8_t g, uint8_t b)
 static int
 imagereductor_findfixed16(uint8_t r, uint8_t g, uint8_t b)
 {
+#if COLOR_DIFF_MODE
 	int rg = (int)r - (int)g;
 	int gb = (int)g - (int)b;
 
@@ -185,6 +206,38 @@ imagereductor_findfixed16(uint8_t r, uint8_t g, uint8_t b)
 			return 6;
 		}
 	}
+#else
+	int I = (int)r + (int)g + (int)b;
+	int R;
+	int G;
+	int B;
+	if (I >= 160 * 3) {
+		R = r >= 160;
+		G = g >= 160;
+		B = b >= 160;
+		if (R == G && G == B) {
+			if (r > 224) {
+				return 7;
+			} else {
+				return 8;
+			}
+		}
+		return R + (G << 1) + (B << 2);
+	} else {
+		R = r >= 80;
+		G = g >= 80;
+		B = b >= 80;
+		if (R == G && G == B) {
+			if (r > 64) {
+				return 15;
+			} else {
+				return 0;
+			}
+		}
+		return R + (G << 1) + (B << 2) | 8;
+	}
+
+#endif
 }
 
 //////////////// その他のサブルーチン
@@ -352,13 +405,9 @@ imagereductor_resize_reduce_fast_fixed16(
 				saturate_byte(col.g),
 				saturate_byte(col.b));
 
-#if 0
-			col.r -= (f8 & 1) << 8;
-			col.g -= ((f8 >> 1) & 1) << 8;
-			col.b -= ((f8 >> 2) & 1) << 8;
-#else
-			col.r = col.g = col.b = 0;
-#endif
+			col.r -= palette_fixed16[f8].r;
+			col.g -= palette_fixed16[f8].g;
+			col.b -= palette_fixed16[f8].b;
 
 			*dst++ = f8;
 		}

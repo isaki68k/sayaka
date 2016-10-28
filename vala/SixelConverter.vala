@@ -29,30 +29,84 @@ using System.OS;
 extern int sixel_image_to_sixel_h6_ormode(
   uint8* dst, uint8* src, int w, int h);
 
+// SIXEL カラーモード
+public enum SixelColorMode
+{
+	FixedX68k,
+	X68k,
+	Gray,
+	GrayMean,
+	Fixed8,
+	FixedANSI16,
+	FixedWindows16,
+	Fixed256,
+	// カスタムカラー。外部でカラーパレットを生成します。
+	Custom,
+}
+
+// SIXEL 減色モード
+public enum SixelReduceMode
+{
+	// 速度優先法
+	Fast,
+
+	// 2次元誤差分散法
+	Diffuse,
+
+	// 単純一致法
+	Simple,
+}
+
+// SIXEL 出力モード
+public enum SixelOutputMode
+{
+	// 通常の SIXEL を出力します。
+	Normal = 1,
+
+	// OR モード SIXEL を出力します。
+	Or = 5,
+}
+
 public class SixelConverter
 {
 	private Diag diag = new Diag("SixelConverter");
 
+	private ImageReductor rd = new ImageReductor();
+
+
+	// 元画像
 	public Pixbuf pix;
 
-	public uint8[,] Palette = new uint8[256, 3];
-
+	// パレット
+	public uint8[,] Palette;
 	public int PaletteCount;
 
-	// 画像の幅と高さ。Resize すると変更されます。
-	public int Width { get; set; }
-	public int Height { get; set; }
+	// インデックスカラー画像バッファ
+	public uint8[] Indexed;
 
-	// Sixel のカラーモード値
+
+	// 画像の幅と高さ。Resize すると変更されます。
+	public int Width { get; private set; }
+	public int Height { get; private set; }
+
+	//////////////// 設定
+
+	// Sixel の出力カラーモード値
 	// 1 : 通常
 	// 5 : X68k OR-ed Mode
-	public int OutputColorMode = 1;
+	public SixelOutputMode OutputMode = SixelOutputMode.Normal;
 
 	// Sixel にパレットを出力する場合 true
 	public bool OutputPalette = true;
 
-	// インデックスカラー画像データへのポインタ
-	public uint8[] IndexedBuffer;
+	// カラーモード
+	public SixelColorMode ColorMode = SixelColorMode.Fixed256;
+
+	// 減色モード
+	public SixelReduceMode ReduceMode = SixelReduceMode.Diffuse;
+
+
+	//////////////// 画像の読み込み
 
 	public void Load(string filename) throws Error
 	{
@@ -75,6 +129,23 @@ public class SixelConverter
 
 	// ----- 前処理
 
+	// 必要に応じてリサイズします。
+	public void ResizeIfNeeded(int width = 0, int height = 0)
+	{
+		if (width == 0) {
+			Width = pix.get_width();
+		}
+		if (height == 0) {
+			Height = pix.get_height() * Width / pix.get_width();
+		}
+
+		// Fast はリサイズを減色と同時に行うので
+		// プロパティだけ変更して、画像処理は行わない。
+		if (ReduceMode == SixelReduceMode.Fast) return;
+
+		Resize(Width, Height);
+	}
+
 	public void ResizeByWidth(int width)
 	{
 		int h = Height * width / Width;
@@ -89,6 +160,58 @@ public class SixelConverter
 	}
 
 	// ----- パレットの設定
+
+	// モードを指定してから呼び出すと、よしなにパレットを設定します。
+	public void SetPalette()
+	{
+		switch (ColorMode) {
+			case SixelColorMode.FixedX68k:
+				SetPaletteFixedX68k();
+				ColorFinder = FindFixedX68k;
+				break;
+
+			case SixelColorMode.X68k:
+				SetPaletteX68k();
+				ColorFinder = FindCustom16;
+				break;
+
+			case SixelColorMode.Gray:
+				SetPaletteGray(256);
+				ColorFinder = FindGray;
+				break;
+
+			case SixelColorMode.GrayMean:
+				SetPaletteGray(256);
+				ColorFinder = FindGrayMean;
+				break;
+
+			case SixelColorMode.Fixed8:
+				SetPaletteFixed8();
+				ColorFinder = FindFixed8;
+				break;
+
+			case SixelColorMode.FixedANSI16:
+				SetPaletteFixedANSI16();
+				ColorFinder = FindFixedANSI16;
+				break;
+
+			case SixelColorMode.FixedWindows16:
+				SetPaletteFixedWindows16();
+				ColorFinder = FindFixedWindows16;
+				break;
+
+			case SixelColorMode.Fixed256:
+			default:
+				SetPaletteFixed256();
+				ColorFinder = FindFixed256;
+				break;
+
+			case SixelColorMode.Custom:
+				PaletteCount = 256;
+				ColorFinder = FindCustom;
+				break;
+		}
+	}
 
 	// グレースケールパレットを生成します。
 	public void SetPaletteGray(int count)
@@ -115,7 +238,8 @@ public class SixelConverter
 		PaletteCount = 8;
 	}
 
-	private void SetPaletteFixedX68kInternal()
+	// x68k 16 色の固定パレットを生成します。
+	public void SetPaletteFixedX68k()
 	{
 		for (int i = 0; i < 8; i++) {
 			uint8 R = (uint8)((i     ) & 0x01) * 255;
@@ -141,7 +265,7 @@ public class SixelConverter
 		PaletteCount = 16;
 	}
 
-	// x68k 16 色の固定パレットを生成します。
+	// x68k 16 色のパレットをシステムから取得して生成します。
 	public void SetPaletteX68k()
 	{
 		for (var i = 0; i < 16; i++) {
@@ -150,8 +274,8 @@ public class SixelConverter
 			var sname = "hw.ite.tpalette%X".printf(i);
 			if (sysctl.getbyname_int(sname, out val) == -1) {
 				// エラーになったらとりあえず内蔵固定16色
-stderr.printf("sysctl error\n");
-				SetPaletteFixedX68kInternal();
+//stderr.printf("sysctl error\n");
+				SetPaletteFixedX68k();
 				return;
 			}
 			// x68k のパレットは GGGG_GRRR_RRBB_BBBI
@@ -167,7 +291,7 @@ stderr.printf("sysctl error\n");
 	}
 
 	// ANSI 16 色の固定パレットを生成します。
-	public void SetPaletteFixed16()
+	public void SetPaletteFixedANSI16()
 	{
 		for (int i = 0; i < 16; i++) {
 			uint8 R = (uint8)((i     ) & 0x01);
@@ -175,13 +299,28 @@ stderr.printf("sysctl error\n");
 			uint8 B = (uint8)((i >> 2) & 0x01);
 			uint8 I = (uint8)((i >> 3) & 0x01);
 
-#if ANSI_PALETTE
 			// ANSI 16 色といっても色実体は実装依存らしい。
 
 			R = R * 170 + I * 85;
 			G = G * 170 + I * 85;
 			B = B * 170 + I * 85;
-#else
+
+			Palette[i, 0] = R;
+			Palette[i, 1] = G;
+			Palette[i, 2] = B;
+		}
+		PaletteCount = 16;
+	}
+
+	// Windows XP CMD 16 色の固定パレットを生成します。
+	public void SetPaletteFixedWindows16()
+	{
+		for (int i = 0; i < 16; i++) {
+			uint8 R = (uint8)((i     ) & 0x01);
+			uint8 G = (uint8)((i >> 1) & 0x01);
+			uint8 B = (uint8)((i >> 2) & 0x01);
+			uint8 I = (uint8)((i >> 3) & 0x01);
+
 			// Windows XP CMD カラーテーブル
 
 			R = R * 128 + I * 127;
@@ -192,7 +331,7 @@ stderr.printf("sysctl error\n");
 			} else if (i == 8) {
 				R = G = B = 128;
 			}
-#endif
+
 			Palette[i, 0] = R;
 			Palette[i, 1] = G;
 			Palette[i, 2] = B;
@@ -216,6 +355,10 @@ stderr.printf("sysctl error\n");
 	// Find* のデリゲートです。
 	public delegate uint8 FindFunc(uint8 r, uint8 g, uint8 b);
 
+	// Find* のデリゲートを保持します。
+	// パレットを選択したときに設定します。
+	private FindFunc ColorFinder;
+
 	// グレースケールパレット時に、最も近いパレット番号を返します。
 	public uint8 FindGray(uint8 r, uint8 g, uint8 b)
 	{
@@ -238,8 +381,49 @@ stderr.printf("sysctl error\n");
 		return R + (G << 1) + (B << 2);
 	}
 
-	// 固定16色時に、最も近いパレット番号を返します。
-	public uint8 FindFixed16(uint8 r, uint8 g, uint8 b)
+	// X68k 固定16色時に、最も近いパレット番号を返します。
+	public uint8 FindFixedX68k(uint8 r, uint8 g, uint8 b)
+	{
+		int I = (int)r + (int)g + (int)b;
+		int R;
+		int G;
+		int B;
+		if (I >= 160 * 3) {
+			R = r >= 160;
+			G = g >= 160;
+			B = b >= 160;
+			if (R == G && G == B) {
+				if (r > 224) {
+					return 7;
+				} else {
+					return 8;
+				}
+			}
+			return R + (G << 1) + (B << 2);
+		} else {
+			R = r >= 80;
+			G = g >= 80;
+			B = b >= 80;
+			if (R == G && G == B) {
+				if (r > 64) {
+					return 15;
+				} else {
+					return 0;
+				}
+			}
+			return R + (G << 1) + (B << 2) | 8;
+		}
+	}
+
+	// ANSI 固定16色時に、最も近いパレット番号を返します。
+	public uint8 FindFixedANSI16(uint8 r, uint8 g, uint8 b)
+	{
+		// TODO: 最適実装
+		return FindCustom(r, g, b);
+	}
+
+	// Windows 固定16色時に、最も近いパレット番号を返します。
+	public uint8 FindFixedWindows16(uint8 r, uint8 g, uint8 b)
 	{
 		// TODO: 最適実装
 		return FindCustom(r, g, b);
@@ -254,6 +438,13 @@ stderr.printf("sysctl error\n");
 		uint8 G = g >> 5;
 		uint8 B = b >> 6;
 		return (R << 5) + (G << 2) + B;
+	}
+
+	// カスタム 16 色パレット時に、最も近いパレット番号を返します。
+	public uint8 FindCustom16(uint8 r, uint8 g, uint8 b)
+	{
+		// TODO: 最適実装
+		return FindCustom(r, g, b);
 	}
 
 	// カスタムパレット時に、最も近いパレット番号を返します。
@@ -286,41 +477,48 @@ stderr.printf("sysctl error\n");
 
 	// ----- カラー変換 (減色)
 
+	public void ReduceColor()
+	{
+		if (ColorFinder == NULL) {
+			stderr.printf("PROGERR Color == NULL\n");
+			return;
+		}
+
+		switch (ReduceMode) {
+			case SixelReduceMode.Fast:
+				FastReduce();
+				break;
+
+			case SixelReduceMode.Diffuse:
+				DiffuseReduce();
+				break;
+
+			case SixelReduceMode.Simple:
+				SimpleReduce();
+				break;
+		}
+	}
+
 	// ----- 単純減色法
 	// ----- 要は誤差拡散法ではなく、当該ピクセルのみの値で減色するアルゴリズム。
 
-	// 単純減色法で NTSC 輝度減色でグレースケールにします。
-	public void SimpleReduceGray()
+	// 飽和加算
+	private uint8 satulate_add(uint8 a, int16 b)
 	{
-		SimpleReduceCustom(FindGray);
-	}
-
-	// 単純減色法で 固定8色にします。
-	public void SimpleReduceFixed8()
-	{
-		SimpleReduceCustom(FindFixed8);
-	}
-
-	// 単純減色法で 固定16色にします。
-	public void SimpleReduceFixed16()
-	{
-		SimpleReduceCustom(FindFixed16);
-	}
-
-	// 単純減色法で 固定256色にします。
-	public void SimpleReduceFixed256()
-	{
-		SimpleReduceCustom(FindFixed256);
+		int16 rv = (int16)a + b;
+		if (rv > 255) rv = 255;
+		if (rv < 0) rv = 0;
+		return (uint8)rv;
 	}
 
 	// 単純減色法を適用します。
-	// この関数を実行すると、pix の内容は画像からパレット番号の列に変わります。
-	public void SimpleReduceCustom(FindFunc op)
+	// ColorFinder が設定されていることを保証してください。
+	public void SimpleReduce()
 	{
 		unowned uint8[] p0 = pix.get_pixels();
-		IndexedBuffer = p0;
 		int w = Width;
 		int h = Height;
+		Indexed = new uint8[w * h];
 		int nch = pix.get_n_channels();
 		int ybase = 0;
 		int dst = 0;
@@ -331,39 +529,11 @@ stderr.printf("sysctl error\n");
 				uint8 r = psrc[0];
 				uint8 g = psrc[1];
 				uint8 b = psrc[2];
-				// パレット番号の列として、画像を破壊して書き込み
-				p0[dst++] = op(r, g, b);
+				// パレット番号の列を書き込み
+				Indexed[dst++] = ColorFinder(r, g, b);
 			}
 			ybase += pix.get_rowstride();
 		}
-	}
-
-	private uint8 satulate_add(uint8 a, int16 b)
-	{
-		int16 rv = (int16)a + b;
-		if (rv > 255) rv = 255;
-		if (rv < 0) rv = 0;
-		return (uint8)rv;
-	}
-
-	public void DiffuseReduceGray()
-	{
-		DiffuseReduceCustom(FindGray);
-	}
-
-	public void DiffuseReduceFixed8()
-	{
-		DiffuseReduceCustom(FindFixed8);
-	}
-
-	public void DiffuseReduceFixed16()
-	{
-		DiffuseReduceCustom(FindFixed16);
-	}
-
-	public void DiffuseReduceFixed256()
-	{
-		DiffuseReduceCustom(FindFixed256);
 	}
 
 	public int16 DiffuseMultiplier = 1;
@@ -376,12 +546,14 @@ stderr.printf("sysctl error\n");
 		ptr[2] = satulate_add(ptr[2], ((int16)b - Palette[c, 2]) * DiffuseMultiplier / DiffuseDivisor);
 	}
 
-	public void DiffuseReduceCustom(FindFunc op)
+	// 二次元誤差分散法を適用します。
+	// ColorFinder が設定されていることを保証してください。
+	public void DiffuseReduce()
 	{
 		unowned uint8[] p0 = pix.get_pixels();
-		IndexedBuffer = p0;
 		int w = Width;
 		int h = Height;
+		Indexed = new uint8[w * h];
 		int nch = pix.get_n_channels();
 		int stride = pix.get_rowstride();
 		int ybase = 0;
@@ -394,9 +566,9 @@ stderr.printf("sysctl error\n");
 				uint8 g = psrc[1];
 				uint8 b = psrc[2];
 
-				uint8 C = op(r, g, b);
-				// パレット番号の列として、画像を破壊して書き込み
-				p0[dst++] = C;
+				uint8 C = ColorFinder(r, g, b);
+				// パレット番号の列を書き込み
+				Indexed[dst++] = C;
 
 				if (x < w - 1) {
 					// 右のピクセルに誤差を分散
@@ -413,6 +585,20 @@ stderr.printf("sysctl error\n");
 			}
 			ybase += stride;
 		}
+	}
+
+	// 高速変換を適用します。
+	// リサイズも同時に実行します。
+	public void FastReduce()
+	{
+		unowned uint8[] p0 = pix.get_pixels();
+		int w = pix.get_width();
+		int h = pix.get_height();
+		Indexed = new uint8[Width * Height];
+		int nch = pix.get_n_channels();
+		int stride = pix.get_rowstride();
+
+		imagereductor_fast(output, Width, Height, p0, w, h, nch, stride, Palette, ColorFinder);
 	}
 
 
