@@ -157,5 +157,16 @@ namespace ULib
 		{
 			return int.parse(ValueString());
 		}
+
+		// ブールとして評価されるスイッチを返します。
+		// 0, off, false のときは false を返します。
+		// 値が省略されたときも含め、それ以外の場合は true を返します。
+		public bool ValueBool()
+		{
+			var v = ValueString();
+			if (v == null) return true;
+			if (v == "0" || v.ascii_down() == "off" || v.ascii_down() == "false") return false;
+			return true;
+		}
 	}
 }
