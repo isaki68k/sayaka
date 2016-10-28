@@ -303,7 +303,7 @@ public class SixelV
 			try {
 				var file = new HttpClient(filename);
 				file.Family = opt_address_family;
-				if (opt_debug) {
+				if (Diag.global_debug) {
 					stderr.printf("%s\n", filename);
 				}
 				var stream = file.GET();
@@ -327,7 +327,7 @@ public class SixelV
 			}
 		}
 
-		if (opt_debug) {
+		if (Diag.global_debug) {
 			stderr.printf("w=%d, h=%d\n", opt_width, opt_height);
 		}
 		sx.ConvertToIndexed(opt_width, opt_height);
