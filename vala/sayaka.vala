@@ -1828,43 +1828,34 @@ public class SayakaMain
 			return null;
 		}
 
-		if (opt_x68k == false && width != 0) {
-			sx.ResizeByWidth(width);
+		if (opt_x68k) {
+			// とりあえず固定 16 色
+			// システム取得する?
+			sx.ColorMode = ReductorColorMode.FixedX68k;
+			sx.OutputMode = SixelOutputMode.Or;
+			sx.ReduceMode = ReductorReduceMode.Fast;
+			sx.OutputPalette = false;
+		} else {
+			if (color_mode <= 2) {
+				sx.ColorMode = ReductorColorMode.Mono;
+			} else if (color_mode < 8) {
+				sx.ColorMode = ReductorColorMode.Gray;
+				// グレーの場合の色数として colormode を渡す
+				sx.GrayCount = color_mode;
+			} else if (color_mode < 16) {
+				sx.ColorMode = ReductorColorMode.Fixed8;
+			} else if (color_mode < 256) {
+				sx.ColorMode = ReductorColorMode.FixedANSI16;
+			} else {
+				sx.ColorMode = ReductorColorMode.Fixed256;
+			}
+			sx.OutputMode = SixelOutputMode.Normal;
+			sx.ReduceMode = ReductorReduceMode.HighQuality;
+			sx.OutputPalette= true;
 		}
 
-		// color_modeでよしなに減色する
-		if (opt_x68k) {
-			sx.SetPaletteX68k();
-			sx.OutputColorMode = 5;	// OR mode
-			if (width == 0) {
-				width = sx.Width;
-			}
-			int h = sx.Height * width / sx.Width;
-			// XXX ImageReductor とか Sixel 関係のクラス整理を予定
-			ImageReductor rd = new ImageReductor();
-			rd.Pix = sx.pix;
-			rd.Palette = sx.Palette;
-			rd.PaletteCount = sx.PaletteCount;
-			rd.FastFixed(width, h);
-			sx.IndexedBuffer = rd.output;
-			sx.Width = width;
-			sx.Height = h;
-		} else if (color_mode <= 2) {
-			sx.SetPaletteGray(2);
-			sx.DiffuseReduceGray();
-		} else if (color_mode < 8) {
-			sx.SetPaletteGray(color_mode);
-			sx.DiffuseReduceGray();
-		} else if (color_mode < 16) {
-			sx.SetPaletteFixed8();
-			sx.DiffuseReduceFixed8();
-		} else if (color_mode < 256) {
-			sx.SetPaletteFixed16();
-			sx.DiffuseReduceFixed16();
-		} else {
-			sx.SetPaletteFixed256();
-			sx.DiffuseReduceFixed256();
-		}
+		// インデックスカラー変換
+		sx.ConvertToIndexed(width);
 
 		var file = FileStream.open(cache_filename, "w+");
 		sx.SixelToStream(file);
