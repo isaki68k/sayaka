@@ -194,12 +194,12 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 	int R;
 	int G;
 	int B;
-	if (I >= 160 * 3) {
+	if (c.r >= 160 || c.g >= 160 || c.b >= 160) {
 		R = c.r >= 160;
 		G = c.g >= 160;
 		B = c.b >= 160;
 		if (R == G && G == B) {
-			if (c.r > 224) {
+			if (I >= 224 * 3) {
 				return 7;
 			} else {
 				return 8;
@@ -207,11 +207,13 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 		}
 		return R + (G << 1) + (B << 2);
 	} else {
-		R = c.r >= 80;
-		G = c.g >= 80;
-		B = c.b >= 80;
+		R = c.r >= 64;
+		G = c.g >= 64;
+		B = c.b >= 64;
 		if (R == G && G == B) {
-			if (c.r > 64) {
+			if (I >= 160 * 3) {
+				return 8;
+			} else if (I >= 64 * 3) {
 				return 15;
 			} else {
 				return 0;
@@ -656,19 +658,19 @@ fprintf(stderr, "dst=(%p,%d,%d) src=(%p,%d,%d)\n", dst, dstWidth, dstHeight, src
 			col.b /= D;
 
 			if (x > 0) {
-				col.r += errbuf_0[x - 1].r * 85 / 256;
-				col.g += errbuf_0[x - 1].g * 85 / 256;
-				col.b += errbuf_0[x - 1].b * 85 / 256;
+				col.r += errbuf_0[x - 1].r * 72 / 256;
+				col.g += errbuf_0[x - 1].g * 72 / 256;
+				col.b += errbuf_0[x - 1].b * 72 / 256;
 			}
 			if (y > 0) {
-				col.r += errbuf_1[x].r * 85 / 256;
-				col.g += errbuf_1[x].g * 85 / 256;
-				col.b += errbuf_1[x].b * 85 / 256;
+				col.r += errbuf_1[x].r * 72 / 256;
+				col.g += errbuf_1[x].g * 72 / 256;
+				col.b += errbuf_1[x].b * 72 / 256;
 			}
 			if (x > 0 && y > 0) {
-				col.r += errbuf_1[x - 1].r * 85 / 256;
-				col.g += errbuf_1[x - 1].g * 85 / 256;
-				col.b += errbuf_1[x - 1].b * 85 / 256;
+				col.r += errbuf_1[x - 1].r * 32 / 256;
+				col.g += errbuf_1[x - 1].g * 32 / 256;
+				col.b += errbuf_1[x - 1].b * 32 / 256;
 			}
 
 			ColorRGBuint8 c8 = {
