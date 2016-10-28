@@ -307,7 +307,7 @@ public class SixelV
 					stderr.printf("%s\n", filename);
 				}
 				var stream = file.GET();
-				sx.LoadFromStream(stream);
+				sx.LoadFromStream(stream, opt_width);
 			} catch (Error e) {
 				stderr.printf("File error: %s\n", e.message);
 				if (opt_ignoreerror) {
@@ -317,7 +317,7 @@ public class SixelV
 			}
 		} else {
 			try {
-				sx.Load(filename);
+				sx.Load(filename, opt_width);
 			} catch {
 				stderr.printf("File load error at %s\n", filename);
 				if (opt_ignoreerror) {

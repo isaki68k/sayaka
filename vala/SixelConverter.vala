@@ -87,9 +87,10 @@ public class SixelConverter
 
 	//////////////// 画像の読み込み
 
-	public void Load(string filename) throws Error
+	public void Load(string filename, int width = 0) throws Error
 	{
-		pix = new Pixbuf.from_file(filename);
+		if (width <= 0) width = -1;
+		pix = new Pixbuf.from_file_at_size(filename, width, -1);
 		Width = pix.get_width();
 		Height = pix.get_height();
 		diag.Debug(@"filename=$(filename)");
@@ -99,9 +100,10 @@ public class SixelConverter
 		diag.Debug(@"rowstride=$(pix.get_rowstride())");
 	}
 
-	public void LoadFromStream(InputStream stream) throws Error
+	public void LoadFromStream(InputStream stream, int width = 0) throws Error
 	{
-		pix = new Pixbuf.from_stream(stream);
+		if (width <= 0) width = -1;
+		pix = new Pixbuf.from_stream_at_scale(stream, width, -1, true);
 		Width = pix.get_width();
 		Height = pix.get_height();
 	}
