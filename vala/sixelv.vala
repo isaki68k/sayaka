@@ -34,32 +34,16 @@ public class SixelV
 		sixelv.main2(args);
 	}
 
-
-	public enum ColorMode {
-		Gray,
-		GrayMean,
-		Fixed8,
-		Fixed16,
-		Fixed256,
-		Custom,
-	}
-	public enum ReduceMode {
-		Diffuse,
-		Simple,
-		Fast,
-	}
-
-	public ColorMode opt_colormode = ColorMode.Fixed256;
+	public ReductorColorMode opt_colormode = ReductorColorMode.Fixed256;
 	public int opt_graylevel = 0;
 	public int opt_width = 0;
 	public int opt_height = 0;
-	public ReduceMode opt_reduce = ReduceMode.Diffuse;
-	public int opt_diffusemultiplier = 1;
-	public int opt_diffusedivisor = 3;
+	public SixelReduceMode opt_reduce = SixelReduceMode.HighQuality;
 	public bool opt_x68k = false;
+	public bool opt_outputpalette = true;
 	public bool opt_ignoreerror = false;
-	public ColorMode opt_findfunc = ColorMode.Custom;
 	public bool opt_ormode = false;
+	public SixelResizeMode opt_resizemode = SixelResizeMode.ByGdkPixbuf;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 	static SixelV this_sixelv;
 
@@ -85,14 +69,11 @@ public class SixelV
 
 					case "-e":
 					case "--monochrome":
-						opt_colormode = ColorMode.Gray;
-						opt_findfunc = ColorMode.Gray;
-						opt_graylevel = 2;
+						opt_colormode = ReductorColorMode.Mono;
 						break;
 						
 					case "--gray":
-						opt_colormode = ColorMode.Gray;
-						opt_findfunc = ColorMode.Gray;
+						opt_colormode = ReductorColorMode.Gray;
 						opt_graylevel = 256;
 						if (opt.ValueString() != "") {
 							opt_graylevel = opt.ValueInt();
@@ -107,16 +88,13 @@ public class SixelV
 					case "--colors":
 						switch (opt.ValueInt()) {
 							case 8:
-								opt_colormode = ColorMode.Fixed8;
-								opt_findfunc = ColorMode.Fixed8;
+								opt_colormode = ReductorColorMode.Fixed8;
 								break;
 							case 16:
-								opt_colormode = ColorMode.Fixed16;
-								opt_findfunc = ColorMode.Fixed16;
+								opt_colormode = ReductorColorMode.FixedANSI16;
 								break;
 							case 256:
-								opt_colormode = ColorMode.Fixed256;
-								opt_findfunc = ColorMode.Fixed256;
+								opt_colormode = ReductorColorMode.Fixed256;
 								break;
 							default:
 								usage();
@@ -125,37 +103,19 @@ public class SixelV
 						break;
 
 					case "-8":
-						opt_colormode = ColorMode.Fixed8;
-						opt_findfunc = ColorMode.Fixed8;
+						opt_colormode = ReductorColorMode.Fixed8;
 						break;
 					case "-16":
-						opt_colormode = ColorMode.Fixed16;
-						opt_findfunc = ColorMode.Fixed16;
+						opt_colormode = ReductorColorMode.FixedANSI16;
 						break;
 					case "-256":
-						opt_colormode = ColorMode.Fixed256;
-						opt_findfunc = ColorMode.Fixed256;
+						opt_colormode = ReductorColorMode.Fixed256;
 						break;
 
 					case "--colorfinder":
 						switch (opt.ValueString()) {
-							case "grayntsc":
-								opt_findfunc = ColorMode.Gray;
-								break;
 							case "graymean":
-								opt_findfunc = ColorMode.GrayMean;
-								break;
-							case "fixed8":
-								opt_findfunc = ColorMode.Fixed8;
-								break;
-							case "fixed16":
-								opt_findfunc = ColorMode.Fixed16;
-								break;
-							case "fixed256":
-								opt_findfunc = ColorMode.Fixed256;
-								break;
-							case "custom":
-								opt_findfunc = ColorMode.Custom;
+								opt_colormode = ReductorColorMode.GrayMean;
 								break;
 							default:
 								usage();
@@ -177,13 +137,16 @@ public class SixelV
 					case "--diffusion":
 						switch (opt.ValueString()) {
 							case "auto":
-								opt_reduce = ReduceMode.Diffuse;
+								opt_reduce = SixelReduceMode.HighQuality;
 								break;
 							case "none":
-								opt_reduce = ReduceMode.Simple;
+								opt_reduce = SixelReduceMode.Simple;
 								break;
 							case "fast":
-								opt_reduce = ReduceMode.Fast;
+								opt_reduce = SixelReduceMode.Fast;
+								break;
+							case "high":
+								opt_reduce = SixelReduceMode.HighQuality;
 								break;
 							default:
 								usage();
@@ -192,24 +155,12 @@ public class SixelV
 						break;
 
 					case "--x68k":
-						opt_x68k = !opt_x68k;
-						break;
-
-					case "--mul":
-						opt_diffusemultiplier = opt.ValueInt();
-						if (opt_diffusemultiplier <= 0 || opt_diffusemultiplier >= 32768) {
-							usage();
-						}
-						break;
-					case "--div":
-						opt_diffusedivisor = opt.ValueInt();
-						if (opt_diffusedivisor <= 0 || opt_diffusedivisor >= 32768) {
-							usage();
-						}
+						opt_colormode = ReductorColorMode.FixedX68k;
+						opt_ormode = true;
 						break;
 
 					case "--noerr":
-						opt_ignoreerror = !opt_ignoreerror;
+						opt_ignoreerror = opt.ValueBool();
 						break;
 
 					case "--ipv4":
@@ -221,7 +172,21 @@ public class SixelV
 						break;
 
 					case "--ormode":
-						opt_ormode = !opt_ormode;
+						opt_ormode = opt.ValueBool();
+						break;
+
+					case "--resize":
+						switch (opt.ValueString()) {
+							case "gdk":
+								opt_resizemode = SixelResizeMode.ByGdkPixbuf;
+								break;
+							case "imagereductor":
+								opt_resizemode = SixelResizeMode.ByImageReductor;
+								break;
+							default:
+								usage();
+								break;
+						}
 						break;
 
 					default:
@@ -259,13 +224,13 @@ public class SixelV
    -8
      Select 8 color (3bit) mode.
    -16
-     Select 16 color (4bit) mode.
+     Select 16 ANSI color (4bit) mode.
    -256
      Select 256 color (8bit) mode. This is default.
 
    -e
    --monochrome
-     equals --gray=2
+	 Select monochrome mode.
 
  size
    -w {width}
@@ -276,33 +241,42 @@ public class SixelV
    -h {height}
    --height={height}
      Resize height (pixel). Must need -w.
+   --resize={gdk, imagereductor}
+     Select Resize alogrithm. (for debug)
 
  algorithm
    -d
    --diffusion={diffuse type}
      auto
-       Diffusion algorithm. This is default.
+       This is default. (now implements = high)
      none
        Simple algorithm. (no diffuser)
-
-   --mul <int>
-     Diffusion multiplier. allows 1 .. 32768. default = 1
-   --div <int>
-     Diffusion divisor. allows 1 .. 32768. default = 3
+     fast
+       Fast algorithm.
+	 high
+       Diffusion algorithm.
 
  colorfind
    --colorfinder={finder}
-     grayntsc
-       Use NTSC Intensity like gray. This is default at grayscale.
      graymean 
        Use mean of RGB gray.
 
-     fixed8
-     fixed16
-     fixed256
-       Internal fixed color finder for 8, 16, 256. Fast. This is default.
-     custom
-       Internal custom color finder. Slow, but more high quarity (maybe.)
+ misc
+   --x68k
+     SHARP X680x0 mode.
+     force X68k 16 fixed color, and OR-mode.
+
+   --ormode[={on|off}]
+     Output OR-mode Sixel. for X680x0 console.
+
+   --ipv4
+     Connect IPv4 only.
+
+   --ipv6
+     Connect IPv6 only.
+
+   --noerr[={on|off}]
+     if turn on, ignore error at open.
 """);
 		Process.exit(1);
 	}
@@ -311,11 +285,27 @@ public class SixelV
 	{
 		SixelConverter sx = new SixelConverter();
 
+		// SixelConverter モード設定
+
+		sx.ColorMode = opt_colormode;
+		sx.ReduceMode = opt_reduce;
+		sx.ResizeMode = opt_resizemode;
+		sx.OutputPalette = opt_outputpalette;
+		if (opt_ormode) {
+			sx.OutputMode = SixelOutputMode.Or;
+		} else {
+			sx.OutputMode = SixelOutputMode.Normal;
+		}
+
+		// ファイル読み込み
+
 		if (filename.contains("://")) {
 			try {
 				var file = new HttpClient(filename);
 				file.Family = opt_address_family;
-stderr.printf("%s\n", filename);
+				if (opt_debug) {
+					stderr.printf("%s\n", filename);
+				}
 				var stream = file.GET();
 				sx.LoadFromStream(stream);
 			} catch (Error e) {
@@ -337,93 +327,12 @@ stderr.printf("%s\n", filename);
 			}
 		}
 
-		sx.DiffuseMultiplier = (int16)opt_diffusemultiplier;
-		sx.DiffuseDivisor = (int16)opt_diffusedivisor;
-if (opt_reduce == ReduceMode.Fast) {
-	if (opt_width == 0) {
-		opt_width = sx.Width;
-	}
-	if (opt_height == 0) {
-		opt_height = (int)((double)sx.Height * opt_width / sx.Width);
-	}
-} else {
-		if (opt_width != 0 && opt_height != 0) {
-			sx.Resize(opt_width, opt_height);
-		} else if (opt_width != 0) {
-			sx.ResizeByWidth(opt_width);
+		if (opt_debug) {
+			stderr.printf("w=%d, h=%d\n", opt_width, opt_height);
 		}
-}
-
-		unowned SixelConverter.FindFunc finder = sx.FindCustom;
-
-		switch (opt_colormode) {
-			case ColorMode.Gray:
-				sx.SetPaletteGray(opt_graylevel);
-				break;
-			case ColorMode.Fixed8:
-				sx.SetPaletteFixed8();
-				break;
-			case ColorMode.Fixed16:
-				sx.SetPaletteFixed16();
-				break;
-			case ColorMode.Fixed256:
-				sx.SetPaletteFixed256();
-				break;
-		}
-
-		switch (opt_findfunc) {
-			case ColorMode.Gray:
-				finder = sx.FindGray;
-				break;
-			case ColorMode.GrayMean:
-				finder = sx.FindGrayMean;
-				break;
-			case ColorMode.Fixed8:
-				finder = sx.FindFixed8;
-				break;
-			case ColorMode.Fixed16:
-				finder = sx.FindFixed16;
-				break;
-			case ColorMode.Fixed256:
-				finder = sx.FindFixed256;
-				break;
-			case ColorMode.Custom:
-				finder = sx.FindCustom;
-				break;
-		}
-
-		if (opt_x68k) {
-			sx.SetPaletteX68k();
-			finder = sx.FindCustom;
-		}
-
-		switch (opt_reduce) {
-			case ReduceMode.Simple:
-				sx.SimpleReduceCustom(finder);
-				break;
-			case ReduceMode.Diffuse:
-				sx.DiffuseReduceCustom(finder);
-				break;
-
-			case ReduceMode.Fast:
-				ImageReductor rd = new ImageReductor();
-				rd.Pix = sx.pix;
-				rd.Palette = sx.Palette;
-				rd.PaletteCount = sx.PaletteCount;
-				rd.FastFixed(opt_width, opt_height);
-				sx.IndexedBuffer = rd.output;
-				sx.Width = opt_width;
-				sx.Height = opt_height;
-				
-				break;
-		}
-
-		if (opt_ormode) {
-			sx.OutputColorMode = 5;
-		}
+		sx.ConvertToIndexed(opt_width, opt_height);
 
 		Posix.@signal(SIGINT, signal_handler);
-
 		sx.SixelToStream(stdout);
 	}
 
