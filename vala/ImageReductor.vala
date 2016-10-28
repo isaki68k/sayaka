@@ -1,5 +1,19 @@
 using Gdk;
 
+// vala 宣言
+// 減色モード
+public enum ReductorReduceMode
+{
+	// 速度優先法
+	Fast,
+
+	// 単純一致法
+	Simple,
+
+	// 2次元誤差分散法
+	HighQuality,
+}
+
 // C の定義と全く同じにしてください。
 
 [CCode (cname="ReductorColorMode", cprefix="RCM_", has_type_id=false)]
@@ -66,6 +80,21 @@ public class ImageReductor
 	public static void SetColorMode(ReductorColorMode mode, int count)
 	{
 		ImageReductor_SetColorMode(mode, count);
+	}
+
+	public static void Convert(ReductorReduceMode mode, Pixbuf pix, uint8[] dst, int toWidth, int toHeight)
+	{
+		switch (mode) {
+			case ReductorReduceMode.Fast:
+				ImageReductor.Fast(pix, dst, toWidth, toHeight);
+				break;
+			case ReductorReduceMode.Simple:
+				ImageReductor.Simple(pix, dst, toWidth, toHeight);
+				break;
+			case ReductorReduceMode.HighQuality:
+				ImageReductor.HighQuality(pix, dst, toWidth, toHeight);
+				break;
+		}
 	}
 
 	// 高速変換を行います。

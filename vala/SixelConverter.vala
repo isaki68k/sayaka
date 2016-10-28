@@ -29,19 +29,6 @@ using System.OS;
 extern int sixel_image_to_sixel_h6_ormode(
   uint8* dst, uint8* src, int w, int h);
 
-// SIXEL 減色モード
-public enum SixelReduceMode
-{
-	// 速度優先法
-	Fast,
-
-	// 単純一致法
-	Simple,
-
-	// 2次元誤差分散法
-	HighQuality,
-}
-
 // SIXEL 出力モード
 // SIXEL のカラーモード値と同じにします。
 public enum SixelOutputMode
@@ -93,7 +80,7 @@ public class SixelConverter
 	public int GrayCount = 256;
 
 	// 減色モード
-	public SixelReduceMode ReduceMode = SixelReduceMode.HighQuality;
+	public ReductorReduceMode ReduceMode = ReductorReduceMode.HighQuality;
 
 	// リサイズモード
 	public SixelResizeMode ResizeMode = SixelResizeMode.ByGdkPixbuf;
@@ -154,20 +141,8 @@ public class SixelConverter
 		ImageReductor.SetColorMode(ColorMode, GrayCount);
 		diag.Debug(@"SetColorMode=$(ColorMode)");
 
-		switch (ReduceMode) {
-			case SixelReduceMode.Fast:
-				ImageReductor.Fast(pix, Indexed, Width, Height);
-				diag.Debug(@"Fast");
-				break;
-			case SixelReduceMode.Simple:
-				ImageReductor.Simple(pix, Indexed, Width, Height);
-				diag.Debug(@"Simple");
-				break;
-			case SixelReduceMode.HighQuality:
-				ImageReductor.HighQuality(pix, Indexed, Width, Height);
-				diag.Debug(@"HighQuality");
-				break;
-		}
+		ImageReductor.Convert(ReduceMode, pix, Indexed, Width, Height);
+		diag.Debug(@"Converted");
 	}
 
 	// ----- Sixel 出力

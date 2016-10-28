@@ -38,7 +38,7 @@ public class SixelV
 	public int opt_graylevel = 0;
 	public int opt_width = 0;
 	public int opt_height = 0;
-	public SixelReduceMode opt_reduce = SixelReduceMode.HighQuality;
+	public ReductorReduceMode opt_reduce = ReductorReduceMode.HighQuality;
 	public bool opt_x68k = false;
 	public bool opt_outputpalette = true;
 	public bool opt_ignoreerror = false;
@@ -137,16 +137,16 @@ public class SixelV
 					case "--diffusion":
 						switch (opt.ValueString()) {
 							case "auto":
-								opt_reduce = SixelReduceMode.HighQuality;
+								opt_reduce = ReductorReduceMode.HighQuality;
 								break;
 							case "none":
-								opt_reduce = SixelReduceMode.Simple;
+								opt_reduce = ReductorReduceMode.Simple;
 								break;
 							case "fast":
-								opt_reduce = SixelReduceMode.Fast;
+								opt_reduce = ReductorReduceMode.Fast;
 								break;
 							case "high":
-								opt_reduce = SixelReduceMode.HighQuality;
+								opt_reduce = ReductorReduceMode.HighQuality;
 								break;
 							default:
 								usage();
