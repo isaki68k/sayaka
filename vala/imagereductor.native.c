@@ -608,7 +608,7 @@ ImageReductor_HighQuality(
 // 垂直方向はピクセルを平均
 // 真に高品質にするには補間法を適用するべきだがそこまではしない。
 
-fprintf(stderr, "dst=(%p,%d,%d) src=(%p,%d,%d)\n", dst, dstWidth, dstHeight, src, srcWidth, srcHeight);
+//fprintf(stderr, "dst=(%p,%d,%d) src=(%p,%d,%d)\n", dst, dstWidth, dstHeight, src, srcWidth, srcHeight);
 
 	StepRational sr_y = StepRationalCreate(0, 0, dstHeight);
 	StepRational sr_ystep = StepRationalCreate(0, srcHeight, dstHeight);
