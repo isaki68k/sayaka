@@ -193,10 +193,11 @@ namespace ULib
 			sb.append("User-Agent: HttpClient.vala\r\n");
 
 			if (method == "POST") {
-				var body = Uri.Query + "\n";
-				sb.append(@"Content-Length: $(body.length)\r\n");
+				sb.append("Content-Type: " +
+					"application/x-www-form-urlencoded\r\n");
+				sb.append(@"Content-Length: $(Uri.Query.length)\r\n");
 				sb.append("\r\n");
-				sb.append(body);
+				sb.append(Uri.Query);
 			} else {
 				sb.append("\r\n");
 			}
