@@ -618,8 +618,8 @@ ImageReductor_HighQuality(
 
 	// 誤差バッファ
 	// 2 ラスタ分を切り換えて使う。
-	ColorRGBuint8 *errbuf_0 = calloc(dstWidth, sizeof(ColorRGBuint8));
-	ColorRGBuint8 *errbuf_1 = calloc(dstWidth, sizeof(ColorRGBuint8));
+	ColorRGBint *errbuf_0 = calloc(dstWidth, sizeof(ColorRGBint));
+	ColorRGBint *errbuf_1 = calloc(dstWidth, sizeof(ColorRGBint));
 
 	for (int y = 0; y < dstHeight; y++) {
 
@@ -681,11 +681,11 @@ ImageReductor_HighQuality(
 
 			int colorCode = ColorFinder(c8);
 
-			c8.r = Saturate_uint8(col.r - Palette[colorCode].r);
-			c8.g = Saturate_uint8(col.g - Palette[colorCode].g);
-			c8.b = Saturate_uint8(col.b - Palette[colorCode].b);
+			col.r = col.r - Palette[colorCode].r;
+			col.g = col.g - Palette[colorCode].g;
+			col.b = col.b - Palette[colorCode].b;
 
-			errbuf_0[x] = c8;
+			errbuf_0[x] = col;
 
 			*dst++ = colorCode;
 		}
