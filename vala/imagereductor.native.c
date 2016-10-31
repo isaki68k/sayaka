@@ -198,15 +198,17 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 	int R;
 	int G;
 	int B;
-	if (c.r >= 160 || c.g >= 160 || c.b >= 160) {
-		R = c.r >= 160;
-		G = c.g >= 160;
-		B = c.b >= 160;
+	if (c.r >= 192 || c.g >= 192 || c.b >= 192) {
+		R = c.r >= 192;
+		G = c.g >= 192;
+		B = c.b >= 192;
 		if (R == G && G == B) {
 			if (I >= 224 * 3) {
 				return 7;
-			} else {
+			} else if (I >= 160 * 3) {
 				return 8;
+			} else {
+				return 15;
 			}
 		}
 		return R + (G << 1) + (B << 2);
@@ -223,7 +225,7 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 				return 0;
 			}
 		}
-		return R + (G << 1) + (B << 2) | 8;
+		return (R + (G << 1) + (B << 2)) | 8;
 	}
 }
 
