@@ -163,6 +163,7 @@ public class SixelV
 					case "--x68k":
 						opt_colormode = ReductorColorMode.FixedX68k;
 						opt_ormode = true;
+						opt_outputpalette = false;
 						break;
 
 					case "--noerr":
@@ -179,6 +180,10 @@ public class SixelV
 
 					case "--ormode":
 						opt_ormode = opt.ValueBool();
+						break;
+
+					case "--palette":
+						opt_outputpalette = opt.ValueBool();
 						break;
 
 					case "--resize":
