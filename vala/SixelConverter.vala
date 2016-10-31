@@ -158,6 +158,7 @@ public class SixelConverter
 		ImageReductor.SetColorMode(ColorMode, GrayCount);
 		diag.Debug(@"SetColorMode=$(ColorMode)");
 
+		diag.Debug(@"ReduceMode=$(ReduceMode)");
 		ImageReductor.Convert(ReduceMode, pix, Indexed, Width, Height);
 		diag.Debug(@"Converted");
 	}
