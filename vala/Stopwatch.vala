@@ -102,6 +102,12 @@ public class Stopwatch
 		stderr.printf("%s %"+ int64.FORMAT + "us\n", msg, Elapsed);
 	}
 
+	public void StopLog_ms(string msg)
+	{
+		Stop();
+		stderr.printf("%s %.3fms\n", msg, (double)Elapsed / 1000d);
+	}
+
 #endif
 }
 
