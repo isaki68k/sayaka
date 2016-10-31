@@ -34,6 +34,8 @@ public class SixelV
 		sixelv.main2(args);
 	}
 
+	public bool opt_debug_sixel = false;
+	public bool opt_debug_net = false;
 	public ReductorColorMode opt_colormode = ReductorColorMode.Fixed256;
 	public int opt_graylevel = 256;
 	public int opt_width = 0;
@@ -62,7 +64,13 @@ public class SixelV
 				switch (opt.Opt()) {
 					case "--debug":
 						gDiag.global_debug = true;
-						gDiag.Debug("Debug ON");
+						gDiag.Debug("Global Debug ON");
+						break;
+					case "--debug-sixel":
+						opt_debug_sixel = true;
+						break;
+					case "--debug-net":
+						opt_debug_net = true;
 						break;
 
 					case "--trace":
@@ -316,6 +324,7 @@ public class SixelV
 		SixelConverter sx = new SixelConverter();
 
 		// SixelConverter モード設定
+		sx.diag.opt_debug |= opt_debug_sixel;
 
 		sx.ColorMode = opt_colormode;
 		sx.ReduceMode = opt_reduce;
@@ -339,6 +348,7 @@ public class SixelV
 		if (filename.contains("://")) {
 			try {
 				var file = new HttpClient(filename);
+				file.diag.opt_debug |= opt_debug_net;
 				file.Family = opt_address_family;
 				gDiag.Debug(@"Downloading $(filename)");
 				var stream = file.GET();

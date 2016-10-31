@@ -55,7 +55,7 @@ public enum SixelResizeMode
 
 public class SixelConverter
 {
-	private Diag diag = new Diag("SixelConverter");
+	public Diag diag = new Diag("SixelConverter");
 
 	// 元画像
 	public Pixbuf pix;

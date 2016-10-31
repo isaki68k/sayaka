@@ -30,7 +30,7 @@ namespace ULib
 	public class HttpClient
 		: Object, IHttpClient
 	{
-		private Diag diag = new Diag("HttpClient");
+		public Diag diag = new Diag("HttpClient");
 
 		// https の時の mTLS コンテキスト
 		private Native.mTLS.mtlsctx* Tls;
