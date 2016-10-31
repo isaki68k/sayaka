@@ -60,11 +60,12 @@ public class SixelV
 			if (opt.IsOption()) {
 				switch (opt.Opt()) {
 					case "--debug":
-						Diag.global_debug = true;
+						gDiag.global_debug = true;
+						gDiag.Debug("Debug ON");
 						break;
 
 					case "--trace":
-						Diag.global_trace = true;
+						gDiag.global_trace = true;
 						break;
 
 					case "-e":
@@ -303,9 +304,7 @@ public class SixelV
 			try {
 				var file = new HttpClient(filename);
 				file.Family = opt_address_family;
-				if (Diag.global_debug) {
-					stderr.printf("%s\n", filename);
-				}
+				gDiag.Debug(@"Downloading $(filename)");
 				var stream = file.GET();
 				sx.LoadFromStream(stream, opt_width);
 			} catch (Error e) {
@@ -317,6 +316,7 @@ public class SixelV
 			}
 		} else {
 			try {
+				gDiag.Debug(@"Loading $(filename)");
 				sx.Load(filename, opt_width);
 			} catch {
 				stderr.printf("File load error at %s\n", filename);
@@ -330,6 +330,8 @@ public class SixelV
 		if (Diag.global_debug) {
 			stderr.printf("w=%d, h=%d\n", opt_width, opt_height);
 		}
+
+		gDiag.Debug(@"Converting w=$(opt_width), h=$(opt_height)");
 		sx.ConvertToIndexed(opt_width, opt_height);
 
 		Posix.@signal(SIGINT, signal_handler);

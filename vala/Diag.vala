@@ -23,9 +23,10 @@
  * SUCH DAMAGE.
  */
 
-
 // デバッグ用診断ツール
-public class Diag
+
+// グローバル
+public class gDiag
 {
 	public static bool global_trace = false;
 	public static bool global_debug = false;
@@ -34,6 +35,81 @@ public class Diag
 
 	public static int global_errexit = 1;
 
+	public static void Puts(string s, string className = "")
+	{
+		TimeVal tv = TimeVal();
+		DateTime dt = new DateTime.from_timeval_local(tv);
+		var time = dt.format("%T") + ".%03d".printf((int)tv.tv_usec / 1000);
+		if (className == "") {
+			stderr.puts(@"[$(time)] $(s)\n");
+		} else {
+			stderr.puts(@"[$(time)] $(className) $(s)\n");
+		}
+	}
+
+	public static void PutHex(string s, uchar[] d, string className = "")
+	{
+		Puts(s, className);
+		int len = d.length;
+		for (int i = 0; i < len; i++) {
+			stderr.printf(" %02X", d[i]);
+			if (i % 16 == 15 && i < len - 1) {
+				stderr.putc('\n');
+			}
+		}
+		stderr.putc('\n');
+	}
+
+	public static void Trace(string s)
+	{
+		if (global_trace) {
+			Puts(s);
+		}
+	}
+
+	public static void Debug(string s)
+	{
+		if (global_debug) {
+			Puts(s);
+		}
+	}
+
+	public static void Warn(string s)
+	{
+		if (global_warn) {
+			Puts(s);
+		}
+	}
+
+	public static void Error(string s)
+	{
+		if (global_error) {
+			Puts(s);
+			if (global_errexit > 0) {
+				Process.exit(global_errexit);
+			}
+		}
+	}
+
+	public static void DebugHex(string s, uchar[] d)
+	{
+		if (global_debug) {
+			PutHex(s, d);
+		}
+	}
+
+	public static void PROGERR(string s)
+	{
+		Puts(s, "PROGERR!!");
+		if (global_errexit > 0) {
+			Process.exit(global_errexit);
+		}
+	}
+}
+
+// デバッグ用診断ツール
+public class Diag
+{
 	public bool opt_trace;
 	public bool opt_debug;
 	public bool opt_warn;
@@ -44,63 +120,50 @@ public class Diag
 	public Diag(string className)
 	{
 		ClassName = className;
-		opt_trace = global_trace;
-		opt_debug = global_debug;
-		opt_warn = global_warn;
-		opt_error = global_error;
-		opt_errexit = global_errexit;
+		opt_trace = gDiag.global_trace;
+		opt_debug = gDiag.global_debug;
+		opt_warn = gDiag.global_warn;
+		opt_error = gDiag.global_error;
+		opt_errexit = gDiag.global_errexit;
 	}
 
 	public void Trace(string s)
 	{
 		if (opt_trace) {
-			TimeVal tv = TimeVal();
-			DateTime dt = new DateTime.from_timeval_local(tv);
-			var time = dt.format("%T") + ".%03d".printf((int)tv.tv_usec / 1000);
-			stderr.puts(@"[$(time)] $(ClassName) $(s)\n");
+			gDiag.Puts(s, ClassName);
 		}
 	}
 
 	public void Debug(string s)
 	{
 		if (opt_debug) {
-			TimeVal tv = TimeVal();
-			DateTime dt = new DateTime.from_timeval_local(tv);
-			var time = dt.format("%T") + ".%03d".printf((int)tv.tv_usec / 1000);
-			stderr.puts(@"[$(time)] $(ClassName) $(s)\n");
+			gDiag.Puts(s, ClassName);
 		}
 	}
 
 	public void Warn(string s)
 	{
 		if (opt_warn) {
-			stderr.puts(@"$(ClassName) $(s)\n");
+			gDiag.Puts(s, ClassName);
 		}
 	}
 
 	public void Error(string s)
 	{
 		if (opt_error) {
-			stderr.puts(@"$(ClassName) $(s)\n");
+			gDiag.Puts(s, ClassName);
 		}
 	}
 
 	public void DebugHex(uchar[] d, int len)
 	{
 		if (opt_debug) {
-			stderr.puts(@"$(ClassName)");
-			for (int i = 0; i < len; i++) {
-				stderr.printf(" %02X", d[i]);
-				if (i % 16 == 15 && i < len - 1) {
-					stderr.putc('\n');
-				}
-			}
-			stderr.putc('\n');
+			gDiag.PutHex("", d, ClassName);
 		}
 	}
 
-
 	// errIfTrue が true の時エラーメッセージを出力します。
+	// [Obsolete]
 	public void ProgErr(bool errIfTrue, string s)
 	{
 		if (errIfTrue) {
@@ -111,13 +174,11 @@ public class Diag
 		}
 	}
 
+	// [Obsolete]
 	public static void GlobalProgErr(bool errIfTrue, string s)
 	{
 		if (errIfTrue) {
-			stderr.puts(@"PROGERR!! $(s)\n");
-			if (global_errexit > 0) {
-				Process.exit(global_errexit);
-			}
+			gDiag.PROGERR(s);
 		}
 	}
 }

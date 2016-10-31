@@ -279,7 +279,7 @@ namespace ULib
 		private void Connect() throws Error
 		{
 			// XXX とりあえず連動させておく
-			if (Diag.global_debug) {
+			if (gDiag.global_debug) {
 				Native.mTLS.set_debuglevel(3);
 			}
 

@@ -199,9 +199,9 @@ public class SayakaMain
 				break;
 			 case "--debug":
 				debug = true;
-				Diag.global_trace = true;
-				Diag.global_debug = true;
-				Diag.global_warn = true;
+				gDiag.global_trace = true;
+				gDiag.global_debug = true;
+				gDiag.global_warn = true;
 				break;
 			 case "--eucjp":
 				iconv_tocode = "euc-jp";
