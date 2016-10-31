@@ -1586,29 +1586,15 @@ public class SayakaMain
 		int resize_width)
 	{
 		var sx = new SixelConverter();
+
 		var fg = new HttpClient(img_url);
 		fg.Family = address_family;
-		DataInputStream basestream;
-		MemoryOutputStream ms;
+		DataInputStream stream;
 		try {
-			basestream = fg.GET();
-			ms = new MemoryOutputStream.resizable();
-			ms.splice(basestream, 0);
-			ms.close();
-		} catch {
-			return null;
-		}
-
-		// ms のバックエンドバッファの所有権を移す。
-		var msdata = ms.steal_data();
-		msdata.length = (int)ms.get_data_size();
-		var stream = new MemoryInputStream.from_data(msdata, null);
-
-		try {
-			(stream as Seekable).seek(0, SeekType.SET);
+			stream = fg.GET();
 			sx.LoadFromStream(stream);
 		} catch (Error e) {
-			diag.Warn(@"Sixel LoadFromStream failed: $(e.message)");
+			diag.Warn(@"fetch_image failed: $(e.message)");
 			return null;
 		}
 
