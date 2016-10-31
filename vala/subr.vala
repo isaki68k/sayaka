@@ -178,4 +178,54 @@ namespace ULib
 
 		return -1;
 	}
+
+	// 外部画像サービス URL を解析した結果を返す
+	public static MediaInfo? format_image_url(string expd_url, string disp_url,
+		int imagesize)
+	{
+		MatchInfo m;
+		string target;
+		int width = 0;
+
+		try {
+			if (new Regex("twitpic.com/(\\w+)")
+					.match(expd_url, 0, out m)) {
+				target = "http://twitpic.com/show/mini/%s".printf(m.fetch(1));
+
+			} else if (new Regex("movapic.com/(pic/)?(\\w+)")
+					.match(expd_url, 0, out m)) {
+				target = "http://image.movapic.com/pic/t_%s.jpeg"
+					.printf(m.fetch(2));
+
+			} else if (new Regex("p.twipple.jp/(\\w+)")
+					.match(expd_url, 0, out m)) {
+				target = "http://p.twpl.jp/show/thumb/%s".printf(m.fetch(1));
+
+			} else if (new Regex("(.*instagram.com/p/[\\w\\-]+)/?")
+					.match(expd_url, 0, out m)) {
+				target = "%s/media/?size=t".printf(m.fetch(1));
+
+			} else if (new Regex("shindanmaker.com/pic/s_(\\d+)/(.*)_wct")
+					.match(expd_url, 0, out m)) {
+				target = "http://pic.shindanmaker.com/s/%s/%s.jpg"
+					.printf(m.fetch(1), m.fetch(2));
+				width = imagesize;
+
+			} else if (new Regex("\\.(jpg|jpeg|png|gif)$").
+					match(expd_url, 0, out m)) {
+				target = expd_url;
+				width = imagesize;
+
+			} else {
+				return null;
+
+			}
+		} catch (RegexError e) {
+			stderr.printf("%s\n", e.message);
+			return null;
+		}
+
+		return new MediaInfo(target, disp_url, width);
+	}
+
 }
