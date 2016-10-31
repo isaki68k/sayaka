@@ -1618,7 +1618,7 @@ public class SayakaMain
 			sx.ColorMode = ReductorColorMode.FixedX68k;
 			sx.OutputMode = SixelOutputMode.Or;
 			sx.ReduceMode = ReductorReduceMode.Fast;
-			sx.ResizeMode = SixelResizeMode.ByImageReductor;
+			sx.ResizeMode = SixelResizeMode.ByLoad;
 			sx.OutputPalette = false;
 		} else {
 			if (color_mode <= 2) {
@@ -1636,7 +1636,7 @@ public class SayakaMain
 			}
 			sx.OutputMode = SixelOutputMode.Normal;
 			sx.ReduceMode = ReductorReduceMode.HighQuality;
-			sx.ResizeMode = SixelResizeMode.ByGdkPixbuf;
+			sx.ResizeMode = SixelResizeMode.ByLoad;
 			sx.OutputPalette= true;
 		}
 
