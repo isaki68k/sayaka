@@ -43,6 +43,7 @@ public class SixelV
 	public bool opt_outputpalette = true;
 	public bool opt_ignoreerror = false;
 	public bool opt_ormode = false;
+	public bool opt_profile = false;
 	public SixelResizeMode opt_resizemode = SixelResizeMode.ByGdkPixbuf;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 	static SixelV this_sixelv;
@@ -66,6 +67,10 @@ public class SixelV
 
 					case "--trace":
 						gDiag.global_trace = true;
+						break;
+
+					case "--profile":
+						opt_profile = true;
 						break;
 
 					case "-e":
@@ -284,6 +289,13 @@ public class SixelV
 
 	public void Convert(string filename)
 	{
+		Stopwatch sw = null;
+
+		if (opt_profile) {
+			sw = new Stopwatch();
+			sw.Restart();
+		}
+
 		SixelConverter sx = new SixelConverter();
 
 		// SixelConverter モード設定
@@ -296,6 +308,11 @@ public class SixelV
 			sx.OutputMode = SixelOutputMode.Or;
 		} else {
 			sx.OutputMode = SixelOutputMode.Normal;
+		}
+
+		if (opt_profile) {
+			sw.StopLog_ms("Create objects");
+			sw.Restart();
 		}
 
 		// ファイル読み込み
@@ -327,15 +344,27 @@ public class SixelV
 			}
 		}
 
-		if (Diag.global_debug) {
-			stderr.printf("w=%d, h=%d\n", opt_width, opt_height);
+		if (opt_profile) {
+			sw.StopLog_ms("Get and Extract image");
+			sw.Restart();
 		}
 
 		gDiag.Debug(@"Converting w=$(opt_width), h=$(opt_height)");
 		sx.ConvertToIndexed(opt_width, opt_height);
 
+		if (opt_profile) {
+			sw.StopLog_ms("Convert image");
+			sw.Restart();
+		}
+
 		Posix.@signal(SIGINT, signal_handler);
 		sx.SixelToStream(stdout);
+
+		if (opt_profile) {
+			sw.StopLog_ms("Output SIXEL");
+			sw.Restart();
+		}
+
 	}
 
 	public static void signal_handler(int signo)

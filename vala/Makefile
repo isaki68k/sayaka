@@ -67,6 +67,7 @@ SRCS_sixelv=	\
 	sixel.native.c \
 	ImageReductor.vala \
 	imagereductor.native.c \
+	Stopwatch.vala \
 
 SRCS_h=	\
 	h.vala \
