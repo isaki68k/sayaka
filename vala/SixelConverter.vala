@@ -174,6 +174,7 @@ public class SixelConverter
 		return linebuf.str;
 	}
 
+#if false
 	// 切り上げする整数の log2
 	private int MyLog2(int n)
 	{
@@ -184,6 +185,7 @@ public class SixelConverter
 		}
 		return 8;
 	}
+#endif
 
 	// OR mode で Sixel コア部分を stream に出力します。
 	private void SixelToStreamCore_ORmode(FileStream stream)
@@ -194,9 +196,11 @@ public class SixelConverter
 
 		uint8[] sixelbuf = new uint8[w * 16 + 12];
 
+#if false
 		// パレットのビット数
 		int bcnt = MyLog2(ImageReductor.PaletteCount);
 //stderr.printf("bcnt=%d\n", bcnt);
+#endif
 
 		uint8* p = p0;
 		int y;
