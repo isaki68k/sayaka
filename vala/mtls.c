@@ -255,7 +255,8 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 	r = mbedtls_net_connect(&ctx->net, hostname, servname,
 			MBEDTLS_NET_PROTO_TCP);
 	if (r != 0) {
-		ERROR("mbedtls_net_connect failed: %s\n", mtls_errmsg(r));
+		ERROR("mbedtls_net_connect %s:%s - %s\n", hostname, servname,
+			mtls_errmsg(r));
 		return -1;
 	}
 
