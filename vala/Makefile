@@ -86,16 +86,16 @@ PKGS= \
 	gdk-pixbuf-2.0 \
 	gio-2.0 \
 
-COPTS=	-O2 -g -std=c99
-CFLAGS=	-w `pkg-config --cflags ${PKGS}`
-LIBS=	`pkg-config --libs ${PKGS}`
-
-CFLAGS+= -I../mbedtls/include -I./
+# システムヘッダより先にバンドル版の mbedTLS ヘッダを探さないといけない
+CFLAGS=	-I../mbedtls/include -I./
 LIBS_MBEDTLS=	\
 	../mbedtls/library/libmbedx509.a \
 	../mbedtls/library/libmbedtls.a \
 	../mbedtls/library/libmbedcrypto.a \
 
+COPTS=	-O2 -g -std=c99
+CFLAGS+=	-w `pkg-config --cflags ${PKGS}`
+LIBS=	`pkg-config --libs ${PKGS}`
 LIBS+=	${LIBS_MBEDTLS}
 
 LIBS+= -ljpeg
