@@ -222,7 +222,7 @@ public class SixelV
 """sixelv [color] [size] [algorithm] [colorfind] file...
 
  color
-   --gray=[graylevel]
+   --gray={graylevel}
      Select grayscale mode.
      graylevel allows 2 .. 256. default = 256
 
@@ -258,27 +258,25 @@ public class SixelV
  algorithm
    -d
    --diffusion={diffuse type}
-     auto
-       This is default. (now implements = high)
-     none
-       Simple algorithm. (no diffuser)
-     fast
-       Fast algorithm.
-	 high
-       Diffusion algorithm.
+     auto : This is default. (now implements = high)
+     none : Simple algorithm. (no diffuser)
+     fast : Fast algorithm.
+	 high : 2D-Diffusion algorithm.
 
  colorfind
    --colorfinder={finder}
-     graymean 
-       Use mean of RGB gray.
+     graymean : Use mean of RGB gray.
 
  misc
    --x68k
      SHARP X680x0 mode.
-     force X68k 16 fixed color, and OR-mode.
+     force X68k 16 fixed color, ormode=on, palette=off
 
-   --ormode[={on|off}]
-     Output OR-mode Sixel. for X680x0 console.
+   --ormode={on|off}
+     Output OR-mode Sixel.  Default = off
+
+   --palette={on|off}
+     Output palette definision. Default = on
 
    --ipv4
      Connect IPv4 only.
@@ -286,8 +284,11 @@ public class SixelV
    --ipv6
      Connect IPv6 only.
 
-   --noerr[={on|off}]
+   --noerr={on|off}
      if turn on, ignore error at open.
+
+ debug
+   --debug, --trace, --profile
 """);
 		Process.exit(1);
 	}
