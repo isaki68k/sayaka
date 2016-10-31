@@ -1587,17 +1587,6 @@ public class SayakaMain
 	{
 		var sx = new SixelConverter();
 
-		var fg = new HttpClient(img_url);
-		fg.Family = address_family;
-		DataInputStream stream;
-		try {
-			stream = fg.GET();
-			sx.LoadFromStream(stream);
-		} catch (Error e) {
-			diag.Warn(@"fetch_image failed: $(e.message)");
-			return null;
-		}
-
 		if (opt_x68k) {
 			// とりあえず固定 16 色
 			// システム取得する?
@@ -1624,6 +1613,17 @@ public class SayakaMain
 			sx.ReduceMode = ReductorReduceMode.HighQuality;
 			sx.ResizeMode = SixelResizeMode.ByLoad;
 			sx.OutputPalette= true;
+		}
+
+		var fg = new HttpClient(img_url);
+		fg.Family = address_family;
+		DataInputStream stream;
+		try {
+			stream = fg.GET();
+			sx.LoadFromStream(stream);
+		} catch (Error e) {
+			diag.Warn(@"fetch_image failed: $(e.message)");
+			return null;
 		}
 
 		// インデックスカラー変換
