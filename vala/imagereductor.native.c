@@ -379,7 +379,7 @@ FindColor_Custom(ColorRGBuint8 c)
 
 // カラーモードを設定します。
 void
-ImageReductor_SetColorMode(ReductorColorMode mode, /*optional*/ uint8_t count)
+ImageReductor_SetColorMode(ReductorColorMode mode, /*optional*/ int count)
 {
 	switch (mode) {
 		case RCM_Mono:
