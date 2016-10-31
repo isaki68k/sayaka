@@ -310,6 +310,8 @@ public class SixelV
 		sx.ReduceMode = opt_reduce;
 		sx.ResizeMode = opt_resizemode;
 		sx.OutputPalette = opt_outputpalette;
+		sx.GrayCount = opt_graylevel;
+
 		if (opt_ormode) {
 			sx.OutputMode = SixelOutputMode.Or;
 		} else {
