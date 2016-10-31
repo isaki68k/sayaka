@@ -471,9 +471,6 @@ ImageReductor_Fast(
 	int srcWidth, int srcHeight,
 	int srcNch, int srcStride)
 {
-// 水平方向は Pow2 になるピクセルをサンプリングして平均
-// 垂直方向はスキップサンプリング
-
 //fprintf(stderr, "dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 螺旋状に一次元誤差分散させる。
@@ -481,52 +478,102 @@ ImageReductor_Fast(
 
 	ColorRGBint col = {0, 0, 0};
 
-	StepRational sr_y = StepRationalCreate(0, 0, dstHeight);
-	StepRational sr_ystep = StepRationalCreate(0, srcHeight, dstHeight);
+	if (dstWidth == srcWidth && dstHeight == srcHeight) {
+		// 変形済み前提
+		int nch_adj = srcNch - 3;
+		uint8_t *srcRaster = src;
+		for (int y = 0; y < dstHeight; y++) {
+			uint8_t *srcPix = srcRaster;
+			for (int x = 0; x < dstWidth; x++) {
+				col.r += *srcPix++;
+				col.g += *srcPix++;
+				col.b += *srcPix++;
+				srcPix += nch_adj;
+//fprintf(stderr, "(%d %d %d) ", col.r, col.g, col.b);
+				ColorRGBuint8 c8 = {
+					Saturate_uint8(col.r),
+					Saturate_uint8(col.g),
+					Saturate_uint8(col.b),
+				};
 
-	StepRational sr_x = StepRationalCreate(0, 0, dstWidth);
-	StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
+//fprintf(stderr, "%d ", (c8.r + c8.g + c8.b) / 3);
+				int colorCode = ColorFinder(c8);
+//fprintf(stderr, "%d ", colorCode);
 
-	int sw = RoundDownPow2(sr_xstep.I);
-	if (sw == 0) sw = 1;
-	int meanShift = 31 - __builtin_clz(sw);
+				const int level = 160;
+				col.r = (col.r - Palette[colorCode].r) * level / 256;
+				col.g = (col.g - Palette[colorCode].g) * level / 256;
+				col.b = (col.b - Palette[colorCode].b) * level / 256;
 
-	for (int y = 0; y < dstHeight; y++) {
-		uint8_t *srcRaster = &src[sr_y.I * srcStride];
-		StepRationalAdd(&sr_y, &sr_ystep);
-
-		sr_x.I = sr_x.N = 0;
-
-		for (int x = 0; x < dstWidth; x++) {
-
-			int sx0 = sr_x.I;
-			StepRationalAdd(&sr_x, &sr_xstep);
-
-			uint8_t *srcPix = &srcRaster[sx0 * srcNch];
-			for (int sx = 0; sx < sw; sx++) {
-				col.r += srcPix[0];
-				col.g += srcPix[1];
-				col.b += srcPix[2];
-				srcPix += srcNch;
+#if 1
+				if (col.r < -511) col.r = 0;
+				if (col.g < -511) col.g = 0;
+				if (col.b < -511) col.b = 0;
+#endif
+				*dst++ = colorCode;
 			}
+			srcRaster += srcStride;
+		}
 
-			col.r >>= meanShift;
-			col.g >>= meanShift;
-			col.b >>= meanShift;
+	} else {
 
-			ColorRGBuint8 c8 = {
-				Saturate_uint8(col.r),
-				Saturate_uint8(col.g),
-				Saturate_uint8(col.b),
-			};
+		// 水平方向は Pow2 になるピクセルをサンプリングして平均
+		// 垂直方向はスキップサンプリング
 
-			int colorCode = ColorFinder(c8);
+		StepRational sr_y = StepRationalCreate(0, 0, dstHeight);
+		StepRational sr_ystep = StepRationalCreate(0, srcHeight, dstHeight);
 
-			col.r = Saturate_uint8(col.r - Palette[colorCode].r);
-			col.g = Saturate_uint8(col.g - Palette[colorCode].g);
-			col.b = Saturate_uint8(col.b - Palette[colorCode].b);
+		StepRational sr_x = StepRationalCreate(0, 0, dstWidth);
+		StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
 
-			*dst++ = colorCode;
+		int sw = RoundDownPow2(sr_xstep.I);
+		if (sw == 0) sw = 1;
+		int meanShift = 31 - __builtin_clz(sw);
+
+		for (int y = 0; y < dstHeight; y++) {
+			uint8_t *srcRaster = &src[sr_y.I * srcStride];
+			StepRationalAdd(&sr_y, &sr_ystep);
+
+			sr_x.I = sr_x.N = 0;
+
+			for (int x = 0; x < dstWidth; x++) {
+
+				int sx0 = sr_x.I;
+				StepRationalAdd(&sr_x, &sr_xstep);
+
+				uint8_t *srcPix = &srcRaster[sx0 * srcNch];
+				for (int sx = 0; sx < sw; sx++) {
+					col.r += srcPix[0];
+					col.g += srcPix[1];
+					col.b += srcPix[2];
+					srcPix += srcNch;
+				}
+
+				col.r >>= meanShift;
+				col.g >>= meanShift;
+				col.b >>= meanShift;
+
+				ColorRGBuint8 c8 = {
+					Saturate_uint8(col.r),
+					Saturate_uint8(col.g),
+					Saturate_uint8(col.b),
+				};
+
+				int colorCode = ColorFinder(c8);
+
+				const int level = 120;
+				col.r = (col.r - Palette[colorCode].r) * level / 256;
+				col.g = (col.g - Palette[colorCode].g) * level / 256;
+				col.b = (col.b - Palette[colorCode].b) * level / 256;
+
+#if 0
+				if (col.r < -255) col.r = 0;
+				if (col.g < -255) col.g = 0;
+				if (col.b < -255) col.b = 0;
+#endif
+
+				*dst++ = colorCode;
+			}
 		}
 	}
 
