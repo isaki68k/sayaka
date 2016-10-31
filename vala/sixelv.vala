@@ -35,7 +35,7 @@ public class SixelV
 	}
 
 	public ReductorColorMode opt_colormode = ReductorColorMode.Fixed256;
-	public int opt_graylevel = 0;
+	public int opt_graylevel = 256;
 	public int opt_width = 0;
 	public int opt_height = 0;
 	public ReductorReduceMode opt_reduce = ReductorReduceMode.HighQuality;
@@ -80,7 +80,6 @@ public class SixelV
 						
 					case "--gray":
 						opt_colormode = ReductorColorMode.Gray;
-						opt_graylevel = 256;
 						if (opt.ValueString() != "") {
 							opt_graylevel = opt.ValueInt();
 						}
@@ -103,7 +102,26 @@ public class SixelV
 								opt_colormode = ReductorColorMode.Fixed256;
 								break;
 							default:
-								usage();
+								switch (opt.ValueString()) {
+									case "mono":
+										opt_colormode = ReductorColorMode.Mono;
+										break;
+									case "gray":
+										opt_colormode = ReductorColorMode.Gray;
+										break;
+									case "graymean":
+										opt_colormode = ReductorColorMode.GrayMean;
+										break;
+									case "x68k":
+										opt_colormode = ReductorColorMode.FixedX68k;
+										break;
+									case "x68k-custom":
+										opt_colormode = ReductorColorMode.CustomX68k;
+										break;
+									default:
+										usage();
+										break;
+								}
 								break;
 						}
 						break;
@@ -116,17 +134,6 @@ public class SixelV
 						break;
 					case "-256":
 						opt_colormode = ReductorColorMode.Fixed256;
-						break;
-
-					case "--colorfinder":
-						switch (opt.ValueString()) {
-							case "graymean":
-								opt_colormode = ReductorColorMode.GrayMean;
-								break;
-							default:
-								usage();
-								break;
-						}
 						break;
 
 					case "-w":
@@ -233,7 +240,12 @@ public class SixelV
    -p {color}
    --color[s]={color}
      Select {color} mode.
-     color = 8, 16, 256 only supports now.
+       8, 16, 256 : Fixed 8, 16, 256 colors
+       mono : monochrome
+       gray : grayscale with NTSC intensity
+       graymean : grayscale with mean of RGB
+       x68k : Fixed x68k palette
+       x68k-custom : Custom X68k palette
 
    -8
      Select 8 color (3bit) mode.
@@ -265,10 +277,6 @@ public class SixelV
      none : Simple algorithm. (no diffuser)
      fast : Fast algorithm.
 	 high : 2D-Diffusion algorithm.
-
- colorfind
-   --colorfinder={finder}
-     graymean : Use mean of RGB gray.
 
  misc
    --x68k
