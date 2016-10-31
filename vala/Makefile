@@ -30,6 +30,7 @@ ALL_TARGET=	\
 
 SRCS_sayaka=	\
 	sayaka.vala \
+	subr.vala \
 	Diag.vala \
 	Dictionary.vala \
 	FileUtil.vala \
