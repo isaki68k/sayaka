@@ -43,8 +43,11 @@ public enum SixelOutputMode
 // リサイズモード
 public enum SixelResizeMode
 {
+	// リサイズ処理を Pixbuf の load at_size, at_scale で行います。
+	ByLoad,
+
 	// リサイズ処理を Gdk.Pixbuf.scale_simple で行います。
-	ByGdkPixbuf,
+	ByScaleSimple,
 
 	// リサイズ処理を ImageReductor で行います。
 	ByImageReductor,
@@ -83,14 +86,18 @@ public class SixelConverter
 	public ReductorReduceMode ReduceMode = ReductorReduceMode.HighQuality;
 
 	// リサイズモード
-	public SixelResizeMode ResizeMode = SixelResizeMode.ByGdkPixbuf;
+	public SixelResizeMode ResizeMode = SixelResizeMode.ByLoad;
 
 	//////////////// 画像の読み込み
 
 	public void Load(string filename, int width = 0) throws Error
 	{
-		if (width <= 0) width = -1;
-		pix = new Pixbuf.from_file_at_size(filename, width, -1);
+		if (ResizeMode == SixelResizeMode.ByLoad) {
+			if (width <= 0) width = -1;
+			pix = new Pixbuf.from_file_at_size(filename, width, -1);
+		} else {
+			pix = new Pixbuf.from_file(filename);
+		}
 		Width = pix.get_width();
 		Height = pix.get_height();
 		diag.Debug(@"filename=$(filename)");
@@ -102,8 +109,12 @@ public class SixelConverter
 
 	public void LoadFromStream(InputStream stream, int width = 0) throws Error
 	{
-		if (width <= 0) width = -1;
-		pix = new Pixbuf.from_stream_at_scale(stream, width, -1, true);
+		if (ResizeMode == SixelResizeMode.ByLoad) {
+			if (width <= 0) width = -1;
+			pix = new Pixbuf.from_stream_at_scale(stream, width, -1, true);
+		} else {
+			pix = new Pixbuf.from_stream(stream);
+		}
 		Width = pix.get_width();
 		Height = pix.get_height();
 	}
@@ -130,12 +141,16 @@ public class SixelConverter
 		}
 		diag.Debug(@"post Width=$(Width) Height=$(Height)");
 
-		if (ResizeMode == SixelResizeMode.ByGdkPixbuf) {
-			// Gdk.Pixbuf で事前リサイズする。
-			// ImageReductor は減色とリサイズを同時実行できるので、
-			// 事前リサイズは品質の問題が出た時のため。
-			pix = pix.scale_simple(Width, Height, InterpType.BILINEAR);
-			diag.Debug("scale_simple resized");
+		if (ResizeMode == SixelResizeMode.ByScaleSimple) {
+			if (Width == pix.get_width() || Height == pix.get_height()) {
+				diag.Debug("no need to resize");
+			} else {
+				// Gdk.Pixbuf で事前リサイズする。
+				// ImageReductor は減色とリサイズを同時実行できるので、
+				// 事前リサイズは品質の問題が出た時のため。
+				pix = pix.scale_simple(Width, Height, InterpType.BILINEAR);
+				diag.Debug("scale_simple resized");
+			}
 		}
 
 		Indexed = new uint8[Width * Height];

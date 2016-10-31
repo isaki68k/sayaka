@@ -44,7 +44,7 @@ public class SixelV
 	public bool opt_ignoreerror = false;
 	public bool opt_ormode = false;
 	public bool opt_profile = false;
-	public SixelResizeMode opt_resizemode = SixelResizeMode.ByGdkPixbuf;
+	public SixelResizeMode opt_resizemode = SixelResizeMode.ByLoad;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 	static SixelV this_sixelv;
 
@@ -188,8 +188,11 @@ public class SixelV
 
 					case "--resize":
 						switch (opt.ValueString()) {
-							case "gdk":
-								opt_resizemode = SixelResizeMode.ByGdkPixbuf;
+							case "load":
+								opt_resizemode = SixelResizeMode.ByLoad;
+								break;
+							case "scale":
+								opt_resizemode = SixelResizeMode.ByScaleSimple;
 								break;
 							case "imagereductor":
 								opt_resizemode = SixelResizeMode.ByImageReductor;
@@ -252,7 +255,7 @@ public class SixelV
    -h {height}
    --height={height}
      Resize height (pixel). Must need -w.
-   --resize={gdk, imagereductor}
+   --resize={load, scale, imagereductor}
      Select Resize alogrithm. (for debug)
 
  algorithm
