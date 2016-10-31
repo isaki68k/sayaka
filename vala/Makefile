@@ -34,6 +34,7 @@ SRCS_sayaka=	\
 	Diag.vala \
 	Dictionary.vala \
 	FileUtil.vala \
+	NGWord.vala \
 	Json.vala \
 	OAuth.vala \
 	PHP.vala \
