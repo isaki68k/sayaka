@@ -1649,15 +1649,6 @@ public class SayakaMain
 		return file;
 	}
 
-	// FileStream からファイルサイズを取得
-	public size_t get_filesize(FileStream stream)
-	{
-		stream.seek(0, FileSeek.END);
-		var fsize = stream.tell();
-		stream.rewind();
-		return fsize;
-	}
-
 	// ブロックユーザ一覧の読み込み
 	public void get_block_list()
 	{

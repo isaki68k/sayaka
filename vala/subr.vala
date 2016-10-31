@@ -179,6 +179,15 @@ namespace ULib
 		return -1;
 	}
 
+	// FileStream からファイルサイズを取得
+	public static size_t get_filesize(FileStream stream)
+	{
+		stream.seek(0, FileSeek.END);
+		var fsize = stream.tell();
+		stream.rewind();
+		return fsize;
+	}
+
 	// 外部画像サービス URL を解析した結果を返す
 	public static MediaInfo? format_image_url(string expd_url, string disp_url,
 		int imagesize)
