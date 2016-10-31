@@ -132,14 +132,18 @@ SetPalette_Gray(int count)
 static int
 FindColor_Gray(ColorRGBuint8 c)
 {
-	return ((int)c.r * 76 + (int)c.g * 153 + (int)c.b * 26) * (PaletteCount - 1) / 255 / 255;
+	int I = (((int)c.r * 76 + (int)c.g * 153 + (int)c.b * 26) * (PaletteCount - 1) + (255 / PaletteCount)) / 255 / 255;
+	if (I >= PaletteCount) return PaletteCount - 1;
+	return I;
 }
 
 // グレースケールパレット時に、RGB 平均で最も近いパレット番号を返します。
 static int
 FindColor_GrayMean(ColorRGBuint8 c)
 {
-	return ((int)c.r + (int)c.g + (int)c.b) * (PaletteCount - 1) / 3 / 255;
+	int I = ((int)c.r + (int)c.g + (int)c.b + (255 / PaletteCount) * 3) * (PaletteCount - 1) / 3 / 255;
+	if (I >= PaletteCount) return PaletteCount - 1;
+	return I;
 }
 
 // 固定 8 色パレット
