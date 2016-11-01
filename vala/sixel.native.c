@@ -28,11 +28,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// for X68k
-#define SIXEL_MAX_WIDTH		(768)
 #define SIXEL_PLANE_COUNT	(4)
 
-static uint8_t sixelbuf[SIXEL_MAX_WIDTH * SIXEL_PLANE_COUNT];
+// SIXEL 変換中間バッファ
+// 必要に応じてアロケートする。
+static uint8_t *sixelbuf = NULL;
+static size_t sixelbuf_length = 0;
 
 // 10 進変換テーブル
 static const uint8_t decimal_table[] = {
@@ -141,6 +142,15 @@ sixel_image_to_sixel_h6_ormode(
 	//  [X=1,Y=0..6,Plane1]
 	//  [X=1,Y=0..6,Plane2]
 	//  [X=1,Y=0..6,Plane3]
+
+	size_t required_length = w * SIXEL_PLANE_COUNT;
+	if (sixelbuf == NULL) {
+		sixelbuf_length = required_length;
+		sixelbuf = malloc(sixelbuf_length);
+	} else if (sixelbuf_length < required_length) {
+		sixelbuf_length = required_length;
+		sixelbuf = realloc(sixelbuf, sixelbuf_length);
+	}
 
 	uint8_t *buf = sixelbuf;
 
