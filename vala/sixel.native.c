@@ -113,14 +113,18 @@ sixel_put_repunit(uint8_t *dst, int rep, uint8_t ptn)
 /*
  * イメージを SIXEL に 6 ラスタ変換します。
  * dst: 変換結果。
- *      w * 4 + 12 バイト以上確保してください。
- *      (4 プレーン分のデータと、パレットコードと改行指示)
- * src: 画像 1 byte per pixel, max 16 color
- *      LSB 4bit がパレットコードとして読み込まれます。上位ニブルは無視。
+ *      (w + 5) * plane_count バイト以上確保してください。
+ *      (データとパレットコード'#xxx'と改行指示がプレーン数分)
+ *      キャラクタデータですが文字列ではないので末尾 NUL 文字は扱いません。
+ * src: 画像 1 byte per pixel Indexed
+ *      下位ビットから、パレットコードとして読み込まれます。
+ *      プレーン数分のビットよりも上位のビットは無視します。
  * w: 幅ピクセル
- *      (0 < w && w <= 768) を保証してください。
  * h: 高さピクセル
  *      (1 <= h && h <= 6) を保証してください。
+ * plane_count: プレーン数。
+ *      16色なら 4、256色なら 8 です。
+ *      (1 <= plane_count && plane_count <= 8) を保証してください。
  * return: dst に書き込んだバイト長
  *
  * m68k での速度を優先するため、範囲チェックなどは行いません。
@@ -130,8 +134,10 @@ sixel_image_to_sixel_h6_ormode(
 	uint8_t* dst,
 	uint8_t* src,
 	int w,
-	int h)
+	int h,
+	int plane_count)
 {
+	// (plane_count==4 のとき)
 	// 6 ラスタ、4プレーンデータを作る
 	// sixelbuf :=
 	//  [X=0,Y=0..6,Plane0]
@@ -143,7 +149,7 @@ sixel_image_to_sixel_h6_ormode(
 	//  [X=1,Y=0..6,Plane2]
 	//  [X=1,Y=0..6,Plane3]
 
-	size_t required_length = w * SIXEL_PLANE_COUNT;
+	size_t required_length = w * plane_count;
 	if (sixelbuf == NULL) {
 		sixelbuf_length = required_length;
 		sixelbuf = malloc(sixelbuf_length);
@@ -157,7 +163,7 @@ sixel_image_to_sixel_h6_ormode(
 	// y=0 のケースで初期化も同時に実行する
 	for (int x = 0; x < w; x++) {
 		uint8_t b = *src++;
-		for (int i = 0; i < SIXEL_PLANE_COUNT; i++) {
+		for (int i = 0; i < plane_count; i++) {
 			*buf++ = (b & 1);
 			b >>= 1;
 		}
@@ -168,7 +174,7 @@ sixel_image_to_sixel_h6_ormode(
 		buf = sixelbuf;
 		for (int x = 0; x < w; x++) {
 			uint8_t b = *src++;
-			for (int i = 0; i < SIXEL_PLANE_COUNT; i++) {
+			for (int i = 0; i < plane_count; i++) {
 				*buf++ |= (b & 1) << y;
 				b >>= 1;
 			}
@@ -179,17 +185,17 @@ sixel_image_to_sixel_h6_ormode(
 
 	uint8_t *dst0 = dst;
 
-	for (int i = 0; i < SIXEL_PLANE_COUNT; i++) {
+	for (int i = 0; i < plane_count; i++) {
 		buf = sixelbuf + i;
 		int rep = 1;
 		uint8_t ptn = *buf;
-		buf += SIXEL_PLANE_COUNT;
+		buf += plane_count;
 
 		dst += sixel_putc(dst, '#');
 		dst += sixel_putd(dst, 1 << i);
 
 		// 1 から
-		for (int x = 1; x < w; x++, buf += SIXEL_PLANE_COUNT) {
+		for (int x = 1; x < w; x++, buf += plane_count) {
 			if (ptn == *buf) {
 				rep++;
 			} else {

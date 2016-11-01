@@ -27,7 +27,7 @@ using Gdk;
 using System.OS;
 
 extern int sixel_image_to_sixel_h6_ormode(
-  uint8* dst, uint8* src, int w, int h);
+  uint8* dst, uint8* src, int w, int h, int plane_count);
 
 // SIXEL 出力モード
 // SIXEL のカラーモード値と同じにします。
@@ -190,7 +190,6 @@ public class SixelConverter
 		return linebuf.str;
 	}
 
-#if false
 	// 切り上げする整数の log2
 	private int MyLog2(int n)
 	{
@@ -201,7 +200,6 @@ public class SixelConverter
 		}
 		return 8;
 	}
-#endif
 
 	// OR mode で Sixel コア部分を stream に出力します。
 	private void SixelToStreamCore_ORmode(FileStream stream)
@@ -210,13 +208,11 @@ public class SixelConverter
 		int w = Width;
 		int h = Height;
 
-		uint8[] sixelbuf = new uint8[w * 16 + 12];
-
-#if false
 		// パレットのビット数
 		int bcnt = MyLog2(ImageReductor.PaletteCount);
 //stderr.printf("bcnt=%d\n", bcnt);
-#endif
+
+		uint8[] sixelbuf = new uint8[(w + 5) * bcnt];
 
 		uint8* p = p0;
 		int y;
@@ -224,14 +220,14 @@ public class SixelConverter
 		for (y = 0; y < h - 6; y += 6) {
 
 			int len = sixel_image_to_sixel_h6_ormode(
-				sixelbuf, p, w, 6);
+				sixelbuf, p, w, 6, bcnt);
 			stream.write(sixelbuf[0 : len]);
 			stream.flush();
 			p += w * 6;
 		}
 		// 最終 SIXEL 行を変換
 		int len = sixel_image_to_sixel_h6_ormode(
-			sixelbuf, p, w, h - y);
+			sixelbuf, p, w, h - y, bcnt);
 		stream.write(sixelbuf[0 : len]);
 		stream.flush();
 	}
