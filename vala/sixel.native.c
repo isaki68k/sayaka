@@ -68,20 +68,19 @@ sixel_putd(uint8_t *dst, int n)
 		sixel_putc(dst, (decimal_table[n] >> 4) + 0x30);
 		sixel_putc(dst + 1, (decimal_table[n] & 0xf) + 0x30);
 		return 2;
-	} else if (n < 200) {
-		sixel_putc(dst, 1 + 0x30);
-		m = n - 100;
-		sixel_putc(dst + 1, (decimal_table[m] >> 4) + 0x30);
-		sixel_putc(dst + 2, (decimal_table[m] & 0xf) + 0x30);
-		return 3;
-	} else if (n < 300) {
-		sixel_putc(dst, 2 + 0x30);
-		m = n - 200;
-		sixel_putc(dst + 1, (decimal_table[m] >> 4) + 0x30);
-		sixel_putc(dst + 2, (decimal_table[m] & 0xf) + 0x30);
-		return 3;
 	} else {
-		return sprintf(dst, "%d", n);
+		if (n < 200) {
+			sixel_putc(dst, 1 + 0x30);
+			m = n - 100;
+		} else if (n < 300) {
+			sixel_putc(dst, 2 + 0x30);
+			m = n - 200;
+		} else {
+			return sprintf(dst, "%d", n);
+		}
+		sixel_putc(dst + 1, (decimal_table[m] >> 4) + 0x30);
+		sixel_putc(dst + 2, (decimal_table[m] & 0xf) + 0x30);
+		return 3;
 	}
 }
 
