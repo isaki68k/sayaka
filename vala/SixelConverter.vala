@@ -220,6 +220,7 @@ public class SixelConverter
 
 		uint8* p = p0;
 		int y;
+		// 一つ手前の SIXEL 行まで変換
 		for (y = 0; y < h - 6; y += 6) {
 
 			int len = sixel_image_to_sixel_h6_ormode(
@@ -228,6 +229,7 @@ public class SixelConverter
 			stream.flush();
 			p += w * 6;
 		}
+		// 最終 SIXEL 行を変換
 		int len = sixel_image_to_sixel_h6_ormode(
 			sixelbuf, p, w, h - y);
 		stream.write(sixelbuf[0 : len]);
