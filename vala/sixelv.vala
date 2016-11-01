@@ -60,7 +60,7 @@ public class SixelV
 		int convert_count = 0;
 
 		foreach (var opt in new OptArgs(args)) {
-			if (opt.IsOption()) {
+			if (opt.IsOption() && opt.Opt() != "-") {
 				switch (opt.Opt()) {
 					case "--debug":
 						gDiag.global_debug = true;
@@ -224,7 +224,11 @@ public class SixelV
 				}
 			} else {
 				if (convert_count > 0) stdout.putc('\n');
-				Convert(opt.ValueString());
+				if (opt.Opt() == "-") {
+					Convert("std://in");
+				} else {
+					Convert(opt.ValueString());
+				}
 				convert_count++;
 			}
 		}
@@ -345,7 +349,18 @@ public class SixelV
 
 		// ファイル読み込み
 
-		if (filename.contains("://")) {
+		if (filename == "std://in") {
+			try {
+				gDiag.Debug(@"Loading stdin");
+				sx.LoadFromStream(new InputStreamFromFileStream(stdin), opt_width);
+			} catch {
+				stderr.printf("File load error at %s\n", filename);
+				if (opt_ignoreerror) {
+					return;
+				}
+				Process.exit(1);
+			}
+		} else if (filename.contains("://")) {
 			try {
 				var file = new HttpClient(filename);
 				file.diag.opt_debug |= opt_debug_net;

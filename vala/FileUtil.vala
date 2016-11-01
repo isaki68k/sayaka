@@ -52,3 +52,27 @@ namespace ULib
 	}
 
 }
+
+// GLib.FileStream を gio の GLib.InputStream にラップするクラス
+// stdin をラップするために作った。
+public class InputStreamFromFileStream
+	: InputStream
+{
+	private unowned FileStream? target;
+
+	public InputStreamFromFileStream(FileStream fs)
+	{
+		target = fs;
+	}
+
+	public override bool close(Cancellable? cancellable = null) throws IOError
+	{
+		target = null;
+		return true;
+	}
+
+	public override ssize_t read(uint8[] buffer, Cancellable? cancellable = null) throws IOError
+	{
+		return (ssize_t)target.read(buffer, 1);
+	}
+}

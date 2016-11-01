@@ -55,6 +55,7 @@ SRCS_sixelv=	\
 	sixelv.vala \
 	Diag.vala \
 	Dictionary.vala \
+	FileUtil.vala \
 	SixelConverter.vala \
 	StringUtil.vala \
 	OptArgs.vala \
