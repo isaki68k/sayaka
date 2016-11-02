@@ -12,3 +12,9 @@ typedef enum
 	RCM_Custom,
 } ReductorColorMode;
 
+typedef enum
+{
+	RIC_OK = 0,
+	RIC_ARG_NULL = 1,
+	RIC_ABORT_JPEG = 2,
+} ReductorImageCode;

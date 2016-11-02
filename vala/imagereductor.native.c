@@ -25,7 +25,9 @@
 
 #include <limits.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <jpeglib.h>
 #include "imagereductor.native.h"
 
 #ifndef __packed
@@ -754,3 +756,217 @@ ImageReductor_HighQuality(
 
 	return 0;
 }
+
+
+//////////// JPEG イメージ
+
+
+typedef struct ImageReductor_Image_t ImageReductor_Image;
+typedef int (* ImageReductor_ReadCallback)(ImageReductor_Image* img);
+
+struct ImageReductor_Image_t
+{
+	uint8_t *Data;
+	int32_t DataLen;
+	int32_t Width;
+	int32_t Height;
+	int32_t ChannelCount;
+	int32_t RowStride;
+	int32_t OriginalWidth;
+	int32_t OriginalHeight;
+
+	ImageReductor_ReadCallback ReadCallback;
+
+	// ユーザが自由に使っていい。コールバック元の this 入れるとか。
+	void *UserObject;
+
+	uint8_t ReadBuffer[1024];
+};
+
+ImageReductor_Image*
+ImageReductor_AllocImage()
+{
+fprintf(stderr, "OffsetOf(DataLen)=%d\n", offsetof(ImageReductor_Image, DataLen));
+fprintf(stderr, "OffsetOf(Width)=%d\n", offsetof(ImageReductor_Image, Width));
+fprintf(stderr, "OffsetOf(Height)=%d\n", offsetof(ImageReductor_Image, Height));
+fprintf(stderr, "OffsetOf(ChannelCount)=%d\n", offsetof(ImageReductor_Image, ChannelCount));
+fprintf(stderr, "OffsetOf(RowStride)=%d\n", offsetof(ImageReductor_Image, RowStride));
+fprintf(stderr, "OffsetOf(OriginalWidth)=%d\n", offsetof(ImageReductor_Image, OriginalWidth));
+fprintf(stderr, "OffsetOf(OriginalHeight)=%d\n", offsetof(ImageReductor_Image, OriginalHeight));
+fprintf(stderr, "OffsetOf(ReadCallback)=%d\n", offsetof(ImageReductor_Image, ReadCallback));
+	return calloc(1, sizeof(ImageReductor_Image));
+}
+
+void
+ImageReductor_FreeImage(ImageReductor_Image* img)
+{
+	if (img->Data != NULL) {
+		free(img->Data);
+	}
+	free(img);
+}
+
+static const JOCTET fake_EOI[] = { 0xff, JPEG_EOI };
+
+void
+init_source(j_decompress_ptr cinfo)
+{
+	// nop
+fprintf(stderr, "init_source\n");
+}
+
+boolean
+fill_input_buffer(j_decompress_ptr cinfo)
+{
+fprintf(stderr, "fill_input\n");
+	if (cinfo->client_data != NULL) {
+		ImageReductor_Image *img = (ImageReductor_Image *)cinfo->client_data;
+fprintf(stderr, "fill_input img=%p\n", img);
+
+		int n = img->ReadCallback(img);
+fprintf(stderr, "callback n=%d\n", n);
+fprintf(stderr, "readbuffer=%02X %02X\n", img->ReadBuffer[0], img->ReadBuffer[1]);
+		if (n > 0) {
+			cinfo->src->next_input_byte = img->ReadBuffer;
+			cinfo->src->bytes_in_buffer = n;
+			return TRUE;
+		}
+	}
+
+	cinfo->src->next_input_byte = fake_EOI;
+	cinfo->src->bytes_in_buffer = sizeof(fake_EOI);
+	return TRUE;
+}
+
+void
+skip_input_data(j_decompress_ptr cinfo, long num_bytes)
+{
+fprintf(stderr, "skip_input\n");
+	while (num_bytes > (long)(cinfo->src->bytes_in_buffer)) {
+		num_bytes -= cinfo->src->bytes_in_buffer;
+		fill_input_buffer(cinfo);
+	}
+	cinfo->src->next_input_byte += num_bytes;
+	cinfo->src->bytes_in_buffer -= num_bytes;
+	return;
+}
+
+void
+term_source(j_decompress_ptr cinfo)
+{
+fprintf(stderr, "term_source\n");
+	// nop
+}
+
+int
+ImageReductor_LoadJpeg(
+	ImageReductor_Image* img,
+	int requestWidth, int requestHeight)
+{
+fprintf(stderr, "LoadJpeg enter img=%p, w=%d, h=%d\n", img, requestWidth, requestHeight);
+
+	if (img == NULL) return RIC_ARG_NULL;
+	if (img->ReadCallback == NULL) return RIC_ARG_NULL;
+
+	struct jpeg_decompress_struct jinfo;
+	struct jpeg_error_mgr jerr;
+	jinfo.err = jpeg_std_error(&jerr);
+
+	jpeg_create_decompress(&jinfo);
+
+	jinfo.client_data = img;
+
+	struct jpeg_source_mgr src_mgr;
+	memset(&src_mgr, 0, sizeof(src_mgr));
+
+	src_mgr.init_source = init_source;
+	src_mgr.fill_input_buffer = fill_input_buffer;
+	src_mgr.skip_input_data = skip_input_data;
+	src_mgr.resync_to_restart = jpeg_resync_to_restart;
+	src_mgr.term_source = term_source;
+	src_mgr.bytes_in_buffer = 0;
+	src_mgr.next_input_byte = NULL;
+
+	jinfo.src = &src_mgr;
+
+fprintf(stderr, "LoadJpeg readheader\n");
+	// ヘッダ読み込み
+	jpeg_read_header(&jinfo, TRUE);
+fprintf(stderr, "LoadJpeg readheader OK\n");
+
+	img->OriginalWidth = jinfo.image_width;
+	img->OriginalHeight = jinfo.image_height;
+
+	// スケールの計算
+	// libjpeg では 1/16 までサポート
+	if (requestWidth <= 0) {
+		requestWidth = img->OriginalWidth;
+	}
+	if (requestHeight <= 0) {
+		requestHeight = img->OriginalHeight * requestWidth / img->OriginalWidth;
+	}
+	int scalew = requestWidth / img->OriginalWidth;
+	int scaleh = requestHeight / img->OriginalHeight;
+	int scale = scalew < scaleh ? scalew : scaleh;
+	if (scale < 1) {
+		scale = 1;
+	} else if (scale > 16) {
+		scale = 16;
+	}
+
+fprintf(stderr, "LoadJpeg org=(%d,%d) scale wh=(%d,%d) scale=%d\n", img->OriginalWidth, img->OriginalHeight, scalew, scaleh, scale);
+
+	jinfo.scale_num = 1;
+	jinfo.scale_denom = scale;
+
+	jinfo.do_fancy_upsampling = FALSE;
+	jinfo.do_block_smoothing = FALSE;
+	jinfo.dct_method = JDCT_FASTEST;
+	jinfo.out_color_space = JCS_RGB;
+	jinfo.output_components = 3;
+
+	jpeg_calc_output_dimensions(&jinfo);
+
+	img->Width = jinfo.output_width;
+	img->Height = jinfo.output_height;
+	img->ChannelCount = jinfo.output_components;
+	img->RowStride = jinfo.output_width * jinfo.output_components;
+
+	img->DataLen = img->RowStride * img->Height;
+	img->Data = malloc(img->DataLen);
+
+fprintf(stderr, "LoadJpeg dim wh=(%d,%d) datalen=%d\n", img->Width, img->Height, img->DataLen);
+
+	// スキャンラインメモリのポインタ配列が必要
+	JSAMPARRAY lines = malloc(jinfo.output_height * sizeof(uint8_t *));
+	for (int y = 0; y < jinfo.output_height; y++) {
+		lines[y] = img->Data + (y * img->RowStride);
+	}
+
+fprintf(stderr, "LoadJpeg startdecompress\n");
+	jpeg_start_decompress(&jinfo);
+fprintf(stderr, "LoadJpeg startdecompress OK\n");
+
+	while (jinfo.output_scanline < jinfo.output_height) {
+		int prev_scanline = jinfo.output_scanline;
+
+		jpeg_read_scanlines(&jinfo,
+			&lines[jinfo.output_scanline],
+			jinfo.rec_outbuf_height);
+
+		if (prev_scanline == jinfo.output_scanline) {
+			// スキャンラインが進まない
+			jpeg_abort_decompress(&jinfo);
+			free(lines);
+			return RIC_ABORT_JPEG;
+		}
+	}
+
+fprintf(stderr, "LoadJpeg finishdecompress\n");
+	jpeg_finish_decompress(&jinfo);
+fprintf(stderr, "LoadJpeg finishdecompress OK\n");
+	free(lines);
+
+	return RIC_OK;
+}
+

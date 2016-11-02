@@ -212,6 +212,9 @@ public class SixelV
 							case "imagereductor":
 								opt_resizemode = SixelResizeMode.ByImageReductor;
 								break;
+							case "libjpeg":
+								opt_resizemode = SixelResizeMode.ByLibJpeg;
+								break;
 							default:
 								usage();
 								break;

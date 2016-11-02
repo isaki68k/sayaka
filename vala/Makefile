@@ -98,6 +98,8 @@ LIBS_MBEDTLS=	\
 
 LIBS+=	${LIBS_MBEDTLS}
 
+LIBS+= -ljpeg
+
 VALA_FLAGS=	\
 	mtlsv.vapi \
 	glib.vapi \

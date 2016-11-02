@@ -51,6 +51,8 @@ public enum SixelResizeMode
 
 	// リサイズ処理を ImageReductor で行います。
 	ByImageReductor,
+
+	ByLibJpeg,
 }
 
 public class SixelConverter
@@ -66,6 +68,8 @@ public class SixelConverter
 	// 画像の幅と高さ。Resize すると変更されます。
 	public int Width { get; private set; }
 	public int Height { get; private set; }
+
+	private ImageReductor_Image *img = null;
 
 	//////////////// 設定
 
@@ -92,19 +96,43 @@ public class SixelConverter
 
 	public void Load(string filename, int width = 0) throws Error
 	{
-		if (ResizeMode == SixelResizeMode.ByLoad) {
-			if (width <= 0) width = -1;
-			pix = new Pixbuf.from_file_at_size(filename, width, -1);
-		} else {
-			pix = new Pixbuf.from_file(filename);
-		}
-		Width = pix.get_width();
-		Height = pix.get_height();
+		bool isLoaded = false;
+
 		diag.Debug(@"filename=$(filename)");
-		diag.Debug(@"Size=($(Width),$(Height))");
-		diag.Debug(@"bits=$(pix.get_bits_per_sample())");
-		diag.Debug(@"nCh=$(pix.get_n_channels())");
-		diag.Debug(@"rowstride=$(pix.get_rowstride())");
+		if (ResizeMode == SixelResizeMode.ByLibJpeg) {
+			img = ImageReductor.AllocImage();
+			diag.Debug(@"alloc img.Width=$(img.Width) img.Height=$(img.Height) img.RowStride=$(img.RowStride)");
+			var f = File.new_for_path(filename);
+			var fs = new DataInputStream(f.read());
+			img.ReadCallback = img_readcallback;
+		stderr.printf("fs=%p\n", fs);
+			img.UserObject = fs;
+			var r = ImageReductor.LoadJpeg(img, width, 0);
+			if (r == ReductorImageCode.RIC_OK) {
+				diag.Debug(@"img.Width=$(img.Width) img.Height=$(img.Height) img.RowStride=$(img.RowStride)");
+				pix = new Pixbuf.from_data(
+					img.Data,
+					Colorspace.RGB,
+					/* has_alpha= */ false,
+					8,
+					img.Width,
+					img.Height,
+					img.RowStride,
+					img_freecallback);
+				isLoaded = true;
+			}
+			fs.close();
+		}
+
+		if (isLoaded == false) {
+			if (ResizeMode == SixelResizeMode.ByLoad) {
+				if (width <= 0) width = -1;
+				pix = new Pixbuf.from_file_at_size(filename, width, -1);
+			} else {
+				pix = new Pixbuf.from_file(filename);
+			}
+		}
+		LoadAfter();
 	}
 
 	public void LoadFromStream(InputStream stream, int width = 0) throws Error
@@ -115,9 +143,40 @@ public class SixelConverter
 		} else {
 			pix = new Pixbuf.from_stream(stream);
 		}
+		LoadAfter();
+	}
+
+	private void LoadAfter()
+	{
 		Width = pix.get_width();
 		Height = pix.get_height();
+		diag.Debug(@"Size=($(Width),$(Height))");
+		diag.Debug(@"bits=$(pix.get_bits_per_sample())");
+		diag.Debug(@"nCh=$(pix.get_n_channels())");
+		diag.Debug(@"rowstride=$(pix.get_rowstride())");
 	}
+
+	static int img_readcallback(ImageReductor_Image *img)
+	{
+		gDiag.Debug("img_readcallback");
+		unowned DataInputStream? s = (DataInputStream) img.UserObject;
+		stderr.printf("UserObject=%p\n", s);
+		try {
+			var n = (int) s.read(img.ReadBuffer);
+			gDiag.Debug(@"read len=$(n)");
+			return n;
+		} catch {
+			return 0;
+		}
+	}
+
+	private void img_freecallback(void *pixels)
+	{
+		if (img != null) {
+			ImageReductor.FreeImage(img);
+		}
+	}
+
 
 	// ----- 前処理
 

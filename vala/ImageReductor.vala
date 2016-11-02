@@ -30,6 +30,14 @@ public enum ReductorColorMode
 	Custom,
 }
 
+[CCode (cname="ReductorImageCode", has_type_id=false)]
+public enum ReductorImageCode
+{
+	RIC_OK = 0,
+	RIC_ARG_NULL = 1,
+	RIC_ABORT_JPEG = 2,
+}
+
 [CCode(cname="ColorRGBuint8")]
 public struct ColorRGBuint8
 {
@@ -37,6 +45,33 @@ public struct ColorRGBuint8
 	uint8 g;
 	uint8 b;
 }
+
+
+[CCode(cname="ImageReductor_Image")]
+public struct ImageReductor_Image
+{
+	[CCode(array_length_cname="DataLen", array_length_type="int32_t")]
+	uint8[] Data;
+	int32 Width;
+	int32 Height;
+	int32 ChannelCount;
+	int32 RowStride;
+	int32 OriginalWidth;
+	int32 OriginalHeight;
+
+	ImageReductor_ReadCallback ReadCallback;
+
+	// ユーザが自由に使っていい。コールバック元の this 入れるとか。
+	void *UserObject;
+
+	uint8 ReadBuffer[1024];
+}
+
+// なぜか ImageReductor_Image より後ろに書かないと C コンパイルできない
+// valac のバグと思われる
+[CCode(cname="ImageReductor_ReadCallback", has_target=false)]
+public delegate int ImageReductor_ReadCallback(ImageReductor_Image* img);
+
 
 // C コードの宣言
 
@@ -63,6 +98,14 @@ extern int ImageReductor_HighQuality(
 	uint8[] src,
 	int srcWidth, int srcHeight,
 	int srcNch, int srcStride);
+
+extern ImageReductor_Image* ImageReductor_AllocImage();
+
+extern void ImageReductor_FreeImage(ImageReductor_Image* img);
+
+extern ReductorImageCode ImageReductor_LoadJpeg(
+	ImageReductor_Image* img,
+	int requestWidth, int requestHeight);
 
 public class ImageReductor
 {
@@ -129,5 +172,21 @@ public class ImageReductor
 			pix.get_pixels(), pix.get_width(), pix.get_height(),
 			pix.get_n_channels(), pix.get_rowstride());
 	}
+
+	public static ImageReductor_Image* AllocImage()
+	{
+		return ImageReductor_AllocImage();
+	}
+
+	public static void FreeImage(ImageReductor_Image* img)
+	{
+		ImageReductor_FreeImage(img);
+	}
+
+	public static ReductorImageCode LoadJpeg(ImageReductor_Image* img, int requestWidth, int requestHeight)
+	{
+		return ImageReductor_LoadJpeg(img, requestWidth, requestHeight);
+	}
+
 }
 
