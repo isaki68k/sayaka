@@ -186,3 +186,63 @@ namespace ULib
 	}
 }
 
+#if SELF_TEST
+// valac -X -w -D SELF_TEST ParsedUri.vala StringUtil.vala
+class program
+{
+	public static int tests;
+	public static int failed;
+	public static int testnum;
+
+	private static void xp_str(string exp, string value, string msg)
+	{
+		tests++;
+		if (value != exp) {
+			stdout.printf(@"Testcase $(testnum): $(msg) expects "
+				+ @"\"$(exp)\" but \"$(value)\"\n");
+			failed++;
+		}
+	}
+
+	public static int main(string[] args)
+	{
+		string[] table = new string[] {
+			// input	scheme, host, port, PQF
+			"a://b",	"a", "b", "", "/",
+			"a://b/",	"a", "b", "", "/",
+			"a://b:c",	"a", "b", "c", "/",
+			"a://b:c/d","a", "b", "c", "/d",
+			"/d",		"",  "",  "",  "/d",
+			"b:c",		"",  "b", "c", "/",
+			"b:c/d/e",	"",  "b", "c", "/d/e",
+		};
+
+		testnum = 0;
+		tests = 0;
+		failed = 0;
+		for (var i = 0; i < table.length; i += 5) {
+			var input = table[i];
+			var exp_scheme = table[i + 1];
+			var exp_host = table[i + 2];
+			var exp_port = table[i + 3];
+			var exp_PQF = table[i + 4];
+
+			var uri = ULib.ParsedUri.Parse(input);
+			xp_str(exp_scheme, uri.Scheme, "uri.Scheme");
+			xp_str(exp_host, uri.Host, "uri.Host");
+			xp_str(exp_port, uri.Port, "uri.Port");
+			xp_str(exp_PQF, uri.PQF(), "uri.PQF");
+
+			testnum++;
+		}
+
+		if (failed == 0) {
+			stdout.printf(@"$(tests) tests, ALL passed\n");
+		} else {
+			stdout.printf(@"$(tests) tests, $(failed) failed\n");
+		}
+
+		return 0;
+	}
+}
+#endif
