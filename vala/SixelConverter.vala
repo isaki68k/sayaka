@@ -109,7 +109,7 @@ public class SixelConverter
 			var r = ImageReductor.LoadJpeg(img, width, 0);
 			if (r == ReductorImageCode.RIC_OK) {
 				diag.Debug(@"img.Width=$(img.Width) img.Height=$(img.Height) img.RowStride=$(img.RowStride)");
-				pix = new Pixbuf.from_data(
+				pix = new Pixbuf.with_unowned_data(
 					img.Data,
 					Colorspace.RGB,
 					/* has_alpha= */ false,
