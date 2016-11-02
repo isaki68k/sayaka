@@ -901,11 +901,15 @@ ImageReductor_LoadJpeg(
 
 	// スケールの計算
 	// libjpeg では 1/16 までサポート
+	// 1/1, 1/2, 1/4, 1/8 しかサポートしないとも書いてある
 	if (requestWidth <= 0) {
 		requestWidth = img->OriginalWidth;
 	}
 	if (requestHeight <= 0) {
 		requestHeight = img->OriginalHeight * requestWidth / img->OriginalWidth;
+		if (requestHeight <= 0) {
+			requestHeight = 1;
+		}
 	}
 	int scalew = img->OriginalWidth / requestWidth;
 	int scaleh = img->OriginalHeight / requestHeight;

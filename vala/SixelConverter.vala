@@ -255,13 +255,16 @@ public class SixelConverter
 		// リサイズ
 
 		diag.Debug(@"pre width=$(width) height=$(height)");
-		if (width == 0) {
+		if (width <= 0) {
 			Width = pix.get_width();
 		} else {
 			Width = width;
 		}
-		if (height == 0) {
+		if (height <= 0) {
 			Height = pix.get_height() * Width / pix.get_width();
+			if (Height <= 0) {
+				Height = 1;
+			}
 		} else {
 			Height = height;
 		}
