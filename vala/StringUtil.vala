@@ -51,6 +51,23 @@ namespace StringUtil
 		return rv;
 	}
 
+	// 文字列 s を、最初に現れた文字列 c で2分割します。
+	// 返される各文字列には c は含まれません。
+	// c が見つからないときは、rv[0] に ""、rv[1] に s を返します。
+	public static string[] Split2FirstOption(string s, string c)
+	{
+		string[] rv = new string[2];
+		int p = s.index_of(c);
+		if (p < 0) {
+			rv[0] = "";
+			rv[1] = s;
+		} else {
+			rv[0] = s.substring(0, p);
+			rv[1] = s.substring(p + c.length);
+		}
+		return rv;
+	}
+
 	// 文字列をなんちゃって Url エンコードします。
 	public static string UrlEncode(string s)
 	{

@@ -133,7 +133,7 @@ namespace ULib
 			var rv = new ParsedUri();
 
 			// スキームとそれ以降を分離
-			var a = Split2(uriString, "://");
+			var a = Split2FirstOption(uriString, "://");
 			rv.Scheme = a[0];
 			var APQF = a[1];
 
