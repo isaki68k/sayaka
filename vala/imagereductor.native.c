@@ -780,7 +780,7 @@ struct ImageReductor_Image_t
 	// ユーザが自由に使っていい。コールバック元の this 入れるとか。
 	void *UserObject;
 
-	uint8_t ReadBuffer[1024];
+	uint8_t ReadBuffer[4096];
 };
 
 ImageReductor_Image*

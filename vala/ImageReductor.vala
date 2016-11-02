@@ -64,7 +64,7 @@ public struct ImageReductor_Image
 	// ユーザが自由に使っていい。コールバック元の this 入れるとか。
 	void *UserObject;
 
-	uint8 ReadBuffer[1024];
+	uint8 ReadBuffer[4096];
 }
 
 // なぜか ImageReductor_Image より後ろに書かないと C コンパイルできない
