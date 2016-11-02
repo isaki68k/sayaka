@@ -991,6 +991,7 @@ public class SayakaMain
 		// 出力文字コードの変換
 		if (iconv_tocode != "") {
 			if (iconv_tocode == "iso-2022-jp") {
+				// (x68kなら)半角カナを先に処理しておく
 				var sb = new StringBuilder();
 				unichar c;
 				for (var i = 0; rv.get_next_char(ref i, out c); ) {
