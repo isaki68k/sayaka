@@ -907,8 +907,8 @@ ImageReductor_LoadJpeg(
 	if (requestHeight <= 0) {
 		requestHeight = img->OriginalHeight * requestWidth / img->OriginalWidth;
 	}
-	int scalew = requestWidth / img->OriginalWidth;
-	int scaleh = requestHeight / img->OriginalHeight;
+	int scalew = img->OriginalWidth / requestWidth;
+	int scaleh = img->OriginalHeight / requestHeight;
 	int scale = scalew < scaleh ? scalew : scaleh;
 	if (scale < 1) {
 		scale = 1;
