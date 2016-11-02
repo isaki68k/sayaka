@@ -126,7 +126,16 @@ namespace ULib
 					var location = GetHeader(RecvHeaders, "Location");
 					diag.Debug(@"Redirect to $(location)");
 					if (location != null) {
-						Uri = ParsedUri.Parse(location);
+						var newUri = ParsedUri.Parse(location);
+						if (newUri.Scheme != "") {
+							// Scheme があればフルURIとみなす
+							Uri = ParsedUri.Parse(location);
+						} else {
+							// そうでなければ相対パスとみなす
+							Uri.Path = newUri.Path;
+							Uri.Query = newUri.Query;
+							Uri.Fragment = newUri.Fragment;
+						}
 						diag.Debug(Uri.to_string());
 						continue;
 					}
