@@ -155,10 +155,10 @@ public class Diag
 		}
 	}
 
-	public void DebugHex(uchar[] d, int len)
+	public void DebugHex(string s, uchar[] d)
 	{
 		if (opt_debug) {
-			gDiag.PutHex("", d, ClassName);
+			gDiag.PutHex(s, d, ClassName);
 		}
 	}
 
