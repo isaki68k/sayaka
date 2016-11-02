@@ -786,6 +786,7 @@ struct ImageReductor_Image_t
 ImageReductor_Image*
 ImageReductor_AllocImage()
 {
+#if 0
 fprintf(stderr, "OffsetOf(DataLen)=%d\n", offsetof(ImageReductor_Image, DataLen));
 fprintf(stderr, "OffsetOf(Width)=%d\n", offsetof(ImageReductor_Image, Width));
 fprintf(stderr, "OffsetOf(Height)=%d\n", offsetof(ImageReductor_Image, Height));
@@ -794,6 +795,7 @@ fprintf(stderr, "OffsetOf(RowStride)=%d\n", offsetof(ImageReductor_Image, RowStr
 fprintf(stderr, "OffsetOf(OriginalWidth)=%d\n", offsetof(ImageReductor_Image, OriginalWidth));
 fprintf(stderr, "OffsetOf(OriginalHeight)=%d\n", offsetof(ImageReductor_Image, OriginalHeight));
 fprintf(stderr, "OffsetOf(ReadCallback)=%d\n", offsetof(ImageReductor_Image, ReadCallback));
+#endif
 	return calloc(1, sizeof(ImageReductor_Image));
 }
 
@@ -812,20 +814,20 @@ void
 init_source(j_decompress_ptr cinfo)
 {
 	// nop
-fprintf(stderr, "init_source\n");
+//fprintf(stderr, "init_source\n");
 }
 
 boolean
 fill_input_buffer(j_decompress_ptr cinfo)
 {
-fprintf(stderr, "fill_input\n");
+//fprintf(stderr, "fill_input\n");
 	if (cinfo->client_data != NULL) {
 		ImageReductor_Image *img = (ImageReductor_Image *)cinfo->client_data;
-fprintf(stderr, "fill_input img=%p\n", img);
+//fprintf(stderr, "fill_input img=%p\n", img);
 
 		int n = img->ReadCallback(img);
-fprintf(stderr, "callback n=%d\n", n);
-fprintf(stderr, "readbuffer=%02X %02X\n", img->ReadBuffer[0], img->ReadBuffer[1]);
+//fprintf(stderr, "callback n=%d\n", n);
+//fprintf(stderr, "readbuffer=%02X %02X\n", img->ReadBuffer[0], img->ReadBuffer[1]);
 		if (n > 0) {
 			cinfo->src->next_input_byte = img->ReadBuffer;
 			cinfo->src->bytes_in_buffer = n;
@@ -841,7 +843,7 @@ fprintf(stderr, "readbuffer=%02X %02X\n", img->ReadBuffer[0], img->ReadBuffer[1]
 void
 skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 {
-fprintf(stderr, "skip_input\n");
+//fprintf(stderr, "skip_input\n");
 	while (num_bytes > (long)(cinfo->src->bytes_in_buffer)) {
 		num_bytes -= cinfo->src->bytes_in_buffer;
 		fill_input_buffer(cinfo);
@@ -854,7 +856,7 @@ fprintf(stderr, "skip_input\n");
 void
 term_source(j_decompress_ptr cinfo)
 {
-fprintf(stderr, "term_source\n");
+//fprintf(stderr, "term_source\n");
 	// nop
 }
 
@@ -863,7 +865,7 @@ ImageReductor_LoadJpeg(
 	ImageReductor_Image* img,
 	int requestWidth, int requestHeight)
 {
-fprintf(stderr, "LoadJpeg enter img=%p, w=%d, h=%d\n", img, requestWidth, requestHeight);
+//fprintf(stderr, "LoadJpeg enter img=%p, w=%d, h=%d\n", img, requestWidth, requestHeight);
 
 	if (img == NULL) return RIC_ARG_NULL;
 	if (img->ReadCallback == NULL) return RIC_ARG_NULL;
@@ -889,10 +891,10 @@ fprintf(stderr, "LoadJpeg enter img=%p, w=%d, h=%d\n", img, requestWidth, reques
 
 	jinfo.src = &src_mgr;
 
-fprintf(stderr, "LoadJpeg readheader\n");
+//fprintf(stderr, "LoadJpeg readheader\n");
 	// ヘッダ読み込み
 	jpeg_read_header(&jinfo, TRUE);
-fprintf(stderr, "LoadJpeg readheader OK\n");
+//fprintf(stderr, "LoadJpeg readheader OK\n");
 
 	img->OriginalWidth = jinfo.image_width;
 	img->OriginalHeight = jinfo.image_height;
@@ -914,7 +916,7 @@ fprintf(stderr, "LoadJpeg readheader OK\n");
 		scale = 16;
 	}
 
-fprintf(stderr, "LoadJpeg org=(%d,%d) scale wh=(%d,%d) scale=%d\n", img->OriginalWidth, img->OriginalHeight, scalew, scaleh, scale);
+//fprintf(stderr, "LoadJpeg org=(%d,%d) scale wh=(%d,%d) scale=%d\n", img->OriginalWidth, img->OriginalHeight, scalew, scaleh, scale);
 
 	jinfo.scale_num = 1;
 	jinfo.scale_denom = scale;
@@ -935,7 +937,7 @@ fprintf(stderr, "LoadJpeg org=(%d,%d) scale wh=(%d,%d) scale=%d\n", img->Origina
 	img->DataLen = img->RowStride * img->Height;
 	img->Data = malloc(img->DataLen);
 
-fprintf(stderr, "LoadJpeg dim wh=(%d,%d) datalen=%d\n", img->Width, img->Height, img->DataLen);
+//fprintf(stderr, "LoadJpeg dim wh=(%d,%d) datalen=%d\n", img->Width, img->Height, img->DataLen);
 
 	// スキャンラインメモリのポインタ配列が必要
 	JSAMPARRAY lines = malloc(jinfo.output_height * sizeof(uint8_t *));
@@ -943,9 +945,9 @@ fprintf(stderr, "LoadJpeg dim wh=(%d,%d) datalen=%d\n", img->Width, img->Height,
 		lines[y] = img->Data + (y * img->RowStride);
 	}
 
-fprintf(stderr, "LoadJpeg startdecompress\n");
+//fprintf(stderr, "LoadJpeg startdecompress\n");
 	jpeg_start_decompress(&jinfo);
-fprintf(stderr, "LoadJpeg startdecompress OK\n");
+//fprintf(stderr, "LoadJpeg startdecompress OK\n");
 
 	while (jinfo.output_scanline < jinfo.output_height) {
 		int prev_scanline = jinfo.output_scanline;
@@ -962,9 +964,9 @@ fprintf(stderr, "LoadJpeg startdecompress OK\n");
 		}
 	}
 
-fprintf(stderr, "LoadJpeg finishdecompress\n");
+//fprintf(stderr, "LoadJpeg finishdecompress\n");
 	jpeg_finish_decompress(&jinfo);
-fprintf(stderr, "LoadJpeg finishdecompress OK\n");
+//fprintf(stderr, "LoadJpeg finishdecompress OK\n");
 	free(lines);
 
 	return RIC_OK;

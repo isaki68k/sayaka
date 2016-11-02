@@ -105,7 +105,6 @@ public class SixelConverter
 			var f = File.new_for_path(filename);
 			var fs = new DataInputStream(f.read());
 			img.ReadCallback = img_readcallback;
-		stderr.printf("fs=%p\n", fs);
 			img.UserObject = fs;
 			var r = ImageReductor.LoadJpeg(img, width, 0);
 			if (r == ReductorImageCode.RIC_OK) {
@@ -160,7 +159,6 @@ public class SixelConverter
 	{
 		gDiag.Debug("img_readcallback");
 		unowned DataInputStream? s = (DataInputStream) img.UserObject;
-		stderr.printf("UserObject=%p\n", s);
 		try {
 			var n = (int) s.read(img.ReadBuffer);
 			gDiag.Debug(@"read len=$(n)");
