@@ -1008,7 +1008,8 @@ public class SayakaMain
 
 			try {
 				string rv2;
-				rv2 = convert(rv, -1, iconv_tocode, "utf-8");
+				rv2 = convert_with_fallback(rv, -1, iconv_tocode, "utf-8",
+					null);
 				rv = rv2;
 			} catch {
 				// nop

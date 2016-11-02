@@ -100,6 +100,7 @@ LIBS+=	${LIBS_MBEDTLS}
 
 VALA_FLAGS=	\
 	mtlsv.vapi \
+	glib.vapi \
 
 VALAC=	valac
 
