@@ -155,6 +155,7 @@ public class Diag
 		}
 	}
 
+	// 一部分を表示したいときはスライスを使う。
 	public void DebugHex(string s, uchar[] d)
 	{
 		if (opt_debug) {
