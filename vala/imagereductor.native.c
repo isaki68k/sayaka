@@ -28,11 +28,15 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <jpeglib.h>
+#include <glib.h>
 #include "imagereductor.native.h"
 
 #ifndef __packed
 #define __packed __attribute__((__packed__))
 #endif
+
+extern gboolean gdiag_global_debug;
+#define DEBUG_PRINTF(x...) if (gdiag_global_debug) fprintf(stderr, x)
 
 typedef struct ColorRGBint_t
 {
@@ -860,12 +864,21 @@ term_source(j_decompress_ptr cinfo)
 	// nop
 }
 
+static void
+debug_handler(j_common_ptr cinfo)
+{
+	char buffer[JMSG_LENGTH_MAX];
+	(*cinfo->err->format_message)(cinfo, buffer);
+
+	DEBUG_PRINTF("%s\n", buffer);
+}
+
 int
 ImageReductor_LoadJpeg(
 	ImageReductor_Image* img,
 	int requestWidth, int requestHeight)
 {
-//fprintf(stderr, "LoadJpeg enter img=%p, w=%d, h=%d\n", img, requestWidth, requestHeight);
+DEBUG_PRINTF("LoadJpeg enter img=%p, w=%d, h=%d\n", img, requestWidth, requestHeight);
 
 	if (img == NULL) return RIC_ARG_NULL;
 	if (img->ReadCallback == NULL) return RIC_ARG_NULL;
@@ -873,6 +886,7 @@ ImageReductor_LoadJpeg(
 	struct jpeg_decompress_struct jinfo;
 	struct jpeg_error_mgr jerr;
 	jinfo.err = jpeg_std_error(&jerr);
+	jerr.output_message = debug_handler;
 
 	jpeg_create_decompress(&jinfo);
 
@@ -891,10 +905,10 @@ ImageReductor_LoadJpeg(
 
 	jinfo.src = &src_mgr;
 
-//fprintf(stderr, "LoadJpeg readheader\n");
+DEBUG_PRINTF("LoadJpeg readheader\n");
 	// ヘッダ読み込み
 	jpeg_read_header(&jinfo, TRUE);
-//fprintf(stderr, "LoadJpeg readheader OK\n");
+DEBUG_PRINTF("LoadJpeg readheader OK\n");
 
 	img->OriginalWidth = jinfo.image_width;
 	img->OriginalHeight = jinfo.image_height;
@@ -920,7 +934,7 @@ ImageReductor_LoadJpeg(
 		scale = 16;
 	}
 
-//fprintf(stderr, "LoadJpeg org=(%d,%d) scale wh=(%d,%d) scale=%d\n", img->OriginalWidth, img->OriginalHeight, scalew, scaleh, scale);
+DEBUG_PRINTF("LoadJpeg org=(%d,%d) scalewh=(%d,%d) scale=%d\n", img->OriginalWidth, img->OriginalHeight, scalew, scaleh, scale);
 
 	jinfo.scale_num = 1;
 	jinfo.scale_denom = scale;
@@ -941,7 +955,7 @@ ImageReductor_LoadJpeg(
 	img->DataLen = img->RowStride * img->Height;
 	img->Data = malloc(img->DataLen);
 
-//fprintf(stderr, "LoadJpeg dim wh=(%d,%d) datalen=%d\n", img->Width, img->Height, img->DataLen);
+DEBUG_PRINTF("LoadJpeg dim wh=(%d,%d) datalen=%d\n", img->Width, img->Height, img->DataLen);
 
 	// スキャンラインメモリのポインタ配列が必要
 	JSAMPARRAY lines = malloc(jinfo.output_height * sizeof(uint8_t *));
@@ -949,9 +963,9 @@ ImageReductor_LoadJpeg(
 		lines[y] = img->Data + (y * img->RowStride);
 	}
 
-//fprintf(stderr, "LoadJpeg startdecompress\n");
+DEBUG_PRINTF("LoadJpeg startdecompress\n");
 	jpeg_start_decompress(&jinfo);
-//fprintf(stderr, "LoadJpeg startdecompress OK\n");
+DEBUG_PRINTF("LoadJpeg startdecompress OK\n");
 
 	while (jinfo.output_scanline < jinfo.output_height) {
 		int prev_scanline = jinfo.output_scanline;
@@ -968,9 +982,9 @@ ImageReductor_LoadJpeg(
 		}
 	}
 
-//fprintf(stderr, "LoadJpeg finishdecompress\n");
+DEBUG_PRINTF("LoadJpeg finishdecompress\n");
 	jpeg_finish_decompress(&jinfo);
-//fprintf(stderr, "LoadJpeg finishdecompress OK\n");
+DEBUG_PRINTF("LoadJpeg finishdecompress OK\n");
 	free(lines);
 
 	return RIC_OK;
