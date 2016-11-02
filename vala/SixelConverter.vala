@@ -55,6 +55,43 @@ public enum SixelResizeMode
 	ByLibJpeg,
 }
 
+public class PeekableInputStream
+ : InputStream
+{
+	private InputStream target;
+	private uint8[] peekbuffer;
+
+	public PeekableInputStream(InputStream baseStream)
+	{
+		target = baseStream;
+	}
+
+	public override bool close(Cancellable? cancellable = null) throws IOError
+	{
+		target.close();
+		return true;
+	}
+
+	public override ssize_t read(uint8[] buffer, Cancellable? cancellable = null) throws IOError
+	{
+		if (peekbuffer.length > 0 && peekbuffer.length < buffer.length) {
+			var n = peekbuffer.length;
+			Memory.copy(buffer, peekbuffer, peekbuffer.length);
+			peekbuffer.length = 0;
+			return n;
+		}
+		return (ssize_t)target.read(buffer);
+	}
+
+	public ssize_t peek(uint8[] buffer) throws IOError
+	{
+		peekbuffer = new uint8[buffer.length];
+		var n = target.read(peekbuffer);
+		Memory.copy(buffer, peekbuffer, buffer.length);
+		return n;
+	}
+}
+
 public class SixelConverter
 {
 	public Diag diag = new Diag("SixelConverter");
@@ -96,34 +133,19 @@ public class SixelConverter
 
 	public void Load(string filename, int width = 0) throws Error
 	{
-		bool isLoaded = false;
-
 		diag.Debug(@"filename=$(filename)");
+		diag.Debug(@"ResizeMode=$(ResizeMode)");
 		if (ResizeMode == SixelResizeMode.ByLibJpeg) {
-			img = ImageReductor.AllocImage();
-			diag.Debug(@"alloc img.Width=$(img.Width) img.Height=$(img.Height) img.RowStride=$(img.RowStride)");
 			var f = File.new_for_path(filename);
-			var fs = new DataInputStream(f.read());
-			img.ReadCallback = img_readcallback;
-			img.UserObject = fs;
-			var r = ImageReductor.LoadJpeg(img, width, 0);
-			if (r == ReductorImageCode.RIC_OK) {
-				diag.Debug(@"img.Width=$(img.Width) img.Height=$(img.Height) img.RowStride=$(img.RowStride)");
-				pix = new Pixbuf.with_unowned_data(
-					img.Data,
-					Colorspace.RGB,
-					/* has_alpha= */ false,
-					8,
-					img.Width,
-					img.Height,
-					img.RowStride,
-					img_freecallback);
-				isLoaded = true;
+			var ps = new PeekableInputStream(f.read());
+			var isLoaded = LoadJpeg(ps, width);
+			ps.close();
+			if (isLoaded == false) {
+				diag.Debug("fallback to gdk");
+				if (width <= 0) width = -1;
+				pix = new Pixbuf.from_file_at_size(filename, width, -1);
 			}
-			fs.close();
-		}
-
-		if (isLoaded == false) {
+		} else {
 			if (ResizeMode == SixelResizeMode.ByLoad) {
 				if (width <= 0) width = -1;
 				pix = new Pixbuf.from_file_at_size(filename, width, -1);
@@ -136,13 +158,60 @@ public class SixelConverter
 
 	public void LoadFromStream(InputStream stream, int width = 0) throws Error
 	{
-		if (ResizeMode == SixelResizeMode.ByLoad) {
-			if (width <= 0) width = -1;
-			pix = new Pixbuf.from_stream_at_scale(stream, width, -1, true);
+		var ps = new PeekableInputStream(stream);
+
+		diag.Debug(@"ResizeMode=$(ResizeMode)");
+		if (ResizeMode == SixelResizeMode.ByLibJpeg) {
+			if (LoadJpeg(ps, width) == false) {
+				diag.Debug("fallback to gdk");
+				if (width <= 0) width = -1;
+				pix = new Pixbuf.from_stream_at_scale(ps, width, -1, true);
+			}
 		} else {
-			pix = new Pixbuf.from_stream(stream);
+			if (ResizeMode == SixelResizeMode.ByLoad) {
+				if (width <= 0) width = -1;
+				pix = new Pixbuf.from_stream_at_scale(ps, width, -1, true);
+			} else {
+				pix = new Pixbuf.from_stream(ps);
+			}
 		}
 		LoadAfter();
+	}
+
+	private bool LoadJpeg(PeekableInputStream ps, int width = 0)
+	{
+		try {
+			uint8[] magic = new uint8[2];
+			diag.Debug(@"magic.len=$(magic.length)");
+			var n = ps.peek(magic);
+			diag.Debug(@"LoadJpeg n=$(n)");
+			if (n == magic.length) {
+				diag.DebugHex("magic=", magic);
+				if (magic[0] == 0xff && magic[1] == 0xd8) {
+					img = ImageReductor.AllocImage();
+					img.ReadCallback = img_readcallback;
+					img.UserObject = ps;
+					var r = ImageReductor.LoadJpeg(img, width, 0);
+					if (r == ReductorImageCode.RIC_OK) {
+						diag.Debug(@"img.Width=$(img.Width) img.Height=$(img.Height) img.RowStride=$(img.RowStride)");
+						pix = new Pixbuf.with_unowned_data(
+							img.Data,
+							Colorspace.RGB,
+							/* has_alpha= */ false,
+							8,
+							img.Width,
+							img.Height,
+							img.RowStride,
+							img_freecallback);
+						return true;
+					}
+				}
+			} else {
+				diag.Warn(@"LoadJpeg n=$(n)");
+			}
+		} catch {
+		}
+		return false;
 	}
 
 	private void LoadAfter()
@@ -157,11 +226,11 @@ public class SixelConverter
 
 	static int img_readcallback(ImageReductor_Image *img)
 	{
-		gDiag.Debug("img_readcallback");
-		unowned DataInputStream? s = (DataInputStream) img.UserObject;
+		//gDiag.Debug("img_readcallback");
+		unowned InputStream? s = (InputStream) img.UserObject;
 		try {
 			var n = (int) s.read(img.ReadBuffer);
-			gDiag.Debug(@"read len=$(n)");
+			//gDiag.Debug(@"read len=$(n)");
 			return n;
 		} catch {
 			return 0;
