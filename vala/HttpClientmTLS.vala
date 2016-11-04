@@ -153,26 +153,7 @@ namespace ULib
 				diag.Debug("use ChunkedInputStream");
 				rv = new ChunkedInputStream(dIn);
 			} else {
-				// ボディをメモリに読み込んで、そのメモリへのストリームを返す。
-				// https の時はストリームの終了で TlsConnection が例外を吐く。
-				// そのため、ストリームを直接外部に渡すと、予期しないタイミング
-				// で例外になるので、一旦メモリに読み込む。
-				diag.Debug("use MemoryInputStream");
-				var ms = new MemoryOutputStream.resizable();
-				try {
-					ms.splice(dIn, 0);
-				} catch {
-					// ignore
-				}
-				ms.close();
-
-				// TODO: ソケットのクローズ
-
-				// ms のバックエンドバッファの所有権を移す。
-				var msdata = ms.steal_data();
-				msdata.length = (int)ms.get_data_size();
-				var msin = new MemoryInputStream.from_data(msdata, null);
-				return new DataInputStream(msin);
+				rv = dIn;
 			}
 
 			return rv;
