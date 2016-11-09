@@ -178,7 +178,7 @@ FindColor_Fixed8(ColorRGBuint8 c)
 // X68k 固定 16 色パレット
 static const ColorRGBuint8 Palette_FixedX68k[] =
 {
- {  0,   0,   0},
+ {  0,   0,   0},	// 透明
  {255,   0,   0},
  {  0, 255,   0},
  {255, 255,   0},
@@ -186,7 +186,7 @@ static const ColorRGBuint8 Palette_FixedX68k[] =
  {255,   0, 255},
  {  0, 255, 255},
  {255, 255, 255},
- {192, 192, 192},
+ {  0,   0,   0},	// 黒
  {128,   0,   0},
  {  0, 128,   0},
  {128, 128,   0},
@@ -209,12 +209,12 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 		G = c.g >= 192;
 		B = c.b >= 192;
 		if (R == G && G == B) {
-			if (I >= 224 * 3) {
+			if (I >= 192 * 3) {
 				return 7;
-			} else if (I >= 160 * 3) {
-				return 8;
-			} else {
+			} else if (I >= 64 * 3) {
 				return 15;
+			} else {
+				return 8;
 			}
 		}
 		return R + (G << 1) + (B << 2);
@@ -223,12 +223,10 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 		G = c.g >= 64;
 		B = c.b >= 64;
 		if (R == G && G == B) {
-			if (I >= 160 * 3) {
-				return 8;
-			} else if (I >= 64 * 3) {
+			if (I >= 64 * 3) {
 				return 15;
 			} else {
-				return 0;
+				return 8;
 			}
 		}
 		return (R + (G << 1) + (B << 2)) | 8;
