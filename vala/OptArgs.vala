@@ -158,6 +158,11 @@ namespace ULib
 			return int.parse(ValueString());
 		}
 
+		public float ValueFloat()
+		{
+			return (float)double.parse(ValueString());
+		}
+
 		// ブールとして評価されるスイッチを返します。
 		// 0, off, false のときは false を返します。
 		// 値が省略されたときも含め、それ以外の場合は true を返します。

@@ -26,6 +26,12 @@
 using System.OS;
 using ULib;
 
+public enum OutputFormat
+{
+	SIXEL,
+	GVRAM,
+}
+
 public class SixelV
 {
 	public static void main(string[] args)
@@ -47,6 +53,10 @@ public class SixelV
 	public bool opt_ormode = false;
 	public bool opt_profile = false;
 	public SixelResizeMode opt_resizemode = SixelResizeMode.ByLoad;
+	public OutputFormat opt_outputformat = OutputFormat.SIXEL;
+	public int opt_output_x = 0;
+	public int opt_output_y = 0;
+	public float opt_colorfactor = 1.0f;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 	static SixelV this_sixelv;
 
@@ -219,6 +229,31 @@ public class SixelV
 								usage();
 								break;
 						}
+						break;
+
+					case "--outputformat":
+						switch (opt.ValueString()) {
+							case "sixel":
+								opt_outputformat = OutputFormat.SIXEL;
+								break;
+							case "gvram":
+								opt_outputformat = OutputFormat.GVRAM;
+								break;
+							default:
+								usage();
+								break;
+						}
+						break;
+
+					case "--output-x":
+						opt_output_x = opt.ValueInt();
+						break;
+					case "--output-y":
+						opt_output_y = opt.ValueInt();
+						break;
+
+					case "--colorfactor":
+						opt_colorfactor = opt.ValueFloat();
 						break;
 
 					default:
@@ -404,8 +439,81 @@ public class SixelV
 			sw.Restart();
 		}
 
-		Posix.@signal(SIGINT, signal_handler);
-		sx.SixelToStream(stdout);
+		if (opt_colorfactor != 1.0) {
+			ImageReductor.ColorFactor(opt_colorfactor);
+		}
+
+		switch (opt_outputformat) {
+			case OutputFormat.SIXEL:
+				Posix.@signal(SIGINT, signal_handler);
+				sx.SixelToStream(stdout);
+				break;
+			case OutputFormat.GVRAM:
+				if (opt_output_x < 0 || opt_output_y < 0) {
+					stderr.printf("invalid offset.\n");
+					return;
+				}
+				if (opt_output_y + sx.Height > 512) {
+					stderr.printf("Image out of height of GVRAM.\n");
+					return;
+				}
+				if (ImageReductor.PaletteCount <= 16
+				  && opt_output_x + sx.Width > 1024) {
+					stderr.printf("Image out of width of 16-color GVRAM.\n");
+					return;
+				}
+				if (ImageReductor.PaletteCount > 16
+				  && opt_output_x + sx.Width > 512) {
+					stderr.printf("Image out of width of 256-color GVRAM.\n");
+					return;
+				}
+
+				uint8 word[2];
+
+				// バージョン番号
+				word[0] = 0;
+				word[1] = 1;	// ver 1
+				stdout.write(word);
+
+				// パレット数
+				word[0] = (uint8)(ImageReductor.PaletteCount >> 8);
+				word[1] = (uint8)(ImageReductor.PaletteCount);
+				stdout.write(word);
+
+				// X68k パレットを作る
+				for (int i = 0; i < ImageReductor.PaletteCount; i++) {
+					uint16 r = ImageReductor.Palette[i].r >> 3;
+					uint16 g = ImageReductor.Palette[i].g >> 3;
+					uint16 b = ImageReductor.Palette[i].b >> 3;
+					uint I =
+						(ImageReductor.Palette[i].r & 0x7)
+					  + (ImageReductor.Palette[i].g & 0x7)
+					  + (ImageReductor.Palette[i].b & 0x7);
+
+					word[0] = g << 3 | r >> 2;
+					word[1] = r << 6 | b << 1;
+					word[1] |= I > (21 / 2) ? 1 : 0;
+					stdout.write(word);
+				}
+				// x, y, w, h を BE word で出す
+				word[0] = (uint8)(opt_output_x >> 8);
+				word[1] = (uint8)(opt_output_x);
+				stdout.write(word);
+				word[0] = (uint8)(opt_output_y >> 8);
+				word[1] = (uint8)(opt_output_y);
+				stdout.write(word);
+				word[0] = (uint8)(sx.Width >> 8);
+				word[1] = (uint8)(sx.Width);
+				stdout.write(word);
+				word[0] = (uint8)(sx.Height >> 8);
+				word[1] = (uint8)(sx.Height);
+				stdout.write(word);
+
+				// GVRAM データを作る
+				stdout.write(sx.Indexed);
+
+				break;
+		}
 
 		if (opt_profile) {
 			sw.StopLog_ms("Output SIXEL");

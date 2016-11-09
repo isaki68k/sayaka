@@ -188,5 +188,28 @@ public class ImageReductor
 		return ImageReductor_LoadJpeg(img, requestWidth, requestHeight);
 	}
 
+	public static uint8 saturate_mul_f(uint8 a, float b)
+	{
+		var f = a * b;
+		if (f < 0) return 0;
+		if (f > 255) return 255;
+		return (uint8)f;
+	}
+
+	public static void ColorFactor(float factor)
+	{
+		if (Palette != Palette_Custom) {
+			for (int i = 0; i < PaletteCount; i++) {
+				Palette_Custom[i] = Palette[i];
+			}
+			Palette = Palette_Custom;
+		}
+		for (int i = 0; i < PaletteCount; i++) {
+			Palette[i].r = saturate_mul_f(Palette[i].r, factor);
+			Palette[i].g = saturate_mul_f(Palette[i].g, factor);
+			Palette[i].b = saturate_mul_f(Palette[i].b, factor);
+		}
+	}
+
 }
 
