@@ -1595,7 +1595,7 @@ public class SayakaMain
 			sx.ColorMode = ReductorColorMode.FixedX68k;
 			sx.OutputMode = SixelOutputMode.Or;
 			sx.ReduceMode = ReductorReduceMode.Fast;
-			sx.ResizeMode = SixelResizeMode.ByLoad;
+			sx.ResizeMode = SixelResizeMode.ByLibJpeg;
 			sx.OutputPalette = false;
 		} else {
 			if (color_mode <= 2) {
