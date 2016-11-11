@@ -204,6 +204,7 @@ public class NGWord
 					return true;
 				}
 			}
+			return false;
 		}
 
 		// クライアント名
@@ -215,6 +216,7 @@ public class NGWord
 					return true;
 				}
 			}
+			return false;
 		}
 
 		// 単純ワード比較
