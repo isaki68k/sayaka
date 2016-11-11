@@ -25,11 +25,13 @@
 
 using System.OS;
 using ULib;
+using Gdk;
 
 public enum OutputFormat
 {
 	SIXEL,
 	GVRAM,
+	PALETTEPNG,
 }
 
 public class SixelV
@@ -279,6 +281,9 @@ public class SixelV
 								break;
 							case "gvram":
 								opt_outputformat = OutputFormat.GVRAM;
+								break;
+							case "palettepng":
+								opt_outputformat = OutputFormat.PALETTEPNG;
 								break;
 							default:
 								usage();
@@ -571,6 +576,28 @@ public class SixelV
 				// GVRAM データを作る
 				stdout.write(sx.Indexed);
 
+				break;
+
+			case OutputFormat.PALETTEPNG:
+				// 11 x 11 はどうなのかとか。img2sixel 合わせだが、
+				// img2sixel 側の問題でうまくいかない。
+				var palpix = new Pixbuf(Colorspace.RGB, false, 8, ImageReductor.PaletteCount * 11, 11);
+				unowned uint8* p = palpix.get_pixels();
+				for (int y = 0; y < 11; y++) {
+				for (int i = 0; i < ImageReductor.PaletteCount; i++) {
+				for (int x = 0; x < 11; x++) {
+					p[0] = ImageReductor.Palette[i].r;
+					p[1] = ImageReductor.Palette[i].g;
+					p[2] = ImageReductor.Palette[i].b;
+					p += 3;
+				}
+				}
+				}
+				var so = new OutputStreamFromFileStream(stdout);
+				try {
+					palpix.save_to_stream(so, "png");
+				} catch {
+				}
 				break;
 		}
 

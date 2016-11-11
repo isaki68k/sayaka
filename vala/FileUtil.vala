@@ -76,3 +76,26 @@ public class InputStreamFromFileStream
 		return (ssize_t)target.read(buffer, 1);
 	}
 }
+
+public class OutputStreamFromFileStream
+	: OutputStream
+{
+	private unowned FileStream? target;
+
+	public OutputStreamFromFileStream(FileStream fs)
+	{
+		target = fs;
+	}
+
+	public override bool close(Cancellable? cancellable = null) throws IOError
+	{
+		target = null;
+		return true;
+	}
+
+	public override ssize_t write(uint8[] buffer, Cancellable? cancellable = null) throws IOError
+	{
+		return (ssize_t)target.write(buffer, 1);
+	}
+}
+
