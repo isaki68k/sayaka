@@ -70,6 +70,15 @@ public class SixelV
 	{
 		int convert_count = 0;
 
+		// X68k なら、デフォルトで --x68k 相当にする。
+		var un = Posix.utsname();
+		//stderr.printf("%s\n", un.machine);;
+		if (un.machine == "x68k") {
+			opt_colormode = ReductorColorMode.FixedX68k;
+			opt_ormode = true;
+			opt_outputpalette = false;
+		}
+
 		foreach (var opt in new OptArgs(args)) {
 			if (opt.IsOption() && opt.Opt() != "-") {
 				switch (opt.Opt()) {
