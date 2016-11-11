@@ -120,7 +120,7 @@ public class SixelV
 							case "256":
 								opt_colormode = ReductorColorMode.Fixed256;
 								break;
-							case "256RGBI":
+							case "256rgbi":
 								opt_colormode = ReductorColorMode.Fixed256RGBI;
 								break;
 							case "mono":
