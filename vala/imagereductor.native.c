@@ -38,27 +38,6 @@
 extern gboolean gdiag_global_debug;
 #define DEBUG_PRINTF(x...) if (gdiag_global_debug) fprintf(stderr, x)
 
-typedef struct ColorRGBint_t
-{
-	int r;
-	int g;
-	int b;
-} ColorRGBint;
-
-typedef struct ColorRGBuint8_t
-{
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-} ColorRGBuint8;
-
-typedef struct ColorRGBint8_t
-{
-	int8_t r;
-	int8_t g;
-	int8_t b;
-} ColorRGBint8;
-
 //////////////// 分数計算機
 // DDA 計算の基礎となる I + N / D 型の分数ステップ加減算計算機です。
 
