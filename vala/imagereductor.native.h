@@ -9,6 +9,7 @@ typedef enum
 	RCM_CustomX68k,
 	RCM_FixedANSI16,
 	RCM_Fixed256,
+	RCM_Fixed256RGBI,
 	RCM_Custom,
 } ReductorColorMode;
 

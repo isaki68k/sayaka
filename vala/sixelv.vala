@@ -109,37 +109,36 @@ public class SixelV
 					case "-p":
 					case "--color":
 					case "--colors":
-						switch (opt.ValueInt()) {
-							case 8:
+						switch (opt.ValueString()) {
+							case "8":
 								opt_colormode = ReductorColorMode.Fixed8;
 								break;
-							case 16:
+							case "16":
 								opt_colormode = ReductorColorMode.FixedANSI16;
 								break;
-							case 256:
+							case "256":
 								opt_colormode = ReductorColorMode.Fixed256;
 								break;
+							case "256RGBI":
+								opt_colormode = ReductorColorMode.Fixed256RGBI;
+								break;
+							case "mono":
+								opt_colormode = ReductorColorMode.Mono;
+								break;
+							case "gray":
+								opt_colormode = ReductorColorMode.Gray;
+								break;
+							case "graymean":
+								opt_colormode = ReductorColorMode.GrayMean;
+								break;
+							case "x68k":
+								opt_colormode = ReductorColorMode.FixedX68k;
+								break;
+							case "x68k-custom":
+								opt_colormode = ReductorColorMode.CustomX68k;
+								break;
 							default:
-								switch (opt.ValueString()) {
-									case "mono":
-										opt_colormode = ReductorColorMode.Mono;
-										break;
-									case "gray":
-										opt_colormode = ReductorColorMode.Gray;
-										break;
-									case "graymean":
-										opt_colormode = ReductorColorMode.GrayMean;
-										break;
-									case "x68k":
-										opt_colormode = ReductorColorMode.FixedX68k;
-										break;
-									case "x68k-custom":
-										opt_colormode = ReductorColorMode.CustomX68k;
-										break;
-									default:
-										usage();
-										break;
-								}
+								usage();
 								break;
 						}
 						break;

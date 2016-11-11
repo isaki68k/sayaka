@@ -358,6 +358,49 @@ FindColor_Fixed256(ColorRGBuint8 c)
 	return (R << 5) + (G << 2) + B;
 }
 
+// R2,G2,B2,I2 bit の 256色固定パレットを生成します。
+static void
+SetPalette_Fixed256RGBI()
+{
+	Palette = Palette_Custom;
+	PaletteCount = 256;
+
+	for (int i = 0; i < 256; i++) {
+		uint8_t R, G, B, I;
+		R = (i >> 6) & 3;
+		G = (i >> 4) & 3;
+		B = (i >> 2) & 3;
+		I = (i     ) & 3;
+
+//DEBUG_PRINTF("(%d,%d,%d,%d)\n", R, G, B, I);
+		Palette_Custom[i].r = (R << 6) + (I * 63 / 3);
+		Palette_Custom[i].g = (G << 6) + (I * 63 / 3);
+		Palette_Custom[i].b = (B << 6) + (I * 63 / 3);
+	}
+}
+
+// R2,G2,B2,I2 bit の 固定256色時に、最も近いパレット番号を返します。
+static int
+FindColor_Fixed256RGBI(ColorRGBuint8 c)
+{
+	uint8_t R, G, B, I;
+	R = c.r >> 6;
+	G = c.g >> 6;
+	B = c.b >> 6;
+	// 最も強い成分で I を決める
+	if (R > G && R > B) {
+		I = ((c.r & 0x3f) + 10) / 21;
+	} else if (G > R && G > B) {
+		I = ((c.g & 0x3f) + 10) / 21;
+	} else if (B > R && B > G) {
+		I = ((c.b & 0x3f) + 10) / 21;
+	} else {
+		// グレーなら I は平均で決める
+		I = ((c.r & 0x3f) + (c.g & 0x3f) + (c.b & 0x3f) + 31) / 63;
+	}
+	return (R << 6)	| (G << 4) | (B << 2) | I;
+}
+
 // カスタムパレット時に、最も近いパレット番号を返します。
 static int
 FindColor_Custom(ColorRGBuint8 c)
@@ -427,6 +470,10 @@ ImageReductor_SetColorMode(ReductorColorMode mode, /*optional*/ int count)
 		case RCM_Fixed256:
 			SetPalette_Fixed256();
 			ColorFinder = FindColor_Fixed256;
+			break;
+		case RCM_Fixed256RGBI:
+			SetPalette_Fixed256RGBI();
+			ColorFinder = FindColor_Fixed256RGBI;
 			break;
 		case RCM_Custom:
 			ColorFinder = FindColor_Custom;

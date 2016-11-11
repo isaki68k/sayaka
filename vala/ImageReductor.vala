@@ -27,6 +27,7 @@ public enum ReductorColorMode
 	CustomX68k,
 	FixedANSI16,
 	Fixed256,
+	Fixed256RGBI,
 	Custom,
 }
 
