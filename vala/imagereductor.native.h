@@ -84,6 +84,13 @@ typedef struct ColorRGBint8_t
 	int8_t b;
 } ColorRGBint8;
 
+typedef struct ColorRGBint16_t
+{
+	int16_t r;
+	int16_t g;
+	int16_t b;
+} ColorRGBint16;
+
 //-------- グローバル変数
 
 extern const ColorRGBuint8 *Palette;

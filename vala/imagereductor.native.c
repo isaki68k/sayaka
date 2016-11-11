@@ -712,27 +712,22 @@ ImageReductor_Simple(
 	return 0;
 }
 
-static int8_t
-Saturate_adderr(int8_t a, int b)
+static int16_t
+Saturate_adderr(int16_t a, int b)
 {
-	int x = (int)a + b / 2;
-#if 1
-	if (x < -128) {
-		return -128;
-#else
-	if (x < 0) {
-		return 0;
-#endif
-	} else if (x > 127) {
-		return 127;
+	int16_t x = a + b;
+	if (x < -512) {
+		return -512;
+	} else if (x > 511) {
+		return 511;
 	} else {
-		return (int8_t)x;
+		return x;
 	}
 }
 
 // eb[x] += col * ratio / 256;
 static void
-set_err(ColorRGBint8 eb[], int x, ColorRGBint col, int ratio)
+set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio)
 {
 	eb[x].r = Saturate_adderr(eb[x].r,  col.r * ratio / 256);
 	eb[x].g = Saturate_adderr(eb[x].g,  col.g * ratio / 256);
@@ -778,11 +773,11 @@ ImageReductor_HighQuality(
 	const int errbuf_left = 2;
 	const int errbuf_right = 2;
 	int errbuf_width = dstWidth + errbuf_left + errbuf_right;
-	int errbuf_len = errbuf_width * sizeof(ColorRGBint8);
+	int errbuf_len = errbuf_width * sizeof(ColorRGBint16);
 	int errbuf_mem_len = errbuf_len * errbuf_count;
 
-	ColorRGBint8 *errbuf_mem;
-	ColorRGBint8 *errbuf[errbuf_count];
+	ColorRGBint16 *errbuf_mem;
+	ColorRGBint16 *errbuf[errbuf_count];
 	errbuf_mem = malloc(errbuf_mem_len);
 	memset(errbuf_mem, 0, errbuf_mem_len);
 	for (int i = 0; i < errbuf_count; i++) {
@@ -825,9 +820,9 @@ ImageReductor_HighQuality(
 			col.g /= D;
 			col.b /= D;
 
-			col.r += (int)errbuf[0][x].r * 2;
-			col.g += (int)errbuf[0][x].g * 2;
-			col.b += (int)errbuf[0][x].b * 2;
+			col.r += errbuf[0][x].r;
+			col.g += errbuf[0][x].g;
+			col.b += errbuf[0][x].b;
 
 			ColorRGBuint8 c8 = {
 				Saturate_uint8(col.r),
@@ -920,7 +915,7 @@ ImageReductor_HighQuality(
 		}
 
 		// 誤差バッファをローテート
-		ColorRGBint8 *tmp = errbuf[0];
+		ColorRGBint16 *tmp = errbuf[0];
 		for (int i = 0; i < errbuf_count - 1; i++) {
 			errbuf[i] = errbuf[i + 1];
 		}
