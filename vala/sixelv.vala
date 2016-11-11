@@ -315,30 +315,30 @@ public class SixelV
 
  color
    --gray={graylevel}
-     Select grayscale mode.
+     Select grayscale mode and set grayscale level.
      graylevel allows 2 .. 256. default = 256
 
    -p={color}
    -p {color}
    --color[s]={color}
      Select {color} mode.
-       8, 16, 256 : Fixed 8, 16, 256 colors
-       mono : monochrome
-       gray : grayscale with NTSC intensity
+       8        : Fixed 8 colors
+       16       : Fixed 16 colors
+       256      : Fixed 256 colors (MSX SCREEN 8 compatible palette)
+                  This is default.
+       256rgbi  : Fixed 256 colors (R2G2B2I2 palette)
+       mono     : monochrome (1bit)
+       gray     : grayscale with NTSC intensity
        graymean : grayscale with mean of RGB
-       x68k : Fixed x68k palette
+       x68k     : Fixed x68k 16 color palette
        x68k-custom : Custom X68k palette
 
-   -8
-     Select 8 color (3bit) mode.
-   -16
-     Select 16 ANSI color (4bit) mode.
-   -256
-     Select 256 color (8bit) mode. This is default.
+   -8, -16, -256
+     Shortcut for -p=8, -p=16, -p=256
 
    -e
    --monochrome
-	 Select monochrome mode.
+     Shortcut for -p=mono
 
  size
    -w {width}
@@ -349,7 +349,7 @@ public class SixelV
    -h {height}
    --height={height}
      Resize height (pixel). Must need -w.
-   --resize={load, scale, imagereductor}
+   --resize={load, scale, imagereductor, libjpeg}
      Select Resize alogrithm. (for debug)
 
  algorithm
@@ -358,7 +358,17 @@ public class SixelV
      auto : This is default. (now implements = high)
      none : Simple algorithm. (no diffuser)
      fast : Fast algorithm.
-	 high : 2D-Diffusion algorithm.
+     high : 2D-Diffusion algorithm.
+
+     Following options, select detailed algorithm with 2D-Diffusion.
+     fs       : Floyd Steinberg (default)
+     atkinson : Atkinson
+     jajuni   : Jarvis, Judice, Ninke
+     stucki   : Stucki
+     burkes   : Burkes
+     2        : 2 pixel (right, down)
+     3        : 3 pixel (right, down, rightdown)
+     rgb      : for debug
 
  misc
    --x68k
@@ -371,6 +381,12 @@ public class SixelV
    --palette={on|off}
      Output palette definision. Default = on
 
+   --outputformat={sixel|gvram}
+     Output SIXEL or original X68k gvram file format.
+
+   --output-x={y}, --output-y={y}
+     X, Y offset for gvram format file. No effect for SIXEL.
+
    --ipv4
      Connect IPv4 only.
 
@@ -381,7 +397,7 @@ public class SixelV
      if turn on, ignore error at open.
 
  debug
-   --debug, --trace, --profile
+   --debug, --trace, --profile, --debug-sixel, --debug-net
 """);
 		Process.exit(1);
 	}
