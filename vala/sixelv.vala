@@ -57,6 +57,7 @@ public class SixelV
 	public int opt_output_x = 0;
 	public int opt_output_y = 0;
 	public float opt_colorfactor = 1.0f;
+	public ReductorDiffuseMethod opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_FS;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 	static SixelV this_sixelv;
 
@@ -177,6 +178,38 @@ public class SixelV
 								break;
 							case "high":
 								opt_reduce = ReductorReduceMode.HighQuality;
+								break;
+							case "fs":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_FS;
+								break;
+							case "atkinson":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_ATKINSON;
+								break;
+							case "jajuni":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_JAJUNI;
+								break;
+							case "stucki":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_STUCKI;
+								break;
+							case "burkes":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_BURKES;
+								break;
+							case "2":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_2;
+								break;
+							case "3":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_3;
+								break;
+							case "rgb":
+								opt_reduce = ReductorReduceMode.HighQuality;
+								opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_RGB;
 								break;
 							default:
 								usage();
@@ -372,6 +405,8 @@ public class SixelV
 		sx.ResizeMode = opt_resizemode;
 		sx.OutputPalette = opt_outputpalette;
 		sx.GrayCount = opt_graylevel;
+
+		ImageReductor.HighQualityDiffuseMethod = opt_highqualitydiffusemethod;
 
 		if (opt_ormode) {
 			sx.OutputMode = SixelOutputMode.Or;

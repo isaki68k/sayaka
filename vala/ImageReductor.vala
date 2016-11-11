@@ -39,6 +39,19 @@ public enum ReductorImageCode
 	RIC_ABORT_JPEG = 2,
 }
 
+[CCode (cname="ReductorDiffuseMethod", has_type_id=false)]
+public enum ReductorDiffuseMethod
+{
+	RDM_FS,			// Floyd Steinberg
+	RDM_ATKINSON,	// Atkinson
+	RDM_JAJUNI,		// Jarvis, Judice, Ninke
+	RDM_STUCKI,		// Stucki
+	RDM_BURKES,		// Burkes
+	RDM_2,			// (x+1,y), (x,y+1)
+	RDM_3,			// (x+1,y), (x,y+1), (x+1,y+1)
+	RDM_RGB,		// RGB color sepalated
+}
+
 [CCode(cname="ColorRGBuint8")]
 public struct ColorRGBuint8
 {
@@ -118,6 +131,9 @@ public class ImageReductor
 
 	[CCode(cname="Palette_Custom")]
 	public static extern ColorRGBuint8 Palette_Custom[256];
+
+	[CCode(cname="HighQualityDiffuseMethod")]
+	public static extern int HighQualityDiffuseMethod;
 
 	// カラーモードを設定します。
 	// 変換関数を呼び出す前に、必ずカラーモードを設定してください。

@@ -689,6 +689,36 @@ ImageReductor_Simple(
 	return 0;
 }
 
+static int8_t
+Saturate_adderr(int8_t a, int b)
+{
+	int x = (int)a + b / 2;
+#if 1
+	if (x < -128) {
+		return -128;
+#else
+	if (x < 0) {
+		return 0;
+#endif
+	} else if (x > 127) {
+		return 127;
+	} else {
+		return (int8_t)x;
+	}
+}
+
+// eb[x] += col * ratio / 256;
+static void
+set_err(ColorRGBint8 eb[], int x, ColorRGBint col, int ratio)
+{
+	eb[x].r = Saturate_adderr(eb[x].r,  col.r * ratio / 256);
+	eb[x].g = Saturate_adderr(eb[x].g,  col.g * ratio / 256);
+	eb[x].b = Saturate_adderr(eb[x].b,  col.b * ratio / 256);
+}
+
+// High 誤差分散アルゴリズム
+ReductorDiffuseMethod HighQualityDiffuseMethod = RDM_FS;
+
 // 画像を縮小しながら減色して変換します。
 // 二次元誤差分散法を使用して、出来る限り高品質に変換します。
 // dst : 色コードを出力するバッファです。
@@ -721,9 +751,20 @@ ImageReductor_HighQuality(
 	StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
 
 	// 誤差バッファ
-	// 2 ラスタ分を切り換えて使う。
-	ColorRGBint *errbuf_0 = calloc(dstWidth, sizeof(ColorRGBint));
-	ColorRGBint *errbuf_1 = calloc(dstWidth, sizeof(ColorRGBint));
+	const int errbuf_count = 3;
+	const int errbuf_left = 2;
+	const int errbuf_right = 2;
+	int errbuf_width = dstWidth + errbuf_left + errbuf_right;
+	int errbuf_len = errbuf_width * sizeof(ColorRGBint8);
+	int errbuf_mem_len = errbuf_len * errbuf_count;
+
+	ColorRGBint8 *errbuf_mem;
+	ColorRGBint8 *errbuf[errbuf_count];
+	errbuf_mem = malloc(errbuf_mem_len);
+	memset(errbuf_mem, 0, errbuf_mem_len);
+	for (int i = 0; i < errbuf_count; i++) {
+		errbuf[i] = errbuf_mem + errbuf_left + errbuf_width * i;
+	}
 
 	for (int y = 0; y < dstHeight; y++) {
 
@@ -761,21 +802,9 @@ ImageReductor_HighQuality(
 			col.g /= D;
 			col.b /= D;
 
-			if (x > 0) {
-				col.r += errbuf_0[x - 1].r * 72 / 256;
-				col.g += errbuf_0[x - 1].g * 72 / 256;
-				col.b += errbuf_0[x - 1].b * 72 / 256;
-			}
-			if (y > 0) {
-				col.r += errbuf_1[x].r * 72 / 256;
-				col.g += errbuf_1[x].g * 72 / 256;
-				col.b += errbuf_1[x].b * 72 / 256;
-			}
-			if (x > 0 && y > 0) {
-				col.r += errbuf_1[x - 1].r * 32 / 256;
-				col.g += errbuf_1[x - 1].g * 32 / 256;
-				col.b += errbuf_1[x - 1].b * 32 / 256;
-			}
+			col.r += (int)errbuf[0][x].r * 2;
+			col.g += (int)errbuf[0][x].g * 2;
+			col.b += (int)errbuf[0][x].b * 2;
 
 			ColorRGBuint8 c8 = {
 				Saturate_uint8(col.r),
@@ -785,23 +814,98 @@ ImageReductor_HighQuality(
 
 			int colorCode = ColorFinder(c8);
 
-			col.r = col.r - Palette[colorCode].r;
-			col.g = col.g - Palette[colorCode].g;
-			col.b = col.b - Palette[colorCode].b;
+			col.r -= Palette[colorCode].r;
+			col.g -= Palette[colorCode].g;
+			col.b -= Palette[colorCode].b;
 
-			errbuf_0[x] = col;
+			switch (HighQualityDiffuseMethod) {
+			 case RDM_FS:
+				// Floyd Steinberg Method
+				set_err(errbuf[0], x + 1, col, 112);
+				set_err(errbuf[1], x - 1, col, 48);
+				set_err(errbuf[1], x    , col, 80);
+				set_err(errbuf[1], x + 1, col, 16);
+				break;
+			 case RDM_ATKINSON:
+				// Atkinson
+				set_err(errbuf[0], x + 1,   col, 32);
+				set_err(errbuf[0], x + 2,   col, 32);
+				set_err(errbuf[1], x - 1,   col, 32);
+				set_err(errbuf[1], x,       col, 32);
+				set_err(errbuf[1], x + 1,   col, 32);
+				set_err(errbuf[2], x,       col, 32);
+				break;
+			 case RDM_JAJUNI:
+				// Jarvis, Judice, Ninke
+				set_err(errbuf[0], x + 1, col, 37);
+				set_err(errbuf[0], x + 2, col, 27);
+				set_err(errbuf[1], x - 2, col, 16);
+				set_err(errbuf[1], x - 1, col, 27);
+				set_err(errbuf[1], x,     col, 37);
+				set_err(errbuf[1], x + 1, col, 27);
+				set_err(errbuf[1], x + 2, col, 16);
+				set_err(errbuf[2], x - 2, col,  5);
+				set_err(errbuf[2], x - 1, col, 16);
+				set_err(errbuf[2], x,     col, 27);
+				set_err(errbuf[2], x + 1, col, 16);
+				set_err(errbuf[2], x + 2, col,  5);
+				break;
+			 case RDM_STUCKI:
+				// Stucki
+				set_err(errbuf[0], x + 1, col, 43);
+				set_err(errbuf[0], x + 2, col, 21);
+				set_err(errbuf[1], x - 2, col, 11);
+				set_err(errbuf[1], x - 1, col, 21);
+				set_err(errbuf[1], x,     col, 43);
+				set_err(errbuf[1], x + 1, col, 21);
+				set_err(errbuf[1], x + 2, col, 11);
+				set_err(errbuf[2], x - 2, col,  5);
+				set_err(errbuf[2], x - 1, col, 11);
+				set_err(errbuf[2], x,     col, 21);
+				set_err(errbuf[2], x + 1, col, 11);
+				set_err(errbuf[2], x + 2, col,  5);
+				break;
+			 case RDM_BURKES:
+				// Burkes
+				set_err(errbuf[0], x + 1, col, 64);
+				set_err(errbuf[0], x + 2, col, 32);
+				set_err(errbuf[1], x - 2, col, 16);
+				set_err(errbuf[1], x - 1, col, 32);
+				set_err(errbuf[1], x,     col, 64);
+				set_err(errbuf[1], x + 1, col, 32);
+				set_err(errbuf[1], x + 2, col, 16);
+				break;
+			 case RDM_2:
+				// (x+1,y), (x,y+1)
+				set_err(errbuf[0], x + 1, col, 128);
+				set_err(errbuf[1], x,     col, 128);
+				break;
+			 case RDM_3:
+				// (x+1,y), (x,y+1), (x+1,y+1)
+				set_err(errbuf[0], x + 1, col, 102);
+				set_err(errbuf[1], x,     col, 102);
+				set_err(errbuf[1], x + 1, col,  51);
+				break;
+			 case RDM_RGB:
+				errbuf[0][x].r = Saturate_adderr(errbuf[0][x].r, col.r);
+				errbuf[1][x].b = Saturate_adderr(errbuf[1][x].b, col.b);
+				errbuf[1][x+1].g = Saturate_adderr(errbuf[1][x+1].g, col.g);
+				break;
+			}
 
 			*dst++ = colorCode;
 		}
 
-		// 誤差バッファをスワップ
-		ColorRGBuint8* tmp = errbuf_0;
-		errbuf_0 = errbuf_1;
-		errbuf_1 = tmp;
+		// 誤差バッファをローテート
+		ColorRGBint8 *tmp = errbuf[0];
+		for (int i = 0; i < errbuf_count - 1; i++) {
+			errbuf[i] = errbuf[i + 1];
+		}
+		errbuf[errbuf_count - 1] = tmp;
+		memset(errbuf[errbuf_count - 1], 0, errbuf_len);
 	}
 
-	free(errbuf_0);
-	free(errbuf_1);
+	free(errbuf_mem);
 
 	return 0;
 }
