@@ -185,37 +185,74 @@ static const ColorRGBuint8 Palette_FixedX68k[] =
 static int
 FindColor_FixedX68k(ColorRGBuint8 c)
 {
-	int I = (int)c.r + (int)c.g + (int)c.b;
-	int R;
-	int G;
-	int B;
-	if (c.r >= 192 || c.g >= 192 || c.b >= 192) {
-		R = c.r >= 192;
-		G = c.g >= 192;
-		B = c.b >= 192;
-		if (R == G && G == B) {
-			if (I >= 192 * 3) {
-				return 7;
-			} else if (I >= 64 * 3) {
-				return 15;
-			} else {
-				return 8;
-			}
-		}
-		return R + (G << 1) + (B << 2);
-	} else {
-		R = c.r >= 64;
-		G = c.g >= 64;
-		B = c.b >= 64;
-		if (R == G && G == B) {
-			if (I >= 64 * 3) {
-				return 15;
-			} else {
-				return 8;
-			}
-		}
-		return (R + (G << 1) + (B << 2)) | 8;
+	int R = (int)c.r;
+	int G = (int)c.g;
+	int B = (int)c.b;
+	int min;
+	int max;
+	int H;
+	int S;
+	int V;
+	int pal;
+
+	min = MIN(MIN(R, G), B);
+	max = MAX(MAX(R, G), B);
+
+	if (min == max) {
+		H = 0;
+	} else if (min == B) {
+		H = 60 * (G - R) / (max - min) + 60;
+	} else if (min == R) {
+		H = 60 * (B - G) / (max - min) + 180;
+	} else if (min == G) {
+		H = 60 * (R - B) / (max - min) + 300;
 	}
+	if (H < 0) {
+		H += 360;
+	} else if (H >= 360) {
+		H -= 360;
+	}
+	V = max;
+	S = max - min;
+
+	// X68k 固定16色のうち前8色(のうち黒と白を除いた6色)が原色なので
+	// 色相からそのままマッピングできる
+	if (H < 30) {
+		pal = 1;		// H = 0
+	} else if (H < 90) {
+		pal = 3;		// H = 60
+	} else if (H < 150) {
+		pal = 2; 		// H = 120
+	} else if (H < 210) {
+		pal = 6;		// H = 180
+	} else if (H < 270) {
+		pal = 4;		// H = 240
+	} else if (H < 330) {
+		pal = 5;		// H = 300
+	} else {
+		pal = 1;		// H = 360
+	}
+
+	if (V < 255 / 3) {
+		// V が低いので黒
+		pal = 8;
+	} else if (V < 255 * 2 / 3) {
+		// V が中間。
+		// S が高ければ暗色、そうでなければ灰
+		if (S < V / 2) {
+			pal = 15;
+		} else {
+			pal += 8;
+		}
+	} else {
+		// V が高い
+		// S が高ければ原色、そうでなければ白
+		if (S < V / 2) {
+			pal = 7;
+		}
+	}
+
+	return pal;
 }
 
 // x68k 16 色のパレットをシステムから取得して生成します。
