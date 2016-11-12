@@ -1125,6 +1125,7 @@ public class SayakaMain
 		string green;
 		string username;
 		string fav;
+		string gray;
 
 		// 黒背景か白背景かで色合いを変えたほうが読みやすい
 		if (bg_white) {
@@ -1157,18 +1158,26 @@ public class SayakaMain
 			fav = BROWN;
 		}
 
+		// x68k 独自16色パッチでは 90 は黒、97 がグレー。
+		// mlterm では 90 がグレー、97 は白。
+		if (opt_x68k) {
+			gray = "97";
+		} else {
+			gray = "90";
+		}
+
 		color2esc[Color.Username]	= username;
 		color2esc[Color.UserId]		= blue;
-		color2esc[Color.Time]		= GRAY;
-		color2esc[Color.Source]		= GRAY;
+		color2esc[Color.Time]		= gray;
+		color2esc[Color.Source]		= gray;
 
 		color2esc[Color.Retweet]	= @"$(BOLD);$(green)";
 		color2esc[Color.Favorite]	= BOLD + ";" + fav;
 		color2esc[Color.Url]		= @"$(UNDERSCORE);$(blue)";
 		color2esc[Color.Tag]		= blue;
 		color2esc[Color.Verified]	= CYAN;
-		color2esc[Color.Protected]	= GRAY;
-		color2esc[Color.NG]			= @"$(STRIKE);$(GRAY)";
+		color2esc[Color.Protected]	= gray;
+		color2esc[Color.NG]			= @"$(STRIKE);$(gray)";
 	}
 
 	public string coloring(string text, Color col)
