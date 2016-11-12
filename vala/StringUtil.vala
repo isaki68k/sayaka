@@ -86,11 +86,4 @@ namespace StringUtil
 		}
 		return sb.str;
 	}
-
-	public static string Trim(string s)
-	{
-		return s.strip();
-	}
 }
-
-
