@@ -321,7 +321,7 @@ public class SayakaMain
 			for (var i = 1; i < args.length; i++) {
 				stdout.printf(@" $(args[i])");
 				if (args[i] == "--x68k") {
-					stdout.printf(" --font 8x16 --jis --black");
+					stdout.printf(" --font 8x16 --jis --black --progress");
 				}
 			}
 			stdout.printf("\n");
