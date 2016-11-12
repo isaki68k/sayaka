@@ -328,7 +328,6 @@ public class SayakaMain
 		}
 
 		diag  = new Diag("SayakaMain");
-		diag.Trace("TRACE CHECK");
 
 		diag.Debug(@"tokenfile = $(tokenfile)\n");
 
@@ -662,8 +661,6 @@ public class SayakaMain
 		var parser = new ULib.JsonParser();
 		try {
 			var obj = parser.Parse(line);
-			TRACE("obj=%p".printf(obj));
-			TRACE("obj=%s\n".printf(obj.ToString()));
 			showstatus_callback(obj);
 		} catch (Error e) {
 			stdout.printf("showstatus_callback_line: %s\n", e.message);
@@ -2009,10 +2006,5 @@ public class SayakaMain
 """
 		);
 		Process.exit(0);
-	}
-
-	private void TRACE(string msg)
-	{
-		//stderr.printf("%s\n", msg);
 	}
 }
