@@ -141,6 +141,8 @@ public class SayakaMain
 	public bool opt_full_url;
 	public bool opt_progress;
 	public NGWord ngword;
+	public bool opt_ormode;
+	public bool opt_outputpalette;
 
 	public string basedir;
 	public string cachedir;
@@ -178,6 +180,8 @@ public class SayakaMain
 		ciphers = null;
 		opt_full_url = false;
 		opt_progress = false;
+		opt_ormode = false;
+		opt_outputpalette = true;
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -264,6 +268,30 @@ public class SayakaMain
 			 case "--nortlist":
 				cmd = SayakaCmd.NortlistMode;
 				break;
+			 case "--ormode":
+			 {
+				var value = args[++i];
+				if (value == "on") {
+					opt_ormode = true;
+				} else if (value == "off") {
+					opt_ormode = false;
+				} else {
+					usage();
+				}
+				break;
+			 }
+			 case "--palette":
+			 {
+				var value = args[++i];
+				if (value == "on") {
+					opt_outputpalette = true;
+				} else if (value == "off") {
+					opt_outputpalette = false;
+				} else {
+					usage();
+				}
+				break;
+			 }
 			 case "--play":
 				cmd = SayakaCmd.PlayMode;
 				break;
@@ -312,14 +340,15 @@ public class SayakaMain
 				break;
 			 case "--x68k":
 				opt_x68k = true;
-				// "--color x68k --font 8x16 --jis --black --progress"
-				// を指定したのと同じ
+				// 以下を指定したのと同じ
 				color_mode = ColorFixedX68k;
 				opt_fontwidth = 8;
 				opt_fontheight = 16;
 				iconv_tocode = "iso-2022-jp";
 				bg_white = false;
 				opt_progress = true;
+				opt_ormode = true;
+				opt_outputpalette = false;
 				break;
 			 default:
 				usage();
@@ -333,7 +362,7 @@ public class SayakaMain
 				stdout.printf(@" $(args[i])");
 				if (args[i] == "--x68k") {
 					stdout.printf(" --color x68k --font 8x16 --jis --black"
-						+ " --progress");
+						+ " --progress --ormode on --palette off");
 				}
 			}
 			stdout.printf("\n");
@@ -1611,10 +1640,8 @@ public class SayakaMain
 			// とりあえず固定 16 色
 			// システム取得する?
 			sx.ColorMode = ReductorColorMode.FixedX68k;
-			sx.OutputMode = SixelOutputMode.Or;
 			sx.ReduceMode = ReductorReduceMode.Fast;
 			sx.ResizeMode = SixelResizeMode.ByLibJpeg;
-			sx.OutputPalette = false;
 		} else {
 			if (color_mode <= 2) {
 				sx.ColorMode = ReductorColorMode.Mono;
@@ -1629,11 +1656,15 @@ public class SayakaMain
 			} else {
 				sx.ColorMode = ReductorColorMode.Fixed256;
 			}
-			sx.OutputMode = SixelOutputMode.Normal;
 			sx.ReduceMode = ReductorReduceMode.HighQuality;
 			sx.ResizeMode = SixelResizeMode.ByLoad;
-			sx.OutputPalette= true;
 		}
+		if (opt_ormode) {
+			sx.OutputMode = SixelOutputMode.Or;
+		} else {
+			sx.OutputMode = SixelOutputMode.Normal;
+		}
+		sx.OutputPalette= opt_outputpalette;
 
 		var fg = new HttpClient(img_url);
 		fg.Family = address_family;
@@ -2013,6 +2044,8 @@ public class SayakaMain
 	--ngword-list
 	--norest
 	--nortlist
+	--ormode <on|off> (default off)
+	--palette <on|off> (default on)
 	--relay-server
 	--user
 """
