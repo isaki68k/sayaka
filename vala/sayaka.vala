@@ -65,6 +65,8 @@ public class SayakaMain
 	public const int DEFAULT_FONT_WIDTH  = 7;
 	public const int DEFAULT_FONT_HEIGHT = 14;
 
+	public const int ColorFixedX68k = -1;
+
 	public enum Color {
 		Username,
 		UserId,
@@ -124,7 +126,6 @@ public class SayakaMain
 		= new Dictionary<string, string>();
 	public Dictionary<string, string> nortlist
 		= new Dictionary<string, string>();
-	public bool opt_x68k;
 	public bool opt_norest;
 	public bool opt_evs;
 	public bool opt_show_ng;
@@ -156,6 +157,7 @@ public class SayakaMain
 	public int Main(string[] args)
 	{
 		SayakaCmd cmd = SayakaCmd.StreamMode;
+		bool opt_x68k;
 
 		basedir = Environment.get_home_dir() + "/.sayaka/";
 		cachedir    = basedir + "cache";
@@ -195,8 +197,15 @@ public class SayakaMain
 				ciphers = args[++i];
 				break;
 			 case "--color":
-				color_mode = int.parse(args[++i]);
+			 {
+				var color_arg = args[++i];
+				if (color_arg == "x68k") {
+					color_mode = ColorFixedX68k;
+				} else {
+					color_mode = int.parse(color_arg);
+				}
 				break;
+			 }
 			 case "--debug":
 				debug = true;
 				gDiag.global_trace = true;
@@ -303,7 +312,9 @@ public class SayakaMain
 				break;
 			 case "--x68k":
 				opt_x68k = true;
-				// "--font 8x16 --jis --black --progress" を指定したのと同じ
+				// "--color x68k --font 8x16 --jis --black --progress"
+				// を指定したのと同じ
+				color_mode = ColorFixedX68k;
 				opt_fontwidth = 8;
 				opt_fontheight = 16;
 				iconv_tocode = "iso-2022-jp";
@@ -321,7 +332,8 @@ public class SayakaMain
 			for (var i = 1; i < args.length; i++) {
 				stdout.printf(@" $(args[i])");
 				if (args[i] == "--x68k") {
-					stdout.printf(" --font 8x16 --jis --black --progress");
+					stdout.printf(" --color x68k --font 8x16 --jis --black"
+						+ " --progress");
 				}
 			}
 			stdout.printf("\n");
@@ -1139,7 +1151,7 @@ public class SayakaMain
 		}
 
 		// リツイートは緑色。出来れば濃い目にしたい
-		if (opt_x68k) {
+		if (color_mode == ColorFixedX68k) {
 			green = "92";
 		} else if (color_mode > 16) {
 			green = "38;5;28";
@@ -1157,7 +1169,7 @@ public class SayakaMain
 
 		// x68k 独自16色パッチでは 90 は黒、97 がグレー。
 		// mlterm では 90 がグレー、97 は白。
-		if (opt_x68k) {
+		if (color_mode == ColorFixedX68k) {
 			gray = "97";
 		} else {
 			gray = "90";
@@ -1595,7 +1607,7 @@ public class SayakaMain
 	{
 		var sx = new SixelConverter();
 
-		if (opt_x68k) {
+		if (color_mode == ColorFixedX68k) {
 			// とりあえず固定 16 色
 			// システム取得する?
 			sx.ColorMode = ReductorColorMode.FixedX68k;
@@ -1970,7 +1982,7 @@ public class SayakaMain
 	{
 		stdout.printf(
 """usage: sayaka [<options>...]
-	--color <n> : color mode { 2 .. 256 }. default 256.
+	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
 	--filter <keyword>
 	--full-url : display full URL even if the URL is abbreviated.
@@ -1986,7 +1998,7 @@ public class SayakaMain
 	--support-evs
 	--token <file> : token file (default: ~/.sayaka/token.json)
 	--version
-	--x68k
+	--x68k : preset options for x68k.
 
 	-4
 	-6
