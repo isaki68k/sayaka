@@ -1671,7 +1671,7 @@ public class SayakaMain
 		DataInputStream stream;
 		try {
 			stream = fg.GET();
-			sx.LoadFromStream(stream);
+			sx.LoadFromStream(stream, resize_width);
 		} catch (Error e) {
 			diag.Warn(@"fetch_image failed: $(e.message)");
 			return null;
