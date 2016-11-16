@@ -97,10 +97,7 @@ public delegate int ImageReductor_ReadCallback(ImageReductor_Image* img);
 // C コードの宣言
 
 extern void ImageReductor_SetColorMode(
-	ReductorColorMode mode, int count);
-
-extern void ImageReductor_SetFinderMode(
-	ReductorFinderMode mode);
+	ReductorColorMode mode, ReductorFinderMode finder, int count);
 
 extern int ImageReductor_Fast(
 	uint8[] dst,
@@ -150,16 +147,9 @@ public class ImageReductor
 
 	// カラーモードを設定します。
 	// 変換関数を呼び出す前に、必ずカラーモードを設定してください。
-	public static void SetColorMode(ReductorColorMode mode, int count)
+	public static void SetColorMode(ReductorColorMode mode, ReductorFinderMode finder, int count)
 	{
-		ImageReductor_SetColorMode(mode, count);
-	}
-
-	// カラーファインダーを差し替えます。
-	// この関数を呼び出す前に SetColorMode でカラーモードを選択してください。
-	public static void SetFinderMode(ReductorFinderMode mode)
-	{
-		ImageReductor_SetFinderMode(mode);
+		ImageReductor_SetColorMode(mode, finder, count);
 	}
 
 	// ノイズ付加モードを設定します。

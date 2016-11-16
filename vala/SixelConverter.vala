@@ -291,10 +291,8 @@ public class SixelConverter
 
 		Indexed = new uint8[Width * Height];
 
-		ImageReductor.SetColorMode(ColorMode, GrayCount);
-		diag.Debug(@"SetColorMode=$(ColorMode)");
-
-		ImageReductor.SetFinderMode(FinderMode);
+		ImageReductor.SetColorMode(ColorMode, FinderMode, GrayCount);
+		diag.Debug(@"SetColorMode=$(ColorMode), $(FinderMode), $(GrayCount)");
 
 		ImageReductor.SetAddNoizeMode(AddNoizeMode);
 

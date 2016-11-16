@@ -529,9 +529,9 @@ FindColor_Custom(ColorRGBuint8 c)
 	return rv;
 }
 
-// カラーモードを設定します。
+// カラーモードとカラーファインダを設定します。
 void
-ImageReductor_SetColorMode(ReductorColorMode mode, /*optional*/ int count)
+ImageReductor_SetColorMode(ReductorColorMode mode, ReductorFinderMode finder, /*optional*/ int count)
 {
 	switch (mode) {
 		case RCM_Mono:
@@ -578,13 +578,8 @@ ImageReductor_SetColorMode(ReductorColorMode mode, /*optional*/ int count)
 			ColorFinder = FindColor_Custom;
 			break;
 	}
-}
 
-// カラーファインダーを差し替えます。
-void
-ImageReductor_SetFinderMode(ReductorFinderMode mode)
-{
-	switch (mode) {
+	switch (finder) {
 	 case RFM_HSV:
 		CreateHSVPalette();
 		ColorFinder = FindColor_HSV;
