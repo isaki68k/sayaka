@@ -1024,8 +1024,6 @@ public class SayakaMain
 		string rv;
 		rv = make_indent(msg);
 
-		// 置換は formatmsg() 中で行っている
-
 		// 出力文字コードの変換
 		if (iconv_tocode != "") {
 			if (iconv_tocode == "iso-2022-jp") {
