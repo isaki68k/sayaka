@@ -1042,6 +1042,12 @@ public class SayakaMain
 					continue;
 				}
 
+				// ビュレット(U+2022) -> 中黒(U+30FB)
+				if (c == 0x2022) {
+					sb.append_unichar(0x30fb);
+					continue;
+				}
+
 				if (0xff61 <= c && c < 0xffa0 && iconv_tocode == "iso-2022-jp"){
 					// XXX JIS というか NetBSD/x68k なら半角カナは表示できる
 					sb.append(@"$(ESC)(I");
