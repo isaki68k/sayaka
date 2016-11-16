@@ -289,14 +289,6 @@ SetPalette_CustomX68k()
 	}
 }
 
-// X68k 16 色パレットへ色を変換します。
-static int
-FindColor_CustomX68k(ColorRGBuint8 c)
-{
-	// XXX unsupported
-	return FindColor_Custom(c);
-}
-
 // ANSI 固定 16 色パレット
 // Standard VGA colors を基準とし、
 // ただしパレット4 を Brown ではなく Yellow になるようにしてある。
@@ -500,35 +492,6 @@ FindColor_HSV(ColorRGBuint8 c)
 	return min_d_i;
 }
 
-// カスタムパレット時に、最も近いパレット番号を返します。
-static int
-FindColor_Custom(ColorRGBuint8 c)
-{
-	// RGB の各色の距離の和が最小、にしてある。
-	// YCC で判断したほうが良好なのは知ってるけど、そこまで必要じゃない。
-	// とおもったけどやっぱり品質わるいので色差も考えていく。
-
-	// 色差情報を重みにしていく。
-	int K1 = ((int)c.r*2 - (int)c.g - (int)c.b); if (K1 < 1) K1 = 1; if (K1 > 8) K1 = 4;
-	int K2 = ((int)c.g*2 - (int)c.r - (int)c.b); if (K2 < 1) K2 = 1; if (K2 > 8) K2 = 4;
-	int K3 = ((int)c.b*2 - (int)c.r - (int)c.g); if (K3 < 1) K3 = 1; if (K3 > 8) K3 = 4;
-	int rv = 0;
-	int min_d = INT_MAX;
-	for (int i = 0; i < PaletteCount; i++) {
-		int dR = (int)Palette[i].r - (int)c.r;
-		int dG = (int)Palette[i].g - (int)c.g;
-		int dB = (int)Palette[i].b - (int)c.b;
-		int d = abs(dR) * K1 + abs(dG) * K2 + abs(dB) * K3;
-
-		if (d < min_d) {
-			rv = i;
-			min_d = d;
-			if (d == 0) break;
-		}
-	}
-	return rv;
-}
-
 // カラーモードとカラーファインダを設定します。
 void
 ImageReductor_SetColorMode(ReductorColorMode mode, ReductorFinderMode finder, /*optional*/ int count)
@@ -559,7 +522,7 @@ ImageReductor_SetColorMode(ReductorColorMode mode, ReductorFinderMode finder, /*
 			break;
 		case RCM_CustomX68k:
 			SetPalette_CustomX68k();
-			ColorFinder = FindColor_CustomX68k;
+			ColorFinder = FindColor_HSV;
 			break;
 		case RCM_FixedANSI16:
 			Palette = Palette_FixedANSI16;
@@ -575,7 +538,7 @@ ImageReductor_SetColorMode(ReductorColorMode mode, ReductorFinderMode finder, /*
 			ColorFinder = FindColor_Fixed256RGBI;
 			break;
 		case RCM_Custom:
-			ColorFinder = FindColor_Custom;
+			ColorFinder = FindColor_HSV;
 			break;
 	}
 
