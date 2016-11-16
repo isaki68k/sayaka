@@ -40,6 +40,13 @@ typedef enum
 	RCM_Custom,
 } ReductorColorMode;
 
+// ファインダーモード
+typedef enum
+{
+	RFM_Default,
+	RFM_HSV,
+} ReductorFinderMode;
+
 // リターンコード
 typedef enum
 {
@@ -90,6 +97,13 @@ typedef struct ColorRGBint16_t
 	int16_t g;
 	int16_t b;
 } ColorRGBint16;
+
+typedef struct ColorHSVuint8_t
+{
+	uint8_t h;	// 0..239, 255=gray
+	uint8_t s;	// 0..255
+	uint8_t v;	// 0..255
+} ColorHSVuint8;
 
 //-------- グローバル変数
 

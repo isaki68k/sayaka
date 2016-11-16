@@ -119,6 +119,9 @@ public class SixelConverter
 	// カラーモード
 	public ReductorColorMode ColorMode = ReductorColorMode.Fixed256;
 
+	// ファインダーモード
+	public ReductorFinderMode FinderMode = ReductorFinderMode.RFM_Default;
+
 	// グレーカラーのときの色数。
 	// グレー以外のときは無視されます。
 	public int GrayCount = 256;
@@ -290,6 +293,8 @@ public class SixelConverter
 
 		ImageReductor.SetColorMode(ColorMode, GrayCount);
 		diag.Debug(@"SetColorMode=$(ColorMode)");
+
+		ImageReductor.SetFinderMode(FinderMode);
 
 		ImageReductor.SetAddNoizeMode(AddNoizeMode);
 

@@ -87,6 +87,8 @@ const ColorRGBuint8 *Palette;
 int PaletteCount;
 ColorRGBuint8 Palette_Custom[256];
 
+ColorHSVuint8 HSVPalette[256];
+
 // 色変換関数の関数ポインタ
 typedef int (* FindColorFunc_t)(ColorRGBuint8 c);
 static FindColorFunc_t ColorFinder;
@@ -424,6 +426,80 @@ FindColor_Fixed256RGBI(ColorRGBuint8 c)
 	return (R << 6)	| (G << 4) | (B << 2) | I;
 }
 
+// 円錐型 HSV を計算します。
+// H = 0..239, 255
+// S = 0..255
+// V = 0..255
+static ColorHSVuint8
+RGBtoHSV(ColorRGBuint8 c)
+{
+	ColorHSVuint8 rv;
+
+	int min = MIN(MIN(c.r, c.g), c.b);
+	int max = MAX(MAX(c.r, c.g), c.b);
+	rv.s = max - min;
+	rv.v = max;
+	if (rv.s == 0) {
+		rv.h = 255;	// gray
+	} else if (min == c.b) {
+		rv.h = 40 * (c.g - c.r) / rv.s + 40;
+	} else if (min == c.r) {
+		rv.h = 40 * (c.b - c.g) / rv.s + 120;
+	} else {
+		rv.h = 40 * (c.r - c.b) / rv.s + 200;
+	}
+	return rv;
+}
+
+static void
+CreateHSVPalette()
+{
+	for (int i = 0; i < PaletteCount; i++) {
+		HSVPalette[i] = RGBtoHSV(Palette[i]);
+	}
+}
+
+static int
+FindColor_HSV_subr(ColorHSVuint8 hsvpal, ColorHSVuint8 hsv)
+{
+	int d;
+	int dh, ds, dv;
+
+	dv = (int)hsvpal.v - hsv.v;
+	ds = (int)hsvpal.s - hsv.s;
+	dh = (int)hsvpal.h - hsv.h;
+	if (hsv.s != 0 && hsvpal.s == 0) {
+		dh = 120;
+		ds = 120;
+	}
+	if (dh > 120) dh -= 240;
+	if (dh < -120) dh += 240;
+
+	ds = ds;
+	dv = dv;
+
+DEBUG_PRINTF("%d,%d,%d ", dh,ds,dv);
+	d = abs(dh)*(hsv.s + 1) / 32 + abs(ds) * 3 + abs(dv) * 5;
+	return d;
+}
+
+static int
+FindColor_HSV(ColorRGBuint8 c)
+{
+	ColorHSVuint8 hsv = RGBtoHSV(c);
+
+	int min_d = FindColor_HSV_subr(HSVPalette[0], hsv);
+	int min_d_i = 0;
+	for (int i = 1; i < PaletteCount; i++) {
+		int d = FindColor_HSV_subr(HSVPalette[i], hsv);
+		if (min_d > d) {
+			min_d = d;
+			min_d_i = i;
+		}
+	}
+	return min_d_i;
+}
+
 // カスタムパレット時に、最も近いパレット番号を返します。
 static int
 FindColor_Custom(ColorRGBuint8 c)
@@ -503,6 +579,21 @@ ImageReductor_SetColorMode(ReductorColorMode mode, /*optional*/ int count)
 			break;
 	}
 }
+
+// カラーファインダーを差し替えます。
+void
+ImageReductor_SetFinderMode(ReductorFinderMode mode)
+{
+	switch (mode) {
+	 case RFM_HSV:
+		CreateHSVPalette();
+		ColorFinder = FindColor_HSV;
+		break;
+	 default:
+		break;
+	}
+}
+
 
 //////////////// その他のサブルーチン
 

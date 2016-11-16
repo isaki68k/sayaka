@@ -31,6 +31,13 @@ public enum ReductorColorMode
 	Custom,
 }
 
+[CCode (cname="ReductorFinderMode", has_type_id=false)]
+public enum ReductorFinderMode
+{
+	RFM_Default,
+	RFM_HSV,
+}
+
 [CCode (cname="ReductorImageCode", has_type_id=false)]
 public enum ReductorImageCode
 {
@@ -92,6 +99,9 @@ public delegate int ImageReductor_ReadCallback(ImageReductor_Image* img);
 extern void ImageReductor_SetColorMode(
 	ReductorColorMode mode, int count);
 
+extern void ImageReductor_SetFinderMode(
+	ReductorFinderMode mode);
+
 extern int ImageReductor_Fast(
 	uint8[] dst,
 	int dstWidth, int dstHeight,
@@ -143,6 +153,13 @@ public class ImageReductor
 	public static void SetColorMode(ReductorColorMode mode, int count)
 	{
 		ImageReductor_SetColorMode(mode, count);
+	}
+
+	// カラーファインダーを差し替えます。
+	// この関数を呼び出す前に SetColorMode でカラーモードを選択してください。
+	public static void SetFinderMode(ReductorFinderMode mode)
+	{
+		ImageReductor_SetFinderMode(mode);
 	}
 
 	// ノイズ付加モードを設定します。
