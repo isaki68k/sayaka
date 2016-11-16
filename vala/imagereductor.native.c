@@ -526,7 +526,19 @@ RoundDownPow2(int x)
 	return x >> 1;
 }
 
+static int
+rnd()
+{
+	static uint32_t y = 24539283060;
+	y = y ^ (y << 13);
+	y = y ^ (y >> 17);
+	y = y ^ (y << 5);
+	return ((y >> 4) % 31) - 15;
+}
+
 //////////////// 変換関数
+
+int AddNoizeMode = 0;
 
 // 画像を縮小しながら減色して変換します。
 // 出来る限り高速に、それなりの品質で変換します。
@@ -821,6 +833,13 @@ ImageReductor_HighQuality(
 			col.r -= Palette[colorCode].r;
 			col.g -= Palette[colorCode].g;
 			col.b -= Palette[colorCode].b;
+
+			// ランダムノイズを加える
+			if (AddNoizeMode) {
+				col.r += rnd();
+				col.g += rnd();
+				col.b += rnd();
+			}
 
 			switch (HighQualityDiffuseMethod) {
 			 case RDM_FS:

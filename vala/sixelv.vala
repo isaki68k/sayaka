@@ -60,6 +60,7 @@ public class SixelV
 	public int opt_output_y = 0;
 	public float opt_colorfactor = 1.0f;
 	public ReductorDiffuseMethod opt_highqualitydiffusemethod = ReductorDiffuseMethod.RDM_FS;
+	public bool opt_addnoize = false;
 	public SocketFamily opt_address_family = SocketFamily.INVALID;	// UNSPEC がないので代用
 	static SixelV this_sixelv;
 
@@ -302,6 +303,10 @@ public class SixelV
 						opt_colorfactor = opt.ValueFloat();
 						break;
 
+					case "--addnoize":
+						opt_addnoize = !opt_addnoize;
+						break;
+
 					default:
 						usage();
 						break;
@@ -435,6 +440,7 @@ public class SixelV
 		sx.ResizeMode = opt_resizemode;
 		sx.OutputPalette = opt_outputpalette;
 		sx.GrayCount = opt_graylevel;
+		sx.AddNoizeMode = opt_addnoize;
 
 		ImageReductor.HighQualityDiffuseMethod = opt_highqualitydiffusemethod;
 

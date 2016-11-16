@@ -129,6 +129,10 @@ public class SixelConverter
 	// リサイズモード
 	public SixelResizeMode ResizeMode = SixelResizeMode.ByLoad;
 
+	// ノイズ付加
+	// ベタ塗り画像で少ない色数へ減色するとき、ノイズを付加すると画質改善できる
+	public bool AddNoizeMode = false;
+
 	//////////////// 画像の読み込み
 
 	public void Load(string filename, int width = 0) throws Error
@@ -286,6 +290,8 @@ public class SixelConverter
 
 		ImageReductor.SetColorMode(ColorMode, GrayCount);
 		diag.Debug(@"SetColorMode=$(ColorMode)");
+
+		ImageReductor.SetAddNoizeMode(AddNoizeMode);
 
 		diag.Debug(@"ReduceMode=$(ReduceMode)");
 		ImageReductor.Convert(ReduceMode, pix, Indexed, Width, Height);
