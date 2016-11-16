@@ -1026,21 +1026,32 @@ public class SayakaMain
 
 		// 出力文字コードの変換
 		if (iconv_tocode != "") {
-			if (iconv_tocode == "iso-2022-jp") {
-				// (x68kなら)半角カナを先に処理しておく
-				var sb = new StringBuilder();
-				unichar c;
-				for (var i = 0; rv.get_next_char(ref i, out c); ) {
-					if (0xff61 <= c && c < 0xffa0) {
-						sb.append(@"$(ESC)(I");
-						sb.append_unichar(c - 0xff60 + 0x20);
-						sb.append(@"$(ESC)(B");
-					} else {
-						sb.append_unichar(c);
-					}
+			var sb = new StringBuilder();
+			unichar c;
+			// ここで文字を置換
+			for (var i = 0; rv.get_next_char(ref i, out c); ) {
+				// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
+				if (c == 0xff5e) {
+					sb.append_unichar(0x301c);
+					continue;
 				}
-				rv = sb.str;
+
+				// 全角ハイフンマイナス(U+FF0D) -> マイナス記号(U+2212)
+				if (c == 0xff0d) {
+					sb.append_unichar(0x2212);
+					continue;
+				}
+
+				if (0xff61 <= c && c < 0xffa0 && iconv_tocode == "iso-2022-jp"){
+					// XXX JIS というか NetBSD/x68k なら半角カナは表示できる
+					sb.append(@"$(ESC)(I");
+					sb.append_unichar(c - 0xff60 + 0x20);
+					sb.append(@"$(ESC)(B");
+				} else {
+					sb.append_unichar(c);
+				}
 			}
+			rv = sb.str;
 
 			try {
 				string rv2;
