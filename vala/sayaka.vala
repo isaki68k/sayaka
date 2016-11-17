@@ -103,6 +103,7 @@ public class SayakaMain
 	public int color_mode;
 	public bool protect;
 	public bool debug;
+	public bool debug_sixel;
 	public int screen_cols;
 	public int opt_fontwidth;
 	public int opt_fontheight;
@@ -215,6 +216,9 @@ public class SayakaMain
 				gDiag.global_trace = true;
 				gDiag.global_debug = true;
 				gDiag.global_warn = true;
+				break;
+			 case "--debug-sixel":
+				debug_sixel = true;
 				break;
 			 case "--eucjp":
 				iconv_tocode = "euc-jp";
@@ -1651,6 +1655,8 @@ public class SayakaMain
 	{
 		var sx = new SixelConverter();
 
+		sx.diag.opt_debug |= debug_sixel;
+
 		if (color_mode == ColorFixedX68k) {
 			// とりあえず固定 16 色
 			// システム取得する?
@@ -2051,6 +2057,7 @@ public class SayakaMain
 	--blocklist
 	--ciphers <ciphers>
 	--debug
+	--debug-sixel
 	--max-cont <n>
 	--max-image-cols <n>
 	--mutelist
