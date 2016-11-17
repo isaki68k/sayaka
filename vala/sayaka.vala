@@ -1485,11 +1485,6 @@ public class SayakaMain
 	// アイコン表示後にカーソル位置を表示前の位置に戻す。
 	public void show_icon(ULib.Json user)
 	{
-		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを発生させ
-		// アイコン表示時にスクロールしないようにしてからカーソル位置を保存する
-		// (スクロールするとカーソル位置復元時に位置が合わない)
-		stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
-
 		var screen_name = unescape(user.GetString("screen_name"));
 		var image_url = user.GetString("profile_image_url");
 
@@ -1498,14 +1493,7 @@ public class SayakaMain
 		var img_file =
 			@"icon-$(iconsize)x$(iconsize)-$(screen_name)-$(filename)";
 
-		if (show_image(img_file, image_url, iconsize, -1) == false) {
-			stdout.printf("\n\n\n");
-		}
-
-		stdout.printf("\r");
-		// カーソル位置保存/復元に対応していない端末でも動作するように
-		// カーソル位置復元前にカーソル上移動x3を行う
-		stdout.printf(CSI + "3A" + @"$(ESC)8");
+		show_image(img_file, image_url, iconsize, -1);
 	}
 
 	// index は画像の番号 (位置決めに使用する)
@@ -1527,7 +1515,8 @@ public class SayakaMain
 	//  $img_url は画像の URL
 	//  $resize_width はリサイズ後の画像の幅。ピクセルで指定。0 を指定すると
 	//  リサイズせずオリジナルのサイズ。
-	//  $index は添付写真の位置決めに使用する画像番号。-1 なら位置不要。
+	//  $index は -1 ならアイコン、0 以上なら添付写真の何枚目かを表す。
+	//  どちらも位置決めなどのために使用する。
 	// 表示できれば真を返す。
 	public bool show_image(string img_file, string img_url, int resize_width,
 		int index)
@@ -1596,8 +1585,16 @@ public class SayakaMain
 		var image_rows = (sx_height + fontheight - 1) / fontheight;
 		var image_cols = (sx_width + fontwidth - 1) / fontwidth;
 
-		// 表示位置などの計算
-		if (index >= 0) {
+		if (index < 0) {
+			// アイコンの場合、
+			// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
+			// 発生させ、アイコン表示時にスクロールしないようにしてから
+			// カーソル位置を保存する
+			// (スクロールするとカーソル位置復元時に位置が合わない)
+			stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
+		} else {
+			// 添付画像の場合、
+			// 表示位置などの計算
 			var indent = (indent_depth + 1) * indent_cols;
 			if ((max_image_count > 0 && image_count >= max_image_count) ||
 				(indent + image_next_cols + image_cols >= screen_cols))
@@ -1632,7 +1629,14 @@ public class SayakaMain
 			n = cache_file.read(buf);
 		} while (n > 0);
 
-		if (index >= 0) {
+		if (index < 0) {
+			// アイコンの場合
+			stdout.printf("\r");
+			// カーソル位置保存/復元に対応していない端末でも動作するように
+			// カーソル位置復元前にカーソル上移動x3を行う
+			stdout.printf(CSI + "3A" + @"$(ESC)8");
+		} else {
+			// 添付画像の場合
 			image_count++;
 			image_next_cols += image_cols;
 
