@@ -643,6 +643,13 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 				col.g = (col.g - Palette[colorCode].g) * level / 256;
 				col.b = (col.b - Palette[colorCode].b) * level / 256;
 
+				// ランダムノイズを加える
+				if (AddNoiseLevel > 0) {
+					col.r += rnd(AddNoiseLevel);
+					col.g += rnd(AddNoiseLevel);
+					col.b += rnd(AddNoiseLevel);
+				}
+
 				*dst++ = colorCode;
 			}
 			srcRaster += srcStride;
@@ -706,6 +713,13 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 				ce.r = (col.r - Palette[colorCode].r) * level / 256;
 				ce.g = (col.g - Palette[colorCode].g) * level / 256;
 				ce.b = (col.b - Palette[colorCode].b) * level / 256;
+
+				// ランダムノイズを加える
+				if (AddNoiseLevel > 0) {
+					ce.r += rnd(AddNoiseLevel);
+					ce.g += rnd(AddNoiseLevel);
+					ce.b += rnd(AddNoiseLevel);
+				}
 
 				*dst++ = colorCode;
 			}
