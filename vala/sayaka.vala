@@ -57,6 +57,7 @@ public class SayakaMain
 	public const string version = "3.2.2 (2016/09/25)";
 
 	private static Diag diag;
+	private static Diag diagSixel;
 
 	public const char CAN = '\x18';
 	public const char ESC = '\x1b';
@@ -103,7 +104,6 @@ public class SayakaMain
 	public int color_mode;
 	public bool protect;
 	public bool debug;
-	public bool debug_sixel;
 	public int screen_cols;
 	public int opt_fontwidth;
 	public int opt_fontheight;
@@ -159,6 +159,9 @@ public class SayakaMain
 
 	public int Main(string[] args)
 	{
+		diag = new Diag("SayakaMain");
+		diagSixel = new Diag("SayakaMain");
+
 		SayakaCmd cmd = SayakaCmd.StreamMode;
 		bool opt_x68k;
 
@@ -218,7 +221,8 @@ public class SayakaMain
 				gDiag.global_warn = true;
 				break;
 			 case "--debug-sixel":
-				debug_sixel = true;
+				diagSixel.opt_debug = true;
+				diagSixel.opt_warn = true;
 				break;
 			 case "--eucjp":
 				iconv_tocode = "euc-jp";
@@ -371,8 +375,6 @@ public class SayakaMain
 			}
 			stdout.printf("\n");
 		}
-
-		diag  = new Diag("SayakaMain");
 
 		diag.Debug(@"tokenfile = $(tokenfile)\n");
 
@@ -1542,12 +1544,13 @@ public class SayakaMain
 			cachedir, img_file);
 		img_file = tmp;
 
-		diag.Debug(@"show_image: img_file=$(img_file), img_url=$(img_url)");
+		diagSixel.Debug(@"show_image: img_url=$(img_url)");
+		diagSixel.Debug(@"show_image: img_file=$(img_file)");
 		var cache_filename = img_file + ".sixel";
 		var cache_file = FileStream.open(cache_filename, "r");
 		if (cache_file == null) {
 			// キャッシュファイルがないので、画像を取得
-			diag.Debug("sixel cache is not found");
+			diagSixel.Debug("sixel cache is not found");
 			cache_file = fetch_image(cache_filename, img_url, resize_width);
 			if (cache_file == null) {
 				return false;
@@ -1655,7 +1658,7 @@ public class SayakaMain
 	{
 		var sx = new SixelConverter();
 
-		sx.diag.opt_debug |= debug_sixel;
+		sx.diag.opt_debug = diagSixel.opt_debug;
 
 		if (color_mode == ColorFixedX68k) {
 			// とりあえず固定 16 色
@@ -1694,7 +1697,7 @@ public class SayakaMain
 			stream = fg.GET();
 			sx.LoadFromStream(stream, resize_width);
 		} catch (Error e) {
-			diag.Warn(@"fetch_image failed: $(e.message)");
+			diagSixel.Warn(@"fetch_image failed: $(e.message)");
 			return null;
 		}
 
