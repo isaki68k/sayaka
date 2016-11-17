@@ -660,16 +660,21 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 		if (sw == 0) sw = 1;
 		int meanShift = 31 - __builtin_clz(sw);
 
+		DEBUG_PRINTF("sw=%d meanShift=%d\n", sw, meanShift);
 		for (int y = 0; y < dstHeight; y++) {
 			uint8_t *srcRaster = &src[sr_y.I * srcStride];
 			StepRationalAdd(&sr_y, &sr_ystep);
 
 			sr_x.I = sr_x.N = 0;
 
+			ColorRGBint ce = {0,0,0};
+
 			for (int x = 0; x < dstWidth; x++) {
 
 				int sx0 = sr_x.I;
 				StepRationalAdd(&sr_x, &sr_xstep);
+
+				col.r = col.g = col.b = 0;
 
 				uint8_t *srcPix = &srcRaster[sx0 * srcNch];
 				for (int sx = 0; sx < sw; sx++) {
@@ -683,6 +688,10 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 				col.g >>= meanShift;
 				col.b >>= meanShift;
 
+				col.r += ce.r;
+				col.g += ce.g;
+				col.b += ce.b;
+
 				ColorRGBuint8 c8 = {
 					Saturate_uint8(col.r),
 					Saturate_uint8(col.g),
@@ -691,9 +700,9 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 
 				int colorCode = ColorFinder(c8);
 
-				col.r = (col.r - Palette[colorCode].r) * level / 256;
-				col.g = (col.g - Palette[colorCode].g) * level / 256;
-				col.b = (col.b - Palette[colorCode].b) * level / 256;
+				ce.r = (col.r - Palette[colorCode].r) * level / 256;
+				ce.g = (col.g - Palette[colorCode].g) * level / 256;
+				ce.b = (col.b - Palette[colorCode].b) * level / 256;
 
 				*dst++ = colorCode;
 			}
