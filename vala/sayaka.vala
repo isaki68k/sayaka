@@ -367,10 +367,11 @@ public class SayakaMain
 		if (opt_x68k) {
 			stdout.printf("%s", args[0]);
 			for (var i = 1; i < args.length; i++) {
-				stdout.printf(@" $(args[i])");
 				if (args[i] == "--x68k") {
 					stdout.printf(" --color x68k --font 8x16 --jis --black"
 						+ " --progress --ormode on --palette off");
+				} else {
+					stdout.printf(@" $(args[i])");
 				}
 			}
 			stdout.printf("\n");
