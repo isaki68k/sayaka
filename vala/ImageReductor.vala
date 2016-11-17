@@ -130,6 +130,9 @@ extern ReductorImageCode ImageReductor_LoadJpeg(
 
 public class ImageReductor
 {
+	[CCode(cname="ImageReductor_Debug")]
+	public static extern int debug;
+
 	[CCode(cname="PaletteCount")]
 	public static extern int PaletteCount;
 

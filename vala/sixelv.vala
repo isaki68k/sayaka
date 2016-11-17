@@ -92,6 +92,7 @@ public class SixelV
 						break;
 					case "--debug-sixel":
 						opt_debug_sixel = true;
+						ImageReductor.debug = 1;
 						break;
 					case "--debug-net":
 						opt_debug_net = true;

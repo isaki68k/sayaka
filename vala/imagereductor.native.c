@@ -35,8 +35,8 @@
 #define __packed __attribute__((__packed__))
 #endif
 
-extern gboolean gdiag_global_debug;
-#define DEBUG_PRINTF(x...) if (gdiag_global_debug) fprintf(stderr, x)
+int ImageReductor_Debug = 0;
+#define DEBUG_PRINTF(x...) if (ImageReductor_Debug) fprintf(stderr, x)
 
 //////////////// 分数計算機
 // DDA 計算の基礎となる I + N / D 型の分数ステップ加減算計算機です。

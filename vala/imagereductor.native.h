@@ -107,6 +107,7 @@ typedef struct ColorHSVuint8_t
 
 //-------- グローバル変数
 
+extern int ImageReductor_Debug;
 extern const ColorRGBuint8 *Palette;
 extern int PaletteCount;
 extern ColorRGBuint8 Palette_Custom[256];
