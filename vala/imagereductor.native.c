@@ -575,19 +575,22 @@ RoundDownPow2(int x)
 	return x >> 1;
 }
 
+// -level .. +level までの乱数を返します。
 static int
-rnd()
+rnd(int level)
 {
 	static uint32_t y = 24539283060;
 	y = y ^ (y << 13);
 	y = y ^ (y >> 17);
 	y = y ^ (y << 5);
-	return ((y >> 4) % 31) - 15;
+	int rv = (((int)(y >> 4) % ((level + 16) * 2 + 1)) - (level + 16)) / 16;
+//DEBUG_PRINTF("%d ", rv);
+	return rv;
 }
 
 //////////////// 変換関数
 
-int AddNoizeMode = 0;
+int AddNoiseLevel = 0;
 
 // 画像を縮小しながら減色して変換します。
 // 出来る限り高速に、それなりの品質で変換します。
@@ -893,10 +896,10 @@ ImageReductor_HighQuality(
 			col.b -= Palette[colorCode].b;
 
 			// ランダムノイズを加える
-			if (AddNoizeMode) {
-				col.r += rnd();
-				col.g += rnd();
-				col.b += rnd();
+			if (AddNoiseLevel > 0) {
+				col.r += rnd(AddNoiseLevel);
+				col.g += rnd(AddNoiseLevel);
+				col.b += rnd(AddNoiseLevel);
 			}
 
 			switch (HighQualityDiffuseMethod) {

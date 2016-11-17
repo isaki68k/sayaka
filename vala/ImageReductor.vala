@@ -145,8 +145,8 @@ public class ImageReductor
 	[CCode(cname="HighQualityDiffuseMethod")]
 	public static extern int HighQualityDiffuseMethod;
 
-	[CCode(cname="AddNoizeMode")]
-	public static extern int AddNoizeMode;
+	[CCode(cname="AddNoiseLevel")]
+	public static extern int AddNoiseLevel;
 
 	// カラーモードを設定します。
 	// 変換関数を呼び出す前に、必ずカラーモードを設定してください。
@@ -156,9 +156,9 @@ public class ImageReductor
 	}
 
 	// ノイズ付加モードを設定します。
-	public static void SetAddNoizeMode(bool mode)
+	public static void SetAddNoiseLevel(int level)
 	{
-		AddNoizeMode = mode ? 1 : 0;
+		AddNoiseLevel = level;
 	}
 
 	public static void Convert(ReductorReduceMode mode, Pixbuf pix, uint8[] dst, int toWidth, int toHeight)

@@ -134,7 +134,7 @@ public class SixelConverter
 
 	// ノイズ付加
 	// ベタ塗り画像で少ない色数へ減色するとき、ノイズを付加すると画質改善できる
-	public bool AddNoizeMode = false;
+	public int AddNoiseLevel = 0;
 
 	//////////////// 画像の読み込み
 
@@ -294,7 +294,7 @@ public class SixelConverter
 		ImageReductor.SetColorMode(ColorMode, FinderMode, GrayCount);
 		diag.Debug(@"SetColorMode=$(ColorMode), $(FinderMode), $(GrayCount)");
 
-		ImageReductor.SetAddNoizeMode(AddNoizeMode);
+		ImageReductor.SetAddNoiseLevel(AddNoiseLevel);
 
 		diag.Debug(@"ReduceMode=$(ReduceMode)");
 		ImageReductor.Convert(ReduceMode, pix, Indexed, Width, Height);
