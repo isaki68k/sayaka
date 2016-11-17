@@ -44,6 +44,8 @@ namespace Native.mTLS
 	public static int init(mtlsctx* ctx);
 	[CCode(cname="mtls_close")]
 	public static int close(mtlsctx* ctx);
+	[CCode(cname="mtls_shutdown")]
+	public static int shutdown(mtlsctx* ctx, int how);
 	[CCode(cname="mtls_setssl")]
 	public static void setssl(mtlsctx* ctx, bool value);
 	[CCode(cname="mtls_usersa")]

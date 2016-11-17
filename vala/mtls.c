@@ -225,6 +225,17 @@ mtls_close(mtlsctx_t* ctx)
 	return 0;
 }
 
+// shutdown をします。
+int
+mtls_shutdown(mtlsctx_t* ctx, int how)
+{
+	int rv = 0;
+	if (ctx->usessl == 0) {
+		rv = shutdown(ctx->net.fd, how);
+	}
+	return rv;
+}
+
 // HTTPS かどうかを設定します。
 // mtls_connect() より先に設定しておく必要があります。
 void

@@ -30,6 +30,10 @@ namespace ULib
 	public class HttpClient
 		: Object, IHttpClient
 	{
+		const int SHUT_RD = 0;
+		const int SHUT_WR = 1;
+		const int SHUT_RDWR = 2;
+
 		public Diag diag = new Diag("HttpClient");
 
 		// https の時の mTLS コンテキスト
@@ -197,6 +201,9 @@ namespace ULib
 			var msg = sb.str;
 
 			Conn.output_stream.write(msg.data);
+
+			Native.mTLS.shutdown(Tls, SHUT_WR);
+
 			diag.Trace("SendRequest() request sent");
 		}
 
