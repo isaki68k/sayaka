@@ -1522,12 +1522,6 @@ public class SayakaMain
 	public bool show_image(string img_file, string img_url, int resize_width,
 		int index)
 	{
-		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
-		if (indent_depth > 0) {
-			var left = indent_cols * indent_depth;
-			stdout.printf(@"$(CSI)$(left)C");
-		}
-
 		if (opt_noimg) return false;
 
 		var tmp = Path.build_path(Path.DIR_SEPARATOR_S,
@@ -1593,6 +1587,13 @@ public class SayakaMain
 			// カーソル位置を保存する
 			// (スクロールするとカーソル位置復元時に位置が合わない)
 			stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
+
+			// インデント。
+			// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
+			if (indent_depth > 0) {
+				var left = indent_cols * indent_depth;
+				stdout.printf(@"$(CSI)$(left)C");
+			}
 		} else {
 			// 添付画像の場合、
 			// 表示位置などの計算
