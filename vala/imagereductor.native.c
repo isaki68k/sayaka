@@ -608,7 +608,7 @@ ImageReductor_Fast(
 	int srcWidth, int srcHeight,
 	int srcNch, int srcStride)
 {
-DEBUG_PRINTF(stderr, "dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeight);
+DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 螺旋状に一次元誤差分散させる。
 	// 当然画像処理的には正しくないが、視覚的にはそんなに遜色が無い。
