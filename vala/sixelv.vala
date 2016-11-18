@@ -149,9 +149,6 @@ public class SixelV
 							case "x68k":
 								opt_colormode = ReductorColorMode.FixedX68k;
 								break;
-							case "x68k-custom":
-								opt_colormode = ReductorColorMode.CustomX68k;
-								break;
 							default:
 								usage();
 								break;
@@ -364,7 +361,6 @@ public class SixelV
        gray     : grayscale with NTSC intensity
        graymean : grayscale with mean of RGB
        x68k     : Fixed x68k 16 color palette
-       x68k-custom : Custom X68k palette
 
    -8, -16, -256
      Shortcut for -p=8, -p=16, -p=256

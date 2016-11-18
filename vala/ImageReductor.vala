@@ -24,7 +24,6 @@ public enum ReductorColorMode
 	GrayMean,
 	Fixed8,
 	FixedX68k,
-	CustomX68k,
 	FixedANSI16,
 	Fixed256,
 	Fixed256RGBI,

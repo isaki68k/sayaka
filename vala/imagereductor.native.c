@@ -93,9 +93,6 @@ ColorHSVuint8 HSVPalette[256];
 typedef int (* FindColorFunc_t)(ColorRGBuint8 c);
 static FindColorFunc_t ColorFinder;
 
-// 前方参照
-static int FindColor_Custom(ColorRGBuint8 c);
-
 // 固定 2 色白黒パレット
 static const ColorRGBuint8 Palette_Mono[] = {
  {  0,   0,   0},
@@ -218,37 +215,6 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 			}
 		}
 		return (R + (G << 1) + (B << 2)) | 8;
-	}
-}
-
-// x68k 16 色のパレットをシステムから取得して生成します。
-static void
-SetPalette_CustomX68k()
-{
-	char sname[] = "hw.ite.tpalette0";
-
-	Palette = Palette_Custom;
-	PaletteCount = 16;
-
-	for (int i = 0; i < 16; i++) {
-		int val;
-		int r, g, b;
-		sname[sizeof(sname) - 1] = (i <= 9) ? (i + 0x30) : (i - 10 + 'A');
-
-		if (native_sysctlbyname(sname, &val, sizeof(val), NULL, 0) == -1) {
-			// エラーになったらとりあえず内蔵固定16色
-//fprintf(stderr, "sysctl error\n");
-				Palette = Palette_FixedX68k;
-				return;
-		}
-		// x68k のパレットは GGGG_GRRR_RRBB_BBBI
-		g = (((val >> 11) & 0x1f) << 1) | (val & 1);
-		r = (((val >>  6) & 0x1f) << 1) | (val & 1);
-		b = (((val >>  1) & 0x1f) << 1) | (val & 1);
-
-		Palette_Custom[i].r = r * 255 / 63;
-		Palette_Custom[i].g = g * 255 / 63;
-		Palette_Custom[i].b = b * 255 / 63;
 	}
 }
 
@@ -482,10 +448,6 @@ ImageReductor_SetColorMode(ReductorColorMode mode, ReductorFinderMode finder, /*
 			Palette = Palette_FixedX68k;
 			PaletteCount = 16;
 			ColorFinder = FindColor_FixedX68k;
-			break;
-		case RCM_CustomX68k:
-			SetPalette_CustomX68k();
-			ColorFinder = FindColor_HSV;
 			break;
 		case RCM_FixedANSI16:
 			Palette = Palette_FixedANSI16;
