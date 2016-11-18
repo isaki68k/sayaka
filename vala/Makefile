@@ -32,17 +32,17 @@ SRCS_common=	\
 	Diag.vala \
 	Dictionary.vala \
 	FileUtil.vala \
-	SixelConverter.vala \
-	StringUtil.vala \
-	ParsedUri.vala \
-	System.OS.vala \
-	System.OS.native.c \
-	mtls.c \
-	IHttpClient.vala \
 	HttpClientmTLS.vala \
-	sixel.native.c \
+	IHttpClient.vala \
 	ImageReductor.vala \
 	imagereductor.native.c \
+	mtls.c \
+	ParsedUri.vala \
+	sixel.native.c \
+	SixelConverter.vala \
+	StringUtil.vala \
+	System.OS.vala \
+	System.OS.native.c \
 
 SRCS_sayaka= ${SRCS_common} \
 	sayaka.vala \
