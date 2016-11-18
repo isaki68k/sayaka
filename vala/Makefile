@@ -28,19 +28,12 @@ ALL_TARGET=	\
 	sixelv \
 	h \
 
-SRCS_sayaka=	\
-	sayaka.vala \
-	subr.vala \
+SRCS_common=	\
 	Diag.vala \
 	Dictionary.vala \
 	FileUtil.vala \
-	NGWord.vala \
-	Json.vala \
-	OAuth.vala \
-	PHP.vala \
 	SixelConverter.vala \
 	StringUtil.vala \
-	Twitter.vala \
 	ParsedUri.vala \
 	System.OS.vala \
 	System.OS.native.c \
@@ -51,23 +44,18 @@ SRCS_sayaka=	\
 	ImageReductor.vala \
 	imagereductor.native.c \
 
-SRCS_sixelv=	\
+SRCS_sayaka= ${SRCS_common} \
+	sayaka.vala \
+	subr.vala \
+	NGWord.vala \
+	Json.vala \
+	OAuth.vala \
+	PHP.vala \
+	Twitter.vala \
+
+SRCS_sixelv= ${SRCS_common} \
 	sixelv.vala \
-	Diag.vala \
-	Dictionary.vala \
-	FileUtil.vala \
-	SixelConverter.vala \
-	StringUtil.vala \
 	OptArgs.vala \
-	ParsedUri.vala \
-	System.OS.vala \
-	System.OS.native.c \
-	mtls.c \
-	IHttpClient.vala \
-	HttpClientmTLS.vala \
-	sixel.native.c \
-	ImageReductor.vala \
-	imagereductor.native.c \
 	Stopwatch.vala \
 
 SRCS_h=	\
