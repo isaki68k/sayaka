@@ -456,7 +456,6 @@ public class SixelV
 		sx.GrayCount = opt_graylevel;
 		sx.FinderMode = opt_findermode;
 		sx.AddNoiseLevel = opt_addnoise;
-gDiag.Debug(@"$(opt_addnoise)");
 
 		ImageReductor.HighQualityDiffuseMethod = opt_highqualitydiffusemethod;
 

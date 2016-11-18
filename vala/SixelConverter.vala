@@ -294,6 +294,7 @@ public class SixelConverter
 		ImageReductor.SetColorMode(ColorMode, FinderMode, GrayCount);
 		diag.Debug(@"SetColorMode=$(ColorMode), $(FinderMode), $(GrayCount)");
 
+		diag.Debug(@"SetAddNoiseLevel=$(AddNoiseLevel)");
 		ImageReductor.SetAddNoiseLevel(AddNoiseLevel);
 
 		diag.Debug(@"ReduceMode=$(ReduceMode)");
