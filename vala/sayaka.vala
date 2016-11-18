@@ -1765,7 +1765,7 @@ public class SayakaMain
 		} else {
 			sx.OutputMode = SixelOutputMode.Normal;
 		}
-		sx.OutputPalette= opt_outputpalette;
+		sx.OutputPalette = opt_outputpalette;
 
 		var fg = new HttpClient(img_url);
 		fg.Family = address_family;
