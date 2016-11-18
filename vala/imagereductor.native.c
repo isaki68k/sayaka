@@ -194,13 +194,7 @@ FindColor_FixedX68k(ColorRGBuint8 c)
 		G = c.g >= 192;
 		B = c.b >= 192;
 		if (R == G && G == B) {
-			if (I >= 192 * 3) {
-				return 7;
-			} else if (I >= 64 * 3) {
-				return 15;
-			} else {
-				return 8;
-			}
+			return 7;
 		}
 		return R + (G << 1) + (B << 2);
 	} else {
