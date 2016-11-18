@@ -55,6 +55,7 @@ public class SixelV
 	public bool opt_ormode = false;
 	public bool opt_profile = false;
 	public SixelResizeMode opt_resizemode = SixelResizeMode.ByLoad;
+	public SixelLoaderMode opt_loadermode = SixelLoaderMode.Gdk;
 	public OutputFormat opt_outputformat = OutputFormat.SIXEL;
 	public int opt_output_x = 0;
 	public int opt_output_y = 0;
@@ -265,8 +266,19 @@ public class SixelV
 							case "imagereductor":
 								opt_resizemode = SixelResizeMode.ByImageReductor;
 								break;
-							case "libjpeg":
-								opt_resizemode = SixelResizeMode.ByLibJpeg;
+							default:
+								usage();
+								break;
+						}
+						break;
+
+					case "--loader":
+						switch (opt.ValueString()) {
+							case "gdk":
+								opt_loadermode = SixelLoaderMode.Gdk;
+								break;
+							case "lib":
+								opt_loadermode = SixelLoaderMode.Lib;
 								break;
 							default:
 								usage();
@@ -448,6 +460,7 @@ public class SixelV
 		sx.ColorMode = opt_colormode;
 		sx.ReduceMode = opt_reduce;
 		sx.ResizeMode = opt_resizemode;
+		sx.LoaderMode = opt_loadermode;
 		sx.OutputPalette = opt_outputpalette;
 		sx.GrayCount = opt_graylevel;
 		sx.FinderMode = opt_findermode;

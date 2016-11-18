@@ -40,19 +40,32 @@ public enum SixelOutputMode
 	Or = 5,
 }
 
+// ローダモード
+// 画像のロードに使うライブラリを指定します。
+public enum SixelLoaderMode
+{
+	// gdk pixbuf を使用します。
+	Gdk,
+
+	// 個別ライブラリを使用します。
+	// 現在は jpeg 画像で、libjpeg を使用します。
+	// 将来的に libpng などをサポートしたときもこのフラグです。
+	// 個別ライブラリが対応していないフォーマットの場合は
+	// gdk pixbuf にフォールバックします。
+	Lib,
+}
+
 // リサイズモード
 public enum SixelResizeMode
 {
-	// リサイズ処理を Pixbuf の load at_size, at_scale で行います。
+	// リサイズ処理をロード時にライブラリで行います。
 	ByLoad,
 
-	// リサイズ処理を Gdk.Pixbuf.scale_simple で行います。
+	// ロードは等倍で行い、その後にリサイズ処理を Gdk.Pixbuf.scale_simple で行います。
 	ByScaleSimple,
 
-	// リサイズ処理を ImageReductor で行います。
+	// ロードは等倍で行い、その後にリサイズ処理を ImageReductor で行います。
 	ByImageReductor,
-
-	ByLibJpeg,
 }
 
 public class PeekableInputStream
@@ -132,6 +145,9 @@ public class SixelConverter
 	// リサイズモード
 	public SixelResizeMode ResizeMode = SixelResizeMode.ByLoad;
 
+	// ローダモード
+	public SixelLoaderMode LoaderMode = SixelLoaderMode.Gdk;
+
 	// ノイズ付加
 	// ベタ塗り画像で少ない色数へ減色するとき、ノイズを付加すると画質改善できる
 	public int AddNoiseLevel = 0;
@@ -141,24 +157,27 @@ public class SixelConverter
 	public void Load(string filename, int width = 0) throws Error
 	{
 		diag.Debug(@"filename=$(filename)");
+		diag.Debug(@"LoaderMode=$(LoaderMode)");
 		diag.Debug(@"ResizeMode=$(ResizeMode)");
-		if (ResizeMode == SixelResizeMode.ByLibJpeg) {
+
+		if (LoaderMode == SixelLoaderMode.Lib) {
 			var f = File.new_for_path(filename);
 			var ps = new PeekableInputStream(f.read());
 			var isLoaded = LoadJpeg(ps, width);
 			ps.close();
-			if (isLoaded == false) {
-				diag.Debug("fallback to gdk");
-				if (width <= 0) width = -1;
-				pix = new Pixbuf.from_file_at_size(filename, width, -1);
-			}
-		} else {
-			if (ResizeMode == SixelResizeMode.ByLoad) {
-				if (width <= 0) width = -1;
-				pix = new Pixbuf.from_file_at_size(filename, width, -1);
+			if (isLoaded) {
+				LoadAfter();
+				return;
 			} else {
-				pix = new Pixbuf.from_file(filename);
+				diag.Debug("fallback to gdk");
 			}
+		}
+
+		if (ResizeMode == SixelResizeMode.ByLoad) {
+			if (width <= 0) width = -1;
+			pix = new Pixbuf.from_file_at_size(filename, width, -1);
+		} else {
+			pix = new Pixbuf.from_file(filename);
 		}
 		LoadAfter();
 	}
@@ -167,20 +186,23 @@ public class SixelConverter
 	{
 		var ps = new PeekableInputStream(stream);
 
+		diag.Debug(@"LoaderMode=$(LoaderMode)");
 		diag.Debug(@"ResizeMode=$(ResizeMode)");
-		if (ResizeMode == SixelResizeMode.ByLibJpeg) {
-			if (LoadJpeg(ps, width) == false) {
-				diag.Debug("fallback to gdk");
-				if (width <= 0) width = -1;
-				pix = new Pixbuf.from_stream_at_scale(ps, width, -1, true);
-			}
-		} else {
-			if (ResizeMode == SixelResizeMode.ByLoad) {
-				if (width <= 0) width = -1;
-				pix = new Pixbuf.from_stream_at_scale(ps, width, -1, true);
+
+		if (LoaderMode == SixelLoaderMode.Lib) {
+			if (LoadJpeg(ps, width) == true) {
+				LoadAfter();
+				return;
 			} else {
-				pix = new Pixbuf.from_stream(ps);
+				diag.Debug("fallback to gdk");
 			}
+		}
+
+		if (ResizeMode == SixelResizeMode.ByLoad) {
+			if (width <= 0) width = -1;
+			pix = new Pixbuf.from_stream_at_scale(ps, width, -1, true);
+		} else {
+			pix = new Pixbuf.from_stream(ps);
 		}
 		LoadAfter();
 	}

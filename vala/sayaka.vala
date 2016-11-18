@@ -1735,6 +1735,11 @@ public class SayakaMain
 	{
 		var sx = new SixelConverter();
 
+		// 共通の設定
+		// 一番高速になる設定
+		sx.LoaderMode = SixelLoaderMode.Lib;
+		sx.ResizeMode = SixelResizeMode.ByLoad;
+
 		sx.diag.opt_debug = diagSixel.opt_debug;
 
 		if (color_mode == ColorFixedX68k) {
@@ -1742,7 +1747,6 @@ public class SayakaMain
 			// システム取得する?
 			sx.ColorMode = ReductorColorMode.FixedX68k;
 			sx.ReduceMode = ReductorReduceMode.Fast;
-			sx.ResizeMode = SixelResizeMode.ByLibJpeg;
 		} else {
 			if (color_mode <= 2) {
 				sx.ColorMode = ReductorColorMode.Mono;
@@ -1758,7 +1762,6 @@ public class SayakaMain
 				sx.ColorMode = ReductorColorMode.Fixed256;
 			}
 			sx.ReduceMode = ReductorReduceMode.HighQuality;
-			sx.ResizeMode = SixelResizeMode.ByLoad;
 		}
 		if (opt_ormode) {
 			sx.OutputMode = SixelOutputMode.Or;
