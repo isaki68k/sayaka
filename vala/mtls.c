@@ -152,7 +152,7 @@ mtls_init(mtlsctx_t* ctx)
 	r = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func,
 			&ctx->entropy, "a", 1);
 	if (r != 0) {
-		ERROR("mbedtls_entropy_init failed: %s\n", mtls_errmsg(r));
+		ERROR("mbedtls_ctr_drbg_seed failed: %s\n", mtls_errmsg(r));
 		goto errexit;
 	}
 
