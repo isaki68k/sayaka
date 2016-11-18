@@ -706,14 +706,18 @@ public class SayakaMain
 			return true;
 		}
 
-		var parser = new ULib.JsonParser();
+		ULib.Json obj;
 		try {
-			var obj = parser.Parse(line);
-			showstatus_callback(obj);
+			var parser = new ULib.JsonParser();
+			obj = parser.Parse(line);
 		} catch (Error e) {
-			stdout.printf("showstatus_callback_line: %s\n", e.message);
+			stdout.printf("showstatus_callback_line: Json Parser failed: %s\n",
+				e.message);
+			stdout.printf("showstatus_callback_line: "
+				+ "There may be something wrong with twitter.\n");
 			return false;
 		}
+		showstatus_callback(obj);
 		return true;
 	}
 
