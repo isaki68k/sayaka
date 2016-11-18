@@ -1026,93 +1026,64 @@ public class SayakaMain
 			: "";
 	}
 
-	public void print_(string msg)
+	// インデントを付けて文字列を表示する
+	public void print_(string text)
 	{
-		string rv;
-		rv = make_indent(msg);
+		StringBuilder sb;
 
-		// 出力文字コードの変換
-		if (iconv_tocode != "") {
-			var sb = new StringBuilder();
-			unichar c;
-			// ここで文字を置換
-			for (var i = 0; rv.get_next_char(ref i, out c); ) {
-				// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
-				if (c == 0xff5e) {
-					sb.append_unichar(0x301c);
-					continue;
-				}
-
-				// 全角ハイフンマイナス(U+FF0D) -> マイナス記号(U+2212)
-				if (c == 0xff0d) {
-					sb.append_unichar(0x2212);
-					continue;
-				}
-
-				// ビュレット(U+2022) -> 中黒(U+30FB)
-				if (c == 0x2022) {
-					sb.append_unichar(0x30fb);
-					continue;
-				}
-
-				if (0xff61 <= c && c < 0xffa0 && iconv_tocode == "iso-2022-jp"){
-					// XXX JIS というか NetBSD/x68k なら半角カナは表示できる
-					sb.append(@"$(ESC)(I");
-					sb.append_unichar(c - 0xff60 + 0x20);
-					sb.append(@"$(ESC)(B");
-				} else {
-					sb.append_unichar(c);
-				}
-			}
-			rv = sb.str;
-
-			try {
-				string rv2;
-				rv2 = convert_with_fallback(rv, -1, iconv_tocode, "utf-8",
-					null);
-				rv = rv2;
-			} catch {
-				// nop
-			}
-		}
-
-		stdout.printf("%s", rv);
-	}
-
-	// インデントをつける
-	public string make_indent(string text)
-	{
-		// 桁数が分からない場合は何もしない
-		if (screen_cols == 0) {
-			return text;
-		}
-
-		// インデント階層
-		var left = indent_cols * (indent_depth + 1);
-		string indent = CSI + @"$(left)C";
-
-		// 文字列を分解。
+		// まず Unicode 文字単位でいろいろフィルターかける。
 		var textarray = new List<unichar>();
 		unichar uni;
 		for (var i = 0; text.get_next_char(ref i, out uni); ) {
+			// Private Use Area (外字) をコードポイント形式(?)にする
 			if ((  0xe000 <= uni && uni <=   0xf8ff)	// BMP
 			 || ( 0xf0000 <= uni && uni <=  0xffffd)	// 第15面
 			 || (0x100000 <= uni && uni <= 0x10fffd)) 	// 第16面
 			{
-				// Private Use Area (外字) をコードポイント形式(?)にする
-				var text2 = "<U+%X>".printf(uni);
-				for (var j = 0; text2.get_next_char(ref j, out uni); ) {
+				textarray_addstring(textarray, "<U+%X>".printf(uni));
+				continue;
+			}
+
+			// ここで EVS 文字を抜く。
+			// 絵文字セレクタらしいけど、mlterm + sayaka14 フォント
+			// だと U+FE0E とかの文字が前の文字に上書き出力されて
+			// ぐちゃぐちゃになってしまうので、mlterm が対応するまでは
+			// こっちでパッチ対応。
+			if (uni == 0xfe0e || uni == 0xfe0f) {
+				if (opt_evs) {
 					textarray.append(uni);
 				}
 				continue;
 			}
-			if (uni == 0xfe0e || uni == 0xfe0f) {
-				// ここで EVS 文字を抜く。
-				// 絵文字セレクタらしいけど、mlterm + sayaka14 フォント
-				// だと U+FE0E とかの文字が前の文字に上書き出力されて
-				// ぐちゃぐちゃになってしまうので、mlterm が対応するまでは
-				// こっちでパッチ対応。
-				if (opt_evs == false) {
+
+			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
+			if (iconv_tocode != "") {
+				// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
+				if (uni == 0xff5e) {
+					textarray.append(0x301c);
+					continue;
+				}
+
+				// 全角ハイフンマイナス(U+FF0D) -> マイナス記号(U+2212)
+				if (uni == 0xff0d) {
+					textarray.append(0x2212);
+					continue;
+				}
+
+				// ビュレット(U+2022) -> 中黒(U+30FB)
+				if (uni == 0x2022) {
+					textarray.append(0x30fb);
+					continue;
+				}
+			}
+
+			// NetBSD/x68k なら半角カナは表示できる。
+			// XXX 正確には JIS という訳ではないのだがとりあえず
+			if (iconv_tocode == "iso-2022-jp"){
+				if (0xff61 <= uni && uni < 0xffa0) {
+					textarray_addstring(textarray, @"$(ESC)(I");
+					textarray.append(uni - 0xff60 + 0x20);
+					textarray_addstring(textarray, @"$(ESC)(B");
 					continue;
 				}
 			}
@@ -1120,48 +1091,143 @@ public class SayakaMain
 			textarray.append(uni);
 		}
 
-		// 1文字ずつ文字幅を数えながら出力用に整形していく
-		bool inescape = false;
-		StringBuilder newtext = new StringBuilder();
-		newtext.append(indent);
-		var x = left;
-		for (var i = 0; i < textarray.length(); i++) {
-			uni = textarray.nth_data(i);
-			if (inescape) {
-				newtext.append_unichar(uni);
-				if (uni == 'm') {
-					inescape = false;
-				}
-			} else {
-				if (uni == ESC) {
-					newtext.append_unichar(uni);
-					inescape = true;
-				} else if (uni == '\n') {
-					newtext.append_unichar(uni);
-					newtext.append(indent);
-					x = left;
-				} else if (uni.iswide_cjk()
-				        || (0x1f000 <= uni && uni <= 0x1ffff))	// 絵文字
-				{
-					if (x > screen_cols - 2) {
-						newtext.append("\n");
-						newtext.append(indent);
+		// 文字コードを変換する場合は、
+		// ここで一度変換してみて、それを Unicode に戻す。
+		// この後の改行処理で、Unicode では半角幅だが変換すると全角ゲタ(〓)
+		// になるような文字の文字幅が合わなくなるのを避けるため。
+		if (iconv_tocode != "") {
+			// textarray(リスト)を string に
+			sb = new StringBuilder();
+			for (var i = 0; i < textarray.length(); i++) {
+				sb.append_unichar(textarray.nth_data(i));
+			}
+
+			// 変換してみる(変換できない文字をフォールバックさせる)
+			string converted_text = null;
+			try {
+				converted_text = convert_with_fallback(sb.str, -1,
+					iconv_tocode, "utf-8", null);
+			} catch {
+				converted_text = null;
+			}
+			sb = null;
+
+			// UTF-8 に戻す
+			string utf_text = null;
+			try {
+				// フォールバック指定しなくていいよな?
+				utf_text = convert(converted_text, -1,
+					"utf-8", iconv_tocode);
+			} catch {
+				utf_text = null;
+			}
+
+			// それを何事もなかったように textarray 形式に戻す
+			textarray = new List<unichar>();
+			for (var i = 0; utf_text.get_next_char(ref i, out uni); ) {
+				textarray.append(uni);
+			}
+		}
+
+		// ここからインデント
+		sb = new StringBuilder();
+
+		// インデント階層
+		var left = indent_cols * (indent_depth + 1);
+		string indent = CSI + @"$(left)C";
+		sb.append(indent);
+
+		if (screen_cols == 0) {
+			// 桁数が分からない場合は何もしない
+			for (var i = 0; i < textarray.length(); i++) {
+				sb.append_unichar(textarray.nth_data(i));
+			}
+		} else {
+			// 1文字ずつ文字幅を数えながら出力用に整形していく
+			int inescape = 0;
+			var x = left;
+			for (var i = 0; i < textarray.length(); i++) {
+				uni = textarray.nth_data(i);
+				if (inescape > 0) {
+					// 1: ESC直後
+					// 2: ESC [
+					// 3: ESC (
+					sb.append_unichar(uni);
+					switch (inescape) {
+					 case 1:
+						// ESC 直後の文字で二手に分かれる
+						if (uni == '[') {
+							inescape = 2;
+						} else {
+							inescape = 3;	// 手抜き
+						}
+						break;
+					 case 2:
+						// ESC [ 以降 'm' まで
+						if (uni == 'm') {
+							inescape = 0;
+						}
+						break;
+					 case 3:
+						// ESC ( の次の1文字だけ
+						inescape = 0;
+						break;
+					}
+				} else {
+					if (uni == ESC) {
+						sb.append_unichar(uni);
+						inescape = 1;
+					} else if (uni == '\n') {
+						sb.append_unichar(uni);
+						sb.append(indent);
+						x = left;
+					} else if (uni.iswide_cjk()
+					        || (0x1f000 <= uni && uni <= 0x1ffff))	// 絵文字
+					{
+						if (x > screen_cols - 2) {
+							sb.append("\n");
+							sb.append(indent);
+							x = left;
+						}
+						sb.append_unichar(uni);
+						x += 2;
+					} else {
+						sb.append_unichar(uni);
+						x++;
+					}
+					if (x > screen_cols - 1) {
+						sb.append("\n");
+						sb.append(indent);
 						x = left;
 					}
-					newtext.append_unichar(uni);
-					x += 2;
-				} else {
-					newtext.append_unichar(uni);
-					x++;
-				}
-				if (x > screen_cols - 1) {
-					newtext.append("\n");
-					newtext.append(indent);
-					x = left;
 				}
 			}
 		}
-		return newtext.str;
+		var outtext = sb.str;
+
+		// 出力文字コードの変換
+		if (iconv_tocode != "") {
+			try {
+				string outtext2;
+				outtext2 = convert(outtext, -1, iconv_tocode, "utf-8");
+				outtext = outtext2;
+			} catch {
+				// nop
+			}
+		}
+
+		stdout.puts(outtext);
+	}
+
+	// textarray に文字列 str を追加する。
+	// print_() の下請け関数。
+	private void textarray_addstring(List<unichar> textarray, string str)
+	{
+		unichar uni;
+
+		for (var i = 0; str.get_next_char(ref i, out uni); ) {
+			textarray.append(uni);
+		}
 	}
 
 	// 色定数
