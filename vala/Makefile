@@ -38,6 +38,7 @@ SRCS_common=	\
 	imagereductor.native.c \
 	mtls.c \
 	ParsedUri.vala \
+	PeekableInputStream.vala \
 	sixel.native.c \
 	SixelConverter.vala \
 	StringUtil.vala \
