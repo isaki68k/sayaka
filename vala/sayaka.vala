@@ -1789,6 +1789,8 @@ public class SayakaMain
 		// 一番高速になる設定
 		sx.LoaderMode = SixelLoaderMode.Lib;
 		sx.ResizeMode = SixelResizeMode.ByLoad;
+		// 縮小するので X68k でも画質 High でいける
+		sx.ReduceMode = ReductorReduceMode.HighQuality;
 		// 長辺指定変形。
 		// height にも resize_width を渡すことで長辺を resize_width に制限できる。
 		// この関数の呼び出し意図がそれを想定している。
@@ -1803,7 +1805,6 @@ public class SayakaMain
 			// とりあえず固定 16 色
 			// システム取得する?
 			sx.ColorMode = ReductorColorMode.FixedX68k;
-			sx.ReduceMode = ReductorReduceMode.Fast;
 		} else {
 			if (color_mode <= 2) {
 				sx.ColorMode = ReductorColorMode.Mono;
@@ -1818,7 +1819,6 @@ public class SayakaMain
 			} else {
 				sx.ColorMode = ReductorColorMode.Fixed256;
 			}
-			sx.ReduceMode = ReductorReduceMode.HighQuality;
 		}
 		if (opt_ormode) {
 			sx.OutputMode = SixelOutputMode.Or;
