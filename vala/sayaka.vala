@@ -955,7 +955,8 @@ public class SayakaMain
 		image_max_rows = 0;
 		for (var i = 0; i < mediainfo.length; i++) {
 			var m = mediainfo.index(i);
-			stdout.printf(@"$(CSI)$(indent_cols)C");
+			var indent = (indent_depth + 1) * indent_cols;
+			stdout.printf(@"$(CSI)$(indent)C");
 			show_photo(m.target_url, m.width, i);
 			stdout.printf("\r");
 		}
