@@ -488,7 +488,6 @@ public class SixelV
 		sx.GrayCount = opt_graylevel;
 		sx.FinderMode = opt_findermode;
 		sx.AddNoiseLevel = opt_addnoise;
-gDiag.Debug(@"$(opt_addnoise)");
 		sx.ResizeWidth = opt_width;
 		sx.ResizeHeight = opt_height;
 		sx.ResizeAxis = opt_resizeaxis;
