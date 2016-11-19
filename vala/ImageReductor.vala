@@ -125,7 +125,7 @@ extern void ImageReductor_FreeImage(ImageReductor_Image* img);
 
 extern ReductorImageCode ImageReductor_LoadJpeg(
 	ImageReductor_Image* img,
-	int requestWidth, int requestHeight);
+	int requestWidth, int requestHeight, ResizeAxisMode requstAxis);
 
 public class ImageReductor
 {
@@ -218,9 +218,9 @@ public class ImageReductor
 		ImageReductor_FreeImage(img);
 	}
 
-	public static ReductorImageCode LoadJpeg(ImageReductor_Image* img, int requestWidth, int requestHeight)
+	public static ReductorImageCode LoadJpeg(ImageReductor_Image* img, int requestWidth, int requestHeight, ResizeAxisMode requestAxis)
 	{
-		return ImageReductor_LoadJpeg(img, requestWidth, requestHeight);
+		return ImageReductor_LoadJpeg(img, requestWidth, requestHeight, requestAxis);
 	}
 
 	public static uint8 saturate_mul_f(uint8 a, float b)

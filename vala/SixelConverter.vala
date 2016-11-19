@@ -68,6 +68,38 @@ public enum SixelResizeMode
 	ByImageReductor,
 }
 
+// リサイズ軸
+// リサイズでどの軸を使うかの設定
+public enum ResizeAxisMode
+{
+	// 幅が ResizeWidth になり、
+	// 高さが ResizeHeight になるようにリサイズします。
+	// ResizeWidth == 0 のときは Height と同じ動作をします。
+	// ResizeHeight == 0 のときは Width と同じ動作をします。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大です。
+	Both,
+
+	// 幅が ResizeWidth になるように縦横比を保持してリサイズします。
+	// ResizeWidth == 0 のときは原寸大です。
+	Width,
+
+	// 高さが ResizeHeight になるように縦横比を保持してリサイズします。
+	// ResizeHeight == 0 のときは原寸大です。
+	Height,
+
+	// 長辺優先リサイズ
+	// 原寸 Width >= Height のときは Width と同じ動作をします。
+	// 原寸 Width < Height のときは Height と同じ動作をします。
+	// 例:
+	// 長辺を特定のサイズにしたい場合は、ResizeWidth と ResizeHeight に同じ値を設定します。
+	Long,
+
+	// 短辺優先リサイズ
+	// 原寸 Width <= Height のときは Width と同じ動作をします。
+	// 原寸 Width > Height のときは Height と同じ動作をします。
+	Short,
+}
+
 public class SixelConverter
 {
 	public Diag diag = new Diag("SixelConverter");
@@ -115,9 +147,18 @@ public class SixelConverter
 	// ベタ塗り画像で少ない色数へ減色するとき、ノイズを付加すると画質改善できる
 	public int AddNoiseLevel = 0;
 
+	// リサイズ情報
+	// リサイズで希望する幅と高さです。
+	// 0 を指定すると、その情報は使用されません。
+	public int ResizeWidth;
+	public int ResizeHeight;
+
+	// リサイズ処理で使用する軸
+	public ResizeAxisMode ResizeAxis = ResizeAxisMode.Both;
+
 	//////////////// 画像の読み込み
 
-	public void Load(string filename, int width = 0) throws Error
+	public void Load(string filename) throws Error
 	{
 		diag.Debug(@"filename=$(filename)");
 		diag.Debug(@"LoaderMode=$(LoaderMode)");
@@ -126,7 +167,7 @@ public class SixelConverter
 		if (LoaderMode == SixelLoaderMode.Lib) {
 			var f = File.new_for_path(filename);
 			var ps = new PeekableInputStream(f.read());
-			var isLoaded = LoadJpeg(ps, width);
+			var isLoaded = LoadJpeg(ps);
 			ps.close();
 			if (isLoaded) {
 				LoadAfter();
@@ -137,15 +178,17 @@ public class SixelConverter
 		}
 
 		if (ResizeMode == SixelResizeMode.ByLoad) {
-			if (width <= 0) width = -1;
-			pix = new Pixbuf.from_file_at_size(filename, width, -1);
+			int width = -1;
+			int height = -1;
+			CalcResizeGdkLoad(ref width, ref height);
+			pix = new Pixbuf.from_file_at_size(filename, width, height);
 		} else {
 			pix = new Pixbuf.from_file(filename);
 		}
 		LoadAfter();
 	}
 
-	public void LoadFromStream(InputStream stream, int width = 0) throws Error
+	public void LoadFromStream(InputStream stream) throws Error
 	{
 		var ps = new PeekableInputStream(stream);
 
@@ -153,7 +196,7 @@ public class SixelConverter
 		diag.Debug(@"ResizeMode=$(ResizeMode)");
 
 		if (LoaderMode == SixelLoaderMode.Lib) {
-			if (LoadJpeg(ps, width) == true) {
+			if (LoadJpeg(ps) == true) {
 				LoadAfter();
 				return;
 			} else {
@@ -162,15 +205,18 @@ public class SixelConverter
 		}
 
 		if (ResizeMode == SixelResizeMode.ByLoad) {
-			if (width <= 0) width = -1;
-			pix = new Pixbuf.from_stream_at_scale(ps, width, -1, true);
+			int width = -1;
+			int height = -1;
+			CalcResizeGdkLoad(ref width, ref height);
+			pix = new Pixbuf.from_stream_at_scale(ps, width, height, true);
 		} else {
 			pix = new Pixbuf.from_stream(ps);
 		}
 		LoadAfter();
 	}
 
-	private bool LoadJpeg(PeekableInputStream ps, int width = 0)
+
+	private bool LoadJpeg(PeekableInputStream ps)
 	{
 		try {
 			uint8[] magic = new uint8[2];
@@ -183,7 +229,7 @@ public class SixelConverter
 					img = ImageReductor.AllocImage();
 					img.ReadCallback = img_readcallback;
 					img.UserObject = ps;
-					var r = ImageReductor.LoadJpeg(img, width, 0);
+					var r = ImageReductor.LoadJpeg(img, ResizeWidth, ResizeHeight, ResizeAxis);
 					if (r == ReductorImageCode.RIC_OK) {
 						diag.Debug(@"img.Width=$(img.Width) img.Height=$(img.Height) img.RowStride=$(img.RowStride)");
 						pix = new Pixbuf.with_unowned_data(
@@ -236,43 +282,123 @@ public class SixelConverter
 		}
 	}
 
+	// ----- リサイズ計算
+
+	// Gdk Load のとき、scale に渡す幅と高さを計算する
+	private void CalcResizeGdkLoad(ref int width, ref int height)
+	{
+		// gdk では -1 が原寸基準
+		width = -1;
+		height = -1;
+		switch (ResizeAxis) {
+		 case ResizeAxisMode.Both:
+			if (ResizeWidth > 0) {
+				width = ResizeWidth;
+			}
+			if (ResizeHeight > 0) {
+				height = ResizeHeight;
+			}
+			break;
+		 case ResizeAxisMode.Width:
+			width = ResizeWidth;
+			break;
+		 case ResizeAxisMode.Height:
+			height = ResizeHeight;
+			break;
+		 case ResizeAxisMode.Long:
+		 case ResizeAxisMode.Short:
+			// Long, Short は ByLoad では処理できない
+			break;
+		}
+
+		if (width <= 0) width = -1;
+		if (height <= 0) height = -1;
+	}
+
+	// Load 時以外の リサイズ計算
+	private void CalcResize(ref int width, ref int height)
+	{
+		var ra = ResizeAxis;
+
+		// 条件を丸めていく
+		switch (ra) {
+		 case ResizeAxisMode.Both:
+			if (ResizeWidth == 0) {
+				ra = ResizeAxisMode.Height;
+			} else if (ResizeHeight == 0) {
+				ra = ResizeAxisMode.Width;
+			}
+			break;
+
+		 case ResizeAxisMode.Long:
+			if (Width >= Height) {
+				ra = ResizeAxisMode.Width;
+			} else {
+				ra = ResizeAxisMode.Height;
+			}
+			break;
+
+		 case ResizeAxisMode.Short:
+			if (Width <= Height) {
+				ra = ResizeAxisMode.Width;
+			} else {
+				ra = ResizeAxisMode.Height;
+			}
+			break;
+		}
+
+		// 確定したので計算
+		switch (ra) {
+		 case ResizeAxisMode.Both:
+			width = ResizeWidth;
+			height = ResizeHeight;
+			break;
+		 case ResizeAxisMode.Width:
+			if (ResizeWidth > 0) {
+				width = ResizeWidth;
+			} else {
+				width = Width;
+			}
+			height = Height * width / Width;
+			break;
+		 case ResizeAxisMode.Height:
+			if (ResizeHeight > 0) {
+				height = ResizeHeight;
+			} else {
+				height = Height;
+			}
+			width = Width * height / Height;
+			break;
+		}
+	}
 
 	// ----- 前処理
 
 	// インデックスカラーに変換します。
-	// width: リサイズ後の幅。0 を指定すると、元画像の幅を使用します。
-	// height: リサイズ後の高さ。0 を指定すると、width からアスペクト比を維持した値が計算されます。
-	public void ConvertToIndexed(int width = 0, int height = 0)
+	public void ConvertToIndexed()
 	{
 		// リサイズ
 
-		diag.Debug(@"pre width=$(width) height=$(height)");
-		if (width <= 0) {
-			Width = pix.get_width();
-		} else {
-			Width = width;
-		}
-		if (height <= 0) {
-			Height = pix.get_height() * Width / pix.get_width();
-			if (Height <= 0) {
-				Height = 1;
-			}
-		} else {
-			Height = height;
-		}
-		diag.Debug(@"post Width=$(Width) Height=$(Height)");
+		int width = 0;
+		int height = 0;
+		CalcResize(ref width, ref height);
+
+		diag.Debug(@"resize to Width=$(width) Height=$(height)");
 
 		if (ResizeMode == SixelResizeMode.ByScaleSimple) {
-			if (Width == pix.get_width() || Height == pix.get_height()) {
+			if (width == Width || height == Height) {
 				diag.Debug("no need to resize");
 			} else {
 				// Gdk.Pixbuf で事前リサイズする。
 				// ImageReductor は減色とリサイズを同時実行できるので、
 				// 事前リサイズは品質の問題が出た時のため。
-				pix = pix.scale_simple(Width, Height, InterpType.BILINEAR);
+				pix = pix.scale_simple(width, height, InterpType.BILINEAR);
 				diag.Debug("scale_simple resized");
 			}
 		}
+
+		Width = width;
+		Height = height;
 
 		Indexed = new uint8[Width * Height];
 

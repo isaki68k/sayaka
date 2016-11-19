@@ -1039,12 +1039,57 @@ debug_handler(j_common_ptr cinfo)
 	DEBUG_PRINTF("%s\n", buffer);
 }
 
+// リサイズ計算
+void
+calcResize(int* req_w, int* req_h, int req_ax, int org_w, int org_h)
+{
+	// まず丸めていく
+	switch (req_ax) {
+	 case RAX_BOTH:
+		if ((*req_w) <= 0) {
+			req_ax = RAX_HEIGHT;
+		} else if ((*req_h) <= 0) {
+			req_ax = RAX_WIDTH;
+		}
+		break;
+	 case RAX_LONG:
+		if (org_w >= org_h) {
+			req_ax = RAX_WIDTH;
+		} else {
+			req_ax = RAX_HEIGHT;
+		}
+		break;
+	 case RAX_SHORT:
+		if (org_w <= org_h) {
+			req_ax = RAX_WIDTH;
+		} else {
+			req_ax = RAX_HEIGHT;
+		}
+		break;
+	}
+
+	switch (req_ax) {
+	 case RAX_WIDTH:
+		if ((*req_w) <= 0) {
+			(*req_w) = org_w;
+		}
+		(*req_h) = org_h * (*req_w) / org_w;
+		break;
+	 case RAX_HEIGHT:
+		if ((*req_h) <= 0) {
+			(*req_h) = org_h;
+		}
+		(*req_w) = org_w * (*req_h) / org_h;
+		break;
+	}
+}
+
 int
 ImageReductor_LoadJpeg(
 	ImageReductor_Image* img,
-	int requestWidth, int requestHeight)
+	int requestWidth, int requestHeight, int requestAxis)
 {
-DEBUG_PRINTF("LoadJpeg enter img=%p, w=%d, h=%d\n", img, requestWidth, requestHeight);
+DEBUG_PRINTF("LoadJpeg enter img=%p, w=%d, h=%d ax=%d\n", img, requestWidth, requestHeight, requestAxis);
 
 	if (img == NULL) return RIC_ARG_NULL;
 	if (img->ReadCallback == NULL) return RIC_ARG_NULL;
@@ -1080,17 +1125,17 @@ DEBUG_PRINTF("LoadJpeg readheader OK\n");
 	img->OriginalHeight = jinfo.image_height;
 
 	// スケールの計算
-	// libjpeg では 1/16 までサポート
-	// 1/1, 1/2, 1/4, 1/8 しかサポートしないとも書いてある
+	calcResize(&requestWidth, &requestHeight, requestAxis, img->OriginalWidth, img->OriginalHeight);
+
 	if (requestWidth <= 0) {
-		requestWidth = img->OriginalWidth;
+		requestWidth = 1;
 	}
 	if (requestHeight <= 0) {
-		requestHeight = img->OriginalHeight * requestWidth / img->OriginalWidth;
-		if (requestHeight <= 0) {
-			requestHeight = 1;
-		}
+		requestHeight = 1;
 	}
+
+	// libjpeg では 1/16 までサポート
+	// 1/1, 1/2, 1/4, 1/8 しかサポートしないとも書いてある
 	int scalew = img->OriginalWidth / requestWidth;
 	int scaleh = img->OriginalHeight / requestHeight;
 	int scale = scalew < scaleh ? scalew : scaleh;

@@ -1739,6 +1739,13 @@ public class SayakaMain
 		// 一番高速になる設定
 		sx.LoaderMode = SixelLoaderMode.Lib;
 		sx.ResizeMode = SixelResizeMode.ByLoad;
+		// 長辺指定変形。
+		// height にも resize_width を渡すことで長辺を resize_width に制限できる。
+		// この関数の呼び出し意図がそれを想定している。
+		// もともと幅しか指定できなかった経緯があり、本当は width/height をうまく分離すること。
+		sx.ResizeWidth = resize_width;
+		sx.ResizeHeight = resize_width;
+		sx.ResizeAxis = ResizeAxisMode.Long;
 
 		sx.diag.opt_debug = diagSixel.opt_debug;
 
@@ -1775,14 +1782,14 @@ public class SayakaMain
 		DataInputStream stream;
 		try {
 			stream = fg.GET();
-			sx.LoadFromStream(stream, resize_width);
+			sx.LoadFromStream(stream);
 		} catch (Error e) {
 			diagSixel.Warn(@"fetch_image failed: $(e.message)");
 			return null;
 		}
 
 		// インデックスカラー変換
-		sx.ConvertToIndexed(resize_width);
+		sx.ConvertToIndexed();
 
 		var file = FileStream.open(cache_filename, "w+");
 		sx.SixelToStream(file);

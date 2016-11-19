@@ -48,6 +48,7 @@ public class SixelV
 	public int opt_graylevel = 256;
 	public int opt_width = 0;
 	public int opt_height = 0;
+	public ResizeAxisMode opt_resizeaxis = ResizeAxisMode.Both;
 	public ReductorReduceMode opt_reduce = ReductorReduceMode.HighQuality;
 	public bool opt_x68k = false;
 	public bool opt_outputpalette = true;
@@ -174,6 +175,28 @@ public class SixelV
 					case "-h":
 					case "--height":
 						opt_height = opt.ValueInt();
+						break;
+
+					case "--axis":
+						switch (opt.ValueString()) {
+							case "both":
+								opt_resizeaxis = ResizeAxisMode.Both;
+								break;
+							case "w":
+							case "width":
+								opt_resizeaxis = ResizeAxisMode.Width;
+								break;
+							case "h":
+							case "height":
+								opt_resizeaxis = ResizeAxisMode.Height;
+								break;
+							case "long":
+								opt_resizeaxis = ResizeAxisMode.Long;
+								break;
+							case "short":
+								opt_resizeaxis = ResizeAxisMode.Short;
+								break;
+						}
 						break;
 
 					case "-d":
@@ -465,6 +488,10 @@ public class SixelV
 		sx.GrayCount = opt_graylevel;
 		sx.FinderMode = opt_findermode;
 		sx.AddNoiseLevel = opt_addnoise;
+gDiag.Debug(@"$(opt_addnoise)");
+		sx.ResizeWidth = opt_width;
+		sx.ResizeHeight = opt_height;
+		sx.ResizeAxis = opt_resizeaxis;
 
 		ImageReductor.HighQualityDiffuseMethod = opt_highqualitydiffusemethod;
 
@@ -484,7 +511,7 @@ public class SixelV
 		if (filename == "std://in") {
 			try {
 				gDiag.Debug(@"Loading stdin");
-				sx.LoadFromStream(new InputStreamFromFileStream(stdin), opt_width);
+				sx.LoadFromStream(new InputStreamFromFileStream(stdin));
 			} catch {
 				stderr.printf("File load error at %s\n", filename);
 				if (opt_ignoreerror) {
@@ -499,7 +526,7 @@ public class SixelV
 				file.Family = opt_address_family;
 				gDiag.Debug(@"Downloading $(filename)");
 				var stream = file.GET();
-				sx.LoadFromStream(stream, opt_width);
+				sx.LoadFromStream(stream);
 			} catch (Error e) {
 				stderr.printf("File error: %s\n", e.message);
 				if (opt_ignoreerror) {
@@ -510,7 +537,7 @@ public class SixelV
 		} else {
 			try {
 				gDiag.Debug(@"Loading $(filename)");
-				sx.Load(filename, opt_width);
+				sx.Load(filename);
 			} catch {
 				stderr.printf("File load error at %s\n", filename);
 				if (opt_ignoreerror) {
@@ -526,7 +553,7 @@ public class SixelV
 		}
 
 		gDiag.Debug(@"Converting w=$(opt_width), h=$(opt_height)");
-		sx.ConvertToIndexed(opt_width, opt_height);
+		sx.ConvertToIndexed();
 
 		if (opt_profile) {
 			sw.StopLog_ms("Convert image");

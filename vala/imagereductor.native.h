@@ -67,6 +67,36 @@ typedef enum
 	RDM_RGB,		// RGB color sepalated
 } ReductorDiffuseMethod;
 
+typedef enum
+{
+	// 幅が ResizeWidth になり、
+	// 高さが ResizeHeight になるようにリサイズします。
+	// ResizeWidth == 0 のときは Height と同じ動作をします。
+	// ResizeHeight == 0 のときは Width と同じ動作をします。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大です。
+	RAX_BOTH,
+
+	// 幅が ResizeWidth になるように縦横比を保持してリサイズします。
+	// ResizeWidth == 0 のときは原寸大です。
+	RAX_WIDTH,
+
+	// 高さが ResizeHeight になるように縦横比を保持してリサイズします。
+	// ResizeHeight == 0 のときは原寸大です。
+	RAX_HEIGHT,
+
+	// 長辺優先リサイズ
+	// 原寸 Width >= Height のときは Width と同じ動作をします。
+	// 原寸 Width < Height のときは Height と同じ動作をします。
+	// 例:
+	// 長辺を特定のサイズにしたい場合は、ResizeWidth と ResizeHeight に同じ値を設定します。
+	RAX_LONG,
+
+	// 短辺優先リサイズ
+	// 原寸 Width <= Height のときは Width と同じ動作をします。
+	// 原寸 Width > Height のときは Height と同じ動作をします。
+	RAX_SHORT,
+} ResizeAxisMode;
+
 //-------- 色の型
 
 typedef struct ColorRGBint_t
