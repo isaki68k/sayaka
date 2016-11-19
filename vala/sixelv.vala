@@ -466,9 +466,26 @@ public class SixelV
 		Process.exit(1);
 	}
 
+	// プロファイルID
+	private enum profile_id {
+		Create,
+		Load,
+		Convert,
+		Output;
+
+		public static unowned EnumValue[] all()
+		{
+			var cls = (EnumClass)(typeof(profile_id).class_ref());
+			return cls.values;
+		}
+	}
+
 	public void Convert(string filename)
 	{
 		Stopwatch sw = null;
+
+		// プロファイル時間
+		int64[] prof = new int64[profile_id.all().length];
 
 		if (opt_profile) {
 			sw = new Stopwatch();
@@ -501,7 +518,8 @@ public class SixelV
 		}
 
 		if (opt_profile) {
-			sw.StopLog_ms("Create objects");
+			sw.Stop();
+			prof[profile_id.Create] = sw.Elapsed;
 			sw.Restart();
 		}
 
@@ -547,7 +565,8 @@ public class SixelV
 		}
 
 		if (opt_profile) {
-			sw.StopLog_ms("Get and Extract image");
+			sw.Stop();
+			prof[profile_id.Load] = sw.Elapsed;
 			sw.Restart();
 		}
 
@@ -555,7 +574,8 @@ public class SixelV
 		sx.ConvertToIndexed();
 
 		if (opt_profile) {
-			sw.StopLog_ms("Convert image");
+			sw.Stop();
+			prof[profile_id.Convert] = sw.Elapsed;
 			sw.Restart();
 		}
 
@@ -658,10 +678,19 @@ public class SixelV
 		}
 
 		if (opt_profile) {
-			sw.StopLog_ms("Output SIXEL");
+			sw.Stop();
+			prof[profile_id.Output] = sw.Elapsed;
 			sw.Restart();
 		}
 
+		if (opt_profile) {
+			int64 total = 0;
+			foreach (var id in profile_id.all()) {
+				total += prof[id.value];
+				stderr.printf("%s %.3fms\n", id.value_nick, (double)prof[id.value] / 1000d);
+			}
+			stderr.printf("%s %.3fms\n", "Total", (double)total / 1000d);
+		}
 	}
 
 	public static void signal_handler(int signo)
