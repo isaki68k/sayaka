@@ -1045,7 +1045,7 @@ public class SayakaMain
 			 || ( 0xf0000 <= uni && uni <=  0xffffd)	// 第15面
 			 || (0x100000 <= uni && uni <= 0x10fffd)) 	// 第16面
 			{
-				textarray_addstring(textarray, "<U+%X>".printf(uni));
+				textarray_addstring(ref textarray, "<U+%X>".printf(uni));
 				continue;
 			}
 
@@ -1086,9 +1086,9 @@ public class SayakaMain
 			// XXX 正確には JIS という訳ではないのだがとりあえず
 			if (iconv_tocode == "iso-2022-jp"){
 				if (0xff61 <= uni && uni < 0xffa0) {
-					textarray_addstring(textarray, @"$(ESC)(I");
+					textarray_addstring(ref textarray, @"$(ESC)(I");
 					textarray.append(uni - 0xff60 + 0x20);
-					textarray_addstring(textarray, @"$(ESC)(B");
+					textarray_addstring(ref textarray, @"$(ESC)(B");
 					continue;
 				}
 			}
@@ -1226,7 +1226,7 @@ public class SayakaMain
 
 	// textarray に文字列 str を追加する。
 	// print_() の下請け関数。
-	private void textarray_addstring(List<unichar> textarray, string str)
+	private void textarray_addstring(ref List<unichar> textarray, string str)
 	{
 		unichar uni;
 
