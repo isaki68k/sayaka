@@ -1086,9 +1086,17 @@ public class SayakaMain
 			// XXX 正確には JIS という訳ではないのだがとりあえず
 			if (iconv_tocode == "iso-2022-jp"){
 				if (0xff61 <= uni && uni < 0xffa0) {
-					textarray_addstring(ref textarray, @"$(ESC)(I");
-					textarray.append(uni - 0xff60 + 0x20);
-					textarray_addstring(ref textarray, @"$(ESC)(B");
+					// 半角カナはそのまま、あるいは JIS に変換、SI/SO を
+					// 使うなどしても、この後の JIS-> UTF-8 変換を安全に
+					// 通せないので、ここで半角カナを文字コードではない
+					// 自前エスケープシーケンスに置き換えておいて、
+					// 変換後にもう一度デコードして復元することにする。
+					// ESC [ .. n は端末問い合わせの CSI シーケンスなので
+					// 入力には来ないはずだし、仮にそのまま出力されたと
+					// してもあまりまずいことにはならないんじゃないかな。
+					// 半角カナを GL に置いた時の10進数2桁でエンコード。
+					var str = "%c[%dn".printf(ESC, (int)uni - 0xff60 + 0x20);
+					textarray_addstring(ref textarray, str);
 					continue;
 				}
 			}
@@ -1127,10 +1135,52 @@ public class SayakaMain
 				utf_text = null;
 			}
 
-			// それを何事もなかったように textarray 形式に戻す
+			// それを何事もなかったように textarray 形式に戻す。
+			// ただし ESC [ %d n があれば NetBSD/x68k コンソールの
+			// 半角カナ ESC ( I %c ESC ( B に置換する…。なんだかなあ。
 			textarray = new List<unichar>();
+			var inescape = 0;
+			StringBuilder argstr = null;
 			for (var i = 0; utf_text.get_next_char(ref i, out uni); ) {
-				textarray.append(uni);
+				if (inescape == 0) {
+					if (uni == ESC) {
+						// ESC は出力せず次へ
+						inescape = 1;
+					} else {
+						// 通常文字
+						textarray.append(uni);
+					}
+				} else if (inescape == 1) {
+					if (uni == '[') {
+						// ESC [ なら出力せず次へ
+						inescape = 2;
+						argstr = new StringBuilder();
+					} else {
+						// ESC だが [ でなければ通常文字に戻す
+						textarray.append(ESC);
+						textarray.append(uni);
+						inescape = 0;
+					}
+				} else {	/* inescape == 2 */
+					if ('0' <= uni && uni <= '9') {
+						argstr.append_unichar(uni);
+					} else if (uni == 'n') {
+						// ESC [ \d+ n なら半角カナを出力
+						var ch = int.parse(argstr.str);
+						var str = "%c(I%c%c(B".printf(ESC, ch, ESC);
+						textarray_addstring(ref textarray, str);
+						inescape = 0;
+					} else {
+						// 'n' 以外ならそのまま出力しておく。
+						// ';' だとここでエスケープ切れるけど、エスケープを
+						// 処理してるわけではないので、問題ないはず。
+						textarray.append(ESC);
+						textarray.append('[');
+						textarray_addstring(ref textarray, argstr.str);
+						textarray.append(uni);
+						inescape = 0;
+					}
+				}
 			}
 		}
 
