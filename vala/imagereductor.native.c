@@ -535,99 +535,60 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 	// 螺旋状に一次元誤差分散させる。
 	// 当然画像処理的には正しくないが、視覚的にはそんなに遜色が無い。
 
-	ColorRGBint col = {0, 0, 0};
+	ColorRGBint col;
 	const int level = 256;
 
-	if (dstWidth == srcWidth && dstHeight == srcHeight) {
-		// 変形済み前提
-		int nch_adj = srcNch - 3;
-		uint8_t *srcRaster = src;
-		for (int y = 0; y < dstHeight; y++) {
-			uint8_t *srcPix = srcRaster;
-			for (int x = 0; x < dstWidth; x++) {
-				col.r += *srcPix++;
-				col.g += *srcPix++;
-				col.b += *srcPix++;
-				srcPix += nch_adj;
+	// 水平方向はスキップサンプリング
+	// 垂直方向はスキップサンプリング
 
-				ColorRGBuint8 c8 = {
-					Saturate_uint8(col.r),
-					Saturate_uint8(col.g),
-					Saturate_uint8(col.b),
-				};
+	StepRational sr_y = StepRationalCreate(0, 0, dstHeight);
+	StepRational sr_ystep = StepRationalCreate(0, srcHeight, dstHeight);
 
-				int colorCode = ColorFinder(c8);
+	StepRational sr_x = StepRationalCreate(0, 0, dstWidth);
+	StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
 
-				col.r = (col.r - Palette[colorCode].r) * level / 256;
-				col.g = (col.g - Palette[colorCode].g) * level / 256;
-				col.b = (col.b - Palette[colorCode].b) * level / 256;
+	for (int y = 0; y < dstHeight; y++) {
+		uint8_t *srcRaster = &src[sr_y.I * srcStride];
+		StepRationalAdd(&sr_y, &sr_ystep);
 
-				// ランダムノイズを加える
-				if (AddNoiseLevel > 0) {
-					col.r += rnd(AddNoiseLevel);
-					col.g += rnd(AddNoiseLevel);
-					col.b += rnd(AddNoiseLevel);
-				}
+		sr_x.I = sr_x.N = 0;
 
-				*dst++ = colorCode;
+		ColorRGBint ce = {0,0,0};
+
+		for (int x = 0; x < dstWidth; x++) {
+
+			int sx0 = sr_x.I;
+			StepRationalAdd(&sr_x, &sr_xstep);
+
+			uint8_t *srcPix = &srcRaster[sx0 * srcNch];
+			col.r = srcPix[0];
+			col.g = srcPix[1];
+			col.b = srcPix[2];
+
+			col.r += ce.r;
+			col.g += ce.g;
+			col.b += ce.b;
+
+			ColorRGBuint8 c8 = {
+				Saturate_uint8(col.r),
+				Saturate_uint8(col.g),
+				Saturate_uint8(col.b),
+			};
+
+			int colorCode = ColorFinder(c8);
+
+			ce.r = (col.r - Palette[colorCode].r) * level / 256;
+			ce.g = (col.g - Palette[colorCode].g) * level / 256;
+			ce.b = (col.b - Palette[colorCode].b) * level / 256;
+
+			// ランダムノイズを加える
+			if (AddNoiseLevel > 0) {
+				ce.r += rnd(AddNoiseLevel);
+				ce.g += rnd(AddNoiseLevel);
+				ce.b += rnd(AddNoiseLevel);
 			}
-			srcRaster += srcStride;
-		}
 
-	} else {
-
-		// 水平方向はスキップサンプリング
-		// 垂直方向はスキップサンプリング
-
-		StepRational sr_y = StepRationalCreate(0, 0, dstHeight);
-		StepRational sr_ystep = StepRationalCreate(0, srcHeight, dstHeight);
-
-		StepRational sr_x = StepRationalCreate(0, 0, dstWidth);
-		StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
-
-		for (int y = 0; y < dstHeight; y++) {
-			uint8_t *srcRaster = &src[sr_y.I * srcStride];
-			StepRationalAdd(&sr_y, &sr_ystep);
-
-			sr_x.I = sr_x.N = 0;
-
-			ColorRGBint ce = {0,0,0};
-
-			for (int x = 0; x < dstWidth; x++) {
-
-				int sx0 = sr_x.I;
-				StepRationalAdd(&sr_x, &sr_xstep);
-
-				uint8_t *srcPix = &srcRaster[sx0 * srcNch];
-				col.r = srcPix[0];
-				col.g = srcPix[1];
-				col.b = srcPix[2];
-
-				col.r += ce.r;
-				col.g += ce.g;
-				col.b += ce.b;
-
-				ColorRGBuint8 c8 = {
-					Saturate_uint8(col.r),
-					Saturate_uint8(col.g),
-					Saturate_uint8(col.b),
-				};
-
-				int colorCode = ColorFinder(c8);
-
-				ce.r = (col.r - Palette[colorCode].r) * level / 256;
-				ce.g = (col.g - Palette[colorCode].g) * level / 256;
-				ce.b = (col.b - Palette[colorCode].b) * level / 256;
-
-				// ランダムノイズを加える
-				if (AddNoiseLevel > 0) {
-					ce.r += rnd(AddNoiseLevel);
-					ce.g += rnd(AddNoiseLevel);
-					ce.b += rnd(AddNoiseLevel);
-				}
-
-				*dst++ = colorCode;
-			}
+			*dst++ = colorCode;
 		}
 	}
 
