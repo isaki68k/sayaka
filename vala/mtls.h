@@ -37,10 +37,14 @@ typedef struct mtlsctx
 	mbedtls_ssl_context ssl;
 	mbedtls_ssl_config conf;
 	mbedtls_x509_crt cacert;
-	mbedtls_ctr_drbg_context ctr_drbg;
-	mbedtls_entropy_context entropy;
 } mtlsctx_t;
 
+typedef struct mtls_global_ctx
+{
+	int initialized;
+	mbedtls_ctr_drbg_context ctr_drbg;
+	mbedtls_entropy_context entropy;
+} mtls_global_ctx_t;
 
 mtlsctx_t* mtls_alloc();
 void mtls_free(mtlsctx_t* ctx);

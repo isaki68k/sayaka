@@ -66,6 +66,8 @@
 } while (0)
 #endif
 
+// global context
+mtls_global_ctx_t gctx;
 
 // private
 int mtls_internal_free(mtlsctx_t* ctx);
@@ -140,21 +142,25 @@ mtls_init(mtlsctx_t* ctx)
 
 	TRACE("start\n");
 
+	// グローバルコンテキストの初期化
+	if (gctx.initialized == 0) {
+		mbedtls_ctr_drbg_init(&gctx.ctr_drbg);
+		mbedtls_entropy_init(&gctx.entropy);
+		// init RNG
+		r = mbedtls_ctr_drbg_seed(&gctx.ctr_drbg, mbedtls_entropy_func,
+			&gctx.entropy, "a", 1);
+		if (r != 0) {
+			ERROR("mbedtls_ctr_drbg_seed failed: %s\n", mtls_errmsg(r));
+			goto errexit;
+		}
+		gctx.initialized = 1;
+	}
+
 	ctx->usessl = 0;
 	mbedtls_net_init(&ctx->net);
 	mbedtls_ssl_init(&ctx->ssl);
 	mbedtls_ssl_config_init(&ctx->conf);
 	mbedtls_x509_crt_init(&ctx->cacert);
-	mbedtls_ctr_drbg_init(&ctx->ctr_drbg);
-
-	// init RNG
-	mbedtls_entropy_init(&ctx->entropy);
-	r = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func,
-			&ctx->entropy, "a", 1);
-	if (r != 0) {
-		ERROR("mbedtls_ctr_drbg_seed failed: %s\n", mtls_errmsg(r));
-		goto errexit;
-	}
 
 	// init CA root
 	r = mbedtls_x509_crt_parse(&ctx->cacert,
@@ -177,7 +183,7 @@ mtls_init(mtlsctx_t* ctx)
 
 	mbedtls_ssl_conf_authmode(&ctx->conf, MBEDTLS_SSL_VERIFY_NONE);
 	mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->cacert, NULL);
-	mbedtls_ssl_conf_rng(&ctx->conf, mbedtls_ctr_drbg_random, &ctx->ctr_drbg);
+	mbedtls_ssl_conf_rng(&ctx->conf, mbedtls_ctr_drbg_random, &gctx.ctr_drbg);
 	mbedtls_ssl_conf_dbg(&ctx->conf, debug_callback, stderr);
 
 	r = mbedtls_ssl_setup(&ctx->ssl, &ctx->conf);
@@ -207,8 +213,6 @@ mtls_internal_free(mtlsctx_t* ctx)
 	mbedtls_x509_crt_free(&ctx->cacert);
 	mbedtls_ssl_free(&ctx->ssl);
 	mbedtls_ssl_config_free(&ctx->conf);
-	mbedtls_ctr_drbg_free(&ctx->ctr_drbg);
-	mbedtls_entropy_free(&ctx->entropy);
 	TRACE("internal_free OK\n");
 	return 0;
 }
