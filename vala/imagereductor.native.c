@@ -576,7 +576,7 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 
 	} else {
 
-		// 水平方向は Pow2 になるピクセルをサンプリングして平均
+		// 水平方向はスキップサンプリング
 		// 垂直方向はスキップサンプリング
 
 		StepRational sr_y = StepRationalCreate(0, 0, dstHeight);
@@ -585,11 +585,6 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 		StepRational sr_x = StepRationalCreate(0, 0, dstWidth);
 		StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
 
-		int sw = RoundDownPow2(sr_xstep.I);
-		if (sw == 0) sw = 1;
-		int meanShift = 31 - __builtin_clz(sw);
-
-		DEBUG_PRINTF("sw=%d meanShift=%d\n", sw, meanShift);
 		for (int y = 0; y < dstHeight; y++) {
 			uint8_t *srcRaster = &src[sr_y.I * srcStride];
 			StepRationalAdd(&sr_y, &sr_ystep);
@@ -603,19 +598,10 @@ DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n", dstWidth, dstHeight, srcWidth, srcHeig
 				int sx0 = sr_x.I;
 				StepRationalAdd(&sr_x, &sr_xstep);
 
-				col.r = col.g = col.b = 0;
-
 				uint8_t *srcPix = &srcRaster[sx0 * srcNch];
-				for (int sx = 0; sx < sw; sx++) {
-					col.r += srcPix[0];
-					col.g += srcPix[1];
-					col.b += srcPix[2];
-					srcPix += srcNch;
-				}
-
-				col.r >>= meanShift;
-				col.g >>= meanShift;
-				col.b >>= meanShift;
+				col.r = srcPix[0];
+				col.g = srcPix[1];
+				col.b = srcPix[2];
 
 				col.r += ce.r;
 				col.g += ce.g;
