@@ -460,6 +460,16 @@ public class SixelV
    --noerr={on|off}
      if turn on, ignore error at open.
 
+   --axis={ both | w | width | h | height | long | short }
+
+   --loader={ gdk | lib }
+
+   --colorfactor={factor}
+
+   --finder={ rgb | hsv | default }
+
+   --addnoise={noiselevel}
+
  debug
    --debug, --trace, --profile, --debug-sixel, --debug-net
 """);
