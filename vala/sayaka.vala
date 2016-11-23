@@ -219,6 +219,7 @@ public class SayakaMain
 			 case "--debug-sixel":
 				diagSixel.opt_debug = true;
 				diagSixel.opt_warn = true;
+				max_image_count = 1;
 				break;
 			 case "--eucjp":
 				iconv_tocode = "euc-jp";
