@@ -42,13 +42,11 @@ public class MediaInfo
 {
 	public string target_url;
 	public string display_url;
-	public int width;
 
-	public MediaInfo(string t, string d, int w = 0)
+	public MediaInfo(string t, string d)
 	{
 		target_url = t;
 		display_url = d;
-		width = w;
 	}
 }
 
@@ -957,7 +955,7 @@ public class SayakaMain
 			var m = mediainfo.index(i);
 			var indent = (indent_depth + 1) * indent_cols;
 			stdout.printf(@"$(CSI)$(indent)C");
-			show_photo(m.target_url, m.width, i);
+			show_photo(m.target_url, imagesize, i);
 			stdout.printf("\r");
 		}
 
@@ -1511,8 +1509,7 @@ public class SayakaMain
 				tags[start] = new TextTag(start, end, Color.Url, newurl);
 
 				// 外部画像サービスを解析
-				var minfo = format_image_url(expd_url, disp_url,
-					imagesize);
+				var minfo = format_image_url(expd_url, disp_url);
 				if (minfo != null) {
 					mediainfo.append_val(minfo);
 				}
@@ -1541,11 +1538,8 @@ public class SayakaMain
 				var disp_url = m.GetString("display_url");
 				var media_url = m.GetString("media_url");
 
-				// width といいつつ長辺の制限
-				int width = imagesize;
-
 				var target_url = @"$(media_url):small";
-				var minfo = new MediaInfo(target_url, disp_url, width);
+				var minfo = new MediaInfo(target_url, disp_url);
 				mediainfo.append_val(minfo);	
 			}
 		}

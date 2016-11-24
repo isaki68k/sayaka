@@ -189,12 +189,10 @@ namespace ULib
 	}
 
 	// 外部画像サービス URL を解析した結果を返す
-	public static MediaInfo? format_image_url(string expd_url, string disp_url,
-		int imagesize)
+	public static MediaInfo? format_image_url(string expd_url, string disp_url)
 	{
 		MatchInfo m;
 		string target;
-		int width = 0;
 
 		try {
 			if (new Regex("twitpic.com/(\\w+)")
@@ -218,12 +216,10 @@ namespace ULib
 					.match(expd_url, 0, out m)) {
 				target = "http://pic.shindanmaker.com/s/%s/%s.jpg"
 					.printf(m.fetch(1), m.fetch(2));
-				width = imagesize;
 
 			} else if (new Regex("\\.(jpg|jpeg|png|gif)$").
 					match(expd_url, 0, out m)) {
 				target = expd_url;
-				width = imagesize;
 
 			} else {
 				return null;
@@ -234,7 +230,7 @@ namespace ULib
 			return null;
 		}
 
-		return new MediaInfo(target, disp_url, width);
+		return new MediaInfo(target, disp_url);
 	}
 
 }
