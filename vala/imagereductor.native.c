@@ -990,16 +990,27 @@ debug_handler(j_common_ptr cinfo)
 void
 calcResize(int* req_w, int* req_h, int req_ax, int org_w, int org_h)
 {
+	int scaledown =
+		(req_ax == RAX_SCALEDOWNBOTH)
+	 || (req_ax == RAX_SCALEDOWNWIDTH)
+	 || (req_ax == RAX_SCALEDOWNHEIGHT)
+	 || (req_ax == RAX_SCALEDOWNLONG)
+	 || (req_ax == RAX_SCALEDOWNSHORT);
+
 	// まず丸めていく
 	switch (req_ax) {
 	 case RAX_BOTH:
+	 case RAX_SCALEDOWNBOTH:
 		if ((*req_w) <= 0) {
 			req_ax = RAX_HEIGHT;
 		} else if ((*req_h) <= 0) {
 			req_ax = RAX_WIDTH;
+		} else {
+			req_ax = RAX_BOTH;
 		}
 		break;
 	 case RAX_LONG:
+	 case RAX_SCALEDOWNLONG:
 		if (org_w >= org_h) {
 			req_ax = RAX_WIDTH;
 		} else {
@@ -1007,25 +1018,35 @@ calcResize(int* req_w, int* req_h, int req_ax, int org_w, int org_h)
 		}
 		break;
 	 case RAX_SHORT:
+	 case RAX_SCALEDOWNSHORT:
 		if (org_w <= org_h) {
 			req_ax = RAX_WIDTH;
 		} else {
 			req_ax = RAX_HEIGHT;
 		}
 		break;
+	 case RAX_SCALEDOWNWIDTH:
+		req_ax = RAX_WIDTH;
+		break;
+	 case RAX_SCALEDOWNHEIGHT:
+		req_ax = RAX_HEIGHT;
+		break;
+	}
+
+	if ((*req_w) <= 0) (*req_w) = org_w;
+	if ((*req_h) <= 0) (*req_h) = org_h;
+
+	// 縮小のみ指示
+	if (scaledown) {
+		if (org_w < (*req_w)) (*req_w) = org_w;
+		if (org_h < (*req_h)) (*req_h) = org_h;
 	}
 
 	switch (req_ax) {
 	 case RAX_WIDTH:
-		if ((*req_w) <= 0) {
-			(*req_w) = org_w;
-		}
 		(*req_h) = org_h * (*req_w) / org_w;
 		break;
 	 case RAX_HEIGHT:
-		if ((*req_h) <= 0) {
-			(*req_h) = org_h;
-		}
 		(*req_w) = org_w * (*req_h) / org_h;
 		break;
 	}

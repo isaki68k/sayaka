@@ -98,6 +98,40 @@ public enum ResizeAxisMode
 	// 原寸 Width <= Height のときは Width と同じ動作をします。
 	// 原寸 Width > Height のときは Height と同じ動作をします。
 	Short,
+
+	// 縮小のみの Both
+	// 幅が ResizeWidth より大きいときは ResizeWidth になり、
+	// 高さが ResizeHeight より大きいときは ResizeHeight になるように
+	// リサイズします。
+	// ResizeWidth == 0 のときは ScaleDownHeight と同じ動作をします。
+	// ResizeHeight == 0 のときは ScaleDownWidth と同じ動作をします。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大です。
+	ScaleDownBoth,
+
+	// 縮小のみの Width
+	// 幅が ResizeWidth より多きときは ResizeWidth になるように
+	// 縦横比を保持してリサイズします。
+	// ResizeWidth == 0 のときは原寸大です。
+	ScaleDownWidth,
+
+	// 縮小のみの Height
+	// 幅が ResizeHeight より多きときは ResizeHeight になるように
+	// 縦横比を保持してリサイズします。
+	// ResizeHeight == 0 のときは原寸大です。
+	ScaleDownHeight,
+
+	// 縮小のみの長辺優先リサイズ
+	// 原寸 Width >= Height のときは ScaleDownWidth と同じ動作をします。
+	// 原寸 Width < Height のときは ScaleDownHeight と同じ動作をします。
+	// 例:
+	// 長辺を特定のサイズ以下にしたい場合は、ResizeWidth と ResizeHeight に
+	// 同じ値を設定します。
+	ScaleDownLong,
+
+	// 縮小のみの短辺優先リサイズ
+	// 原寸 Width <= Height のときは ScaleDownWidth と同じ動作をします。
+	// 原寸 Width > Height のときは ScaleDownHeight と同じ動作をします。
+	ScaleDownShort,
 }
 
 public class SixelConverter
@@ -307,7 +341,12 @@ public class SixelConverter
 			break;
 		 case ResizeAxisMode.Long:
 		 case ResizeAxisMode.Short:
-			// Long, Short は ByLoad では処理できない
+		 case ResizeAxisMode.ScaleDownBoth:
+		 case ResizeAxisMode.ScaleDownWidth:
+		 case ResizeAxisMode.ScaleDownHeight:
+		 case ResizeAxisMode.ScaleDownLong:
+		 case ResizeAxisMode.ScaleDownShort:
+			// Long, Short, ScaleDown 系は Gdk ByLoad では処理できない
 			break;
 		}
 
@@ -319,18 +358,29 @@ public class SixelConverter
 	private void CalcResize(ref int width, ref int height)
 	{
 		var ra = ResizeAxis;
+		bool scaledown =
+			(ra == ResizeAxisMode.ScaleDownBoth)
+		 || (ra == ResizeAxisMode.ScaleDownWidth)
+		 || (ra == ResizeAxisMode.ScaleDownHeight)
+		 || (ra == ResizeAxisMode.ScaleDownLong)
+		 || (ra == ResizeAxisMode.ScaleDownShort);
+
 
 		// 条件を丸めていく
 		switch (ra) {
 		 case ResizeAxisMode.Both:
+		 case ResizeAxisMode.ScaleDownBoth:
 			if (ResizeWidth == 0) {
 				ra = ResizeAxisMode.Height;
 			} else if (ResizeHeight == 0) {
 				ra = ResizeAxisMode.Width;
+			} else {
+				ra = ResizeAxisMode.Both;
 			}
 			break;
 
 		 case ResizeAxisMode.Long:
+		 case ResizeAxisMode.ScaleDownLong:
 			if (Width >= Height) {
 				ra = ResizeAxisMode.Width;
 			} else {
@@ -339,34 +389,47 @@ public class SixelConverter
 			break;
 
 		 case ResizeAxisMode.Short:
+		 case ResizeAxisMode.ScaleDownShort:
 			if (Width <= Height) {
 				ra = ResizeAxisMode.Width;
 			} else {
 				ra = ResizeAxisMode.Height;
 			}
 			break;
+
+		 case ResizeAxisMode.ScaleDownWidth:
+			ra = ResizeAxisMode.Width;
+			break;
+
+		 case ResizeAxisMode.ScaleDownHeight:
+			ra = ResizeAxisMode.Height;
+			break;
+		}
+
+		var rw = ResizeWidth;
+		var rh = ResizeHeight;
+
+		if (rw <= 0) rw = Width;
+		if (rh <= 0) rh = Height;
+
+		// 縮小のみ指示
+		if (scaledown) {
+			if (Width < rw) rw = Width;
+			if (Height < rh) rh = Height;
 		}
 
 		// 確定したので計算
 		switch (ra) {
 		 case ResizeAxisMode.Both:
-			width = ResizeWidth;
-			height = ResizeHeight;
+			width = rw;
+			height = rh;
 			break;
 		 case ResizeAxisMode.Width:
-			if (ResizeWidth > 0) {
-				width = ResizeWidth;
-			} else {
-				width = Width;
-			}
+			width = rw;
 			height = Height * width / Width;
 			break;
 		 case ResizeAxisMode.Height:
-			if (ResizeHeight > 0) {
-				height = ResizeHeight;
-			} else {
-				height = Height;
-			}
+			height = rh;
 			width = Width * height / Height;
 			break;
 		}

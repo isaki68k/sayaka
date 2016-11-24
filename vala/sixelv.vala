@@ -196,6 +196,28 @@ public class SixelV
 							case "short":
 								opt_resizeaxis = ResizeAxisMode.Short;
 								break;
+							case "sdboth":
+							case "scaledown-both":
+								opt_resizeaxis = ResizeAxisMode.ScaleDownBoth;
+								break;
+							case "sdw":
+							case "sdwidth":
+							case "scaledown-width":
+								opt_resizeaxis = ResizeAxisMode.ScaleDownWidth;
+								break;
+							case "sdh":
+							case "sdheight":
+							case "scaledown-height":
+								opt_resizeaxis = ResizeAxisMode.ScaleDownHeight;
+								break;
+							case "sdlong":
+							case "scaledown-long":
+								opt_resizeaxis = ResizeAxisMode.ScaleDownLong;
+								break;
+							case "sdshort":
+							case "scaledown-short":
+								opt_resizeaxis = ResizeAxisMode.ScaleDownShort;
+								break;
 						}
 						break;
 
@@ -580,7 +602,7 @@ public class SixelV
 			sw.Restart();
 		}
 
-		gDiag.Debug(@"Converting w=$(opt_width), h=$(opt_height)");
+		gDiag.Debug(@"Converting w=$(opt_width), h=$(opt_height) axis=$(opt_resizeaxis)");
 		sx.ConvertToIndexed();
 
 		if (opt_profile) {

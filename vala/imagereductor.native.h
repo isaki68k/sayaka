@@ -95,6 +95,40 @@ typedef enum
 	// 原寸 Width <= Height のときは Width と同じ動作をします。
 	// 原寸 Width > Height のときは Height と同じ動作をします。
 	RAX_SHORT,
+
+	// 縮小のみの Both
+	// 幅が ResizeWidth より大きいときは ResizeWidth になり、
+	// 高さが ResizeHeight より大きいときは ResizeHeight になるように
+	// リサイズします。
+	// ResizeWidth == 0 のときは ScaleDownHeight と同じ動作をします。
+	// ResizeHeight == 0 のときは ScaleDownWidth と同じ動作をします。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大です。
+	RAX_SCALEDOWNBOTH,
+
+	// 縮小のみの Width
+	// 幅が ResizeWidth より多きときは ResizeWidth になるように
+	// 縦横比を保持してリサイズします。
+	// ResizeWidth == 0 のときは原寸大です。
+	RAX_SCALEDOWNWIDTH,
+
+	// 縮小のみの Height
+	// 幅が ResizeHeight より多きときは ResizeHeight になるように
+	// 縦横比を保持してリサイズします。
+	// ResizeHeight == 0 のときは原寸大です。
+	RAX_SCALEDOWNHEIGHT,
+
+	// 縮小のみの長辺優先リサイズ
+	// 原寸 Width >= Height のときは ScaleDownWidth と同じ動作をします。
+	// 原寸 Width < Height のときは ScaleDownHeight と同じ動作をします。
+	// 例:
+	// 長辺を特定のサイズ以下にしたい場合は、ResizeWidth と ResizeHeight に
+	// 同じ値を設定します。
+	RAX_SCALEDOWNLONG,
+
+	// 縮小のみの短辺優先リサイズ
+	// 原寸 Width <= Height のときは ScaleDownWidth と同じ動作をします。
+	// 原寸 Width > Height のときは ScaleDownHeight と同じ動作をします。
+	RAX_SCALEDOWNSHORT,
 } ResizeAxisMode;
 
 //-------- 色の型
