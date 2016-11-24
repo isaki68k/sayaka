@@ -1771,9 +1771,10 @@ public class SayakaMain
 		// 縮小するので X68k でも画質 High でいける
 		sx.ReduceMode = ReductorReduceMode.HighQuality;
 		// 縮小のみの長辺指定変形。
-		// height にも resize_width を渡すことで長辺を resize_width に制限できる。
-		// この関数の呼び出し意図がそれを想定している。
-		// もともと幅しか指定できなかった経緯があり、本当は width/height をうまく分離すること。
+		// height にも resize_width を渡すことで長辺を resize_width に
+		// 制限できる。この関数の呼び出し意図がそれを想定している。
+		// もともと幅しか指定できなかった経緯があり、
+		// 本当は width/height をうまく分離すること。
 		sx.ResizeWidth = resize_width;
 		sx.ResizeHeight = resize_width;
 		sx.ResizeAxis = ResizeAxisMode.ScaleDownLong;
