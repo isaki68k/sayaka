@@ -161,7 +161,6 @@ public class SayakaMain
 		diagSixel = new Diag("SayakaMain");
 
 		SayakaCmd cmd = SayakaCmd.StreamMode;
-		bool opt_x68k;
 
 		basedir = Environment.get_home_dir() + "/.sayaka/";
 		cachedir    = basedir + "cache";
@@ -174,7 +173,6 @@ public class SayakaMain
 		bg_white = true;
 		opt_evs = false;
 		opt_show_ng = false;
-		opt_x68k = false;
 		opt_filter = "";
 		last_id = "";
 		last_id_count = 0;
@@ -345,7 +343,6 @@ public class SayakaMain
 				bg_white = true;
 				break;
 			 case "--x68k":
-				opt_x68k = true;
 				// 以下を指定したのと同じ
 				color_mode = ColorFixedX68k;
 				opt_fontwidth = 8;
@@ -361,8 +358,8 @@ public class SayakaMain
 				break;
 			}
 		}
-		// --x68k ならそれを展開したコマンドラインを表示してみるか
-		if (opt_x68k) {
+		// --progress ならそれを展開したコマンドラインを表示してみるか
+		if (opt_progress) {
 			stdout.printf("%s", args[0]);
 			for (var i = 1; i < args.length; i++) {
 				if (args[i] == "--x68k") {
