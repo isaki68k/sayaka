@@ -723,6 +723,11 @@ ImageReductor_HighQuality(
 		errbuf[i] = errbuf_mem + errbuf_left + errbuf_width * i;
 	}
 
+	int isAlpha = 0;
+	if (srcNch == 4) {
+		isAlpha = 1;
+	}
+
 	for (int y = 0; y < dstHeight; y++) {
 
 		int sy0 = sr_y.I;
@@ -735,6 +740,7 @@ ImageReductor_HighQuality(
 		for (int x = 0; x < dstWidth; x++) {
 
 			ColorRGBint col = {0, 0, 0};
+			int alpha = 0;
 
 			int sx0 = sr_x.I;
 			StepRationalAdd(&sr_x, &sr_xstep);
@@ -749,6 +755,9 @@ ImageReductor_HighQuality(
 					col.r += srcPix[0];
 					col.g += srcPix[1];
 					col.b += srcPix[2];
+					if (isAlpha) {
+						alpha += srcPix[3];
+					}
 					srcPix += srcNch;
 				}
 			}
@@ -769,7 +778,13 @@ ImageReductor_HighQuality(
 				Saturate_uint8(col.b),
 			};
 
-			int colorCode = ColorFinder(c8);
+			int colorCode;
+			if (isAlpha && alpha == 0) {
+				// XXX パレットがアルファ対応かとか。
+				colorCode = 0;
+			} else {
+				colorCode = ColorFinder(c8);
+			}
 
 			col.r -= Palette[colorCode].r;
 			col.g -= Palette[colorCode].g;
