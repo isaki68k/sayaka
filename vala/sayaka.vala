@@ -1541,20 +1541,8 @@ public class SayakaMain
 				var disp_url = m.GetString("display_url");
 				var media_url = m.GetString("media_url");
 
-				// pic.twitter.com の画像のうち :thumb は縮小ではなく切り抜き
-				// なので使わない。:small は縦横比に関わらず横 340px に縮小。
-				// 横長なら 340 x (340以下)、縦長なら 340 x (340以上) になって
-				// そのままでは縦長写真と横長写真で縮尺が揃わないクソ仕様なので
-				// ここでは長辺を基準に 40% に縮小する。
-				var small = m.GetJson("sizes").GetJson("small");
-				var w = small.GetInt("w");
-				var h = small.GetInt("h");
-				int width;
-				if (h > w) {
-					width = (int)((double)w / h * imagesize);
-				} else {
-					width = imagesize;
-				}
+				// width といいつつ長辺の制限
+				int width = imagesize;
 
 				var target_url = @"$(media_url):small";
 				var minfo = new MediaInfo(target_url, disp_url, width);
