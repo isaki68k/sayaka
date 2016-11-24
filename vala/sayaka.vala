@@ -477,6 +477,10 @@ public class SayakaMain
 		tw = new Twitter();
 		get_access_token();
 
+		if (ciphers != null) {
+			tw.SetCiphers(ciphers);
+		}
+
 		// 投稿するパラメータを用意
 		var options = new Dictionary<string, string>();
 		options.AddOrUpdate("status", text);
