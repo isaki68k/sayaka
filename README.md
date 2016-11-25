@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.2.2+ (2016/10/27)
+twitter クライアント sayaka ちゃん version 3.3.0 (2016/11/25)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -9,9 +9,11 @@ twitter クライアント sayaka ちゃん version 3.2.2+ (2016/10/27)
 
 更新履歴
 ---
-* 3.2.x (2016/10/26) … libcurl ではなく mbedTLS に移行してみる。
+* 3.3.0 (2016/11/25) … libcurl ではなく mbedTLS に移行してみる。
 	--full-url オプション、--progress オプションを実装。
 	--sixel-cmd オプション廃止、PHP 版サポート廃止。
+	EUC-JP/JIS に変換できない文字の処理を追加。
+	画像の高品質化、高速化いろいろ。
 * 3.2.2 (2016/09/25) … glib-networking ではなく libcurl に移行してみる。
 	--post オプション、--ciphers オプションを実装。
 	extended_tweet の表示に対応。
