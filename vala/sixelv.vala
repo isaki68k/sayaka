@@ -728,6 +728,7 @@ public class SixelV
 	public static void signal_handler(int signo)
 	{
 		this_sixelv.signal_handler_2(signo);
+		Process.exit(0);
 	}
 
 	public void signal_handler_2(int signo)
