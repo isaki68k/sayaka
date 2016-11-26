@@ -512,14 +512,17 @@ namespace ULib
 			ctx = owner.ctx;
 		}
 
-		public override bool close(Cancellable? cancellable = null) throws IOError
+		public override bool close(Cancellable? cancellable = null)
+			throws IOError
 		{
 			return true;
 		}
 
-		public override ssize_t read(uint8[] buffer, Cancellable? cancellable = null) throws IOError
+		public override ssize_t read(uint8[] buffer,
+			Cancellable? cancellable = null) throws IOError
 		{
-			ssize_t rv = (ssize_t)Native.mTLS.read(ctx, (uint8*)buffer, buffer.length);
+			ssize_t rv = (ssize_t)Native.mTLS.read(ctx, (uint8*)buffer,
+				buffer.length);
 			diag.Debug(@"read rv=$(rv)");
 			return rv;
 		}
@@ -538,15 +541,18 @@ namespace ULib
 			ctx = owner.ctx;
 		}
 
-		public override bool close(Cancellable? cancellable = null) throws IOError
+		public override bool close(Cancellable? cancellable = null)
+			throws IOError
 		{
 			return true;
 		}
 
-		public override ssize_t write(uint8[] buffer, Cancellable? cancellable = null) throws IOError
+		public override ssize_t write(uint8[] buffer,
+			Cancellable? cancellable = null) throws IOError
 		{
 			string buf = (string)buffer;
-			ssize_t rv = (ssize_t)Native.mTLS.write(ctx, (uint8*)buffer, buffer.length);
+			ssize_t rv = (ssize_t)Native.mTLS.write(ctx, (uint8*)buffer,
+				buffer.length);
 			diag.Debug(@"write=$(buf)");
 			diag.Debug(@"write return $(rv)");
 			return rv;
