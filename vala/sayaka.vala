@@ -1074,7 +1074,7 @@ public class SayakaMain
 					continue;
 				}
 
-				// ビュレット(U+2022) -> 中黒(U+30FB)
+				// BULLET (U+2022) -> 中黒(U+30FB)
 				if (uni == 0x2022) {
 					textarray.append(0x30fb);
 					continue;
