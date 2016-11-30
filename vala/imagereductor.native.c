@@ -881,7 +881,8 @@ ImageReductor_HighQuality(
 			errbuf[i] = errbuf[i + 1];
 		}
 		errbuf[errbuf_count - 1] = tmp;
-		memset(errbuf[errbuf_count - 1], 0, errbuf_len);
+		// errbuf[y] には左マージンがあるのを考慮する
+		memset(errbuf[errbuf_count - 1] - errbuf_left, 0, errbuf_len);
 	}
 
 	free(errbuf_mem);
