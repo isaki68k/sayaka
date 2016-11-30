@@ -782,6 +782,7 @@ public class SayakaMain
 				print_(@"$(time) $(src)");
 				stdout.printf("\n");
 				stdout.printf("\n");
+				last_id = "";
 				return;
 
 			 case "mute":
