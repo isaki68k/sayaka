@@ -497,6 +497,12 @@ namespace ULib
 			input_stream_ = new mTLSInputStream(this);
 			output_stream_ = new mTLSOutputStream(this);
 		}
+
+		virtual ~mTLSIOStream()
+		{
+			Native.mTLS.close(ctx);
+			Native.mTLS.free(ctx);
+		}
 	}
 
 	public class mTLSInputStream : InputStream
