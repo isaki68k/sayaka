@@ -46,10 +46,11 @@ twitter クライアント sayaka ちゃん version 3.3.0 (2016/11/25)
 * vala-0.28 くらい以上
 * glib2-2.44 以上
 * gdk-pixbuf2
+* libjpeg
 * GNU make
 
 pkgsrc なら
-lang/vala, devel/glib2, graphics/gdk-pixbuf2, devel/gmake
+lang/vala, devel/glib2, graphics/gdk-pixbuf2, graphics/jpeg, devel/gmake
 をインストールしてください。
 
 
