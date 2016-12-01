@@ -95,12 +95,6 @@ namespace ULib
 			Ciphers = null;
 		}
 
-		virtual ~HttpClient()
-		{
-			Native.mTLS.close(Tls);
-			Native.mTLS.free(Tls);
-		}
-
 		// uri から GET して、ストリームを返します。
 		public DataInputStream GET() throws Error
 		{
