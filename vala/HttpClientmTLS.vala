@@ -95,6 +95,12 @@ namespace ULib
 			Ciphers = null;
 		}
 
+		virtual ~HttpClient()
+		{
+			Native.mTLS.close(Tls);
+			Native.mTLS.free(Tls);
+		}
+
 		// uri から GET して、ストリームを返します。
 		public DataInputStream GET() throws Error
 		{
@@ -490,12 +496,6 @@ namespace ULib
 			this.ctx = ctx;
 			input_stream_ = new mTLSInputStream(this);
 			output_stream_ = new mTLSOutputStream(this);
-		}
-
-		virtual ~mTLSIOStream()
-		{
-			Native.mTLS.close(ctx);
-			Native.mTLS.free(ctx);
 		}
 	}
 
