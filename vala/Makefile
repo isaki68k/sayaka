@@ -36,7 +36,7 @@ SRCS_common=	\
 	IHttpClient.vala \
 	ImageReductor.vala \
 	imagereductor.native.c \
-	mtls.c \
+	mtls.native.c \
 	ParsedUri.vala \
 	PeekableInputStream.vala \
 	sixel.native.c \
@@ -151,5 +151,5 @@ clean-h:
 .PHONY:	clean
 clean:	clean-sayaka clean-sixelv clean-h
 
-mtlstest: mtls.c ${LIBS_MBEDTLS}
-	${CC} ${CFLAGS} -DTEST -DDEBUG mtls.c -o mtlstest ${LIBS_MBEDTLS}
+mtlstest: mtls.native.c ${LIBS_MBEDTLS}
+	${CC} ${CFLAGS} -DTEST -DDEBUG mtls.native.c -o mtlstest ${LIBS_MBEDTLS}

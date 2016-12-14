@@ -23,7 +23,7 @@
  * SUCH DAMAGE.
  */
 
-[CCode(cheader_filename="mtls.h")]
+[CCode(cheader_filename="mtls.native.h")]
 namespace Native.mTLS
 {
 	[CCode(cname="struct mtlsctx")]
