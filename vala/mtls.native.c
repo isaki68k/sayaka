@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "mtls.h"
+#include "mtls.native.h"
 
 //#define DEBUG
 
