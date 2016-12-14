@@ -36,10 +36,11 @@ namespace ULib
 
 		public Diag diag = new Diag("HttpClient");
 
-		// https の時の mTLS コンテキスト
-		private Native.mTLS.mtlsctx* Tls;
+		// mTLS ハンドル
+		private Native.mTLS.mTLSHandle Handle;
 
-		private mTLSIOStream Conn;
+		// 入力ストリーム
+		private DataInputStream dIn;
 
 		// パース後の URI
 		public ParsedUri Uri;
@@ -73,15 +74,15 @@ namespace ULib
 
 
 		// uri をターゲットにした HttpClient を作成します。
-		public HttpClient(string uri)
+		public HttpClient(string uri) throws Error
 		{
 			diag = new Diag("HttpClient");
 
-			Tls = Native.mTLS.alloc();
-			if (Native.mTLS.init(Tls) != 0) {
-				diag.Error("mTLS.init failed");
-				// XXX app exit
-				return;
+			Handle = new mTLSHandle();
+
+			if (Handle.Init() != 0) {
+				Handle = null;
+				throw new IOError.FAILED("mTLSHandle.Init failed");
 			}
 
 			// XXX AF_UNSPEC がなさげなのでとりあえず代用
@@ -112,7 +113,7 @@ namespace ULib
 		public DataInputStream Act(string method) throws Error
 		{
 			diag.Trace(@"$(method)()");
-			DataInputStream dIn = null;
+			dIn = null;
 
 			while (true) {
 
@@ -120,7 +121,7 @@ namespace ULib
 
 				SendRequest(method);
 
-				dIn = new DataInputStream(Conn.input_stream);
+				dIn = new DataInputStream(new mTLSInputStream(Handle));
 				dIn.set_newline_type(DataStreamNewlineType.CR_LF);
 
 				ReceiveHeader(dIn);
@@ -200,9 +201,9 @@ namespace ULib
 
 			var msg = sb.str;
 
-			Conn.output_stream.write(msg.data);
+			Handle.write(msg.data, msg.data.length);
 
-			Native.mTLS.shutdown(Tls, SHUT_WR);
+			Handle.shutdown(SHUT_WR);
 
 			diag.Trace("SendRequest() request sent");
 		}
@@ -277,7 +278,7 @@ namespace ULib
 		{
 			// XXX とりあえず連動させておく
 			if (gDiag.global_debug) {
-				Native.mTLS.set_debuglevel(3);
+				mTLSHandle.set_debuglevel(3);
 			}
 
 			// 透過プロキシ(?)設定があれば対応。
@@ -305,17 +306,16 @@ namespace ULib
 			}
 
 			// 接続
-			Conn = new mTLSIOStream(Tls);
 			if (Uri.Scheme == "https") {
-				Native.mTLS.setssl(Tls, true);
+				Handle.setssl(true);
 			}
 			if (Ciphers != null && Ciphers == "RSA") {
 				// XXX RSA 専用
-				Native.mTLS.usersa(Tls);
+				Handle.usersa();
 			}
 			diag.Trace(@"Connect(): $(Uri)");
-			if (Native.mTLS.connect(Tls, Uri.Host, Uri.Port) != 0) {
-				diag.Debug(@"Tls.connect: failed");
+			if (Handle.connect(Uri.Host, Uri.Port) != 0) {
+				diag.Debug(@"mTLSHandle.connect: failed");
 				throw new IOError.HOST_NOT_FOUND(@"$(Uri.Host)");
 			}
 		}
@@ -324,10 +324,8 @@ namespace ULib
 		public void Close() throws Error
 		{
 			diag.Trace("Close");
-			if (Conn != null) {
-				Conn.close();
-				Conn = null;
-			}
+
+			// nothing to do ?
 		}
 
 		// Ciphers を設定します。
@@ -461,102 +459,67 @@ namespace ULib
 		}
 	}
 
-///////////////////
-// mTLS stream
-///////////////////
-
-	public class mTLSIOStream : IOStream
-	{
-		public override InputStream input_stream
-		{
-			get {
-				return input_stream_;
-			}
-		}
-		private mTLSInputStream input_stream_;
-
-		public override OutputStream output_stream
-		{
-			get {
-				return output_stream_;
-			}
-		}
-		private mTLSOutputStream output_stream_;
-
-		public Native.mTLS.mtlsctx* ctx;
-
-		public mTLSIOStream(Native.mTLS.mtlsctx* ctx)
-		{
-			this.ctx = ctx;
-			input_stream_ = new mTLSInputStream(this);
-			output_stream_ = new mTLSOutputStream(this);
-		}
-
-		virtual ~mTLSIOStream()
-		{
-			Native.mTLS.close(ctx);
-			Native.mTLS.free(ctx);
-		}
-	}
+	///////////////////
+	// mTLS stream
+	///////////////////
 
 	public class mTLSInputStream : InputStream
 	{
 		private Diag diag = new Diag("mTLSInputStream");
 
-		private mTLSIOStream owner;
-		private Native.mTLS.mtlsctx* ctx;
+		private unowned mTLSHandle handle;
 
-		public mTLSInputStream(mTLSIOStream owner)
+		public mTLSInputStream(mTLSHandle handle)
 		{
-			this.owner = owner;
-			ctx = owner.ctx;
-		}
-
-		public override bool close(Cancellable? cancellable = null)
-			throws IOError
-		{
-			return true;
+			this.handle = handle;
 		}
 
 		public override ssize_t read(uint8[] buffer,
 			Cancellable? cancellable = null) throws IOError
 		{
-			ssize_t rv = (ssize_t)Native.mTLS.read(ctx, (uint8*)buffer,
+			ssize_t rv = (ssize_t)handle.read((uint8 *)buffer,
 				buffer.length);
 			diag.Debug(@"read rv=$(rv)");
 			return rv;
-		}
-	}
-
-	public class mTLSOutputStream : OutputStream
-	{
-		private Diag diag = new Diag("mTLSOutputStream");
-
-		private mTLSIOStream owner;
-		private Native.mTLS.mtlsctx* ctx;
-
-		public mTLSOutputStream(mTLSIOStream owner)
-		{
-			this.owner = owner;
-			ctx = owner.ctx;
 		}
 
 		public override bool close(Cancellable? cancellable = null)
 			throws IOError
 		{
 			return true;
+		}
+	}
+
+#if false
+	// InputStream と対称なので書いてはみたものの、現在の HttpClient
+	// 実装は OutputStream を使わず直接 write しているので、これは不要。
+	public class mTLSOutputStream : OutputStream
+	{
+		private Diag diag = new Diag("mTLSOutputStream");
+
+		private unowned mTLSHandle handle;
+
+		public mTLSOutputStream(mTLSHandle handle)
+		{
+			this.handle = handle;
 		}
 
 		public override ssize_t write(uint8[] buffer,
 			Cancellable? cancellable = null) throws IOError
 		{
 			string buf = (string)buffer;
-			ssize_t rv = (ssize_t)Native.mTLS.write(ctx, (uint8*)buffer,
+			ssize_t rv = (ssize_t)handle.write((uint8 *)buffer,
 				buffer.length);
 			diag.Debug(@"write=$(buf)");
 			diag.Debug(@"write return $(rv)");
 			return rv;
 		}
-	}
-}
 
+		public override bool close(Cancellable? cancellable = null)
+			throws IOError
+		{
+			return true;
+		}
+	}
+#endif
+}

@@ -26,36 +26,38 @@
 [CCode(cheader_filename="mtls.native.h")]
 namespace Native.mTLS
 {
-	[CCode(cname="struct mtlsctx")]
+	[CCode (cname = "mtlsctx_t", free_function = "mtls_free")]
 	[Compact]
-	public struct mtlsctx
+	public class mTLSHandle
 	{
-		// internal
+		[CCode(cname = "mtls_set_debuglevel")]
+		public static void set_debuglevel(int level);
+
+		[CCode (cname = "mtls_alloc")]
+		public mTLSHandle();
+
+		[CCode (cname = "mtls_init")]
+		public int Init();
+
+		[CCode(cname = "mtls_setssl")]
+		public void setssl(bool value);
+
+		[CCode(cname = "mtls_usersa")]
+		public void usersa();
+
+		[CCode(cname = "mtls_connect")]
+		public int connect(char* hostname, char* servname);
+
+		[CCode(cname = "mtls_close")]
+		public void close();
+
+		[CCode(cname = "mtls_shutdown")]
+		public int shutdown(int how);
+
+		[CCode(cname = "mtls_read")]
+		public int read(uint8* buf, int len);
+
+		[CCode(cname = "mtls_write")]
+		public int write(uint8* buf, int len);
 	}
-
-	[CCode(cname="mtls_set_debuglevel")]
-	public static void set_debuglevel(int level);
-
-	[CCode(cname="mtls_alloc")]
-	public static mtlsctx* alloc();
-	[CCode(cname="mtls_free")]
-	public static void free(mtlsctx* ctx);
-	[CCode(cname="mtls_init")]
-	public static int init(mtlsctx* ctx);
-	[CCode(cname="mtls_close")]
-	public static int close(mtlsctx* ctx);
-	[CCode(cname="mtls_shutdown")]
-	public static int shutdown(mtlsctx* ctx, int how);
-	[CCode(cname="mtls_setssl")]
-	public static void setssl(mtlsctx* ctx, bool value);
-	[CCode(cname="mtls_usersa")]
-	public static void usersa(mtlsctx* ctx);
-	[CCode(cname="mtls_connect")]
-	public static int connect(mtlsctx* ctx, char* hostname, char* servname);
-
-	[CCode(cname="mtls_read")]
-	public static int read(mtlsctx* ctx, uint8* buf, int len);
-	[CCode(cname="mtls_write")]
-	public static int write(mtlsctx* ctx, uint8* buf, int len);
 }
-

@@ -69,9 +69,6 @@
 // global context
 mtls_global_ctx_t gctx;
 
-// private
-int mtls_internal_free(mtlsctx_t* ctx);
-
 
 ////////////////////////////////////
 
@@ -115,26 +112,24 @@ mtls_set_debuglevel(int level)
 }
 
 // mtlsctx_t のメモリを確保します。
-// alloc と init を分離しないと、エラー通知が難しいので
-// 分離されています。
-// alloc で確保したメモリは free で開放してください。
+// alloc と init を分離しないと、エラー通知が難しいので分離されています。
+// mtls_alloc() で確保したメモリは mtls_free() で解放してください。
 mtlsctx_t*
 mtls_alloc()
 {
-	TRACE("called\n");
-	return (mtlsctx_t*)malloc(sizeof(mtlsctx_t));
-}
+	mtlsctx_t *ctx;
 
-// ctx のメモリを開放します。
-// init が成功した後のコンテキストには、
-// 呼び出す前に close を呼び出してください。
-void
-mtls_free(mtlsctx_t* ctx)
-{
-	free(ctx);
+	TRACE("called\n");
+	ctx = (mtlsctx_t *)malloc(sizeof(mtlsctx_t));
+	if (ctx != NULL) {
+		memset(ctx, 0, sizeof(*ctx));
+	}
+	return ctx;
 }
 
 // コンテキストを初期化します。
+// mtls_alloc() に続いてコールしてください。
+// 成功すれば 0、失敗すれば -1 を返します。
 int
 mtls_init(mtlsctx_t* ctx)
 {
@@ -183,49 +178,30 @@ mtls_init(mtlsctx_t* ctx)
 
 	mbedtls_ssl_set_bio(&ctx->ssl, &ctx->net, mbedtls_net_send, mbedtls_net_recv, NULL);
 
+	ctx->initialized = 1;
 	TRACE("done\n");
 	return 0;
 
-errexit:
+ errexit:
 	// cleanup
-	mtls_internal_free(ctx);
 	TRACE("NG\n");
 	return -1;
 }
 
-// 内部のフィールドを開放します。
-// private
-int
-mtls_internal_free(mtlsctx_t* ctx)
+// ctx をクリーンアップしてメモリを解放します。
+// オープンされていればクローズも行います。
+void
+mtls_free(mtlsctx_t* ctx)
 {
-	mbedtls_net_free(&ctx->net);
-	mbedtls_ssl_free(&ctx->ssl);
-	mbedtls_ssl_config_free(&ctx->conf);
-	TRACE("internal_free OK\n");
-	return 0;
-}
-
-// 接続を閉じて、コンテキストを init する前の状態にします。
-int
-mtls_close(mtlsctx_t* ctx)
-{
-	if (ctx->usessl) {
-		mbedtls_ssl_close_notify(&ctx->ssl);
+	TRACE("called\n");
+	if (ctx != NULL) {
+		if (ctx->initialized) {
+			mtls_close(ctx);
+			mbedtls_ssl_free(&ctx->ssl);
+			mbedtls_ssl_config_free(&ctx->conf);
+		}
+		free(ctx);
 	}
-	mtls_internal_free(ctx);
-	TRACE("OK\n");
-	return 0;
-}
-
-// shutdown をします。
-int
-mtls_shutdown(mtlsctx_t* ctx, int how)
-{
-	int rv = 0;
-	if (ctx->usessl == 0) {
-		rv = shutdown(ctx->net.fd, how);
-	}
-	return rv;
 }
 
 // HTTPS かどうかを設定します。
@@ -281,6 +257,35 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 		(int)result.tv_sec * 1000 + result.tv_usec / 1000,
 		(int)result.tv_usec % 1000);
 	return 0;
+}
+
+// 接続をクローズします。
+// 未接続や未初期化の状態で呼んでも副作用はありません。
+int
+mtls_close(mtlsctx_t* ctx)
+{
+	TRACE("called\n");
+
+	if (ctx->initialized) {
+		if (ctx->usessl) {
+			mbedtls_ssl_close_notify(&ctx->ssl);
+		}
+
+		// mbedtls_net_free() という名前だが実は close。
+		mbedtls_net_free(&ctx->net);
+	}
+	return 0;
+}
+
+// shutdown をします。
+int
+mtls_shutdown(mtlsctx_t* ctx, int how)
+{
+	int rv = 0;
+	if (ctx->usessl == 0) {
+		rv = shutdown(ctx->net.fd, how);
+	}
+	return rv;
 }
 
 int
