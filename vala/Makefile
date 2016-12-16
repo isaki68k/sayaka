@@ -78,8 +78,8 @@ PKGS= \
 # システムヘッダより先にバンドル版の mbedTLS ヘッダを探さないといけない
 CFLAGS=	-I../mbedtls/include -I./
 LIBS_MBEDTLS=	\
-	../mbedtls/library/libmbedx509.a \
 	../mbedtls/library/libmbedtls.a \
+	../mbedtls/library/libmbedx509.a \
 	../mbedtls/library/libmbedcrypto.a \
 
 COPTS=	-O2 -g -std=c99
