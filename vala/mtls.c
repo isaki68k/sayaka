@@ -221,7 +221,7 @@ mtls_internal_free(mtlsctx_t* ctx)
 int
 mtls_close(mtlsctx_t* ctx)
 {
-	if (&ctx->usessl) {
+	if (ctx->usessl) {
 		mbedtls_ssl_close_notify(&ctx->ssl);
 	}
 	mtls_internal_free(ctx);
