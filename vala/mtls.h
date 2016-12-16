@@ -36,7 +36,6 @@ typedef struct mtlsctx
 	mbedtls_net_context net;
 	mbedtls_ssl_context ssl;
 	mbedtls_ssl_config conf;
-	mbedtls_x509_crt cacert;
 } mtlsctx_t;
 
 typedef struct mtls_global_ctx

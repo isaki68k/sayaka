@@ -160,16 +160,6 @@ mtls_init(mtlsctx_t* ctx)
 	mbedtls_net_init(&ctx->net);
 	mbedtls_ssl_init(&ctx->ssl);
 	mbedtls_ssl_config_init(&ctx->conf);
-	mbedtls_x509_crt_init(&ctx->cacert);
-
-	// init CA root
-	r = mbedtls_x509_crt_parse(&ctx->cacert,
-			(const unsigned char*)mbedtls_test_cas_pem,
-			mbedtls_test_cas_pem_len);
-	if (r < 0) {
-		ERROR("mbedtls_x509_crt_parse failed: %s\n", mtls_errmsg(r));
-		goto errexit;
-	}
 
 	// TLS config
 	r = mbedtls_ssl_config_defaults(&ctx->conf,
@@ -182,7 +172,6 @@ mtls_init(mtlsctx_t* ctx)
 	}
 
 	mbedtls_ssl_conf_authmode(&ctx->conf, MBEDTLS_SSL_VERIFY_NONE);
-	mbedtls_ssl_conf_ca_chain(&ctx->conf, &ctx->cacert, NULL);
 	mbedtls_ssl_conf_rng(&ctx->conf, mbedtls_ctr_drbg_random, &gctx.ctr_drbg);
 	mbedtls_ssl_conf_dbg(&ctx->conf, debug_callback, stderr);
 
@@ -210,7 +199,6 @@ int
 mtls_internal_free(mtlsctx_t* ctx)
 {
 	mbedtls_net_free(&ctx->net);
-	mbedtls_x509_crt_free(&ctx->cacert);
 	mbedtls_ssl_free(&ctx->ssl);
 	mbedtls_ssl_config_free(&ctx->conf);
 	TRACE("internal_free OK\n");
