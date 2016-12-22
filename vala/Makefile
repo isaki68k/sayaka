@@ -32,7 +32,7 @@ SRCS_common=	\
 	Diag.vala \
 	Dictionary.vala \
 	FileUtil.vala \
-	HttpClientmTLS.vala \
+	HttpClient.vala \
 	IHttpClient.vala \
 	ImageReductor.vala \
 	imagereductor.native.c \
