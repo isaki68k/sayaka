@@ -90,7 +90,7 @@ LIBS+=	${LIBS_MBEDTLS}
 LIBS+= -ljpeg
 
 VALA_FLAGS=	\
-	mtlsv.vapi \
+	mtls.vapi \
 	glib.vapi \
 
 VALAC=	valac
