@@ -52,7 +52,7 @@ public class MediaInfo
 
 public class SayakaMain
 {
-	public const string version = "3.3.0 (2016/11/25)";
+	public const string version = "3.3.1 (2016/12/23)";
 
 	private static Diag diag;
 	private static Diag diagSixel;
