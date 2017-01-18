@@ -607,6 +607,10 @@ public class SayakaMain
 				stderr.printf("userstream.read_line: %s\n", e.message);
 				Process.exit(1);
 			}
+			if (line == null) {
+				stderr.printf("userstream.read_line: EOF?\n");
+				Process.exit(1);
+			}
 			if (showstatus_callback_line(line) == false) {
 				break;
 			}
