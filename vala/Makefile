@@ -68,12 +68,13 @@ SRCS_h=	\
 
 VALA_PKGS=	\
 	--pkg posix \
+	--pkg gio-2.0 \
 	--pkg gdk-pixbuf-2.0 \
 
 PKGS= \
 	glib-2.0 \
-	gdk-pixbuf-2.0 \
 	gio-2.0 \
+	gdk-pixbuf-2.0 \
 
 # システムヘッダより先にバンドル版の mbedTLS ヘッダを探さないといけない
 CFLAGS=	-I../mbedtls/include -I./
