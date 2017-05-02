@@ -261,7 +261,8 @@ namespace ULib
 		}
 
 		// ヘッダ配列から指定のヘッダを検索してボディを返します。
-		private string GetHeader(Array<string> header, string key)
+		// 指定されたヘッダが存在しない場合は "" を返します。
+		public string GetHeader(Array<string> header, string key)
 		{
 			var key2 = key.ascii_down();
 			for (var i = 0; i < header.length; i++) {

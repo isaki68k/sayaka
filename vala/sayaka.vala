@@ -1818,9 +1818,20 @@ public class SayakaMain
 		DataInputStream stream;
 		try {
 			stream = fg.GET();
+		} catch (Error e) {
+			diagSixel.Warn(@"fetch_image GET failed: $(e.message)");
+			return null;
+		}
+		// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
+		// (= HTML とか) を返すやつは画像ではないので無視。
+		var content_type = fg.GetHeader(fg.RecvHeaders, "Content-Type");
+		if (content_type != "" && content_type.has_prefix("image/") == false) {
+			return null;
+		}
+		try {
 			sx.LoadFromStream(stream);
 		} catch (Error e) {
-			diagSixel.Warn(@"fetch_image failed: $(e.message)");
+			diagSixel.Warn(@"fetch_image LoadFromStream failed: $(e.message)");
 			return null;
 		}
 
