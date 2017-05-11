@@ -49,7 +49,7 @@ static const uint8_t decimal_table[] = {
 0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,
 };
 
-inline int
+static inline int
 sixel_putc(uint8_t *dst, char c)
 {
 	*dst = c;
@@ -57,7 +57,7 @@ sixel_putc(uint8_t *dst, char c)
 }
 
 /* 小さい正の整数をとにかく高速に出力したい */
-inline int
+static inline int
 sixel_putd(uint8_t *dst, int n)
 {
 	// 小さい数優先で、255 までを高速に出力できればそれでいい
@@ -85,7 +85,7 @@ sixel_putd(uint8_t *dst, int n)
 	}
 }
 
-inline int
+static inline int
 sixel_put_repunit(uint8_t *dst, int rep, uint8_t ptn)
 {
 	if (rep == 1) {
