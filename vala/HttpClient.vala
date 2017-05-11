@@ -341,24 +341,20 @@ namespace ULib
 	{
 		private Diag diag = new Diag("ChunkedInputStream");
 
-		// 入力ストリーム
-		private DataInputStream Src;
+		// キャスト用
+		private unowned DataInputStream Src;
 
 		private MemoryInputStream Chunks;
 
 		public ChunkedInputStream(DataInputStream stream)
 		{
-			Src = stream;
+			Object(base_stream:stream);
+
+			Src = (DataInputStream)base_stream;
+
 			Src.set_newline_type(DataStreamNewlineType.CR_LF);
 
 			Chunks = new MemoryInputStream();
-		}
-
-		public override bool close(Cancellable? cancellable = null)
-			throws IOError
-		{
-			// XXX Not implemented
-			return false;
 		}
 
 		public override ssize_t read(uint8[] buffer,
