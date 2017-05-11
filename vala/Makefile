@@ -61,10 +61,13 @@ SRCS_sixelv= ${SRCS_common} \
 
 SRCS_h=	\
 	h.vala \
+	HttpClient.vala \
+	IHttpClient.vala \
 	Diag.vala \
 	Dictionary.vala \
 	StringUtil.vala \
 	ParsedUri.vala \
+	mtls.native.c \
 
 VALA_PKGS=	\
 	--pkg posix \
