@@ -1813,7 +1813,13 @@ public class SayakaMain
 		}
 		sx.OutputPalette = opt_outputpalette;
 
-		var fg = new HttpClient(img_url);
+		HttpClient fg;
+		try {
+			fg = new HttpClient(img_url);
+		} catch (Error e) {
+			diagSixel.Warn(@"fetch_image HttpClient ctor failed: $(e.message)");
+			return null;
+		}
 		fg.Family = address_family;
 		DataInputStream stream;
 		try {
