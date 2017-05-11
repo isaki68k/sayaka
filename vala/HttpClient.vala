@@ -39,9 +39,6 @@ namespace ULib
 		// mTLS ハンドル
 		private Native.mTLS.mTLSHandle Handle;
 
-		// 入力ストリーム
-		private DataInputStream dIn;
-
 		// パース後の URI
 		public ParsedUri Uri;
 
@@ -113,7 +110,7 @@ namespace ULib
 		public DataInputStream Act(string method) throws Error
 		{
 			diag.Trace(@"$(method)()");
-			dIn = null;
+			DataInputStream dIn = null;
 
 			while (true) {
 
