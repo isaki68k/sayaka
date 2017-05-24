@@ -87,6 +87,84 @@ public class NGWord
 		}
 	}
 
+	// NG ワードをファイルから読み込んで、前処理する。
+	// write_file() で書き戻さないこと。
+	public void parse_file()
+	{
+		read_file();
+
+		var ngwords2 = new Array<ULib.Json>();
+		for (int i = 0; i < ngwords.length; i++) {
+			var ng = ngwords.index(i);
+
+			var ng2 = parse(ng);
+			ngwords2.append_val(ng2);
+		}
+		ngwords = ngwords2;
+	}
+
+	// NG ワードを前処理して返す。
+	//	"ngword" => ngword (ファイルから読んだまま変更しない)
+	//	"nguser" => nguser (ファイルから読んだまま変更しない)
+	//	"type" => 種別
+	//	以下 type に応じて必要なパラメータ
+	// type == "%LIVE" なら
+	//	"wday" => 曜日
+	//	"start" => 開始時間を0時からの分で
+	//	"end" => 終了時間を0時からの分で。日をまたぐ場合は 24:00
+	//	"end2" => 日をまたぐ場合の終了時間を分で。またがないなら -1
+	// type == "%RT" なら "rtnum" (RT数閾値)
+	// type == "%SOURCE" なら "source"(クライアント名regex)
+	// type == "normal" なら "ngword" をそのまま比較に使用
+	public Json parse(Json ng)
+	{
+		var a = new Dictionary<string, Json>();
+		var ngword = ng.GetString("ngword");
+		a.AddOrUpdate("ngword", new Json.String(ngword));
+		a.AddOrUpdate("nguser", ng.GetJson("user"));
+
+		// 生実況 NG
+		if (ngword.has_prefix("%LIVE,")) {
+			var tmp = ngword.split(",", 5);
+			// 曜日と時刻2つを取り出す
+			var wday  = my_strptime(tmp[1], "%a");
+			var start = my_strptime(tmp[2], "%R");
+			var end1  = my_strptime(tmp[3], "%R");
+			var end2  = -1;
+			if (end1 > 1440) {
+				end2 = end1 - 1440;
+				end1 = 1440;
+			}
+			a.AddOrUpdate("type", new Json.String(tmp[0]));
+			a.AddOrUpdate("wday", new Json.Number(wday.to_string()));
+			a.AddOrUpdate("start", new Json.Number(start.to_string()));
+			a.AddOrUpdate("end1", new Json.Number(end1.to_string()));
+			a.AddOrUpdate("end2", new Json.Number(end2.to_string()));
+			return new Json.Object(a);
+		}
+
+		// RT NG
+		if (ngword.has_prefix("%RT,")) {
+			var tmp = ngword.split(",", 2);
+			a.AddOrUpdate("type", new Json.String(tmp[0]));
+			a.AddOrUpdate("rtnum", new Json.Number(tmp[1]));
+			return new Json.Object(a);
+		}
+
+		// クライアント名
+		if (ngword.has_prefix("%SOURCE,")) {
+			var tmp = ngword.split(",", 2);
+			a.AddOrUpdate("type", new Json.String(tmp[0]));
+			a.AddOrUpdate("source", new Json.String(tmp[1]));
+			return new Json.Object(a);
+		}
+
+		// 通常 NG ワード
+		a.AddOrUpdate("type", new Json.String("normal"));
+		return new Json.Object(a);
+
+	}
+
 	// NG ワードと照合し、結果を NGStatus で返す。
 	// 一致したら match = true で、他のすべてのパラメータを埋めて返す。
 	// 一致しなければ match = false で、他のパラメータは不定で返す。
@@ -97,12 +175,12 @@ public class NGWord
 		ULib.Json user = null;	// マッチしたユーザ
 		for (int i = 0; i < ngwords.length; i++) {
 			var ng = ngwords.index(i);
+			var nguser = ng.GetString("nguser");
 
-			var ng_user = ng.GetString("user");
 			if (status.Has("retweeted_status")) {
 				var s = status.GetJson("retweeted_status");
 
-				if (ng_user == "") {
+				if (nguser == "") {
 					// ユーザ指定がなければ、RT先本文を比較
 					if (match_main(ng, s)) {
 						user = s.GetJson("user");
@@ -110,11 +188,11 @@ public class NGWord
 				} else {
 					// ユーザ指定があって、RT元かRT先のユーザと一致すれば
 					// RT先本文を比較。ただしユーザ情報はマッチしたほう。
-					if (match_user(ng_user, status)) {
+					if (match_user(nguser, status)) {
 						if (match_main_rt(ng, s)) {
 							user = status.GetJson("user");
 						}
-					} else if (match_user(ng_user, s)) {
+					} else if (match_user(nguser, s)) {
 						if (match_main(ng, s)) {
 							user = s.GetJson("user");
 						}
@@ -123,7 +201,7 @@ public class NGWord
 			} else {
 				// RT でないステータス
 				// ユーザ指定がないか、あって一致すれば、本文を比較
-				if (ng_user == "" || match_user(ng_user, status)) {
+				if (nguser == "" || match_user(nguser, status)) {
 					if (match_main(ng, status)) {
 						user = status.GetJson("user");
 					}
@@ -172,18 +250,12 @@ public class NGWord
 	{
 		var ngword = ng.GetString("ngword");
 
-		// 生実況 NG
-		if (ngword.has_prefix("%LIVE,")) {
-			var tmp = ngword.split(",", 5);
-			// 曜日と時刻2つを取り出す
-			var wday  = my_strptime(tmp[1], "%a");
-			var start = my_strptime(tmp[2], "%R");
-			var end1  = my_strptime(tmp[3], "%R");
-			var end2  = -1;
-			if (end1 > 1440) {
-				end2 = end1 - 1440;
-				end1 = 1440;
-			}
+		switch (ng.GetString("type")) {
+		 case "%LIVE":	// 生実況 NG
+			var wday  = ng.GetInt("wday");
+			var start = ng.GetInt("start");
+			var end1  = ng.GetInt("end1");
+			var end2  = ng.GetInt("end2");
 
 			// 発言時刻
 			var dt = get_datetime(status).to_local();
@@ -204,37 +276,35 @@ public class NGWord
 					return true;
 				}
 			}
-			return false;
-		}
+			break;
 
-		// クライアント名
-		if (ngword.has_prefix("%SOURCE,")) {
-			var tmp = ngword.split(",", 2);
-			if (tmp.length > 1 && tmp[1] != null) {
-				var match = tmp[1];
-				if (match in status.GetString("source")) {
-					return true;
-				}
-			}
-			return false;
-		}
+		 case "%RT":
+			// 未実装
+			break;
 
-		// 単純ワード比較
-		try {
-			string text;
-			if (status.Has("full_text")) {
-				text = status.GetString("full_text");
-			} else {
-				text = status.GetString("text");
-			}
-			var regex = new Regex(ngword, RegexCompileFlags.DOTALL);
-			if (regex.match(text)) {
+		 case "%SOURCE":	// クライアント名
+			if (ng.GetString("source") in status.GetString("source")) {
 				return true;
 			}
-		} catch (RegexError e) {
-			stderr.printf("Regex failed: %s\n", e.message);
-		}
+			break;
 
+		 default:	// 通常 NG ワード
+			try {
+				string text;
+				if (status.Has("full_text")) {
+					text = status.GetString("full_text");
+				} else {
+					text = status.GetString("text");
+				}
+				var regex = new Regex(ngword, RegexCompileFlags.DOTALL);
+				if (regex.match(text)) {
+					return true;
+				}
+			} catch (RegexError e) {
+				stderr.printf("Regex failed: %s\n", e.message);
+			}
+			break;
+		}
 		return false;
 	}
 
@@ -248,20 +318,23 @@ public class NGWord
 		}
 
 		// 名前も比較
-		var user = status.GetJson("user");
-		var ngword = ng.GetString("ngword");
-		Regex regex;
-		try {
-			regex = new Regex(ngword, RegexCompileFlags.CASELESS);
-		} catch (RegexError e) {
-			stderr.printf("Regex failed: %s\n", e.message);
-			return false;
-		}
-		if (regex.match(user.GetString("screen_name"))) {
-			return true;
-		}
-		if (regex.match(user.GetString("name"))) {
-			return true;
+		var type = ng.GetString("type");
+		if (type == "normal") {
+			var user = status.GetJson("nguser");
+			var ngword = ng.GetString("ngword");
+			Regex regex;
+			try {
+				regex = new Regex(ngword, RegexCompileFlags.CASELESS);
+			} catch (RegexError e) {
+				stderr.printf("Regex failed: %s\n", e.message);
+				return false;
+			}
+			if (regex.match(user.GetString("screen_name"))) {
+				return true;
+			}
+			if (regex.match(user.GetString("name"))) {
+				return true;
+			}
 		}
 
 		return false;

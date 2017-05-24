@@ -511,7 +511,7 @@ public class SayakaMain
 		signal_handler(SIGWINCH);
 
 		// NGワード取得
-		ngword.read_file();
+		ngword.parse_file();
 	}
 
 	// ユーザストリーム
