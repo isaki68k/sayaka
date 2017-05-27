@@ -113,6 +113,9 @@ public class NGWord
 	//	"start" => 開始時間を0時からの分で
 	//	"end" => 終了時間を0時からの分で。日をまたぐ場合は 24:00
 	//	"end2" => 日をまたぐ場合の終了時間を分で。またがないなら -1
+	// type == "%DELAY" なら
+	//	"ngtext" => キーワード
+	//	"delay" => 遅延させる時間 [時間]
 	// type == "%RT" なら "rtnum" (RT数閾値)
 	// type == "%SOURCE" なら "source"(クライアント名regex)
 	// type == "normal" なら "ngword" をそのまま比較に使用
@@ -140,6 +143,22 @@ public class NGWord
 			a.AddOrUpdate("start", new Json.Number(start.to_string()));
 			a.AddOrUpdate("end1", new Json.Number(end1.to_string()));
 			a.AddOrUpdate("end2", new Json.Number(end2.to_string()));
+			return new Json.Object(a);
+		}
+
+		// 遅延
+		if (ngword.has_prefix("%DELAY,")) {
+			var tmp = ngword.split(",", 3);
+			var hourstr = tmp[1];
+			var hour = 0;
+			if (hourstr.has_suffix("d")) {
+				hour = int.parse(hourstr) * 24;
+			} else {
+				hour = int.parse(hourstr);
+			}
+			a.AddOrUpdate("type", new Json.String(tmp[0]));
+			a.AddOrUpdate("delay", new Json.Number(hour.to_string()));
+			a.AddOrUpdate("ngtext", new Json.String(tmp[2]));
 			return new Json.Object(a);
 		}
 
@@ -278,6 +297,22 @@ public class NGWord
 			}
 			break;
 
+		 case "%DELAY":	// 表示遅延
+			// まずは通常の文字列比較
+			if (match_normal(ng.GetString("ngtext"), status)) {
+				// 一致したら発言時刻と現在時刻を比較
+
+				// 発言時刻
+				var dt = get_datetime(status).to_local();
+				// delay[時間]以内なら表示しない(=NG)
+				var now = new DateTime.now_local();
+				var delay = ng.GetInt("delay");
+				if (now.to_unix() < dt.add_hours(delay).to_unix()) {
+					return true;
+				}
+			}
+			break;
+
 		 case "%RT":
 			// 未実装
 			break;
@@ -289,21 +324,31 @@ public class NGWord
 			break;
 
 		 default:	// 通常 NG ワード
-			try {
-				string text;
-				if (status.Has("full_text")) {
-					text = status.GetString("full_text");
-				} else {
-					text = status.GetString("text");
-				}
-				var regex = new Regex(ngword, RegexCompileFlags.DOTALL);
-				if (regex.match(text)) {
-					return true;
-				}
-			} catch (RegexError e) {
-				stderr.printf("Regex failed: %s\n", e.message);
+			if (match_normal(ngword, status)) {
+				return true;
 			}
 			break;
+		}
+		return false;
+	}
+
+	// NGワード(regex) ngword が status 中の本文にマッチするか調べる。
+	// マッチすれば true、しなければ false を返す。
+	public bool match_normal(string ngword, ULib.Json status)
+	{
+		try {
+			string text;
+			if (status.Has("full_text")) {
+				text = status.GetString("full_text");
+			} else {
+				text = status.GetString("text");
+			}
+			var regex = new Regex(ngword, RegexCompileFlags.DOTALL);
+			if (regex.match(text)) {
+				return true;
+			}
+		} catch (RegexError e) {
+			stderr.printf("Regex failed: %s\n", e.message);
 		}
 		return false;
 	}
