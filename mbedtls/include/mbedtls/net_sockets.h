@@ -93,6 +93,9 @@ void mbedtls_net_init( mbedtls_net_context *ctx );
  */
 int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host, const char *port, int proto );
 
+int mbedtls_net_connect_timeout(mbedtls_net_context *ctx, const char *host,
+	const char *port, int proto, int timeout_msec);
+
 /**
  * \brief          Create a receiving socket on bind_ip:port in the chosen
  *                 protocol. If bind_ip == NULL, all interfaces are bound.

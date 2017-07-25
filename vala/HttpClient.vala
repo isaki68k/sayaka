@@ -331,6 +331,12 @@ namespace ULib
 		{
 			Ciphers = ciphers;
 		}
+
+		// タイムアウト [msec] を設定します。
+		public void SetTimeout(int timeout)
+		{
+			Handle.set_timeout(timeout);
+		}
 	}
 
 	public class ChunkedInputStream

@@ -81,6 +81,7 @@ static int wsa_init_done = 0;
 #include <fcntl.h>
 #include <netdb.h>
 #include <errno.h>
+#include <poll.h>
 
 #endif /* ( _WIN32 || _WIN32_WCE ) && !EFIX64 && !EFI32 */
 
@@ -172,6 +173,108 @@ int mbedtls_net_connect( mbedtls_net_context *ctx, const char *host,
         close( ctx->fd );
         ret = MBEDTLS_ERR_NET_CONNECT_FAILED;
     }
+
+    freeaddrinfo( addr_list );
+
+    return( ret );
+}
+
+/*
+ * mbedtls_net_connect() のタイムアウト付き版
+ */
+int mbedtls_net_connect_timeout(mbedtls_net_context *ctx, const char *host,
+                         const char *port, int proto, int timeout_msec)
+{
+    int ret;
+    struct addrinfo hints, *addr_list, *cur;
+	struct timeval t1, t2, res;
+	int64_t remain_usec;
+	struct pollfd pfd;
+
+	if (timeout_msec == 0) {
+		return mbedtls_net_connect(ctx, host, port, proto);
+	}
+
+    if( ( ret = net_prepare() ) != 0 )
+        return( ret );
+
+	/* タイムアウト時刻を設定 */
+	remain_usec = (int64_t)timeout_msec * 1000;
+	gettimeofday(&t1, NULL);
+
+    /* Do name resolution with both IPv6 and IPv4 */
+    memset( &hints, 0, sizeof( hints ) );
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = proto == MBEDTLS_NET_PROTO_UDP ? SOCK_DGRAM : SOCK_STREAM;
+    hints.ai_protocol = proto == MBEDTLS_NET_PROTO_UDP ? IPPROTO_UDP : IPPROTO_TCP;
+
+    if( getaddrinfo( host, port, &hints, &addr_list ) != 0 )
+        return( MBEDTLS_ERR_NET_UNKNOWN_HOST );
+
+    /* Try the sockaddrs until a connection succeeds */
+    ret = MBEDTLS_ERR_NET_UNKNOWN_HOST;
+    for( cur = addr_list; cur != NULL; cur = cur->ai_next )
+    {
+        ctx->fd = (int) socket( cur->ai_family, cur->ai_socktype,
+                            cur->ai_protocol );
+        if( ctx->fd < 0 )
+        {
+            ret = MBEDTLS_ERR_NET_SOCKET_FAILED;
+            continue;
+        }
+
+		/* ノンブロッキングに設定 */
+		if (mbedtls_net_set_nonblock(ctx) == -1) {
+			goto close_and_next;
+		}
+
+        ret = connect( ctx->fd, cur->ai_addr, MSVC_INT_CAST cur->ai_addrlen );
+		if (ret == 0) {
+			/* 起きないはずだけど */
+            break;
+        }
+		if (errno != EINPROGRESS) {
+			goto close_and_next;
+		}
+
+		memset(&pfd, 0, sizeof(pfd));
+		pfd.fd = ctx->fd;
+		pfd.events = POLLIN | POLLOUT;
+		ret = poll(&pfd, 1, (int)(remain_usec / 1000));
+		if (ret > 0) {
+			/*
+			 * connect(2) が成功したかどうかは getsockopt(2) で調べる
+			 * getsockopt(SO_ERROR) が 0 なら成功、1 なら失敗、
+			 * -1 なら getsockopt() 自体が失敗。
+			 */
+			int error;
+			socklen_t len = sizeof(error);
+			if (getsockopt(ctx->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0) {
+				goto close_and_next;
+			}
+			/* 接続できたのでブロッキングに戻す */
+			if (mbedtls_net_set_block(ctx) == -1) {
+				goto close_and_next;
+			}
+			ret = 0;
+			break;
+		}
+		if (ret == 0) {
+			/* タイムアウト。次を試す必要はないのでここで終了 */
+			ret = MBEDTLS_ERR_NET_CONNECT_FAILED;
+			break;
+		}
+
+	 close_and_next:
+		/* 残りタイムアウト時間を再計算 */
+		gettimeofday(&t2, NULL);
+		timersub(&t2, &t1, &res);
+		t1 = t2;
+		remain_usec -= (int64_t)((int64_t)res.tv_sec * 1000000 + res.tv_usec);
+
+		close(ctx->fd);
+		ret = MBEDTLS_ERR_NET_CONNECT_FAILED;
+	}
 
     freeaddrinfo( addr_list );
 

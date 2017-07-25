@@ -45,6 +45,9 @@ namespace Native.mTLS
 		[CCode(cname = "mtls_usersa")]
 		public void usersa();
 
+		[CCode(cname = "mtls_set_timeout")]
+		public void set_timeout(int timeout);
+
 		[CCode(cname = "mtls_connect")]
 		public int connect(char* hostname, char* servname);
 

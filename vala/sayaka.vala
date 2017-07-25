@@ -142,6 +142,7 @@ public class SayakaMain
 	public NGWord ngword;
 	public bool opt_ormode;
 	public bool opt_outputpalette;
+	public int opt_timeout_image;	// 画像取得の(接続)タイムアウト [msec]
 
 	public string basedir;
 	public string cachedir;
@@ -182,6 +183,7 @@ public class SayakaMain
 		opt_progress = false;
 		opt_ormode = false;
 		opt_outputpalette = true;
+		opt_timeout_image = 3000;
 
 		for (var i = 1; i < args.length; i++) {
 			switch (args[i]) {
@@ -320,6 +322,9 @@ public class SayakaMain
 				break;
 			 case "--support-evs":
 				opt_evs = true;
+				break;
+			 case "--timeout-image":
+				opt_timeout_image = int.parse(args[++i]) * 1000;
 				break;
 			 case "--token":
 			 {
@@ -1825,6 +1830,7 @@ public class SayakaMain
 			return null;
 		}
 		fg.Family = address_family;
+		fg.SetTimeout(opt_timeout_image);
 		DataInputStream stream;
 		try {
 			stream = fg.GET();

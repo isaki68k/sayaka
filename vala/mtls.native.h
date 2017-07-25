@@ -33,6 +33,7 @@ typedef struct mtlsctx
 {
 	int initialized;
 	int usessl;
+	int connect_timeout;	// [msec]
 	// internal contexts
 	mbedtls_net_context net;
 	mbedtls_ssl_context ssl;

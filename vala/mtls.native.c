@@ -221,6 +221,14 @@ mtls_usersa(mtlsctx_t* ctx)
 	mbedtls_ssl_conf_ciphersuites(&ctx->conf, ciphersuites_RSA);
 }
 
+// コネクトタイムアウトを設定します。
+// mtls_connect() より先に設定しておく必要があります。
+void
+mtls_set_timeout(mtlsctx_t* ctx, int timeout)
+{
+	ctx->connect_timeout = timeout;
+}
+
 
 // 接続します。
 int
@@ -231,8 +239,8 @@ mtls_connect(mtlsctx_t* ctx, const char* hostname, const char *servname)
 	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
 	int r;
 
-	r = mbedtls_net_connect(&ctx->net, hostname, servname,
-			MBEDTLS_NET_PROTO_TCP);
+	r = mbedtls_net_connect_timeout(&ctx->net, hostname, servname,
+			MBEDTLS_NET_PROTO_TCP, ctx->connect_timeout);
 	if (r != 0) {
 		ERROR("mbedtls_net_connect %s:%s - %s\n", hostname, servname,
 			mtls_errmsg(r));
