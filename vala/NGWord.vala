@@ -365,7 +365,7 @@ public class NGWord
 		// 名前も比較
 		var type = ng.GetString("type");
 		if (type == "normal") {
-			var user = status.GetJson("nguser");
+			var user = status.GetJson("user");
 			var ngword = ng.GetString("ngword");
 			Regex regex;
 			try {
