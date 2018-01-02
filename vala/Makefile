@@ -95,7 +95,6 @@ LIBS+= -ljpeg
 
 VALA_FLAGS=	\
 	mtls.vapi \
-	glib.vapi \
 
 VALAC=	valac
 
