@@ -2,7 +2,7 @@
  * sayaka - twitter client
  */
 /*
- * Copyright (C) 2014-2016 Tetsuya Isaki
+ * Copyright (C) 2014-2018 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -52,7 +52,7 @@ public class MediaInfo
 
 public class SayakaMain
 {
-	public const string version = "3.3.1 (2016/12/23)";
+	public const string version = "3.3.2 (2018/01/02)";
 
 	private static Diag diag;
 	private static Diag diagSixel;
