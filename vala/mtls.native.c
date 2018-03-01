@@ -30,8 +30,9 @@
 
 //#define DEBUG
 
-#if defined(DEBUG)
 #include <sys/time.h>
+
+#if defined(DEBUG)
 #define TRACE(fmt...)	do { \
 	struct timeval tv;	\
 	TRACE_tv(&tv, fmt);	\
