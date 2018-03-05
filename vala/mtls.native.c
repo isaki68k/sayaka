@@ -26,11 +26,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "mtls.native.h"
 
 //#define DEBUG
-
-#include <sys/time.h>
 
 #if defined(DEBUG)
 #define TRACE(fmt...)	do { \
