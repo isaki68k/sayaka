@@ -162,13 +162,12 @@ public class Twitter
 
 	// API に接続し、結果の JSON を返します。
 	// 接続が失敗、あるいは JSON が正しく受け取れなかった場合は
-	// 空の JSON を返します。
-	public Json API2Json(string method, string apiRoot, string api,
+	// null を返します。
+	public Json? API2Json(string method, string apiRoot, string api,
 		Dictionary<string, string>? options = null)
 	{
 		DataInputStream stream = null;
 		string line = null;
-		Json json = new Json();
 		try {
 			stream = API(method, apiRoot, api, options);
 			line = stream.read_line();
@@ -177,9 +176,10 @@ public class Twitter
 			// nop
 		}
 		if (line == null || line == "") {
-			return json;
+			return null;
 		}
 
+		Json json = null;
 		var parser = new JsonParser();
 		try {
 			json = parser.Parse(line);

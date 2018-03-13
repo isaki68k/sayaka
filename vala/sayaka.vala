@@ -495,6 +495,10 @@ public class SayakaMain
 		// 投稿
 		var json = tw.API2Json("POST", Twitter.APIRoot, "statuses/update",
 			options);
+		if (json == null) {
+			stderr.printf("statuses/update API2Json failed\n");
+			Process.exit(1);
+		}
 		if (json.Has("errors")) {
 			var errorlist = json.GetArray("errors");
 			// エラーが複数返ってきたらどうするかね
@@ -1877,11 +1881,11 @@ public class SayakaMain
 			// JSON を取得
 			var json = tw.API2Json("GET", Twitter.APIRoot, "blocks/ids",
 				options);
-			diag.Debug(@"json=|$(json)|");
 			if (json == null) {
-				stderr.printf("get_block_list failed: json == null\n");
-				break;
+				stderr.printf("get_block_list API2Json failed\n");
+				Process.exit(1);
 			}
+			diag.Debug(@"json=|$(json)|");
 			if (json.Has("errors")) {
 				var errorlist = json.GetArray("errors");
 				// エラーが複数返ってきたらどうするかね
@@ -1935,11 +1939,11 @@ public class SayakaMain
 			// JSON を取得
 			var json = tw.API2Json("GET", Twitter.APIRoot, "mutes/users/ids",
 				options);
-			diag.Debug(@"json=|$(json)|");
 			if (json == null) {
-				stderr.printf("get_mute_list failed: json == null\n");
-				break;
+				stderr.printf("get_mute_list API2Json failed\n");
+				Process.exit(1);
 			}
+			diag.Debug(@"json=|$(json)|");
 			if (json.Has("errors")) {
 				var errorlist = json.GetArray("errors");
 				// エラーが複数返ってきたらどうするかね
@@ -2002,11 +2006,11 @@ public class SayakaMain
 		// JSON を取得
 		var json = tw.API2Json("GET", Twitter.APIRoot,
 			"friendships/no_retweets/ids");
-		diag.Debug(@"json=|$(json)|");
 		if (json == null) {
-			stderr.printf("get_nort_list failed: json == null\n");
-			return;
+			stderr.printf("get_nort_list API2Json failed\n");
+			Process.exit(1);
 		}
+		diag.Debug(@"json=|$(json)|");
 
 		if (json.IsArray == false) {
 			// どうするかね
