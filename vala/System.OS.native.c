@@ -25,10 +25,10 @@
  */
 
 #include <stdio.h>
+#include <termios.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
-#include <sys/ttycom.h>
 
 int
 native_ioctl_TIOCGWINSZ(int fd, struct winsize *ws)
