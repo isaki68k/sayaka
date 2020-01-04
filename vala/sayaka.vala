@@ -88,7 +88,6 @@ public class SayakaMain
 		PlayMode,
 		TweetMode,
 		MutelistMode,
-		StreamRelayMode,
 		NgwordAdd,
 		NgwordDel,
 		NgwordList,
@@ -349,9 +348,6 @@ public class SayakaMain
 				}
 				record_file = args[i];
 				break;
-			 case "--relay-server":
-				cmd = SayakaCmd.StreamRelayMode;
-				break;
 			 case "--show-ng":
 				opt_show_ng = true;
 				break;
@@ -455,9 +451,6 @@ public class SayakaMain
 			break;
 		 case SayakaCmd.MutelistMode:
 			cmd_mutelist();
-			break;
-		 case SayakaCmd.StreamRelayMode:
-			cmd_userstream_relay(args[0]);
 			break;
 		 case SayakaCmd.NgwordAdd:
 			cmd_ngword_add();
@@ -682,48 +675,6 @@ public class SayakaMain
 			if (showstatus_callback_line(line) == false) {
 				break;
 			}
-		}
-	}
-
-	// 中継サーバモード
-	public void cmd_userstream_relay(string progname)
-	{
-		DataInputStream userStream = null;
-
-		// 実行ファイルのあるところへ chdir
-		var progdir = Path.get_dirname(progname);
-		Posix.chdir(progdir);
-
-		// アクセストークンを取得
-		// XXX すでにあることが前提
-		tw = new Twitter();
-		get_access_token();
-
-		// ストリーミング開始
-		try {
-			diag.Trace("UserStreamAPI call");
-			userStream = tw.UserStreamAPI("user");
-		} catch (Error e) {
-			stderr.printf("userstream: %s\n", e.message);
-			Process.exit(1);
-		}
-
-		while (true) {
-			string line;
-			try {
-				line = userStream.read_line();
-			} catch (Error e) {
-				stderr.printf("userstream.read_line: %s\n", e.message);
-				Process.exit(1);
-			}
-
-			// 空行がちょくちょく送られてくるようだ
-			if (line == "") {
-				continue;
-			}
-
-			stdout.printf("%s\n", line);
-			stdout.flush();
 		}
 	}
 
@@ -2271,7 +2222,6 @@ public class SayakaMain
 	--nortlist
 	--ormode <on|off> (default off)
 	--palette <on|off> (default on)
-	--relay-server
 	--user
 """
 		);
