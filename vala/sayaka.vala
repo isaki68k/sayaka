@@ -146,6 +146,7 @@ public class SayakaMain
 	public bool opt_ormode;
 	public bool opt_outputpalette;
 	public int opt_timeout_image;	// 画像取得の(接続)タイムアウト [msec]
+	public bool opt_pseudo_home;	// 疑似ホームタイムライン
 
 	public string basedir;
 	public string cachedir;
@@ -382,6 +383,10 @@ public class SayakaMain
 				}
 				break;
 			 }
+			 case "-u":
+				cmd = SayakaCmd.StreamMode;
+				opt_pseudo_home = true;
+				break;
 			 case "--user":
 				if (++i >= args.length) {
 					usage();
@@ -438,6 +443,12 @@ public class SayakaMain
 
 		// usage() は init() より前のほうがいいか。
 		if (cmd == SayakaCmd.Noop) {
+			usage();
+			Process.exit(0);
+		}
+
+		if (opt_pseudo_home && opt_filter != "") {
+			stdout.printf("filter keyword and -u must be exclusive.\n");
 			usage();
 			Process.exit(0);
 		}
@@ -573,7 +584,7 @@ public class SayakaMain
 		stdout.printf("Posted.\n");
 	}
 
-	// ユーザストリームモードのための準備
+	// ストリームモードのための準備
 	public void init_stream()
 	{
 		// 色の初期化
@@ -610,6 +621,18 @@ public class SayakaMain
 		}
 
 		if (opt_norest == false) {
+			// フォローユーザ取得 (疑似タイムライン時のみ)
+			if (opt_pseudo_home) {
+				if (debug || opt_progress) {
+					stdout.printf("Getting follow list...");
+					stdout.flush();
+				}
+				get_follow_list();
+				if (debug || opt_progress) {
+					stdout.printf("done\n");
+				}
+			}
+
 			// ブロックユーザ取得
 			if (debug || opt_progress) {
 				stdout.printf("Getting block users list...");
@@ -648,7 +671,14 @@ public class SayakaMain
 		diag.Trace("PostAPI call");
 		try {
 			var dict = new Dictionary<string, string>();
-			dict.AddOrUpdate("track", opt_filter);
+			if (opt_pseudo_home) {
+				// 疑似ホームタイムライン
+				var liststr = join_dict(",", followlist);
+				dict.AddOrUpdate("follow", liststr);
+			} else {
+				// キーワード検索
+				dict.AddOrUpdate("track", opt_filter);
+			}
 			stream = tw.PostAPI(Twitter.PublicAPIRoot, "statuses/filter", dict);
 		} catch (Error e) {
 			stderr.printf("statuses/filter: %s\n", e.message);
@@ -672,6 +702,26 @@ public class SayakaMain
 				break;
 			}
 		}
+	}
+
+	// Dictionary のキーを sep で連結した文字列を返す。
+	// dict = { "A"=>"a", "B"=>"b", "C"=>"c" } なら
+	// join_dict(",", dict) の戻り値は "A,B,C"。
+	// string.join(sep, ...) は可変引数が必要なので、
+	// Dictionary<string> に対するよく似たものを作る。
+	public string join_dict(string sep, Dictionary<string, string> dict)
+	{
+		var str = "";
+		if (dict.Count > 0) {
+			var kv = dict.At(0);
+			str += kv.Key;
+		}
+		for (var i = 1; i < dict.Count; i++) {
+			var kv = dict.At(i);
+			str += sep + kv.Key;
+		}
+		stdout.printf(@"rv=|$(str)|\n");
+		return str;
 	}
 
 	// 再生モード
@@ -2205,6 +2255,7 @@ public class SayakaMain
 	--show-ng
 	--support-evs
 	--token <file> : token file (default: ~/.sayaka/token.json)
+	-u : pseudo home timeline using filter stream
 	--version
 	--x68k : preset options for x68k.
 
