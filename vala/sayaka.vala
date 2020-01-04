@@ -261,6 +261,10 @@ public class SayakaMain
 			 case "--full-url":
 				opt_full_url = true;
 				break;
+			 case "--home":
+				cmd = SayakaCmd.StreamMode;
+				opt_pseudo_home = true;
+				break;
 			 case "--jis":
 				iconv_tocode = "iso-2022-jp";
 				break;
@@ -390,10 +394,6 @@ public class SayakaMain
 				}
 				break;
 			 }
-			 case "-u":
-				cmd = SayakaCmd.StreamMode;
-				opt_pseudo_home = true;
-				break;
 			 case "--version":
 				cmd = SayakaCmd.Version;
 				break;
@@ -449,7 +449,7 @@ public class SayakaMain
 		}
 
 		if (opt_pseudo_home && opt_filter != "") {
-			stdout.printf("filter keyword and -u must be exclusive.\n");
+			stdout.printf("filter keyword and --home must be exclusive.\n");
 			usage();
 			Process.exit(0);
 		}
@@ -2337,11 +2337,13 @@ public class SayakaMain
 	public void usage()
 	{
 		stdout.printf(
-"""usage: sayaka [<options>...] <keyword>
+"""usage: sayaka [<options>...] --home
+       sayaka [<options>...] <keyword>
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
 	--filter <keyword>
 	--full-url : display full URL even if the URL is abbreviated.
+	--home : pseudo home timeline using filter stream
 	--white / --black : darken/lighten the text color. (default: --white)
 	--noimg
 	--jis
@@ -2353,7 +2355,6 @@ public class SayakaMain
 	--show-ng
 	--support-evs
 	--token <file> : token file (default: ~/.sayaka/token.json)
-	-u : pseudo home timeline using filter stream
 	--version
 	--x68k : preset options for x68k.
 
