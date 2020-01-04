@@ -87,6 +87,7 @@ public class SayakaMain
 		StreamMode,
 		PlayMode,
 		TweetMode,
+		FollowlistMode,
 		MutelistMode,
 		NgwordAdd,
 		NgwordDel,
@@ -119,6 +120,8 @@ public class SayakaMain
 	public string iconv_tocode = "";
 	public string[] color2esc = new string[Color.Max];
 	public Twitter tw;
+	public Dictionary<string, string> followlist
+		= new Dictionary<string, string>();
 	public Dictionary<string, string> blocklist
 		= new Dictionary<string, string>();
 	public Dictionary<string, string> mutelist
@@ -238,6 +241,9 @@ public class SayakaMain
 				}
 				cmd = SayakaCmd.StreamMode;
 				opt_filter = args[i];
+				break;
+			 case "--followlist":
+				cmd = SayakaCmd.FollowlistMode;
 				break;
 			 case "--font":
 				if (++i >= args.length) {
@@ -448,6 +454,9 @@ public class SayakaMain
 		 case SayakaCmd.PlayMode:
 			init_stream();
 			cmd_play();
+			break;
+		 case SayakaCmd.FollowlistMode:
+			cmd_followlist();
 			break;
 		 case SayakaCmd.MutelistMode:
 			cmd_mutelist();
@@ -1861,25 +1870,29 @@ public class SayakaMain
 		return file;
 	}
 
-	// ブロックユーザ一覧の読み込み
-	public void get_block_list()
+	// ユーザ一覧を読み込む(共通)。
+	// フォロー(friends)、ブロックユーザ、ミュートユーザは同じ形式。
+	// 読み込んだリストを Dictionary 形式で返す。エラーなら終了する。
+	// funcname はエラー時の表示用。
+	public Dictionary<string, string> get_paged_list(string api,
+		string funcname)
 	{
-		// ブロックユーザ一覧は一度に全部送られてくるとは限らず、
+		// ユーザ一覧は一度に全部送られてくるとは限らず、
 		// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
 		// これを cursor に指定してもう一度リクエストを送る。
 
-		blocklist.Clear();
 		var cursor = "-1";
+		var list = new Dictionary<string, string>();
+		list.Clear();
 
 		do {
 			var options = new Dictionary<string, string>();
 			options["cursor"] = cursor;
 
 			// JSON を取得
-			var json = tw.API2Json("GET", Twitter.APIRoot, "blocks/ids",
-				options);
+			var json = tw.API2Json("GET", Twitter.APIRoot, api, options);
 			if (json == null) {
-				stderr.printf("get_block_list API2Json failed\n");
+				stderr.printf(@"$(funcname) API2Json failed\n");
 				Process.exit(1);
 			}
 			diag.Debug(@"json=|$(json)|");
@@ -1888,19 +1901,47 @@ public class SayakaMain
 				// エラーが複数返ってきたらどうするかね
 				var code = errorlist.index(0).GetInt("code");
 				var message = errorlist.index(0).GetString("message");
-				stderr.printf(@"get_block_list failed: $(message)($(code))\n");
+				stderr.printf(@"$(funcname) failed: $(message)($(code))\n");
 				Process.exit(1);
 			}
 
 			var users = json.GetArray("ids");
 			for (var i = 0; i < users.length; i++) {
 				var id_str = users.index(i).AsNumber;
-				blocklist[id_str] = id_str;
+				list[id_str] = id_str;
 			}
 
 			cursor = json.GetString("next_cursor_str");
 			diag.Debug(@"cursor=|$(cursor)|");
 		} while (cursor != "0");
+
+		return list;
+	}
+
+	// フォローユーザ一覧の読み込み
+	public void get_follow_list()
+	{
+		followlist = get_paged_list("friends/ids", "get_follow_list");
+	}
+
+	// 取得したフォローユーザの一覧を表示する
+	public void cmd_followlist()
+	{
+		tw = new Twitter();
+		get_access_token();
+
+		get_follow_list();
+
+		for (var i = 0; i < followlist.Count; i++) {
+			var kv = followlist.At(i);
+			stdout.printf("%s\n".printf(kv.Key));
+		}
+	}
+
+	// ブロックユーザ一覧の読み込み
+	public void get_block_list()
+	{
+		blocklist = get_paged_list("blocks/ids", "get_block_list");
 	}
 
 	// 取得したブロックユーザの一覧を表示する
@@ -1920,46 +1961,7 @@ public class SayakaMain
 	// ミュートユーザ一覧の読み込み
 	public void get_mute_list()
 	{
-		// ミュートユーザ一覧は一度に全部送られてくるとは限らず、
-		// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
-		// これを cursor に指定してもう一度リクエストを送る。
-
-		mutelist.Clear();
-		var cursor = "0";
-
-		do {
-			var options = new Dictionary<string, string>();
-			if (cursor != "0") {
-				options["cursor"] = cursor;
-			}
-
-			// JSON を取得
-			var json = tw.API2Json("GET", Twitter.APIRoot, "mutes/users/ids",
-				options);
-			if (json == null) {
-				stderr.printf("get_mute_list API2Json failed\n");
-				Process.exit(1);
-			}
-			diag.Debug(@"json=|$(json)|");
-			if (json.Has("errors")) {
-				var errorlist = json.GetArray("errors");
-				// エラーが複数返ってきたらどうするかね
-				var code = errorlist.index(0).GetInt("code");
-				var message = errorlist.index(0).GetString("message");
-				stderr.printf(@"get_mute_list failed: $(message)($(code))\n");
-				Process.exit(1);
-			}
-
-			var users = json.GetArray("ids");
-			for (var i = 0; i < users.length; i++) {
-				var id_json = users.index(i);
-				var id_str = id_json.AsNumber;
-				mutelist[id_str] = id_str;
-			}
-
-			cursor = json.GetString("next_cursor_str");
-			diag.Debug(@"cursor=|$(cursor)|");
-		} while (cursor != "0");
+		mutelist = get_paged_list("mutes/users/ids", "get_mute_list");
 	}
 
 	// ミュートユーザを追加
@@ -1995,7 +1997,7 @@ public class SayakaMain
 	// RT非表示ユーザ一覧の読み込み
 	public void get_nort_list()
 	{
-		// ミュートユーザ一覧とは違って、リスト一発で送られてくるっぽい。
+		// ミュートユーザ一覧等とは違って、リスト一発で送られてくるっぽい。
 		// なんであっちこっちで仕様が違うんだよ…。
 
 		nortlist.Clear();
@@ -2212,6 +2214,7 @@ public class SayakaMain
 	--ciphers <ciphers>
 	--debug
 	--debug-sixel
+	--followlist
 	--max-cont <n>
 	--max-image-cols <n>
 	--mutelist
