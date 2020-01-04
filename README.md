@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.3.2 (2018/01/02)
+twitter クライアント sayaka ちゃん version 3.3.3 (2019/01/04)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -9,6 +9,7 @@ twitter クライアント sayaka ちゃん version 3.3.2 (2018/01/02)
 
 更新履歴
 ---
+* 3.3.3 (2019/01/04) … Linux でのビルドエラーを修正。
 * 3.3.2 (2018/01/02) … pkgsrc-2017Q4 (vala-0.38.1以上) でのビルドに対応。
 	画像は Content-Type が image/* の時のみ表示するようにしてみる。
 	mbedTLS-2.4.2 に更新。
