@@ -299,6 +299,12 @@ public class SayakaMain
 			 case "--ngword-list":
 				cmd = SayakaCmd.NgwordList;
 				break;
+			 case "--ngword-user":
+				if (++i >= args.length) {
+					usage();
+				}
+				opt_ngword_user = args[i];
+				break;
 			 case "--noimg":
 				opt_noimg = true;
 				break;
@@ -387,12 +393,6 @@ public class SayakaMain
 			 case "-u":
 				cmd = SayakaCmd.StreamMode;
 				opt_pseudo_home = true;
-				break;
-			 case "--user":
-				if (++i >= args.length) {
-					usage();
-				}
-				opt_ngword_user = args[i];
 				break;
 			 case "--version":
 				cmd = SayakaCmd.Version;
@@ -2370,11 +2370,11 @@ public class SayakaMain
 	--ngword-add
 	--ngword-del
 	--ngword-list
+	--ngword-user
 	--norest
 	--nortlist
 	--ormode <on|off> (default off)
 	--palette <on|off> (default on)
-	--user
 """
 		);
 		Process.exit(0);
