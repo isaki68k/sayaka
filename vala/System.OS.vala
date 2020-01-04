@@ -29,29 +29,6 @@ extern int native_sysctlbyname(string sname,
 	void *oldp, size_t *oldlenp,
 	void *newp, size_t newlen);
 
-[CCode(cname="SIGINT")]
-extern const int native_SIGINT;
-[CCode(cname="SIGWINCH")]
-extern const int native_SIGWINCH;
-[CCode(cname="SIGHUP")]
-extern const int native_SIGHUP;
-[CCode(cname="SIGPIPE")]
-extern const int native_SIGPIPE;
-[CCode(cname="SIGALRM")]
-extern const int native_SIGALRM;
-[CCode(cname="SIGXCPU")]
-extern const int native_SIGXCPU;
-[CCode(cname="SIGXFSZ")]
-extern const int native_SIGXFSZ;
-[CCode(cname="SIGVTALRM")]
-extern const int native_SIGVTALRM;
-[CCode(cname="SIGPROF")]
-extern const int native_SIGPROF;
-[CCode(cname="SIGUSR1")]
-extern const int native_SIGUSR1;
-[CCode(cname="SIGUSR2")]
-extern const int native_SIGUSR2;
-
 namespace System.OS
 {
 	public struct winsize {
@@ -68,18 +45,6 @@ namespace System.OS
 			return native_ioctl_TIOCGWINSZ(fd, out ws);
 		}
 	}
-
-	public const int SIGINT = native_SIGINT;
-	public const int SIGWINCH = native_SIGWINCH;
-	public const int SIGHUP = native_SIGHUP;
-	public const int SIGPIPE = native_SIGPIPE;
-	public const int SIGALRM = native_SIGALRM;
-	public const int SIGXCPU = native_SIGXCPU;
-	public const int SIGXFSZ = native_SIGXFSZ;
-	public const int SIGVTALRM = native_SIGVTALRM;
-	public const int SIGPROF = native_SIGPROF;
-	public const int SIGUSR1 = native_SIGUSR1;
-	public const int SIGUSR2 = native_SIGUSR2;
 
 	public class sysctl
 	{

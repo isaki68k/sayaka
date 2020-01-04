@@ -617,7 +617,7 @@ public class SixelV
 
 		switch (opt_outputformat) {
 			case OutputFormat.SIXEL:
-				Posix.@signal(SIGINT, signal_handler);
+				Posix.@signal(Posix.Signal.INT, signal_handler);
 				sx.SixelToStream(stdout);
 				break;
 			case OutputFormat.GVRAM:
@@ -734,7 +734,7 @@ public class SixelV
 	public void signal_handler_2(int signo)
 	{
 		switch (signo) {
-		 case SIGINT:
+		 case Posix.Signal.INT:
 			// SIXEL 出力を中断する (CAN + ST)
 			stdout.printf("\x18\x1b\\");
 			stdout.flush();

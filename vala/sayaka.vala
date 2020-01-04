@@ -451,18 +451,18 @@ public class SayakaMain
 		}
 
 		// シグナルハンドラを設定
-		Posix.@signal(SIGINT, signal_handler);
-		Posix.@signal(SIGWINCH, signal_handler);
+		Posix.@signal(Posix.Signal.INT,		signal_handler);
+		Posix.@signal(Posix.Signal.WINCH,	signal_handler);
 
-		Posix.@signal(SIGHUP,	signal_handler);
-		Posix.@signal(SIGPIPE,	signal_handler);
-		Posix.@signal(SIGALRM,	signal_handler);
-		Posix.@signal(SIGXCPU,	signal_handler);
-		Posix.@signal(SIGXFSZ,	signal_handler);
-		Posix.@signal(SIGVTALRM, signal_handler);
-		Posix.@signal(SIGPROF,	signal_handler);
-		Posix.@signal(SIGUSR1,	signal_handler);
-		Posix.@signal(SIGUSR2,	signal_handler);
+		Posix.@signal(Posix.Signal.HUP,		signal_handler);
+		Posix.@signal(Posix.Signal.PIPE,	signal_handler);
+		Posix.@signal(Posix.Signal.ALRM,	signal_handler);
+		Posix.@signal(Posix.Signal.XCPU,	signal_handler);
+		Posix.@signal(Posix.Signal.XFSZ,	signal_handler);
+		Posix.@signal(Posix.Signal.VTALRM,	signal_handler);
+		Posix.@signal(Posix.Signal.PROF,	signal_handler);
+		Posix.@signal(Posix.Signal.USR1,	signal_handler);
+		Posix.@signal(Posix.Signal.USR2,	signal_handler);
 	}
 
 	// 投稿する
@@ -517,7 +517,7 @@ public class SayakaMain
 		init_color();
 
 		// 一度手動で呼び出して桁数を取得
-		signal_handler(SIGWINCH);
+		signal_handler(Posix.Signal.WINCH);
 
 		// NGワード取得
 		ngword.parse_file();
@@ -2077,7 +2077,7 @@ public class SayakaMain
 	public void signal_handler_2(int signo)
 	{
 		switch (signo) {
-		 case SIGINT:
+		 case Posix.Signal.INT:
 			// SIXEL 出力中なら中断する (CAN + ST)
 			if (in_sixel) {
 				stdout.printf("%c%c%c", CAN, ESC, '\\');
@@ -2087,7 +2087,7 @@ public class SayakaMain
 			}
 			break;
 
-		 case SIGWINCH:
+		 case Posix.Signal.WINCH:
 			int ws_cols = 0;
 			int ws_width = 0;
 			int ws_height = 0;
