@@ -83,6 +83,7 @@ public class SayakaMain
 	}
 
 	public enum SayakaCmd {
+		Noop,
 		StreamMode,
 		PlayMode,
 		TweetMode,
@@ -161,7 +162,7 @@ public class SayakaMain
 		diag = new Diag("SayakaMain");
 		diagSixel = new Diag("SayakaMain");
 
-		SayakaCmd cmd = SayakaCmd.StreamMode;
+		SayakaCmd cmd = SayakaCmd.Noop;
 
 		basedir = Environment.get_home_dir() + "/.sayaka/";
 		cachedir    = basedir + "cache";
@@ -236,6 +237,7 @@ public class SayakaMain
 				if (++i >= args.length) {
 					usage();
 				}
+				cmd = SayakaCmd.StreamMode;
 				opt_filter = args[i];
 				break;
 			 case "--font":
@@ -401,8 +403,20 @@ public class SayakaMain
 				opt_ormode = true;
 				opt_outputpalette = false;
 				break;
-			 default:
+			 case "-h":
+			 case "--help":
 				usage();
+				break;
+			 default:
+				// 知らない引数はエラー。
+				// そうでなければ filter キーワード。
+				if (args[i][0] == '-') {
+					stdout.printf(@"unknown option $(args[i])\n");
+					usage();
+				} else {
+					cmd = SayakaCmd.StreamMode;
+					opt_filter = args[i];
+				}
 				break;
 			}
 		}
@@ -420,8 +434,13 @@ public class SayakaMain
 			stdout.printf("\n");
 		}
 
-		diag.Debug(@"tokenfile = $(tokenfile)\n");
+		// usage() は init() より前のほうがいいか。
+		if (cmd == SayakaCmd.Noop) {
+			usage();
+			Process.exit(0);
+		}
 
+		diag.Debug(@"tokenfile = $(tokenfile)\n");
 		init();
 
 		// コマンド別処理
@@ -565,10 +584,10 @@ public class SayakaMain
 		ngword.parse_file();
 	}
 
-	// ユーザストリーム
+	// フィルタストリーム
 	public void cmd_stream()
 	{
-		DataInputStream userStream = null;
+		DataInputStream stream = null;
 
 		// 古いキャッシュを削除
 		if (debug || opt_progress) {
@@ -624,42 +643,27 @@ public class SayakaMain
 		stdout.flush();
 
 		// ストリーミング開始
-		if (opt_filter != "") {
-			// --filter 指定があればキーワード検索モード
-			diag.Trace("PostAPI call");
-			try {
-				var dict = new Dictionary<string, string>();
-				dict.AddOrUpdate("track", opt_filter);
-				userStream = tw.PostAPI(Twitter.PublicAPIRoot,
-					"statuses/filter", dict);
-			} catch (Error e) {
-				stderr.printf("statuses/filter: %s\n", e.message);
-				Process.exit(1);
-			}
-		} else {
-			diag.Trace("UserStreamAPI call");
-			try {
-				var dict = new Dictionary<string, string>();
-				dict.AddOrUpdate("tweet_mode", "extended");
-				userStream = tw.UserStreamAPI("user", dict);
-			} catch (Error e) {
-				stderr.printf("userstream: %s\n", e.message);
-				Process.exit(1);
-			}
+		diag.Trace("PostAPI call");
+		try {
+			var dict = new Dictionary<string, string>();
+			dict.AddOrUpdate("track", opt_filter);
+			stream = tw.PostAPI(Twitter.PublicAPIRoot, "statuses/filter", dict);
+		} catch (Error e) {
+			stderr.printf("statuses/filter: %s\n", e.message);
+			Process.exit(1);
 		}
-
 		stdout.printf("Connected.\n");
 
 		while (true) {
 			string line;
 			try {
-				line = userStream.read_line();
+				line = stream.read_line();
 			} catch (Error e) {
-				stderr.printf("userstream.read_line: %s\n", e.message);
+				stderr.printf("statuses/filter: read_line: %s\n", e.message);
 				Process.exit(1);
 			}
 			if (line == null) {
-				stderr.printf("userstream.read_line: EOF?\n");
+				stderr.printf("statuses/filter: read_line: EOF?\n");
 				Process.exit(1);
 			}
 			if (showstatus_callback_line(line) == false) {
@@ -2232,7 +2236,7 @@ public class SayakaMain
 	public void usage()
 	{
 		stdout.printf(
-"""usage: sayaka [<options>...]
+"""usage: sayaka [<options>...] <keyword>
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
 	--font <w>x<h> : font width x height. default 7x14.
 	--filter <keyword>
