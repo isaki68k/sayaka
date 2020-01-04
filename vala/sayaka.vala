@@ -147,6 +147,7 @@ public class SayakaMain
 	public bool opt_outputpalette;
 	public int opt_timeout_image;	// 画像取得の(接続)タイムアウト [msec]
 	public bool opt_pseudo_home;	// 疑似ホームタイムライン
+	public string myid;				// 自身の user id
 
 	public string basedir;
 	public string cachedir;
@@ -611,8 +612,18 @@ public class SayakaMain
 		CreateTwitter();
 
 		if (opt_norest == false) {
-			// フォローユーザ取得 (疑似タイムライン時のみ)
 			if (opt_pseudo_home) {
+				// 疑似タイムライン用に自分の ID 取得
+				if (debug || opt_progress) {
+					stdout.printf("Getting credentials...");
+					stdout.flush();
+				}
+				get_credentials();
+				if (debug || opt_progress) {
+					stdout.printf("done\n");
+				}
+
+				// 疑似タイムライン用にフォローユーザ取得
 				if (debug || opt_progress) {
 					stdout.printf("Getting follow list...");
 					stdout.flush();
@@ -621,6 +632,10 @@ public class SayakaMain
 				if (debug || opt_progress) {
 					stdout.printf("done\n");
 				}
+
+				// ストリームの場合だけフォローの中に自身を入れておく。
+				// 表示するかどうかの判定はほぼフォローと同じなので。
+				followlist.AddOrUpdate(myid, myid);
 			}
 
 			// ブロックユーザ取得
@@ -663,7 +678,13 @@ public class SayakaMain
 			var dict = new Dictionary<string, string>();
 			if (opt_pseudo_home) {
 				// 疑似ホームタイムライン
-				var liststr = join_dict(",", followlist);
+				// followlist には自分自身を加えているので必ず1人以上いる
+				// ことを利用して join(",") 相当の処理をする
+				var liststr = followlist.At(0).Key;
+				for (var i = 1; i < followlist.Count; i++) {
+					var kv = followlist.At(i);
+					liststr += "," + kv.Key;
+				}
 				dict.AddOrUpdate("follow", liststr);
 			} else {
 				// キーワード検索
@@ -692,25 +713,6 @@ public class SayakaMain
 				break;
 			}
 		}
-	}
-
-	// Dictionary のキーを sep で連結した文字列を返す。
-	// dict = { "A"=>"a", "B"=>"b", "C"=>"c" } なら
-	// join_dict(",", dict) の戻り値は "A,B,C"。
-	// string.join(sep, ...) は可変引数が必要なので、
-	// Dictionary<string> に対するよく似たものを作る。
-	public string join_dict(string sep, Dictionary<string, string> dict)
-	{
-		var str = "";
-		if (dict.Count > 0) {
-			var kv = dict.At(0);
-			str += kv.Key;
-		}
-		for (var i = 1; i < dict.Count; i++) {
-			var kv = dict.At(i);
-			str += sep + kv.Key;
-		}
-		return str;
 	}
 
 	// 再生モード
@@ -1962,6 +1964,34 @@ public class SayakaMain
 		sx.SixelToStream(file);
 		file.seek(0, FileSeek.SET);
 		return file;
+	}
+
+	// 自分の ID を取得
+	public void get_credentials()
+	{
+		CreateTwitter();
+
+		var options = new Dictionary<string, string>();
+		options["include_entities"] = "false";
+		options["include_email"] = "false";
+		var json = tw.API2Json("GET", Twitter.APIRoot,
+			"account/verify_credentials", options);
+		if (json == null) {
+			stderr.printf("get_credentials API2Json failed\n");
+			Process.exit(1);
+		}
+		diag.Debug(@"json=|$(json)|");
+		if (json.Has("errors")) {
+			// エラーのフォーマットがこれかどうかは分からんけど
+			var errorlist = json.GetArray("errors");
+			// エラーが複数返ってきたらどうするかね
+			var code = errorlist.index(0).GetInt("code");
+			var message = errorlist.index(0).GetString("message");
+			stderr.printf(@"get_credentials failed: $(message)($(code))\n");
+			Process.exit(1);
+		}
+
+		myid = json.GetString("id_str");
 	}
 
 	// ユーザ一覧を読み込む(共通)。
