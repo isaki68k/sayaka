@@ -876,15 +876,56 @@ public class SayakaMain
 			return;
 		}
 
-		// ブロックユーザ、ミュートユーザ、RT 非表示のユーザの RT も
-		// ストリームには流れてきてしまうので、ここで弾く。
+		// if (pseudo_home && ユーザがフォローでない) {
+		//   RT 先が自身なら表示;
+		//   リプライ先が自身なら表示?
+		//   それ以外は表示しない
+		// }
+		//
+		// if (ブロック) {
+		//   表示しない
+		// }
+		// if (ミュート) {
+		//   リプライ先が自身なら表示?
+		//   それ以外は表示しない
+		// }
+		// if (has Retweet) {
+		//   RT 元ユーザが NoRT なら表示しない
+		//   RT 先がブロックかミュートなら表示しない
+		// }
+
 		var id_str = status.GetJson("user").GetString("id_str");
+		if (opt_pseudo_home && followlist.ContainsKey(id_str) == false) {
+			// フォローしてない他人がフォローユーザのツイートを RT したり、
+			// フォローしてない他人がフォローユーザにリプライしたのも全部
+			// フィルタストリームには流れてくるが、疑似タイムラインには不要。
+
+			// RT 先が自身なら表示?
+			// リプライ先が自身なら表示?
+
+			// それ以外は表示しない
+			return;
+		}
+
+		// ブロックユーザ
 		if (blocklist.ContainsKey(id_str)) {
 			return;
 		}
+		// ミュートユーザ
 		if (mutelist.ContainsKey(id_str)) {
+			// 自身宛のリプライは表示する?
 			return;
 		}
+
+		// フォローユーザのフォロー以外宛へのリプライは弾く
+		var reply_to = status.GetString("in_reply_to_user_id_str");
+		if (reply_to != "") {
+			if (opt_pseudo_home && followlist.ContainsKey(reply_to) == false) {
+				return;
+			}
+		}
+
+		// リツイートの場合
 		if (status.Has("retweeted_status")) {
 			// RT があって RT 元ユーザが該当すれば弾く
 			if (nortlist.ContainsKey(id_str)) {
