@@ -200,11 +200,17 @@ public class SayakaMain
 				cmd = SayakaCmd.BlocklistMode;
 				break;
 			 case "--ciphers":
-				ciphers = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				ciphers = args[i];
 				break;
 			 case "--color":
 			 {
-				var color_arg = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				var color_arg = args[i];
 				if (color_arg == "x68k") {
 					color_mode = ColorFixedX68k;
 				} else {
@@ -227,10 +233,16 @@ public class SayakaMain
 				iconv_tocode = "euc-jp";
 				break;
 			 case "--filter":
-				opt_filter = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				opt_filter = args[i];
 				break;
 			 case "--font":
-				var metric = args[++i].split("x");
+				if (++i >= args.length) {
+					usage();
+				}
+				var metric = args[i].split("x");
 				if (metric.length != 2) {
 					usage();
 				}
@@ -244,10 +256,16 @@ public class SayakaMain
 				iconv_tocode = "iso-2022-jp";
 				break;
 			 case "--max-cont":
-				last_id_max = int.parse(args[++i]);
+				if (++i >= args.length) {
+					usage();
+				}
+				last_id_max = int.parse(args[i]);
 				break;
 			 case "--max-image-cols":
-				max_image_count = int.parse(args[++i]);
+				if (++i >= args.length) {
+					usage();
+				}
+				max_image_count = int.parse(args[i]);
 				if (max_image_count < 1) {
 					max_image_count = 0;
 				}
@@ -256,12 +274,18 @@ public class SayakaMain
 				cmd = SayakaCmd.MutelistMode;
 				break;
 			 case "--ngword-add":
+				if (++i >= args.length) {
+					usage();
+				}
 				cmd = SayakaCmd.NgwordAdd;
-				opt_ngword = args[++i];
+				opt_ngword = args[i];
 				break;
 			 case "--ngword-del":
+				if (++i >= args.length) {
+					usage();
+				}
 				cmd = SayakaCmd.NgwordDel;
-				opt_ngword = args[++i];
+				opt_ngword = args[i];
 				break;
 			 case "--ngword-list":
 				cmd = SayakaCmd.NgwordList;
@@ -277,7 +301,10 @@ public class SayakaMain
 				break;
 			 case "--ormode":
 			 {
-				var value = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				var value = args[i];
 				if (value == "on") {
 					opt_ormode = true;
 				} else if (value == "off") {
@@ -289,7 +316,10 @@ public class SayakaMain
 			 }
 			 case "--palette":
 			 {
-				var value = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				var value = args[i];
 				if (value == "on") {
 					opt_outputpalette = true;
 				} else if (value == "off") {
@@ -312,7 +342,10 @@ public class SayakaMain
 				protect = true;
 				break;
 			 case "--record":
-				record_file = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				record_file = args[i];
 				break;
 			 case "--relay-server":
 				cmd = SayakaCmd.StreamRelayMode;
@@ -324,11 +357,17 @@ public class SayakaMain
 				opt_evs = true;
 				break;
 			 case "--timeout-image":
-				opt_timeout_image = int.parse(args[++i]) * 1000;
+				if (++i >= args.length) {
+					usage();
+				}
+				opt_timeout_image = int.parse(args[i]) * 1000;
 				break;
 			 case "--token":
 			 {
-				var path = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				var path = args[i];
 				if (path == null) {
 					usage();
 				}
@@ -340,7 +379,10 @@ public class SayakaMain
 				break;
 			 }
 			 case "--user":
-				opt_ngword_user = args[++i];
+				if (++i >= args.length) {
+					usage();
+				}
+				opt_ngword_user = args[i];
 				break;
 			 case "--version":
 				cmd = SayakaCmd.Version;
