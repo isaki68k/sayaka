@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2016 Tetsuya Isaki
+ * Copyright (C) 2015-2020 Tetsuya Isaki
  * Copyright (C) 2015 Y.Sugahara (moveccr)
  *
  * Redistribution and use in source and binary forms, with or without
