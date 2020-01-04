@@ -720,7 +720,6 @@ public class SayakaMain
 			var kv = dict.At(i);
 			str += sep + kv.Key;
 		}
-		stdout.printf(@"rv=|$(str)|\n");
 		return str;
 	}
 
