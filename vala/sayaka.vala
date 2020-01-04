@@ -554,12 +554,7 @@ public class SayakaMain
 		var text = sb.str.chomp();
 
 		// アクセストークンを取得
-		tw = new Twitter();
-		get_access_token();
-
-		if (ciphers != null) {
-			tw.SetCiphers(ciphers);
-		}
+		CreateTwitter();
 
 		// 投稿するパラメータを用意
 		var options = new Dictionary<string, string>();
@@ -613,12 +608,7 @@ public class SayakaMain
 		}
 
 		// アクセストークンを取得
-		tw = new Twitter();
-		get_access_token();
-
-		if (ciphers != null) {
-			tw.SetCiphers(ciphers);
-		}
+		CreateTwitter();
 
 		if (opt_norest == false) {
 			// フォローユーザ取得 (疑似タイムライン時のみ)
@@ -732,6 +722,20 @@ public class SayakaMain
 			line = stdin.read_line();
 			if (showstatus_callback_line(line) == false) {
 				break;
+			}
+		}
+	}
+
+	// Twitter オブジェクトを初期化
+	public void CreateTwitter()
+	{
+		if (tw == null) {
+			tw = new Twitter();
+			get_access_token();
+
+			// userstream 用なので今となってはもういらないのだが
+			if (ciphers != null) {
+				tw.SetCiphers(ciphers);
 			}
 		}
 	}
@@ -2017,8 +2021,7 @@ public class SayakaMain
 	// 取得したフォローユーザの一覧を表示する
 	public void cmd_followlist()
 	{
-		tw = new Twitter();
-		get_access_token();
+		CreateTwitter();
 
 		get_follow_list();
 
@@ -2037,8 +2040,7 @@ public class SayakaMain
 	// 取得したブロックユーザの一覧を表示する
 	public void cmd_blocklist()
 	{
-		tw = new Twitter();
-		get_access_token();
+		CreateTwitter();
 
 		get_block_list();
 
@@ -2073,8 +2075,7 @@ public class SayakaMain
 	// 取得したミュートユーザの一覧を表示する
 	public void cmd_mutelist()
 	{
-		tw = new Twitter();
-		get_access_token();
+		CreateTwitter();
 
 		get_mute_list();
 
@@ -2117,8 +2118,7 @@ public class SayakaMain
 	// 取得した RT 非表示ユーザの一覧を表示する
 	public void cmd_nortlist()
 	{
-		tw = new Twitter();
-		get_access_token();
+		CreateTwitter();
 
 		get_nort_list();
 
