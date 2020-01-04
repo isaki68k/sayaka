@@ -882,6 +882,38 @@ public class SayakaMain
 			return;
 		}
 
+		// このツイートを表示するかどうかの判定
+		if (showstatus_check(status) == false) {
+			return;
+		}
+
+		// NGワード
+		var ngstat = ngword.match(status);
+		if (ngstat.match) {
+			// マッチしたらここで表示
+			if (opt_show_ng) {
+				var userid = coloring(formatid(ngstat.screen_name), Color.NG);
+				var name = coloring(formatname(ngstat.name), Color.NG);
+				var time = coloring(ngstat.time, Color.NG);
+
+				var msg = coloring(@"NG:$(ngstat.ngword)", Color.NG);
+
+				print_(@"$(name) $(userid)\n"
+				     + @"$(time) $(msg)");
+				stdout.printf("\n");
+				stdout.printf("\n");
+			}
+			return;
+		}
+
+		showstatus(status, false);
+		stdout.printf("\n");
+	}
+
+	// このツイートを表示するか。表示しないなら false。
+	// NG ワード判定はここではない。
+	public bool showstatus_check(ULib.Json status)
+	{
 		// if (pseudo_home && ユーザがフォローでない) {
 		//   RT 先が自身なら表示;
 		//   リプライ先が自身なら表示?
@@ -906,28 +938,44 @@ public class SayakaMain
 			// フォローしてない他人がフォローユーザにリプライしたのも全部
 			// フィルタストリームには流れてくるが、疑似タイムラインには不要。
 
-			// RT 先が自身なら表示?
-			// リプライ先が自身なら表示?
+			// RT 先が自分なら表示
+			if (status.Has("retweeted_status")) {
+				var retweeted_status = status.GetJson("retweeted_status");
+				id_str = retweeted_status.GetJson("user").GetString("id_str");
+				if (id_str == myid) {
+					return true;
+				}
+			}
+
+			// リプライが自分宛なら表示
+			var reply_to = status.GetString("in_reply_to_user_id_str");
+			if (reply_to == myid) {
+				return true;
+			}
 
 			// それ以外は表示しない
-			return;
+			return false;
 		}
 
 		// ブロックユーザ
 		if (blocklist.ContainsKey(id_str)) {
-			return;
+			return false;
 		}
 		// ミュートユーザ
 		if (mutelist.ContainsKey(id_str)) {
-			// 自身宛のリプライは表示する?
-			return;
+			// 自分宛のリプライは表示する?
+			var reply_to = status.GetString("in_reply_to_user_id_str");
+			if (reply_to == myid) {
+				return true;
+			}
+			return false;
 		}
 
 		// フォローユーザのフォロー以外宛へのリプライは弾く
 		var reply_to = status.GetString("in_reply_to_user_id_str");
 		if (reply_to != "") {
 			if (opt_pseudo_home && followlist.ContainsKey(reply_to) == false) {
-				return;
+				return false;
 			}
 		}
 
@@ -935,41 +983,21 @@ public class SayakaMain
 		if (status.Has("retweeted_status")) {
 			// RT があって RT 元ユーザが該当すれば弾く
 			if (nortlist.ContainsKey(id_str)) {
-				return;
+				return false;
 			}
 
 			// RT 先ユーザがブロック/ミュートユーザでも弾く
 			var retweeted_status = status.GetJson("retweeted_status");
 			id_str = retweeted_status.GetJson("user").GetString("id_str");
 			if (blocklist.ContainsKey(id_str)) {
-				return;
+				return false;
 			}
 			if (mutelist.ContainsKey(id_str)) {
-				return;
+				return false;
 			}
 		}
 
-		// NGワード
-		var ngstat = ngword.match(status);
-		if (ngstat.match) {
-			// マッチしたらここで表示
-			if (opt_show_ng) {
-				var userid = coloring(formatid(ngstat.screen_name), Color.NG);
-				var name = coloring(formatname(ngstat.name), Color.NG);
-				var time = coloring(ngstat.time, Color.NG);
-
-				var msg = coloring(@"NG:$(ngstat.ngword)", Color.NG);
-
-				print_(@"$(name) $(userid)\n"
-				     + @"$(time) $(msg)");
-				stdout.printf("\n");
-				stdout.printf("\n");
-			}
-			return;
-		}
-
-		showstatus(status, false);
-		stdout.printf("\n");
+		return true;
 	}
 
 	// 1ツイートを表示
