@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <termios.h>
+#include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
@@ -46,4 +47,47 @@ native_sysctlbyname(const char *sname,
 #else
 	return -1;
 #endif
+}
+
+// vala でこの辺の低レベル扱うのは出来るけど骨が折れるので、
+// こっちでさくっとやってしまう。応答文字列だけ返して向こうで処理する
+// くらいが格好はよさげだけど文字列を C -> vala に受け渡すとかさらに
+// 面倒そうなので、もう判定まで全部こっちでやってしまう。
+int
+native_term_support_sixel()
+{
+	struct termios tc, old;
+	char answer[256];
+	char query[4];
+
+	// 応答受け取るため非カノニカルモードにするのと
+	// その応答を画面に表示してしまわないようにエコーオフにする。
+	tcgetattr(STDOUT_FILENO, &tc);
+	old = tc;
+	tc.c_lflag &= ~(ECHO | ICANON);
+	tcsetattr(STDOUT_FILENO, TCSANOW, &tc);
+
+	// 問い合わせ
+	sprintf(query, "%c[c", 0x1b);
+	write(STDOUT_FILENO, query, strlen(query));
+	int n = read(STDOUT_FILENO, answer, sizeof(answer));
+	answer[n] = 0;
+
+	// 端末を元に戻す
+	tcsetattr(STDOUT_FILENO, TCSANOW, &old);
+
+	// 応答を調べる。応答は
+	// ESC "[?63;1;2;3;4;7;29c" のような感じで "4" があれば SIXEL 対応。
+	// XXX use strtok_r
+	char *p, *e;
+	for (p = answer; p; p = e) {
+		e = strchr(p, ';');
+		if (e) {
+			*e++ = '\0';
+		}
+		if (strcmp(p, "4") == 0) {
+			return 1;
+		}
+	}
+	return 0;
 }

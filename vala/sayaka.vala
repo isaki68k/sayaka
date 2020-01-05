@@ -583,6 +583,15 @@ public class SayakaMain
 	// ストリームモードのための準備
 	public void init_stream()
 	{
+		// 端末が SIXEL をサポートしてなければ画像オフ
+		if (native.term_support_sixel() == false) {
+			if (opt_noimg == false) {
+				stdout.printf(
+					"Terminal doesn't support sixel, switch to --noimg\n");
+			}
+			opt_noimg = true;
+		}
+
 		// 色の初期化
 		init_color();
 

@@ -28,6 +28,7 @@ extern int native_ioctl_TIOCGWINSZ(int fd, out System.OS.winsize ws);
 extern int native_sysctlbyname(string sname,
 	void *oldp, size_t *oldlenp,
 	void *newp, size_t newlen);
+extern int native_term_support_sixel();
 
 namespace System.OS
 {
@@ -55,6 +56,14 @@ namespace System.OS
 			oldp = 0;
 			return native_sysctlbyname(sname, &oldp, &oldlenp,
 				null, 0);
+		}
+	}
+
+	public class native
+	{
+		public static bool term_support_sixel()
+		{
+			return (bool)native_term_support_sixel();
 		}
 	}
 }
