@@ -967,6 +967,12 @@ public class SayakaMain
 		}
 		// フォロー氏
 		if (followlist.ContainsKey(id_str)) {
+			// ホームなら他人氏へのリプは弾く
+			if (opt_pseudo_home) {
+				if (reply_to != "" && !followlist.ContainsKey(reply_to)) {
+					return false;
+				}
+			}
 			// ミュート氏/ブロック氏に絡むものを弾く
 			if (mutelist.ContainsKey(reply_to)) {
 				return false;
@@ -1056,7 +1062,7 @@ public class SayakaMain
 			"{id:2,reply:4,         }",		// ミュートへ
 			"{id:2,reply:5,home,filt}",		// RT非表示へ
 			"{id:2,reply:6,         }",		// ブロックへ
-			"{id:2,reply:8,home,filt}",		// 他人へ
+			"{id:2,reply:8,     filt}",		// 他人へ
 
 			// ミュート氏の発言
 			"{id:4,                 }",		// 平文
@@ -1074,7 +1080,7 @@ public class SayakaMain
 			"{id:5,reply:4,         }",		// ミュートへ
 			"{id:5,reply:5,home,filt}",		// RT非表示へ
 			"{id:5,reply:6,         }",		// ブロックへ
-			"{id:5,reply:8,home,filt}",		// 他人へ
+			"{id:5,reply:8,     filt}",		// 他人へ
 
 			// ブロック氏の発言 (そもそも来ないような気がするけど一応)
 			"{id:6,                 }",		// 平文
