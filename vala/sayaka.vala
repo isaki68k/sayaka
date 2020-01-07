@@ -896,7 +896,7 @@ public class SayakaMain
 		}
 
 		// このツイートを表示するかどうかの判定
-		if (showstatus_check(status) == false) {
+		if (showstatus_acl(status) == false) {
 			return;
 		}
 
@@ -925,7 +925,7 @@ public class SayakaMain
 
 	// このツイートを表示するか。表示しないなら false。
 	// NG ワード判定はここではない。
-	public bool showstatus_check(ULib.Json status)
+	public bool showstatus_acl(ULib.Json status)
 	{
 		// このツイートの発言者
 		var id_str = status.GetJson("user").GetString("id_str");
@@ -945,14 +945,14 @@ public class SayakaMain
 		bool? r;
 
 		// ツイート(ベースのほう)を評価。
-		r = showstatus_check1(id_str, reply_to, retweeted_id);
+		r = showstatus_acl1(id_str, reply_to, retweeted_id);
 		if (r != null) {
 			return r;
 		}
 
 		// リツイートがあればそちらについても評価。
 		if (retweeted_id != "") {
-			r = showstatus_check1(retweeted_id, retweeted_reply_to, "");
+			r = showstatus_acl1(retweeted_id, retweeted_reply_to, "");
 			if (r != null) {
 				return r;
 			}
@@ -981,7 +981,7 @@ public class SayakaMain
 	// reply はリプライ先(なければ "")。
 	// rt はリツイート先発言者 (なければ "")。
 	// 戻り値は true なら表示確定、false なら非表示確定。null なら未確定。
-	public bool? showstatus_check1(string id, string reply_to, string rt)
+	public bool? showstatus_acl1(string id, string reply_to, string rt)
 	{
 		// 俺氏の発言はすべて表示
 		if (id == myid) {
@@ -1024,7 +1024,7 @@ public class SayakaMain
 	}
 
 #if TEST
-	public void test_showstatus_check()
+	public void test_showstatus_acl()
 	{
 		// id:1 が自分、id:2,3 がフォロー、
 		// id:4 はミュートしているフォロー、
@@ -1336,7 +1336,7 @@ public class SayakaMain
 
 			// テスト (home)
 			opt_pseudo_home = true;
-			var result = showstatus_check(status);
+			var result = showstatus_acl(status);
 			if (result != expected_home) {
 				stdout.printf(@"$(input_str) (for home) "
 					+ @"expects '$(expected_home)' but '$(result)'\n");
@@ -1344,7 +1344,7 @@ public class SayakaMain
 			}
 
 			opt_pseudo_home = false;
-			result = showstatus_check(status);
+			result = showstatus_acl(status);
 			if (result != expected_filt) {
 				stdout.printf(@"$(input_str) (for filter) "
 					+ @"expects '$(expected_filt)' but '$(result)'\n");
@@ -2691,7 +2691,7 @@ public class SayakaMain
 #if TEST
 	public int Test(string[] args)
 	{
-		test_showstatus_check();
+		test_showstatus_acl();
 		return 0;
 	}
 #endif
