@@ -1015,7 +1015,6 @@ public class SayakaMain
 			}
 			return true;
 		}
-		return true;
 	}
 
 #if TEST
