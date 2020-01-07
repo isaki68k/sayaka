@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
+#include <sys/select.h>
 #include <sys/sysctl.h>
 
 int
@@ -57,8 +58,15 @@ int
 native_term_support_sixel()
 {
 	struct termios tc, old;
+	struct timeval timeout;
+	fd_set rfds;
 	char answer[256];
 	char query[4];
+
+	FD_ZERO(&rfds);
+	FD_SET(STDOUT_FILENO, &rfds);
+	memset(&timeout, 0, sizeof(timeout));
+	timeout.tv_sec = 1;
 
 	// 応答受け取るため非カノニカルモードにするのと
 	// その応答を画面に表示してしまわないようにエコーオフにする。
@@ -70,6 +78,16 @@ native_term_support_sixel()
 	// 問い合わせ
 	sprintf(query, "%c[c", 0x1b);
 	write(STDOUT_FILENO, query, strlen(query));
+	// 念のため応答なければタイムアウトする
+	int r = select(STDOUT_FILENO + 1, &rfds, NULL, NULL, &timeout);
+	if (r == -1) {
+		warn("%s: select() failed", __func__);
+		return 0;
+	}
+	if (r == 0) {
+		warnx("%s: select() timeout", __func__);
+		return 0;
+	}
 	int n = read(STDOUT_FILENO, answer, sizeof(answer));
 	answer[n] = 0;
 
