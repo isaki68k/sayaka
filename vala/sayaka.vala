@@ -34,7 +34,11 @@ class Program
 	public static int main(string[] args)
 	{
 		var sayaka = new SayakaMain();
+#if TEST
+		return sayaka.Test(args);
+#else
 		return sayaka.Main(args);
+#endif
 	}
 }
 
@@ -923,91 +927,292 @@ public class SayakaMain
 	// NG ワード判定はここではない。
 	public bool showstatus_check(ULib.Json status)
 	{
-		// if (pseudo_home && ユーザがフォローでない) {
-		//   RT 先が自身なら表示;
-		//   リプライ先が自身なら表示?
-		//   それ以外は表示しない
-		// }
-		//
-		// if (ブロック) {
-		//   表示しない
-		// }
-		// if (ミュート) {
-		//   リプライ先が自身なら表示?
-		//   それ以外は表示しない
-		// }
-		// if (has Retweet) {
-		//   RT 元ユーザが NoRT なら表示しない
-		//   RT 先がブロックかミュートなら表示しない
-		// }
-
+		// このツイートの発言者
 		var id_str = status.GetJson("user").GetString("id_str");
-		if (opt_pseudo_home && followlist.ContainsKey(id_str) == false) {
-			// フォローしてない他人がフォローユーザのツイートを RT したり、
-			// フォローしてない他人がフォローユーザにリプライしたのも全部
-			// フィルタストリームには流れてくるが、疑似タイムラインには不要。
-
-			// RT 先が自分なら表示
-			if (status.Has("retweeted_status")) {
-				var retweeted_status = status.GetJson("retweeted_status");
-				id_str = retweeted_status.GetJson("user").GetString("id_str");
-				if (id_str == myid) {
-					return true;
-				}
-			}
-
-			// リプライが自分宛なら表示
-			var reply_to = status.GetString("in_reply_to_user_id_str");
-			if (reply_to == myid) {
-				return true;
-			}
-
-			// それ以外は表示しない
-			return false;
+		// リプライ先 (なければ "")
+		var reply_to = status.GetString("in_reply_to_user_id_str");
+		// リツイート先の発言者 (なければ "")
+		string retweeted_id = "";
+		if (status.Has("retweeted_status")) {
+			var retweeted_status = status.GetJson("retweeted_status");
+			retweeted_id = retweeted_status.GetJson("user").GetString("id_str");
 		}
 
-		// ブロックユーザ
+		// 俺氏の発言はすべて表示
+		if (id_str == myid) {
+			return true;
+		}
+		// ブロック氏の発言はすべて非表示
 		if (blocklist.ContainsKey(id_str)) {
 			return false;
 		}
-		// ミュートユーザ
+		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示
 		if (mutelist.ContainsKey(id_str)) {
-			// 自分宛のリプライは表示する?
-			var reply_to = status.GetString("in_reply_to_user_id_str");
 			if (reply_to == myid) {
 				return true;
 			}
 			return false;
 		}
-
-		// フォローユーザのフォロー以外宛へのリプライは弾く
-		var reply_to = status.GetString("in_reply_to_user_id_str");
-		if (reply_to != "") {
-			if (opt_pseudo_home && followlist.ContainsKey(reply_to) == false) {
+		// RT非表示氏の発言は、RT のみ別対応、それ以外はフォロー氏に準じる
+		if (nortlist.ContainsKey(id_str) && retweeted_id != "") {
+			// 要確認?
+			// そうは言っても俺氏やフォロー氏の発言のリツイートは別に
+			// 表示してもいいような気がするので、たぶん弾きたいのは
+			// 他人氏発言をリツイートのような気がする。
+			// そしてただしフィルタモードなら関連ワードのストリームなのだから
+			// 表示されてもいいような気がする。
+			if (!followlist.ContainsKey(retweeted_id) && opt_pseudo_home) {
 				return false;
 			}
 		}
-
-		// リツイートの場合
-		if (status.Has("retweeted_status")) {
-			// RT があって RT 元ユーザが該当すれば弾く
-			if (nortlist.ContainsKey(id_str)) {
+		// フォロー氏
+		if (followlist.ContainsKey(id_str)) {
+			// ミュート氏/ブロック氏に絡むものを弾く
+			if (mutelist.ContainsKey(reply_to)) {
 				return false;
 			}
-
-			// RT 先ユーザがブロック/ミュートユーザでも弾く
-			var retweeted_status = status.GetJson("retweeted_status");
-			id_str = retweeted_status.GetJson("user").GetString("id_str");
-			if (blocklist.ContainsKey(id_str)) {
+			if (blocklist.ContainsKey(reply_to)) {
 				return false;
 			}
-			if (mutelist.ContainsKey(id_str)) {
-				return false;
+			if (retweeted_id != "") {
+				if (mutelist.ContainsKey(retweeted_id)) {
+					return false;
+				}
+				if (blocklist.ContainsKey(retweeted_id)) {
+					return false;
+				}
 			}
+			return true;
 		}
-
+		// ここまで来たら他人氏
+		if (opt_pseudo_home) {
+			// ホームなら、自分宛のみ表示
+			if (reply_to == myid || retweeted_id == myid) {
+				return true;
+			}
+			return false;
+		} else {
+			// フィルタなら、ミュート/ブロック宛を非表示
+			if (mutelist.ContainsKey(reply_to)) {
+				return false;
+			}
+			if (blocklist.ContainsKey(reply_to)) {
+				return false;
+			}
+			if (retweeted_id != "") {
+				if (mutelist.ContainsKey(retweeted_id)) {
+					return false;
+				}
+				if (blocklist.ContainsKey(retweeted_id)) {
+					return false;
+				}
+			}
+			return true;
+		}
 		return true;
 	}
+
+#if TEST
+	public void test_showstatus_check()
+	{
+		// id:1 が自分、id:2,3 がフォロー、
+		// id:4 はミュートしているフォロー、
+		// id:5 はRTを表示しないフォロー
+		// id:6,7 はブロック、
+		// id:8,9 がフォロー外
+		myid = "1";
+		followlist.AddOrUpdate("1", "1");	// 自身もフォローに入れてある
+		followlist.AddOrUpdate("2", "2");
+		followlist.AddOrUpdate("3", "3");
+		followlist.AddOrUpdate("4", "4");
+		followlist.AddOrUpdate("5", "5");
+		mutelist.AddOrUpdate("4", "4");
+		nortlist.AddOrUpdate("5", "5");
+		blocklist.AddOrUpdate("6", "6");
+		blocklist.AddOrUpdate("7", "7");
+
+		// 簡易 JSON みたいな独自書式でテストを書いてコード中で JSON にする。
+		// o 発言者 id (number) -> user.id_str (string)
+		// o リプ先 reply (number) -> in_reply_to_user_id_str (string)
+		// o リツイート rt (number) -> retweeted_status.user.id_str (string)
+		// 結果はホームタイムラインとフィルタモードによって期待値が異なり
+		// それぞれ home, filt で表す。あれば表示、省略は非表示を意味する。
+		var table = new string[] {
+			// 俺氏の発言
+			// (ブロック氏への発言はシステム上出来ないはずだが、
+			// こっちの処理の都合から言えばあえて弾く必要もない気がする)
+			"{id:1,        home,filt}",		// 平文
+			"{id:1,reply:1,home,filt}",		// 自分自身へ
+			"{id:1,reply:2,home,filt}",		// フォローへ
+			"{id:1,reply:4,home,filt}",		// ミュートへ
+			"{id:1,reply:5,home,filt}",		// RT非表示へ
+			"{id:1,reply:6,home,filt}",		// ブロックへ
+			"{id:1,reply:8,home,filt}",		// 他人へ
+
+			// フォロー氏の発言 (RT非表示氏も同じになるはずなので以下参照)
+			"{id:2,        home,filt}",		// 平文
+			"{id:2,reply:1,home,filt}",		// 自分へ
+			"{id:2,reply:2,home,filt}",		// フォローへ
+			"{id:2,reply:4,         }",		// ミュートへ
+			"{id:2,reply:5,home,filt}",		// RT非表示へ
+			"{id:2,reply:6,         }",		// ブロックへ
+			"{id:2,reply:8,home,filt}",		// 他人へ
+
+			// ミュート氏の発言
+			"{id:4,                 }",		// 平文
+			"{id:4,reply:1,home,filt}",		// 自分へ
+			"{id:4,reply:2,         }",		// フォローへ
+			"{id:4,reply:4,         }",		// ミュートへ
+			"{id:4,reply:5,         }",		// RT非表示へ
+			"{id:4,reply:6,         }",		// ブロックへ
+			"{id:4,reply:8,         }",		// 他人へ
+
+			// RT非表示氏の発言 (リプはフォロー氏発言と同じ扱いでよいはず)
+			"{id:5,        home,filt}",		// 平文
+			"{id:5,reply:1,home,filt}",		// 自分へ
+			"{id:5,reply:2,home,filt}",		// フォローへ
+			"{id:5,reply:4,         }",		// ミュートへ
+			"{id:5,reply:5,home,filt}",		// RT非表示へ
+			"{id:5,reply:6,         }",		// ブロックへ
+			"{id:5,reply:8,home,filt}",		// 他人へ
+
+			// ブロック氏の発言 (そもそも来ないような気がするけど一応)
+			"{id:6,                 }",		// 平文
+			"{id:6,reply:1,         }",		// 自分へ
+			"{id:6,reply:2,         }",		// フォローへ
+			"{id:6,reply:4,         }",		// ミュートへ
+			"{id:6,reply:5,         }",		// RT非表示へ
+			"{id:6,reply:6,         }",		// ブロックへ
+			"{id:6,reply:8,         }",		// 他人へ
+
+			// 他人氏の発言
+			"{id:8,             filt}",		// 平文
+			"{id:8,reply:1,home,filt}",		// 自分へ
+			"{id:8,reply:2,     filt}",		// フォローへ
+			"{id:8,reply:4,         }",		// ミュートへ
+			"{id:8,reply:5,     filt}",		// RT非表示へ
+			"{id:8,reply:6,         }",		// ブロックへ
+			"{id:8,reply:8,     filt}",		// 他人へ
+
+			// 俺氏がリツイート
+			// (ブロック氏をリツイートはシステム上出来ないはずだが、
+			// こっちの処理の都合から言えばあえて弾く必要もない気がする)
+			"{id:1,rt:1,home,filt}",		// 自分自身を
+			"{id:1,rt:2,home,filt}",		// フォローを
+			"{id:1,rt:4,home,filt}",		// ミュートを
+			"{id:1,rt:5,home,filt}",		// RT非表示を
+			"{id:1,rt:6,home,filt}",		// ブロックを
+			"{id:1,rt:8,home,filt}",		// 他人を
+
+			// フォロー氏がリツイート
+			"{id:2,rt:1,home,filt}",		// 自分を
+			"{id:2,rt:2,home,filt}",		// フォローを
+			"{id:2,rt:4,         }",		// ミュートを
+			"{id:2,rt:5,home,filt}",		// RT非表示を
+			"{id:2,rt:6,         }",		// ブロックを
+			"{id:2,rt:8,home,filt}",		// 他人を
+
+			// ミュート氏がリツイート
+			// XXX ミュート氏が自分のツイートをリツイートは表示するかどうか
+			"{id:4,rt:1          }",		// 自分を
+			"{id:4,rt:2,         }",		// フォローを
+			"{id:4,rt:4,         }",		// ミュートを
+			"{id:4,rt:5,         }",		// RT非表示を
+			"{id:4,rt:6,         }",		// ブロックを
+			"{id:4,rt:8,         }",		// 他人を
+
+			// RT非表示氏がリツイート
+			// 自分の発言をリツイートは表示してもいいだろう
+			// フィルタストリームなら表示してもいいだろうか
+			"{id:5,rt:1,home,filt}",		// 自分を
+			"{id:5,rt:2,home,filt}",		// フォローを
+			"{id:5,rt:4,         }",		// ミュートを
+			"{id:5,rt:5,home,filt}",		// RT非表示を
+			"{id:5,rt:6,         }",		// ブロックを
+			"{id:5,rt:8,     filt}",		// 他人を
+
+			// ブロック氏がリツイート (そもそも来ないような気がするけど一応)
+			"{id:6,rt:1,         }",		// 自分を
+			"{id:6,rt:2,         }",		// フォローを
+			"{id:6,rt:4,         }",		// ミュートを
+			"{id:6,rt:5,         }",		// RT非表示を
+			"{id:6,rt:6,         }",		// ブロックを
+			"{id:6,rt:8,         }",		// 他人を
+
+			// 他人氏がリツイート
+			"{id:8,rt:1,home,filt}",		// 自分を
+			"{id:8,rt:2,     filt}",		// フォローを
+			"{id:8,rt:4,         }",		// ミュートを
+			"{id:8,rt:5,     filt}",		// RT非表示を
+			"{id:8,rt:6,         }",		// ブロックを
+			"{id:8,rt:8,     filt}",		// 他人を
+		};
+		foreach (var input_sq in table) {
+			// 入力文字列はテストを書きやすいよう簡易 JSON みたいな表記に
+			// してあるので、これを正しい JSON に置換。
+			var input_str = input_sq.replace(" ", "")
+				.replace("id:",		"\"id\":")
+				.replace("reply:",	"\"reply\":")
+				.replace("rt:",		"\"rt\":")
+				.replace("home",	"\"home\":true")
+				.replace("filt",	"\"filt\":true")
+				// 末尾カンマは許容しておいてここで消すほうが楽
+				.replace(",}",		"}")
+			;
+			ULib.Json input;
+			try {
+				input = ULib.Json.FromString(input_str);
+			} catch (Error e) {
+				stdout.printf(@"Json.FromString($(input_str)) failed: "
+					+ @"$(e.message)\n");
+				Process.exit(1);
+			}
+
+			// それらから status をでっちあげる
+			var dict = new Dictionary<string, ULib.Json>();
+			// user.id_str
+			var dictuser = new Dictionary<string, ULib.Json>();
+			dictuser.AddOrUpdate("id_str",
+				new Json.String(input.GetInt("id").to_string()));
+			dict.AddOrUpdate("user", new Json.Object(dictuser));
+			// in_reply_to_user_id_str
+			if (input.Has("reply")) {
+				dict.AddOrUpdate("in_reply_to_user_id_str",
+					new Json.String(input.GetInt("reply").to_string()));
+			}
+			// retweeted_status.user.id_str
+			if (input.Has("rt")) {
+				var dict_rt = new Dictionary<string, ULib.Json>();
+				var dict_rtuser = new Dictionary<string, ULib.Json>();
+				dict_rtuser.AddOrUpdate("id_str",
+					new Json.String(input.GetInt("rt").to_string()));
+				dict_rt.AddOrUpdate("user", new Json.Object(dict_rtuser));
+				dict.AddOrUpdate("retweeted_status", new Json.Object(dict_rt));
+			}
+
+			// 期待値
+			var expected_home = input.GetBool("home", false);
+			var expected_filt = input.GetBool("filt", false);
+
+			var status = new Json.Object(dict);
+
+			// テスト (home)
+			opt_pseudo_home = true;
+			var result = showstatus_check(status);
+			if (result != expected_home) {
+				stdout.printf(@"$(input_str) (for home) "
+					+ @"expects '$(expected_home)' but '$(result)'\n");
+			}
+
+			opt_pseudo_home = false;
+			result = showstatus_check(status);
+			if (result != expected_filt) {
+				stdout.printf(@"$(input_str) (for filter) "
+					+ @"expects '$(expected_filt)' but '$(result)'\n");
+			}
+		}
+	}
+#endif
 
 	// 1ツイートを表示
 	public void showstatus(ULib.Json status, bool is_quoted)
@@ -2337,6 +2542,14 @@ public class SayakaMain
 			break;
 		}
 	}
+
+#if TEST
+	public int Test(string[] args)
+	{
+		test_showstatus_check();
+		return 0;
+	}
+#endif
 
 	public void cmd_version()
 	{

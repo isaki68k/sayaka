@@ -96,6 +96,8 @@ LIBS+= -ljpeg
 VALA_FLAGS=	\
 	mtls.vapi \
 
+#VALA_FLAGS+=	-D TEST
+
 VALAC=	valac
 
 OBJDIR=		objdir
