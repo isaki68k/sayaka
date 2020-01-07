@@ -54,16 +54,16 @@ public class Twitter_Token
 public class Twitter
 {
 
-	public static const string accessTokenURL  = "https://api.twitter.com/oauth/access_token";
-	public static const string authorizeURL    = "https://twitter.com/oauth/authorize";
-	public static const string requestTokenURL = "https://api.twitter.com/oauth/request_token";
+	public const string accessTokenURL  = "https://api.twitter.com/oauth/access_token";
+	public const string authorizeURL    = "https://twitter.com/oauth/authorize";
+	public const string requestTokenURL = "https://api.twitter.com/oauth/request_token";
 
-	public static const string APIRoot = "https://api.twitter.com/1.1/";
-	public static const string StreamAPIRoot = "https://userstream.twitter.com/1.1/";
-	public static const string PublicAPIRoot = "https://stream.twitter.com/1.1/";
+	public const string APIRoot = "https://api.twitter.com/1.1/";
+	public const string StreamAPIRoot = "https://userstream.twitter.com/1.1/";
+	public const string PublicAPIRoot = "https://stream.twitter.com/1.1/";
 
-	private static const string ConsumerKey = "jPY9PU5lvwb6s9mqx3KjRA";
-	private static const string ConsumerSecret = "faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw";
+	private const string ConsumerKey = "jPY9PU5lvwb6s9mqx3KjRA";
+	private const string ConsumerSecret = "faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw";
 
 	public Twitter_Token AccessToken;
 
