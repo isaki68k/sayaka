@@ -953,7 +953,7 @@ public class SayakaMain
 			}
 			return false;
 		}
-		// RT非表示氏の発言は、RT のみ別対応、それ以外はフォロー氏に準じる
+		// RT非表示氏の発言はリツイートのみ別対応
 		if (nortlist.ContainsKey(id_str) && retweeted_id != "") {
 			// 要確認?
 			// そうは言っても俺氏やフォロー氏の発言のリツイートは別に
@@ -965,56 +965,38 @@ public class SayakaMain
 				return false;
 			}
 		}
-		// フォロー氏
-		if (followlist.ContainsKey(id_str)) {
-			// ホームなら他人氏へのリプは弾く
-			if (opt_pseudo_home) {
+
+		// ミュート氏/ブロック氏に絡むものは非表示
+		if (mutelist.ContainsKey(reply_to)) {
+			return false;
+		}
+		if (blocklist.ContainsKey(reply_to)) {
+			return false;
+		}
+		if (retweeted_id != "") {
+			if (mutelist.ContainsKey(retweeted_id)) {
+				return false;
+			}
+			if (blocklist.ContainsKey(retweeted_id)) {
+				return false;
+			}
+		}
+
+		if (opt_pseudo_home) {
+			if (followlist.ContainsKey(id_str)) {
+				// ホームなら、フォロー氏から他人へのリプは弾く
 				if (reply_to != "" && !followlist.ContainsKey(reply_to)) {
 					return false;
 				}
-			}
-			// ミュート氏/ブロック氏に絡むものを弾く
-			if (mutelist.ContainsKey(reply_to)) {
+			} else {
+				// ホームなら、他人からは自分絡みのみ表示
+				if (reply_to == myid || retweeted_id == myid) {
+					return true;
+				}
 				return false;
 			}
-			if (blocklist.ContainsKey(reply_to)) {
-				return false;
-			}
-			if (retweeted_id != "") {
-				if (mutelist.ContainsKey(retweeted_id)) {
-					return false;
-				}
-				if (blocklist.ContainsKey(retweeted_id)) {
-					return false;
-				}
-			}
-			return true;
 		}
-		// ここまで来たら他人氏
-		if (opt_pseudo_home) {
-			// ホームなら、自分宛のみ表示
-			if (reply_to == myid || retweeted_id == myid) {
-				return true;
-			}
-			return false;
-		} else {
-			// フィルタなら、ミュート/ブロック宛を非表示
-			if (mutelist.ContainsKey(reply_to)) {
-				return false;
-			}
-			if (blocklist.ContainsKey(reply_to)) {
-				return false;
-			}
-			if (retweeted_id != "") {
-				if (mutelist.ContainsKey(retweeted_id)) {
-					return false;
-				}
-				if (blocklist.ContainsKey(retweeted_id)) {
-					return false;
-				}
-			}
-			return true;
-		}
+		return true;
 	}
 
 #if TEST
