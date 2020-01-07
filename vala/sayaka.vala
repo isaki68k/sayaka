@@ -933,52 +933,28 @@ public class SayakaMain
 		var reply_to = status.GetString("in_reply_to_user_id_str");
 		// リツイート先の発言者 (なければ "")
 		string retweeted_id = "";
+		// リツイート先のリプライ先 (なければ "")
+		string retweeted_reply_to = "";
 		if (status.Has("retweeted_status")) {
 			var retweeted_status = status.GetJson("retweeted_status");
 			retweeted_id = retweeted_status.GetJson("user").GetString("id_str");
+			retweeted_reply_to =
+				retweeted_status.GetString("in_reply_to_user_id_str");
 		}
 
-		// 俺氏の発言はすべて表示
-		if (id_str == myid) {
-			return true;
-		}
-		// ブロック氏の発言はすべて非表示
-		if (blocklist.ContainsKey(id_str)) {
-			return false;
-		}
-		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示
-		if (mutelist.ContainsKey(id_str)) {
-			if (reply_to == myid) {
-				return true;
-			}
-			return false;
-		}
-		// RT非表示氏の発言はリツイートのみ別対応
-		if (nortlist.ContainsKey(id_str) && retweeted_id != "") {
-			// 要確認?
-			// そうは言っても俺氏やフォロー氏の発言のリツイートは別に
-			// 表示してもいいような気がするので、たぶん弾きたいのは
-			// 他人氏発言をリツイートのような気がする。
-			// そしてただしフィルタモードなら関連ワードのストリームなのだから
-			// 表示されてもいいような気がする。
-			if (!followlist.ContainsKey(retweeted_id) && opt_pseudo_home) {
-				return false;
-			}
+		bool? r;
+
+		// ツイート(ベースのほう)を評価。
+		r = showstatus_check1(id_str, reply_to, retweeted_id);
+		if (r != null) {
+			return r;
 		}
 
-		// ミュート氏/ブロック氏に絡むものは非表示
-		if (mutelist.ContainsKey(reply_to)) {
-			return false;
-		}
-		if (blocklist.ContainsKey(reply_to)) {
-			return false;
-		}
+		// リツイートがあればそちらについても評価。
 		if (retweeted_id != "") {
-			if (mutelist.ContainsKey(retweeted_id)) {
-				return false;
-			}
-			if (blocklist.ContainsKey(retweeted_id)) {
-				return false;
+			r = showstatus_check1(retweeted_id, retweeted_reply_to, "");
+			if (r != null) {
+				return r;
 			}
 		}
 
@@ -997,6 +973,54 @@ public class SayakaMain
 			}
 		}
 		return true;
+	}
+
+	// 1ツイートに対する判定。
+	// ベースと(あれば)リツイート先で2回ほぼ同じ判定をするため。
+	// id は発言者。
+	// reply はリプライ先(なければ "")。
+	// rt はリツイート先発言者 (なければ "")。
+	// 戻り値は true なら表示確定、false なら非表示確定。null なら未確定。
+	public bool? showstatus_check1(string id, string reply_to, string rt)
+	{
+		// 俺氏の発言はすべて表示
+		if (id == myid) {
+			return true;
+		}
+		// ブロック氏の発言はすべて非表示
+		if (blocklist.ContainsKey(id)) {
+			return false;
+		}
+		// ブロック以外からの俺氏宛の発言はすべて表示
+		if (reply_to == myid) {
+			return true;
+		}
+		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示だが
+		// 自分宛はもう処理済みなので、ここは非表示だけでいい。
+		if (mutelist.ContainsKey(id)) {
+			return false;
+		}
+
+		// RT非表示氏の発言はリツイートのみ別対応
+		if (nortlist.ContainsKey(id) && rt != "") {
+			// ここで弾きたいのは、ホームでRT非表示氏が他人のツイートを RT
+			// すること (キーワード検索なら表示されてもいいような気がする)。
+			// それ以外は FALL THROUGH。
+			if (opt_pseudo_home && !followlist.ContainsKey(rt)) {
+				return false;
+			}
+			// FALLTHROUGH
+		}
+
+		// ミュート氏/ブロック氏に絡むものは非表示
+		if (mutelist.ContainsKey(reply_to)) {
+			return false;
+		}
+		if (blocklist.ContainsKey(reply_to)) {
+			return false;
+		}
+
+		return null;
 	}
 
 #if TEST
@@ -1022,18 +1046,18 @@ public class SayakaMain
 		// o 発言者 id (number) -> user.id_str (string)
 		// o リプ先 reply (number) -> in_reply_to_user_id_str (string)
 		// o リツイート rt (number) -> retweeted_status.user.id_str (string)
+		// o リツイート先のリプライ先 rt_rep (number) ->
+		//                 retweeted_status.in_reply_to_user_id_str (string)
 		// 結果はホームタイムラインとフィルタモードによって期待値が異なり
 		// それぞれ home, filt で表す。あれば表示、省略は非表示を意味する。
 		var table = new string[] {
 			// 俺氏の発言
-			// (ブロック氏への発言はシステム上出来ないはずだが、
-			// こっちの処理の都合から言えばあえて弾く必要もない気がする)
 			"{id:1,        home,filt}",		// 平文
 			"{id:1,reply:1,home,filt}",		// 自分自身へ
 			"{id:1,reply:2,home,filt}",		// フォローへ
 			"{id:1,reply:4,home,filt}",		// ミュートへ
 			"{id:1,reply:5,home,filt}",		// RT非表示へ
-			"{id:1,reply:6,home,filt}",		// ブロックへ
+			"{id:1,reply:6,home,filt}",		// ブロックへ (*N)
 			"{id:1,reply:8,home,filt}",		// 他人へ
 
 			// フォロー氏の発言 (RT非表示氏も同じになるはずなので以下参照)
@@ -1133,6 +1157,125 @@ public class SayakaMain
 			"{id:8,rt:5,     filt}",		// RT非表示を
 			"{id:8,rt:6,         }",		// ブロックを
 			"{id:8,rt:8,     filt}",		// 他人を
+
+			//
+			// フォロー氏がリツイート
+			"{id:2,rt:1,rt_rep:1,home,filt}",	// 俺氏から俺氏宛リプ
+			"{id:2,rt:1,rt_rep:2,home,filt}",	// 俺氏からフォロー宛リプ
+			"{id:2,rt:1,rt_rep:4,home,filt}",	// 俺氏からミュート宛リプ
+			"{id:2,rt:1,rt_rep:5,home,filt}",	// 俺氏からRT非表示宛リプ
+			"{id:2,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ(*N)
+			"{id:2,rt:1,rt_rep:8,home,filt}",	// 俺氏から他人宛リプ
+			"{id:2,rt:2,rt_rep:1,home,filt}",	// フォローから俺氏宛リプ
+			"{id:2,rt:2,rt_rep:2,home,filt}",	// フォローからフォロー宛リプ
+			"{id:2,rt:2,rt_rep:4,         }",	// フォローからミュート宛リプ
+			"{id:2,rt:2,rt_rep:5,home,filt}",	// フォローからRT非表示宛リプ
+			"{id:2,rt:2,rt_rep:6,         }",	// フォローからブロック宛リプ
+			"{id:2,rt:2,rt_rep:8,home,filt}",	// フォローから他人宛リプ
+			"{id:2,rt:4,rt_rep:1,home,filt}",	// ミュートから俺氏宛リプ
+			"{id:2,rt:4,rt_rep:2,         }",	// ミュートからフォロー宛リプ
+			"{id:2,rt:4,rt_rep:4,         }",	// ミュートからミュート宛リプ
+			"{id:2,rt:4,rt_rep:5,         }",	// ミュートからRT非表示宛リプ
+			"{id:2,rt:4,rt_rep:6,         }",	// ミュートからブロック宛リプ
+			"{id:2,rt:4,rt_rep:8,         }",	// ミュートから他人宛リプ
+			"{id:2,rt:5,rt_rep:1,home,filt}",	// RT非表示から俺氏宛リプ
+			"{id:2,rt:5,rt_rep:2,home,filt}",	// RT非表示からフォロー宛リプ
+			"{id:2,rt:5,rt_rep:4,         }",	// RT非表示からミュート宛リプ
+			"{id:2,rt:5,rt_rep:5,home,filt}",	// RT非表示からRT非表示宛リプ
+			"{id:2,rt:5,rt_rep:6,         }",	// RT非表示からブロック宛リプ
+			"{id:2,rt:5,rt_rep:8,home,filt}",	// RT非表示から他人宛リプ
+			"{id:2,rt:6,rt_rep:1,         }",	// ブロックから俺氏宛リプ
+			"{id:2,rt:6,rt_rep:2,         }",	// ブロックからフォロー宛リプ
+			"{id:2,rt:6,rt_rep:4,         }",	// ブロックからブロック宛リプ
+			"{id:2,rt:6,rt_rep:5,         }",	// ブロックからRT非表示宛リプ
+			"{id:2,rt:6,rt_rep:6,         }",	// ブロックからブロック宛リプ
+			"{id:2,rt:6,rt_rep:8,         }",	// ブロックから他人宛リプ
+			"{id:2,rt:8,rt_rep:1,home,filt}",	// 他人から俺氏宛リプ
+			"{id:2,rt:8,rt_rep:2,home,filt}",	// 他人からフォロー宛リプ
+			"{id:2,rt:8,rt_rep:4,         }",	// 他人からブロック宛リプ
+			"{id:2,rt:8,rt_rep:5,home,filt}",	// 他人からRT非表示宛リプ
+			"{id:2,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
+			"{id:2,rt:8,rt_rep:8,home,filt}",	// 他人から他人宛リプ
+			// ミュート氏がリツイート
+		/* XXX 面倒すぎる
+			"{id:4,rt:1,rt_rep:1,home,filt}",	// 俺氏から俺氏宛リプ
+			"{id:4,rt:1,rt_rep:2,home,filt}",	// 俺氏からフォロー宛リプ
+			"{id:4,rt:1,rt_rep:4,home,filt}",	// 俺氏からミュート宛リプ
+			"{id:4,rt:1,rt_rep:5,home,filt}",	// 俺氏からRT非表示宛リプ
+			"{id:4,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ(*N)
+			"{id:4,rt:1,rt_rep:8,home,filt}",	// 俺氏から他人宛リプ
+			"{id:4,rt:2,rt_rep:1,home,filt}",	// フォローから俺氏宛リプ
+			"{id:4,rt:2,rt_rep:2,     filt}",	// フォローからフォロー宛リプ
+			"{id:4,rt:2,rt_rep:4,         }",	// フォローからミュート宛リプ
+			"{id:4,rt:2,rt_rep:5,     filt}",	// フォローからRT非表示宛リプ
+			"{id:4,rt:2,rt_rep:6,         }",	// フォローからブロック宛リプ
+			"{id:4,rt:2,rt_rep:8,     filt}",	// フォローから他人宛リプ
+			"{id:4,rt:4,rt_rep:1,home,filt}",	// ミュートから俺氏宛リプ
+			"{id:4,rt:4,rt_rep:2,         }",	// ミュートからフォロー宛リプ
+			"{id:4,rt:4,rt_rep:4,         }",	// ミュートからミュート宛リプ
+			"{id:4,rt:4,rt_rep:5,         }",	// ミュートからRT非表示宛リプ
+			"{id:4,rt:4,rt_rep:6,         }",	// ミュートからブロック宛リプ
+			"{id:4,rt:4,rt_rep:8,         }",	// ミュートから他人宛リプ
+			"{id:4,rt:5,rt_rep:1,home,filt}",	// RT非表示から俺氏宛リプ
+			"{id:4,rt:5,rt_rep:2,     filt}",	// RT非表示からフォロー宛リプ
+			"{id:4,rt:5,rt_rep:4,         }",	// RT非表示からミュート宛リプ
+			"{id:4,rt:5,rt_rep:5,     filt}",	// RT非表示からRT非表示宛リプ
+			"{id:4,rt:5,rt_rep:6,         }",	// RT非表示からブロック宛リプ
+			"{id:4,rt:5,rt_rep:8,     filt}",	// RT非表示から他人宛リプ
+			"{id:4,rt:6,rt_rep:1,         }",	// ブロックから俺氏宛リプ
+			"{id:4,rt:6,rt_rep:2,         }",	// ブロックからフォロー宛リプ
+			"{id:4,rt:6,rt_rep:4,         }",	// ブロックからブロック宛リプ
+			"{id:4,rt:6,rt_rep:5,         }",	// ブロックからRT非表示宛リプ
+			"{id:4,rt:6,rt_rep:6,         }",	// ブロックからブロック宛リプ
+			"{id:4,rt:6,rt_rep:8,         }",	// ブロックから他人宛リプ
+			"{id:4,rt:8,rt_rep:1,home,filt}",	// 他人から俺氏宛リプ
+			"{id:4,rt:8,rt_rep:2,     filt}",	// 他人からフォロー宛リプ
+			"{id:4,rt:8,rt_rep:4,         }",	// 他人からブロック宛リプ
+			"{id:4,rt:8,rt_rep:5,     filt}",	// 他人からRT非表示宛リプ
+			"{id:4,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
+			"{id:4,rt:8,rt_rep:8,     filt}",	// 他人から他人宛リプ
+		*/
+			// 他人がリツイート
+			"{id:8,rt:1,rt_rep:1,home,filt}",	// 俺氏から俺氏宛リプ
+			"{id:8,rt:1,rt_rep:2,home,filt}",	// 俺氏からフォロー宛リプ
+			"{id:8,rt:1,rt_rep:4,home,filt}",	// 俺氏からミュート宛リプ
+			"{id:8,rt:1,rt_rep:5,home,filt}",	// 俺氏からRT非表示宛リプ
+			"{id:8,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ(*N)
+			"{id:8,rt:1,rt_rep:8,home,filt}",	// 俺氏から他人宛リプ
+			"{id:8,rt:2,rt_rep:1,home,filt}",	// フォローから俺氏宛リプ
+			"{id:8,rt:2,rt_rep:2,     filt}",	// フォローからフォロー宛リプ
+			"{id:8,rt:2,rt_rep:4,         }",	// フォローからミュート宛リプ
+			"{id:8,rt:2,rt_rep:5,     filt}",	// フォローからRT非表示宛リプ
+			"{id:8,rt:2,rt_rep:6,         }",	// フォローからブロック宛リプ
+			"{id:8,rt:2,rt_rep:8,     filt}",	// フォローから他人宛リプ
+			"{id:8,rt:4,rt_rep:1,home,filt}",	// ミュートから俺氏宛リプ
+			"{id:8,rt:4,rt_rep:2,         }",	// ミュートからフォロー宛リプ
+			"{id:8,rt:4,rt_rep:4,         }",	// ミュートからミュート宛リプ
+			"{id:8,rt:4,rt_rep:5,         }",	// ミュートからRT非表示宛リプ
+			"{id:8,rt:4,rt_rep:6,         }",	// ミュートからブロック宛リプ
+			"{id:8,rt:4,rt_rep:8,         }",	// ミュートから他人宛リプ
+			"{id:8,rt:5,rt_rep:1,home,filt}",	// RT非表示から俺氏宛リプ
+			"{id:8,rt:5,rt_rep:2,     filt}",	// RT非表示からフォロー宛リプ
+			"{id:8,rt:5,rt_rep:4,         }",	// RT非表示からミュート宛リプ
+			"{id:8,rt:5,rt_rep:5,     filt}",	// RT非表示からRT非表示宛リプ
+			"{id:8,rt:5,rt_rep:6,         }",	// RT非表示からブロック宛リプ
+			"{id:8,rt:5,rt_rep:8,     filt}",	// RT非表示から他人宛リプ
+			"{id:8,rt:6,rt_rep:1,         }",	// ブロックから俺氏宛リプ
+			"{id:8,rt:6,rt_rep:2,         }",	// ブロックからフォロー宛リプ
+			"{id:8,rt:6,rt_rep:4,         }",	// ブロックからブロック宛リプ
+			"{id:8,rt:6,rt_rep:5,         }",	// ブロックからRT非表示宛リプ
+			"{id:8,rt:6,rt_rep:6,         }",	// ブロックからブロック宛リプ
+			"{id:8,rt:6,rt_rep:8,         }",	// ブロックから他人宛リプ
+			"{id:8,rt:8,rt_rep:1,home,filt}",	// 他人から俺氏宛リプ
+			"{id:8,rt:8,rt_rep:2,     filt}",	// 他人からフォロー宛リプ
+			"{id:8,rt:8,rt_rep:4,         }",	// 他人からブロック宛リプ
+			"{id:8,rt:8,rt_rep:5,     filt}",	// 他人からRT非表示宛リプ
+			"{id:8,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
+			"{id:8,rt:8,rt_rep:8,     filt}",	// 他人から他人宛リプ
+
+			// 注釈。
+			// *N: ブロック氏への発言はシステム上出来ないはずなので
+			//     こっちの処理の都合から言えばどちらでもいい?
 		};
 		var nfail = 0;
 		foreach (var input_sq in table) {
@@ -1142,6 +1285,7 @@ public class SayakaMain
 				.replace("id:",		"\"id\":")
 				.replace("reply:",	"\"reply\":")
 				.replace("rt:",		"\"rt\":")
+				.replace("rt_rep:",	"\"rt_rep\":")
 				.replace("home",	"\"home\":true")
 				.replace("filt",	"\"filt\":true")
 				// 末尾カンマは許容しておいてここで消すほうが楽
@@ -1175,6 +1319,13 @@ public class SayakaMain
 				dict_rtuser.AddOrUpdate("id_str",
 					new Json.String(input.GetInt("rt").to_string()));
 				dict_rt.AddOrUpdate("user", new Json.Object(dict_rtuser));
+
+				// retweeted_status.in_reply_to_user_id_str
+				if (input.Has("rt_rep")) {
+					dict_rt.AddOrUpdate("in_reply_to_user_id_str",
+						new Json.String(input.GetInt("rt_rep").to_string()));
+				}
+
 				dict.AddOrUpdate("retweeted_status", new Json.Object(dict_rt));
 			}
 			var status = new Json.Object(dict);
