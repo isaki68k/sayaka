@@ -1134,6 +1134,7 @@ public class SayakaMain
 			"{id:8,rt:6,         }",		// ブロックを
 			"{id:8,rt:8,     filt}",		// 他人を
 		};
+		var nfail = 0;
 		foreach (var input_sq in table) {
 			// 入力文字列はテストを書きやすいよう簡易 JSON みたいな表記に
 			// してあるので、これを正しい JSON に置換。
@@ -1176,12 +1177,11 @@ public class SayakaMain
 				dict_rt.AddOrUpdate("user", new Json.Object(dict_rtuser));
 				dict.AddOrUpdate("retweeted_status", new Json.Object(dict_rt));
 			}
+			var status = new Json.Object(dict);
 
 			// 期待値
 			var expected_home = input.GetBool("home", false);
 			var expected_filt = input.GetBool("filt", false);
-
-			var status = new Json.Object(dict);
 
 			// テスト (home)
 			opt_pseudo_home = true;
@@ -1189,6 +1189,7 @@ public class SayakaMain
 			if (result != expected_home) {
 				stdout.printf(@"$(input_str) (for home) "
 					+ @"expects '$(expected_home)' but '$(result)'\n");
+				nfail++;
 			}
 
 			opt_pseudo_home = false;
@@ -1196,8 +1197,14 @@ public class SayakaMain
 			if (result != expected_filt) {
 				stdout.printf(@"$(input_str) (for filter) "
 					+ @"expects '$(expected_filt)' but '$(result)'\n");
+				nfail++;
 			}
 		}
+		stdout.printf(@"$(table.length) tests, $(table.length - nfail) passes");
+		if (nfail > 0) {
+			stdout.printf(@", $(nfail) FAILED!");
+		}
+		stdout.printf("\n");
 	}
 #endif
 
