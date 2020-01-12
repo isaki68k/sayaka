@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.4.0 (2019/01/05)
+twitter クライアント sayaka ちゃん version 3.4.1 (2020/01/12)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -10,6 +10,8 @@ twitter クライアント sayaka ちゃん version 3.4.0 (2019/01/05)
 
 更新履歴
 ---
+* 3.4.1 (2020/01/12) … 疑似ホームタイムラインの調整。
+	SIXEL 非対応端末を自動判別してみる。
 * 3.4.0 (2020/01/05) … フィルタストリームによる擬似ホームタイムラインに対応。
 * 3.3.3 (2020/01/04) … Linux でのビルドエラーを修正。
 * 3.3.2 (2018/01/02) … pkgsrc-2017Q4 (vala-0.38.1以上) でのビルドに対応。
@@ -169,7 +171,9 @@ sayaka ver 3.4 以降はフィルタストリームのみ対応しています�
 	`--ngword-add` オプションとともに使用します。
 	`<user>` は `@<screen_name>` か `id:<user_id>` で指定します。
 
-* `--noimg` … SIXEL 画像を一切出力しません。SIXEL 非対応ターミナル用。
+* `--noimg` … 明示的に SIXEL 画像出力をオフにします。
+	このオプションを指定しなくても、
+	ターミナルが SIXEL 非対応であれば自動的に画像出力はオフになります。
 
 * `--ormode <on|off>` … on なら SIXEL を独自実装の OR モードで出力します。
 	デフォルトは off です。
@@ -212,3 +216,8 @@ sayaka ver 3.4 以降はフィルタストリームのみ対応しています�
 
 * `--x68k` … NetBSD/x68k のためのプリセットオプションで、
 	実際には `--color x68k --font 8x16 --jis --black --progress --ormode on --palette off` と等価です。
+
+.
+---
+[@isaki68k](https://twitter.com/isaki68k/)  
+[差入れ](https://www.amazon.co.jp/hz/wishlist/ls/3TXVBRKSKTF31)してもらえると喜びます。
