@@ -1811,6 +1811,14 @@ public class SayakaMain
 		string fav;
 		string gray;
 
+		// 2色ならテキストに色(も何の属性も)つけない
+		if (color_mode != ColorFixedX68k && color_mode <= 2) {
+			for (var i = 0; i < Color.Max; i++) {
+				color2esc[i] = "";
+			}
+			return;
+		}
+
 		// 黒背景か白背景かで色合いを変えたほうが読みやすい
 		if (bg_white) {
 			blue = BLUE;
