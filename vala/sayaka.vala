@@ -2127,10 +2127,24 @@ public class SayakaMain
 		return text;
 	}
 
-	// 現在のカーソル位置に user のアイコンを表示。
+	// 現在行に user のアイコンを表示。
+	// 呼び出し時点でカーソルは行頭にあるため、必要なインデントを行う。
 	// アイコン表示後にカーソル位置を表示前の位置に戻す。
 	public void show_icon(ULib.Json user)
 	{
+		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
+		// 発生させ、アイコン表示時にスクロールしないようにしてから
+		// カーソル位置を保存する
+		// (スクロールするとカーソル位置復元時に位置が合わない)
+		stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
+
+		// インデント。
+		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
+		if (indent_depth > 0) {
+			var left = indent_cols * indent_depth;
+			stdout.printf(@"$(CSI)$(left)C");
+		}
+
 		var screen_name = unescape(user.GetString("screen_name"));
 		var image_url = user.GetString("profile_image_url");
 
@@ -2140,6 +2154,12 @@ public class SayakaMain
 			@"icon-$(iconsize)x$(iconsize)-$(screen_name)-$(filename)";
 
 		show_image(img_file, image_url, iconsize, -1);
+
+		// カーソル位置を復帰
+		stdout.printf("\r");
+		// カーソル位置保存/復元に対応していない端末でも動作するように
+		// カーソル位置復元前にカーソル上移動x3を行う
+		stdout.printf(CSI + "3A" + @"$(ESC)8");
 	}
 
 	// index は画像の番号 (位置決めに使用する)
@@ -2226,19 +2246,7 @@ public class SayakaMain
 		var image_cols = (sx_width + fontwidth - 1) / fontwidth;
 
 		if (index < 0) {
-			// アイコンの場合、
-			// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
-			// 発生させ、アイコン表示時にスクロールしないようにしてから
-			// カーソル位置を保存する
-			// (スクロールするとカーソル位置復元時に位置が合わない)
-			stdout.printf("\n\n\n" + CSI + "3A" + @"$(ESC)7");
-
-			// インデント。
-			// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
-			if (indent_depth > 0) {
-				var left = indent_cols * indent_depth;
-				stdout.printf(@"$(CSI)$(left)C");
-			}
+			// アイコンの場合は呼び出し側で実施。
 		} else {
 			// 添付画像の場合、
 			// 表示位置などの計算
@@ -2277,11 +2285,7 @@ public class SayakaMain
 		} while (n > 0);
 
 		if (index < 0) {
-			// アイコンの場合
-			stdout.printf("\r");
-			// カーソル位置保存/復元に対応していない端末でも動作するように
-			// カーソル位置復元前にカーソル上移動x3を行う
-			stdout.printf(CSI + "3A" + @"$(ESC)8");
+			// アイコンの場合は呼び出し側で実施。
 		} else {
 			// 添付画像の場合
 			image_count++;
