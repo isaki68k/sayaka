@@ -314,13 +314,14 @@ public class SayakaMain
 				}
 				opt_ngword_user = args[i];
 				break;
-			 case "--nocolor":
+			 case "--no-color":
 				opt_nocolor = true;
 				break;
 			 case "--noimg":
+			 case "--no-image":
 				opt_noimg = true;
 				break;
-			 case "--norest":
+			 case "--no-rest":
 				opt_norest = true;
 				break;
 			 case "--nortlist":
@@ -595,7 +596,7 @@ public class SayakaMain
 		if (native.term_support_sixel() == false) {
 			if (opt_noimg == false) {
 				stdout.printf(
-					"Terminal doesn't support sixel, switch to --noimg\n");
+					"Terminal doesn't support sixel, switch to --no-image\n");
 			}
 			opt_noimg = true;
 		}
@@ -2748,8 +2749,8 @@ public class SayakaMain
 	--full-url : display full URL even if the URL is abbreviated.
 	--home : pseudo home timeline using filter stream
 	--white / --black : darken/lighten the text color. (default: --white)
-	--nocolor : disable all text color sequences
-	--noimg
+	--no-color : disable all text color sequences
+	--no-image / --noimg
 	--jis
 	--eucjp
 	--play : read JSON from stdin.
@@ -2776,7 +2777,7 @@ public class SayakaMain
 	--ngword-del
 	--ngword-list
 	--ngword-user
-	--norest
+	--no-rest
 	--nortlist
 	--ormode <on|off> (default off)
 	--palette <on|off> (default on)
