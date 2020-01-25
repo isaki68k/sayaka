@@ -727,7 +727,7 @@ public class SayakaMain
 				stderr.printf("statuses/filter: read_line: EOF?\n");
 				Process.exit(1);
 			}
-			if (showstatus_callback_line(line) == false) {
+			if (showobject(line) == false) {
 				break;
 			}
 		}
@@ -737,7 +737,7 @@ public class SayakaMain
 	public void cmd_play()
 	{
 		for (string line; (line = stdin.read_line()) != null; ) {
-			if (showstatus_callback_line(line) == false) {
+			if (showobject(line) == false) {
 				break;
 			}
 		}
@@ -779,17 +779,17 @@ public class SayakaMain
 		}
 	}
 
-	// ストリームから受け取った何かの1行を処理する共通部分。
-	// ツイートオブジェクトなら showstatus() を呼んでツイートを表示する。
-	// true でループ継続、false でループ終了。
+	// ストリームから受け取った何かの1行 line を処理する共通部分。
+	// line はイベントかメッセージの JSON 文字列1行分。
 	// ファイルかソケットかで全部 read_line() が使えてれば
 	// こんなことにはならないんだが…。
+	// true でループ継続、false でループ終了。
 	//
 	// ユーザストリーム時代には各種イベントも飛んできていたので、ここでその
 	// ディスパッチを行っていたためこういう構造になっている。
 	// フィルタストリームではツイート以外が飛んでくることはないのだが、
 	// ユーザストリーム時代の録画データの再生に対応するため、残してある。
-	public bool showstatus_callback_line(string line)
+	public bool showobject(string line)
 	{
 		// 空行がちょくちょく送られてくるようだ
 		if (line == "") {
@@ -893,32 +893,11 @@ public class SayakaMain
 			return true;
 		}
 
-		// このツイートを表示するかどうかの判定
-		if (showstatus_acl(status) == false) {
-			return true;
+		// ツイートメッセージ
+		var crlf = showstatus(status, false);
+		if (crlf) {
+			stdout.printf("\n");
 		}
-
-		// NGワード
-		var ngstat = ngword.match(status);
-		if (ngstat.match) {
-			// マッチしたらここで表示
-			if (opt_show_ng) {
-				var userid = coloring(formatid(ngstat.screen_name), Color.NG);
-				var name = coloring(formatname(ngstat.name), Color.NG);
-				var time = coloring(ngstat.time, Color.NG);
-
-				var msg = coloring(@"NG:$(ngstat.ngword)", Color.NG);
-
-				print_(@"$(name) $(userid)\n"
-				     + @"$(time) $(msg)");
-				stdout.printf("\n");
-				stdout.printf("\n");
-			}
-			return true;
-		}
-
-		showstatus(status, false);
-		stdout.printf("\n");
 		return true;
 	}
 
@@ -1358,10 +1337,37 @@ public class SayakaMain
 	}
 #endif
 
-	// 1ツイートを表示
-	public void showstatus(ULib.Json status, bool is_quoted)
+	// 1ツイートを表示。
+	// true なら戻ったところで1行空ける改行。ツイートとツイートの間は1行
+	// 空けるがここで判定の結果何も表示しなかったら空けないなど。
+	public bool showstatus(ULib.Json status, bool is_quoted)
 	{
 		ULib.Json obj = status.GetJson("object");
+
+		// このツイートを表示するかどうかの判定。
+		// これは、このツイートがリツイートを持っているかどうかも含めた判定を
+		// 行うのでリツイート分離前に行う。
+		if (showstatus_acl(status) == false) {
+			return false;
+		}
+
+		// NGワード
+		var ngstat = ngword.match(status);
+		if (ngstat.match) {
+			// マッチしたらここで表示
+			if (opt_show_ng) {
+				var userid = coloring(formatid(ngstat.screen_name), Color.NG);
+				var name = coloring(formatname(ngstat.name), Color.NG);
+				var time = coloring(ngstat.time, Color.NG);
+
+				var msg = coloring(@"NG:$(ngstat.ngword)", Color.NG);
+
+				print_(@"$(name) $(userid)\n"
+				     + @"$(time) $(msg)\n");
+				return true;
+			}
+			return false;
+		}
 
 		// RT なら、RT 元を $status、RT先を $s
 		ULib.Json s = status;
@@ -1389,8 +1395,7 @@ public class SayakaMain
 			if (match) {
 				print_(coloring("鍵垢", Color.NG) + "\n"
 					+ coloring(formattime(status), Color.Time));
-				stdout.printf("\n");
-				return;
+				return true;
 			}
 		}
 
@@ -1403,8 +1408,7 @@ public class SayakaMain
 					var rtcnt = format_rt_cnt(s);
 					var favcnt = format_fav_cnt(s);
 					print_(rtmsg + rtcnt + favcnt);
-					stdout.printf("\n");
-					return;
+					return true;
 				}
 			}
 
@@ -1416,8 +1420,7 @@ public class SayakaMain
 					var rtcnt = format_rt_cnt(s);
 					var favcnt = format_fav_cnt(s);
 					print_(favmsg + rtcnt + favcnt);
-					stdout.printf("\n");
-					return;
+					return true;
 				}
 			}
 
@@ -1470,6 +1473,7 @@ public class SayakaMain
 			indent_depth++;
 			showstatus(s.GetJson("quoted_status"), true);
 			indent_depth--;
+			// 引用表示後のここは改行しない
 		}
 
 		// このステータスの既 RT、既ふぁぼ数
@@ -1489,6 +1493,8 @@ public class SayakaMain
 			print_(format_fav_owner(obj));
 			stdout.printf("\n");
 		}
+
+		return true;
 	}
 
 	// リツイート元通知を整形して返す
