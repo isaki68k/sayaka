@@ -152,6 +152,7 @@ public class SayakaMain
 	public int opt_timeout_image;	// 画像取得の(接続)タイムアウト [msec]
 	public bool opt_pseudo_home;	// 疑似ホームタイムライン
 	public string myid;				// 自身の user id
+	public bool opt_nocolor;		// テキストに(色)属性を一切付けない
 
 	public string basedir;
 	public string cachedir;
@@ -312,6 +313,9 @@ public class SayakaMain
 					usage();
 				}
 				opt_ngword_user = args[i];
+				break;
+			 case "--nocolor":
+				opt_nocolor = true;
 				break;
 			 case "--noimg":
 				opt_noimg = true;
@@ -1876,10 +1880,14 @@ public class SayakaMain
 	{
 		string rv;
 
-		if (color2esc[col] != null) {
-			rv = @"$(CSI)$(color2esc[col])m$(text)$(CSI)0m";
-		} else {
+		if (opt_nocolor) {
+			// --nocolor なら一切属性を付けない
+			rv = text;
+		} else if (color2esc[col] == null) {
+			// ポカ避け
 			rv = @"Coloring($(text),$(col))";
+		} else {
+			rv = @"$(CSI)$(color2esc[col])m$(text)$(CSI)0m";
 		}
 		return rv;
 	}
@@ -2720,6 +2728,7 @@ public class SayakaMain
 	--full-url : display full URL even if the URL is abbreviated.
 	--home : pseudo home timeline using filter stream
 	--white / --black : darken/lighten the text color. (default: --white)
+	--nocolor : disable all text color sequences
 	--noimg
 	--jis
 	--eucjp
