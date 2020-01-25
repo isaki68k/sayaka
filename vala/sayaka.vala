@@ -2145,15 +2145,19 @@ public class SayakaMain
 			stdout.printf(@"$(CSI)$(left)C");
 		}
 
-		var screen_name = unescape(user.GetString("screen_name"));
-		var image_url = user.GetString("profile_image_url");
+		if (opt_noimg) {
+			stdout.printf("◆");
+		} else {
+			var screen_name = unescape(user.GetString("screen_name"));
+			var image_url = user.GetString("profile_image_url");
 
-		// URLのファイル名部分をキャッシュのキーにする
-		var filename = Path.get_basename(image_url);
-		var img_file =
-			@"icon-$(iconsize)x$(iconsize)-$(screen_name)-$(filename)";
+			// URLのファイル名部分をキャッシュのキーにする
+			var filename = Path.get_basename(image_url);
+			var img_file =
+				@"icon-$(iconsize)x$(iconsize)-$(screen_name)-$(filename)";
 
-		show_image(img_file, image_url, iconsize, -1);
+			show_image(img_file, image_url, iconsize, -1);
+		}
 
 		// カーソル位置を復帰
 		stdout.printf("\r");
