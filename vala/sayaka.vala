@@ -736,10 +736,7 @@ public class SayakaMain
 	// 再生モード
 	public void cmd_play()
 	{
-		while (true) {
-			string line;
-
-			line = stdin.read_line();
+		for (string line; (line = stdin.read_line()) != null; ) {
 			if (showstatus_callback_line(line) == false) {
 				break;
 			}
@@ -782,22 +779,26 @@ public class SayakaMain
 		}
 	}
 
-	// 1行を受け取ってから callback に呼ぶまでの共通部分。
+	// ストリームから受け取った何かの1行を処理する共通部分。
+	// ツイートオブジェクトなら showstatus() を呼んでツイートを表示する。
 	// true でループ継続、false でループ終了。
 	// ファイルかソケットかで全部 read_line() が使えてれば
 	// こんなことにはならないんだが…。
-	public bool showstatus_callback_line(string? line)
+	//
+	// ユーザストリーム時代には各種イベントも飛んできていたので、ここでその
+	// ディスパッチを行っていたためこういう構造になっている。
+	// フィルタストリームではツイート以外が飛んでくることはないのだが、
+	// ユーザストリーム時代の録画データの再生に対応するため、残してある。
+	public bool showstatus_callback_line(string line)
 	{
-		if (line == null) {
-			return false;
-		}
-
 		// 空行がちょくちょく送られてくるようだ
 		if (line == "") {
 			diag.Debug("empty line");
 			return true;
 		}
 
+		// line から obj にデコード。
+		// obj が (イベント or メッセージ) のオブジェクト。
 		ULib.Json obj;
 		try {
 			var parser = new ULib.JsonParser();
@@ -809,17 +810,9 @@ public class SayakaMain
 				+ "There may be something wrong with twitter.\n");
 			return false;
 		}
-		showstatus_callback(obj);
-		return true;
-	}
 
-	// 1ツイートを表示するコールバック関数
-	// ここではループ中からそのまま呼ばれる
-	public void showstatus_callback(ULib.Json obj)
-	{
+		// status はツイート。
 		ULib.Json status = null;
-
-		// obj が元オブジェクト (イベント or メッセージ)
 
 		// 録画
 		if (record_file != null) {
@@ -875,18 +868,18 @@ public class SayakaMain
 				stdout.printf("\n");
 				stdout.printf("\n");
 				last_id = "";
-				return;
+				return true;
 
 			 case "mute":
 				add_mute_list(obj.GetJson("target"));
-				return;
+				return true;
 
 			 case "unmute":
 				del_mute_list(obj.GetJson("target"));
-				return;
+				return true;
 
 			 default:
-				return;
+				return true;
 			}
 		} else if (obj.Has("text")) {
 			// 通常のツイート
@@ -894,15 +887,15 @@ public class SayakaMain
 			status = obj;
 		} else if (obj.Has("friends")) {
 			// 最初に送られてくる friends リストはいらない
-			return;
+			return true;
 		} else {
 			// それ以外の情報はとりあえず無視
-			return;
+			return true;
 		}
 
 		// このツイートを表示するかどうかの判定
 		if (showstatus_acl(status) == false) {
-			return;
+			return true;
 		}
 
 		// NGワード
@@ -921,11 +914,12 @@ public class SayakaMain
 				stdout.printf("\n");
 				stdout.printf("\n");
 			}
-			return;
+			return true;
 		}
 
 		showstatus(status, false);
 		stdout.printf("\n");
+		return true;
 	}
 
 	// このツイートを表示するか。表示しないなら false。
