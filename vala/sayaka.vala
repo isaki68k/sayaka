@@ -1809,64 +1809,61 @@ public class SayakaMain
 
 	public void init_color()
 	{
-		string blue;
-		string green;
-		string username;
-		string fav;
-		string gray;
-		string verified;
+		string blue = "";
+		string green = "";
+		string username = "";
+		string fav = "";
+		string gray = "";
+		string verified = "";
 
-		// 黒背景か白背景かで色合いを変えたほうが読みやすい
-		if (bg_white) {
-			blue = BLUE;
-		} else {
-			blue = CYAN;
-		}
-
-		// ユーザ名。白地の場合は出来ればもう少し暗めにしたい
-		if (bg_white && color_mode > 16) {
-			username = "38;5;28";
-		} else {
-			username = BROWN;
-		}
-
-		// リツイートは緑色。出来れば濃い目にしたい
-		if (color_mode == ColorFixedX68k) {
-			green = "92";
-		} else if (color_mode > 16) {
-			green = "38;5;28";
-		} else {
-			green = GREEN;
-		}
-
-		// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
-		// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
-		if (bg_white && color_mode > 16) {
-			fav = "38;5;184";
-		} else {
-			fav = BROWN;
-		}
-
-		// x68k 独自16色パッチでは 90 は黒、97 がグレー。
-		// mlterm では 90 がグレー、97 は白。
-		if (color_mode == ColorFixedX68k) {
-			gray = "97";
-		} else {
-			gray = "90";
-		}
-
-		// 認証マークは白背景でも黒背景でもシアンでよさそう
-		verified = CYAN;
-
-		// ただし、2色モードなら色は全部無効にする。
-		// ユーザ名だけボールドにすると少し目立って分かりやすいか。
 		if (color_mode == 2) {
-			blue = "";
-			green = "";
+			// 2色モードなら色は全部無効にする。
+			// ユーザ名だけボールドにすると少し目立って分かりやすいか。
 			username = BOLD;
-			fav = "";
-			gray = "";
-			verified = "";
+		} else {
+			// それ以外のケースは色ごとに個別調整
+
+			// 青は黒背景か白背景かで色合いを変えたほうが読みやすい
+			if (bg_white) {
+				blue = BLUE;
+			} else {
+				blue = CYAN;
+			}
+
+			// ユーザ名。白地の場合は出来ればもう少し暗めにしたい
+			if (bg_white && color_mode > 16) {
+				username = "38;5;28";
+			} else {
+				username = BROWN;
+			}
+
+			// リツイートは緑色。出来れば濃い目にしたい
+			if (color_mode == ColorFixedX68k) {
+				green = "92";
+			} else if (color_mode > 16) {
+				green = "38;5;28";
+			} else {
+				green = GREEN;
+			}
+
+			// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
+			// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
+			if (bg_white && color_mode > 16) {
+				fav = "38;5;184";
+			} else {
+				fav = BROWN;
+			}
+
+			// x68k 独自16色パッチでは 90 は黒、97 がグレー。
+			// mlterm では 90 がグレー、97 は白。
+			if (color_mode == ColorFixedX68k) {
+				gray = "97";
+			} else {
+				gray = "90";
+			}
+
+			// 認証マークは白背景でも黒背景でもシアンでよさそう
+			verified = CYAN;
 		}
 
 		color2esc[Color.Username]	= username;
