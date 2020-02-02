@@ -102,7 +102,14 @@ native_term_support_sixel()
 		e = strchr(p, ';');
 		if (e) {
 			*e++ = '\0';
+		} else {
+			e = strrchr(p, 'c');
+			if (e) {
+				*e = '\0';
+				e = NULL;
+			}
 		}
+
 		if (strcmp(p, "4") == 0) {
 			return 1;
 		}
