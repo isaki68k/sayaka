@@ -162,25 +162,4 @@ public class Diag
 			gDiag.PutHex(s, d, ClassName);
 		}
 	}
-
-	// errIfTrue が true の時エラーメッセージを出力します。
-	// [Obsolete]
-	public void ProgErr(bool errIfTrue, string s)
-	{
-		if (errIfTrue) {
-			stderr.puts(@"$(ClassName) PROGERR!! $(s)\n");
-			if (opt_errexit > 0) {
-				Process.exit(opt_errexit);
-			}
-		}
-	}
-
-	// [Obsolete]
-	public static void GlobalProgErr(bool errIfTrue, string s)
-	{
-		if (errIfTrue) {
-			gDiag.PROGERR(s);
-		}
-	}
 }
-

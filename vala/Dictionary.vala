@@ -210,7 +210,8 @@ namespace ULib
 			} else if (typeof(TKey) == typeof(int)) {
 				KeyComparer = (CompareFunc<TKey>)IntCmp;
 			} else {
-				Diag.GlobalProgErr(true, "Dictionary TKey not supported");
+				stderr.printf("Dictionary::Dictionary(): TKey not supported");
+				assert(false);
 			}
 			// コンパイラのバグ回避
 			data = new SortedArray<KeyValuePair<TKey, TValue>>.backend(

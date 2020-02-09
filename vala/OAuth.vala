@@ -105,7 +105,7 @@ public class OAuth
 		size_t len = 64;
 		uint8[] digest = new uint8[len];
 		hm.get_digest(digest, ref len);
-		diag.ProgErr(len > digest.length, "HMAC_SHA1 digest buffer overflow");
+		assert(len <= digest.length);
 
 		// バイナリを Base64 した文字列を返す
 		digest.resize((int)len);
