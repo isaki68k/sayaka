@@ -31,9 +31,6 @@ public class gDiag
 	public static bool global_trace = false;
 	public static bool global_debug = false;
 	public static bool global_warn  = false;
-	public static bool global_error = true;
-
-	public static int global_errexit = 1;
 
 	public static void Puts(string s, string className = "")
 	{
@@ -81,16 +78,6 @@ public class gDiag
 		}
 	}
 
-	public static void Error(string s)
-	{
-		if (global_error) {
-			Puts(s);
-			if (global_errexit > 0) {
-				Process.exit(global_errexit);
-			}
-		}
-	}
-
 	public static void DebugHex(string s, uchar[] d)
 	{
 		if (global_debug) {
@@ -101,9 +88,6 @@ public class gDiag
 	public static void PROGERR(string s)
 	{
 		Puts(s, "PROGERR!!");
-		if (global_errexit > 0) {
-			Process.exit(global_errexit);
-		}
 	}
 }
 
@@ -113,8 +97,6 @@ public class Diag
 	public bool opt_trace;
 	public bool opt_debug;
 	public bool opt_warn;
-	public bool opt_error;
-	public int opt_errexit;
 	public string ClassName;
 
 	public Diag(string className)
@@ -123,8 +105,6 @@ public class Diag
 		opt_trace = gDiag.global_trace;
 		opt_debug = gDiag.global_debug;
 		opt_warn = gDiag.global_warn;
-		opt_error = gDiag.global_error;
-		opt_errexit = gDiag.global_errexit;
 	}
 
 	public void Trace(string s)
@@ -144,13 +124,6 @@ public class Diag
 	public void Warn(string s)
 	{
 		if (opt_warn) {
-			gDiag.Puts(s, ClassName);
-		}
-	}
-
-	public void Error(string s)
-	{
-		if (opt_error) {
 			gDiag.Puts(s, ClassName);
 		}
 	}
