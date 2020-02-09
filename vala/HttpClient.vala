@@ -73,7 +73,7 @@ namespace ULib
 		// uri をターゲットにした HttpClient を作成します。
 		public HttpClient(string uri) throws Error
 		{
-			diag = new Diag("HttpClient");
+			diag.SetLevel(SayakaMain.debug_http);
 
 			Handle = new mTLSHandle();
 
@@ -274,10 +274,7 @@ namespace ULib
 		// uri へ接続します。
 		private void Connect() throws Error
 		{
-			// XXX とりあえず連動させておく
-			if (gDiag.global_debug) {
-				mTLSHandle.set_debuglevel(3);
-			}
+			mTLSHandle.set_debuglevel(SayakaMain.debug_http);
 
 			// 透過プロキシ(?)設定があれば対応。
 			var proxyTarget = "";
@@ -351,6 +348,9 @@ namespace ULib
 
 		public ChunkedInputStream(DataInputStream stream)
 		{
+			// XXX ここ実行すると死ぬ
+			//diag.SetLevel(SayakaMain.debug_http);
+
 			Object(base_stream:stream);
 
 			Src = (DataInputStream)base_stream;
@@ -471,6 +471,7 @@ namespace ULib
 
 		public mTLSInputStream(mTLSHandle handle)
 		{
+			diag.SetLevel(SayakaMain.debug_http);
 			this.handle = handle;
 		}
 
@@ -501,6 +502,7 @@ namespace ULib
 
 		public mTLSOutputStream(mTLSHandle handle)
 		{
+			diag.SetLevel(SayakaMain.debug_http);
 			this.handle = handle;
 		}
 

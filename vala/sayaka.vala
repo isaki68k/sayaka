@@ -107,6 +107,7 @@ public class SayakaMain
 	public int color_mode;
 	public bool protect;
 	public bool debug;
+	public static int debug_http;	// HttpClient, mtls のデバッグレベル
 	public int screen_cols;
 	public int opt_fontwidth;
 	public int opt_fontheight;
@@ -233,6 +234,12 @@ public class SayakaMain
 				gDiag.global_trace = true;
 				gDiag.global_debug = true;
 				gDiag.global_warn = true;
+				break;
+			 case "--debug-http":
+				if (++i >= args.length) {
+					usage();
+				}
+				debug_http = int.parse(args[i]);
 				break;
 			 case "--debug-sixel":
 				diagSixel.opt_debug = true;
@@ -2776,6 +2783,7 @@ public class SayakaMain
 	--blocklist
 	--ciphers <ciphers>
 	--debug
+	--debug-http <0-3>
 	--debug-sixel
 	--followlist
 	--max-cont <n>

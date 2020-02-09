@@ -107,6 +107,24 @@ public class Diag
 		opt_warn = gDiag.global_warn;
 	}
 
+	// 出力するログレベルを指定する
+	//  0: warn を出力する
+	//  1: warn, debug を出力する
+	//  2: warn, debug, trace を出力する
+	public void SetLevel(int level)
+	{
+		opt_trace = false;
+		opt_debug = false;
+		opt_warn  = false;
+
+		if (level >= 0)
+			opt_warn = true;
+		if (level >= 1)
+			opt_debug = true;
+		if (level >= 2)
+			opt_trace = true;
+	}
+
 	public void Trace(string s)
 	{
 		if (opt_trace) {
