@@ -672,10 +672,7 @@ public class SixelConverter
 	{
 		diag.Debug("SixelToStream");
 
-		if (ImageReductor.PaletteCount == 0) {
-			diag.Error("PaletteCount == 0");
-			return;
-		}
+		assert(ImageReductor.PaletteCount != 0);
 
 		// 開始コードとかの出力。
 		stream.puts(SixelPreamble());
