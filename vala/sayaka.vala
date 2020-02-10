@@ -924,7 +924,7 @@ public class SayakaMain
 
 	// このツイートを表示するか。表示しないなら false。
 	// NG ワード判定はここではない。
-	public bool showstatus_acl(ULib.Json status)
+	public bool showstatus_acl(ULib.Json status, bool is_quoted)
 	{
 		// このツイートの発言者
 		var id_str = status.GetJson("user").GetString("id_str");
@@ -957,8 +957,22 @@ public class SayakaMain
 			}
 		}
 
+		// 引用先なら、最低限ブロックした以外は全部表示。
+		if (is_quoted) {
+			return true;
+		}
+
 		if (opt_pseudo_home) {
-			if (followlist.ContainsKey(id_str)) {
+			// RT非表示氏の発言はリツイートのみ別対応
+			if (retweeted_id != "" && nortlist.ContainsKey(id_str)) {
+				// ホームなら、RT非表示氏が他人のツイートを RT を弾く
+				// Twitter の動作とは異なるけど、RT 非表示氏がフォロー氏を
+				// RT するのは別に表示してもいいんじゃないかなあ
+				if (!followlist.ContainsKey(retweeted_id)) {
+					debug_show(1, "showstatus_acl: noretweet -> false\n");
+					return false;
+				}
+			} else if (followlist.ContainsKey(id_str)) {
 				// ホームなら、フォロー氏から他人へのリプは弾く
 				if (reply_to != "" && !followlist.ContainsKey(reply_to)) {
 					debug_show(2,
@@ -984,7 +998,7 @@ public class SayakaMain
 	}
 
 	// 1ツイートに対する判定。
-	// ベースと(あれば)リツイート先で2回ほぼ同じ判定をするため。
+	// ベースと(あれば)リツイート先や引用先で同じ判定をするため。
 	// id は発言者。
 	// reply はリプライ先(なければ "")。
 	// rt はリツイート先発言者 (なければ "")。
@@ -1023,15 +1037,6 @@ public class SayakaMain
 			return false;
 		}
 
-		// RT非表示氏の発言はリツイートのみ別対応
-		if (nortlist.ContainsKey(id) && rt != "") {
-			// ここで弾きたいのは、ホームでRT非表示氏が他人のツイートを RT
-			// すること (キーワード検索なら表示されてもいいような気がする)。
-			if (opt_pseudo_home && !followlist.ContainsKey(rt)) {
-				debug_show(1, "showstatus_acl1: noretweet -> false\n");
-				return false;
-			}
-		}
 		return null;
 	}
 
@@ -1289,6 +1294,7 @@ public class SayakaMain
 			// *N: ブロック氏への発言はシステム上出来ないはずなので
 			//     こっちの処理の都合から言えばどちらでもいい?
 		};
+		var ntest = 0;
 		var nfail = 0;
 		foreach (var input_sq in table) {
 			// 入力文字列はテストを書きやすいよう簡易 JSON みたいな表記に
@@ -1347,23 +1353,44 @@ public class SayakaMain
 			var expected_filt = input.GetBool("filt", false);
 
 			// テスト (home)
+			ntest++;
 			opt_pseudo_home = true;
-			var result = showstatus_acl(status);
+			var result = showstatus_acl(status, false);
 			if (result != expected_home) {
 				stdout.printf(@"$(input_str) (for home) "
 					+ @"expects '$(expected_home)' but '$(result)'\n");
 				nfail++;
 			}
 
+			// テスト (home/quoted)
+			ntest++;
+			result = showstatus_acl(status, true);
+			if (result != expected_filt) {
+				stdout.printf(@"$(input_str) (for home/quoted) "
+					+ @"expects '$(expected_filt)' but '$(result)'\n");
+				nfail++;
+			}
+
+			// テスト (filter)
+			ntest++;
 			opt_pseudo_home = false;
-			result = showstatus_acl(status);
+			result = showstatus_acl(status, false);
 			if (result != expected_filt) {
 				stdout.printf(@"$(input_str) (for filter) "
 					+ @"expects '$(expected_filt)' but '$(result)'\n");
 				nfail++;
 			}
+
+			// テスト (filter/quoted)
+			ntest++;
+			result = showstatus_acl(status, true);
+			if (result != expected_filt) {
+				stdout.printf(@"$(input_str) (for filter/quoted) "
+					+ @"expects '$(expected_filt)' but '$(result)'\n");
+				nfail++;
+			}
 		}
-		stdout.printf(@"$(table.length) tests, $(table.length - nfail) passes");
+		stdout.printf(@"$(ntest) tests, $(ntest - nfail) passes");
 		if (nfail > 0) {
 			stdout.printf(@", $(nfail) FAILED!");
 		}
@@ -1381,7 +1408,7 @@ public class SayakaMain
 		// このツイートを表示するかどうかの判定。
 		// これは、このツイートがリツイートを持っているかどうかも含めた判定を
 		// 行うのでリツイート分離前に行う。
-		if (showstatus_acl(status) == false) {
+		if (showstatus_acl(status, is_quoted) == false) {
 			return false;
 		}
 
