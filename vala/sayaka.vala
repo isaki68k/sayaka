@@ -1013,18 +1013,6 @@ public class SayakaMain
 			return false;
 		}
 
-		// RT非表示氏の発言はリツイートのみ別対応
-		if (nortlist.ContainsKey(id) && rt != "") {
-			// ここで弾きたいのは、ホームでRT非表示氏が他人のツイートを RT
-			// すること (キーワード検索なら表示されてもいいような気がする)。
-			// それ以外は FALL THROUGH。
-			if (opt_pseudo_home && !followlist.ContainsKey(rt)) {
-				debug_show(1, "showstatus_acl1: noretweet -> false\n");
-				return false;
-			}
-			// FALLTHROUGH
-		}
-
 		// ミュート氏/ブロック氏に絡むものは非表示
 		if (mutelist.ContainsKey(reply_to)) {
 			debug_show(1, "showstatus_acl1: reply to mute -> false\n");
@@ -1035,6 +1023,15 @@ public class SayakaMain
 			return false;
 		}
 
+		// RT非表示氏の発言はリツイートのみ別対応
+		if (nortlist.ContainsKey(id) && rt != "") {
+			// ここで弾きたいのは、ホームでRT非表示氏が他人のツイートを RT
+			// すること (キーワード検索なら表示されてもいいような気がする)。
+			if (opt_pseudo_home && !followlist.ContainsKey(rt)) {
+				debug_show(1, "showstatus_acl1: noretweet -> false\n");
+				return false;
+			}
+		}
 		return null;
 	}
 
