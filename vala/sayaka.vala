@@ -108,6 +108,7 @@ public class SayakaMain
 	public bool protect;
 	public bool debug;
 	public static int debug_http;	// HttpClient, mtls のデバッグレベル
+	public int opt_debug_show;		// メッセージ表示判定のデバッグレベル
 	public int screen_cols;
 	public int opt_fontwidth;
 	public int opt_fontheight;
@@ -240,6 +241,12 @@ public class SayakaMain
 					usage();
 				}
 				debug_http = int.parse(args[i]);
+				break;
+			 case "--debug-show":
+				if (++i >= args.length) {
+					usage();
+				}
+				opt_debug_show = int.parse(args[i]);
 				break;
 			 case "--debug-sixel":
 				diagSixel.opt_debug = true;
@@ -516,6 +523,13 @@ public class SayakaMain
 		}
 
 		return 0;
+	}
+
+	// デバッグ表示
+	public void debug_show(int lv, string message)
+	{
+		if (opt_debug_show >= lv)
+			stdout.printf(message);
 	}
 
 	// 初期化
@@ -947,13 +961,22 @@ public class SayakaMain
 			if (followlist.ContainsKey(id_str)) {
 				// ホームなら、フォロー氏から他人へのリプは弾く
 				if (reply_to != "" && !followlist.ContainsKey(reply_to)) {
+					debug_show(2,
+						"showstatus_acl: follow replies to other -> false\n");
 					return false;
 				}
 			} else {
 				// ホームなら、他人からは自分絡みのみ表示
-				if (reply_to == myid || retweeted_id == myid) {
+				if (reply_to == myid) {
+					debug_show(1,
+						"showstatus_acl: other replies to me -> true\n");
 					return true;
 				}
+				if (retweeted_id == myid) {
+					debug_show(1, "showstatus_acl: other retweet me -> true\n");
+					return true;
+				}
+				debug_show(2, "showstatus_acl: other -> false\n");
 				return false;
 			}
 		}
@@ -970,19 +993,23 @@ public class SayakaMain
 	{
 		// 俺氏の発言はすべて表示
 		if (id == myid) {
+			debug_show(1, "showstatus_acl1: myid -> true\n");
 			return true;
 		}
 		// ブロック氏の発言はすべて非表示
 		if (blocklist.ContainsKey(id)) {
+			debug_show(1, "showstatus_acl1: block -> false\n");
 			return false;
 		}
 		// ブロック以外からの俺氏宛の発言はすべて表示
 		if (reply_to == myid) {
+			debug_show(1, "showstatus_acl1: reply to me -> true\n");
 			return true;
 		}
 		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示だが
 		// 自分宛はもう処理済みなので、ここは非表示だけでいい。
 		if (mutelist.ContainsKey(id)) {
+			debug_show(1, "showstatus_acl1: mute -> false\n");
 			return false;
 		}
 
@@ -992,6 +1019,7 @@ public class SayakaMain
 			// すること (キーワード検索なら表示されてもいいような気がする)。
 			// それ以外は FALL THROUGH。
 			if (opt_pseudo_home && !followlist.ContainsKey(rt)) {
+				debug_show(1, "showstatus_acl1: noretweet -> false\n");
 				return false;
 			}
 			// FALLTHROUGH
@@ -999,9 +1027,11 @@ public class SayakaMain
 
 		// ミュート氏/ブロック氏に絡むものは非表示
 		if (mutelist.ContainsKey(reply_to)) {
+			debug_show(1, "showstatus_acl1: reply to mute -> false\n");
 			return false;
 		}
 		if (blocklist.ContainsKey(reply_to)) {
+			debug_show(1, "showstatus_acl1: reply to block -> false\n");
 			return false;
 		}
 
@@ -1362,6 +1392,7 @@ public class SayakaMain
 		var ngstat = ngword.match(status);
 		if (ngstat.match) {
 			// マッチしたらここで表示
+			debug_show(1, "showstatus: ng -> false\n");
 			if (opt_show_ng) {
 				var userid = coloring(formatid(ngstat.screen_name), Color.NG);
 				var name = coloring(formatname(ngstat.name), Color.NG);
