@@ -943,14 +943,14 @@ public class SayakaMain
 		bool? r;
 
 		// ツイート(ベースのほう)を評価。
-		r = showstatus_acl1(user_id, replyto_id, rt_user_id);
+		r = showstatus_acl1(user_id, replyto_id);
 		if (r != null) {
 			return r;
 		}
 
 		// リツイートがあればそちらについても評価。
 		if (rt_user_id != "") {
-			r = showstatus_acl1(rt_user_id, rt_replyto_id, "");
+			r = showstatus_acl1(rt_user_id, rt_replyto_id);
 			if (r != null) {
 				return r;
 			}
@@ -1000,10 +1000,8 @@ public class SayakaMain
 	// ベースと(あれば)リツイート先や引用先で同じ判定をするため。
 	// user_id は発言者。
 	// replyto_id はリプライ先(なければ "")。
-	// rt_user_id はリツイート先発言者 (なければ "")。
 	// 戻り値は true なら表示確定、false なら非表示確定。null なら未確定。
-	public bool? showstatus_acl1(string user_id, string replyto_id,
-		string rt_user_id)
+	public bool? showstatus_acl1(string user_id, string replyto_id)
 	{
 		// 俺氏の発言はすべて表示
 		if (user_id == myid) {
