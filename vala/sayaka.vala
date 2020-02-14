@@ -927,31 +927,30 @@ public class SayakaMain
 	public bool showstatus_acl(ULib.Json status, bool is_quoted)
 	{
 		// このツイートの発言者
-		var id_str = status.GetJson("user").GetString("id_str");
+		var user_id = status.GetJson("user").GetString("id_str");
 		// リプライ先 (なければ "")
-		var reply_to = status.GetString("in_reply_to_user_id_str");
+		var replyto_id = status.GetString("in_reply_to_user_id_str");
 		// リツイート先の発言者 (なければ "")
-		string retweeted_id = "";
+		string rt_user_id = "";
 		// リツイート先のリプライ先 (なければ "")
-		string retweeted_reply_to = "";
+		string rt_replyto_id = "";
 		if (status.Has("retweeted_status")) {
-			var retweeted_status = status.GetJson("retweeted_status");
-			retweeted_id = retweeted_status.GetJson("user").GetString("id_str");
-			retweeted_reply_to =
-				retweeted_status.GetString("in_reply_to_user_id_str");
+			var rt_status = status.GetJson("retweeted_status");
+			rt_user_id = rt_status.GetJson("user").GetString("id_str");
+			rt_replyto_id = rt_status.GetString("in_reply_to_user_id_str");
 		}
 
 		bool? r;
 
 		// ツイート(ベースのほう)を評価。
-		r = showstatus_acl1(id_str, reply_to, retweeted_id);
+		r = showstatus_acl1(user_id, replyto_id, rt_user_id);
 		if (r != null) {
 			return r;
 		}
 
 		// リツイートがあればそちらについても評価。
-		if (retweeted_id != "") {
-			r = showstatus_acl1(retweeted_id, retweeted_reply_to, "");
+		if (rt_user_id != "") {
+			r = showstatus_acl1(rt_user_id, rt_replyto_id, "");
 			if (r != null) {
 				return r;
 			}
@@ -964,29 +963,29 @@ public class SayakaMain
 
 		if (opt_pseudo_home) {
 			// RT非表示氏の発言はリツイートのみ別対応
-			if (retweeted_id != "" && nortlist.ContainsKey(id_str)) {
+			if (rt_user_id != "" && nortlist.ContainsKey(user_id)) {
 				// ホームなら、RT非表示氏が他人のツイートを RT を弾く
 				// Twitter の動作とは異なるけど、RT 非表示氏がフォロー氏を
 				// RT するのは別に表示してもいいんじゃないかなあ
-				if (!followlist.ContainsKey(retweeted_id)) {
+				if (!followlist.ContainsKey(rt_user_id)) {
 					debug_show(1, "showstatus_acl: noretweet -> false\n");
 					return false;
 				}
-			} else if (followlist.ContainsKey(id_str)) {
+			} else if (followlist.ContainsKey(user_id)) {
 				// ホームなら、フォロー氏から他人へのリプは弾く
-				if (reply_to != "" && !followlist.ContainsKey(reply_to)) {
+				if (replyto_id != "" && !followlist.ContainsKey(replyto_id)) {
 					debug_show(2,
 						"showstatus_acl: follow replies to other -> false\n");
 					return false;
 				}
 			} else {
 				// ホームなら、他人からは自分絡みのみ表示
-				if (reply_to == myid) {
+				if (replyto_id == myid) {
 					debug_show(1,
 						"showstatus_acl: other replies to me -> true\n");
 					return true;
 				}
-				if (retweeted_id == myid) {
+				if (rt_user_id == myid) {
 					debug_show(1, "showstatus_acl: other retweet me -> true\n");
 					return true;
 				}
@@ -999,40 +998,41 @@ public class SayakaMain
 
 	// 1ツイートに対する判定。
 	// ベースと(あれば)リツイート先や引用先で同じ判定をするため。
-	// id は発言者。
-	// reply はリプライ先(なければ "")。
-	// rt はリツイート先発言者 (なければ "")。
+	// user_id は発言者。
+	// replyto_id はリプライ先(なければ "")。
+	// rt_user_id はリツイート先発言者 (なければ "")。
 	// 戻り値は true なら表示確定、false なら非表示確定。null なら未確定。
-	public bool? showstatus_acl1(string id, string reply_to, string rt)
+	public bool? showstatus_acl1(string user_id, string replyto_id,
+		string rt_user_id)
 	{
 		// 俺氏の発言はすべて表示
-		if (id == myid) {
+		if (user_id == myid) {
 			debug_show(1, "showstatus_acl1: myid -> true\n");
 			return true;
 		}
 		// ブロック氏の発言はすべて非表示
-		if (blocklist.ContainsKey(id)) {
+		if (blocklist.ContainsKey(user_id)) {
 			debug_show(1, "showstatus_acl1: block -> false\n");
 			return false;
 		}
 		// ブロック以外からの俺氏宛の発言はすべて表示
-		if (reply_to == myid) {
+		if (replyto_id == myid) {
 			debug_show(1, "showstatus_acl1: reply to me -> true\n");
 			return true;
 		}
 		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示だが
 		// 自分宛はもう処理済みなので、ここは非表示だけでいい。
-		if (mutelist.ContainsKey(id)) {
+		if (mutelist.ContainsKey(user_id)) {
 			debug_show(1, "showstatus_acl1: mute -> false\n");
 			return false;
 		}
 
 		// ミュート氏/ブロック氏に絡むものは非表示
-		if (mutelist.ContainsKey(reply_to)) {
+		if (mutelist.ContainsKey(replyto_id)) {
 			debug_show(1, "showstatus_acl1: reply to mute -> false\n");
 			return false;
 		}
-		if (blocklist.ContainsKey(reply_to)) {
+		if (blocklist.ContainsKey(replyto_id)) {
 			debug_show(1, "showstatus_acl1: reply to block -> false\n");
 			return false;
 		}
