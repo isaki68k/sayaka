@@ -939,18 +939,33 @@ public class SayakaMain
 			rt_user_id = rt_status.GetJson("user").GetString("id_str");
 			rt_replyto_id = rt_status.GetString("in_reply_to_user_id_str");
 		}
+		// デバッグ用
+		string user_name = "";
+		string replyto_name = "";
+		string rt_user_name = "";
+		string rt_replyto_name = "";
+		if (opt_debug_show > 0) {
+			user_name = status.GetJson("user").GetString("screen_name");
+			replyto_name = status.GetString("in_reply_to_screen_name");
+			if (status.Has("retweeted_status")) {
+				var rt = status.GetJson("retweeted_status");
+				rt_user_name = rt.GetJson("user").GetString("screen_name");
+				rt_replyto_name = rt.GetString("in_reply_to_screen_name");
+			}
+		}
 
 		bool? r;
 
 		// ツイート(ベースのほう)を評価。
-		r = showstatus_acl1(user_id, replyto_id);
+		r = showstatus_acl1(user_id, replyto_id, user_name, replyto_name);
 		if (r != null) {
 			return r;
 		}
 
 		// リツイートがあればそちらについても評価。
 		if (rt_user_id != "") {
-			r = showstatus_acl1(rt_user_id, rt_replyto_id);
+			r = showstatus_acl1(rt_user_id, rt_replyto_id,
+				rt_user_name, rt_replyto_name);
 			if (r != null) {
 				return r;
 			}
@@ -968,14 +983,15 @@ public class SayakaMain
 				// Twitter の動作とは異なるけど、RT 非表示氏がフォロー氏を
 				// RT するのは別に表示してもいいんじゃないかなあ
 				if (!followlist.ContainsKey(rt_user_id)) {
-					debug_show(1, "showstatus_acl: noretweet -> false\n");
+					debug_show(1, "showstatus_acl: "
+						+ @"noretweet(@$(user_name)) -> false\n");
 					return false;
 				}
 			} else if (followlist.ContainsKey(user_id)) {
 				// ホームなら、フォロー氏から他人へのリプは弾く
 				if (replyto_id != "" && !followlist.ContainsKey(replyto_id)) {
-					debug_show(2,
-						"showstatus_acl: follow replies to other -> false\n");
+					debug_show(2, "showstatus_acl: "
+						+ @"follow(@$(user_name)) replies to other -> false\n");
 					return false;
 				}
 			} else {
@@ -1001,7 +1017,8 @@ public class SayakaMain
 	// user_id は発言者。
 	// replyto_id はリプライ先(なければ "")。
 	// 戻り値は true なら表示確定、false なら非表示確定。null なら未確定。
-	public bool? showstatus_acl1(string user_id, string replyto_id)
+	public bool? showstatus_acl1(string user_id, string replyto_id,
+		string user_name, string replyto_name)
 	{
 		// 俺氏の発言はすべて表示
 		if (user_id == myid) {
@@ -1010,7 +1027,7 @@ public class SayakaMain
 		}
 		// ブロック氏の発言はすべて非表示
 		if (blocklist.ContainsKey(user_id)) {
-			debug_show(1, "showstatus_acl1: block -> false\n");
+			debug_show(1, @"showstatus_acl1: block(@$(user_name)) -> false\n");
 			return false;
 		}
 		// ブロック以外からの俺氏宛の発言はすべて表示
@@ -1021,17 +1038,19 @@ public class SayakaMain
 		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示だが
 		// 自分宛はもう処理済みなので、ここは非表示だけでいい。
 		if (mutelist.ContainsKey(user_id)) {
-			debug_show(1, "showstatus_acl1: mute -> false\n");
+			debug_show(1, @"showstatus_acl1: mute(@$(user_name)) -> false\n");
 			return false;
 		}
 
 		// ミュート氏/ブロック氏に絡むものは非表示
 		if (mutelist.ContainsKey(replyto_id)) {
-			debug_show(1, "showstatus_acl1: reply to mute -> false\n");
+			debug_show(1, "showstatus_acl1: "
+				+ @"@$(user_name) reply to mute(@$(replyto_name)) -> false\n");
 			return false;
 		}
 		if (blocklist.ContainsKey(replyto_id)) {
-			debug_show(1, "showstatus_acl1: reply to block -> false\n");
+			debug_show(1, "showstatus_acl1: "
+				+ @"@$(user_name) reply to block(@$(replyto_name)) -> false\n");
 			return false;
 		}
 
