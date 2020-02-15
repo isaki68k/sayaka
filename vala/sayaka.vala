@@ -1341,10 +1341,14 @@ public class SayakaMain
 			var dictuser = new Dictionary<string, ULib.Json>();
 			dictuser.AddOrUpdate("id_str",
 				new Json.String(input.GetInt("id").to_string()));
+			dictuser.AddOrUpdate("screen_name",
+				new Json.String(input.GetInt("id").to_string()));
 			dict.AddOrUpdate("user", new Json.Object(dictuser));
 			// in_reply_to_user_id_str
 			if (input.Has("reply")) {
 				dict.AddOrUpdate("in_reply_to_user_id_str",
+					new Json.String(input.GetInt("reply").to_string()));
+				dict.AddOrUpdate("in_reply_to_screen_name",
 					new Json.String(input.GetInt("reply").to_string()));
 			}
 			// retweeted_status.user.id_str
@@ -1353,11 +1357,15 @@ public class SayakaMain
 				var dict_rtuser = new Dictionary<string, ULib.Json>();
 				dict_rtuser.AddOrUpdate("id_str",
 					new Json.String(input.GetInt("rt").to_string()));
+				dict_rtuser.AddOrUpdate("screen_name",
+					new Json.String(input.GetInt("rt").to_string()));
 				dict_rt.AddOrUpdate("user", new Json.Object(dict_rtuser));
 
 				// retweeted_status.in_reply_to_user_id_str
 				if (input.Has("rt_rep")) {
 					dict_rt.AddOrUpdate("in_reply_to_user_id_str",
+						new Json.String(input.GetInt("rt_rep").to_string()));
+					dict_rt.AddOrUpdate("in_reply_to_screen_name",
 						new Json.String(input.GetInt("rt_rep").to_string()));
 				}
 
