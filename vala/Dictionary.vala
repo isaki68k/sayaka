@@ -25,8 +25,9 @@
 
 namespace ULib
 {
-	// ----- KeyValuePair
-
+	//
+	// KeyValuePair
+	//
 	// .Net の KeyValuePair に似せて作る。
 	public class KeyValuePair<TKey, TValue>
 	{
@@ -46,7 +47,9 @@ namespace ULib
 		}
 	}
 
-	// ----- キー比較関数
+	//
+	// キー比較関数
+	//
 
 	// namespace static function
 	public static int IntCmp(int a, int b)
@@ -64,7 +67,9 @@ namespace ULib
 		return 0;
 	}
 
+	//
 	// ソート済み配列
+	//
 	public class SortedArray<T>
 	{
 		//private Diag diag = new Diag("SortedArray");
@@ -178,13 +183,15 @@ namespace ULib
 		public int size { get { return Count; } }
 	}
 
-	// ----- Dictionary
-
+	//
+	// Dictionary
+	//
 	// いろいろ考えた。IDictionary インタフェース用意するかとか、
 	// 継承使ってソート条件指定するかとか。でも、コンパイル時間や
 	// オブジェクトコードサイズを考えてシンプルにすることにした。
 	// .Net の Dictionary に似せて作る。
 	// 中身は SortedDictionary にする。O(logN) で上等。
+	//
 	public class Dictionary<TKey, TValue>
 	{
 		//private Diag diag = new Diag("Dictionary");
