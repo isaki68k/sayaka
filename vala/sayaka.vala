@@ -1084,6 +1084,7 @@ public class SayakaMain
 		//                 retweeted_status.in_reply_to_user_id_str (string)
 		// 結果はホームタイムラインとフィルタモードによって期待値が異なり
 		// それぞれ home, filt で表す。あれば表示、省略は非表示を意味する。
+		// h---, f--- は流れてこないはずのためテスト不要を意味する。
 		var table = new string[] {
 			// 俺氏の発言
 			"{id:1,        home,filt}",		// 平文
@@ -1091,7 +1092,7 @@ public class SayakaMain
 			"{id:1,reply:2,home,filt}",		// フォローへ
 			"{id:1,reply:4,home,filt}",		// ミュートへ
 			"{id:1,reply:5,home,filt}",		// RT非表示へ
-			"{id:1,reply:6,home,filt}",		// ブロックへ (*N)
+			"{id:1,reply:6,h---,f---}",		// ブロックへ
 			"{id:1,reply:8,home,filt}",		// 他人へ
 
 			// フォロー氏の発言 (RT非表示氏も同じになるはずなので以下参照)
@@ -1121,17 +1122,17 @@ public class SayakaMain
 			"{id:5,reply:6,         }",		// ブロックへ
 			"{id:5,reply:8,     filt}",		// 他人へ
 
-			// ブロック氏の発言 (そもそも来ないような気がするけど一応)
-			"{id:6,                 }",		// 平文
-			"{id:6,reply:1,         }",		// 自分へ
+			// ブロック氏の発言
+			"{id:6,        h---     }",		// 平文
+			"{id:6,reply:1,h---,f---}",		// 自分へ
 			"{id:6,reply:2,         }",		// フォローへ
 			"{id:6,reply:4,         }",		// ミュートへ
 			"{id:6,reply:5,         }",		// RT非表示へ
-			"{id:6,reply:6,         }",		// ブロックへ
+			"{id:6,reply:6,h---,f---}",		// ブロックへ
 			"{id:6,reply:8,         }",		// 他人へ
 
 			// 他人氏の発言
-			"{id:8,             filt}",		// 平文
+			"{id:8,        h---,filt}",		// 平文
 			"{id:8,reply:1,home,filt}",		// 自分へ
 			"{id:8,reply:2,     filt}",		// フォローへ
 			"{id:8,reply:4,         }",		// ミュートへ
@@ -1140,13 +1141,11 @@ public class SayakaMain
 			"{id:8,reply:8,     filt}",		// 他人へ
 
 			// 俺氏がリツイート
-			// (ブロック氏をリツイートはシステム上出来ないはずだが、
-			// こっちの処理の都合から言えばあえて弾く必要もない気がする)
 			"{id:1,rt:1,home,filt}",		// 自分自身を
 			"{id:1,rt:2,home,filt}",		// フォローを
 			"{id:1,rt:4,home,filt}",		// ミュートを
 			"{id:1,rt:5,home,filt}",		// RT非表示を
-			"{id:1,rt:6,home,filt}",		// ブロックを
+			"{id:1,rt:6,h---,f---}",		// ブロックを
 			"{id:1,rt:8,home,filt}",		// 他人を
 
 			// フォロー氏がリツイート
@@ -1177,7 +1176,7 @@ public class SayakaMain
 			"{id:5,rt:8,     filt}",		// 他人を
 
 			// ブロック氏がリツイート (そもそも来ないような気がするけど一応)
-			"{id:6,rt:1,         }",		// 自分を
+			"{id:6,rt:1,h---,f---}",		// 自分を
 			"{id:6,rt:2,         }",		// フォローを
 			"{id:6,rt:4,         }",		// ミュートを
 			"{id:6,rt:5,         }",		// RT非表示を
@@ -1198,7 +1197,7 @@ public class SayakaMain
 			"{id:2,rt:1,rt_rep:2,home,filt}",	// 俺氏からフォロー宛リプ
 			"{id:2,rt:1,rt_rep:4,home,filt}",	// 俺氏からミュート宛リプ
 			"{id:2,rt:1,rt_rep:5,home,filt}",	// 俺氏からRT非表示宛リプ
-			"{id:2,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ(*N)
+			"{id:2,rt:1,rt_rep:6,h---,f---}",	// 俺氏からブロック宛リプ
 			"{id:2,rt:1,rt_rep:8,home,filt}",	// 俺氏から他人宛リプ
 			"{id:2,rt:2,rt_rep:1,home,filt}",	// フォローから俺氏宛リプ
 			"{id:2,rt:2,rt_rep:2,home,filt}",	// フォローからフォロー宛リプ
@@ -1306,10 +1305,6 @@ public class SayakaMain
 			"{id:8,rt:8,rt_rep:5,     filt}",	// 他人からRT非表示宛リプ
 			"{id:8,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
 			"{id:8,rt:8,rt_rep:8,     filt}",	// 他人から他人宛リプ
-
-			// 注釈。
-			// *N: ブロック氏への発言はシステム上出来ないはずなので
-			//     こっちの処理の都合から言えばどちらでもいい?
 		};
 		var ntest = 0;
 		var nfail = 0;
@@ -1321,8 +1316,10 @@ public class SayakaMain
 				.replace("reply:",	"\"reply\":")
 				.replace("rt:",		"\"rt\":")
 				.replace("rt_rep:",	"\"rt_rep\":")
-				.replace("home",	"\"home\":true")
-				.replace("filt",	"\"filt\":true")
+				.replace("home",	"\"home\":1")
+				.replace("filt",	"\"filt\":1")
+				.replace("h---",	"\"home\":-1")
+				.replace("f---",	"\"filt\":-1")
 				// 末尾カンマは許容しておいてここで消すほうが楽
 				.replace(",}",		"}")
 			;
@@ -1373,46 +1370,52 @@ public class SayakaMain
 			}
 			var status = new Json.Object(dict);
 
-			// 期待値
-			var expected_home = input.GetBool("home", false);
-			var expected_filt = input.GetBool("filt", false);
+			// 期待値 (1=true, 0=false, -1 ならテストしない)
+			var expected_home_int = input.GetInt("home");
+			var expected_filt_int = input.GetInt("filt");
+			var expected_home = (bool)expected_home_int;
+			var expected_filt = (bool)expected_filt_int;
 
 			// テスト (home)
-			ntest++;
-			opt_pseudo_home = true;
-			var result = showstatus_acl(status, false);
-			if (result != expected_home) {
-				stdout.printf(@"$(input_str) (for home) "
-					+ @"expects '$(expected_home)' but '$(result)'\n");
-				nfail++;
+			if (expected_home_int != -1) {
+				ntest++;
+				opt_pseudo_home = true;
+				var result = showstatus_acl(status, false);
+				if (result != expected_home) {
+					stdout.printf(@"$(input_str) (for home) "
+						+ @"expects '$(expected_home)' but '$(result)'\n");
+					nfail++;
+				}
 			}
 
-			// テスト (home/quoted)
-			ntest++;
-			result = showstatus_acl(status, true);
-			if (result != expected_filt) {
-				stdout.printf(@"$(input_str) (for home/quoted) "
-					+ @"expects '$(expected_filt)' but '$(result)'\n");
-				nfail++;
-			}
+			if (expected_filt_int != -1) {
+				// テスト (home/quoted)
+				ntest++;
+				var result = showstatus_acl(status, true);
+				if (result != expected_filt) {
+					stdout.printf(@"$(input_str) (for home/quoted) "
+						+ @"expects '$(expected_filt)' but '$(result)'\n");
+					nfail++;
+				}
 
-			// テスト (filter)
-			ntest++;
-			opt_pseudo_home = false;
-			result = showstatus_acl(status, false);
-			if (result != expected_filt) {
-				stdout.printf(@"$(input_str) (for filter) "
-					+ @"expects '$(expected_filt)' but '$(result)'\n");
-				nfail++;
-			}
+				// テスト (filter)
+				ntest++;
+				opt_pseudo_home = false;
+				result = showstatus_acl(status, false);
+				if (result != expected_filt) {
+					stdout.printf(@"$(input_str) (for filter) "
+						+ @"expects '$(expected_filt)' but '$(result)'\n");
+					nfail++;
+				}
 
-			// テスト (filter/quoted)
-			ntest++;
-			result = showstatus_acl(status, true);
-			if (result != expected_filt) {
-				stdout.printf(@"$(input_str) (for filter/quoted) "
-					+ @"expects '$(expected_filt)' but '$(result)'\n");
-				nfail++;
+				// テスト (filter/quoted)
+				ntest++;
+				result = showstatus_acl(status, true);
+				if (result != expected_filt) {
+					stdout.printf(@"$(input_str) (for filter/quoted) "
+						+ @"expects '$(expected_filt)' but '$(result)'\n");
+					nfail++;
+				}
 			}
 		}
 		stdout.printf(@"$(ntest) tests, $(ntest - nfail) passes");
