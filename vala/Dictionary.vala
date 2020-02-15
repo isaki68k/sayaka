@@ -106,6 +106,18 @@ namespace ULib
 			data.insert(i, value);
 		}
 
+		// 値を削除します。
+		// 値が見つかり削除できれば true、そうでなければ false を返します。
+		public bool Remove(T value)
+		{
+			int i = IndexOf(value);
+			if (i < 0) {
+				return false;
+			}
+			data.remove_index(i);
+			return true;
+		}
+
 		// クリアします。
 		public void Clear()
 		{
@@ -247,6 +259,15 @@ namespace ULib
 			} else {
 				data.InternalInsert(~index,
 					new KeyValuePair<TKey, TValue>(key, value));
+			}
+		}
+
+		// 削除。
+		public void Remove(TKey key)
+		{
+			TValue? value = get(key);
+			if (value != null) {
+				data.Remove(new KeyValuePair<TKey, TValue>(key, value));
 			}
 		}
 
