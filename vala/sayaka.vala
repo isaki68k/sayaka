@@ -107,7 +107,6 @@ public class SayakaMain
 	public int color_mode;
 	public bool protect;
 	public bool debug;
-	public static int debug_http;	// HttpClient, mtls のデバッグレベル
 	public int opt_debug_show;		// メッセージ表示判定のデバッグレベル
 	public int screen_cols;
 	public int opt_fontwidth;
@@ -240,7 +239,7 @@ public class SayakaMain
 				if (++i >= args.length) {
 					usage();
 				}
-				debug_http = int.parse(args[i]);
+				HttpClient.debuglevel = int.parse(args[i]);
 				break;
 			 case "--debug-show":
 				if (++i >= args.length) {

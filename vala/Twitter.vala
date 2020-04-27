@@ -73,7 +73,7 @@ public class Twitter
 
 	public Twitter()
 	{
-		diag.SetLevel(SayakaMain.debug_http);
+		diag.SetLevel(HttpClient.debuglevel);
 		AccessToken = new Twitter_Token();
 
 		oauth = new OAuth();

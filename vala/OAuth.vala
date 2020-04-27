@@ -61,7 +61,7 @@ public class OAuth
 
 	public OAuth()
 	{
-		diag.SetLevel(SayakaMain.debug_http);
+		diag.SetLevel(HttpClient.debuglevel);
 		rand = new Rand();
 		UseOAuthHeader = true;
 		Ciphers = null;

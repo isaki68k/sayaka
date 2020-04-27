@@ -43,7 +43,6 @@ public class SixelV
 	}
 
 	public bool opt_debug_sixel = false;
-	public bool opt_debug_net = false;
 	public ReductorColorMode opt_colormode = ReductorColorMode.Fixed256;
 	public int opt_graylevel = 256;
 	public int opt_width = 0;
@@ -92,12 +91,14 @@ public class SixelV
 						gDiag.global_debug = true;
 						gDiag.Debug("Global Debug ON");
 						break;
+
+					case "--debug-http":
+						HttpClient.debuglevel = opt.ValueInt();
+						break;
+
 					case "--debug-sixel":
 						opt_debug_sixel = true;
 						ImageReductor.debug = 1;
-						break;
-					case "--debug-net":
-						opt_debug_net = true;
 						break;
 
 					case "--trace":
@@ -493,7 +494,7 @@ public class SixelV
    --addnoise={noiselevel}
 
  debug
-   --debug, --trace, --profile, --debug-sixel, --debug-net
+   --debug, --trace, --profile, --debug-sixel, --debug-http <0..3>
 """);
 		Process.exit(1);
 	}
@@ -571,7 +572,6 @@ public class SixelV
 		} else if (filename.contains("://")) {
 			try {
 				var file = new HttpClient(filename);
-				file.diag.opt_debug |= opt_debug_net;
 				file.Family = opt_address_family;
 				gDiag.Debug(@"Downloading $(filename)");
 				var stream = file.GET();
