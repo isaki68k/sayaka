@@ -32,6 +32,15 @@
 #include <sys/select.h>
 #include <sys/sysctl.h>
 
+// ざっくり遅マシン判定
+#if defined(__hppa__)	|| \
+    defined(__m68k__)	|| \
+    defined(__sh3__)	|| \
+    (defined(__sparc__) && !defined(__sparc64__))	|| \
+    defined(__vax__)
+#define SLOW_MACHINES
+#endif
+
 int
 native_ioctl_TIOCGWINSZ(int fd, struct winsize *ws)
 {
@@ -66,7 +75,11 @@ native_term_support_sixel()
 	FD_ZERO(&rfds);
 	FD_SET(STDOUT_FILENO, &rfds);
 	memset(&timeout, 0, sizeof(timeout));
-	timeout.tv_sec = 1;
+#if defined(SLOW_MACHINES)
+	timeout.tv_sec = 10;
+#else
+	timeout.tv_sec = 2;
+#endif
 
 	// 応答受け取るため非カノニカルモードにするのと
 	// その応答を画面に表示してしまわないようにエコーオフにする。
