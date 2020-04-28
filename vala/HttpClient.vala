@@ -353,14 +353,14 @@ namespace ULib
 
 		public ChunkedInputStream(DataInputStream stream, Diag diag_)
 		{
-			diag = diag_;
-
 			Object(base_stream:stream);
 
 			Src = (DataInputStream)base_stream;
 			Src.set_newline_type(DataStreamNewlineType.CR_LF);
 
 			Chunks = new MemoryInputStream();
+
+			diag = diag_;
 		}
 
 		public override ssize_t read(uint8[] buffer,
