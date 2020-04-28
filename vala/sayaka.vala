@@ -422,7 +422,7 @@ public class SayakaMain
 				if (path == null) {
 					usage();
 				}
-				if (path.has_prefix("/")) {
+				if (path.contains("/")) {
 					tokenfile = path;
 				} else {
 					tokenfile = basedir + path;
