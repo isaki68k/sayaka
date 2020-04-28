@@ -1490,14 +1490,35 @@ public class SayakaMain
 
 		// 簡略表示の判定。QT 側では行わない
 		if (is_quoted == false) {
-			// 直前のツイートの RT なら簡略表示
-			if (has_retweet && last_id == s.GetString("id_str")) {
-				if (last_id_count++ < last_id_max) {
-					var rtmsg = format_rt_owner(status);
-					var rtcnt = format_rt_cnt(s);
-					var favcnt = format_fav_cnt(s);
-					print_(rtmsg + rtcnt + favcnt);
-					return true;
+			if (has_retweet) {
+				var rt_id = s.GetString("id_str");
+
+				// 直前のツイートが (フォロー氏による) 元ツイートで
+				// 続けてこれがそれを RT したツイートなら簡略表示だが、
+				// この二者は別なので1行空けたまま表示。
+				if (rt_id == last_id) {
+					if (last_id_count++ < last_id_max) {
+						var rtmsg = format_rt_owner(status);
+						var rtcnt = format_rt_cnt(s);
+						var favcnt = format_fav_cnt(s);
+						print_(rtmsg + rtcnt + favcnt + "\n");
+						// これ以降はリツイートの連続とみなす
+						last_id += "_RT";
+						return true;
+					}
+				}
+				// 直前のツイートがすでに誰か氏によるリツイートで
+				// 続けてこれが同じツイートを RT したものなら簡略表示だが、
+				// これはどちらも他者をリツイートなので区別しなくていい。
+				if (rt_id + "_RT" == last_id) {
+					if (last_id_count++ < last_id_max) {
+						var rtmsg = format_rt_owner(status);
+						var rtcnt = format_rt_cnt(s);
+						var favcnt = format_fav_cnt(s);
+						stdout.printf(@"$(CSI)1A");
+						print_(rtmsg + rtcnt + favcnt + "\n");
+						return true;
+					}
 				}
 			}
 
@@ -1508,13 +1529,20 @@ public class SayakaMain
 					var favmsg = format_fav_owner(obj);
 					var rtcnt = format_rt_cnt(s);
 					var favcnt = format_fav_cnt(s);
-					print_(favmsg + rtcnt + favcnt);
+					stdout.printf(@"$(CSI)1A");
+					print_(favmsg + rtcnt + favcnt + "\n");
 					return true;
 				}
 			}
 
 			// 表示確定
-			last_id = s.GetString("id_str");
+			// 次回の簡略表示のために覚えておく。その際今回表示するのが
+			// 元ツイートかリツイートかで次回の連続表示が変わる。
+			if (has_retweet) {
+				last_id = s.GetString("id_str") + "_RT";
+			} else {
+				last_id = status.GetString("id_str");
+			}
 			last_id_count = 0;
 		}
 
