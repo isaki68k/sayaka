@@ -25,132 +25,57 @@
 
 // デバッグ用診断ツール
 
-// グローバル
-public class gDiag
-{
-	public static bool global_trace = false;
-	public static bool global_debug = false;
-	public static bool global_warn  = false;
-
-	public static void Puts(string s, string className = "")
-	{
-		TimeVal tv = TimeVal();
-		DateTime dt = new DateTime.from_timeval_local(tv);
-		var time = dt.format("%T") + ".%03d".printf((int)tv.tv_usec / 1000);
-		if (className == "") {
-			stderr.puts(@"[$(time)] $(s)\n");
-		} else {
-			stderr.puts(@"[$(time)] $(className) $(s)\n");
-		}
-	}
-
-	public static void PutHex(string s, uchar[] d, string className = "")
-	{
-		Puts(s, className);
-		int len = d.length;
-		for (int i = 0; i < len; i++) {
-			stderr.printf(" %02X", d[i]);
-			if (i % 16 == 15 && i < len - 1) {
-				stderr.putc('\n');
-			}
-		}
-		stderr.putc('\n');
-	}
-
-	public static void Trace(string s)
-	{
-		if (global_trace) {
-			Puts(s);
-		}
-	}
-
-	public static void Debug(string s)
-	{
-		if (global_debug) {
-			Puts(s);
-		}
-	}
-
-	public static void Warn(string s)
-	{
-		if (global_warn) {
-			Puts(s);
-		}
-	}
-
-	public static void DebugHex(string s, uchar[] d)
-	{
-		if (global_debug) {
-			PutHex(s, d);
-		}
-	}
-
-	public static void PROGERR(string s)
-	{
-		Puts(s, "PROGERR!!");
-	}
-}
-
-// デバッグ用診断ツール
 public class Diag
 {
-	public bool opt_trace;
-	public bool opt_debug;
-	public bool opt_warn;
-	public string ClassName;
+	// 分類名
+	private string classname;
+	// レベル。指標と後方互換性を兼ねて
+	// 0: なし
+	// 1: デバッグ
+	// 2: トレース(詳細)
+	// としておく。
+	private int debuglevel = 0;
 
-	public Diag(string className)
+	// コンストラクタ
+	public Diag()
 	{
-		ClassName = className;
-		opt_trace = gDiag.global_trace;
-		opt_debug = gDiag.global_debug;
-		opt_warn = gDiag.global_warn;
+		classname = "";
 	}
-
-	// 出力するログレベルを指定する
-	//  0: warn を出力する
-	//  1: warn, debug を出力する
-	//  2: warn, debug, trace を出力する
-	public void SetLevel(int level)
+	public Diag.name(string name_)
 	{
-		opt_trace = false;
-		opt_debug = false;
-		opt_warn  = false;
-
-		if (level >= 0)
-			opt_warn = true;
-		if (level >= 1)
-			opt_debug = true;
-		if (level >= 2)
-			opt_trace = true;
-	}
-
-	public void Trace(string s)
-	{
-		if (opt_trace) {
-			gDiag.Puts(s, ClassName);
+		classname = name_;
+		if (classname != "") {
+			classname += " ";
 		}
 	}
 
-	public void Debug(string s)
+	// デバッグレベルを lv に設定する
+	public void SetLevel(int lv)
 	{
-		if (opt_debug) {
-			gDiag.Puts(s, ClassName);
-		}
+		debuglevel = lv;
+	}
+	// デバッグレベル取得
+	public int GetLevel()
+	{
+		return debuglevel;
 	}
 
-	public void Warn(string s)
+	// レベル可変のメッセージ (改行はこちらで付加する)
+	public void Print(int lv, string msg)
 	{
-		if (opt_warn) {
-			gDiag.Puts(s, ClassName);
-		}
+		if (debuglevel >= lv)
+			stderr.puts(classname + msg + "\n");
 	}
 
-	// 一部分を表示したいときはスライスを使う。
-	public void DebugHex(string s, uchar[] d)
+	// デバッグログ表示 (改行はこちらで付加する)
+	public void Debug(string msg)
 	{
-		if (opt_debug) {
-			gDiag.PutHex(s, d, ClassName);
-		}
+		Print(1, msg);
+	}
+
+	// トレースログ表示 (改行はこちらで付加する)
+	public void Trace(string msg)
+	{
+		Print(2, msg);
 	}
 }

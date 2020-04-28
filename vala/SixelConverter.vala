@@ -136,7 +136,7 @@ public enum ResizeAxisMode
 
 public class SixelConverter
 {
-	public Diag diag = new Diag("SixelConverter");
+	private Diag diag;
 
 	// 元画像
 	public Pixbuf pix;
@@ -189,6 +189,31 @@ public class SixelConverter
 
 	// リサイズ処理で使用する軸
 	public ResizeAxisMode ResizeAxis = ResizeAxisMode.Both;
+
+
+	////////////////
+
+	// コンストラクタ (lv はデバッグレベルを指定)
+	public SixelConverter(int lv)
+	{
+		diag = new Diag.name("SixelConveter");
+		diag.SetLevel(lv);
+	}
+
+	private void debughex(int lv, string msg, uchar[] d)
+	{
+		if (diag.GetLevel() >= lv) {
+			stderr.printf("magic=");
+			int len = d.length;
+			for (int i = 0; i < len; i++) {
+				stderr.printf(" %02X", d[i]);
+				if (i % 16 == 15 && i < len - 1) {
+					stderr.putc('\n');
+				}
+			}
+			stderr.putc('\n');
+		}
+	}
 
 	//////////////// 画像の読み込み
 
@@ -258,7 +283,7 @@ public class SixelConverter
 			var n = ps.peek(magic);
 			diag.Debug(@"LoadJpeg n=$(n)");
 			if (n == magic.length) {
-				diag.DebugHex("magic=", magic);
+				debughex(1, "magic", magic);
 				if (magic[0] == 0xff && magic[1] == 0xd8) {
 					img = ImageReductor.AllocImage();
 					img.ReadCallback = img_readcallback;
@@ -279,7 +304,7 @@ public class SixelConverter
 					}
 				}
 			} else {
-				diag.Warn(@"LoadJpeg n=$(n)");
+				diag.Debug(@"Warning: LoadJpeg n=$(n)");
 			}
 		} catch {
 		}
@@ -298,11 +323,9 @@ public class SixelConverter
 
 	static int img_readcallback(ImageReductor_Image *img)
 	{
-		//gDiag.Debug("img_readcallback");
 		unowned InputStream? s = (InputStream) img.UserObject;
 		try {
 			var n = (int) s.read(img.ReadBuffer);
-			//gDiag.Debug(@"read len=$(n)");
 			return n;
 		} catch {
 			return 0;
@@ -587,12 +610,12 @@ public class SixelConverter
 
 			do {
 				// 出力するべきカラーがなくなるまでのループ
-//				Diag.DEBUG("do1");
+				diag.Trace("do1");
 				int16 mx = -1;
 
 				do {
 					// 1行の出力で出力できるカラーのループ
-//					Diag.DEBUG("do2");
+					diag.Trace("do2");
 
 					uint8 min_color = 0;
 					int16 min = int16.MAX;

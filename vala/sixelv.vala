@@ -42,7 +42,9 @@ public class SixelV
 		sixelv.main2(args);
 	}
 
-	public bool opt_debug_sixel = false;
+	public Diag diag;
+	public Diag diagHttp;
+	public int opt_debug_sixel = 0;
 	public ReductorColorMode opt_colormode = ReductorColorMode.Fixed256;
 	public int opt_graylevel = 256;
 	public int opt_width = 0;
@@ -75,6 +77,9 @@ public class SixelV
 	{
 		int convert_count = 0;
 
+		diag = new Diag();
+		diagHttp = new Diag.name("HttpClient");
+
 		// X68k なら、デフォルトで --x68k 相当にする。
 		var un = Posix.utsname();
 		//stderr.printf("%s\n", un.machine);;
@@ -88,21 +93,16 @@ public class SixelV
 			if (opt.IsOption() && opt.Opt() != "-") {
 				switch (opt.Opt()) {
 					case "--debug":
-						gDiag.global_debug = true;
-						gDiag.Debug("Global Debug ON");
+						diag.SetLevel(opt.ValueInt());
 						break;
 
 					case "--debug-http":
-						HttpClient.debuglevel = opt.ValueInt();
+						diagHttp.SetLevel(opt.ValueInt());
 						break;
 
 					case "--debug-sixel":
-						opt_debug_sixel = true;
+						opt_debug_sixel = 1;
 						ImageReductor.debug = 1;
-						break;
-
-					case "--trace":
-						gDiag.global_trace = true;
 						break;
 
 					case "--profile":
@@ -494,7 +494,7 @@ public class SixelV
    --addnoise={noiselevel}
 
  debug
-   --debug, --trace, --profile, --debug-sixel, --debug-http <0..3>
+   --debug <0..2>, --profile, --debug-sixel, --debug-http <0..3>
 """);
 		Process.exit(1);
 	}
@@ -525,11 +525,9 @@ public class SixelV
 			sw.Restart();
 		}
 
-		SixelConverter sx = new SixelConverter();
+		SixelConverter sx = new SixelConverter(opt_debug_sixel);
 
 		// SixelConverter モード設定
-		sx.diag.opt_debug |= opt_debug_sixel;
-
 		sx.ColorMode = opt_colormode;
 		sx.ReduceMode = opt_reduce;
 		sx.ResizeMode = opt_resizemode;
@@ -560,7 +558,7 @@ public class SixelV
 
 		if (filename == "std://in") {
 			try {
-				gDiag.Debug(@"Loading stdin");
+				diag.Debug("Loading stdin");
 				sx.LoadFromStream(new InputStreamFromFileStream(stdin));
 			} catch {
 				stderr.printf("File load error at %s\n", filename);
@@ -570,14 +568,20 @@ public class SixelV
 				Process.exit(1);
 			}
 		} else if (filename.contains("://")) {
+			var file = new HttpClient(diagHttp);
+			if (file.Init(filename) == false) {
+				stderr.printf(@"File error: $(filename)\n");
+				if (opt_ignoreerror)
+					return;
+				Process.exit(1);
+			}
+			file.Family = opt_address_family;
+			diag.Debug(@"Downloading $(filename)");
 			try {
-				var file = new HttpClient(filename);
-				file.Family = opt_address_family;
-				gDiag.Debug(@"Downloading $(filename)");
 				var stream = file.GET();
 				sx.LoadFromStream(stream);
 			} catch (Error e) {
-				stderr.printf("File error: %s\n", e.message);
+				stderr.printf("Stream error: %s\n", e.message);
 				if (opt_ignoreerror) {
 					return;
 				}
@@ -585,7 +589,7 @@ public class SixelV
 			}
 		} else {
 			try {
-				gDiag.Debug(@"Loading $(filename)");
+				diag.Debug(@"Loading $(filename)");
 				sx.Load(filename);
 			} catch {
 				stderr.printf("File load error at %s\n", filename);
@@ -602,7 +606,8 @@ public class SixelV
 			sw.Restart();
 		}
 
-		gDiag.Debug(@"Converting w=$(opt_width), h=$(opt_height) axis=$(opt_resizeaxis)");
+		diag.Debug(@"Converting w=$(opt_width), h=$(opt_height) "
+			+ @"axis=$(opt_resizeaxis)");
 		sx.ConvertToIndexed();
 
 		if (opt_profile) {

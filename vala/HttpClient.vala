@@ -34,11 +34,7 @@ namespace ULib
 		const int SHUT_WR = 1;
 		const int SHUT_RDWR = 2;
 
-		// HTTP 周りのクラスのデバッグレベル
-		// (HttpClient の全インスタンスと関連するクラス全部で共通)
-		public static int debuglevel;
-
-		public Diag diag = new Diag("HttpClient");
+		private Diag diag;
 
 		// mTLS ハンドル
 		private Native.mTLS.mTLSHandle Handle;
@@ -74,27 +70,32 @@ namespace ULib
 		public static string ProxyMap;
 
 
-		// uri をターゲットにした HttpClient を作成します。
-		public HttpClient(string uri) throws Error
+		// 新しい HttpClient を生成します。
+		public HttpClient(Diag diag_)
 		{
-			diag.SetLevel(debuglevel);
-
-			Handle = new mTLSHandle();
-
-			if (Handle.Init() != 0) {
-				Handle = null;
-				throw new IOError.FAILED("mTLSHandle.Init failed");
-			}
-
-			// XXX AF_UNSPEC がなさげなのでとりあえず代用
-			Family = SocketFamily.INVALID;
-
-			Uri = ParsedUri.Parse(uri);
-			diag.Debug(Uri.to_string());
+			diag = diag_;
 
 			SendHeaders = new Array<string>();
 			RecvHeaders = new Array<string>();
 			Ciphers = null;
+			// XXX AF_UNSPEC がなさげなのでとりあえず代用
+			Family = SocketFamily.INVALID;
+		}
+
+		// uri をターゲットに初期化します。
+		public bool Init(string uri)
+		{
+			Handle = new mTLSHandle();
+			if (Handle.Init() != 0) {
+				stderr.printf("HttpClient.Init: mTLSHandle.Init failed\n");
+				Handle = null;
+				return false;
+			}
+
+			Uri = ParsedUri.Parse(uri);
+			diag.Debug(Uri.to_string());
+
+			return true;
 		}
 
 		// uri から GET して、ストリームを返します。
@@ -117,12 +118,12 @@ namespace ULib
 			DataInputStream dIn = null;
 
 			while (true) {
-
 				Connect();
 
 				SendRequest(method);
 
-				dIn = new DataInputStream(new mTLSInputStream(Handle));
+				var ms = new mTLSInputStream(Handle, diag);
+				dIn = new DataInputStream(ms);
 				dIn.set_newline_type(DataStreamNewlineType.CR_LF);
 
 				ReceiveHeader(dIn);
@@ -157,7 +158,7 @@ namespace ULib
 			if (transfer_encoding == "chunked") {
 				// チャンク
 				diag.Debug("use ChunkedInputStream");
-				rv = new ChunkedInputStream(dIn);
+				rv = new ChunkedInputStream(dIn, diag);
 			} else {
 				rv = dIn;
 			}
@@ -278,7 +279,7 @@ namespace ULib
 		// uri へ接続します。
 		private void Connect() throws Error
 		{
-			mTLSHandle.set_debuglevel(debuglevel);
+			mTLSHandle.set_debuglevel(diag.GetLevel());
 
 			// 透過プロキシ(?)設定があれば対応。
 			var proxyTarget = "";
@@ -343,22 +344,20 @@ namespace ULib
 	public class ChunkedInputStream
 		: DataInputStream
 	{
-		private Diag diag = new Diag("ChunkedInputStream");
+		private Diag diag;
 
 		// キャスト用
 		private unowned DataInputStream Src;
 
 		private MemoryInputStream Chunks;
 
-		public ChunkedInputStream(DataInputStream stream)
+		public ChunkedInputStream(DataInputStream stream, Diag diag_)
 		{
-			// XXX ここ実行すると死ぬ
-			//diag.SetLevel(HttpClient.debuglevel);
+			diag = diag_;
 
 			Object(base_stream:stream);
 
 			Src = (DataInputStream)base_stream;
-
 			Src.set_newline_type(DataStreamNewlineType.CR_LF);
 
 			Chunks = new MemoryInputStream();
@@ -367,7 +366,7 @@ namespace ULib
 		public override ssize_t read(uint8[] buffer,
 			Cancellable? cancellable = null) throws IOError
 		{
-			diag.Debug("read %d".printf(buffer.length));
+			diag.Debug(@"read $(buffer.length)");
 
 			// 内部バッファの長さ
 			int64 chunksLength;
@@ -469,13 +468,13 @@ namespace ULib
 
 	public class mTLSInputStream : InputStream
 	{
-		private Diag diag = new Diag("mTLSInputStream");
+		private Diag diag;
 
 		private unowned mTLSHandle handle;
 
-		public mTLSInputStream(mTLSHandle handle)
+		public mTLSInputStream(mTLSHandle handle, Diag diag_)
 		{
-			diag.SetLevel(HttpClient.debuglevel);
+			diag = diag_;
 			this.handle = handle;
 		}
 
@@ -500,13 +499,13 @@ namespace ULib
 	// 実装は OutputStream を使わず直接 write しているので、これは不要。
 	public class mTLSOutputStream : OutputStream
 	{
-		private Diag diag = new Diag("mTLSOutputStream");
+		private Diag diag;
 
 		private unowned mTLSHandle handle;
 
-		public mTLSOutputStream(mTLSHandle handle)
+		public mTLSOutputStream(mTLSHandle handle, Diag diag_)
 		{
-			diag.SetLevel(HttpClient.debuglevel);
+			diag = diag_;
 			this.handle = handle;
 		}
 

@@ -28,7 +28,7 @@ using StringUtil;
 
 public class OAuth
 {
-	private Diag diag = new Diag("OAuth");
+	private Diag diag;
 
 	public string ConsumerKey { get; set; }
 	public string ConsumerSecret { get; set; }
@@ -59,9 +59,9 @@ public class OAuth
 	// TLS で使用する cipher list。null ならデフォルト。
 	private string Ciphers;
 
-	public OAuth()
+	public OAuth(Diag diag_)
 	{
-		diag.SetLevel(HttpClient.debuglevel);
+		diag = diag_;
 		rand = new Rand();
 		UseOAuthHeader = true;
 		Ciphers = null;
@@ -225,7 +225,10 @@ public class OAuth
 	{
 		var conn_uri = CreateParams(method, uri);
 
-		var client = new HttpClient(conn_uri);
+		var client = new HttpClient(diag);
+		if (client.Init(conn_uri) == false) {
+			// XXX エラーは
+		}
 		if (UseOAuthHeader) {
 			client.AddHeader(MakeOAuthHeader());
 		}

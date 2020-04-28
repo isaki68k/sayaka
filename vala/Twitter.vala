@@ -53,7 +53,6 @@ public class Twitter_Token
 
 public class Twitter
 {
-
 	public const string accessTokenURL  = "https://api.twitter.com/oauth/access_token";
 	public const string authorizeURL    = "https://twitter.com/oauth/authorize";
 	public const string requestTokenURL = "https://api.twitter.com/oauth/request_token";
@@ -69,14 +68,14 @@ public class Twitter
 
 	private OAuth oauth;
 
-	private Diag diag = new Diag("twitter");
+	private Diag diag;
 
-	public Twitter()
+	public Twitter(Diag diag_)
 	{
-		diag.SetLevel(HttpClient.debuglevel);
+		diag = diag_;
 		AccessToken = new Twitter_Token();
 
-		oauth = new OAuth();
+		oauth = new OAuth(diag);
 
 		oauth.ConsumerKey = ConsumerKey;
 		oauth.ConsumerSecret = ConsumerSecret;

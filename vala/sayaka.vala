@@ -58,9 +58,6 @@ public class SayakaMain
 {
 	public const string version = "3.4.3 (2020/02/15)";
 
-	private static Diag diag;
-	private static Diag diagSixel;
-
 	public const char CAN = '\x18';
 	public const char ESC = '\x1b';
 	public const string CSI = "\x1b[";
@@ -106,8 +103,12 @@ public class SayakaMain
 	public bool opt_noimg;
 	public int color_mode;
 	public bool protect;
-	public bool debug;
-	public int opt_debug_show;		// メッセージ表示判定のデバッグレベル
+	public Diag diag;			// デバッグ (無分類)
+	public Diag diagHttp;		// デバッグ (HTTP コネクション)
+	public Diag diagImage;		// デバッグ (画像周り)
+	public Diag diagShow;		// デバッグ (メッセージ表示判定)
+	public int opt_debug_sixel;	// デバッグレベル (SIXEL変換周り)
+	public bool opt_debug;		// デバッグオプション (後方互換性)
 	public int screen_cols;
 	public int opt_fontwidth;
 	public int opt_fontheight;
@@ -169,8 +170,10 @@ public class SayakaMain
 
 	public int Main(string[] args)
 	{
-		diag = new Diag("SayakaMain");
-		diagSixel = new Diag("SayakaMain");
+		diag = new Diag();
+		diagHttp = new Diag.name("HttpClient");
+		diagImage = new Diag();
+		diagShow = new Diag();
 
 		SayakaCmd cmd = SayakaCmd.Noop;
 
@@ -230,26 +233,36 @@ public class SayakaMain
 				break;
 			 }
 			 case "--debug":
-				debug = true;
-				gDiag.global_trace = true;
-				gDiag.global_debug = true;
-				gDiag.global_warn = true;
+				if (++i >= args.length) {
+					usage();
+				}
+				diag.SetLevel(int.parse(args[i]));
+				// とりあえず後方互換
+				opt_debug = (diag.GetLevel() > 0);
 				break;
 			 case "--debug-http":
 				if (++i >= args.length) {
 					usage();
 				}
-				HttpClient.debuglevel = int.parse(args[i]);
+				diagHttp.SetLevel(int.parse(args[i]));
+				break;
+			 case "--debug-image":
+				if (++i >= args.length) {
+					usage();
+				}
+				diagImage.SetLevel(int.parse(args[i]));
 				break;
 			 case "--debug-show":
 				if (++i >= args.length) {
 					usage();
 				}
-				opt_debug_show = int.parse(args[i]);
+				diagShow.SetLevel(int.parse(args[i]));
 				break;
 			 case "--debug-sixel":
-				diagSixel.opt_debug = true;
-				diagSixel.opt_warn = true;
+				if (++i >= args.length) {
+					usage();
+				}
+				opt_debug_sixel = int.parse(args[i]);
 				max_image_count = 1;
 				break;
 			 case "--eucjp":
@@ -476,7 +489,7 @@ public class SayakaMain
 			Process.exit(0);
 		}
 
-		diag.Debug(@"tokenfile = $(tokenfile)\n");
+		diag.Debug(@"tokenfile = $(tokenfile)");
 		init();
 
 		// コマンド別処理
@@ -522,13 +535,6 @@ public class SayakaMain
 		}
 
 		return 0;
-	}
-
-	// デバッグ表示
-	public void debug_show(int lv, string message)
-	{
-		if (opt_debug_show >= lv)
-			stdout.printf(message);
 	}
 
 	// 初期化
@@ -637,12 +643,12 @@ public class SayakaMain
 		DataInputStream stream = null;
 
 		// 古いキャッシュを削除
-		if (debug || opt_progress) {
+		if (opt_debug || opt_progress) {
 			stdout.printf("Deleting expired cache files...");
 			stdout.flush();
 		}
 		invalidate_cache();
-		if (debug || opt_progress) {
+		if (opt_debug || opt_progress) {
 			stdout.printf("done\n");
 		}
 
@@ -652,22 +658,22 @@ public class SayakaMain
 		if (opt_norest == false) {
 			if (opt_pseudo_home) {
 				// 疑似タイムライン用に自分の ID 取得
-				if (debug || opt_progress) {
+				if (opt_debug || opt_progress) {
 					stdout.printf("Getting credentials...");
 					stdout.flush();
 				}
 				get_credentials();
-				if (debug || opt_progress) {
+				if (opt_debug || opt_progress) {
 					stdout.printf("done\n");
 				}
 
 				// 疑似タイムライン用にフォローユーザ取得
-				if (debug || opt_progress) {
+				if (opt_debug || opt_progress) {
 					stdout.printf("Getting follow list...");
 					stdout.flush();
 				}
 				get_follow_list();
-				if (debug || opt_progress) {
+				if (opt_debug || opt_progress) {
 					stdout.printf("done\n");
 				}
 
@@ -677,32 +683,32 @@ public class SayakaMain
 			}
 
 			// ブロックユーザ取得
-			if (debug || opt_progress) {
+			if (opt_debug || opt_progress) {
 				stdout.printf("Getting block users list...");
 				stdout.flush();
 			}
 			get_block_list();
-			if (debug || opt_progress) {
+			if (opt_debug || opt_progress) {
 				stdout.printf("done\n");
 			}
 
 			// ミュートユーザ取得
-			if (debug || opt_progress) {
+			if (opt_debug || opt_progress) {
 				stdout.printf("Getting mute users list...");
 				stdout.flush();
 			}
 			get_mute_list();
-			if (debug || opt_progress) {
+			if (opt_debug || opt_progress) {
 				stdout.printf("done\n");
 			}
 
 			// RT非表示ユーザ取得
-			if (debug || opt_progress) {
+			if (opt_debug || opt_progress) {
 				stdout.printf("Getting nort users list...");
 				stdout.flush();
 			}
 			get_nort_list();
-			if (debug || opt_progress) {
+			if (opt_debug || opt_progress) {
 				stdout.printf("done\n");
 			}
 		}
@@ -711,7 +717,7 @@ public class SayakaMain
 		stdout.flush();
 
 		// ストリーミング開始
-		diag.Trace("PostAPI call");
+		diag.Debug("PostAPI call");
 		try {
 			var dict = new Dictionary<string, string>();
 			if (opt_pseudo_home) {
@@ -767,7 +773,7 @@ public class SayakaMain
 	public void CreateTwitter()
 	{
 		if (tw == null) {
-			tw = new Twitter();
+			tw = new Twitter(diagHttp);
 			get_access_token();
 
 			// userstream 用なので今となってはもういらないのだが
@@ -943,7 +949,7 @@ public class SayakaMain
 		string replyto_name = "";
 		string rt_user_name = "";
 		string rt_replyto_name = "";
-		if (opt_debug_show > 0) {
+		if (diagShow.GetLevel() > 0) {
 			user_name = status.GetJson("user").GetString("screen_name");
 			replyto_name = status.GetString("in_reply_to_screen_name");
 			if (status.Has("retweeted_status")) {
@@ -982,29 +988,30 @@ public class SayakaMain
 				// Twitter の動作とは異なるけど、RT 非表示氏がフォロー氏を
 				// RT するのは別に表示してもいいんじゃないかなあ
 				if (!followlist.ContainsKey(rt_user_id)) {
-					debug_show(1, "showstatus_acl: "
-						+ @"noretweet(@$(user_name)) -> false\n");
+					diagShow.Print(1, "showstatus_acl: "
+						+ @"noretweet(@$(user_name)) -> false");
 					return false;
 				}
 			} else if (followlist.ContainsKey(user_id)) {
 				// ホームなら、フォロー氏から他人へのリプは弾く
 				if (replyto_id != "" && !followlist.ContainsKey(replyto_id)) {
-					debug_show(2, "showstatus_acl: "
-						+ @"follow(@$(user_name)) replies to other -> false\n");
+					diagShow.Print(2, "showstatus_acl: "
+						+ @"follow(@$(user_name)) replies to other -> false");
 					return false;
 				}
 			} else {
 				// ホームなら、他人からは自分絡みのみ表示
 				if (replyto_id == myid) {
-					debug_show(1,
-						"showstatus_acl: other replies to me -> true\n");
+					diagShow.Print(1,
+						"showstatus_acl: other replies to me -> true");
 					return true;
 				}
 				if (rt_user_id == myid) {
-					debug_show(1, "showstatus_acl: other retweet me -> true\n");
+					diagShow.Print(1,
+						"showstatus_acl: other retweet me -> true");
 					return true;
 				}
-				debug_show(2, "showstatus_acl: other -> false\n");
+				diagShow.Print(2, "showstatus_acl: other -> false");
 				return false;
 			}
 		}
@@ -1021,35 +1028,36 @@ public class SayakaMain
 	{
 		// 俺氏の発言はすべて表示
 		if (user_id == myid) {
-			debug_show(1, "showstatus_acl1: myid -> true\n");
+			diagShow.Print(1, "showstatus_acl1: myid -> true");
 			return true;
 		}
 		// ブロック氏の発言はすべて非表示
 		if (blocklist.ContainsKey(user_id)) {
-			debug_show(1, @"showstatus_acl1: block(@$(user_name)) -> false\n");
+			diagShow.Print(1,
+				@"showstatus_acl1: block(@$(user_name)) -> false");
 			return false;
 		}
 		// ブロック以外からの俺氏宛の発言はすべて表示
 		if (replyto_id == myid) {
-			debug_show(1, "showstatus_acl1: reply to me -> true\n");
+			diagShow.Print(1, "showstatus_acl1: reply to me -> true");
 			return true;
 		}
 		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示だが
 		// 自分宛はもう処理済みなので、ここは非表示だけでいい。
 		if (mutelist.ContainsKey(user_id)) {
-			debug_show(1, @"showstatus_acl1: mute(@$(user_name)) -> false\n");
+			diagShow.Print(1, @"showstatus_acl1: mute(@$(user_name)) -> false");
 			return false;
 		}
 
 		// ミュート氏/ブロック氏に絡むものは非表示
 		if (mutelist.ContainsKey(replyto_id)) {
-			debug_show(1, "showstatus_acl1: "
-				+ @"@$(user_name) reply to mute(@$(replyto_name)) -> false\n");
+			diagShow.Print(1, "showstatus_acl1: "
+				+ @"@$(user_name) reply to mute(@$(replyto_name)) -> false");
 			return false;
 		}
 		if (blocklist.ContainsKey(replyto_id)) {
-			debug_show(1, "showstatus_acl1: "
-				+ @"@$(user_name) reply to block(@$(replyto_name)) -> false\n");
+			diagShow.Print(1, "showstatus_acl1: "
+				+ @"@$(user_name) reply to block(@$(replyto_name)) -> false");
 			return false;
 		}
 
@@ -1443,7 +1451,7 @@ public class SayakaMain
 		var ngstat = ngword.match(status);
 		if (ngstat.match) {
 			// マッチしたらここで表示
-			debug_show(1, "showstatus: ng -> false\n");
+			diagShow.Print(1, "showstatus: ng -> false");
 			if (opt_show_ng) {
 				var userid = coloring(formatid(ngstat.screen_name), Color.NG);
 				var name = coloring(formatname(ngstat.name), Color.NG);
@@ -2314,13 +2322,13 @@ public class SayakaMain
 			cachedir, img_file);
 		img_file = tmp;
 
-		diagSixel.Debug(@"show_image: img_url=$(img_url)");
-		diagSixel.Debug(@"show_image: img_file=$(img_file)");
+		diagImage.Debug(@"show_image: img_url=$(img_url)");
+		diagImage.Debug(@"show_image: img_file=$(img_file)");
 		var cache_filename = img_file + ".sixel";
 		var cache_file = FileStream.open(cache_filename, "r");
 		if (cache_file == null) {
 			// キャッシュファイルがないので、画像を取得
-			diagSixel.Debug("sixel cache is not found");
+			diagImage.Debug("sixel cache is not found");
 			cache_file = fetch_image(cache_filename, img_url, resize_width);
 			if (cache_file == null) {
 				return false;
@@ -2432,7 +2440,7 @@ public class SayakaMain
 	public FileStream? fetch_image(string cache_filename, string img_url,
 		int resize_width)
 	{
-		var sx = new SixelConverter();
+		var sx = new SixelConverter(opt_debug_sixel);
 
 		// 共通の設定
 		// 一番高速になる設定
@@ -2448,8 +2456,6 @@ public class SayakaMain
 		sx.ResizeWidth = resize_width;
 		sx.ResizeHeight = resize_width;
 		sx.ResizeAxis = ResizeAxisMode.ScaleDownLong;
-
-		sx.diag.opt_debug = diagSixel.opt_debug;
 
 		if (color_mode == ColorFixedX68k) {
 			// とりあえず固定 16 色
@@ -2477,11 +2483,8 @@ public class SayakaMain
 		}
 		sx.OutputPalette = opt_outputpalette;
 
-		HttpClient fg;
-		try {
-			fg = new HttpClient(img_url);
-		} catch (Error e) {
-			diagSixel.Warn(@"fetch_image HttpClient ctor failed: $(e.message)");
+		HttpClient fg = new HttpClient(diagHttp);
+		if (fg.Init(img_url) == false) {
 			return null;
 		}
 		fg.Family = address_family;
@@ -2490,7 +2493,7 @@ public class SayakaMain
 		try {
 			stream = fg.GET();
 		} catch (Error e) {
-			diagSixel.Warn(@"fetch_image GET failed: $(e.message)");
+			diag.Debug(@"Warning: fetch_image GET failed: $(e.message)");
 			return null;
 		}
 		// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
@@ -2502,7 +2505,8 @@ public class SayakaMain
 		try {
 			sx.LoadFromStream(stream);
 		} catch (Error e) {
-			diagSixel.Warn(@"fetch_image LoadFromStream failed: $(e.message)");
+			diag.Debug("Warning: fetch_image LoadFromStream failed: "
+				+ @"$(e.message)");
 			return null;
 		}
 
@@ -2835,14 +2839,12 @@ public class SayakaMain
 			// そこからインデント幅を決定
 			indent_cols = ((int)(iconsize / fontwidth)) + 1;
 
-			if (debug) {
-				stdout.printf("screen columns=%d%s\n", screen_cols, msg_cols);
-				stdout.printf("font height=%d%s\n", fontheight, msg_height);
-				stdout.printf("font width=%d%s\n", fontwidth, msg_width);
-				stdout.printf("iconsize=%d\n", iconsize);
-				stdout.printf("indent columns=%d\n", indent_cols);
-				stdout.printf("imagesize=%d\n", imagesize);
-			}
+			diag.Debug(@"screen columns=$(screen_cols)$(msg_cols)");
+			diag.Debug(@"font height=$(fontheight)$(msg_height)");
+			diag.Debug(@"font width=$(fontwidth)$(msg_width)");
+			diag.Debug(@"iconsize=$(iconsize)");
+			diag.Debug(@"indent columns=$(indent_cols)");
+			diag.Debug(@"imagesize=$(imagesize)");
 			break;
 		 default:
 			stderr.printf(@"sayaka caught signal $(signo)\n");
@@ -2893,8 +2895,10 @@ public class SayakaMain
 	--blocklist
 	--ciphers <ciphers>
 	--debug
-	--debug-http <0-3>
-	--debug-sixel
+	--debug-http <0-2>
+	--debug-show <0-2>
+	--debug-image <0-1>
+	--debug-sixel <0-2>
 	--followlist
 	--max-cont <n>
 	--max-image-cols <n>
