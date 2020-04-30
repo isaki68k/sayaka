@@ -86,7 +86,7 @@ LIBS_MBEDTLS=	\
 	../mbedtls/library/libmbedx509.a \
 	../mbedtls/library/libmbedcrypto.a \
 
-COPTS=	-O2 -g -std=c99
+COPTS=	-O2 -g
 CFLAGS+=	-w `pkg-config --cflags ${PKGS}`
 LIBS=	`pkg-config --libs ${PKGS}`
 LIBS+=	${LIBS_MBEDTLS}
