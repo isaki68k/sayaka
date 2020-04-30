@@ -562,8 +562,6 @@ public class SayakaMain
 
 		// シグナルハンドラを設定
 		Posix.@signal(Posix.Signal.INT,		signal_handler);
-		Posix.@signal(Posix.Signal.WINCH,	signal_handler);
-
 		Posix.@signal(Posix.Signal.HUP,		signal_handler);
 		Posix.@signal(Posix.Signal.PIPE,	signal_handler);
 		Posix.@signal(Posix.Signal.ALRM,	signal_handler);
@@ -573,6 +571,12 @@ public class SayakaMain
 		Posix.@signal(Posix.Signal.PROF,	signal_handler);
 		Posix.@signal(Posix.Signal.USR1,	signal_handler);
 		Posix.@signal(Posix.Signal.USR2,	signal_handler);
+		// SIGWINCH は *BSD では SA_RESTART が立っていて
+		// Linux では立っていないらしい。とりあえず立てておく。
+		var act = Posix.sigaction_t();
+		act.sa_handler = signal_handler;
+		act.sa_flags = Posix.SA_RESTART;
+		Posix.sigaction(Posix.Signal.WINCH, act, null);
 	}
 
 	// 投稿する
