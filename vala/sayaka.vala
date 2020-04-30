@@ -635,7 +635,7 @@ public class SayakaMain
 		init_color();
 
 		// 一度手動で呼び出して桁数を取得
-		signal_handler(Posix.Signal.WINCH);
+		sigwinch();
 
 		// NGワード取得
 		ngword.parse_file();
@@ -2764,96 +2764,103 @@ public class SayakaMain
 			break;
 
 		 case Posix.Signal.WINCH:
-			int ws_cols = 0;
-			int ws_width = 0;
-			int ws_height = 0;
-
-			winsize ws = winsize();
-			var r = ioctl.TIOCGWINSZ(Posix.STDOUT_FILENO, out ws);
-			if (r != 0) {
-				stdout.printf("TIOCGWINSZ failed.\n");
-			} else {
-				ws_cols = ws.ws_col;
-
-				if (ws.ws_col != 0) {
-					ws_width = ws.ws_xpixel / ws.ws_col;
-				}
-				if (ws.ws_row != 0) {
-					ws_height = ws.ws_ypixel / ws.ws_row;
-				}
-			}
-
-			var msg_cols = "";
-			var msg_width = "";
-			var msg_height = "";
-
-			// 画面幅は常に更新
-			if (ws_cols > 0) {
-				screen_cols = ws_cols;
-				msg_cols = " (from ioctl)";
-			} else {
-				screen_cols = 0;
-				msg_cols = " (not detected)";
-			}
-			// フォント幅と高さは指定されてない時だけ取得した値を使う
-			var use_default_font = false;
-			if (opt_fontwidth > 0) {
-				fontwidth = opt_fontwidth;
-			} else {
-				if (ws_width > 0) {
-					fontwidth = ws_width;
-					msg_width = " (from ioctl)";
-				} else {
-					fontwidth = DEFAULT_FONT_WIDTH;
-					msg_width = " (DEFAULT)";
-					use_default_font = true;
-				}
-			}
-			if (opt_fontheight > 0) {
-				fontheight = opt_fontheight;
-			} else {
-				if (ws_height > 0) {
-					fontheight = ws_height;
-					msg_height = " (from ioctl)";
-				} else {
-					fontheight = DEFAULT_FONT_HEIGHT;
-					msg_height = " (DEFAULT)";
-					use_default_font = true;
-				}
-			}
-			if (use_default_font) {
-				stdout.printf("sayaka: Fontsize not detected. "
-					+ @"Application default $(fontwidth)x$(fontheight) "
-					+ "is used\n");
-			}
-
-			// フォントの高さからアイコンサイズを決定する。
-			//
-			// SIXEL 表示後のカーソル位置は、
-			// o xterm 等では SIXEL 最終ラスタを含む行の次の行、
-			// o VT382 等では SIXEL 最終ラスタの次のラスタを含む行
-			// になる。
-			// アイコンは2行以上3行未満にする必要があり、
-			// かつ6の倍数だと SIXEL 的に都合がいい。
-			iconsize  = ((fontheight * 3 - 1) / 6) * 6;
-			// 画像サイズにはアイコンのような行制約はないので計算は適当。
-			// XXX まだ縦横について考慮してない
-			imagesize = ((fontheight * 9 - 1) / 6) * 6;
-
-			// そこからインデント幅を決定
-			indent_cols = ((int)(iconsize / fontwidth)) + 1;
-
-			diag.Debug(@"screen columns=$(screen_cols)$(msg_cols)");
-			diag.Debug(@"font height=$(fontheight)$(msg_height)");
-			diag.Debug(@"font width=$(fontwidth)$(msg_width)");
-			diag.Debug(@"iconsize=$(iconsize)");
-			diag.Debug(@"indent columns=$(indent_cols)");
-			diag.Debug(@"imagesize=$(imagesize)");
+			sigwinch();
 			break;
+
 		 default:
 			stderr.printf(@"sayaka caught signal $(signo)\n");
 			break;
 		}
+	}
+
+	// SIGWINCH の処理。
+	public void sigwinch()
+	{
+		int ws_cols = 0;
+		int ws_width = 0;
+		int ws_height = 0;
+
+		winsize ws = winsize();
+		var r = ioctl.TIOCGWINSZ(Posix.STDOUT_FILENO, out ws);
+		if (r != 0) {
+			stdout.printf("TIOCGWINSZ failed.\n");
+		} else {
+			ws_cols = ws.ws_col;
+
+			if (ws.ws_col != 0) {
+				ws_width = ws.ws_xpixel / ws.ws_col;
+			}
+			if (ws.ws_row != 0) {
+				ws_height = ws.ws_ypixel / ws.ws_row;
+			}
+		}
+
+		var msg_cols = "";
+		var msg_width = "";
+		var msg_height = "";
+
+		// 画面幅は常に更新
+		if (ws_cols > 0) {
+			screen_cols = ws_cols;
+			msg_cols = " (from ioctl)";
+		} else {
+			screen_cols = 0;
+			msg_cols = " (not detected)";
+		}
+		// フォント幅と高さは指定されてない時だけ取得した値を使う
+		var use_default_font = false;
+		if (opt_fontwidth > 0) {
+			fontwidth = opt_fontwidth;
+		} else {
+			if (ws_width > 0) {
+				fontwidth = ws_width;
+				msg_width = " (from ioctl)";
+			} else {
+				fontwidth = DEFAULT_FONT_WIDTH;
+				msg_width = " (DEFAULT)";
+				use_default_font = true;
+			}
+		}
+		if (opt_fontheight > 0) {
+			fontheight = opt_fontheight;
+		} else {
+			if (ws_height > 0) {
+				fontheight = ws_height;
+				msg_height = " (from ioctl)";
+			} else {
+				fontheight = DEFAULT_FONT_HEIGHT;
+				msg_height = " (DEFAULT)";
+				use_default_font = true;
+			}
+		}
+		if (use_default_font) {
+			stdout.printf("sayaka: Fontsize not detected. "
+				+ @"Application default $(fontwidth)x$(fontheight) "
+				+ "is used\n");
+		}
+
+		// フォントの高さからアイコンサイズを決定する。
+		//
+		// SIXEL 表示後のカーソル位置は、
+		// o xterm 等では SIXEL 最終ラスタを含む行の次の行、
+		// o VT382 等では SIXEL 最終ラスタの次のラスタを含む行
+		// になる。
+		// アイコンは2行以上3行未満にする必要があり、
+		// かつ6の倍数だと SIXEL 的に都合がいい。
+		iconsize  = ((fontheight * 3 - 1) / 6) * 6;
+		// 画像サイズにはアイコンのような行制約はないので計算は適当。
+		// XXX まだ縦横について考慮してない
+		imagesize = ((fontheight * 9 - 1) / 6) * 6;
+
+		// そこからインデント幅を決定
+		indent_cols = ((int)(iconsize / fontwidth)) + 1;
+
+		diag.Debug(@"screen columns=$(screen_cols)$(msg_cols)");
+		diag.Debug(@"font height=$(fontheight)$(msg_height)");
+		diag.Debug(@"font width=$(fontwidth)$(msg_width)");
+		diag.Debug(@"iconsize=$(iconsize)");
+		diag.Debug(@"indent columns=$(indent_cols)");
+		diag.Debug(@"imagesize=$(imagesize)");
 	}
 
 #if TEST
