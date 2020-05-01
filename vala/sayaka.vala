@@ -155,6 +155,7 @@ public class SayakaMain
 	public bool opt_pseudo_home;	// 疑似ホームタイムライン
 	public string myid;				// 自身の user id
 	public bool opt_nocolor;		// テキストに(色)属性を一切付けない
+	public int opt_record_mode;		// 0:保存しない 1:表示のみ 2:全部保存
 
 	public string basedir;
 	public string cachedir;
@@ -400,6 +401,14 @@ public class SayakaMain
 					usage();
 				}
 				record_file = args[i];
+				opt_record_mode = 1;
+				break;
+			 case "--record-all":
+				if (++i >= args.length) {
+					usage();
+				}
+				record_file = args[i];
+				opt_record_mode = 2;
 				break;
 			 case "--show-ng":
 				opt_show_ng = true;
@@ -844,17 +853,9 @@ public class SayakaMain
 		// status はツイート。
 		ULib.Json status = null;
 
-		// 録画
-		if (record_file != null) {
-			try {
-				var f = File.new_for_path(record_file);
-				var outputstream = f.append_to(FileCreateFlags.NONE);
-				var stream = new DataOutputStream(outputstream);
-				stream.put_string(obj.ToString());
-				stream.put_string("\n");
-			} catch (Error e) {
-				// ignore ?
-			}
+		// 全ツイートを録画 (--record-all)
+		if (opt_record_mode == 2) {
+			record(obj);
 		}
 
 		if (obj.Has("event")) {
@@ -1449,6 +1450,13 @@ public class SayakaMain
 		// 行うのでリツイート分離前に行う。
 		if (showstatus_acl(status, is_quoted) == false) {
 			return false;
+		}
+
+		// 表示範囲だけ録画ならここで保存。
+		// 実際にはここから NG ワードと鍵垢の非表示判定があるけど
+		// もういいだろう。
+		if (opt_record_mode == 1) {
+			record(status);
 		}
 
 		// NGワード
@@ -2715,6 +2723,20 @@ public class SayakaMain
 		}
 	}
 
+	// ツイートを保存する
+	public void record(ULib.Json obj)
+	{
+		try {
+			var f = File.new_for_path(record_file);
+			var outputstream = f.append_to(FileCreateFlags.NONE);
+			var stream = new DataOutputStream(outputstream);
+			stream.put_string(obj.ToString());
+			stream.put_string("\n");
+		} catch (Error e) {
+			// ignore ?
+		}
+	}
+
 	// 古いキャッシュを破棄する
 	public void invalidate_cache()
 	{
@@ -2895,6 +2917,8 @@ public class SayakaMain
 	--post : post tweet from stdin (utf-8 is expected).
 	--progress: show start up progress.
 	--protect : don't display protected user's tweet.
+	--record <file> : record JSON to file.
+	--record-all <file> : record all received JSON to file.
 	--show-ng
 	--support-evs
 	--token <file> : token file (default: ~/.sayaka/token.json)
