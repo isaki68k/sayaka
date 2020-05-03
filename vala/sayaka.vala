@@ -1000,6 +1000,11 @@ public class SayakaMain
 						+ @"follow(@$(user_name)) replies to other -> false");
 					return false;
 				}
+				// フォロー氏の発言者自身宛なら
+				// 別途本文前ユーザメンションを調べる必要あり。長いので別。
+				if (replyto_id == user_id) {
+					return showstatus_acl_mention(status);
+				}
 			} else {
 				// ホームなら、他人からは自分絡みのみ表示
 				if (replyto_id == myid) {
@@ -1063,6 +1068,110 @@ public class SayakaMain
 		}
 
 		return null;
+	}
+
+	// フォロー氏が発言者自身へ宛てたリプの場合の処理。
+	// ・本文前ユーザメンションがなければ表示
+	//   (これはフォロー氏の単独ツリー発言?)
+	// ・本文前ユーザメンションに(発言者以外の)フォローが一人もいなければ非表示
+	//   (これはリプが自己宛に見えてるが実質他人宛のリプ)
+	public bool showstatus_acl_mention(ULib.Json status)
+	{
+		string diagmsg = "";
+		if (diagShow.GetLevel() > 0) {
+			// 冒頭全部同じメッセージになるのでここで用意しておく
+			var user_name = status.GetJson("user").GetString("screen_name");
+			diagmsg = "showstatus_acl_mention: "
+				+ @"follow(@$(user_name)) self-replies";
+		}
+
+		// entities.user_mentions がなければここでの作業は不要
+		ULib.Json? entities = status.GetJson("entities");
+		if (entities == null) {
+			diagShow.Print(1, @"$(diagmsg) but no user_mentions -> true");
+			return true;
+		}
+		if (!entities.Has("user_mentions")) {
+			diagShow.Print(1, @"$(diagmsg) but no user_mentions -> true");
+			return true;
+		}
+
+		// このツイートの発言者
+		var user_id = status.GetJson("user").GetString("id_str");
+
+		// display_text_range の一つ目だけ取得。これより前が本文前。
+		// なければとりあえず全域としておくか。
+		int text_start = 0;
+		Array<ULib.Json>? text_range = status.GetArray("display_text_range");
+		if (text_range != null) {
+			ULib.Json text_start_obj = text_range.index(0);
+			text_start = text_start_obj.AsInt;
+		}
+
+		// user_mentions 中の発言者以外の登場人物を検査
+		var is_follow = false;
+		var is_other = false;
+		var mention_name = "";
+		var user_mentions = entities.GetArray("user_mentions");
+		for (var i = 0; i < user_mentions.length; i++) {
+			ULib.Json um = user_mentions.index(i);
+			// ここで um は user_mentions[] の1人分
+			// {
+			//   "id":..,
+			//   "id_str":"...",
+			//   "indices":[s,e],
+			//   "name":"...",
+			//   "screen_name":"...",
+			// }
+			Array<ULib.Json>? indices = um.GetArray("indices");
+			int um_start = 0;
+			// このユーザメンションの開始位置が
+			if (indices != null) {
+				um_start = indices.index(0).AsInt;
+			}
+			// 本文以降なら、これは宛先ではないという認識
+			if (um_start >= text_start) {
+				continue;
+			}
+
+			string mention_id = um.GetString("id_str");
+			if (mention_id == null) {
+				continue;
+			}
+			// 発言者自身は取り除く
+			if (mention_id == user_id) {
+				continue;
+			}
+			// 本文前ユーザメンションに
+			if (mutelist.ContainsKey(mention_id)) {
+				// ミュート氏はここでは他人氏と同じ扱い
+				is_other = true;
+			} else if (followlist.ContainsKey(mention_id)) {
+				// 発言者以外のフォロー氏が含まれている
+				is_follow = true;
+				mention_name = um.GetString("screen_name");
+				break;
+			} else {
+				// 他人氏が含まれている
+				is_other = true;
+			}
+		}
+		if (is_follow == false && is_other == false) {
+			// 発言者以外しかいないので、おそらくただの自己レス
+			diagShow.Print(1, @"$(diagmsg) -> true");
+			return true;
+		} else if (is_follow == false && is_other == true) {
+			// 発言者以外には他人氏(かミュート氏)しかいないので、これを弾く
+			diagShow.Print(1,
+				@"$(diagmsg) and mentions have no follows -> false");
+			return false;
+		} else {
+			// is_follow == true
+			// 発言者以外のフォロー氏が含まれるので、これは表示
+			diagShow.Print(1, @"$(diagmsg) and mentions have "
+				+ @"follow(@$(mention_name)) -> true");
+			return true;
+		}
 	}
 
 #if TEST
@@ -1313,6 +1422,19 @@ public class SayakaMain
 			"{id:8,rt:8,rt_rep:5,     filt}",	// 他人からRT非表示宛リプ
 			"{id:8,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
 			"{id:8,rt:8,rt_rep:8,     filt}",	// 他人から他人宛リプ
+
+			// フォロー氏が自己レスして本文前ユーザメンションがある
+			"{id:2,reply:2,ment:1,home,filt}",	// 自己宛で、UM に俺氏
+			"{id:2,reply:2,ment:2,home,filt}",	// 自己宛で、UM も自己宛て
+			"{id:2,reply:2,ment:3,home,filt}",	// 自己宛で、UM にフォロー氏
+			"{id:2,reply:2,ment:4,     filt}",	// 自己宛で、UM にミュート氏
+			"{id:2,reply:2,ment:8,     filt}",	// 自己宛で、UM に他人氏
+			// RT非表示氏が自己レス (RT関係ないのでフォロー氏と同じになる)
+			"{id:5,reply:5,ment:1,home,filt}",	// 自己宛で、UM に俺氏
+			"{id:5,reply:5,ment:2,home,filt}",	// 自己宛で、UM も自己宛て
+			"{id:5,reply:5,ment:3,home,filt}",	// 自己宛で、UM にフォロー氏
+			"{id:5,reply:5,ment:4,     filt}",	// 自己宛で、UM にミュート氏
+			"{id:5,reply:5,ment:8,     filt}",	// 自己宛で、UM に他人氏
 		};
 		var ntest = 0;
 		var nfail = 0;
@@ -1324,6 +1446,7 @@ public class SayakaMain
 				.replace("reply:",	"\"reply\":")
 				.replace("rt:",		"\"rt\":")
 				.replace("rt_rep:",	"\"rt_rep\":")
+				.replace("ment:",	"\"ment\":")
 				.replace("home",	"\"home\":1")
 				.replace("filt",	"\"filt\":1")
 				.replace("h---",	"\"home\":-1")
@@ -1376,6 +1499,36 @@ public class SayakaMain
 
 				dict.AddOrUpdate("retweeted_status", new Json.Object(dict_rt));
 			}
+			// entities.user_mentions[]
+			if (input.Has("ment")) {
+				var array_indices = new Array<ULib.Json>();
+				array_indices.append_val(new Json.Number("0"));
+				array_indices.append_val(new Json.Number("2"));
+
+				var dict_um = new Dictionary<string, ULib.Json>();
+				dict_um.AddOrUpdate("id_str",
+					new Json.String(input.GetInt("ment").to_string()));
+				dict_um.AddOrUpdate("screen_name",
+					new Json.String(input.GetInt("ment").to_string()));
+				dict_um.AddOrUpdate("indices", new Json.Array(array_indices));
+				var um = new Json.Object(dict_um);
+
+				var array_um = new Array<ULib.Json>();
+				array_um.append_val(um);
+
+				var dict_ent = new Dictionary<string, ULib.Json>();
+				dict_ent.AddOrUpdate("user_mentions", new Json.Array(array_um));
+
+				dict.AddOrUpdate("entities", new Json.Object(dict_ent));
+
+				// display_text_range
+				var array_range = new Array<ULib.Json>();
+				array_range.append_val(new Json.Number("3"));
+				array_range.append_val(new Json.Number("5"));
+				dict.AddOrUpdate("display_text_range",
+					new Json.Array(array_range));
+			}
+
 			var status = new Json.Object(dict);
 
 			// 期待値 (1=true, 0=false, -1 ならテストしない)
@@ -1384,13 +1537,19 @@ public class SayakaMain
 			var expected_home = (bool)expected_home_int;
 			var expected_filt = (bool)expected_filt_int;
 
+			if (diagShow.GetLevel() > 0) {
+				// 経緯により Diag は stderr、テスト結果は stdout に出るので
+				// おそらく |& とかして表示しないといけないことになる。
+				stderr.printf(@"$(input_str)\n");
+			}
+
 			// テスト (home)
 			if (expected_home_int != -1) {
 				ntest++;
 				opt_pseudo_home = true;
 				var result = showstatus_acl(status, false);
 				if (result != expected_home) {
-					stdout.printf(@"$(input_str) (for home) "
+					stderr.printf(@"$(input_str) (for home) "
 						+ @"expects '$(expected_home)' but '$(result)'\n");
 					nfail++;
 				}
@@ -1401,7 +1560,7 @@ public class SayakaMain
 				ntest++;
 				var result = showstatus_acl(status, true);
 				if (result != expected_filt) {
-					stdout.printf(@"$(input_str) (for home/quoted) "
+					stderr.printf(@"$(input_str) (for home/quoted) "
 						+ @"expects '$(expected_filt)' but '$(result)'\n");
 					nfail++;
 				}
@@ -1411,7 +1570,7 @@ public class SayakaMain
 				opt_pseudo_home = false;
 				result = showstatus_acl(status, false);
 				if (result != expected_filt) {
-					stdout.printf(@"$(input_str) (for filter) "
+					stderr.printf(@"$(input_str) (for filter) "
 						+ @"expects '$(expected_filt)' but '$(result)'\n");
 					nfail++;
 				}
@@ -1420,7 +1579,7 @@ public class SayakaMain
 				ntest++;
 				result = showstatus_acl(status, true);
 				if (result != expected_filt) {
-					stdout.printf(@"$(input_str) (for filter/quoted) "
+					stderr.printf(@"$(input_str) (for filter/quoted) "
 						+ @"expects '$(expected_filt)' but '$(result)'\n");
 					nfail++;
 				}
@@ -2884,6 +3043,16 @@ public class SayakaMain
 #if TEST
 	public int Test(string[] args)
 	{
+		for (var i = 1; i < args.length; i++) {
+			switch (args[i]) {
+			 case "--debug-show":
+				if (++i >= args.length) {
+					usage();
+				}
+				diagShow.SetLevel(int.parse(args[i]));
+				break;
+			}
+		}
 		test_showstatus_acl();
 		return 0;
 	}
