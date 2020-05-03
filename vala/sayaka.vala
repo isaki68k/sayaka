@@ -103,10 +103,10 @@ public class SayakaMain
 	public bool opt_noimg;
 	public int color_mode;
 	public bool protect;
-	public Diag diag;			// デバッグ (無分類)
-	public Diag diagHttp;		// デバッグ (HTTP コネクション)
-	public Diag diagImage;		// デバッグ (画像周り)
-	public Diag diagShow;		// デバッグ (メッセージ表示判定)
+	public Diag diag = new Diag();			// デバッグ (無分類)
+	public Diag diagHttp;					// デバッグ (HTTP コネクション)
+	public Diag diagImage = new Diag();		// デバッグ (画像周り)
+	public Diag diagShow = new Diag();		// デバッグ (メッセージ表示判定)
 	public int opt_debug_sixel;	// デバッグレベル (SIXEL変換周り)
 	public bool opt_debug;		// デバッグオプション (後方互換性)
 	public int screen_cols;
@@ -171,13 +171,9 @@ public class SayakaMain
 
 	public int Main(string[] args)
 	{
-		diag = new Diag();
 		diagHttp = new Diag.name("HttpClient");
-		diagImage = new Diag();
-		diagShow = new Diag();
 
 		SayakaCmd cmd = SayakaCmd.Noop;
-
 		basedir = Environment.get_home_dir() + "/.sayaka/";
 		cachedir    = basedir + "cache";
 		tokenfile   = basedir + "token.json";
