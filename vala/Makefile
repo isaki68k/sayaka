@@ -114,7 +114,7 @@ vala-make2:	vala-make2.vala
 
 VALAMAKE_COMMON_OPTS= \
 		-a "${VALAC}" \
-		--valaopt "${VALA_PKGS} ${VALA_FLAGS}" \
+		--vala-opt "${VALA_PKGS} ${VALA_FLAGS}" \
 		-c "${CC} ${COPTS} ${CFLAGS}" \
 		-l "${CC} " \
 		-L "${LIBS} " \

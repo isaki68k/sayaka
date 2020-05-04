@@ -87,6 +87,10 @@ public class Program
 	  --clean
 		中間ファイルと、実行ファイルを削除します。
 
+	  --vala-opt <arg>
+		valac のコマンドラインに指定するオプションを指定します。
+		複数回指定するとすべて連結して使用します。
+
 	  --valac-only
 	    valac の実行までで停止します。
 ";
@@ -204,10 +208,6 @@ public class Program
 				opt_exefile = args[++i];
 				break;
 
-			 case "--valaopt":
-				opt_vala_opt = args[++i];
-				break;
-
 			 case "-O":
 			 case "--workdir":
 				opt_workdir = args[++i];
@@ -222,6 +222,13 @@ public class Program
 			 case "--clean":
 				opt_clean = true;
 				break;
+
+			 case "--vala-opt":
+				if (opt_vala_opt != "")
+					opt_vala_opt += " ";
+				opt_vala_opt += args[++i];
+				break;
+
 			 case "--valac-only":
 				opt_valac_only = true;
 				break;
