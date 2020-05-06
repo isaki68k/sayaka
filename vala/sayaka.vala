@@ -1041,8 +1041,19 @@ public class SayakaMain
 		if (is_quoted == false && opt_pseudo_home) {
 			// 宛先があって、かつ、フォロー氏が一人も含まれてなければ
 			if (replies.Count > 0 && reply_to_follow == false) {
-				diagShow.Print(1, "acl: "
-					+ @"@$(user_name) replies others -> false");
+				if (diagShow.GetLevel() > 0) {
+					var names = "";
+					for (var i = 0; i < replies.Count; i++) {
+						var kv = replies.At(i);
+						var name = kv.Value;
+						if (names.length != 0) {
+							names += ",";
+						}
+						names += "@" + name;
+					}
+					diagShow.Print(1, "acl: "
+						+ @"@$(user_name) replies others($(names)) -> false");
+				}
 				return false;
 			}
 		}
