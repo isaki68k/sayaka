@@ -1010,7 +1010,7 @@ public class SayakaMain
 		// ブロック氏かミュート氏がどこかに登場するツイートをひたすら弾く。
 
 		// ブロック氏宛て、ミュート氏宛てを弾く。
-		var replies = GetReplies(status);
+		var replies = GetReplies(status, user_id, user_name);
 		var reply_to_follow = false;
 		for (var i = 0; i < replies.Count; i++) {
 			var kv = replies.At(i);
@@ -1067,7 +1067,7 @@ public class SayakaMain
 			}
 
 			// RT 先のリプ先がブロック氏かミュート氏なら弾く
-			replies = GetReplies(rt_status);
+			replies = GetReplies(rt_status, rt_user_id, rt_user_name);
 			for (var i = 0; i < replies.Count; i++) {
 				var kv = replies.At(i);
 				var id = kv.Key;
@@ -1098,6 +1098,7 @@ public class SayakaMain
 		// このツイートの発言者
 		var user = status.GetJson("user");
 		var user_id = user.GetString("id_str");
+		var user_name = user.GetString("screen_name");
 
 		// 俺氏の発言はすべて表示
 		if (user_id == myid) {
@@ -1106,14 +1107,13 @@ public class SayakaMain
 		}
 
 		// 俺氏宛てはブロック以外からは表示
-		var replies = GetReplies(status);
+		var replies = GetReplies(status, user_id, user_name);
 		for (var i = 0; i < replies.Count; i++) {
 			var kv = replies.At(i);
 			var id = kv.Key;
 			var name = kv.Value;
 			if (id == myid) {
 				if (blocklist.ContainsKey(user_id)) {
-					var user_name = user.GetString("screen_name");
 					diagShow.Print(1, "acl_me: "
 						+ @"block(@$(user_name)) to myid -> false");
 					return false;
@@ -1172,10 +1172,10 @@ public class SayakaMain
 	//
 	// XXX 本文前ではなく本文内の先頭から始まるメンションはテキスト上
 	// 見分けが付かないけどこれは無理というか仕様バグでは…。
-	public Dictionary<string,string> GetReplies(ULib.Json status)
+	public Dictionary<string,string> GetReplies(ULib.Json status,
+		string user_id, string user_name)
 	{
-		// このツイートの発言者
-		var user_id = status.GetJson("user").GetString("id_str");
+		// user_id(, user_name) はこのツイートの発言者
 
 		// display_text_range の一つ目だけ取得。これより前が本文前。
 		// なければとりあえず全域としておくか。
