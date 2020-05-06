@@ -1226,8 +1226,10 @@ public class SayakaMain
 		}
 
 		// in_reply_to_user_id を追加
-		if (status.Has("in_reply_to_user_id_str")) {
-			var replyto_id = status.GetString("in_reply_to_user_id_str");
+		// フィールド自体があって null ということもあるようなので
+		// Has() は使わず、最初から文字列評価する (なければ "" になる)。
+		var replyto_id = status.GetString("in_reply_to_user_id_str");
+		if (replyto_id != "") {
 			var replyto_name = "";
 			if (diagShow.GetLevel() > 0) {
 				replyto_name = status.GetString("in_reply_to_screen_name");
