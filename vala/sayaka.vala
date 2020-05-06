@@ -1585,7 +1585,7 @@ public class SayakaMain
 				}
 			}
 		}
-		stdout.printf(@"$(ntest) tests, $(ntest - nfail) passes");
+		stdout.printf(@"$(ntest) tests, $(ntest - nfail) passed");
 		if (nfail > 0) {
 			stdout.printf(@", $(nfail) FAILED!");
 		}
