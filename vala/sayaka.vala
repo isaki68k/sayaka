@@ -928,205 +928,287 @@ public class SayakaMain
 		return true;
 	}
 
-	// このツイートを表示するか。表示しないなら false。
+	// 表示判定のおおまかなルール
+	//
+	// ブロック氏: false
+	// 俺氏      : true
+	// * to 俺氏 : true
+	// ミュート氏: false
+	// * rt 俺氏: true
+	// * rt (ブロック to 俺氏): false
+	// * rt (* to 俺氏): true
+	//
+	// if (ホームTL) {
+	//   RT非表示氏 rt *: false
+	//   他人氏: false
+	//
+	//   フォロー to 他人: false
+	//   フォロー to ブロック: false
+	//   フォロー to ミュート: false
+	//   フォロー rt ブロック: false
+	//   フォロー rt ミュート: false
+	//   フォロー rt (* to ブロック): false
+	//   フォロー rt (* to ミュート): false
+	//   フォロー rt *: true
+	//   フォロー: true
+	// } else {
+	//   * to ブロック: false
+	//   * to ミュート: false
+	//   * rt ブロック: false
+	//   * rt ミュート: false
+	//   * rt (* to ブロック): false
+	//   * rt (* to ミュート): false
+	//   * rt *: true
+	//   *: true
+	// }
+
+	// このツイートを表示するか判定する。表示するなら true。
 	// NG ワード判定はここではない。
-	public bool showstatus_acl(ULib.Json status, bool is_quoted)
+	public bool acl(ULib.Json status, bool is_quoted)
 	{
 		// このツイートの発言者
 		var user_id = status.GetJson("user").GetString("id_str");
-		// リプライ先 (なければ "")
-		var replyto_id = status.GetString("in_reply_to_user_id_str");
-		// リツイート先の発言者 (なければ "")
-		string rt_user_id = "";
-		// リツイート先のリプライ先 (なければ "")
-		string rt_replyto_id = "";
-		if (status.Has("retweeted_status")) {
-			var rt_status = status.GetJson("retweeted_status");
-			rt_user_id = rt_status.GetJson("user").GetString("id_str");
-			rt_replyto_id = rt_status.GetString("in_reply_to_user_id_str");
-		}
-		// デバッグ用
-		string user_name = "";
-		string replyto_name = "";
-		string rt_user_name = "";
-		string rt_replyto_name = "";
+		var user_name = "";
 		if (diagShow.GetLevel() > 0) {
 			user_name = status.GetJson("user").GetString("screen_name");
-			replyto_name = status.GetString("in_reply_to_screen_name");
-			if (status.Has("retweeted_status")) {
-				var rt = status.GetJson("retweeted_status");
-				rt_user_name = rt.GetJson("user").GetString("screen_name");
-				rt_replyto_name = rt.GetString("in_reply_to_screen_name");
-			}
 		}
 
-		bool? r;
-
-		// ツイート(ベースのほう)を評価。
-		r = showstatus_acl1(user_id, replyto_id, user_name, replyto_name);
-		if (r != null) {
-			return r;
+		// ブロック氏の発言はすべて非表示
+		if (blocklist.ContainsKey(user_id)) {
+			diagShow.Print(1, @"acl: block(@$(user_name)) -> false");
+			return false;
 		}
 
-		// リツイートがあればそちらについても評価。
-		if (rt_user_id != "") {
-			r = showstatus_acl1(rt_user_id, rt_replyto_id,
-				rt_user_name, rt_replyto_name);
-			if (r != null) {
-				return r;
-			}
-		}
-
-		// 引用先なら、最低限ブロックした以外は全部表示。
-		if (is_quoted) {
+		// 俺氏発と俺氏宛てはすべて表示
+		if (acl_me(status)) {
 			return true;
 		}
 
-		if (opt_pseudo_home) {
-			// RT非表示氏の発言はリツイートのみ別対応
-			if (rt_user_id != "" && nortlist.ContainsKey(user_id)) {
-				// ホームなら、RT非表示氏が他人のツイートを RT を弾く
-				// Twitter の動作とは異なるけど、RT 非表示氏がフォロー氏を
-				// RT するのは別に表示してもいいんじゃないかなあ
-				if (!followlist.ContainsKey(rt_user_id)) {
-					diagShow.Print(1, "showstatus_acl: "
-						+ @"noretweet(@$(user_name)) -> false");
-					return false;
-				}
-			} else if (followlist.ContainsKey(user_id)) {
-				// ホームなら、フォロー氏から他人へのリプは弾く
-				if (replyto_id != "" && !followlist.ContainsKey(replyto_id)) {
-					diagShow.Print(2, "showstatus_acl: "
-						+ @"follow(@$(user_name)) replies to other -> false");
-					return false;
-				}
-				// フォロー氏の発言者自身宛なら
-				// 別途本文前ユーザメンションを調べる必要あり。長いので別。
-				if (replyto_id == user_id) {
-					return showstatus_acl_mention(status);
-				}
-			} else {
-				// ホームなら、他人からは自分絡みのみ表示
-				if (replyto_id == myid) {
-					diagShow.Print(1,
-						"showstatus_acl: other replies to me -> true");
-					return true;
-				}
-				if (rt_user_id == myid) {
-					diagShow.Print(1,
-						"showstatus_acl: other retweet me -> true");
-					return true;
-				}
-				diagShow.Print(2, "showstatus_acl: other -> false");
+		// 俺氏宛てを表示した後でミュート氏の発言はすべて非表示
+		if (mutelist.ContainsKey(user_id)) {
+			diagShow.Print(1, @"acl: mute(@$(user_name)) -> false");
+			return false;
+		}
+
+		// リツイートを持っていればその中の俺氏関係分だけ表示
+		// 俺氏関係分なのでRT非表示氏や他人氏でも可。
+		if (status.Has("retweeted_status")) {
+			var rt_status = status.GetJson("retweeted_status");
+			if (acl_me(rt_status)) {
+				return true;
+			}
+		}
+
+		// ホーム TL 用の判定
+		if (is_quoted == false && opt_pseudo_home) {
+			if (acl_home(user_id, user_name, status) == false) {
 				return false;
 			}
 		}
+
+		// ここからはホームでもフィルタでも
+		// ブロック氏かミュート氏がどこかに登場するツイートをひたすら弾く。
+
+		// ブロック氏宛て、ミュート氏宛てを弾く。
+		var replies = GetReplies(status);
+		var reply_to_follow = false;
+		for (var i = 0; i < replies.Count; i++) {
+			var kv = replies.At(i);
+			var id = kv.Key;
+			var name = kv.Value;
+			if (blocklist.ContainsKey(id)) {
+				diagShow.Print(1, "acl: "
+					+ @"@$(user_name) replies block(@$(user_name)) -> false");
+				return false;
+			}
+			if (mutelist.ContainsKey(id)) {
+				diagShow.Print(1, "acl: "
+					+ @"@$(user_name) replies mute(@$(user_name)) -> false");
+				return false;
+			}
+			if (followlist.ContainsKey(id)) {
+				reply_to_follow = true;
+			}
+		}
+		// ホーム TL なら、フォロー氏から他人氏宛てのリプを弾く。
+		// この時点で生き残ってる発言者はホーム TL ならフォロー氏だけ。
+		if (is_quoted == false && opt_pseudo_home) {
+			// 宛先があって、かつ、フォロー氏が一人も含まれてなければ
+			if (replies.Count > 0 && reply_to_follow == false) {
+				diagShow.Print(1, "acl: "
+					+ @"@$(user_name) replies others -> false");
+				return false;
+			}
+		}
+
+		// リツイートがあれば
+		if (status.Has("retweeted_status")) {
+			var rt_status = status.GetJson("retweeted_status");
+
+			var rt_user = rt_status.GetJson("user");
+			var rt_user_id = rt_user.GetString("id_str");
+			var rt_user_name = "";
+			if (diagShow.GetLevel() > 0) {
+				rt_user_name = rt_user.GetString("screen_name");
+			}
+
+			// RT 先発言者がブロック氏かミュート氏なら弾く
+			if (blocklist.ContainsKey(rt_user_id)) {
+				diagShow.Print(1, "acl: "
+					+ @"@$(user_name) retweets block(@$(rt_user_name))"
+					+ " -> false");
+				return false;
+			}
+			if (mutelist.ContainsKey(rt_user_id)) {
+				diagShow.Print(1, "acl: "
+					+ @"@$(user_name) retweets mute(@$(rt_user_name))"
+					+ " -> false");
+				return false;
+			}
+
+			// RT 先のリプ先がブロック氏かミュート氏なら弾く
+			replies = GetReplies(rt_status);
+			for (var i = 0; i < replies.Count; i++) {
+				var kv = replies.At(i);
+				var id = kv.Key;
+				var name = kv.Value;
+				if (blocklist.ContainsKey(id)) {
+					diagShow.Print(1, "acl: "
+						+ @"@$(user_name) retweets (* to block(@$(name)))"
+						+ " -> false");
+					return false;
+				}
+				if (mutelist.ContainsKey(id)) {
+					diagShow.Print(1, "acl: "
+						+ @"@$(user_name) retweets (* to mute(@$(name)))"
+						+ " -> false");
+					return false;
+				}
+			}
+		}
+
+		// それ以外のツイートは表示してよい
 		return true;
 	}
 
-	// 1ツイートに対する判定。
-	// ベースと(あれば)リツイート先や引用先で同じ判定をするため。
-	// user_id は発言者。
-	// replyto_id はリプライ先(なければ "")。
-	// 戻り値は true なら表示確定、false なら非表示確定。null なら未確定。
-	public bool? showstatus_acl1(string user_id, string replyto_id,
-		string user_name, string replyto_name)
+	// このツイートが俺氏発か俺氏宛てで表示するなら true。
+	// (本ツイートとリツイート先とから呼ばれる)
+	public bool acl_me(ULib.Json status)
 	{
+		// このツイートの発言者
+		var user = status.GetJson("user");
+		var user_id = user.GetString("id_str");
+
 		// 俺氏の発言はすべて表示
 		if (user_id == myid) {
-			diagShow.Print(1, "showstatus_acl1: myid -> true");
+			diagShow.Print(1, "acl_me: myid -> true");
 			return true;
 		}
-		// ブロック氏の発言はすべて非表示
-		if (blocklist.ContainsKey(user_id)) {
-			diagShow.Print(1,
-				@"showstatus_acl1: block(@$(user_name)) -> false");
-			return false;
-		}
-		// ブロック以外からの俺氏宛の発言はすべて表示
-		if (replyto_id == myid) {
-			diagShow.Print(1, "showstatus_acl1: reply to me -> true");
-			return true;
-		}
-		// ミュート氏の発言は、自分宛のリプのみ表示、それ以外は非表示だが
-		// 自分宛はもう処理済みなので、ここは非表示だけでいい。
-		if (mutelist.ContainsKey(user_id)) {
-			diagShow.Print(1, @"showstatus_acl1: mute(@$(user_name)) -> false");
-			return false;
+
+		// 俺氏宛てはブロック以外からは表示
+		var replies = GetReplies(status);
+		for (var i = 0; i < replies.Count; i++) {
+			var kv = replies.At(i);
+			var id = kv.Key;
+			var name = kv.Value;
+			if (id == myid) {
+				if (blocklist.ContainsKey(user_id)) {
+					var user_name = user.GetString("screen_name");
+					diagShow.Print(1, "acl_me: "
+						+ @"block(@$(user_name)) to myid -> false");
+					return false;
+				}
+				diagShow.Print(1, "acl_me: * to myid -> true");
+				return true;
+			}
 		}
 
-		// ミュート氏/ブロック氏に絡むものは非表示
-		if (mutelist.ContainsKey(replyto_id)) {
-			diagShow.Print(1, "showstatus_acl1: "
-				+ @"@$(user_name) reply to mute(@$(replyto_name)) -> false");
-			return false;
-		}
-		if (blocklist.ContainsKey(replyto_id)) {
-			diagShow.Print(1, "showstatus_acl1: "
-				+ @"@$(user_name) reply to block(@$(replyto_name)) -> false");
-			return false;
-		}
-
-		return null;
+		return false;
 	}
 
-	// フォロー氏が発言者自身へ宛てたリプの場合の処理。
-	// ・本文前ユーザメンションがなければ表示
-	//   (これはフォロー氏の単独ツリー発言?)
-	// ・本文前ユーザメンションに(発言者以外の)フォローが一人もいなければ非表示
-	//   (これはリプが自己宛に見えてるが実質他人宛のリプ)
-	public bool showstatus_acl_mention(ULib.Json status)
+	// ホーム TL のみで行う追加判定。
+	public bool acl_home(string user_id, string user_name, ULib.Json status)
 	{
-		string diagmsg = "";
-		if (diagShow.GetLevel() > 0) {
-			// 冒頭全部同じメッセージになるのでここで用意しておく
-			var user_name = status.GetJson("user").GetString("screen_name");
-			diagmsg = "showstatus_acl_mention: "
-				+ @"follow(@$(user_name)) self-replies";
+		// user_id(, user_name) はこのツイートの発言者
+
+		// RT非表示氏のリツイートは弾く。
+		if (status.Has("retweeted_status") && nortlist.ContainsKey(user_id)) {
+			diagShow.Print(1, "acl_home: "
+				+ @"nort(@$(user_name)) retweet -> false");
+			return false;
 		}
 
-		// entities.user_mentions がなければここでの作業は不要
-		ULib.Json? entities = status.GetJson("entities");
-		if (entities == null) {
-			diagShow.Print(1, @"$(diagmsg) but no user_mentions -> true");
-			return true;
-		}
-		if (!entities.Has("user_mentions")) {
-			diagShow.Print(1, @"$(diagmsg) but no user_mentions -> true");
-			return true;
+		// 他人氏の発言はもう全部弾いてよい
+		if (!followlist.ContainsKey(user_id)) {
+			diagShow.Print(2, @"acl_home: others(@$(user_name)) -> false");
+			return false;
 		}
 
+		// これ以降は、
+		// フォロー氏、フォロー氏から誰か宛て、フォロー氏がRT、
+		// RT非表示氏、RT非表示氏から誰か宛て、
+		// だけになっているので、ホーム/フィルタ共通の判定に戻る。
+		return true;
+	}
+
+	// リプライ + ユーザメンションの宛先リストを返す。
+	//
+	// 誰か宛てのツイートは
+	// ・in_reply_to_user_id なし、本文前ユーザメンションあり
+	//   (誰か宛ての最初のツイート)
+	// ・in_reply_to_user_id があるけど発言者自身宛て
+	//   (通常のツリー発言)
+	// ・in_reply_to_user_id あり、本文前ユーザメンションなし?
+	//   (返信?)
+	// ・in_reply_to_user_id あり、本文前ユーザメンションあり
+	//   (返信?、もしくは複数人との会話)
+	// が考えられるため、in_reply_to_user_id のユーザだけ見たのではいけない。
+	//
+	// in_reply_to_user_id に本文前ユーザメンションの全員を加えてここから
+	// 発言者本人を引いた集合が、おそらく知りたい宛先リスト。
+	//
+	// 戻り値は Dictionary<string,string> で user_id => screen_name に
+	// なっている。ただし screen_name はデバッグレベル 1 以上で有効。
+	//
+	// XXX 本文前ではなく本文内の先頭から始まるメンションはテキスト上
+	// 見分けが付かないけどこれは無理というか仕様バグでは…。
+	public Dictionary<string,string> GetReplies(ULib.Json status)
+	{
 		// このツイートの発言者
 		var user_id = status.GetJson("user").GetString("id_str");
 
 		// display_text_range の一つ目だけ取得。これより前が本文前。
 		// なければとりあえず全域としておくか。
 		int text_start = 0;
-		Array<ULib.Json>? text_range = status.GetArray("display_text_range");
-		if (text_range != null) {
-			ULib.Json text_start_obj = text_range.index(0);
-			text_start = text_start_obj.AsInt;
+		if (status.Has("display_text_range")) {
+			var text_range = status.GetArray("display_text_range");
+			text_start = text_range.index(0).AsInt;
 		}
 
-		// user_mentions 中の発言者以外の登場人物を検査
-		var is_follow = false;
-		var is_other = false;
-		var mention_name = "";
-		var user_mentions = entities.GetArray("user_mentions");
+		// ユーザメンション(entities.user_mentions)、なければ空配列
+		var user_mentions = new Array<ULib.Json>();
+		if (status.Has("entities")) {
+			var entities = status.GetJson("entities");
+			if (entities.Has("user_mentions")) {
+				user_mentions = entities.GetArray("user_mentions");
+			}
+		}
+		// screen_name は判定自体には不要なのでデバッグ表示の時だけ有効。
+		var dict = new Dictionary<string, string>();
 		for (var i = 0; i < user_mentions.length; i++) {
 			ULib.Json um = user_mentions.index(i);
 			// ここで um は user_mentions[] の1人分
 			// {
 			//   "id":..,
 			//   "id_str":"...",
-			//   "indices":[s,e],
+			//   "indices":[start,end],
 			//   "name":"...",
 			//   "screen_name":"...",
 			// }
-			Array<ULib.Json>? indices = um.GetArray("indices");
 			int um_start = 0;
 			// このユーザメンションの開始位置が
-			if (indices != null) {
+			if (um.Has("indices")) {
+				var indices = um.GetArray("indices");
 				um_start = indices.index(0).AsInt;
 			}
 			// 本文以降なら、これは宛先ではないという認識
@@ -1134,44 +1216,29 @@ public class SayakaMain
 				continue;
 			}
 
-			string mention_id = um.GetString("id_str");
-			if (mention_id == null) {
-				continue;
+			// dict に追加
+			var id_str = um.GetString("id_str");
+			var screen_name = "";
+			if (diagShow.GetLevel() > 0) {
+				screen_name = um.GetString("screen_name");
 			}
-			// 発言者自身は取り除く
-			if (mention_id == user_id) {
-				continue;
-			}
-			// 本文前ユーザメンションに
-			if (mutelist.ContainsKey(mention_id)) {
-				// ミュート氏はここでは他人氏と同じ扱い
-				is_other = true;
-			} else if (followlist.ContainsKey(mention_id)) {
-				// 発言者以外のフォロー氏が含まれている
-				is_follow = true;
-				mention_name = um.GetString("screen_name");
-				break;
-			} else {
-				// 他人氏が含まれている
-				is_other = true;
-			}
+			dict.AddOrUpdate(id_str, screen_name);
 		}
-		if (is_follow == false && is_other == false) {
-			// 発言者以外しかいないので、おそらくただの自己レス
-			diagShow.Print(1, @"$(diagmsg) -> true");
-			return true;
-		} else if (is_follow == false && is_other == true) {
-			// 発言者以外には他人氏(かミュート氏)しかいないので、これを弾く
-			diagShow.Print(1,
-				@"$(diagmsg) and mentions have no follows -> false");
-			return false;
-		} else {
-			// is_follow == true
-			// 発言者以外のフォロー氏が含まれるので、これは表示
-			diagShow.Print(1, @"$(diagmsg) and mentions have "
-				+ @"follow(@$(mention_name)) -> true");
-			return true;
+
+		// in_reply_to_user_id を追加
+		if (status.Has("in_reply_to_user_id_str")) {
+			var replyto_id = status.GetString("in_reply_to_user_id_str");
+			var replyto_name = "";
+			if (diagShow.GetLevel() > 0) {
+				replyto_name = status.GetString("in_reply_to_screen_name");
+			}
+			dict.AddOrUpdate(replyto_id, replyto_name);
 		}
+
+		// ここから発言者自身を引く
+		dict.Remove(user_id);
+
+		return dict;
 	}
 
 #if TEST
@@ -1202,6 +1269,8 @@ public class SayakaMain
 		// 結果はホームタイムラインとフィルタモードによって期待値が異なり
 		// それぞれ home, filt で表す。あれば表示、省略は非表示を意味する。
 		// h---, f--- は流れてこないはずのためテスト不要を意味する。
+		// あるいは扱いが不明なのでテストせずに放置 (ブロック氏からフォロー宛て
+		// リプのユーザメンションの俺氏が指定されたケースとか)。
 		var table = new string[] {
 			// 俺氏の発言
 			"{id:1,        home,filt}",		// 平文
@@ -1257,6 +1326,287 @@ public class SayakaMain
 			"{id:8,reply:6,         }",		// ブロックへ
 			"{id:8,reply:8,     filt}",		// 他人へ
 
+			// 俺氏、メンションのみ
+			"{id:1,ment:1,home,filt}",			// リプなし、UM 俺氏
+			"{id:1,ment:2,home,filt}",			// リプなし、UM フォロー氏
+			"{id:1,ment:4,home,filt}",			// リプなし、UM ミュート氏
+			"{id:1,ment:5,home,filt}",			// リプなし、UM RT非表示氏
+			"{id:1,ment:6,h---,f---}",			// リプなし、UM ブロック氏
+			"{id:1,ment:8,home,filt}",			// リプなし、UM 他人氏
+
+			// フォロー氏、メンションのみ
+			"{id:2,ment:1,home,filt}",			// リプなし、UM 俺氏
+			"{id:2,ment:2,home,filt}",			// リプなし、UM フォロー氏自
+			"{id:2,ment:3,home,filt}",			// リプなし、UM フォロー氏他
+			"{id:2,ment:4,         }",			// リプなし、UM ミュート氏
+			"{id:2,ment:5,home,filt}",			// リプなし、UM RT非表示氏
+			"{id:2,ment:6,         }",			// リプなし、UM ブロック氏
+			"{id:2,ment:8,     filt}",			// リプなし、UM 他人氏
+
+			// ミュート氏、メンションのみ
+			"{id:4,ment:1,home,filt}",			// リプなし、UM 俺氏
+			"{id:4,ment:2,         }",			// リプなし、UM フォロー氏
+			"{id:4,ment:4,         }",			// リプなし、UM ミュート氏
+			"{id:4,ment:5,         }",			// リプなし、UM RT非表示氏
+			"{id:4,ment:6,         }",			// リプなし、UM ブロック氏
+			"{id:4,ment:8,         }",			// リプなし、UM 他人氏
+
+			// RT非表示氏、メンションのみ (フォロー氏と同じになる)
+			"{id:5,ment:1,home,filt}",			// リプなし、UM 俺氏
+			"{id:5,ment:2,home,filt}",			// リプなし、UM フォロー氏
+			"{id:5,ment:4,         }",			// リプなし、UM ミュート氏
+			"{id:5,ment:5,home,filt}",			// リプなし、UM RT非表示氏
+			"{id:5,ment:6,         }",			// リプなし、UM ブロック氏
+			"{id:5,ment:8,     filt}",			// リプなし、UM 他人氏
+
+			// ブロック氏、メンションのみ
+			"{id:6,ment:1,h---,f---}",			// リプなし、UM 俺氏
+			"{id:6,ment:2,         }",			// リプなし、UM フォロー氏
+			"{id:6,ment:4,         }",			// リプなし、UM ミュート氏
+			"{id:6,ment:5,         }",			// リプなし、UM RT非表示氏
+			"{id:6,ment:6,         }",			// リプなし、UM ブロック氏
+			"{id:6,ment:8,         }",			// リプなし、UM 他人氏
+
+			// 他人氏、メンションのみ
+			"{id:8,ment:1,home,filt}",			// リプなし、UM 俺氏
+			"{id:8,ment:2,     filt}",			// リプなし、UM フォロー氏
+			"{id:8,ment:4,         }",			// リプなし、UM ミュート氏
+			"{id:8,ment:5,     filt}",			// リプなし、UM RT非表示氏
+			"{id:8,ment:6,         }",			// リプなし、UM ブロック氏
+			"{id:8,ment:8,     filt}",			// リプなし、UM 他人氏
+
+			// 俺氏、リプ+メンション
+			"{id:1,reply:1,ment:1,home,filt}",	// rep俺氏、UM 俺氏
+			"{id:1,reply:1,ment:2,home,filt}",	// rep俺氏、UM フォロー氏
+			"{id:1,reply:1,ment:4,home,filt}",	// rep俺氏、UM ミュート氏
+			"{id:1,reply:1,ment:5,home,filt}",	// rep俺氏、UM RT非表示氏
+			"{id:1,reply:1,ment:6,h---,f---}",	// rep俺氏、UM ブロック氏
+			"{id:1,reply:1,ment:8,home,filt}",	// rep俺氏、UM 他人氏
+			"{id:1,reply:2,ment:1,home,filt}",	// repフォロー氏、UM 俺氏
+			"{id:1,reply:2,ment:2,home,filt}",	// repフォロー氏、UM フォロー氏
+			"{id:1,reply:2,ment:4,home,filt}",	// repフォロー氏、UM ミュート氏
+			"{id:1,reply:2,ment:5,home,filt}",	// repフォロー氏、UM RT非表示氏
+			"{id:1,reply:2,ment:6,h---,f---}",	// repフォロー氏、UM ブロック氏
+			"{id:1,reply:2,ment:8,home,filt}",	// repフォロー氏、UM 他人氏
+			"{id:1,reply:4,ment:1,home,filt}",	// repミュート氏、UM 俺氏
+			"{id:1,reply:4,ment:2,home,filt}",	// repミュート氏、UM フォロー氏
+			"{id:1,reply:4,ment:4,home,filt}",	// repミュート氏、UM ミュート氏
+			"{id:1,reply:4,ment:5,home,filt}",	// repミュート氏、UM RT非表示氏
+			"{id:1,reply:4,ment:6,h---,f---}",	// repミュート氏、UM ブロック氏
+			"{id:1,reply:4,ment:8,home,filt}",	// repミュート氏、UM 他人氏
+			"{id:1,reply:5,ment:1,home,filt}",	// repRT非表示氏、UM 俺氏
+			"{id:1,reply:5,ment:2,home,filt}",	// repRT非表示氏、UM フォロー氏
+			"{id:1,reply:5,ment:4,home,filt}",	// repRT非表示氏、UM ミュート氏
+			"{id:1,reply:5,ment:5,home,filt}",	// repRT非表示氏、UM RT非表示氏
+			"{id:1,reply:5,ment:6,h---,f---}",	// repRT非表示氏、UM ブロック氏
+			"{id:1,reply:5,ment:8,home,filt}",	// repRT非表示氏、UM 他人氏
+			"{id:1,reply:6,ment:1,h---,f---}",	// repブロック氏、UM 俺氏
+			"{id:1,reply:6,ment:2,h---,f---}",	// repブロック氏、UM フォロー氏
+			"{id:1,reply:6,ment:4,h---,f---}",	// repブロック氏、UM ミュート氏
+			"{id:1,reply:6,ment:5,h---,f---}",	// repブロック氏、UM RT非表示氏
+			"{id:1,reply:6,ment:6,h---,f---}",	// repブロック氏、UM ブロック氏
+			"{id:1,reply:6,ment:8,h---,f---}",	// repブロック氏、UM 他人氏
+			"{id:1,reply:8,ment:1,home,filt}",	// rep他人氏、UM 俺氏
+			"{id:1,reply:8,ment:2,home,filt}",	// rep他人氏、UM フォロー氏
+			"{id:1,reply:8,ment:4,home,filt}",	// rep他人氏、UM ミュート氏
+			"{id:1,reply:8,ment:5,home,filt}",	// rep他人氏、UM RT非表示氏
+			"{id:1,reply:8,ment:6,h---,f---}",	// rep他人氏、UM ブロック氏
+			"{id:1,reply:8,ment:8,home,filt}",	// rep他人氏、UM 他人氏
+
+			// フォロー氏、リプ+メンション
+			"{id:2,reply:1,ment:1,home,filt}",	// rep俺氏、UM 俺氏
+			"{id:2,reply:1,ment:2,home,filt}",	// rep俺氏、UM フォロー氏
+			"{id:2,reply:1,ment:4,home,filt}",	// rep俺氏、UM ミュート氏
+			"{id:2,reply:1,ment:5,home,filt}",	// rep俺氏、UM RT非表示氏
+			"{id:2,reply:1,ment:6,h---,f---}",	// rep俺氏、UM ブロック氏
+			"{id:2,reply:1,ment:8,home,filt}",	// rep俺氏、UM 他人氏
+			"{id:2,reply:2,ment:1,home,filt}",	// repフォロー氏、UM 俺氏
+			"{id:2,reply:2,ment:2,home,filt}",	// repフォロー自、UM フォロー氏
+			"{id:2,reply:2,ment:3,home,filt}",	// repフォロー他、UM フォロー氏
+			"{id:2,reply:2,ment:4,         }",	// repフォロー自、UM ミュート氏
+			"{id:2,reply:2,ment:5,home,filt}",	// repフォロー自、UM RT非表示氏
+			"{id:2,reply:2,ment:6,         }",	// repフォロー自、UM ブロック氏
+			"{id:2,reply:2,ment:8,     filt}",	// repフォロー自、UM 他人氏
+			"{id:2,reply:4,ment:1,home,filt}",	// repミュート氏、UM 俺氏
+			"{id:2,reply:4,ment:2,         }",	// repミュート氏、UM フォロー自
+			"{id:2,reply:4,ment:3,         }",	// repミュート氏、UM フォロー他
+			"{id:2,reply:4,ment:4,         }",	// repミュート氏、UM ミュート氏
+			"{id:2,reply:4,ment:5,         }",	// repミュート氏、UM RT非表示氏
+			"{id:2,reply:4,ment:6,         }",	// repミュート氏、UM ブロック氏
+			"{id:2,reply:4,ment:8,         }",	// repミュート氏、UM 他人氏
+			"{id:2,reply:5,ment:1,home,filt}",	// repRT非表示氏、UM 俺氏
+			"{id:2,reply:5,ment:2,home,filt}",	// repRT非表示氏、UM フォロー氏
+			"{id:2,reply:5,ment:4,         }",	// repRT非表示氏、UM ミュート氏
+			"{id:2,reply:5,ment:5,home,filt}",	// repRT非表示氏、UM RT非表示氏
+			"{id:2,reply:5,ment:6,         }",	// repRT非表示氏、UM ブロック氏
+			"{id:2,reply:5,ment:8,home,filt}",	// repRT非表示氏、UM 他人氏
+			"{id:2,reply:6,ment:1,h---,f---}",	// repブロック氏、UM 俺氏
+			"{id:2,reply:6,ment:2,         }",	// repブロック氏、UM フォロー自
+			"{id:2,reply:6,ment:3,         }",	// repブロック氏、UM フォロー他
+			"{id:2,reply:6,ment:4,         }",	// repブロック氏、UM ミュート氏
+			"{id:2,reply:6,ment:5,         }",	// repブロック氏、UM RT非表示氏
+			"{id:2,reply:6,ment:6,         }",	// repブロック氏、UM ブロック氏
+			"{id:2,reply:6,ment:8,         }",	// repブロック氏、UM 他人氏
+			"{id:2,reply:8,ment:1,home,filt}",	// rep他人氏、UM 俺氏
+			"{id:2,reply:8,ment:2,     filt}",	// rep他人氏、UM フォロー氏
+			"{id:2,reply:8,ment:4,         }",	// rep他人氏、UM ミュート氏
+			"{id:2,reply:8,ment:5,home,filt}",	// rep他人氏、UM RT非表示氏
+			"{id:2,reply:8,ment:6,         }",	// rep他人氏、UM ブロック氏
+			"{id:2,reply:8,ment:8,     filt}",	// rep他人氏、UM 他人氏
+
+			// ミュート氏、リプ+メンション
+			"{id:4,reply:1,ment:1,home,filt}",	// rep俺氏、UM 俺氏
+			"{id:4,reply:1,ment:2,home,filt}",	// rep俺氏、UM フォロー氏
+			"{id:4,reply:1,ment:4,home,filt}",	// rep俺氏、UM ミュート氏
+			"{id:4,reply:1,ment:5,home,filt}",	// rep俺氏、UM RT非表示氏
+			"{id:4,reply:1,ment:6,h---,f---}",	// rep俺氏、UM ブロック氏
+			"{id:4,reply:1,ment:8,home,filt}",	// rep俺氏、UM 他人氏
+			"{id:4,reply:2,ment:1,home,filt}",	// repフォロー氏、UM 俺氏
+			"{id:4,reply:2,ment:2,         }",	// repフォロー氏、UM フォロー氏
+			"{id:4,reply:2,ment:4,         }",	// repフォロー氏、UM ミュート氏
+			"{id:4,reply:2,ment:5,         }",	// repフォロー氏、UM RT非表示氏
+			"{id:4,reply:2,ment:6,         }",	// repフォロー氏、UM ブロック氏
+			"{id:4,reply:2,ment:8,         }",	// repフォロー氏、UM 他人氏
+			"{id:4,reply:4,ment:1,home,filt}",	// repミュート氏、UM 俺氏
+			"{id:4,reply:4,ment:2,         }",	// repミュート氏、UM フォロー氏
+			"{id:4,reply:4,ment:4,         }",	// repミュート氏、UM ミュート氏
+			"{id:4,reply:4,ment:5,         }",	// repミュート氏、UM RT非表示氏
+			"{id:4,reply:4,ment:6,         }",	// repミュート氏、UM ブロック氏
+			"{id:4,reply:4,ment:8,         }",	// repミュート氏、UM 他人氏
+			"{id:4,reply:5,ment:1,home,filt}",	// repRT非表示氏、UM 俺氏
+			"{id:4,reply:5,ment:2,         }",	// repRT非表示氏、UM フォロー氏
+			"{id:4,reply:5,ment:4,         }",	// repRT非表示氏、UM ミュート氏
+			"{id:4,reply:5,ment:5,         }",	// repRT非表示氏、UM RT非表示氏
+			"{id:4,reply:5,ment:6,         }",	// repRT非表示氏、UM ブロック氏
+			"{id:4,reply:5,ment:8,         }",	// repRT非表示氏、UM 他人氏
+			"{id:4,reply:6,ment:1,h---,f---}",	// repブロック氏、UM 俺氏
+			"{id:4,reply:6,ment:2,         }",	// repブロック氏、UM フォロー氏
+			"{id:4,reply:6,ment:4,         }",	// repブロック氏、UM ミュート氏
+			"{id:4,reply:6,ment:5,         }",	// repブロック氏、UM RT非表示氏
+			"{id:4,reply:6,ment:6,         }",	// repブロック氏、UM ブロック氏
+			"{id:4,reply:6,ment:8,         }",	// repブロック氏、UM 他人氏
+			"{id:4,reply:8,ment:1,home,filt}",	// rep他人氏、UM 俺氏
+			"{id:4,reply:8,ment:2,         }",	// rep他人氏、UM フォロー氏
+			"{id:4,reply:8,ment:4,         }",	// rep他人氏、UM ミュート氏
+			"{id:4,reply:8,ment:5,         }",	// rep他人氏、UM RT非表示氏
+			"{id:4,reply:8,ment:6,         }",	// rep他人氏、UM ブロック氏
+			"{id:4,reply:8,ment:8,         }",	// rep他人氏、UM 他人氏
+
+			// RT非表示氏、リプ+メンション
+			"{id:5,reply:1,ment:1,home,filt}",	// rep俺氏、UM 俺氏
+			"{id:5,reply:1,ment:2,home,filt}",	// rep俺氏、UM フォロー氏
+			"{id:5,reply:1,ment:4,home,filt}",	// rep俺氏、UM ミュート氏
+			"{id:5,reply:1,ment:5,home,filt}",	// rep俺氏、UM RT非表示氏
+			"{id:5,reply:1,ment:6,h---,f---}",	// rep俺氏、UM ブロック氏
+			"{id:5,reply:1,ment:8,home,filt}",	// rep俺氏、UM 他人氏
+			"{id:5,reply:2,ment:1,home,filt}",	// repフォロー氏、UM 俺氏
+			"{id:5,reply:2,ment:2,home,filt}",	// repフォロー氏、UM フォロー氏
+			"{id:5,reply:2,ment:4,         }",	// repフォロー氏、UM ミュート氏
+			"{id:5,reply:2,ment:5,home,filt}",	// repフォロー氏、UM RT非表示氏
+			"{id:5,reply:2,ment:6,         }",	// repフォロー氏、UM ブロック氏
+			"{id:5,reply:2,ment:8,home,filt}",	// repフォロー氏、UM 他人氏
+			"{id:5,reply:4,ment:1,home,filt}",	// repミュート氏、UM 俺氏
+			"{id:5,reply:4,ment:2,         }",	// repミュート氏、UM フォロー氏
+			"{id:5,reply:4,ment:4,         }",	// repミュート氏、UM ミュート氏
+			"{id:5,reply:4,ment:5,         }",	// repミュート氏、UM RT非表示氏
+			"{id:5,reply:4,ment:6,         }",	// repミュート氏、UM ブロック氏
+			"{id:5,reply:4,ment:8,         }",	// repミュート氏、UM 他人氏
+			"{id:5,reply:5,ment:1,home,filt}",	// repRT非表示氏、UM 俺氏
+			"{id:5,reply:5,ment:2,home,filt}",	// repRT非表示氏、UM フォロー氏
+			"{id:5,reply:5,ment:4,         }",	// repRT非表示氏、UM ミュート氏
+			"{id:5,reply:5,ment:5,home,filt}",	// repRT非表示氏、UM RT非表示氏
+			"{id:5,reply:5,ment:6,         }",	// repRT非表示氏、UM ブロック氏
+			"{id:5,reply:5,ment:8,     filt}",	// repRT非表示氏、UM 他人氏
+			"{id:5,reply:6,ment:1,h---,f---}",	// repブロック氏、UM 俺氏
+			"{id:5,reply:6,ment:2,         }",	// repブロック氏、UM フォロー氏
+			"{id:5,reply:6,ment:4,         }",	// repブロック氏、UM ミュート氏
+			"{id:5,reply:6,ment:5,         }",	// repブロック氏、UM RT非表示氏
+			"{id:5,reply:6,ment:6,         }",	// repブロック氏、UM ブロック氏
+			"{id:5,reply:6,ment:8,         }",	// repブロック氏、UM 他人氏
+			"{id:5,reply:8,ment:1,home,filt}",	// rep他人氏、UM 俺氏
+			"{id:5,reply:8,ment:2,home,filt}",	// rep他人氏、UM フォロー氏
+			"{id:5,reply:8,ment:4,         }",	// rep他人氏、UM ミュート氏
+			"{id:5,reply:8,ment:5,     filt}",	// rep他人氏、UM RT非表示氏
+			"{id:5,reply:8,ment:6,         }",	// rep他人氏、UM ブロック氏
+			"{id:5,reply:8,ment:8,     filt}",	// rep他人氏、UM 他人氏
+
+			// ブロック氏、リプ+メンション
+			"{id:6,reply:1,ment:1,h---,f---}",	// rep俺氏、UM 俺氏
+			"{id:6,reply:1,ment:2,h---,f---}",	// rep俺氏、UM フォロー氏
+			"{id:6,reply:1,ment:4,h---,f---}",	// rep俺氏、UM ミュート氏
+			"{id:6,reply:1,ment:5,h---,f---}",	// rep俺氏、UM RT非表示氏
+			"{id:6,reply:1,ment:6,h---,f---}",	// rep俺氏、UM ブロック氏
+			"{id:6,reply:1,ment:8,h---,f---}",	// rep俺氏、UM 他人氏
+			"{id:6,reply:2,ment:1,h---,f---}",	// repフォロー氏、UM 俺氏
+			"{id:6,reply:2,ment:2,         }",	// repフォロー自、UM フォロー氏
+			"{id:6,reply:2,ment:3,         }",	// repフォロー他、UM フォロー氏
+			"{id:6,reply:2,ment:4,         }",	// repフォロー自、UM ミュート氏
+			"{id:6,reply:2,ment:5,         }",	// repフォロー自、UM RT非表示氏
+			"{id:6,reply:2,ment:6,         }",	// repフォロー自、UM ブロック氏
+			"{id:6,reply:2,ment:8,         }",	// repフォロー自、UM 他人氏
+			"{id:6,reply:4,ment:1,h---,f---}",	// repミュート氏、UM 俺氏
+			"{id:6,reply:4,ment:2,         }",	// repミュート氏、UM フォロー氏
+			"{id:6,reply:4,ment:4,         }",	// repミュート氏、UM ミュート氏
+			"{id:6,reply:4,ment:5,         }",	// repミュート氏、UM RT非表示氏
+			"{id:6,reply:4,ment:6,         }",	// repミュート氏、UM ブロック氏
+			"{id:6,reply:4,ment:8,         }",	// repミュート氏、UM 他人氏
+			"{id:6,reply:5,ment:1,h---,f---}",	// repRT非表示氏、UM 俺氏
+			"{id:6,reply:5,ment:2,         }",	// repRT非表示氏、UM フォロー氏
+			"{id:6,reply:5,ment:4,         }",	// repRT非表示氏、UM ミュート氏
+			"{id:6,reply:5,ment:5,         }",	// repRT非表示氏、UM RT非表示氏
+			"{id:6,reply:5,ment:6,         }",	// repRT非表示氏、UM ブロック氏
+			"{id:6,reply:5,ment:8,         }",	// repRT非表示氏、UM 他人氏
+			"{id:6,reply:6,ment:1,h---,f---}",	// repブロック氏、UM 俺氏
+			"{id:6,reply:6,ment:2,         }",	// repブロック氏、UM フォロー氏
+			"{id:6,reply:6,ment:4,         }",	// repブロック氏、UM ミュート氏
+			"{id:6,reply:6,ment:5,         }",	// repブロック氏、UM RT非表示氏
+			"{id:6,reply:6,ment:6,         }",	// repブロック氏、UM ブロック氏
+			"{id:6,reply:6,ment:8,         }",	// repブロック氏、UM 他人氏
+			"{id:6,reply:8,ment:1,h---,f---}",	// rep他人氏、UM 俺氏
+			"{id:6,reply:8,ment:2,         }",	// rep他人氏、UM フォロー氏
+			"{id:6,reply:8,ment:4,         }",	// rep他人氏、UM ミュート氏
+			"{id:6,reply:8,ment:5,         }",	// rep他人氏、UM RT非表示氏
+			"{id:6,reply:8,ment:6,         }",	// rep他人氏、UM ブロック氏
+			"{id:6,reply:8,ment:8,         }",	// rep他人氏、UM 他人氏
+
+			// 他人氏、リプ+メンション
+			"{id:8,reply:1,ment:1,home,filt}",	// rep俺氏、UM 俺氏
+			"{id:8,reply:1,ment:2,home,filt}",	// rep俺氏、UM フォロー氏
+			"{id:8,reply:1,ment:4,home,filt}",	// rep俺氏、UM ミュート氏
+			"{id:8,reply:1,ment:5,home,filt}",	// rep俺氏、UM RT非表示氏
+			"{id:8,reply:1,ment:6,h---,f---}",	// rep俺氏、UM ブロック氏
+			"{id:8,reply:1,ment:8,home,filt}",	// rep俺氏、UM 他人氏
+			"{id:8,reply:2,ment:1,home,filt}",	// repフォロー氏、UM 俺氏
+			"{id:8,reply:2,ment:2,     filt}",	// repフォロー氏、UM フォロー氏
+			"{id:8,reply:2,ment:4,         }",	// repフォロー氏、UM ミュート氏
+			"{id:8,reply:2,ment:5,     filt}",	// repフォロー氏、UM RT非表示氏
+			"{id:8,reply:2,ment:6,         }",	// repフォロー氏、UM ブロック氏
+			"{id:8,reply:2,ment:8,     filt}",	// repフォロー氏、UM 他人氏
+			"{id:8,reply:4,ment:1,home,filt}",	// repミュート氏、UM 俺氏
+			"{id:8,reply:4,ment:2,         }",	// repミュート氏、UM フォロー氏
+			"{id:8,reply:4,ment:4,         }",	// repミュート氏、UM ミュート氏
+			"{id:8,reply:4,ment:5,         }",	// repミュート氏、UM RT非表示氏
+			"{id:8,reply:4,ment:6,         }",	// repミュート氏、UM ブロック氏
+			"{id:8,reply:4,ment:8,         }",	// repミュート氏、UM 他人氏
+			"{id:8,reply:5,ment:1,home,filt}",	// repRT非表示氏、UM 俺氏
+			"{id:8,reply:5,ment:2,     filt}",	// repRT非表示氏、UM フォロー氏
+			"{id:8,reply:5,ment:4,         }",	// repRT非表示氏、UM ミュート氏
+			"{id:8,reply:5,ment:5,     filt}",	// repRT非表示氏、UM RT非表示氏
+			"{id:8,reply:5,ment:6,         }",	// repRT非表示氏、UM ブロック氏
+			"{id:8,reply:5,ment:8,     filt}",	// repRT非表示氏、UM 他人氏
+			"{id:8,reply:6,ment:1,h---,f---}",	// repブロック氏、UM 俺氏
+			"{id:8,reply:6,ment:2,         }",	// repブロック氏、UM フォロー氏
+			"{id:8,reply:6,ment:4,         }",	// repブロック氏、UM ミュート氏
+			"{id:8,reply:6,ment:5,         }",	// repブロック氏、UM RT非表示氏
+			"{id:8,reply:6,ment:6,         }",	// repブロック氏、UM ブロック氏
+			"{id:8,reply:6,ment:8,         }",	// repブロック氏、UM 他人氏
+			"{id:8,reply:8,ment:1,home,filt}",	// rep他人氏、UM 俺氏
+			"{id:8,reply:8,ment:2,     filt}",	// rep他人氏、UM フォロー氏
+			"{id:8,reply:8,ment:4,         }",	// rep他人氏、UM ミュート氏
+			"{id:8,reply:8,ment:5,     filt}",	// rep他人氏、UM RT非表示氏
+			"{id:8,reply:8,ment:6,         }",	// rep他人氏、UM ブロック氏
+			"{id:8,reply:8,ment:8,     filt}",	// rep他人氏、UM 他人氏
+
 			// 俺氏がリツイート
 			"{id:1,rt:1,home,filt}",		// 自分自身を
 			"{id:1,rt:2,home,filt}",		// フォローを
@@ -1286,9 +1636,9 @@ public class SayakaMain
 			// 自分の発言をリツイートは表示してもいいだろう
 			// フィルタストリームなら表示してもいいだろうか
 			"{id:5,rt:1,home,filt}",		// 自分を
-			"{id:5,rt:2,home,filt}",		// フォローを
+			"{id:5,rt:2,     filt}",		// フォローを
 			"{id:5,rt:4,         }",		// ミュートを
-			"{id:5,rt:5,home,filt}",		// RT非表示を
+			"{id:5,rt:5,     filt}",		// RT非表示を
 			"{id:5,rt:6,         }",		// ブロックを
 			"{id:5,rt:8,     filt}",		// 他人を
 
@@ -1422,19 +1772,6 @@ public class SayakaMain
 			"{id:8,rt:8,rt_rep:5,     filt}",	// 他人からRT非表示宛リプ
 			"{id:8,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
 			"{id:8,rt:8,rt_rep:8,     filt}",	// 他人から他人宛リプ
-
-			// フォロー氏が自己レスして本文前ユーザメンションがある
-			"{id:2,reply:2,ment:1,home,filt}",	// 自己宛で、UM に俺氏
-			"{id:2,reply:2,ment:2,home,filt}",	// 自己宛で、UM も自己宛て
-			"{id:2,reply:2,ment:3,home,filt}",	// 自己宛で、UM にフォロー氏
-			"{id:2,reply:2,ment:4,     filt}",	// 自己宛で、UM にミュート氏
-			"{id:2,reply:2,ment:8,     filt}",	// 自己宛で、UM に他人氏
-			// RT非表示氏が自己レス (RT関係ないのでフォロー氏と同じになる)
-			"{id:5,reply:5,ment:1,home,filt}",	// 自己宛で、UM に俺氏
-			"{id:5,reply:5,ment:2,home,filt}",	// 自己宛で、UM も自己宛て
-			"{id:5,reply:5,ment:3,home,filt}",	// 自己宛で、UM にフォロー氏
-			"{id:5,reply:5,ment:4,     filt}",	// 自己宛で、UM にミュート氏
-			"{id:5,reply:5,ment:8,     filt}",	// 自己宛で、UM に他人氏
 		};
 		var ntest = 0;
 		var nfail = 0;
@@ -1547,7 +1884,7 @@ public class SayakaMain
 			if (expected_home_int != -1) {
 				ntest++;
 				opt_pseudo_home = true;
-				var result = showstatus_acl(status, false);
+				var result = acl(status, false);
 				if (result != expected_home) {
 					stderr.printf(@"$(input_str) (for home) "
 						+ @"expects '$(expected_home)' but '$(result)'\n");
@@ -1558,7 +1895,7 @@ public class SayakaMain
 			if (expected_filt_int != -1) {
 				// テスト (home/quoted)
 				ntest++;
-				var result = showstatus_acl(status, true);
+				var result = acl(status, true);
 				if (result != expected_filt) {
 					stderr.printf(@"$(input_str) (for home/quoted) "
 						+ @"expects '$(expected_filt)' but '$(result)'\n");
@@ -1568,7 +1905,7 @@ public class SayakaMain
 				// テスト (filter)
 				ntest++;
 				opt_pseudo_home = false;
-				result = showstatus_acl(status, false);
+				result = acl(status, false);
 				if (result != expected_filt) {
 					stderr.printf(@"$(input_str) (for filter) "
 						+ @"expects '$(expected_filt)' but '$(result)'\n");
@@ -1577,7 +1914,7 @@ public class SayakaMain
 
 				// テスト (filter/quoted)
 				ntest++;
-				result = showstatus_acl(status, true);
+				result = acl(status, true);
 				if (result != expected_filt) {
 					stderr.printf(@"$(input_str) (for filter/quoted) "
 						+ @"expects '$(expected_filt)' but '$(result)'\n");
@@ -1603,7 +1940,7 @@ public class SayakaMain
 		// このツイートを表示するかどうかの判定。
 		// これは、このツイートがリツイートを持っているかどうかも含めた判定を
 		// 行うのでリツイート分離前に行う。
-		if (showstatus_acl(status, is_quoted) == false) {
+		if (acl(status, is_quoted) == false) {
 			return false;
 		}
 
