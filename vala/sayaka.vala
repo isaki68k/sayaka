@@ -980,7 +980,7 @@ public class SayakaMain
 		}
 
 		// 俺氏発と俺氏宛てはすべて表示
-		if (acl_me(status)) {
+		if (acl_me(status, user_id, user_name)) {
 			return true;
 		}
 
@@ -994,14 +994,20 @@ public class SayakaMain
 		// 俺氏関係分なのでRT非表示氏や他人氏でも可。
 		if (status.Has("retweeted_status")) {
 			var rt_status = status.GetJson("retweeted_status");
-			if (acl_me(rt_status)) {
+			var rt_user   = rt_status.GetJson("user");
+			var rt_user_id   = rt_user.GetString("id_str");
+			var rt_user_name = "";
+			if (diagShow.GetLevel() > 0) {
+				rt_user_name = rt_user.GetString("screen_name");
+			}
+			if (acl_me(rt_status, rt_user_id, rt_user_name)) {
 				return true;
 			}
 		}
 
 		// ホーム TL 用の判定
 		if (is_quoted == false && opt_pseudo_home) {
-			if (acl_home(user_id, user_name, status) == false) {
+			if (acl_home(status, user_id, user_name) == false) {
 				return false;
 			}
 		}
@@ -1093,12 +1099,9 @@ public class SayakaMain
 
 	// このツイートが俺氏発か俺氏宛てで表示するなら true。
 	// (本ツイートとリツイート先とから呼ばれる)
-	public bool acl_me(ULib.Json status)
+	public bool acl_me(ULib.Json status, string user_id, string user_name)
 	{
-		// このツイートの発言者
-		var user = status.GetJson("user");
-		var user_id = user.GetString("id_str");
-		var user_name = user.GetString("screen_name");
+		// user_id(, user_name) はこのツイートの発言者
 
 		// 俺氏の発言はすべて表示
 		if (user_id == myid) {
@@ -1127,7 +1130,7 @@ public class SayakaMain
 	}
 
 	// ホーム TL のみで行う追加判定。
-	public bool acl_home(string user_id, string user_name, ULib.Json status)
+	public bool acl_home(ULib.Json status, string user_id, string user_name)
 	{
 		// user_id(, user_name) はこのツイートの発言者
 
