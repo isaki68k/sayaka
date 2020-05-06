@@ -1895,6 +1895,7 @@ public class SayakaMain
 			if (expected_filt_int != -1) {
 				// テスト (home/quoted)
 				ntest++;
+				opt_pseudo_home = true;
 				var result = acl(status, true);
 				if (result != expected_filt) {
 					stderr.printf(@"$(input_str) (for home/quoted) "
@@ -1914,6 +1915,7 @@ public class SayakaMain
 
 				// テスト (filter/quoted)
 				ntest++;
+				opt_pseudo_home = false;
 				result = acl(status, true);
 				if (result != expected_filt) {
 					stderr.printf(@"$(input_str) (for filter/quoted) "
