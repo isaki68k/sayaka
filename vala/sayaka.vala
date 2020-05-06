@@ -1288,8 +1288,15 @@ public class SayakaMain
 		// あるいは扱いが不明なのでテストせずに放置 (ブロック氏からフォロー宛て
 		// リプのユーザメンションの俺氏が指定されたケースとか)。
 		var table = new string[] {
-			// 俺氏の発言
-			"{id:1,        home,filt}",		// 平文
+			// 平文
+			"{id:1,        home,filt}",		// 俺氏
+			"{id:2,        home,filt}",		// フォロー氏
+			"{id:4,                 }",		// ミュート氏
+			"{id:5,        home,filt}",		// RT非表示氏
+			"{id:6,        h---     }",		// ブロック氏
+			"{id:8,        h---,filt}",		// 他人氏
+
+			// 俺氏がリプ
 			"{id:1,reply:1,home,filt}",		// 自分自身へ
 			"{id:1,reply:2,home,filt}",		// フォローへ
 			"{id:1,reply:4,home,filt}",		// ミュートへ
@@ -1297,8 +1304,7 @@ public class SayakaMain
 			"{id:1,reply:6,h---,f---}",		// ブロックへ
 			"{id:1,reply:8,home,filt}",		// 他人へ
 
-			// フォロー氏の発言 (RT非表示氏も同じになるはずなので以下参照)
-			"{id:2,        home,filt}",		// 平文
+			// フォロー氏がリプ (RT非表示氏も同じになるはずなので以下参照)
 			"{id:2,reply:1,home,filt}",		// 自分へ
 			"{id:2,reply:2,home,filt}",		// フォローへ
 			"{id:2,reply:4,         }",		// ミュートへ
@@ -1306,8 +1312,7 @@ public class SayakaMain
 			"{id:2,reply:6,         }",		// ブロックへ
 			"{id:2,reply:8,     filt}",		// 他人へ
 
-			// ミュート氏の発言
-			"{id:4,                 }",		// 平文
+			// ミュート氏がリプ
 			"{id:4,reply:1,home,filt}",		// 自分へ
 			"{id:4,reply:2,         }",		// フォローへ
 			"{id:4,reply:4,         }",		// ミュートへ
@@ -1315,8 +1320,7 @@ public class SayakaMain
 			"{id:4,reply:6,         }",		// ブロックへ
 			"{id:4,reply:8,         }",		// 他人へ
 
-			// RT非表示氏の発言 (リプはフォロー氏発言と同じ扱いでよいはず)
-			"{id:5,        home,filt}",		// 平文
+			// RT非表示氏がリプ (リプはフォロー氏発言と同じ扱いでよいはず)
 			"{id:5,reply:1,home,filt}",		// 自分へ
 			"{id:5,reply:2,home,filt}",		// フォローへ
 			"{id:5,reply:4,         }",		// ミュートへ
@@ -1324,8 +1328,7 @@ public class SayakaMain
 			"{id:5,reply:6,         }",		// ブロックへ
 			"{id:5,reply:8,     filt}",		// 他人へ
 
-			// ブロック氏の発言
-			"{id:6,        h---     }",		// 平文
+			// ブロック氏がリプ
 			"{id:6,reply:1,h---,f---}",		// 自分へ
 			"{id:6,reply:2,         }",		// フォローへ
 			"{id:6,reply:4,         }",		// ミュートへ
@@ -1333,8 +1336,7 @@ public class SayakaMain
 			"{id:6,reply:6,h---,f---}",		// ブロックへ
 			"{id:6,reply:8,         }",		// 他人へ
 
-			// 他人氏の発言
-			"{id:8,        h---,filt}",		// 平文
+			// 他人氏がリプ
 			"{id:8,reply:1,home,filt}",		// 自分へ
 			"{id:8,reply:2,     filt}",		// フォローへ
 			"{id:8,reply:4,         }",		// ミュートへ
