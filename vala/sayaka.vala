@@ -1235,6 +1235,20 @@ public class SayakaMain
 			}
 			dict.AddOrUpdate(id_str, screen_name);
 		}
+		// デバッグ表示用
+		var msg = "";
+		var msgdict = "";
+		if (diagShow.GetLevel() >= 2) {
+			msg = @"user=@$(user_name)";
+			for (var i = 0; i < dict.Count; i++) {
+				var kv = dict.At(i);
+				var name = kv.Value;
+				if (msgdict.length != 0) {
+					msgdict += ",";
+				}
+				msgdict += @"@$(name)";
+			}
+		}
 
 		// in_reply_to_user_id を追加
 		// フィールド自体があって null ということもあるようなので
@@ -1244,8 +1258,17 @@ public class SayakaMain
 			var replyto_name = "";
 			if (diagShow.GetLevel() > 0) {
 				replyto_name = status.GetString("in_reply_to_screen_name");
+				msg += @" reply_to=@$(replyto_name)";
 			}
 			dict.AddOrUpdate(replyto_id, replyto_name);
+		}
+
+		// デバッグ表示
+		if (diagShow.GetLevel() >= 2) {
+			if (msgdict.length != 0) {
+				msg += @" mentions=$(msgdict)";
+			}
+			diagShow.Print(2, msg);
 		}
 
 		// ここから発言者自身を引く
