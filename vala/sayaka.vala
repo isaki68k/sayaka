@@ -941,26 +941,18 @@ public class SayakaMain
 	// if (ホームTL) {
 	//   RT非表示氏 rt *: false
 	//   他人氏: false
-	//
+	//   ; これ以降残ってるのはフォロー氏のみ
 	//   フォロー to 他人: false
-	//   フォロー to ブロック: false
-	//   フォロー to ミュート: false
-	//   フォロー rt ブロック: false
-	//   フォロー rt ミュート: false
-	//   フォロー rt (* to ブロック): false
-	//   フォロー rt (* to ミュート): false
-	//   フォロー rt *: true
-	//   フォロー: true
-	// } else {
-	//   * to ブロック: false
-	//   * to ミュート: false
-	//   * rt ブロック: false
-	//   * rt ミュート: false
-	//   * rt (* to ブロック): false
-	//   * rt (* to ミュート): false
-	//   * rt *: true
-	//   *: true
 	// }
+	//
+	// * to ブロック: false
+	// * to ミュート: false
+	// * rt ブロック: false
+	// * rt ミュート: false
+	// * rt (* to ブロック): false
+	// * rt (* to ミュート): false
+	// * rt *: true
+	// *: true
 
 	// このツイートを表示するか判定する。表示するなら true。
 	// NG ワード判定はここではない。
