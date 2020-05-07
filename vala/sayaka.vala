@@ -1324,24 +1324,23 @@ public class SayakaMain
 		//                 retweeted_status.in_reply_to_user_id_str (string)
 		// 結果はホームタイムラインとフィルタモードによって期待値が異なり
 		// それぞれ home, filt で表す。あれば表示、省略は非表示を意味する。
-		// h---, f--- は流れてこないはずのためテスト不要を意味する。
-		// あるいは扱いが不明なのでテストせずに放置 (ブロック氏からフォロー宛て
-		// リプのユーザメンションの俺氏が指定されたケースとか)。
+		// h---, f--- はテストしないことを示す。俺氏とブロック氏とに同時に
+		// 返信された場合のように判定不能なケースをとりあえず。
 		var table = new string[] {
 			// 平文
 			"{id:1,        home,filt}",		// 俺氏
 			"{id:2,        home,filt}",		// フォロー氏
 			"{id:4,                 }",		// ミュート氏
 			"{id:5,        home,filt}",		// RT非表示氏
-			"{id:6,        h---     }",		// ブロック氏
-			"{id:8,        h---,filt}",		// 他人氏
+			"{id:6,                 }",		// ブロック氏
+			"{id:8,             filt}",		// 他人氏
 
 			// 俺氏がリプ
 			"{id:1,reply:1,home,filt}",		// 自分自身へ
 			"{id:1,reply:2,home,filt}",		// フォローへ
 			"{id:1,reply:4,home,filt}",		// ミュートへ
 			"{id:1,reply:5,home,filt}",		// RT非表示へ
-			"{id:1,reply:6,h---,f---}",		// ブロックへ
+			"{id:1,reply:6,home,filt}",		// ブロックへ
 			"{id:1,reply:8,home,filt}",		// 他人へ
 
 			// フォロー氏がリプ (RT非表示氏も同じになるはずなので以下参照)
@@ -1369,11 +1368,11 @@ public class SayakaMain
 			"{id:5,reply:8,     filt}",		// 他人へ
 
 			// ブロック氏がリプ
-			"{id:6,reply:1,h---,f---}",		// 自分へ
+			"{id:6,reply:1,         }",		// 自分へ
 			"{id:6,reply:2,         }",		// フォローへ
 			"{id:6,reply:4,         }",		// ミュートへ
 			"{id:6,reply:5,         }",		// RT非表示へ
-			"{id:6,reply:6,h---,f---}",		// ブロックへ
+			"{id:6,reply:6,         }",		// ブロックへ
 			"{id:6,reply:8,         }",		// 他人へ
 
 			// 他人氏がリプ
@@ -1389,7 +1388,7 @@ public class SayakaMain
 			"{id:1,ment:2,home,filt}",			// リプなし、UM フォロー氏
 			"{id:1,ment:4,home,filt}",			// リプなし、UM ミュート氏
 			"{id:1,ment:5,home,filt}",			// リプなし、UM RT非表示氏
-			"{id:1,ment:6,h---,f---}",			// リプなし、UM ブロック氏
+			"{id:1,ment:6,home,filt}",			// リプなし、UM ブロック氏
 			"{id:1,ment:8,home,filt}",			// リプなし、UM 他人氏
 
 			// フォロー氏、メンションのみ
@@ -1418,7 +1417,7 @@ public class SayakaMain
 			"{id:5,ment:8,     filt}",			// リプなし、UM 他人氏
 
 			// ブロック氏、メンションのみ
-			"{id:6,ment:1,h---,f---}",			// リプなし、UM 俺氏
+			"{id:6,ment:1,         }",			// リプなし、UM 俺氏
 			"{id:6,ment:2,         }",			// リプなし、UM フォロー氏
 			"{id:6,ment:4,         }",			// リプなし、UM ミュート氏
 			"{id:6,ment:5,         }",			// リプなし、UM RT非表示氏
@@ -1438,37 +1437,37 @@ public class SayakaMain
 			"{id:1,reply:1,ment:2,home,filt}",	// rep俺氏、UM フォロー氏
 			"{id:1,reply:1,ment:4,home,filt}",	// rep俺氏、UM ミュート氏
 			"{id:1,reply:1,ment:5,home,filt}",	// rep俺氏、UM RT非表示氏
-			"{id:1,reply:1,ment:6,h---,f---}",	// rep俺氏、UM ブロック氏
+			"{id:1,reply:1,ment:6,home,filt}",	// rep俺氏、UM ブロック氏
 			"{id:1,reply:1,ment:8,home,filt}",	// rep俺氏、UM 他人氏
 			"{id:1,reply:2,ment:1,home,filt}",	// repフォロー氏、UM 俺氏
 			"{id:1,reply:2,ment:2,home,filt}",	// repフォロー氏、UM フォロー氏
 			"{id:1,reply:2,ment:4,home,filt}",	// repフォロー氏、UM ミュート氏
 			"{id:1,reply:2,ment:5,home,filt}",	// repフォロー氏、UM RT非表示氏
-			"{id:1,reply:2,ment:6,h---,f---}",	// repフォロー氏、UM ブロック氏
+			"{id:1,reply:2,ment:6,home,filt}",	// repフォロー氏、UM ブロック氏
 			"{id:1,reply:2,ment:8,home,filt}",	// repフォロー氏、UM 他人氏
 			"{id:1,reply:4,ment:1,home,filt}",	// repミュート氏、UM 俺氏
 			"{id:1,reply:4,ment:2,home,filt}",	// repミュート氏、UM フォロー氏
 			"{id:1,reply:4,ment:4,home,filt}",	// repミュート氏、UM ミュート氏
 			"{id:1,reply:4,ment:5,home,filt}",	// repミュート氏、UM RT非表示氏
-			"{id:1,reply:4,ment:6,h---,f---}",	// repミュート氏、UM ブロック氏
+			"{id:1,reply:4,ment:6,home,filt}",	// repミュート氏、UM ブロック氏
 			"{id:1,reply:4,ment:8,home,filt}",	// repミュート氏、UM 他人氏
 			"{id:1,reply:5,ment:1,home,filt}",	// repRT非表示氏、UM 俺氏
 			"{id:1,reply:5,ment:2,home,filt}",	// repRT非表示氏、UM フォロー氏
 			"{id:1,reply:5,ment:4,home,filt}",	// repRT非表示氏、UM ミュート氏
 			"{id:1,reply:5,ment:5,home,filt}",	// repRT非表示氏、UM RT非表示氏
-			"{id:1,reply:5,ment:6,h---,f---}",	// repRT非表示氏、UM ブロック氏
+			"{id:1,reply:5,ment:6,home,filt}",	// repRT非表示氏、UM ブロック氏
 			"{id:1,reply:5,ment:8,home,filt}",	// repRT非表示氏、UM 他人氏
-			"{id:1,reply:6,ment:1,h---,f---}",	// repブロック氏、UM 俺氏
-			"{id:1,reply:6,ment:2,h---,f---}",	// repブロック氏、UM フォロー氏
-			"{id:1,reply:6,ment:4,h---,f---}",	// repブロック氏、UM ミュート氏
-			"{id:1,reply:6,ment:5,h---,f---}",	// repブロック氏、UM RT非表示氏
-			"{id:1,reply:6,ment:6,h---,f---}",	// repブロック氏、UM ブロック氏
-			"{id:1,reply:6,ment:8,h---,f---}",	// repブロック氏、UM 他人氏
+			"{id:1,reply:6,ment:1,home,filt}",	// repブロック氏、UM 俺氏
+			"{id:1,reply:6,ment:2,home,filt}",	// repブロック氏、UM フォロー氏
+			"{id:1,reply:6,ment:4,home,filt}",	// repブロック氏、UM ミュート氏
+			"{id:1,reply:6,ment:5,home,filt}",	// repブロック氏、UM RT非表示氏
+			"{id:1,reply:6,ment:6,home,filt}",	// repブロック氏、UM ブロック氏
+			"{id:1,reply:6,ment:8,home,filt}",	// repブロック氏、UM 他人氏
 			"{id:1,reply:8,ment:1,home,filt}",	// rep他人氏、UM 俺氏
 			"{id:1,reply:8,ment:2,home,filt}",	// rep他人氏、UM フォロー氏
 			"{id:1,reply:8,ment:4,home,filt}",	// rep他人氏、UM ミュート氏
 			"{id:1,reply:8,ment:5,home,filt}",	// rep他人氏、UM RT非表示氏
-			"{id:1,reply:8,ment:6,h---,f---}",	// rep他人氏、UM ブロック氏
+			"{id:1,reply:8,ment:6,home,filt}",	// rep他人氏、UM ブロック氏
 			"{id:1,reply:8,ment:8,home,filt}",	// rep他人氏、UM 他人氏
 
 			// フォロー氏、リプ+メンション
@@ -1670,7 +1669,7 @@ public class SayakaMain
 			"{id:1,rt:2,home,filt}",		// フォローを
 			"{id:1,rt:4,home,filt}",		// ミュートを
 			"{id:1,rt:5,home,filt}",		// RT非表示を
-			"{id:1,rt:6,h---,f---}",		// ブロックを
+			"{id:1,rt:6,home,filt}",		// ブロックを
 			"{id:1,rt:8,home,filt}",		// 他人を
 
 			// フォロー氏がリツイート
@@ -1682,8 +1681,7 @@ public class SayakaMain
 			"{id:2,rt:8,home,filt}",		// 他人を
 
 			// ミュート氏がリツイート
-			// XXX ミュート氏が自分のツイートをリツイートは表示するかどうか
-			"{id:4,rt:1          }",		// 自分を
+			"{id:4,rt:1,         }",		// 自分を
 			"{id:4,rt:2,         }",		// フォローを
 			"{id:4,rt:4,         }",		// ミュートを
 			"{id:4,rt:5,         }",		// RT非表示を
@@ -1701,7 +1699,7 @@ public class SayakaMain
 			"{id:5,rt:8,     filt}",		// 他人を
 
 			// ブロック氏がリツイート (そもそも来ないような気がするけど一応)
-			"{id:6,rt:1,h---,f---}",		// 自分を
+			"{id:6,rt:1,         }",		// 自分を
 			"{id:6,rt:2,         }",		// フォローを
 			"{id:6,rt:4,         }",		// ミュートを
 			"{id:6,rt:5,         }",		// RT非表示を
@@ -1722,7 +1720,7 @@ public class SayakaMain
 			"{id:2,rt:1,rt_rep:2,home,filt}",	// 俺氏からフォロー宛リプ
 			"{id:2,rt:1,rt_rep:4,home,filt}",	// 俺氏からミュート宛リプ
 			"{id:2,rt:1,rt_rep:5,home,filt}",	// 俺氏からRT非表示宛リプ
-			"{id:2,rt:1,rt_rep:6,h---,f---}",	// 俺氏からブロック宛リプ
+			"{id:2,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ
 			"{id:2,rt:1,rt_rep:8,home,filt}",	// 俺氏から他人宛リプ
 			"{id:2,rt:2,rt_rep:1,home,filt}",	// フォローから俺氏宛リプ
 			"{id:2,rt:2,rt_rep:2,home,filt}",	// フォローからフォロー宛リプ
@@ -1755,50 +1753,48 @@ public class SayakaMain
 			"{id:2,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
 			"{id:2,rt:8,rt_rep:8,home,filt}",	// 他人から他人宛リプ
 			// ミュート氏がリツイート
-		/* XXX 面倒すぎる
-			"{id:4,rt:1,rt_rep:1,home,filt}",	// 俺氏から俺氏宛リプ
-			"{id:4,rt:1,rt_rep:2,home,filt}",	// 俺氏からフォロー宛リプ
-			"{id:4,rt:1,rt_rep:4,home,filt}",	// 俺氏からミュート宛リプ
-			"{id:4,rt:1,rt_rep:5,home,filt}",	// 俺氏からRT非表示宛リプ
-			"{id:4,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ(*N)
-			"{id:4,rt:1,rt_rep:8,home,filt}",	// 俺氏から他人宛リプ
-			"{id:4,rt:2,rt_rep:1,home,filt}",	// フォローから俺氏宛リプ
-			"{id:4,rt:2,rt_rep:2,     filt}",	// フォローからフォロー宛リプ
+			"{id:4,rt:1,rt_rep:1,         }",	// 俺氏から俺氏宛リプ
+			"{id:4,rt:1,rt_rep:2,         }",	// 俺氏からフォロー宛リプ
+			"{id:4,rt:1,rt_rep:4,         }",	// 俺氏からミュート宛リプ
+			"{id:4,rt:1,rt_rep:5,         }",	// 俺氏からRT非表示宛リプ
+			"{id:4,rt:1,rt_rep:6,         }",	// 俺氏からブロック宛リプ
+			"{id:4,rt:1,rt_rep:8,         }",	// 俺氏から他人宛リプ
+			"{id:4,rt:2,rt_rep:1,         }",	// フォローから俺氏宛リプ
+			"{id:4,rt:2,rt_rep:2,         }",	// フォローからフォロー宛リプ
 			"{id:4,rt:2,rt_rep:4,         }",	// フォローからミュート宛リプ
-			"{id:4,rt:2,rt_rep:5,     filt}",	// フォローからRT非表示宛リプ
+			"{id:4,rt:2,rt_rep:5,         }",	// フォローからRT非表示宛リプ
 			"{id:4,rt:2,rt_rep:6,         }",	// フォローからブロック宛リプ
-			"{id:4,rt:2,rt_rep:8,     filt}",	// フォローから他人宛リプ
-			"{id:4,rt:4,rt_rep:1,home,filt}",	// ミュートから俺氏宛リプ
+			"{id:4,rt:2,rt_rep:8,         }",	// フォローから他人宛リプ
+			"{id:4,rt:4,rt_rep:1,         }",	// ミュートから俺氏宛リプ
 			"{id:4,rt:4,rt_rep:2,         }",	// ミュートからフォロー宛リプ
 			"{id:4,rt:4,rt_rep:4,         }",	// ミュートからミュート宛リプ
 			"{id:4,rt:4,rt_rep:5,         }",	// ミュートからRT非表示宛リプ
 			"{id:4,rt:4,rt_rep:6,         }",	// ミュートからブロック宛リプ
 			"{id:4,rt:4,rt_rep:8,         }",	// ミュートから他人宛リプ
-			"{id:4,rt:5,rt_rep:1,home,filt}",	// RT非表示から俺氏宛リプ
-			"{id:4,rt:5,rt_rep:2,     filt}",	// RT非表示からフォロー宛リプ
+			"{id:4,rt:5,rt_rep:1,         }",	// RT非表示から俺氏宛リプ
+			"{id:4,rt:5,rt_rep:2,         }",	// RT非表示からフォロー宛リプ
 			"{id:4,rt:5,rt_rep:4,         }",	// RT非表示からミュート宛リプ
-			"{id:4,rt:5,rt_rep:5,     filt}",	// RT非表示からRT非表示宛リプ
+			"{id:4,rt:5,rt_rep:5,         }",	// RT非表示からRT非表示宛リプ
 			"{id:4,rt:5,rt_rep:6,         }",	// RT非表示からブロック宛リプ
-			"{id:4,rt:5,rt_rep:8,     filt}",	// RT非表示から他人宛リプ
+			"{id:4,rt:5,rt_rep:8,         }",	// RT非表示から他人宛リプ
 			"{id:4,rt:6,rt_rep:1,         }",	// ブロックから俺氏宛リプ
 			"{id:4,rt:6,rt_rep:2,         }",	// ブロックからフォロー宛リプ
 			"{id:4,rt:6,rt_rep:4,         }",	// ブロックからブロック宛リプ
 			"{id:4,rt:6,rt_rep:5,         }",	// ブロックからRT非表示宛リプ
 			"{id:4,rt:6,rt_rep:6,         }",	// ブロックからブロック宛リプ
 			"{id:4,rt:6,rt_rep:8,         }",	// ブロックから他人宛リプ
-			"{id:4,rt:8,rt_rep:1,home,filt}",	// 他人から俺氏宛リプ
-			"{id:4,rt:8,rt_rep:2,     filt}",	// 他人からフォロー宛リプ
+			"{id:4,rt:8,rt_rep:1,         }",	// 他人から俺氏宛リプ
+			"{id:4,rt:8,rt_rep:2,         }",	// 他人からフォロー宛リプ
 			"{id:4,rt:8,rt_rep:4,         }",	// 他人からブロック宛リプ
-			"{id:4,rt:8,rt_rep:5,     filt}",	// 他人からRT非表示宛リプ
+			"{id:4,rt:8,rt_rep:5,         }",	// 他人からRT非表示宛リプ
 			"{id:4,rt:8,rt_rep:6,         }",	// 他人からブロック宛リプ
-			"{id:4,rt:8,rt_rep:8,     filt}",	// 他人から他人宛リプ
-		*/
+			"{id:4,rt:8,rt_rep:8,         }",	// 他人から他人宛リプ
 			// 他人がリツイート
 			"{id:8,rt:1,rt_rep:1,home,filt}",	// 俺氏から俺氏宛リプ
 			"{id:8,rt:1,rt_rep:2,home,filt}",	// 俺氏からフォロー宛リプ
 			"{id:8,rt:1,rt_rep:4,home,filt}",	// 俺氏からミュート宛リプ
 			"{id:8,rt:1,rt_rep:5,home,filt}",	// 俺氏からRT非表示宛リプ
-			"{id:8,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ(*N)
+			"{id:8,rt:1,rt_rep:6,home,filt}",	// 俺氏からブロック宛リプ
 			"{id:8,rt:1,rt_rep:8,home,filt}",	// 俺氏から他人宛リプ
 			"{id:8,rt:2,rt_rep:1,home,filt}",	// フォローから俺氏宛リプ
 			"{id:8,rt:2,rt_rep:2,     filt}",	// フォローからフォロー宛リプ
