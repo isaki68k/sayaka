@@ -337,11 +337,13 @@ public class NGWord
 	public bool match_normal(string ngword, ULib.Json status)
 	{
 		try {
-			string text;
-			if (status.Has("full_text")) {
-				text = status.GetString("full_text");
-			} else {
-				text = status.GetString("text");
+			// extended_tweet.full_text があればそっち、なければ text
+			string text = status.GetString("text");
+			if (status.Has("extended_tweet")) {
+				var extended_tweet = status.GetJson("extended_tweet");
+				if (extended_tweet.Has("full_text")) {
+					text = extended_tweet.GetString("full_text");
+				}
 			}
 			var regex = new Regex(ngword, RegexCompileFlags.DOTALL);
 			if (regex.match(text)) {
