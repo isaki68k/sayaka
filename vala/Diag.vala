@@ -43,6 +43,12 @@ public class Diag
 	}
 	public Diag.name(string name_)
 	{
+		SetClassname(name_);
+	}
+
+	// クラス名を後から設定する
+	public void SetClassname(string name_)
+	{
 		classname = name_;
 		if (classname != "") {
 			classname += " ";

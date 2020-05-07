@@ -42,8 +42,8 @@ public class SixelV
 		sixelv.main2(args);
 	}
 
-	public Diag diag;
-	public Diag diagHttp;
+	public Diag diag = new Diag();
+	public Diag diagHttp = new Diag();
 	public int opt_debug_sixel = 0;
 	public ReductorColorMode opt_colormode = ReductorColorMode.Fixed256;
 	public int opt_graylevel = 256;
@@ -77,8 +77,7 @@ public class SixelV
 	{
 		int convert_count = 0;
 
-		diag = new Diag();
-		diagHttp = new Diag.name("HttpClient");
+		diagHttp.SetClassname("HttpClient");
 
 		// X68k なら、デフォルトで --x68k 相当にする。
 		var un = Posix.utsname();

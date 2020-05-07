@@ -104,7 +104,7 @@ public class SayakaMain
 	public int color_mode;
 	public bool protect;
 	public Diag diag = new Diag();			// デバッグ (無分類)
-	public Diag diagHttp;					// デバッグ (HTTP コネクション)
+	public Diag diagHttp = new Diag();		// デバッグ (HTTP コネクション)
 	public Diag diagImage = new Diag();		// デバッグ (画像周り)
 	public Diag diagShow = new Diag();		// デバッグ (メッセージ表示判定)
 	public int opt_debug_sixel;	// デバッグレベル (SIXEL変換周り)
@@ -171,7 +171,7 @@ public class SayakaMain
 
 	public int Main(string[] args)
 	{
-		diagHttp = new Diag.name("HttpClient");
+		diagHttp.SetClassname("HttpClient");
 
 		SayakaCmd cmd = SayakaCmd.Noop;
 		basedir = Environment.get_home_dir() + "/.sayaka/";
