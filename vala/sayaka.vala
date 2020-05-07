@@ -1138,7 +1138,6 @@ public class SayakaMain
 		for (var i = 0; i < replies.Count; i++) {
 			var kv = replies.At(i);
 			var id = kv.Key;
-			var name = kv.Value;
 			if (id == myid) {
 				if (blocklist.ContainsKey(user_id)) {
 					diagShow.Print(1, "acl_me: "
