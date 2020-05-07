@@ -971,8 +971,13 @@ public class SayakaMain
 			return false;
 		}
 
+		// このツイートの返信周りを先に洗い出す。
+		// (俺氏宛てのために先にここで使うけど、
+		// 後からもフォロー同士の関係性を調べるためにまた使う)
+		var replies = GetReplies(status, user_id, user_name);
+
 		// 俺氏発と俺氏宛てはすべて表示
-		if (acl_me(status, user_id, user_name)) {
+		if (acl_me(user_id, user_name, replies)) {
 			return true;
 		}
 
@@ -997,7 +1002,8 @@ public class SayakaMain
 			if (diagShow.GetLevel() > 0) {
 				rt_user_name = rt_user.GetString("screen_name");
 			}
-			if (acl_me(rt_status, rt_user_id, rt_user_name)) {
+			var rt_replies = GetReplies(rt_status, rt_user_id, rt_user_name);
+			if (acl_me(rt_user_id, rt_user_name, rt_replies)) {
 				return true;
 			}
 		}
@@ -1012,8 +1018,11 @@ public class SayakaMain
 		// ここからはホームでもフィルタでも
 		// ブロック氏かミュート氏がどこかに登場するツイートをひたすら弾く。
 
+		// 他人氏を弾いたのでここで返信先関係のデバッグメッセージを表示
+		diagShow.Print(1, replies[""]);
+		replies.Remove("");
+
 		// ブロック氏宛て、ミュート氏宛てを弾く。
-		var replies = GetReplies(status, user_id, user_name);
 		var reply_to_follow = false;
 		for (var i = 0; i < replies.Count; i++) {
 			var kv = replies.At(i);
@@ -1082,6 +1091,8 @@ public class SayakaMain
 
 			// RT 先のリプ先がブロック氏かミュート氏なら弾く
 			replies = GetReplies(rt_status, rt_user_id, rt_user_name);
+			diagShow.Print(2, replies[""]);
+			replies.Remove("");
 			for (var i = 0; i < replies.Count; i++) {
 				var kv = replies.At(i);
 				var id = kv.Key;
@@ -1107,9 +1118,11 @@ public class SayakaMain
 
 	// このツイートが俺氏発か俺氏宛てで表示するなら true。
 	// (本ツイートとリツイート先とから呼ばれる)
-	public bool acl_me(ULib.Json status, string user_id, string user_name)
+	public bool acl_me(string user_id, string user_name,
+		Dictionary<string, string> replies)
 	{
 		// user_id(, user_name) はこのツイートの発言者
+		// replies はこのツイートの返信関係の情報
 
 		// 俺氏の発言はすべて表示
 		if (user_id == myid) {
@@ -1118,7 +1131,6 @@ public class SayakaMain
 		}
 
 		// 俺氏宛てはブロック以外からは表示
-		var replies = GetReplies(status, user_id, user_name);
 		for (var i = 0; i < replies.Count; i++) {
 			var kv = replies.At(i);
 			var id = kv.Key;
@@ -1129,6 +1141,7 @@ public class SayakaMain
 						+ @"block(@$(user_name)) to myid -> false");
 					return false;
 				}
+				diagShow.Print(2, replies[""]);
 				diagShow.Print(1, "acl_me: * to myid -> true");
 				return true;
 			}
@@ -1179,7 +1192,9 @@ public class SayakaMain
 	// 発言者本人を引いた集合が、おそらく知りたい宛先リスト。
 	//
 	// 戻り値は Dictionary<string,string> で user_id => screen_name に
-	// なっている。ただし screen_name はデバッグレベル 1 以上で有効。
+	// なっている (screen_name はデバッグレベル 1 以上で有効)。
+	// また "" => debug message というエントリを紛れ込ませてあるので
+	// 列挙する前に取り除くか、列挙中で避けるかすること。
 	//
 	// XXX 本文前ではなく本文内の先頭から始まるメンションはテキスト上
 	// 見分けが付かないけどこれは無理というか仕様バグでは…。
@@ -1235,7 +1250,7 @@ public class SayakaMain
 			}
 			dict.AddOrUpdate(id_str, screen_name);
 		}
-		// デバッグ表示用
+		// デバッグメッセージ
 		var msg = "";
 		var msgdict = "";
 		if (diagShow.GetLevel() >= 2) {
@@ -1263,12 +1278,12 @@ public class SayakaMain
 			dict.AddOrUpdate(replyto_id, replyto_name);
 		}
 
-		// デバッグ表示
+		// デバッグメッセージ
 		if (diagShow.GetLevel() >= 2) {
 			if (msgdict.length != 0) {
 				msg += @" mentions=$(msgdict)";
 			}
-			diagShow.Print(2, msg);
+			dict.AddOrUpdate("", msg);
 		}
 
 		// ここから発言者自身を引く
