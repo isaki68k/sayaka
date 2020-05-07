@@ -1032,12 +1032,12 @@ public class SayakaMain
 			var name = kv.Value;
 			if (blocklist.ContainsKey(id)) {
 				diagShow.Print(1, "acl: "
-					+ @"@$(user_name) replies block(@$(user_name)) -> false");
+					+ @"@$(user_name) replies block(@$(name)) -> false");
 				return false;
 			}
 			if (mutelist.ContainsKey(id)) {
 				diagShow.Print(1, "acl: "
-					+ @"@$(user_name) replies mute(@$(user_name)) -> false");
+					+ @"@$(user_name) replies mute(@$(name)) -> false");
 				return false;
 			}
 			if (followlist.ContainsKey(id)) {
