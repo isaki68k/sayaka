@@ -1019,8 +1019,10 @@ public class SayakaMain
 		// ブロック氏かミュート氏がどこかに登場するツイートをひたすら弾く。
 
 		// 他人氏を弾いたのでここで返信先関係のデバッグメッセージを表示
-		diagShow.Print(1, replies[""]);
-		replies.Remove("");
+		if (diagShow.GetLevel() >= 1) {
+			diagShow.Print(1, replies[""]);
+			replies.Remove("");
+		}
 
 		// ブロック氏宛て、ミュート氏宛てを弾く。
 		var reply_to_follow = false;
@@ -1091,8 +1093,10 @@ public class SayakaMain
 
 			// RT 先のリプ先がブロック氏かミュート氏なら弾く
 			replies = GetReplies(rt_status, rt_user_id, rt_user_name);
-			diagShow.Print(2, replies[""]);
-			replies.Remove("");
+			if (diagShow.GetLevel() >= 2) {
+				diagShow.Print(2, replies[""]);
+				replies.Remove("");
+			}
 			for (var i = 0; i < replies.Count; i++) {
 				var kv = replies.At(i);
 				var id = kv.Key;
@@ -1141,7 +1145,8 @@ public class SayakaMain
 						+ @"block(@$(user_name)) to myid -> false");
 					return false;
 				}
-				diagShow.Print(2, replies[""]);
+				if (diagShow.GetLevel() >= 2)
+					diagShow.Print(2, replies[""]);
 				diagShow.Print(1, "acl_me: * to myid -> true");
 				return true;
 			}
@@ -1192,9 +1197,9 @@ public class SayakaMain
 	// 発言者本人を引いた集合が、おそらく知りたい宛先リスト。
 	//
 	// 戻り値は Dictionary<string,string> で user_id => screen_name に
-	// なっている (screen_name はデバッグレベル 1 以上で有効)。
-	// また "" => debug message というエントリを紛れ込ませてあるので
-	// 列挙する前に取り除くか、列挙中で避けるかすること。
+	// なっている (デバッグレベル 0 なら screen_name は "")。
+	// またデバッグレベル 1 以上なら、"" => debug message というエントリを
+	// 紛れ込ませてあるので列挙する前に取り除くか、列挙中で避けるかすること。
 	//
 	// XXX 本文前ではなく本文内の先頭から始まるメンションはテキスト上
 	// 見分けが付かないけどこれは無理というか仕様バグでは…。
