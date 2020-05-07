@@ -967,7 +967,7 @@ public class SayakaMain
 
 		// ブロック氏の発言はすべて非表示
 		if (blocklist.ContainsKey(user_id)) {
-			diagShow.Print(1, @"acl: block(@$(user_name)) -> false");
+			diagShow.Print(3, @"acl: block(@$(user_name)) -> false");
 			return false;
 		}
 
@@ -978,7 +978,12 @@ public class SayakaMain
 
 		// 俺氏宛てを表示した後でミュート氏の発言はすべて非表示
 		if (mutelist.ContainsKey(user_id)) {
-			diagShow.Print(1, @"acl: mute(@$(user_name)) -> false");
+			// フォローしていれば Lv1 で表示する
+			// フォローしてなければ Lv2 のみで表示する
+			if (diagShow.GetLevel() > 0) {
+				int lv = followlist.ContainsKey(user_id) ? 1 : 2;
+				diagShow.Print(lv, @"acl: mute(@$(user_name)) -> false");
+			}
 			return false;
 		}
 
@@ -1146,7 +1151,7 @@ public class SayakaMain
 
 		// 他人氏の発言はもう全部弾いてよい
 		if (!followlist.ContainsKey(user_id)) {
-			diagShow.Print(2, @"acl_home: others(@$(user_name)) -> false");
+			diagShow.Print(3, @"acl_home: others(@$(user_name)) -> false");
 			return false;
 		}
 
