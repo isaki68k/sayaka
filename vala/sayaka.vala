@@ -984,9 +984,9 @@ public class SayakaMain
 		// 俺氏宛てを表示した後でミュート氏の発言はすべて非表示
 		if (mutelist.ContainsKey(user_id)) {
 			// フォローしていれば Lv1 で表示する
-			// フォローしてなければ Lv2 のみで表示する
+			// フォローしてなければ Lv3 のみで表示する
 			if (diagShow.GetLevel() > 0) {
-				int lv = followlist.ContainsKey(user_id) ? 1 : 2;
+				int lv = followlist.ContainsKey(user_id) ? 1 : 3;
 				diagShow.Print(lv, @"acl: mute(@$(user_name)) -> false");
 			}
 			return false;
