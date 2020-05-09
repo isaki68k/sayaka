@@ -2002,7 +2002,7 @@ public class SayakaMain
 		// 表示範囲だけ録画ならここで保存。
 		// 実際にはここから NG ワードと鍵垢の非表示判定があるけど
 		// もういいだろう。
-		if (opt_record_mode == 1) {
+		if (opt_record_mode == 1 && is_quoted == false) {
 			record(status);
 		}
 
