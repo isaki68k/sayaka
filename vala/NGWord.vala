@@ -227,6 +227,16 @@ public class NGWord
 				}
 			}
 
+			// QT 元ユーザ名がマッチするなら QT 先も RT チェック
+			if (user == null && status.Has("quoted_status")) {
+				if (nguser == "" || match_user(nguser, status)) {
+					var qt_status = status.GetJson("quoted_status");
+					if (match_main(ng, qt_status)) {
+						user = status.GetJson("user");
+					}
+				}
+			}
+
 			if (user != null) {
 				ngstat.match = true;
 				ngstat.screen_name = user.GetString("screen_name");
