@@ -2830,7 +2830,7 @@ public class SayakaMain
 		}
 
 		if (opt_noimg) {
-			stdout.printf("◆");
+			stdout.printf(" *");
 		} else {
 			var screen_name = unescape(user.GetString("screen_name"));
 			var image_url = user.GetString("profile_image_url");
