@@ -56,7 +56,7 @@ public class MediaInfo
 
 public class SayakaMain
 {
-	public const string version = "3.4.5 (2020/05/15)";
+	public const string version = "3.4.6 (2020/11/10)";
 
 	public const char CAN = '\x18';
 	public const char ESC = '\x1b';
