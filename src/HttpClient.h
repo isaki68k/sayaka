@@ -1,0 +1,112 @@
+#pragma once
+
+#include "Diag.h"
+#include "mtls.h"
+#include "ParsedUri.h"
+#include "StreamBase.h"
+#include <string>
+#include <vector>
+
+class HttpClient
+{
+ public:
+	// パース後の URI
+	ParsedUri Uri {};
+
+	// リクエスト時にサーバに送る追加のヘッダ
+	// Host: はこちらで生成するので呼び出し側は指定しないこと。
+	std::vector<std::string> SendHeaders {};
+
+	// 受け取ったヘッダ
+	std::vector<std::string> RecvHeaders {};
+
+	// 受け取った応答行
+	std::string ResultLine {};
+
+	// 受け取った応答コード
+	int ResultCode {};
+
+	// コネクションに使用するプロトコルファミリ
+	// XXX ただし mbedTLS 版は API が指定に対応していないので、未対応
+	int family {};
+
+	// 使用する CipherSuites
+	// ただし ""(デフォルト) と "RSA" しか対応していない
+	std::string Ciphers {};
+
+ public:
+	// コンストラクタ
+	HttpClient();
+
+	// uri をターゲットにして初期化する
+	bool Init(const Diag& diag, const std::string& uri);
+
+	// uri から GET して、ストリームを返す
+	InputStream *GET() {
+		return Act("GET");
+	}
+
+	// uri へ POST して、ストリームを返す
+	InputStream *POST() {
+		return Act("POST");
+	}
+
+	// uri へ GET/POST して、ストリームを返す
+	// GET と POST の共通部。
+	InputStream *Act(const std::string& method);
+
+	// 接続を閉じる
+	void Close();
+
+	// 送信ヘッダを追加する。
+	// s は改行を含まない HTTP ヘッダ1行の形式。
+	void AddHeader(const std::string& s) {
+		SendHeaders.push_back(s);
+	}
+
+	// ヘッダ配列から指定のヘッダを検索してボディを返す。
+	// 指定されたヘッダが存在しない場合は "" を返す。
+	std::string GetHeader(const std::vector<std::string>& header,
+		const std::string& key) const;
+
+	// Ciphers を設定する
+	void SetCiphers(const std::string& ciphers_) {
+		Ciphers = ciphers_;
+	}
+
+	// タイムアウトを設定する
+	void SetTimeout(int timeout) {
+		mtls.SetTimeout(timeout);
+	}
+
+ private:
+	// GET/POST リクエストを発行する
+	void SendRequest(const std::string& method);
+
+	// ヘッダを受信する
+	bool ReceiveHeader(InputStream *stream);
+
+	// 接続する
+	bool Connect();
+
+	// mTLS ハンドル
+	mTLSHandle mtls {};
+
+	Diag diag {};
+};
+
+class mTLSInputStream : public InputStream
+{
+ public:
+	mTLSInputStream(mTLSHandle *mtls, const Diag& diag);
+	virtual ~mTLSInputStream() override;
+
+	ssize_t Read(char *buf, size_t buflen) override;
+
+ private:
+	mTLSHandle *mtls;
+
+	Diag diag;
+};
+
+// mTLSOutputStream は不要なので作ってない
