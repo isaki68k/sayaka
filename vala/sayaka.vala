@@ -2907,7 +2907,7 @@ public class SayakaMain
 		// Search "
 		for (i = 0; i < buf.length && buf[i] != '\x22' ; i++)
 			;
-		// Skip Pad;
+		// Skip Pan;
 		for (i++; i < buf.length && buf[i] != ';'; i++)
 			;
 		// Skip Pad;
