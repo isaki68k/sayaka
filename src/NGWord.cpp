@@ -68,10 +68,12 @@ NGWord::WriteFile()
 
 // NG ワードをファイルから読み込んで、前処理する。
 // WriteFile() で書き戻さないこと。
-void
+bool
 NGWord::ParseFile()
 {
-	ReadFile();
+	if (!ReadFile()) {
+		return false;
+	}
 
 	std::vector<Json> ngwords2;
 	for (const auto& ng : ngwords) {
@@ -79,6 +81,8 @@ NGWord::ParseFile()
 		ngwords2.emplace_back(ng2);
 	}
 	ngwords = ngwords2;
+
+	return true;
 }
 
 // NG ワードを前処理して返す。
@@ -363,10 +367,12 @@ NGWord::MatchMainRT(const Json& ng, const Json& status) const
 }
 
 // NG ワードを追加する
-void
+bool
 NGWord::CmdAdd(const std::string& word, const std::string& user)
 {
-	ReadFile();
+	if (!ReadFile()) {
+		return false;
+	}
 
 	// もっとも新しい ID を探す (int が一周することはないだろう)
 	auto new_id = 0;
@@ -387,22 +393,28 @@ NGWord::CmdAdd(const std::string& word, const std::string& user)
 	ngwords.emplace_back(obj);
 	printf("id %d added\n", new_id);
 
-	WriteFile();
+	if (!WriteFile()) {
+		return false;
+	}
+	return true;
 }
 
 // NG ワードを削除する
-void
+bool
 NGWord::CmdDel(const std::string& ngword_id)
 {
 	// 未実装
 	printf("%s not implemented\n", __PRETTY_FUNCTION__);
+	return false;
 }
 
 // NG ワード一覧を表示する
-void
+bool
 NGWord::CmdList()
 {
-	ReadFile();
+	if (!ReadFile()) {
+		return false;
+	}
 
 	for (const auto& ng : ngwords) {
 		auto id = ng["id"].get<int>();
@@ -415,6 +427,8 @@ NGWord::CmdList()
 		}
 		printf("\n");
 	}
+
+	return true;
 }
 
 

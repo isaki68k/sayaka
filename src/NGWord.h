@@ -29,15 +29,15 @@ class NGWord
 	bool WriteFile();
 
 	// NG ワードをファイルから読み込んで、前処理する。
-	void ParseFile();
+	bool ParseFile();
 
 	// NG ワードと照合する。
 	bool Match(NGStatus *ngstat, const Json& status) const;
 
 	// コマンド
-	void CmdAdd(const std::string& word, const std::string& user);
-	void CmdDel(const std::string& ngword_id);
-	void CmdList();
+	bool CmdAdd(const std::string& word, const std::string& user);
+	bool CmdDel(const std::string& ngword_id);
+	bool CmdList();
 
  public:
 	// NG ワード1つを前処理して返す
