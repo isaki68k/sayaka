@@ -1,4 +1,4 @@
-CXX=		c++ -std=c++17
+CXX=		c++ -std=c++17 -g -O0
 CPPFLAGS=	-I../mbedtls/include
 SRCS=	\
 	ChunkedInputStream.cpp \
