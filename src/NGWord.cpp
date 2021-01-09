@@ -418,7 +418,7 @@ NGWord::CmdList()
 
 	for (const auto& ng : ngwords) {
 		auto id = ng["id"].get<int>();
-		auto word = ng["word"].get<std::string>();
+		auto word = ng["ngword"].get<std::string>();
 		auto user = ng["user"].get<std::string>();
 
 		printf("%d\t%s", id, word.c_str());
