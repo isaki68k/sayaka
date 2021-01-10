@@ -4,6 +4,7 @@
 #include "Dictionary.h"
 #include "HttpClient.h"
 #include <string>
+#include <memory>
 
 class OAuth
 {
@@ -82,14 +83,15 @@ class OAuth
 	// method と url から IHttpClient を生成して返す。
 	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意する。
 	// 接続はまだ行わない。
-	HttpClient CreateHttp(const std::string& method, const std::string& uri);
+	std::unique_ptr<HttpClient> CreateHttp(const std::string& method,
+		const std::string& uri);
 
 	Diag diag;
 
 	// HTTP クライアント
 	// (ローカル変数に出来そうに見えるが、HTTP コネクション張ってる間
 	// ずっと生存している必要があるので、メンバ変数でなければならない)
-	HttpClient RequestAPIClient {};
+	std::unique_ptr<HttpClient> RequestAPIClient {};
 
 	// TLS で使用する cipher list。"" ならデフォルト。
 	std::string Ciphers {};

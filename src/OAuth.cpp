@@ -261,17 +261,17 @@ OAuth::MakeOAuthHeader()
 }
 
 // method と url から IHttpClient を生成して返す。
-HttpClient
+std::unique_ptr<HttpClient>
 OAuth::CreateHttp(const std::string& method, const std::string& uri)
 {
 	auto conn_uri = CreateParams(method, uri);
 
-	HttpClient client;
-	if (client.Init(diag, conn_uri) == false) {
+	std::unique_ptr<HttpClient> client(new HttpClient());
+	if (client->Init(diag, conn_uri) == false) {
 		// XXX エラーは?
 	}
 	if (UseOAuthHeader) {
-		client.AddHeader(MakeOAuthHeader());
+		client->AddHeader(MakeOAuthHeader());
 	}
 	return client;
 }
@@ -283,7 +283,7 @@ OAuth::RequestToken(const std::string& uri_request_token)
 	auto client = CreateHttp("GET", uri_request_token);
 
 	StringDictionary resultDict;
-	auto stream = client.GET();
+	auto stream = client->GET();
 	// TODO: Content-Encoding とかに応じた処理
 	std::string buf;
 	while (stream->ReadLine(&buf) == true) {
@@ -304,14 +304,14 @@ OAuth::RequestAPI(const std::string& method, const std::string& uri_api)
 
 	// Ciphers 指定があれば指示
 	if (!Ciphers.empty()) {
-		RequestAPIClient.SetCiphers(Ciphers);
+		RequestAPIClient->SetCiphers(Ciphers);
 	}
 
 	diag.Trace("client.%s call", method.c_str());
-	auto rv = RequestAPIClient.Act(method);
+	auto stream = RequestAPIClient->Act(method);
 	diag.Trace("client.%s return", method.c_str());
 
-	return rv;
+	return stream;
 }
 
 

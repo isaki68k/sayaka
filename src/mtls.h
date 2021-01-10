@@ -14,6 +14,10 @@ class mTLSHandle
 	mTLSHandle();
 	~mTLSHandle();
 
+	// ディスクリプタを持っているのでコピーコンストラクタを禁止する。
+	mTLSHandle(const mTLSHandle&) = delete;
+	mTLSHandle& operator=(const mTLSHandle&) = delete;
+
 	// 初期化
 	bool Init();
 
