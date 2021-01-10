@@ -1,5 +1,5 @@
-CXX=		c++ -std=c++17 -g -O0
-CPPFLAGS=	-I../mbedtls/include
+# vi:set ts=8:
+
 SRCS=	\
 	ChunkedInputStream.cpp \
 	Diag.cpp \
@@ -19,77 +19,58 @@ SRCS=	\
 	subr.cpp \
 	term.cpp \
 
-LIBS_MBEDTLS=	\
+CXX=		c++ -std=c++17
+CPPFLAGS+=	-g -O0
+CPPFLAGS+=	-I../mbedtls/include
+
+LIBS +=	\
 	../mbedtls/library/libmbedtls.a \
 	../mbedtls/library/libmbedx509.a \
 	../mbedtls/library/libmbedcrypto.a \
-
-LIBS +=	\
 	-lssl
 
 all:	test sayaka
 
-test:	test.o \
-		ChunkedInputStream.test.o \
-		Dictionary.test.o \
-		FileUtil.test.o \
-		NGWord.test.o \
-		MemoryInputStream.test.o \
-		OAuth.test.o \
-		ParsedUri.test.o \
-		StringUtil.test.o \
-		Twitter.test.o \
-		subr.test.o \
-		Diag.o \
-		HttpClient.o \
-		StreamBase.o \
-		mtls.o
-	c++ -o $@ $> ${LIBS_MBEDTLS} ${LIBS}
+sayaka:	${SRCS:.cpp=.o}
+	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
+
+test:	test.o ${SRCS:.cpp=.test.o}
+	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
 
 test.o:	test.cpp
 	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
 
-ChunkedInputStream.test.o:	ChunkedInputStream.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
+.for S in ${SRCS}
+${S:.cpp=.o}:	${S}
+	${CXX} ${CPPFLAGS} -c ${S} -o $@
 
-Dictionary.test.o:	Dictionary.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
+${S:.cpp=.test.o}:	${S}
+	${CXX} ${CPPFLAGS} -DSELFTEST -c ${S} -o $@
+.endfor
 
-FileUtil.test.o:	FileUtil.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-MemoryInputStream.test.o:	MemoryInputStream.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-NGWord.test.o: NGWord.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-OAuth.test.o: OAuth.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-ParsedUri.test.o:	ParsedUri.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-StringUtil.test.o:	StringUtil.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-subr.test.o:	subr.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-Twitter.test.o:	Twitter.cpp
-	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
-
-sayaka:	${SRCS:.cpp=.o}
-	${CXX} ${LDFLAGS} -o $@ $> ${LIBS_MBEDTLS} ${LIBS}
-
-.cpp.o:
-	${CXX} ${CPPFLAGS} -c $> -o $@
-
+# XXX
 test_mtls:	mtls.cpp
-	${CXX} ${CPPFLAGS} -DTEST $> -o $@ ${LIBS_MBEDTLS}
+	${CXX} ${CPPFLAGS} -DTEST $> -o $@ ${LIBS}
 
-test_nonce:	oauth.cpp
-	${CXX} ${CPPFLAGS} -DTEST_NONCE $> -o $@ ${LIBS_MBEDTLS}
 
+.PHONY:	clean
 clean:
-	rm -f *.o sayaka test
+	rm -f sayaka test *.o *.core
+
+
+.PHONY:	depend
+depend:	${SRCS:.cpp=.d} ${SRCS:.cpp=.test.d}
+	cat ${.ALLSRC} > .depends
+	-rm -f *.d
+
+.for S in ${SRCS}
+${S:.cpp=.d}:
+	${CXX} ${CPPFLAGS} -E -MM ${S} > $@
+
+${S:.cpp=.test.d}:
+	${CXX} ${CPPFLAGS} -DSELFTEST -E -MM -MT ${S:.cpp=.test.o} ${S} > $@
+.endfor
+
+.if exists(.depends)
+.include ".depends"
+.endif
