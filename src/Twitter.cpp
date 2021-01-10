@@ -172,6 +172,7 @@ Twitter::API2Json(const std::string& method, const std::string& apiRoot,
 		diag.Debug("%s: ReadLine failed", api.c_str());
 		return json;
 	}
+	diag.Debug("ReadLine |%s|", line.c_str());
 
 	if (line.empty()) {
 		return json;
