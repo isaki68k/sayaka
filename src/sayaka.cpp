@@ -37,8 +37,6 @@
 #include <cstring>
 #include <err.h>
 
-static const char version[] = "3.5.x (2021/01/09)";
-
 #if !defined(PATH_SEPARATOR)
 #define PATH_SEPARATOR "/"
 #endif
@@ -234,7 +232,6 @@ cmd_stream()
 
 	// 古いキャッシュを削除
 	progress("Deleting expired cache files...");
-#if notyet
 	invalidate_cache();
 	progress("done\n");
 
@@ -273,7 +270,6 @@ cmd_stream()
 		get_nort_list();
 		progress("done\n");
 	}
-#endif
 
 	printf("Ready..");
 	fflush(stdout);
