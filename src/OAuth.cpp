@@ -317,7 +317,6 @@ OAuth::RequestAPI(const std::string& method, const std::string& uri_api)
 
 #if defined(SELFTEST)
 #include "test.h"
-#include "StringUtil.h"
 #include <string.h>
 
 // テストの表記を簡単にするため
