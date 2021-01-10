@@ -188,7 +188,7 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 	}
 
 	if (usessl == false) {
-		TRACE("connect (plain) OK\n");
+		TRACE("connect plain OK\n");
 		return true;
 	}
 
@@ -199,7 +199,7 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 		}
 	}
 
-	TRACE_tv(&end, "connect OK\n");
+	TRACE_tv(&end, "connect ssl OK\n");
 
 	timersub(&end, &start, &result);
 	TRACE("connect time = %d.%03d msec\n",
