@@ -14,7 +14,9 @@ SRCS=	\
 	StreamBase.cpp \
 	StringUtil.cpp \
 	Twitter.cpp \
+	acl.cpp \
 	mtls.cpp \
+	sayaka.cpp \
 	subr.cpp \
 	term.cpp \
 
@@ -30,13 +32,13 @@ LIBS +=	\
 
 all:	test sayaka
 
-sayaka:	sayaka.o ${SRCS:.cpp=.o}
+sayaka:	main.o ${SRCS:.cpp=.o}
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
 
 test:	test.o ${SRCS:.cpp=.test.o}
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
 
-sayaka.o:	sayaka.cpp
+main.o:	main.cpp
 	${CXX} ${CPPFLAGS} -c $> -o $@
 
 test.o:	test.cpp
