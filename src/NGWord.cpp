@@ -101,7 +101,7 @@ NGWord::ParseFile()
 // type == "%RT" なら "rtnum" (RT数閾値)
 // type == "%SOURCE" なら "source"(クライアント名regex)
 // type == "normal" なら "ngword" をそのまま比較に使用
-Json
+/*static*/ Json
 NGWord::Parse(const Json& ng)
 {
 	Json ng2;
@@ -263,8 +263,8 @@ NGWord::MatchUser(const std::string& ng_user, const Json& status)
 
 // status の本文その他を NGワード ng と照合する。
 // マッチしたかどうかを返す。
-bool
-NGWord::MatchMain(const Json& ng, const Json& status) const
+/*static*/ bool
+NGWord::MatchMain(const Json& ng, const Json& status)
 {
 	const Json& ngword = ng["ngword"];
 	const std::string& ngtype = ng["type"];
@@ -313,7 +313,7 @@ NGWord::MatchMain(const Json& ng, const Json& status) const
 	} else if (ngtype == "%SOURCE") {	// クライアント名
 		const std::string& stsource = status["source"];
 		const std::string& ngsource = ng["source"];
-		if (stsource.find(ngsource)) {
+		if (stsource.find(ngsource) != std::string::npos) {
 			return true;
 		}
 
@@ -493,7 +493,6 @@ test_NGWord_Parse()
 		{ "%SOURCE,a,a",	R"( "type":"%SOURCE","source":"a,a" )" },
 		// XXX 異常系をもうちょっとやったほうがいい
 	};
-	NGWord ngword("");
 	for (const auto& a : table) {
 		const auto& src = a.first;
 		const auto& expstr = a.second;
@@ -505,7 +504,7 @@ test_NGWord_Parse()
 		ng["user"] = "u";
 		ng["ngword"] = src;
 		// 検査 (仕方ないので一つずつやる)
-		auto act = ngword.Parse(ng);
+		auto act = NGWord::Parse(ng);
 		// Parse() の出力 JSON では "nguser"。
 		xp_eq("u", act["nguser"], src);
 		xp_eq(src, act["ngword"], src);
@@ -562,6 +561,66 @@ test_NGWord_MatchUser()
 }
 
 void
+test_NGWord_MatchMain()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::tuple<std::string, std::string, bool>> table = {
+		// testname	ngword						expected
+
+		// %LIVE (NGワードはローカル時刻、status は UTC)
+		// XXX JST 前提なので、他タイムゾーンではテストがこける…。
+		{ "test1",	"%LIVE,Sun,21:00,22:00",	true },
+		{ "test1",	"%LIVE,Sun,12:00,21:00",	false },
+
+		// %LIVE (日またぎ、Sun 21:20 は Sat 45:20…)
+		{ "test1",	"%LIVE,Sat,23:00,45:00",	false },
+		{ "test1",	"%LIVE,Sat,23:00,45:30",	true },
+
+		// %DELAY はストリームでは使いみちがあまりないので省略
+
+		// %RT
+
+		// %SOURCE
+		{ "test1",	"%SOURCE,client",			true },
+		{ "test1",	"%SOURCE,tests",			false },
+
+		// 通常ワード
+		{ "test1",	"abc",						true },
+		{ "test1",	"ABC",						false },
+		// 正規表現
+		{ "test1",	"a(b|d)c",					true },
+		{ "test1",	"ad?c",						false },
+	};
+	Json statuses {
+		{ "test1", {	// 基本形式
+			{ "text", "abc hello..." },
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+			{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+			{ "source", "test client v0" },
+			{ "user", { { "id_str", "100" }, { "screen_name", "ange" } } },
+		} },
+	};
+	for (const auto& a : table) {
+		const auto& testname = std::get<0>(a);
+		const auto& ngword = std::get<1>(a);
+		bool expected = std::get<2>(a);
+
+		// ng を作成
+		Json ng_file;
+		ng_file["user"] = "user";
+		ng_file["ngword"] = ngword;
+		auto ng2 = NGWord::Parse(ng_file);
+
+		// テストを選択
+		const Json& status = statuses[testname];
+
+		auto actual = NGWord::MatchMain(ng2, status);
+		xp_eq(expected, actual, testname + "," + ngword);
+	}
+}
+
+void
 test_NGWord_MatchNormal()
 {
 	printf("%s\n", __func__);
@@ -592,6 +651,7 @@ test_NGWord()
 	test_NGWord_ReadFile();
 	test_NGWord_Parse();
 	test_NGWord_MatchUser();
+	test_NGWord_MatchMain();
 	test_NGWord_MatchNormal();
 }
 #endif

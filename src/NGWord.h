@@ -41,13 +41,13 @@ class NGWord
 
  public:
 	// NG ワード1つを前処理して返す
-	Json Parse(const Json& ng);
+	static Json Parse(const Json& ng);
 
 	// ツイート status がユーザ ng_user のものか調べる。
 	static bool MatchUser(const std::string& ng_user, const Json& status);
 
 	// status の本文その他を NG ワード ng と照合する。
-	bool MatchMain(const Json& ng, const Json& status) const;
+	static bool MatchMain(const Json& ng, const Json& status);
 
 	// 正規表現のNGワード ngword が status 中の本文にマッチするか調べる。
 	static bool MatchNormal(const std::string& ngword, const Json& status);
