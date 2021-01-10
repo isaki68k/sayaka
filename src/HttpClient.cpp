@@ -270,7 +270,7 @@ mTLSInputStream::Read(char *buf, size_t buflen)
 	int r;
 
 	r = mtls->Read(buf, buflen);
-	diag.Debug("read=%d", r);
+	diag.Trace("read=%d", r);
 
 	return (ssize_t)r;
 }
