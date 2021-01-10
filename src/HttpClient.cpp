@@ -63,6 +63,8 @@ HttpClient::Act(const std::string& method)
 				continue;
 			}
 		} else if (ResultCode >= 400) {
+			// XXX この場合でも本文にエラーのヒントがある場合があるので、
+			// 本文を読んでデバッグ表示だけでもしておきたいのだが。
 			errno = ENOTCONN;
 			return NULL;
 		}
@@ -155,18 +157,18 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 		}
 		diag.Debug("HEADER |%s|", s.c_str());
 
-		// End of Header
-		if (s.empty())
-			break;
-
-		// ヘッダ行
+		// まず行継続の処理
 		if (s[0] == ' ') {
-			// 行継続
 			auto& prev = RecvHeaders.back();
 			prev += Chomp(s);
-		} else {
-			RecvHeaders.emplace_back(Chomp(s));
+			continue;
 		}
+		// その後で改行等を削って、空行ならここで終了
+		s = Chomp(s);
+		if (s.empty()) {
+			break;
+		}
+		RecvHeaders.emplace_back(s);
 	}
 }
 
