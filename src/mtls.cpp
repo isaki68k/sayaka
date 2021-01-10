@@ -100,7 +100,7 @@ mTLSHandle::trace(struct timeval *tv, const char *funcname,
 		funcname);
 
 	va_start(ap, fmt);
-	fprintf(stderr, fmt, ap);
+	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 #endif
 }
