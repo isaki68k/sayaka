@@ -2595,7 +2595,8 @@ get_paged_list(const std::string& api, const char *funcname)
 
 		auto users = json["ids"];
 		for (auto u : users) {
-			auto id_str = u.get<std::string>();
+			auto id = u.get<Json::number_integer_t>();
+			auto id_str = std::to_string(id);
 			list[id_str] = id_str;
 		}
 
@@ -2669,6 +2670,7 @@ static void
 get_nort_list()
 {
 	// ミュートユーザ一覧等とは違って、リスト一発で送られてくるっぽい。
+	// ただの数値の配列 [1,2,3,4] の形式。
 	// なんであっちこっちで仕様が違うんだよ…。
 
 	nortlist.clear();
@@ -2687,7 +2689,8 @@ get_nort_list()
 	}
 
 	for (const auto& u : json) {
-		auto id_str = u.get<std::string>();
+		auto id = u.get<Json::number_integer_t>();
+		auto id_str = std::to_string(id);
 		nortlist[id_str] = id_str;
 	}
 }
