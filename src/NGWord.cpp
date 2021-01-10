@@ -178,28 +178,28 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 {
 	NGStatus& ngstat = *ngstatp;
 
-	Json user;	// マッチしたユーザ
+	const Json *user = NULL;	// マッチしたユーザ
 	for (const auto& ng : ngwords) {
 		const std::string& nguser = ng["nguser"];
 
 		if (status.contains("retweeted_status")) {
-			Json s = status["retweeted_status"];
+			const Json& s = status["retweeted_status"];
 
 			if (nguser.empty()) {
 				// ユーザ指定がなければ、RT先本文を比較
 				if (MatchMain(ng, s)) {
-					user = s["user"];
+					user = &s["user"];
 				}
 			} else {
 				// ユーザ指定があって、RT元かRT先のユーザと一致すれば
 				// RT先本文を比較。ただしユーザ情報はマッチしたほう。
 				if (MatchUser(nguser, status)) {
 					if (MatchMainRT(ng, s)) {
-						user = status["user"];
+						user = &status["user"];
 					}
 				} else if (MatchUser(nguser, s)) {
 					if (MatchMain(ng, s)) {
-						user = s["user"];
+						user = &s["user"];
 					}
 				}
 			}
@@ -208,25 +208,27 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 			// ユーザ指定がないか、あって一致すれば、本文を比較
 			if (nguser.empty() || MatchUser(nguser, status)) {
 				if (MatchMain(ng, status)) {
-					user = status["user"];
+					user = &status["user"];
 				}
 			}
 		}
 
 		// QT 元ユーザ名がマッチするなら QT 先も RT チェック
-		if (user.is_null() && status.contains("quoted_status")) {
+		if (user == NULL && status.contains("quoted_status")) {
 			if (nguser.empty() || MatchUser(nguser, status)) {
-				Json qt_status = status["quoted_status"];
+				const Json& qt_status = status["quoted_status"];
 				if (MatchMain(ng, qt_status)) {
-					user = status["user"];
+					user = &status["user"];
 				}
 			}
 		}
 
-		if (!user.is_null()) {
+		if (user) {
+			const Json& u = *user;
+
 			ngstat.match = true;
-			ngstat.screen_name = user["screen_name"];
-			ngstat.name = user["name"];
+			ngstat.screen_name = u["screen_name"];
+			ngstat.name = u["name"];
 			ngstat.time = formattime(status);
 			ngstat.ngword = ng["ngword"];
 			return true;
