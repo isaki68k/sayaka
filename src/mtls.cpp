@@ -205,7 +205,7 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 	TRACE("connect time = %d.%03d msec\n",
 		(int)result.tv_sec * 1000 + result.tv_usec / 1000,
 		(int)result.tv_usec % 1000);
-	return 0;
+	return true;
 }
 
 // クローズ。
