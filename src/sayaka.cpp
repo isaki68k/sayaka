@@ -2002,8 +2002,6 @@ test_showstatus_acl()
 static bool
 showstatus(const Json& status, bool is_quoted)
 {
-	Json obj = status["object"];
-
 	// このツイートを表示するかどうかの判定。
 	// これは、このツイートがリツイートを持っているかどうかも含めた判定を
 	// 行うのでリツイート分離前に行う。
