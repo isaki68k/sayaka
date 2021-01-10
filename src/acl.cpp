@@ -940,6 +940,11 @@ test_showstatus_acl()
 			printf("Json::parse(%s) failed\n", input_str.c_str());
 			exit(1);
 		}
+		// 取り出しやすいよう、home, filt はなければ 0 をセットしておく。
+		if (!input.contains("home"))
+			input["home"] = 0;
+		if (!input.contains("filt"))
+			input["filt"] = 0;
 
 		// それらから status をでっちあげる
 		Json status;
@@ -995,8 +1000,8 @@ test_showstatus_acl()
 		// 期待値 (入力は 1=true, 0=false, -1 ならテストしない)
 		std::optional<bool> expected_home;
 		std::optional<bool> expected_filt;
-		auto expected_home_int = input["home"].get<int>();
-		auto expected_filt_int = input["filt"].get<int>();
+		int expected_home_int = input["home"];
+		int expected_filt_int = input["filt"];
 		if (expected_home_int != -1)
 			expected_home = (bool)expected_home_int;
 		if (expected_filt_int != -1)
