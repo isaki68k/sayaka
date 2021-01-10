@@ -44,7 +44,7 @@ class NGWord
 	Json Parse(const Json& ng);
 
 	// ツイート status がユーザ ng_user のものか調べる。
-	bool MatchUser(const std::string& ng_user, const Json& status) const;
+	static bool MatchUser(const std::string& ng_user, const Json& status);
 
 	// status の本文その他を NG ワード ng と照合する。
 	bool MatchMain(const Json& ng, const Json& status) const;

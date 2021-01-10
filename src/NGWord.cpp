@@ -240,8 +240,8 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 
 // ツイート status がユーザ ng_user のものか調べる。
 // ng_user は "id:<numeric_id>" か "@<screen_name>" 形式。
-bool
-NGWord::MatchUser(const std::string& ng_user, const Json& status) const
+/*static*/ bool
+NGWord::MatchUser(const std::string& ng_user, const Json& status)
 {
 	const Json& u = status["user"];
 
@@ -435,6 +435,7 @@ NGWord::CmdList()
 
 #if defined(SELFTEST)
 #include "test.h"
+#include <tuple>
 
 void
 test_NGWord_ReadFile()
@@ -475,7 +476,7 @@ test_NGWord_ReadFile()
 }
 
 void
-test_Parse()
+test_NGWord_Parse()
 {
 	printf("%s\n", __func__);
 
@@ -533,9 +534,38 @@ test_Parse()
 }
 
 void
+test_NGWord_MatchUser()
+{
+	printf("%s\n", __func__);
+
+	// さすがに status に user がないケースはテストせんでいいだろ…
+	std::vector<std::tuple<std::string, std::string, bool>> table = {
+		// nguser	status->user								expected
+		{ "id:1",	R"( "id_str":"12","screen_name":"ab" )",	false },
+		{ "id:12",	R"( "id_str":"12","screen_name":"ab" )",	true },
+		{ "id:123",	R"( "id_str":"12","screen_name":"ab" )",	false },
+		{ "@a",		R"( "id_str":"12","screen_name":"ab" )",	false },
+		{ "@ab",	R"( "id_str":"12","screen_name":"ab" )",	true },
+		{ "@abc",	R"( "id_str":"12","screen_name":"ab" )",	false },
+		{ "@AB",	R"( "id_str":"12","screen_name":"ab" )",	false },
+	};
+	for (const auto& a : table) {
+		const std::string& nguser = std::get<0>(a);
+		const std::string& expr = std::get<1>(a);
+		const bool expected = std::get<2>(a);
+
+		Json user = Json::parse("{" + expr + "}");
+		Json status { { "user", user } };
+		auto actual = NGWord::MatchUser(nguser, status);
+		xp_eq(expected, actual, nguser + "," + expr);
+	}
+}
+
+void
 test_NGWord()
 {
 	test_NGWord_ReadFile();
-	test_Parse();
+	test_NGWord_Parse();
+	test_NGWord_MatchUser();
 }
 #endif
