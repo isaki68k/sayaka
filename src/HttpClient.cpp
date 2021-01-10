@@ -16,13 +16,13 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 {
 	diag = diag_;
 
-	if (mtls.Init() != 0) {
+	if (mtls.Init() == false) {
 		warnx("HttpClient.Init: mTLSHandle.Init failed");
 		return false;
 	}
 
 	Uri = ParsedUri::Parse(uri_);
-	diag.Debug("%s", Uri.to_string());
+	diag.Debug("Uri=|%s|", Uri.to_string().c_str());
 
 	return true;
 }
