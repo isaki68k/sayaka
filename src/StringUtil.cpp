@@ -38,6 +38,20 @@ string_replace(const std::string& s,
 	return rv;
 }
 
+// s の末尾の連続する空白文字を削除する (s を書き換える)
+void
+string_rtrim(std::string& s)
+{
+	for (;;) {
+		char c = s.back();
+		if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+			s.pop_back();
+		} else {
+			break;
+		}
+	}
+}
+
 // s を sep で分割する。
 std::vector<std::string>
 Split(const std::string& s, const std::string& sep)
@@ -292,6 +306,28 @@ test_string_replace()
 
 		auto actual = string_replace(input, oldstr, newstr);
 		xp_eq(exp, actual, input + ",/" + oldstr + "/" + newstr + "/");
+	}
+}
+
+void
+test_string_rtrim()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::array<std::string, 2>> table = {
+		// input		expected
+		{ "ab c",		"ab c" },
+		{ "ab c \n",	"ab c" },
+		{ "a\t \r \n",	"a" },
+		{ "\r\n",		"" },
+		{ "",			"" },
+	};
+	for (const auto& a : table) {
+		auto input = a[0];
+		const auto& exp = a[1];
+
+		string_rtrim(input);
+		xp_eq(exp, input, input);
 	}
 }
 
@@ -559,6 +595,7 @@ void
 test_StringUtil()
 {
 	test_string_replace();
+	test_string_rtrim();
 	test_Split();
 	test_Split_limit();
 	test_Split2();

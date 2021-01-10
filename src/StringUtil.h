@@ -11,6 +11,9 @@ extern std::string string_format(const char *fmt, ...) __printflike(1, 2);
 extern std::string string_replace(const std::string& s,
 	const std::string& o, const std::string& n);
 
+// s の末尾の連続する空白文字を削除する (s を書き換える)
+extern void string_rtrim(std::string& s);
+
 // s を sep で分割する
 extern std::vector<std::string> Split(const std::string& s,
 	const std::string& sep);
