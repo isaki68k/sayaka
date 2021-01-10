@@ -853,7 +853,8 @@ cmd_stream()
 		if (stream->ReadLine(&line) == false) {
 			errx(1, "statuses/filter: ReadLine failed");
 		}
-		// XXX EOF が分からないね
+		if (line.empty())
+			break;
 
 		if (showobject(line) == false) {
 			break;
@@ -869,6 +870,8 @@ cmd_play()
 	std::string line;
 
 	while (stdinstream.ReadLine(&line)) {
+		if (line.empty())
+			break;
 		if (showobject(line) == false) {
 			break;
 		}

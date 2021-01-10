@@ -23,6 +23,7 @@ class InputStream
 	// エラーが発生すれば false を返し、*retval は不定。
 	// 読み出した1行には改行を含む。ただし改行なしでストリームが終端すれば
 	// 改行のない文字列を返す。
+	// EOF なら *retval は empty で true を返す。
 	bool ReadLine(std::string *retval);
 
 	// 1行読み出す (エラーを返す手段のない版)

@@ -152,7 +152,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 	for (int i = 0; i < 1000; i++) {
 		std::string s;
 		dIn->ReadLine(&s);
-		if (rv == false) {
+		if (rv == false || s.empty()) {
 			return false;
 		}
 		diag.Debug("HEADER |%s|", s.c_str());
