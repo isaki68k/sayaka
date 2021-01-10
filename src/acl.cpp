@@ -43,10 +43,10 @@ bool
 acl(const Json& status, bool is_quoted)
 {
 	// このツイートの発言者
-	const auto& user_id = status["user"]["id_str"].get<std::string>();
+	const std::string& user_id = status["user"]["id_str"];
 	std::string user_name;
 	if (diagShow > 0) {
-		user_name = status["user"]["screen_name"].get<std::string>();
+		user_name = status["user"]["screen_name"];
 	}
 
 	// ブロック氏の発言はすべて非表示
@@ -79,12 +79,12 @@ acl(const Json& status, bool is_quoted)
 	// リツイートを持っていればその中の俺氏関係分だけ表示
 	// 俺氏関係分なのでRT非表示氏や他人氏でも可。
 	if (status.contains("retweeted_status")) {
-		const auto rt_status   = status["retweeted_status"];
-		const auto rt_user     = rt_status["user"];
-		const auto rt_user_id  = rt_user["id_str"].get<std::string>();
+		const Json& rt_status = status["retweeted_status"];
+		const Json& rt_user   = rt_status["user"];
+		const std::string& rt_user_id = rt_user["id_str"];
 		std::string rt_user_name;
 		if (diagShow > 0) {
-			rt_user_name = rt_user["screen_name"].get<std::string>();
+			rt_user_name = rt_user["screen_name"];
 		}
 		const auto rt_replies = GetReplies(rt_status, rt_user_id, rt_user_name);
 		if (acl_me(rt_user_id, rt_user_name, rt_replies)) {
@@ -151,13 +151,13 @@ acl(const Json& status, bool is_quoted)
 
 	// リツイートがあれば
 	if (status.contains("retweeted_status")) {
-		const auto rt_status = status["retweeted_status"];
+		const Json& rt_status = status["retweeted_status"];
 
-		const auto rt_user = rt_status["user"];
-		const std::string rt_user_id = rt_user["id_str"].get<std::string>();
+		const Json& rt_user = rt_status["user"];
+		const std::string& rt_user_id = rt_user["id_str"];
 		std::string rt_user_name;
 		if (diagShow > 0) {
-			rt_user_name = rt_user["screen_name"].get<std::string>();
+			rt_user_name = rt_user["screen_name"];
 		}
 
 		// RT 先発言者がブロック氏かミュート氏なら弾く
@@ -208,7 +208,6 @@ acl_me(const std::string& user_id, const std::string& user_name,
 {
 	// user_id(, user_name) はこのツイートの発言者
 	// replies はこのツイートの返信関係の情報
-
 
 	// 俺氏の発言はすべて表示
 	if (user_id == myid) {
@@ -298,13 +297,13 @@ GetReplies(const Json& status,
 	int text_start = 0;
 	if (status.contains("display_text_range")) {
 		auto text_range = status["display_text_range"];
-		text_start = text_range[0].get<int>();
+		text_start = text_range[0];
 	}
 
 	// ユーザメンション(entities.user_mentions)、なければ空配列
 	Json user_mentions = Json::array();
 	if (status.contains("entities")) {
-		auto entities = status["entities"];
+		const Json& entities = status["entities"];
 		if (entities.contains("user_mentions")) {
 			user_mentions = entities["user_mentions"];
 		}
@@ -324,7 +323,7 @@ GetReplies(const Json& status,
 		// このユーザメンションの開始位置が
 		if (um.contains("indices")) {
 			auto indices = um["indices"];
-			um_start = indices[0].get<int>();
+			um_start = indices[0];
 		}
 		// 本文以降なら、これは宛先ではないという認識
 		if (um_start >= text_start) {
@@ -332,10 +331,10 @@ GetReplies(const Json& status,
 		}
 
 		// dict に追加
-		auto id_str = um["id_str"].get<std::string>();
+		const std::string& id_str = um["id_str"];
 		std::string screen_name;
 		if (diagShow > 0) {
-			screen_name = um["screen_name"].get<std::string>();
+			screen_name = um["screen_name"];
 		}
 		dict.AddOrUpdate(id_str, screen_name);
 	}
@@ -363,7 +362,7 @@ GetReplies(const Json& status,
 	if (!replyto_id.empty()) {
 		std::string replyto_name;
 		if (diagShow > 0) {
-			replyto_name = status["in_reply_to_screen_name"].get<std::string>();
+			replyto_name = status["in_reply_to_screen_name"];
 			msg += " reply_to=@" + replyto_name;
 		}
 		dict.AddOrUpdate(replyto_id, replyto_name);
