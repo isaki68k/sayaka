@@ -2,6 +2,7 @@
 #include "NGWord.h"
 #include "StringUtil.h"
 #include "subr.h"
+#include <regex>
 
 // コンストラクタ
 NGWord::NGWord()
@@ -331,21 +332,33 @@ NGWord::MatchMain(const Json& ng, const Json& status)
 /*static*/ bool
 NGWord::MatchNormal(const std::string& ngword, const Json& status)
 {
-	if (status.contains("text") == false) {
-		return false;
-	}
-	std::string text = status["text"];
-	if (status.contains("extended_tweet")) {
-		const Json& extended_tweet = status["extended_tweet"];
-		if (extended_tweet.contains("full_text")) {
-			text = extended_tweet["full_text"];
-		}
-	}
-	// XXX 正規表現未対応
-	if (text.find(ngword) != std::string::npos) {
-		return true;
-	}
+	const Json *textp = NULL;
 
+	// extended_tweet->full_text、なければ text、どちらもなければ false?
+	do {
+		if (status.contains("extended_tweet")) {
+			const Json& ext = status["extended_tweet"];
+			if (ext.contains("full_text")) {
+				textp = &ext["full_text"];
+				break;
+			}
+		}
+		if (status.contains("text")) {
+			textp = &status["text"];
+			break;
+		}
+		return false;
+	} while (0);
+
+	const auto& text = textp->get<std::string>();
+	try {
+		std::regex re(ngword);
+		if (regex_search(text, re)) {
+			return true;
+		}
+	} catch (...) {
+		// 正規表現周りで失敗したらそのまま、マッチしなかった、でよい
+	}
 	return false;
 }
 
@@ -625,23 +638,42 @@ test_NGWord_MatchNormal()
 {
 	printf("%s\n", __func__);
 
-	std::vector<std::pair<std::string, bool>> table = {
-		// ngword		expected
-		{ "abc",		true },
-		{ "ABC",		false },
+	std::vector<std::tuple<std::string, std::string, bool>> table = {
+		// testname	ngword		expected
+		{ "both",	"abc",		true },
+		{ "both",	"ABC",		false },
+		{ "text",	"ab",		true },
+		{ "text",	"abc",		false },
+		{ "full",	"abc",		true },
+		{ "full",	"abcd",		false },
+		{ "empty",	"ab",		false },
+		{ "empty",	"ab",		false },
+	};
+	Json statuses {
+		{ "both", {	// text, full_text あり
+			{ "text", "ab.." },
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+		} },
+		{ "text", {	// text のみ
+			{ "text", "ab.." },
+		} },
+		{ "full", {	// full_text のみ (来るのかどうかは知らんけど)
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+		} },
+		{ "empty", {	// 両方ない (来るのかどうかは知らんけど)
+			{ "created_at", "" },
+		} },
 	};
 	for (const auto& a : table) {
-		const auto& ngword = a.first;
-		bool expected = a.second;
+		const auto& testname = std::get<0>(a);
+		const auto& ngword = std::get<1>(a);
+		bool expected = std::get<2>(a);
 
-		Json status {
-			{ "text", "ab.." },
-			{ "extended_tweet", {
-				{ "full_text", "abc hello world" }
-			} },
-		};
+		// テストを選択
+		const Json& status = statuses[testname];
+
 		auto actual = NGWord::MatchNormal(ngword, status);
-		xp_eq(expected, actual, ngword);
+		xp_eq(expected, actual, testname + "," + ngword);
 	}
 }
 
