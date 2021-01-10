@@ -1352,7 +1352,7 @@ test_showstatus_acl()
 	// それぞれ home, filt で表す。あれば表示、省略は非表示を意味する。
 	// h---, f--- はテストしないことを示す。俺氏とブロック氏とに同時に
 	// 返信された場合のように判定不能なケースをとりあえず。
-	var table = new string[] {
+	std::vector<std::string> table = {
 		// 平文
 		"{id:1,        home,filt}",		// 俺氏
 		"{id:2,        home,filt}",		// フォロー氏
@@ -1856,19 +1856,20 @@ test_showstatus_acl()
 	int ntest = 0;
 	int nfail = 0;
 	for (const auto& input_sq : table) {
-		auto input_str = input_sq.replace(" ", "")
-			.replace("id:",		"\"id\":")
-			.replace("reply:",	"\"reply\":")
-			.replace("rt:",		"\"rt\":")
-			.replace("rt_rep:",	"\"rt_rep\":")
-			.replace("ment:",	"\"ment\":")
-			.replace("home",	"\"home\":1")
-			.replace("filt",	"\"filt\":1")
-			.replace("h---",	"\"home\":-1")
-			.replace("f---",	"\"filt\":-1")
-			// 末尾カンマは許容しておいてここで消すほうが楽
-			.replace(",}",		"}")
-		;
+		auto input_str = input_sq;
+		input_str = string_replace(input_str, " ", "");
+		input_str = string_replace(input_str, "id:",	"\"id\":");
+		input_str = string_replace(input_str, "reply:",	"\"reply\":");
+		input_str = string_replace(input_str, "rt:",	"\"rt\":");
+		input_str = string_replace(input_str, "rt_rep:","\"rt_rep\":");
+		input_str = string_replace(input_str, "ment:",	"\"ment\":");
+		input_str = string_replace(input_str, "home",	"\"home\":1");
+		input_str = string_replace(input_str, "filt",	"\"filt\":1");
+		input_str = string_replace(input_str, "h---",	"\"home\":-1");
+		input_str = string_replace(input_str, "f---",	"\"filt\":-1");
+		// 末尾カンマは許容しておいてここで消すほうが楽
+		input_str = string_replace(input_str, ",}",		"}");
+
 		Json input = Json::parse(input_str);
 		if (input.is_null()) {
 			printf("Json::parse(%s) failed\n", input_str.c_str());
@@ -1946,7 +1947,7 @@ test_showstatus_acl()
 			// テスト (home)
 			ntest++;
 			opt_pseudo_home = true;
-			auto result = aclt(status, false);
+			auto result = acl(status, false);
 			if (result != expected_home.value()) {
 				fprintf(stderr, "%s (for home) expects '%s' but '%s'\n",
 					input_str.c_str(), expected_home.value(), result);
