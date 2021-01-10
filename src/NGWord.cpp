@@ -328,8 +328,8 @@ NGWord::MatchMain(const Json& ng, const Json& status) const
 
 // NGワード ngword が status 中の本文に正規表現でマッチするか調べる。
 // マッチすれば true、しなければ false を返す。
-bool
-NGWord::MatchNormal(const std::string& ngword, const Json& status) const
+/*static*/ bool
+NGWord::MatchNormal(const std::string& ngword, const Json& status)
 {
 	if (status.contains("text") == false) {
 		return false;
@@ -342,7 +342,7 @@ NGWord::MatchNormal(const std::string& ngword, const Json& status) const
 		}
 	}
 	// XXX 正規表現未対応
-	if (text.find(ngword)) {
+	if (text.find(ngword) != std::string::npos) {
 		return true;
 	}
 
@@ -562,10 +562,36 @@ test_NGWord_MatchUser()
 }
 
 void
+test_NGWord_MatchNormal()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::pair<std::string, bool>> table = {
+		// ngword		expected
+		{ "abc",		true },
+		{ "ABC",		false },
+	};
+	for (const auto& a : table) {
+		const auto& ngword = a.first;
+		bool expected = a.second;
+
+		Json status {
+			{ "text", "ab.." },
+			{ "extended_tweet", {
+				{ "full_text", "abc hello world" }
+			} },
+		};
+		auto actual = NGWord::MatchNormal(ngword, status);
+		xp_eq(expected, actual, ngword);
+	}
+}
+
+void
 test_NGWord()
 {
 	test_NGWord_ReadFile();
 	test_NGWord_Parse();
 	test_NGWord_MatchUser();
+	test_NGWord_MatchNormal();
 }
 #endif

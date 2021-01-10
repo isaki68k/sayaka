@@ -50,7 +50,7 @@ class NGWord
 	bool MatchMain(const Json& ng, const Json& status) const;
 
 	// 正規表現のNGワード ngword が status 中の本文にマッチするか調べる。
-	bool MatchNormal(const std::string& ngword, const Json& status) const;
+	static bool MatchNormal(const std::string& ngword, const Json& status);
 
 	// status の本文その他を NG ワード ng と照合する。
 	bool MatchMainRT(const Json& ng, const Json& status) const;
