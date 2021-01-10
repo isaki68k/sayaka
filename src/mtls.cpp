@@ -24,6 +24,27 @@
 #define ERROR(...)		fprintf(stderr, __VA_ARGS__)
 #endif
 
+#if defined(DEBUG)
+// デバッグ表示
+static void trace(struct timeval *tv, const char *func, const char *fmt, ...)
+	__printflike(3, 4);
+static void
+trace(struct timeval *tv, const char *funcname, const char *fmt, ...)
+{
+	va_list ap;
+
+	fprintf(stderr, "[%02d:%02d.%06d] %s() ",
+		(int)((tv->tv_sec / 60) % 60),
+		(int)((tv->tv_sec     ) % 60),
+		(int)(tv->tv_usec),
+		funcname);
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
+#endif
+
 // グローバルコンテキスト
 struct mtls_global_ctx
 {
@@ -83,26 +104,6 @@ mTLSHandle::errmsg(int code)
 {
 	mbedtls_strerror(code, errbuf, sizeof(errbuf));
 	return errbuf;
-}
-
-// デバッグ表示
-void
-mTLSHandle::trace(struct timeval *tv, const char *funcname,
-	const char *fmt, ...)
-{
-#if defined(DEBUG)
-	va_list ap;
-
-	fprintf(stderr, "[%02d:%02d.%06d] %s() ",
-		(int)((tv->tv_sec / 60) % 60),
-		(int)((tv->tv_sec     ) % 60),
-		(int)(tv->tv_usec),
-		funcname);
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-#endif
 }
 
 // mbedTLS のデバッグレベルを指定

@@ -68,8 +68,4 @@ class mTLSHandle
 	// (static バッファを使っていることに注意)
 	char errbuf[128] {};
 	const char *errmsg(int code);
-
-	// デバッグ表示用
-	void trace(struct timeval *tv, const char *funcname,
-		const char *fmt, ...) __printflike(4, 5);
 };
