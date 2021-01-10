@@ -87,7 +87,7 @@ NGWord::ParseFile()
 
 // NG ワードを前処理して返す。
 //	"ngword" => ngword (ファイルから読んだまま変更しない)
-//	"nguser" => nguser (ファイルから読んだまま変更しない)
+//	"nguser" => user (ファイルから読んだまま変更しない)
 //	"type" => 種別
 //	以下 type に応じて必要なパラメータ
 // type == "%LIVE" なら
@@ -108,7 +108,10 @@ NGWord::Parse(const Json& ng)
 
 	std::string ngword = ng["ngword"];
 	ng2["ngword"] = ngword;
-	ng2["nguser"] = ng["nguser"];
+	// 歴史的経緯によりユーザ情報は、
+	// ファイル上の JSON ではキーは "user" だが
+	// メモリ上の JSON では "nguser" なことに注意。
+	ng2["nguser"] = ng["user"];
 
 	// 生実況 NG
 	if (StartWith(ngword, "%LIVE,")) {
