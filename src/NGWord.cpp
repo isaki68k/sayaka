@@ -75,7 +75,7 @@ NGWord::ParseFile()
 		return false;
 	}
 
-	std::vector<Json> ngwords2;
+	Json ngwords2 = Json::array();
 	for (const auto& ng : ngwords) {
 		auto ng2 = Parse(ng);
 		ngwords2.emplace_back(ng2);
@@ -180,7 +180,7 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 
 	Json user;	// マッチしたユーザ
 	for (const auto& ng : ngwords) {
-		std::string nguser = ng["nguser"];
+		const std::string& nguser = ng["nguser"];
 
 		if (status.contains("retweeted_status")) {
 			Json s = status["retweeted_status"];
@@ -241,7 +241,7 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 bool
 NGWord::MatchUser(const std::string& ng_user, const Json& status) const
 {
-	auto u = status["user"];
+	const Json& u = status["user"];
 
 	if (StartWith(ng_user, "id:")) {
 		auto ng_user_id = ng_user.substr(3);
@@ -265,7 +265,7 @@ bool
 NGWord::MatchMain(const Json& ng, const Json& status) const
 {
 	const Json& ngword = ng["ngword"];
-	std::string ngtype = ng["type"];
+	const std::string& ngtype = ng["type"];
 
 	if (ngtype == "%LIVE") {	// 生実況 NG
 		int wday  = ng["wday"];
@@ -309,8 +309,8 @@ NGWord::MatchMain(const Json& ng, const Json& status) const
 	// } else if (ngtype == "%RT") {	// 未実装
 
 	} else if (ngtype == "%SOURCE") {	// クライアント名
-		std::string stsource = status["source"];
-		std::string ngsource = ng["source"];
+		const std::string& stsource = status["source"];
+		const std::string& ngsource = ng["source"];
 		if (stsource.find(ngsource)) {
 			return true;
 		}
@@ -324,7 +324,7 @@ NGWord::MatchMain(const Json& ng, const Json& status) const
 	return false;
 }
 
-// NGワード(regex) ngword が status 中の本文にマッチするか調べる。
+// NGワード ngword が status 中の本文に正規表現でマッチするか調べる。
 // マッチすれば true、しなければ false を返す。
 bool
 NGWord::MatchNormal(const std::string& ngword, const Json& status) const
@@ -378,14 +378,10 @@ NGWord::CmdAdd(const std::string& word, const std::string& user)
 	}
 
 	// もっとも新しい ID を探す (int が一周することはないだろう)
-	auto new_id = 0;
-	
+	int new_id = 0;
 	for (const auto& ng : ngwords) {
-		int id = ng["id"].get<int>();
-
-		if (id > new_id) {
-			new_id = id;
-		}
+		int id = ng["id"];
+		new_id = std::max(new_id, id);
 	}
 	new_id++;
 
@@ -421,8 +417,8 @@ NGWord::CmdList()
 
 	for (const auto& ng : ngwords) {
 		auto id = ng["id"].get<int>();
-		auto word = ng["ngword"].get<std::string>();
-		auto user = ng["user"].get<std::string>();
+		const std::string& word = ng["ngword"];
+		const std::string& user = ng["user"];
 
 		printf("%d\t%s", id, word.c_str());
 		if (!user.empty()) {
@@ -501,31 +497,32 @@ test_Parse()
 
 		// 期待するJson
 		Json exp = Json::parse("{" + expstr + "}");
-		exp["nguser"] = "u";
-		exp["ngword"] = src;
-		// 入力
+		// 入力 (ファイルを模しているので "nguser" ではなく "user")
 		Json ng;
-		ng["nguser"] = "u";
+		ng["user"] = "u";
 		ng["ngword"] = src;
 		// 検査 (仕方ないので一つずつやる)
 		auto act = ngword.Parse(ng);
-		xp_eq(exp["nguser"], act["nguser"].get<std::string>(), src);
-		xp_eq(exp["ngword"], act["ngword"].get<std::string>(), src);
-		auto type = exp["type"];
-		xp_eq(type, act["type"].get<std::string>(), src);
-		if (type == "%LIVE") {
-			xp_eq(exp["wday"], act["wday"].get<int>(), src);
-			xp_eq(exp["start"], act["start"].get<int>(), src);
-			xp_eq(exp["end1"], act["end1"].get<int>(), src);
-			xp_eq(exp["end2"], act["end2"].get<int>(), src);
-		} else if (type == "%DELAY") {
-			xp_eq(exp["delay"], act["delay"].get<int>(), src);
-			xp_eq(exp["ngtext"], act["ngtext"].get<std::string>(), src);
-		} else if (type == "%RT") {
-			xp_eq(exp["rtnum"], act["rtnum"].get<int>(), src);
-		} else if (type == "%SOURCE") {
-			xp_eq(exp["source"], act["source"].get<std::string>(), src);
-		} else if (type == "normal") {
+		// Parse() の出力 JSON では "nguser"。
+		xp_eq("u", act["nguser"], src);
+		xp_eq(src, act["ngword"], src);
+		const std::string& exptype = exp["type"];
+		xp_eq(exptype, act["type"], src);
+		if (exptype == "%LIVE") {
+			xp_eq(exp["wday"].get<int>(),  act["wday"].get<int>(), src);
+			xp_eq(exp["start"].get<int>(), act["start"].get<int>(), src);
+			xp_eq(exp["end1"].get<int>(),  act["end1"].get<int>(), src);
+			xp_eq(exp["end2"].get<int>(),  act["end2"].get<int>(), src);
+		} else if (exptype == "%DELAY") {
+			xp_eq(exp["delay"].get<int>(), act["delay"].get<int>(), src);
+			xp_eq(exp["ngtext"].get<std::string>(),
+			      act["ngtext"].get<std::string>(), src);
+		} else if (exptype == "%RT") {
+			xp_eq(exp["rtnum"].get<int>(), act["rtnum"].get<int>(), src);
+		} else if (exptype == "%SOURCE") {
+			xp_eq(exp["source"].get<std::string>(),
+			      act["source"].get<std::string>(), src);
+		} else if (exptype == "normal") {
 			// 追加パラメータなし
 		} else {
 			xp_fail(src);
