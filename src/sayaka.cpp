@@ -1296,9 +1296,12 @@ GetReplies(const Json& status,
 	}
 
 	// in_reply_to_user_id を追加
-	// フィールド自体があって null ということもあるようなので
-	// Has() は使わず、最初から文字列評価する (なければ "" になる)。
-	auto replyto_id = status["in_reply_to_user_id_str"].get<std::string>();
+	// フィールド自体があって json::null ということもあるようだ。
+	std::string replyto_id;
+	if (status.contains("in_reply_to_user_id_str") &&
+	    status["in_reply_to_user_id_str"].is_string()) {
+		replyto_id = status["in_reply_to_user_id_str"];
+	}
 	if (!replyto_id.empty()) {
 		std::string replyto_name;
 		if (diagShow > 0) {
