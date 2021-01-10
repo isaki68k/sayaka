@@ -146,7 +146,8 @@ conv_twtime_to_unixtime(const std::string& instr)
 	tm.tm_hour = hour;
 	tm.tm_min  = min;
 	tm.tm_sec  = sec;
-	return mktime(&tm);
+	// タイムゾーン欄 (+0000) は常に 0 っぽいので、他は対応してない
+	return mktime_z(NULL, &tm);
 }
 
 // strptime() っぽい俺様版。
@@ -201,9 +202,9 @@ test_formattime()
 	// テスト中は Now() が固定時刻を返す
 	std::vector<std::array<std::string, 2>> table = {
 		// 入力時刻							期待値
-		{ "Wed Nov 18 11:54:12 +0000 2009",	"11:54:12" },			// 同日
-		{ "Tue Nov 17 09:54:12 +0000 2009", "11/17 09:54:12" },		// 年内
-		{ "Tue Nov 18 11:54:12 +0000 2008", "2008/11/18 11:54" },	// それ以前
+		{ "Wed Nov 18 11:54:12 +0000 2009",	"20:54:12" },			// 同日
+		{ "Tue Nov 17 09:54:12 +0000 2009", "11/17 18:54:12" },		// 年内
+		{ "Tue Nov 18 11:54:12 +0000 2008", "2008/11/18 20:54" },	// それ以前
 	};
 	for (const auto& a : table) {
 		const auto& inp = a[0];
@@ -222,7 +223,7 @@ test_get_datetime()
 
 	std::vector<std::pair<std::string, time_t>> table = {
 		{ R"( "timestamp_ms":"1234999" )",	1234 },
-		{ R"( "created_at":"Wed Nov 18 18:54:12 +0000 2009" )", 1258538052 },
+		{ R"( "created_at":"Wed Nov 18 09:54:12 +0000 2009" )", 1258538052 },
 	};
 	for (const auto& a : table) {
 		auto& src = a.first;
