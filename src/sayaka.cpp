@@ -44,14 +44,17 @@
 class MediaInfo
 {
  public:
+	MediaInfo()
+	{
+	}
 	MediaInfo(const std::string& target_url_, const std::string& display_url_)
 	{
 		target_url = target_url_;
 		display_url = display_url_;
 	}
 
-	std::string target_url;
-	std::string display_url;
+	std::string target_url  {};
+	std::string display_url {};
 };
 
 enum Color {
@@ -82,8 +85,11 @@ static void init_color();
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
 static std::string coloring(const std::string& text, Color col);
+static std::vector<unichar> coloring(const std::vector<unichar>& utext,
+	Color col);
 class TextTag;
-std::string formatmsg(const Json& s, const std::vector<MediaInfo>& mediainfo);
+std::string formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
+static void SetTag(std::vector<TextTag>& tags, const Json& list, Color color);
 static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
@@ -518,7 +524,7 @@ showstatus(const Json& status, bool is_quoted)
 		: "";
 
 	std::vector<MediaInfo> mediainfo;
-	auto msg = formatmsg(s, mediainfo);
+	auto msg = formatmsg(s, &mediainfo);
 
 	show_icon(s_user);
 	print_(name + " " + userid + verified);
@@ -697,6 +703,7 @@ str_join(const std::string& sep, const std::string& s1, const std::string& s2)
 	}
 }
 
+// 文字列 text を属性付けした新しい文字列を返す (std::string 版)
 static std::string
 coloring(const std::string& text, Color col)
 {
@@ -705,7 +712,7 @@ coloring(const std::string& text, Color col)
 	if (opt_nocolor) {
 		// --nocolor なら一切属性を付けない
 		rv = text;
-	} else if (color2esc.empty()) {
+	} else if (__predict_false(color2esc.empty())) {
 		// ポカ避け
 		rv = string_format("Coloring(%s,%d)", text.c_str(), col);
 	} else {
@@ -714,14 +721,55 @@ coloring(const std::string& text, Color col)
 	return rv;
 }
 
+// Unicode配列 utext を文字列のように属性付けした新しい Unicode 配列を返す。
+// (vala では unichar と string がもっと親和性が高かったのでこうなっている)
+static std::vector<unichar>
+coloring(const std::vector<unichar>& utext, Color col)
+{
+	std::vector<unichar> rv;
+
+	if (opt_nocolor) {
+		// --nocolor なら一切属性を付けない
+		rv = utext;
+	} else if (__predict_false(color2esc.empty())) {
+		// ポカ避け (%d は省略)
+		std::vector<unichar> t { 'C', 'o', 'l', 'o', 'r', 'i', 'n', 'g', '(' };
+		rv.insert(rv.cend(), t.begin(), t.end());
+		rv.insert(rv.cend(), utext.begin(), utext.end());
+		rv.emplace_back(')');
+	} else {
+		// ( CSI + color2esc[col] + "m" ) + text + ( CSI + "0m" )
+		std::string pre = CSI + color2esc[col] + "m";
+		for (int i = 0; i < pre.size(); i++) {
+			rv.emplace_back(pre[i]);
+		}
+		rv.insert(rv.end(), utext.begin(), utext.end());
+		std::string post = CSI "0m";
+		for (int i = 0; i < post.size(); i++) {
+			rv.emplace_back(post[i]);
+		}
+	}
+	return rv;
+}
+
 class TextTag
 {
+	// 文字列先頭からタグが始まる場合は Start == 0 となるため、
+	// 未使用エントリは Start == -1 とする。
  public:
-	int Start;
-	int End;
-	Color Type;
-	std::string Text;
+	int Start {};
+	int End {};
+	Color Type {};
+	std::string Text {};
 
+	TextTag()
+		: TextTag(-1, -1, (Color)0)
+	{
+	}
+	TextTag(int start_, int end_, Color type_)
+		: TextTag(start_, end_, type_, "")
+	{
+	}
 	TextTag(int start_, int end_, Color type_, const std::string& text_)
 	{
 		Start = start_;
@@ -730,7 +778,9 @@ class TextTag
 		Text = text_;
 	}
 
-	int length() { return End - Start; }
+	int Length() const { return End - Start; }
+
+	bool Valid() const { return (Start >= 0); }
 
 	std::string to_string()
 	{
@@ -739,10 +789,254 @@ class TextTag
 };
 
 // 本文を整形して返す
+// (そのためにここでハッシュタグ、メンション、URL を展開)
+//
+// 従来はこうだった(↓)が
+//   "text":本文,
+//   "entities":{
+//     "hashtag":[..]
+//     "user_mentions":[..]
+//     "urls":[..]
+//   },
+//   "extended_entities":{
+//     "media":[..]
+//   }
+// extended_tweet 形式ではこれに加えて
+//   "extended_tweet":{
+//     "full_text":本文,
+//     "entities":{
+//     "hashtag":[..]
+//     "user_mentions":[..]
+//     "urls":[..]
+//     "media":[..]
+//   }
+// が追加されている。media の位置に注意。
 std::string
-formatmsg(const Json& s, const std::vector<MediaInfo>& mediainfo)
+formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 {
-printf("%s not implemented\n", __func__);
+	const Json *extw = NULL;
+	const Json *textj = NULL;
+
+	// 本文
+	if (s.contains("extended_tweet")) {
+		extw = &s["extended_tweet"];
+		if ((*extw).contains("full_text")) {
+			textj = &(*extw)["full_text"];
+		}
+	} else {
+		if (s.contains("text")) {
+			textj = &s["text"];
+		}
+	}
+	if (__predict_false(textj == NULL)) {
+		// ないことはないはず
+		return "";
+	}
+	const std::string& text = (*textj).get<std::string>();
+
+	// 1文字ずつ分解して配列に
+	std::vector<unichar> utext = Utf8ToUnicode(text);
+
+	// エンティティの位置が新旧で微妙に違うのを吸収
+	const Json *entities;
+	const Json *media_entities;
+	if (extw) {
+		if ((*extw).contains("entities")) {
+			entities = &(*extw)["entities"];
+		}
+		media_entities = entities;
+	} else {
+		if (s.contains("entities")) {
+			entities = &s["entities"];
+		}
+		if (s.contains("extended_entities")) {
+			media_entities = &s["extended_entities"];
+		}
+	}
+
+	// エンティティを調べる
+	std::vector<TextTag> tags(utext.size());
+	if (entities) {
+		// ハッシュタグ情報を展開
+		if ((*entities).contains("hashtags")) {
+			const Json& hashtags = (*entities)["hashtags"];
+			SetTag(tags, hashtags, Color::Tag);
+		}
+
+		// ユーザID情報を展開
+		if ((*entities).contains("user_mentions")) {
+			const Json& mentions = (*entities)["user_mentions"];
+			SetTag(tags, mentions, Color::UserId);
+		}
+
+		// URL を展開
+		if ((*entities).contains("urls")) {
+			const Json& urls = (*entities)["urls"];
+			if (urls.is_array()) {
+				for (const Json& u : urls) {
+					if (u.contains("indices")) {
+						const Json& indices = u["indices"];
+						if (!indices.is_array() || indices.size() != 2) {
+							continue;
+						}
+						int start = indices[0].get<int>();
+						int end   = indices[1].get<int>();
+
+						// url          … 本文中の短縮 URL
+						// display_url  … 差し替えて表示用の URL
+						// expanded_url … 展開後の URL
+						const auto& url      = u.value("url", "");
+						const auto& disp_url = u.value("display_url", "");
+						const auto& expd_url = u.value("expanded_url", "");
+
+						// 本文の短縮 URL を差し替える
+						std::string newurl;
+						const auto& qid = s.value("quoted_status_id_str", "");
+						std::string text2 = Chomp(text);
+						if (s.contains("quoted_status")
+						 && expd_url.find(qid) != std::string::npos
+						 && EndWith(text2, url))
+						{
+							// この場合は引用 RT の URL なので、表示しなくていい
+							newurl = "";
+						} else {
+							newurl = disp_url;
+						}
+						// --full-url モードなら短縮 URL ではなく元 URL を使う
+						if (opt_full_url
+						 && newurl.find("…") != std::string::npos)
+						{
+							newurl = expd_url;
+							string_replace(newurl, "http://", "");
+						}
+
+						tags[start] = TextTag(start, end, Color::Url, newurl);
+
+						// 外部画像サービスを解析
+						MediaInfo minfo;
+#if 0
+						if (format_image_url(&minfo, expd_url, disp_url)) {
+							(*mediainfo).emplace_back(minfo);
+						}
+#endif
+					}
+				}
+			}
+		}
+	}
+
+	// メディア情報を展開
+	if (media_entities != NULL && (*media_entities).contains("media")) {
+		const Json& media = (*media_entities)["media"];
+		for (const Json& m : media) {
+			// 本文の短縮 URL を差し替える
+			const std::string& disp_url = m.value("display_url", "");
+			if (m.contains("indices")) {
+				const Json& indices = m["indices"];
+				if (indices.is_array() && indices.size() == 2) {
+					int start = indices[0].get<int>();
+					int end   = indices[1].get<int>();
+					tags[start] = TextTag(start, end, Color::Url, disp_url);
+				}
+			}
+
+			// 画像展開に使う
+			//   url         本文中の短縮 URL (twitterから)
+			//   display_url 差し替えて表示用の URL (twitterから)
+			//   media_url   指定の実ファイル URL (twitterから)
+			//   target_url  それを元に実際に使う URL (こちらで付加)
+			//   width       幅指定。ピクセルか割合で (こちらで付加)
+			const std::string& media_url = m.value("media_url", "");
+			std::string target_url = media_url + ":small";
+			MediaInfo minfo(target_url, disp_url);
+			(*mediainfo).emplace_back(minfo);
+		}
+	}
+
+	// タグ情報をもとにテキストを整形
+	// 表示区間が指定されていたらそれに従う
+	// XXX 後ろは添付画像 URL とかなので削るとして
+	// XXX 前はメンションがどうなるか分からないのでとりあえず後回し
+	auto display_end = utext.size();
+	if (extw != NULL && (*extw).contains("display_text_range")) {
+		const Json& range = (*extw)["display_text_range"];
+		if (range.is_array() && range.size() >= 2) {
+			display_end = range[1].get<int>();
+		}
+	}
+	// 文字数を数える必要があるのでコードポイントのまま文字列を作っていく
+	std::vector<unichar> new_utext;
+	for (int i = 0; i < display_end; ) {
+		if (__predict_false(tags[i].Valid())) {
+			switch (tags[i].Type) {
+			 case Color::Tag:
+			 case Color::UserId:
+			 {
+				std::vector<unichar> sb;
+				for (int j = 0, jend = tags[i].Length(); j < jend; j++) {
+					sb.emplace_back(utext[i + j]);
+				}
+				sb = coloring(sb, tags[i].Type);
+				new_utext.insert(new_utext.end(), sb.begin(), sb.end());
+				i += tags[i].Length();
+				break;
+			 }
+			 case Color::Url:
+			 {
+				std::string sb = coloring(tags[i].Text, tags[i].Type);
+				for (int i = 0; i < sb.size(); i++) {
+					new_utext.emplace_back(sb[i]);
+				}
+				i += tags[i].Length();
+				break;
+			 }
+			 default:
+				break;
+			}
+		} else {
+			new_utext.emplace_back(utext[i++]);
+		}
+	}
+	// ここで文字列に戻す
+	std::string new_text = UnicodeToUtf8(new_utext);
+
+	// タグの整形が済んでからエスケープと改行を整形
+	new_text = unescape(new_text);
+	new_text = string_replace(new_text, "\r\n", "\n");
+	string_inreplace(new_text, '\r', '\n');
+
+	return new_text;
+}
+
+// formatmsg() の下請け。
+// list からタグ情報を取り出して tags にセットする。
+// ハッシュタグとユーザメンションがまったく同じ構造なので。
+//
+// "hashtag": [
+//   { "indices": [
+//	     <start> … 開始位置、1文字目からなら 0
+//       <end>   … 終了位置。この1文字前まで
+//     ],
+//     "...": 他のキーもあるかも知れないがここでは見ない
+//   }, ...
+// ]
+static void
+SetTag(std::vector<TextTag>& tags, const Json& list, Color color)
+{
+	if (list.is_array() == false) {
+		return;
+	}
+
+	for (const Json& t : list) {
+		if (t.contains("indices")) {
+			const Json& indices = t["indices"];
+			if (indices.is_array() && indices.size() == 2) {
+				int start = indices[0].get<int>();
+				int end   = indices[1].get<int>();
+				tags[start] = TextTag(start, end, color);
+			}
+		}
+	}
 }
 
 // 現在行に user のアイコンを表示。
