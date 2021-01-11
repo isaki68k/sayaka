@@ -101,7 +101,7 @@ NGWord::ParseFile()
 //	"delay" => 遅延させる時間 [時間]
 // type == "%RT" なら "rtnum" (RT数閾値)
 // type == "%SOURCE" なら "source"(クライアント名regex)
-// type == "normal" なら "ngword" をそのまま比較に使用
+// type == "regular" なら "ngword" をそのまま比較に使用
 /*static*/ Json
 NGWord::Parse(const Json& ng)
 {
@@ -167,7 +167,7 @@ NGWord::Parse(const Json& ng)
 	}
 
 	// 通常 NG ワード
-	ng2["type"] = "normal";
+	ng2["type"] = "regular";
 	return ng2;
 }
 
@@ -296,7 +296,7 @@ NGWord::MatchMain(const Json& ng, const Json& status)
 
 	} else if (ngtype == "%DELAY") {	// 表示遅延
 		// まずは通常の文字列比較
-		if (MatchNormal(ng["ngtext"], status)) {
+		if (MatchRegular(ng["ngtext"], status)) {
 			// 一致したら発言時刻と現在時刻を比較
 
 			// 発言時刻
@@ -319,7 +319,7 @@ NGWord::MatchMain(const Json& ng, const Json& status)
 		}
 
 	} else {	// 通常 NG ワード
-		if (MatchNormal(ngword, status)) {
+		if (MatchRegular(ngword, status)) {
 			return true;
 		}
 	}
@@ -330,7 +330,7 @@ NGWord::MatchMain(const Json& ng, const Json& status)
 // NGワード ngword が status 中の本文に正規表現でマッチするか調べる。
 // マッチすれば true、しなければ false を返す。
 /*static*/ bool
-NGWord::MatchNormal(const std::string& ngword, const Json& status)
+NGWord::MatchRegular(const std::string& ngword, const Json& status)
 {
 	const Json *textp = NULL;
 
@@ -374,7 +374,7 @@ NGWord::MatchMainRT(const Json& ng, const Json& status) const
 
 	// 名前も比較
 	const std::string& ngtype = ng["type"];
-	if (ngtype == "normal") {
+	if (ngtype == "regular") {
 		const Json& user = status["user"];
 		const std::string& ngword = ng["ngword"];
 		// 正規表現未対応
@@ -495,7 +495,7 @@ test_NGWord_Parse()
 
 	std::vector<std::pair<std::string, std::string>> table = {
 		// src	期待値 JSON のうち可変部分ダンプ
-		{ "a",	R"("type":"normal")" },
+		{ "a",	R"("type":"regular")" },
 		{ "%LIVE,Mon,00:01,23:59,a,a",
 		  R"( "type":"%LIVE","wday":1,"start":1,"end1":1439,"end2":-1 )" },
 		{ "%LIVE,Tue,00:00,24:01,a,a",
@@ -537,7 +537,7 @@ test_NGWord_Parse()
 		} else if (exptype == "%SOURCE") {
 			xp_eq(exp["source"].get<std::string>(),
 			      act["source"].get<std::string>(), src);
-		} else if (exptype == "normal") {
+		} else if (exptype == "regular") {
 			// 追加パラメータなし
 		} else {
 			xp_fail(src);
@@ -634,7 +634,7 @@ test_NGWord_MatchMain()
 }
 
 void
-test_NGWord_MatchNormal()
+test_NGWord_MatchRegular()
 {
 	printf("%s\n", __func__);
 
@@ -672,7 +672,7 @@ test_NGWord_MatchNormal()
 		// テストを選択
 		const Json& status = statuses[testname];
 
-		auto actual = NGWord::MatchNormal(ngword, status);
+		auto actual = NGWord::MatchRegular(ngword, status);
 		xp_eq(expected, actual, testname + "," + ngword);
 	}
 }
@@ -684,6 +684,6 @@ test_NGWord()
 	test_NGWord_Parse();
 	test_NGWord_MatchUser();
 	test_NGWord_MatchMain();
-	test_NGWord_MatchNormal();
+	test_NGWord_MatchRegular();
 }
 #endif
