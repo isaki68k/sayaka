@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Json.h"
-#include <time.h>
+#include <ctime>
 #include <string>
 
 extern std::string formatname(const std::string& text);
