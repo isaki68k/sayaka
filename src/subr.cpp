@@ -203,11 +203,11 @@ Utf8ToUnicode(const std::string& utf8str)
 	std::vector<unichar> unistr;
 
 #if _BYTE_ORDER == _LITTLE_ENDIAN
-#define UTF32HE	"utf-32le"
+#define UTF32_HE "utf-32le"
 #else
-#define UTF32HE "utf-32be"
+#define UTF32_HE "utf-32be"
 #endif
-	cd = iconv_open(UTF32HE, "utf-8");
+	cd = iconv_open(UTF32_HE, "utf-8");
 	if (cd == (iconv_t)-1) {
 		return unistr;
 	}
@@ -252,6 +252,48 @@ Utf8ToUnicode(const std::string& utf8str)
 		unistr.emplace_back(*s++);
 	}
 	return unistr;
+}
+
+// Unicode コードポイント配列を UTF-8 文字列に変換する。
+// Unicode コードポイントといいつつ実際は UTF-32 なのだが。
+// 変換できなければ "" を返す。
+std::string
+UnicodeToUtf8(const std::vector<unichar>& ustr)
+{
+	iconv_t cd;
+	std::string str;
+
+	cd = iconv_open("utf-8", UTF32_HE);
+	if (cd == (iconv_t)-1) {
+		return str;
+	}
+
+	size_t srcleft = ustr.size() * 4;
+	std::vector<char> srcbuf(srcleft);
+	std::vector<char> dstbuf(srcleft);	// 足りるはず?
+	memcpy(srcbuf.data(), ustr.data(), ustr.size() * 4);
+	const char *src = srcbuf.data();
+	char *dst = dstbuf.data();
+	size_t dstlen = dstbuf.size();
+	auto r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	if (r < 0) {
+		iconv_close(cd);
+		return str;
+	}
+	if (r > 0) {
+		// 戻り値は invalid conversion の数
+		iconv_close(cd);
+		// どうすべ
+		errno = 0;
+		return str;
+	}
+
+	const char *s = (const char *)dstbuf.data();
+	const char *e = (const char *)dst;
+	while (s < e) {
+		str += *s++;
+	}
+	return str;
 }
 
 #if defined(SELFTEST)
@@ -347,6 +389,8 @@ test_Utf8ToUnicode()
 		{ "￥",					{ 0xffe5 } },	// FULLWIDTH YEN SIGN
 		{ "\xf0\x9f\x98\xad",	{ 0x1f62d } },	// LOUDLY CRYING FACE
 	};
+
+	// Utf8ToUnicode()
 	for (const auto& a : table) {
 		const auto& input = a.first;
 		const auto& expected = a.second;
@@ -359,6 +403,15 @@ test_Utf8ToUnicode()
 		} else {
 			xp_eq(expected.size(), actual.size(), input);
 		}
+	}
+
+	// UnicodeToUtf8()
+	for (const auto& a : table) {
+		const auto& expected = a.first;
+		const auto& input = a.second;
+
+		auto actual = UnicodeToUtf8(input);
+		xp_eq(expected, actual, expected);
 	}
 }
 

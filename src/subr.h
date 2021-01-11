@@ -18,6 +18,7 @@ extern time_t conv_twtime_to_unixtime(const std::string& s);
 extern int my_strptime(const std::string& buf, const std::string& fmt);
 
 extern std::vector<unichar> Utf8ToUnicode(const std::string& utf8str);
+extern std::string UnicodeToUtf8(const std::vector<unichar>& ustr);
 
 #if defined(SELFTEST)
 extern void test_subr();
