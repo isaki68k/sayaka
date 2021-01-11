@@ -38,6 +38,18 @@ string_replace(const std::string& s,
 	return rv;
 }
 
+// s のすべての oldchar を newchar に置換する (s を書き換える)
+void
+string_inreplace(std::string& s, char oldchar, char newchar)
+{
+	for (auto pos = 0;;) {
+		pos = s.find(oldchar, pos);
+		if (pos == std::string::npos)
+			break;
+		s[pos++] = newchar;
+	}
+}
+
 // s の末尾の連続する空白文字を削除する (s を書き換える)
 void
 string_rtrim(std::string& s)
@@ -306,6 +318,28 @@ test_string_replace()
 
 		auto actual = string_replace(input, oldstr, newstr);
 		xp_eq(exp, actual, input + ",/" + oldstr + "/" + newstr + "/");
+	}
+}
+
+void
+test_string_inreplace()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::tuple<std::string, char, char, std::string>> table = {
+		{ "abaca",	'a',	'x',	"xbxcx" },
+		{ "",		'a',	'x',	"" },
+		{ "abaca",	'a',	'a',	"abaca" },	// old/new が同じ
+	};
+	for (const auto& a : table) {
+		std::string input = std::get<0>(a);
+		char oldchar = std::get<1>(a);
+		char newchar = std::get<2>(a);
+		const auto& expected = std::get<3>(a);
+		std::string where = input + "," + oldchar + "," + newchar;
+
+		string_inreplace(input, oldchar, newchar);
+		xp_eq(expected, input, where);
 	}
 }
 
@@ -595,6 +629,7 @@ void
 test_StringUtil()
 {
 	test_string_replace();
+	test_string_inreplace();
 	test_string_rtrim();
 	test_Split();
 	test_Split_limit();

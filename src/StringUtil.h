@@ -6,10 +6,12 @@
 
 extern std::string string_format(const char *fmt, ...) __printflike(1, 2);
 
-// s の old を new に置換した文字列を返す。
+// s のすべての old を new に置換した文字列を返す。
 // (std::string::replace() は指定位置の文字を置き換えるタイプなので違う)
 extern std::string string_replace(const std::string& s,
 	const std::string& o, const std::string& n);
+// s のすべての oldchar を newchar に置換する (s を書き換える)
+extern void string_inreplace(std::string& s, char o, char n);
 
 // s の末尾の連続する空白文字を削除する (s を書き換える)
 extern void string_rtrim(std::string& s);
