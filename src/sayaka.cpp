@@ -610,7 +610,167 @@ format_fav_cnt(const Json& s)
 static void
 print_(const std::string& text)
 {
-	printf("%s not implemented\n", __func__);
+	// まず Unicode 文字単位でいろいろフィルターかける。
+	UString src = StringToUString(text);
+	UString textarray;
+	for (const auto uni : src) {
+		// Private Use Area (外字) をコードポイント形式(?)にする
+		if (__predict_false((  0xe000 <= uni && uni <=   0xf8ff))	// BMP
+		 || __predict_false(( 0xf0000 <= uni && uni <=  0xffffd))	// 第15面
+		 || __predict_false((0x100000 <= uni && uni <= 0x10fffd))) 	// 第16面
+		{
+			auto tmpstr = string_format("<U+%X>", uni);
+			auto tmp = StringToUString(tmpstr);
+			textarray += tmp;
+			continue;
+		}
+
+		// ここで EVS 文字を抜く。
+		// 絵文字セレクタらしいけど、うちの mlterm + sayaka14 フォントだと
+		// U+FE0E とかの文字が前の文字に上書き出力されてぐちゃぐちゃに
+		// なってしまうので、mlterm が対応するまではこっちでパッチ対応。
+		if (__predict_false(uni == 0xfe0e || uni == 0xfe0f)) {
+			if (opt_evs) {
+				textarray += uni;
+			}
+			continue;
+		}
+
+		// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
+		if (iconv_tocode != "") {
+			// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
+			if (uni == 0xff5e) {
+				textarray.Append(0x301c);
+				continue;
+			}
+
+			// 全角ハイフンマイナス(U+FF0D) -> マイナス記号(U+2212)
+			if (uni == 0xff0d) {
+				textarray.Append(0x2212);
+				continue;
+			}
+
+			// BULLET (U+2022) -> 中黒(U+30FB)
+			if (uni == 0x2022) {
+				textarray.Append(0x30fb);
+				continue;
+			}
+		}
+
+		// NetBSD/x68k なら半角カナは表示できる。
+		// XXX 正確には JIS という訳ではないのだがとりあえず
+		if (__predict_false(iconv_tocode == "iso-2022-jp")) {
+			if (0xff61 <= uni && uni < 0xffa0) {
+				// 半角カナはそのまま、あるいは JIS に変換、SI/SO を
+				// 使うなどしても、この後の JIS-> UTF-8 変換を安全に
+				// 通せないので、ここで半角カナを文字コードではない
+				// 自前エスケープシーケンスに置き換えておいて、
+				// 変換後にもう一度デコードして復元することにする。
+				// ESC [ .. n は端末問い合わせの CSI シーケンスなので
+				// 入力には来ないはずだし、仮にそのまま出力されたと
+				// してもあまりまずいことにはならないんじゃないかな。
+				// 半角カナを GL に置いた時の10進数2桁でエンコード。
+				auto str = string_format(ESC "[%dn", uni - 0xff60 + 0x20);
+				auto tmp = StringToUString(str);
+				textarray += tmp;
+				continue;
+			}
+		}
+
+		textarray += uni;
+	}
+
+	// 文字コードを変換する場合は、
+	// ここで一度変換してみて、それを Unicode に戻す。
+	// この後の改行処理で、Unicode では半角幅だが変換すると全角ゲタ(〓)
+	// になるような文字の文字幅が合わなくなるのを避けるため。
+#if 0
+	if (__predict_false(!iconv_tocode.empty()) {
+		sb = UStringToString(textarray);
+
+		// 変換してみる (変換できない文字をフォールバックさせる)
+	}
+#endif
+
+	// ここからインデント
+	UString sb;
+
+	// インデント階層
+	auto left = indent_cols * (indent_depth + 1);
+	auto indent_str = string_format(CSI "%dC", left);
+	auto indent = StringToUString(indent_str);
+	sb.Append(indent);
+
+	if (__predict_false(screen_cols == 0)) {
+		// 桁数が分からない場合は何もしない
+		sb.Append(textarray);
+	} else {
+		// 1文字ずつ文字幅を数えながら出力用に整形していく
+		int inescape = 0;
+		auto x = left;
+		for (auto uni : textarray) {
+			if (__predict_false(inescape > 0)) {
+				// 1: ESC直後
+				// 2: ESC [
+				// 3: ESC (
+				sb.Append(uni);
+				switch (inescape) {
+				 case 1:
+					// ESC 直後の文字で二手に分かれる
+					if (uni == '[') {
+						inescape = 2;
+					} else {
+						inescape = 3;	// 手抜き
+					}
+					break;
+				 case 2:
+					// ESC [ 以降 'm' まで
+					if (uni == 'm') {
+						inescape = 0;
+					}
+					break;
+				 case 3:
+					// ESC ( の次の1文字だけ
+					inescape = 0;
+					break;
+				}
+			} else {
+				if (uni == ESCchar) {
+					sb += uni;
+					inescape = 1;
+				} else if (uni == '\n') {
+					sb += uni;
+					sb += indent;
+					x = left;
+				} else if (0/*iswide_cjk()*/
+				        || (0x1f000 <= uni && uni <= 0x1ffff))	// 絵文字
+				{
+					if (x > screen_cols - 2) {
+						sb += '\n';
+						sb += indent;
+						x = left;
+					}
+					sb += uni;
+					x += 2;
+				} else {
+					sb += uni;
+					x++;
+				}
+				if (x > screen_cols - 1) {
+					sb += '\n';
+					sb += indent;
+					x = left;
+				}
+			}
+		}
+	}
+	std::string outtext = UStringToString(sb);
+
+	// 出力文字コードの変換
+	if (__predict_false(!iconv_tocode.empty())) {
+	}
+
+	fputs(outtext.c_str(), stdout);
 }
 
 static void
