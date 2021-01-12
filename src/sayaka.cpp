@@ -759,13 +759,9 @@ class TextTag
 	std::string Text {};
 
 	TextTag()
-		: TextTag(-1, -1, (Color)0)
-	{
-	}
+		: TextTag(-1, -1, (Color)0) { }
 	TextTag(int start_, int end_, Color type_)
-		: TextTag(start_, end_, type_, "")
-	{
-	}
+		: TextTag(start_, end_, type_, "") { }
 	TextTag(int start_, int end_, Color type_, const std::string& text_)
 	{
 		Start = start_;
@@ -778,8 +774,7 @@ class TextTag
 
 	bool Valid() const { return (Start >= 0); }
 
-	std::string to_string()
-	{
+	std::string to_string() {
 		return string_format("(%d, %d, %d)", Start, End, (int)Type);
 	}
 };
