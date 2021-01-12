@@ -2834,6 +2834,9 @@ public class SayakaMain
 		} else {
 			var screen_name = unescape(user.GetString("screen_name"));
 			var image_url = user.GetString("profile_image_url_https");
+			if (image_url == "") {
+				image_url = user.GetString("profile_image_url");
+			}
 
 			// URLのファイル名部分をキャッシュのキーにする
 			var filename = Path.get_basename(image_url);
