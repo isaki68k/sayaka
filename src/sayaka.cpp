@@ -1057,15 +1057,24 @@ show_icon(const Json& user)
 	if (opt_noimage) {
 		printf(" *");
 	} else {
-		auto screen_name = unescape(user["screen_name"].get<std::string>());
-		auto image_url = user["profile_image_url_https"].get<std::string>();
+		auto screen_name = unescape(user.value("screen_name", ""));
+		const auto& image_url = user.contains("profile_image_url_https")
+			? user["profile_image_url_https"].get<std::string>()
+			: (user.contains("profile_image_url")
+				? user["profile_image_url"].get<std::string>()
+				: "");
 
 		// URL のファイル名部分をキャッシュのキーにする
 		auto p = image_url.rfind('/');
-		auto img_file = string_format("icon-%dx%d-%s-%s",
-			iconsize, iconsize, screen_name.c_str(), image_url.c_str() + p + 1);
-
-		show_image(img_file, image_url, iconsize, -1);
+		if (__predict_false(p < 0)) {
+			// ないことはないはずだけど
+			printf(" *");
+		} else {
+			auto img_file = string_format("icon-%dx%d-%s-%s",
+				iconsize, iconsize, screen_name.c_str(),
+				image_url.c_str() + p + 1);
+			show_image(img_file, image_url, iconsize, -1);
+		}
 	}
 
 	// カーソル位置を復帰
