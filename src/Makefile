@@ -23,16 +23,16 @@ SRCS=	\
 
 CXX=		c++ -std=c++17
 CPPFLAGS+=	-g -O0
-CPPFLAGS+=	-I../mbedtls/include
 CPPFLAGS+=	-I/usr/pkg/include
 
+#	../mbedtls/library/libmbedx509.a \
+#	../mbedtls/library/libmbedcrypto.a \
+
 LIBS +=	\
-	../mbedtls/library/libmbedtls.a \
-	../mbedtls/library/libmbedx509.a \
-	../mbedtls/library/libmbedcrypto.a \
 	-lssl \
 	-L/usr/pkg/lib -Wl,-R,/usr/pkg/lib \
 	-licuuc \
+	-lmbedtls \
 
 all:	test sayaka
 

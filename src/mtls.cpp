@@ -1,10 +1,10 @@
 #include "mtls.h"
-#include "mbedtls/debug.h"
-#include "mbedtls/error.h"
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
 #include <sys/socket.h>
+#include <mbedtls/debug.h>
+#include <mbedtls/error.h>
 
 //#define DEBUG 1
 
@@ -179,8 +179,12 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 
 	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
 
+#if 0
 	r = mbedtls_net_connect_timeout(&net, hostname, servname,
 		MBEDTLS_NET_PROTO_TCP, connect_timeout);
+#else
+	r = mbedtls_net_connect(&net, hostname, servname, MBEDTLS_NET_PROTO_TCP);
+#endif
 	if (r != 0) {
 		ERROR("mbedtls_net_connect_timeout %s:%s - %s\n",
 			hostname, servname, errmsg(r));
