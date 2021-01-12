@@ -376,13 +376,21 @@ NGWord::MatchMainRT(const Json& ng, const Json& status) const
 	// 名前も比較
 	const auto& ngtype = ng["type"].get<std::string>();
 	if (ngtype == "regular") {
-		if (status.contains("user")) {
-			const Json& user = status["user"];
-			const auto& ngword = ng["ngword"].get<std::string>();
-			// 正規表現未対応
-#if 0
-#endif
+		if (__predict_false(status.contains("user") == false)) {
 			return false;
+		}
+		const Json& user = status["user"];
+		const auto& ngword = ng["ngword"].get<std::string>();
+		try {
+			std::regex re(ngword, std::regex_constants::icase);
+			if (regex_search(user.value("screen_name", ""), re)) {
+				return true;
+			}
+			if (regex_search(user.value("name", ""), re)) {
+				return true;
+			}
+		} catch (...) {
+			// 正規表現周りで失敗したらそのまま続行(失敗扱い)でよい
 		}
 	}
 
