@@ -36,23 +36,23 @@ TwitterToken::SaveToFile(const std::string& filename)
 // Twitter
 //
 
-/*static*/ const std::string Twitter::accessTokenURL =
+/*static*/ const char Twitter::accessTokenURL[] =
 	"https://api.twitter.com/oauth/access_token";
-/*static*/ const std::string Twitter::authorizeURL =
+/*static*/ const char Twitter::authorizeURL[] =
 	"https://twitter.com/oauth/authorize";
-/*static*/ const std::string Twitter::requestTokenURL =
+/*static*/ const char Twitter::requestTokenURL[] =
 	"https://api.twitter.com/oauth/request_token";
 
-/*static*/ const std::string Twitter::APIRoot =
+/*static*/ const char Twitter::APIRoot[] =
 	"https://api.twitter.com/1.1/";
-/*static*/ const std::string Twitter::StreamAPIRoot =
+/*static*/ const char Twitter::StreamAPIRoot[] =
 	"https://userstream.twitter.com/1.1/";
-/*static*/ const std::string Twitter::PublicAPIRoot =
+/*static*/ const char Twitter::PublicAPIRoot[] =
 	"https://stream.twitter.com/1.1/";
 
-/*static*/ const std::string Twitter::ConsumerKey =
+/*static*/ const char Twitter::ConsumerKey[] =
 	"jPY9PU5lvwb6s9mqx3KjRA";
-/*static*/ const std::string Twitter::ConsumerSecret =
+/*static*/ const char Twitter::ConsumerSecret[] =
 	"faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw";
 
 // コンストラクタ

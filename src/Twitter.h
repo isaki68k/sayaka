@@ -53,16 +53,16 @@ class Twitter
 	Diag diag;
 
  public:
-	static const std::string accessTokenURL;
-	static const std::string authorizeURL;
-	static const std::string requestTokenURL;
+	static const char accessTokenURL[];
+	static const char authorizeURL[];
+	static const char requestTokenURL[];
 
-	static const std::string APIRoot;
-	static const std::string StreamAPIRoot;
-	static const std::string PublicAPIRoot;
+	static const char APIRoot[];
+	static const char StreamAPIRoot[];
+	static const char PublicAPIRoot[];
  private:
-	static const std::string ConsumerKey;
-	static const std::string ConsumerSecret;
+	static const char ConsumerKey[];
+	static const char ConsumerSecret[];
 };
 
 #if defined(SELFTEST)
