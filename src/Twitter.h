@@ -29,8 +29,6 @@ class Twitter
 	// Access Token を取得するところまで
 	void GetAccessToken();
 
-	InputStream *UserStreamAPI(const std::string& api,
-		const StringDictionary& options);
 	InputStream *GetAPI(const std::string& apiRoot, const std::string& api,
 		const StringDictionary& options);
 	InputStream *PostAPI(const std::string& apiRoot, const std::string& api,
@@ -59,7 +57,6 @@ class Twitter
 
 	static const char APIRoot[];
 	static const char StreamAPIRoot[];
-	static const char PublicAPIRoot[];
  private:
 	static const char ConsumerKey[];
 	static const char ConsumerSecret[];

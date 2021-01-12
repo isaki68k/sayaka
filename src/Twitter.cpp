@@ -46,8 +46,6 @@ TwitterToken::SaveToFile(const std::string& filename)
 /*static*/ const char Twitter::APIRoot[] =
 	"https://api.twitter.com/1.1/";
 /*static*/ const char Twitter::StreamAPIRoot[] =
-	"https://userstream.twitter.com/1.1/";
-/*static*/ const char Twitter::PublicAPIRoot[] =
 	"https://stream.twitter.com/1.1/";
 
 /*static*/ const char Twitter::ConsumerKey[] =
@@ -109,12 +107,6 @@ Twitter::GetAccessToken()
 
 	AccessToken.Token  = oauth.AccessToken;
 	AccessToken.Secret = oauth.AccessSecret;
-}
-
-InputStream *
-Twitter::UserStreamAPI(const std::string& api, const StringDictionary& options)
-{
-	return GetAPI(StreamAPIRoot, api, options);
 }
 
 InputStream *

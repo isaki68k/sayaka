@@ -297,7 +297,7 @@ cmd_stream()
 			// キーワード検索
 			dict.AddOrUpdate("track", opt_filter);
 		}
-		stream = tw.PostAPI(Twitter::PublicAPIRoot, "statuses/filter", dict);
+		stream = tw.PostAPI(Twitter::StreamAPIRoot, "statuses/filter", dict);
 		if (stream == NULL) {
 			errx(1, "statuses/filter failed");
 		}
