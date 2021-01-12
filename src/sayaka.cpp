@@ -38,6 +38,7 @@
 #include <cstdio>
 #include <cstring>
 #include <err.h>
+#include <unicode/uchar.h>
 
 #if !defined(PATH_SEPARATOR)
 #define PATH_SEPARATOR "/"
@@ -735,19 +736,31 @@ print_(const std::string& text)
 					sb += uni;
 					sb += indent;
 					x = left;
-				} else if (0/*iswide_cjk()*/
-				        || (0x1f000 <= uni && uni <= 0x1ffff))	// 絵文字
-				{
-					if (x > screen_cols - 2) {
-						sb += '\n';
-						sb += indent;
-						x = left;
-					}
-					sb += uni;
-					x += 2;
 				} else {
-					sb += uni;
-					x++;
+					// Neutral と Ambiguous は安全のため2桁側に振っておく。
+					// 2桁で数えておけば端末が1桁しか進まなくても、改行が
+					// 想定より早まるだけで、逆よりはマシ。
+					auto eaw = (UEastAsianWidth)u_getIntPropertyValue(uni,
+						UCHAR_EAST_ASIAN_WIDTH);
+					switch (eaw) {
+					 case U_EA_NARROW:
+					 case U_EA_HALFWIDTH:
+						sb += uni;
+						x++;
+						break;
+					 case U_EA_WIDE:
+					 case U_EA_FULLWIDTH:
+					 case U_EA_NEUTRAL:
+					 case U_EA_AMBIGUOUS:
+						if (x > screen_cols - 2) {
+							sb += '\n';
+							sb += indent;
+							x = left;
+						}
+						sb += uni;
+						x += 2;
+						break;
+					}
 				}
 				if (x > screen_cols - 1) {
 					sb += '\n';
