@@ -1,7 +1,5 @@
 #include "StringUtil.h"
 #include "subr.h"
-#include <iconv.h>
-#include <sys/endian.h>
 
 // 雑多なサブルーチン
 
@@ -193,109 +191,6 @@ my_strptime(const std::string& buf, const std::string& fmt)
 	return -1;
 }
 
-// UTF-8 入力文字列 utf8str を Unicode コードポイントの配列に変換する。
-// といいつつ UTF-32 なのだが (実際は別物)。
-// 変換できなければ空配列を返す。
-std::vector<unichar>
-Utf8ToUnicode(const std::string& utf8str)
-{
-	iconv_t cd;
-	std::vector<unichar> unistr;
-
-#if _BYTE_ORDER == _LITTLE_ENDIAN
-#define UTF32_HE "utf-32le"
-#else
-#define UTF32_HE "utf-32be"
-#endif
-	cd = iconv_open(UTF32_HE, "utf-8");
-	if (cd == (iconv_t)-1) {
-		return unistr;
-	}
-
-	size_t srcleft = utf8str.size();
-	std::vector<char> srcbuf(srcleft + 1);
-	std::vector<char> dstbuf(srcleft * 4 + 1);
-	memcpy(srcbuf.data(), utf8str.c_str(), srcbuf.size());
-	const char *src = srcbuf.data();
-	char *dst = dstbuf.data();
-	size_t dstlen = dstbuf.size();
-	auto r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-	if (r < 0) {
-		iconv_close(cd);
-		return unistr;
-	}
-	if (r > 0) {
-		// 戻り値は invalid conversion の数
-		iconv_close(cd);
-		// どうすべ
-		errno = 0;
-		return unistr;
-	}
-
-	// デバッグ用
-	if (0) {
-		printf("src=+%x srcleft=%d->%d dst=+%x dstlen=%d:",
-			(int)(src-srcbuf.data()),
-			(int)utf8str.size(),
-			(int)srcleft,
-			(int)(dst-dstbuf.data()),
-			(int)dstlen);
-		for (int i = 0; i < (dst - dstbuf.data()); i++) {
-			printf(" %02x", (unsigned char)dstbuf[i]);
-		}
-		printf("\n");
-	}
-
-	const uint32_t *s = (const uint32_t *)dstbuf.data();
-	const uint32_t *e = (const uint32_t *)dst;
-	while (s < e) {
-		unistr.emplace_back(*s++);
-	}
-	return unistr;
-}
-
-// Unicode コードポイント配列を UTF-8 文字列に変換する。
-// Unicode コードポイントといいつつ実際は UTF-32 なのだが。
-// 変換できなければ "" を返す。
-std::string
-UnicodeToUtf8(const std::vector<unichar>& ustr)
-{
-	iconv_t cd;
-	std::string str;
-
-	cd = iconv_open("utf-8", UTF32_HE);
-	if (cd == (iconv_t)-1) {
-		return str;
-	}
-
-	size_t srcleft = ustr.size() * 4;
-	std::vector<char> srcbuf(srcleft);
-	std::vector<char> dstbuf(srcleft);	// 足りるはず?
-	memcpy(srcbuf.data(), ustr.data(), ustr.size() * 4);
-	const char *src = srcbuf.data();
-	char *dst = dstbuf.data();
-	size_t dstlen = dstbuf.size();
-	auto r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-	if (r < 0) {
-		iconv_close(cd);
-		return str;
-	}
-	if (r > 0) {
-		// 戻り値は invalid conversion の数
-		iconv_close(cd);
-		// どうすべ
-		errno = 0;
-		return str;
-	}
-
-	const char *s = (const char *)dstbuf.data();
-	const char *e = (const char *)dst;
-	while (s < e) {
-		str += *s++;
-	}
-	return str;
-}
-
 #if defined(SELFTEST)
 #include "test.h"
 
@@ -378,49 +273,10 @@ test_my_strptime()
 }
 
 void
-test_Utf8ToUnicode()
-{
-	printf("%s\n", __func__);
-
-	std::vector<std::pair<std::string, std::vector<unichar>>> table = {
-		// input				expected
-		{ "AB\n",				{ 0x41, 0x42, 0x0a } },
-		{ "亜",					{ 0x4e9c } },
-		{ "￥",					{ 0xffe5 } },	// FULLWIDTH YEN SIGN
-		{ "\xf0\x9f\x98\xad",	{ 0x1f62d } },	// LOUDLY CRYING FACE
-	};
-
-	// Utf8ToUnicode()
-	for (const auto& a : table) {
-		const auto& input = a.first;
-		const auto& expected = a.second;
-
-		auto actual = Utf8ToUnicode(input);
-		if (expected.size() == actual.size()) {
-			for (int i = 0; i < expected.size(); i++) {
-				xp_eq(expected[i], actual[i], input);
-			}
-		} else {
-			xp_eq(expected.size(), actual.size(), input);
-		}
-	}
-
-	// UnicodeToUtf8()
-	for (const auto& a : table) {
-		const auto& expected = a.first;
-		const auto& input = a.second;
-
-		auto actual = UnicodeToUtf8(input);
-		xp_eq(expected, actual, expected);
-	}
-}
-
-void
 test_subr()
 {
 	test_formattime();
 	test_get_datetime();
 	test_my_strptime();
-	test_Utf8ToUnicode();
 }
 #endif

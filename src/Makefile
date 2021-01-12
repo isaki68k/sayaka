@@ -14,6 +14,7 @@ SRCS=	\
 	StreamBase.cpp \
 	StringUtil.cpp \
 	Twitter.cpp \
+	UString.cpp \
 	acl.cpp \
 	mtls.cpp \
 	sayaka.cpp \

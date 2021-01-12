@@ -30,6 +30,7 @@
 #include "sayaka.h"
 #include "FileInputStream.h"
 #include "StringUtil.h"
+#include "UString.h"
 #include "main.h"
 #include "subr.h"
 #include <memory>
@@ -85,8 +86,7 @@ static void init_color();
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
 static std::string coloring(const std::string& text, Color col);
-static std::vector<unichar> coloring(const std::vector<unichar>& utext,
-	Color col);
+static UString coloring(const UString& utext, Color col);
 class TextTag;
 std::string formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
 static void SetTag(std::vector<TextTag>& tags, const Json& list, Color color);
@@ -721,33 +721,29 @@ coloring(const std::string& text, Color col)
 	return rv;
 }
 
-// Unicode配列 utext を文字列のように属性付けした新しい Unicode 配列を返す。
+// UString の utext を属性付けした新しい UString を返す。
 // (vala では unichar と string がもっと親和性が高かったのでこうなっている)
-static std::vector<unichar>
-coloring(const std::vector<unichar>& utext, Color col)
+static UString
+coloring(const UString& utext, Color col)
 {
-	std::vector<unichar> rv;
+	UString rv;
 
 	if (opt_nocolor) {
 		// --nocolor なら一切属性を付けない
 		rv = utext;
 	} else if (__predict_false(color2esc.empty())) {
 		// ポカ避け (%d は省略)
-		std::vector<unichar> t { 'C', 'o', 'l', 'o', 'r', 'i', 'n', 'g', '(' };
-		rv.insert(rv.cend(), t.begin(), t.end());
-		rv.insert(rv.cend(), utext.begin(), utext.end());
-		rv.emplace_back(')');
+		const UString tmp { 'C', 'o', 'l', 'o', 'r', 'i', 'n', 'g', '(' };
+		rv += tmp;
+		rv += utext;
+		rv += ')';
 	} else {
 		// ( CSI + color2esc[col] + "m" ) + text + ( CSI + "0m" )
 		std::string pre = CSI + color2esc[col] + "m";
-		for (int i = 0; i < pre.size(); i++) {
-			rv.emplace_back(pre[i]);
-		}
-		rv.insert(rv.end(), utext.begin(), utext.end());
 		std::string post = CSI "0m";
-		for (int i = 0; i < post.size(); i++) {
-			rv.emplace_back(post[i]);
-		}
+		rv.AppendChars(pre);
+		rv.Append(utext);
+		rv.AppendChars(post);
 	}
 	return rv;
 }
@@ -835,7 +831,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	const std::string& text = (*textj).get<std::string>();
 
 	// 1文字ずつ分解して配列に
-	std::vector<unichar> utext = Utf8ToUnicode(text);
+	UString utext = StringToUString(text);
 
 	// エンティティの位置が新旧で微妙に違うのを吸収
 	const Json *entities;
@@ -965,19 +961,19 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		}
 	}
 	// 文字数を数える必要があるのでコードポイントのまま文字列を作っていく
-	std::vector<unichar> new_utext;
+	UString new_utext;
 	for (int i = 0; i < display_end; ) {
 		if (__predict_false(tags[i].Valid())) {
 			switch (tags[i].Type) {
 			 case Color::Tag:
 			 case Color::UserId:
 			 {
-				std::vector<unichar> sb;
+				UString sb;
 				for (int j = 0, jend = tags[i].Length(); j < jend; j++) {
-					sb.emplace_back(utext[i + j]);
+					sb.Append(utext[i + j]);
 				}
 				sb = coloring(sb, tags[i].Type);
-				new_utext.insert(new_utext.end(), sb.begin(), sb.end());
+				new_utext.Append(sb);
 				i += tags[i].Length();
 				break;
 			 }
@@ -998,7 +994,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		}
 	}
 	// ここで文字列に戻す
-	std::string new_text = UnicodeToUtf8(new_utext);
+	std::string new_text = UStringToString(new_utext);
 
 	// タグの整形が済んでからエスケープと改行を整形
 	new_text = unescape(new_text);

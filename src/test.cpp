@@ -8,6 +8,7 @@
 #include "ParsedUri.h"
 #include "StringUtil.h"
 #include "Twitter.h"
+#include "UString.h"
 #include "acl.h"
 #include "subr.h"
 
@@ -64,6 +65,7 @@ main(int ac, char *av[])
 	test_ParsedUri();
 	test_StringUtil();
 	test_Twitter();
+	test_UString();
 	test_subr();
 
 	printf("%d tests", test_count);
