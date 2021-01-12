@@ -17,6 +17,7 @@ extern void get_follow_list();
 extern void get_block_list();
 extern void get_mute_list();
 extern void get_nort_list();
+extern void init_color();
 
 extern int  address_family;
 extern bool opt_noimage;

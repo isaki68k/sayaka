@@ -83,7 +83,6 @@ static std::string format_rt_owner(const Json& s);
 static std::string format_rt_cnt(const Json& s);
 static std::string format_fav_cnt(const Json& s);
 static void print_(const std::string& text);
-static void init_color();
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
 static std::string coloring(const std::string& text, Color col);
@@ -773,7 +772,7 @@ print_(const std::string& text)
 	fputs(outtext.c_str(), stdout);
 }
 
-static void
+void
 init_color()
 {
 	std::string blue;

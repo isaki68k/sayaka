@@ -515,13 +515,11 @@ init_stream()
 		opt_noimage = true;
 	}
 
-#if notyet
 	// 色の初期化
 	init_color();
 
 	// 一度手動で呼び出して桁数を取得
 	sigwinch();
-#endif
 
 	// NG ワード取得
 	ngword.ParseFile();
