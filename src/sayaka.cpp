@@ -33,6 +33,7 @@
 #include "UString.h"
 #include "main.h"
 #include "subr.h"
+#include "term.h"
 #include <memory>
 #include <cstdio>
 #include <cstring>

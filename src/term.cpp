@@ -26,7 +26,6 @@ terminal_support_sixel()
 	struct timeval timeout;
 	fd_set rfds;
 	char answer[256];
-	char query[4];
 
 	FD_ZERO(&rfds);
 	FD_SET(STDOUT_FILENO, &rfds);
@@ -45,8 +44,7 @@ terminal_support_sixel()
 	tcsetattr(STDOUT_FILENO, TCSANOW, &tc);
 
 	// 問い合わせ
-	sprintf(query, "%c[c", 0x1b);
-	write(STDOUT_FILENO, query, strlen(query));
+	write(STDOUT_FILENO, ESC "[c", 3);
 	// 念のため応答なければタイムアウトする
 	int r = select(STDOUT_FILENO + 1, &rfds, NULL, NULL, &timeout);
 	if (r == -1) {
