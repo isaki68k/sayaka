@@ -618,9 +618,8 @@ print_(const std::string& text)
 		 || __predict_false(( 0xf0000 <= uni && uni <=  0xffffd))	// 第15面
 		 || __predict_false((0x100000 <= uni && uni <= 0x10fffd))) 	// 第16面
 		{
-			auto tmpstr = string_format("<U+%X>", uni);
-			auto tmp = StringToUString(tmpstr);
-			textarray += tmp;
+			auto tmp = string_format("<U+%X>", uni);
+			textarray.Append(tmp);
 			continue;
 		}
 
@@ -669,9 +668,8 @@ print_(const std::string& text)
 				// 入力には来ないはずだし、仮にそのまま出力されたと
 				// してもあまりまずいことにはならないんじゃないかな。
 				// 半角カナを GL に置いた時の10進数2桁でエンコード。
-				auto str = string_format(ESC "[%dn", uni - 0xff60 + 0x20);
-				auto tmp = StringToUString(str);
-				textarray += tmp;
+				auto tmp = string_format(ESC "[%dn", uni - 0xff60 + 0x20);
+				textarray.Append(tmp);
 				continue;
 			}
 		}
