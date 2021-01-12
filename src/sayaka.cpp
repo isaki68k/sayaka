@@ -1050,8 +1050,9 @@ show_icon(const Json& user)
 		printf(CSI "%dC", left);
 	}
 
-	if (opt_noimage) {
-		printf(" *");
+	bool shown = false;
+	if (__predict_false(opt_noimage)) {
+		// shown = false;
 	} else {
 		auto screen_name = unescape(user.value("screen_name", ""));
 		const auto& image_url = user.contains("profile_image_url_https")
@@ -1062,22 +1063,27 @@ show_icon(const Json& user)
 
 		// URL のファイル名部分をキャッシュのキーにする
 		auto p = image_url.rfind('/');
-		if (__predict_false(p < 0)) {
-			// ないことはないはずだけど
-			printf(" *");
-		} else {
+		if (__predict_false(p >= 0)) {
 			auto img_file = string_format("icon-%dx%d-%s-%s",
 				iconsize, iconsize, screen_name.c_str(),
 				image_url.c_str() + p + 1);
 			show_image(img_file, image_url, iconsize, -1);
+			shown = true;
 		}
 	}
 
-	// カーソル位置を復帰
-	printf("\r");
-	// カーソル位置保存/復元に対応していない端末でも動作するように
-	// カーソル位置復元前にカーソル上移動x3を行う
-	printf(CSI "3A" ESC "8");
+	if (__predict_true(shown)) {
+		// アイコン表示後、カーソル位置を復帰
+		printf("\r");
+		// カーソル位置保存/復元に対応していない端末でも動作するように
+		// カーソル位置復元前にカーソル上移動x3を行う
+		printf(CSI "3A" ESC "8");
+	} else {
+		// アイコンを表示してない場合はここで代替アイコンを表示。
+		printf(" *");
+		// これだけで復帰できるはず
+		printf("\r");
+	}
 }
 
 // index は画像の番号 (位置決めに使用する)
