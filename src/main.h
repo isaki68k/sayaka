@@ -7,6 +7,12 @@
 #include <array>
 #include <string>
 
+#define CAN "\x18"
+#define ESC "\x1b"
+#define CSI ESC "["
+
+#define ESCchar '\x1b'
+
 // sayaka.cpp で定義されてるやつだけど、sayaka.h はグローバルなのでちょっと
 // どうすべ。
 extern void cmd_tweet();
