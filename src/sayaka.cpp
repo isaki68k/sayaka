@@ -78,7 +78,7 @@ enum Color {
 static void progress(const char *msg);
 static void get_access_token();
 static bool showobject(const std::string& line);
-static bool showstatus(const Json& status, bool is_quoted);
+static bool showstatus(const Json *status, bool is_quoted);
 static std::string format_rt_owner(const Json& s);
 static std::string format_rt_cnt(const Json& s);
 static std::string format_fav_cnt(const Json& s);
@@ -101,6 +101,7 @@ static StringDictionary get_paged_list(const std::string& api,
 	const char *funcname);
 static void record(const Json& obj);
 static void invalidate_cache();
+static std::string errors2string(const Json& json);
 
 #if defined(SELFTEST)
 extern void test_showstatus_acl();
@@ -211,11 +212,7 @@ cmd_tweet()
 		errx(1, "statuses/update API2Json failed");
 	}
 	if (json.contains("errors")) {
-		auto errorlist = json["errors"];
-		// TODO: エラーが複数返ってきたらどうするかね
-		auto code = errorlist[0]["code"].get<int>();
-		auto message = errorlist[0]["message"].get<std::string>();
-		errx(1, "statuses/update failed: %s(%d)", message.c_str(), code);
+		errx(1, "statuses/update failed%s", errors2string(json).c_str());
 	}
 	printf("Posted.\n");
 }
@@ -404,7 +401,7 @@ showobject(const std::string& line)
 
 	if (obj.contains("text")) {
 		// 通常のツイート
-		bool crlf = showstatus(obj, false);
+		bool crlf = showstatus(&obj, false);
 		if (crlf) {
 			printf("\n");
 		}
@@ -418,12 +415,12 @@ showobject(const std::string& line)
 // true なら戻ったところで1行空ける改行。ツイートとツイートの間は1行
 // 空けるがここで判定の結果何も表示しなかったら空けないなど。
 static bool
-showstatus(const Json& status, bool is_quoted)
+showstatus(const Json *status, bool is_quoted)
 {
 	// このツイートを表示するかどうかの判定。
 	// これは、このツイートがリツイートを持っているかどうかも含めた判定を
 	// 行うのでリツイート分離前に行う。
-	if (acl(status, is_quoted) == false) {
+	if (acl(*status, is_quoted) == false) {
 		return false;
 	}
 
@@ -431,12 +428,12 @@ showstatus(const Json& status, bool is_quoted)
 	// 実際にはここから NG ワードと鍵垢の非表示判定があるけど
 	// もういいだろう。
 	if (opt_record_mode == 1 && is_quoted == false) {
-		record(status);
+		record(*status);
 	}
 
 	// NGワード
 	NGStatus ngstat;
-	bool match = ngword.Match(&ngstat, status);
+	bool match = ngword.Match(&ngstat, *status);
 	if (match) {
 		// マッチしたらここで表示
 		diagShow.Print(1, "showstatus: ng -> false");
@@ -454,26 +451,26 @@ showstatus(const Json& status, bool is_quoted)
 	}
 
 	// RT なら、RT 元を status に、RT先を s に。
-	Json s = status;
+	const Json *s = status;
 	bool has_retweet = false;
-	if (status.contains("retweeted_status")) {
-		s = status["retweeted_status"];
+	if ((*status).contains("retweeted_status")) {
+		s = &(*status)["retweeted_status"];
 		has_retweet = true;
 	}
 
 	// 簡略表示の判定。QT 側では行わない
 	if (is_quoted == false) {
 		if (has_retweet) {
-			auto rt_id = s["id_str"].get<std::string>();
+			auto rt_id = (*s).value("id_str", "");
 
 			// 直前のツイートが (フォロー氏による) 元ツイートで
 			// 続けてこれがそれを RT したツイートなら簡略表示だが、
 			// この二者は別なので1行空けたまま表示。
 			if (rt_id == last_id) {
 				if (last_id_count++ < last_id_max) {
-					auto rtmsg = format_rt_owner(status);
-					auto rtcnt = format_rt_cnt(s);
-					auto favcnt = format_fav_cnt(s);
+					auto rtmsg = format_rt_owner(*status);
+					auto rtcnt = format_rt_cnt(*s);
+					auto favcnt = format_fav_cnt(*s);
 					print_(rtmsg + rtcnt + favcnt + "\n");
 					// これ以降のリツイートは連続とみなす
 					last_id += "_RT";
@@ -485,9 +482,9 @@ showstatus(const Json& status, bool is_quoted)
 			// これはどちらも他者をリツイートなので区別しなくていい。
 			if (rt_id + "_RT" == last_id) {
 				if (last_id_count++ < last_id_max) {
-					auto rtmsg = format_rt_owner(status);
-					auto rtcnt = format_rt_cnt(s);
-					auto favcnt = format_fav_cnt(s);
+					auto rtmsg = format_rt_owner(*status);
+					auto rtcnt = format_rt_cnt(*s);
+					auto favcnt = format_fav_cnt(*s);
 					printf(CSI "1A");
 					print_(rtmsg + rtcnt + favcnt + "\n");
 					return true;
@@ -504,27 +501,26 @@ showstatus(const Json& status, bool is_quoted)
 		// 次回の簡略表示のために覚えておく。その際今回表示するのが
 		// 元ツイートかリツイートかで次回の連続表示が変わる。
 		if (has_retweet) {
-			last_id = s["id_str"].get<std::string>() + "_RT";
+			last_id = (*s).value("id_str", "") + "_RT";
 		} else {
-			last_id = status["id_str"].get<std::string>();
+			last_id = (*status).value("id_str", "");
 		}
 		last_id_count = 0;
 	}
 
-	auto s_user = s["user"];
-	auto userid = coloring(formatid(s_user["screen_name"].get<std::string>()),
+	const Json& s_user = (*s)["user"];
+	auto userid = coloring(formatid(s_user.value("screen_name", "")),
 		Color::UserId);
-	auto name = coloring(formatname(s_user["name"].get<std::string>()),
-		Color::Username);
-	auto src = coloring(unescape(strip_tags(s["source"].get<std::string>()))
-		+ "から", Color::Source);
-	auto time = coloring(formattime(s), Color::Time);
-	auto verified = s_user["verified"].get<bool>()
+	auto name = coloring(formatname(s_user.value("name", "")), Color::Username);
+	auto src = coloring(unescape(strip_tags((*s).value("source", ""))) + "から",
+		Color::Source);
+	auto time = coloring(formattime(*s), Color::Time);
+	auto verified = s_user.value("verified", false)
 		? coloring(" ●", Color::Verified)
 		: "";
 
 	std::vector<MediaInfo> mediainfo;
-	auto msg = formatmsg(s, &mediainfo);
+	auto msg = formatmsg(*s, &mediainfo);
 
 	show_icon(s_user);
 	print_(name + " " + userid + verified);
@@ -546,24 +542,24 @@ showstatus(const Json& status, bool is_quoted)
 	}
 
 	// コメント付きRT の引用部分
-	if (s.contains("quoted_status")) {
+	if ((*s).contains("quoted_status")) {
 		// この中はインデントを一つ下げる
 		printf("\n");
 		indent_depth++;
-		showstatus(s["quoted_status"], true);
+		showstatus(&(*s)["quoted_status"], true);
 		indent_depth--;
 		// 引用表示後のここは改行しない
 	}
 
 	// このステータスの既 RT、既ふぁぼ数
-	auto rtmsg = format_rt_cnt(s);
-	auto favmsg = format_fav_cnt(s);
+	auto rtmsg = format_rt_cnt(*s);
+	auto favmsg = format_fav_cnt(*s);
 	print_(time + " " + src + rtmsg + favmsg);
 	printf("\n");
 
 	// リツイート元
 	if (has_retweet) {
-		print_(format_rt_owner(status));
+		print_(format_rt_owner(*status));
 		printf("\n");
 	}
 
@@ -576,10 +572,10 @@ showstatus(const Json& status, bool is_quoted)
 static std::string
 format_rt_owner(const Json& status)
 {
-	auto user = status["user"];
+	const Json& user = status["user"];
 	auto rt_time   = formattime(status);
-	auto rt_userid = formatid(user["screen_name"].get<std::string>());
-	auto rt_name   = formatname(user["name"].get<std::string>());
+	auto rt_userid = formatid(user.value("screen_name", ""));
+	auto rt_name   = formatname(user.value("name", ""));
 	auto str = coloring(string_format("%s %s %s がリツイート",
 		rt_time.c_str(), rt_name.c_str(), rt_userid.c_str()), Color::Retweet);
 	return str;
@@ -589,7 +585,7 @@ format_rt_owner(const Json& status)
 static std::string
 format_rt_cnt(const Json& s)
 {
-	auto rtcnt = s["retweet_count"].get<int>();
+	auto rtcnt = s.value("retweet_count", 0);
 	return (rtcnt > 0)
 		? coloring(string_format(" %dRT", rtcnt), Color::Retweet)
 		: "";
@@ -599,7 +595,7 @@ format_rt_cnt(const Json& s)
 static std::string
 format_fav_cnt(const Json& s)
 {
-	auto favcnt = s["favorite_count"].get<int>();
+	auto favcnt = s.value("favorite_count", 0);
 	return (favcnt > 0)
 		? coloring(string_format(" %dFav", favcnt), Color::Favorite)
 		: "";
@@ -1416,16 +1412,10 @@ get_credentials()
 	}
 	diag.Debug("json=|%s|", json.dump());
 	if (json.contains("errors")) {
-		// エラーのフォーマットがこれかどうかは分からんけど
-		auto errorlist = json["errors"];
-		// エラーが複数返ってきたらどうするかね
-		auto error = errorlist[0];
-		auto code = error["code"].get<int>();
-		auto message = error["message"].get<std::string>();
-		errx(1, "get_credentials failed: %s(%d)", message.c_str(), code);
+		errx(1, "get_credentials failed%s", errors2string(json).c_str());
 	}
 
-	myid = json["id_str"].get<std::string>();
+	myid = json.value("id_str", "");
 }
 
 // ユーザ一覧を読み込む(共通)。
@@ -1453,12 +1443,7 @@ get_paged_list(const std::string& api, const char *funcname)
 		}
 		diag.Debug("json=|%s|", json.dump());
 		if (json.contains("errors")) {
-			auto errorlist = json["errors"];
-			// エラーが複数返ってきたらどうするかね
-			auto error = errorlist[0];
-			auto code = error["code"].get<int>();
-			auto message = error["message"].get<std::string>();
-			errx(1, "%s failed: %s(%d)", funcname, message.c_str(), code);
+			errx(1, "%s failed: %s", funcname, errors2string(json).c_str());
 		}
 
 		auto users = json["ids"];
@@ -1468,8 +1453,11 @@ get_paged_list(const std::string& api, const char *funcname)
 			list[id_str] = id_str;
 		}
 
-		cursor = json["next_cursor_str"].get<std::string>();
+		cursor = json.value("next_cursor_str", "");
 		diag.Debug("cursor=|%s|", cursor.c_str());
+		if (__predict_false(cursor.empty())) {
+			cursor = "0";
+		}
 	} while (cursor != "0");
 
 	return list;
@@ -1560,3 +1548,20 @@ invalidate_cache()
 	system(cmd);
 }
 
+// API2Json の応答がエラーだった時に表示用文字列に整形して返す。
+// if (json.contains("errors")) {
+//   auto msg = errors2string(json);
+// のように呼び出す。
+static std::string
+errors2string(const Json& json)
+{
+	const Json& errors = json["errors"];
+	if (errors.is_array()) {
+		// エラーが複数返ってきたらどうするかね
+		const Json& error = errors[0];
+		auto code = error.value("code", 0);
+		auto message = error.value("message", "");
+		return string_format(": %s(%d)", message.c_str(), code);
+	}
+	return "";
+}

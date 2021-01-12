@@ -109,10 +109,10 @@ get_datetime(const Json& status)
 
 	if (status.contains("timestamp_ms")) {
 		// 数値のようにみえる文字列で格納されている
-		const std::string& timestamp_ms = status["timestamp_ms"];
+		const auto& timestamp_ms = status.value("timestamp_ms", "0");
 		unixtime = (time_t)(std::stol(timestamp_ms) / 1000);
 	} else {
-		const std::string& created_at = status["created_at"];
+		const auto& created_at = status.value("created_at", "");
 		unixtime = conv_twtime_to_unixtime(created_at);
 	}
 	return unixtime;
@@ -123,6 +123,10 @@ get_datetime(const Json& status)
 time_t
 conv_twtime_to_unixtime(const std::string& instr)
 {
+	if (__predict_false(instr.empty())) {
+		return 0;
+	}
+
 	auto w = Split(instr, " ");
 	auto& monname = w[1];
 	int mday = std::stoi(w[2]);

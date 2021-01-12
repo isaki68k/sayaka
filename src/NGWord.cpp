@@ -107,12 +107,12 @@ NGWord::Parse(const Json& ng)
 {
 	Json ng2;
 
-	std::string ngword = ng["ngword"];
+	const auto& ngword = ng["ngword"].get<std::string>();
 	ng2["ngword"] = ngword;
 	// 歴史的経緯によりユーザ情報は、
 	// ファイル上の JSON ではキーは "user" だが
 	// メモリ上の JSON では "nguser" なことに注意。
-	ng2["nguser"] = ng["user"];
+	ng2["nguser"] = ng.value("user", "");
 
 	// 生実況 NG
 	if (StartWith(ngword, "%LIVE,")) {
@@ -181,7 +181,7 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 
 	const Json *user = NULL;	// マッチしたユーザ
 	for (const auto& ng : ngwords) {
-		const std::string& nguser = ng["nguser"];
+		const auto& nguser = ng["nguser"].get<std::string>();
 
 		if (status.contains("retweeted_status")) {
 			const Json& s = status["retweeted_status"];
@@ -228,10 +228,10 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 			const Json& u = *user;
 
 			ngstat.match = true;
-			ngstat.screen_name = u["screen_name"];
-			ngstat.name = u["name"];
+			ngstat.screen_name = u.value("screen_name", "");
+			ngstat.name = u.value("name", "");
 			ngstat.time = formattime(status);
-			ngstat.ngword = ng["ngword"];
+			ngstat.ngword = ng["ngword"].get<std::string>();
 			return true;
 		}
 	}
@@ -248,13 +248,13 @@ NGWord::MatchUser(const std::string& ng_user, const Json& status)
 
 	if (StartWith(ng_user, "id:")) {
 		auto ng_user_id = ng_user.substr(3);
-		if (ng_user_id == u["id_str"]) {
+		if (ng_user_id == u.value("id_str", "")) {
 			return true;
 		}
 	}
 	if (StartWith(ng_user, '@')) {
 		auto ng_screen_name = ng_user.substr(1);
-		if (ng_screen_name == u["screen_name"]) {
+		if (ng_screen_name == u.value("screen_name", "")) {
 			return true;
 		}
 	}
@@ -267,8 +267,7 @@ NGWord::MatchUser(const std::string& ng_user, const Json& status)
 /*static*/ bool
 NGWord::MatchMain(const Json& ng, const Json& status)
 {
-	const Json& ngword = ng["ngword"];
-	const std::string& ngtype = ng["type"];
+	const auto& ngtype = ng["type"].get<std::string>();
 
 	if (ngtype == "%LIVE") {	// 生実況 NG
 		int wday  = ng["wday"];
@@ -296,7 +295,8 @@ NGWord::MatchMain(const Json& ng, const Json& status)
 
 	} else if (ngtype == "%DELAY") {	// 表示遅延
 		// まずは通常の文字列比較
-		if (MatchRegular(ng["ngtext"], status)) {
+		const auto& ngtext = ng["ngtext"].get<std::string>();
+		if (MatchRegular(ngtext, status)) {
 			// 一致したら発言時刻と現在時刻を比較
 
 			// 発言時刻
@@ -312,13 +312,14 @@ NGWord::MatchMain(const Json& ng, const Json& status)
 	// } else if (ngtype == "%RT") {	// 未実装
 
 	} else if (ngtype == "%SOURCE") {	// クライアント名
-		const std::string& stsource = status["source"];
-		const std::string& ngsource = ng["source"];
+		const auto& stsource = status.value("source", "");
+		const auto& ngsource = ng["source"].get<std::string>();
 		if (stsource.find(ngsource) != std::string::npos) {
 			return true;
 		}
 
 	} else {	// 通常 NG ワード
+		const auto& ngword = ng["ngword"].get<std::string>();
 		if (MatchRegular(ngword, status)) {
 			return true;
 		}
@@ -350,7 +351,7 @@ NGWord::MatchRegular(const std::string& ngword, const Json& status)
 		return false;
 	} while (0);
 
-	const auto& text = textp->get<std::string>();
+	const auto& text = (*textp).get<std::string>();
 	try {
 		std::regex re(ngword);
 		if (regex_search(text, re)) {
@@ -373,12 +374,16 @@ NGWord::MatchMainRT(const Json& ng, const Json& status) const
 	}
 
 	// 名前も比較
-	const std::string& ngtype = ng["type"];
+	const auto& ngtype = ng["type"].get<std::string>();
 	if (ngtype == "regular") {
-		const Json& user = status["user"];
-		const std::string& ngword = ng["ngword"];
-		// 正規表現未対応
-		return false;
+		if (status.contains("user")) {
+			const Json& user = status["user"];
+			const auto& ngword = ng["ngword"].get<std::string>();
+			// 正規表現未対応
+#if 0
+#endif
+			return false;
+		}
 	}
 
 	return false;
@@ -519,10 +524,10 @@ test_NGWord_Parse()
 		// 検査 (仕方ないので一つずつやる)
 		auto act = NGWord::Parse(ng);
 		// Parse() の出力 JSON では "nguser"。
-		xp_eq("u", act["nguser"], src);
-		xp_eq(src, act["ngword"], src);
+		xp_eq("u", act["nguser"].get<std::string>(), src);
+		xp_eq(src, act["ngword"].get<std::string>(), src);
 		const std::string& exptype = exp["type"];
-		xp_eq(exptype, act["type"], src);
+		xp_eq(exptype, act["type"].get<std::string>(), src);
 		if (exptype == "%LIVE") {
 			xp_eq(exp["wday"].get<int>(),  act["wday"].get<int>(), src);
 			xp_eq(exp["start"].get<int>(), act["start"].get<int>(), src);
@@ -626,6 +631,9 @@ test_NGWord_MatchMain()
 		auto ng2 = NGWord::Parse(ng_file);
 
 		// テストを選択
+		if (statuses.contains(testname) == false) {
+			xp_fail("invalid testname: " + testname);
+		}
 		const Json& status = statuses[testname];
 
 		auto actual = NGWord::MatchMain(ng2, status);
@@ -670,6 +678,9 @@ test_NGWord_MatchRegular()
 		bool expected = std::get<2>(a);
 
 		// テストを選択
+		if (statuses.contains(testname) == false) {
+			xp_fail("invalid testname: " + testname);
+		}
 		const Json& status = statuses[testname];
 
 		auto actual = NGWord::MatchRegular(ngword, status);
