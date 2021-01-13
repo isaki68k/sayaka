@@ -25,9 +25,6 @@ CXX=		c++ -std=c++17
 CPPFLAGS+=	-g -O0
 CPPFLAGS+=	-I/usr/pkg/include
 
-#	../mbedtls/library/libmbedx509.a \
-#	../mbedtls/library/libmbedcrypto.a \
-
 LIBS +=	\
 	-lssl \
 	-L/usr/pkg/lib -Wl,-R,/usr/pkg/lib \
