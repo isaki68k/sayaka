@@ -30,8 +30,8 @@ class mTLSHandle
 	// Connect() より先に設定しておくこと。
 	void SetFamily(int family_) { family = family_; }
 
-	// タイムアウトを設定する。デフォルトは -1 (タイムアウトしない)。
-	void SetTimeout(int timeout_) { timeout = timeout_; }
+	// タイムアウトを設定する。デフォルトは 0 (タイムアウトしない)
+	void SetTimeout(int timeout_);
 
 	// mbedTLS ライブラリのデバッグレベルを指定する。
 	void SetDebugLevel(int level);

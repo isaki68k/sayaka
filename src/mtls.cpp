@@ -110,7 +110,6 @@ mTLSHandle::mTLSHandle()
 
 	// メンバを初期化
 	family = AF_UNSPEC;
-	timeout = -1;
 	mbedtls_net_init(&net);
 	mbedtls_ssl_init(&ssl);
 	mbedtls_ssl_config_init(&conf);
@@ -161,13 +160,11 @@ mTLSHandle::Init()
 	mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_NONE);
 	mbedtls_ssl_conf_rng(&conf, mbedtls_ctr_drbg_random, &gctx.ctr_drbg);
 	mbedtls_ssl_conf_dbg(&conf, debug_callback, stderr);
-	r = mbedtls_ssl_setup(&ssl, &conf);
-	if (r != 0) {
-		ERROR("mbedtls_ssl_setup failed: %s\n", errmsg(r));
-		goto errexit;
-	}
 
-	mbedtls_ssl_set_bio(&ssl, &net, mbedtls_net_send, mbedtls_net_recv, NULL);
+	mbedtls_ssl_set_bio(&ssl, &net,
+		mbedtls_net_send,
+		NULL, // recv (without timeout)
+		mbedtls_net_recv_timeout);
 
 	initialized = true;
 	TRACE("done\n");
@@ -177,6 +174,13 @@ mTLSHandle::Init()
 	// cleanup
 	TRACE("failed\n");
 	return false;
+}
+
+void
+mTLSHandle::SetTimeout(int timeout_)
+{
+	timeout = timeout_;
+	mbedtls_ssl_conf_read_timeout(&conf, timeout);
 }
 
 void
@@ -193,6 +197,16 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 	int r;
 
 	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
+
+	// ssl_setup() は複数回呼んではいけないし、呼んだ後で conf を変更するな
+	// と書いてあるように読める。mTLSHandle は Init() 後、必要に応じていろいろ
+	// Set してから Connect() を呼ぶということにしているので、ここで呼ぶのが
+	// いいか。
+	r = mbedtls_ssl_setup(&ssl, &conf);
+	if (r != 0) {
+		ERROR("mbedtls_ssl_setup failed: %s\n", errmsg(r));
+		return false;
+	}
 
 	// 独自のノンブロッキングコネクト。(see net_socket2.cpp)
 	// 戻り値 -0x004b は EINPROGRESS 相当。
@@ -298,7 +312,12 @@ mTLSHandle::Read(void *buf, int len)
 	if (usessl) {
 		rv = mbedtls_ssl_read(&ssl, (unsigned char *)buf, len);
 	} else {
-		rv = mbedtls_net_recv(&net, (unsigned char *)buf, len);
+		if (timeout > 0) {
+			rv = mbedtls_net_recv_timeout(&net, (unsigned char *)buf, len,
+				timeout);
+		} else {
+			rv = mbedtls_net_recv(&net, (unsigned char *)buf, len);
+		}
 	}
 
 	if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
@@ -443,7 +462,8 @@ usage()
 	printf("usage: <options>\n");
 	printf(" -d <level>   : set debug level\n");
 	printf(" -h <hostname>: set hostname (default: www.google.com)\n");
-	printf(" -p <portname>: set portname or servname (default: 443)\n");
+	printf(" -p <pathname>: set pathname (default: /)\n");
+	printf(" -s <servname>: set servname or portname (default: 443)\n");
 	printf(" -r           : use RSA\n");
 	printf(" -t <timeout> : set timeout (default -1)\n");
 	exit(0);
@@ -453,8 +473,9 @@ int
 main(int ac, char *av[])
 {
 	mTLSHandle mtls;
-	const char* hostname = "www.google.com";
-	const char* servname = "443";
+	const char *hostname = "www.google.com";
+	const char *servname = "443";
+	const char *pathname = "/";
 	int r;
 	int c;
 	int debuglevel;
@@ -464,7 +485,7 @@ main(int ac, char *av[])
 	debuglevel = 0;
 	use_rsa_only = 0;
 	timeout = -1;
-	while ((c = getopt(ac, av, "d:h:p:rt:")) != -1) {
+	while ((c = getopt(ac, av, "d:h:p:rs:t:")) != -1) {
 		switch (c) {
 		 case 'd':
 			debuglevel = atoi(optarg);
@@ -473,10 +494,13 @@ main(int ac, char *av[])
 			hostname = optarg;
 			break;
 		 case 'p':
-			servname = optarg;
+			pathname = optarg;
 			break;
 		 case 'r':
 			use_rsa_only = 1;
+			break;
+		 case 's':
+			servname = optarg;
 			break;
 		 case 't':
 			timeout = atoi(optarg);
@@ -518,12 +542,12 @@ main(int ac, char *av[])
 		errx(1, "mtls.Connect failed");
 	}
 
-	char req[128];
+	char req[512];
 	sprintf(req,
-		"GET / HTTP/1.1\r\n"
+		"GET %s HTTP/1.1\r\n"
 		"Host: %s\r\n"
 		"Connection: close\r\n"
-		"\r\n", hostname);
+		"\r\n", pathname, hostname);
 	fprintf(stderr, "write buf=|%s|\n", req);
 
 	r = mtls.Write(req, strlen(req));
