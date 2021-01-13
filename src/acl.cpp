@@ -49,7 +49,7 @@ acl(const Json& status, bool is_quoted)
 	// このツイートの発言者
 	const auto& user_id = user.value("id_str", "");
 	std::string user_name;
-	if (diagShow > 0) {
+	if (diagShow >= 1) {
 		user_name = user.value("screen_name", "");
 	}
 
@@ -73,7 +73,7 @@ acl(const Json& status, bool is_quoted)
 	if (mutelist.ContainsKey(user_id)) {
 		// フォローしていれば Lv1 で表示する
 		// フォローしてなければ Lv3 のみで表示する
-		if (diagShow > 0) {
+		if (diagShow >= 1) {
 			int lv = followlist.ContainsKey(user_id) ? 1 : 3;
 			diagShow.Print(lv, "acl: mute(@%s) -> false", user_name.c_str());
 		}
@@ -90,7 +90,7 @@ acl(const Json& status, bool is_quoted)
 		const Json& rt_user = rt_status["user"];
 		const auto& rt_user_id = rt_user.value("id_str", "");
 		std::string rt_user_name;
-		if (diagShow > 0) {
+		if (diagShow >= 1) {
 			rt_user_name = rt_user.value("screen_name", "");
 		}
 		const auto rt_replies = GetReplies(rt_status, rt_user_id, rt_user_name);
@@ -166,7 +166,7 @@ acl(const Json& status, bool is_quoted)
 		const Json& rt_user = rt_status["user"];
 		const auto& rt_user_id = rt_user.value("id_str", "");
 		std::string rt_user_name;
-		if (diagShow > 0) {
+		if (diagShow >= 1) {
 			rt_user_name = rt_user.value("screen_name", "");
 		}
 
@@ -346,7 +346,7 @@ GetReplies(const Json& status,
 		// dict に追加
 		const auto& id_str = um.value("id_str", "");
 		std::string screen_name;
-		if (diagShow > 0) {
+		if (diagShow >= 1) {
 			screen_name = um.value("screen_name", "");
 		}
 		dict.AddOrUpdate(id_str, screen_name);
@@ -374,7 +374,7 @@ GetReplies(const Json& status,
 	}
 	if (!replyto_id.empty()) {
 		std::string replyto_name;
-		if (diagShow > 0) {
+		if (diagShow >= 1) {
 			replyto_name = status.value("in_reply_to_screen_name", "");
 			msg += " reply_to=@" + replyto_name;
 		}
@@ -1019,7 +1019,7 @@ test_showstatus_acl()
 		if (expected_filt_int != -1)
 			expected_filt = (bool)expected_filt_int;
 
-		if (diagShow > 0) {
+		if (diagShow >= 1) {
 			// 歴史的経緯により Diag は stderr、テスト結果は stdout に出るので
 			// おそらく |& とかして表示しないといけないことになる。
 			fprintf(stderr, "%s\n", input_str.c_str());
