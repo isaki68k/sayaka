@@ -44,6 +44,10 @@ InputStream::ReadLine()
 }
 
 // 1行読み出す。
+// 改行まで読むが、retval に返す文字列は改行を取り除いたもの。
+// 改行が来ずに終端した場合はそこまでの文字列を返す。
+// EOF またはエラーなら false を返し retval は不定。
+// EOF とエラーの区別は付かない。
 bool
 InputStream::ReadLine(std::string *retval)
 {
@@ -55,16 +59,35 @@ InputStream::ReadLine(std::string *retval)
 
 	for (;;) {
 		len = Read(buf, sizeof(buf));
-		if (len < 0)
+		if (__predict_false(len < 0))
 			return false;
 
-		if (len == 0)
-			break;
+		if (__predict_false(len == 0)) {
+			if (rv.empty()) {
+				// 行頭で EOF なら false で帰る
+				return false;
+			} else {
+				// 行途中で EOF ならここまでの行を一旦返す
+				// (次の呼び出しで即 EOF になるはず)
+				break;
+			}
+		}
 
 		rv += buf[0];
 		if (buf[0] == '\n')
 			break;
 	}
+
+	// 読み込んだ行から改行文字は取り除いて返す
+	for (;;) {
+		char c = rv.back();
+		if (c == '\r' || c == '\n') {
+			rv.pop_back();
+		} else {
+			break;
+		}
+	}
+
 	return true;
 }
 

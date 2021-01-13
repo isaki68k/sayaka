@@ -19,11 +19,10 @@ class InputStream
 	virtual void Close();
 
 	// 1行読み出す。
-	// 読み出せれば *retval に読み出した1行を格納して true を返す。
-	// エラーが発生すれば false を返し、*retval は不定。
-	// 読み出した1行には改行を含む。ただし改行なしでストリームが終端すれば
-	// 改行のない文字列を返す。
-	// EOF なら *retval は empty で true を返す。
+	// 改行まで読むが、retval に返す文字列は改行を取り除いたもの。
+	// 改行が来ずに終端した場合はそこまでの文字列を返す。
+	// EOF またはエラーなら false を返し retval は不定。
+	// EOF とエラーの区別は付かない。
 	bool ReadLine(std::string *retval);
 
 	// 1行読み出す (エラーを返す手段のない版)

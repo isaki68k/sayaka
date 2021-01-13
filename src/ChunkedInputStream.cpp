@@ -146,10 +146,16 @@ test_ChunkedInputStream()
 		std::vector<uint8> data {
 			'2', '\r', '\n',	// このチャンクのバイト数
 			'a', '\r',			// 本文
-			'\r', '\n',			// 終端 CRLF
-			'3', '\r', '\n',	// 次のチャンクのバイト数
-			'\n', 'c', 'd',		// 本文
-			'\r', '\n',			// 終端 CRLF
+			'\r', '\n',			// チャンク終端 CRLF
+
+			'3', '\r', '\n',	// このチャンクのバイト数
+			'\n','\r', '\n',	// 本文(2行目は空行)
+			'\r', '\n',			// チャンク終端 CRLF
+
+			'2', '\r', '\n',	// このチャンクのバイト数
+			'b', 'c',			// 本文(3行目は改行なしで終端)
+			'\r', '\n',			// チャンク終端 CRLF
+
 			'0', '\r', '\n',	// このチャンクで終了
 		};
 		src.AddData(data);
@@ -158,20 +164,29 @@ test_ChunkedInputStream()
 		// ついでに ReadLine(std::string*) のほうをテストする。
 		std::string str;
 		bool rv;
+		// ReadLine() は読み込んだ行から改行を除いて返す。
+		// 1行目 ("a\r\n")
 		rv = chunk.ReadLine(&str);
 		xp_eq(true, rv);
-		xp_eq("a\r\n", str);
-		rv = chunk.ReadLine(&str);
-		xp_eq(true, rv);
-		xp_eq("cd", str);
+		xp_eq("a", str);
+
+		// 2行目 ("\r\n")
 		rv = chunk.ReadLine(&str);
 		xp_eq(true, rv);
 		xp_eq("", str);
 
-		// EOF 後にもう一度読んでも EOF
+		// 3行目 ("bc")。改行なしで終端すればそのまま返す
 		rv = chunk.ReadLine(&str);
 		xp_eq(true, rv);
-		xp_eq("", str);
+		xp_eq("bc", str);
+
+		// EOF
+		rv = chunk.ReadLine(&str);
+		xp_eq(false, rv);
+
+		// EOF 後にもう一度読んでも EOF
+		rv = chunk.ReadLine(&str);
+		xp_eq(false, rv);
 	}
 }
 #endif // SELFTEST
