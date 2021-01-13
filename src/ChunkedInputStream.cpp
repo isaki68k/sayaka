@@ -54,7 +54,7 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 		// チャンク長を取り出す
 		char *end;
 		errno = 0;
-		auto intlen = strtol(slen.c_str(), &end, 10);
+		auto intlen = strtol(slen.c_str(), &end, 16);
 		if (end == slen.c_str()) {
 			diag.Debug("Not a number: %s", slen.c_str());
 			return -1;
@@ -125,15 +125,17 @@ test_ChunkedInputStream()
 	{
 		MemoryInputStream src;
 		std::vector<uint8> data {
-			'2','\r','\n',	// このチャンクのバイト数
-			'a','b',		// 本文
+			'a','\r','\n',	// このチャンクのバイト数
+			'0','1','2','3',	// 本文
+			'4','5','6','7',
+			'8','9',
 			'\r','\n',		// 終端 CRLF
 			'0','\n'		// このチャンクで終了 (LF のみの改行も許容したい)
 		};
 		src.AddData(data);
 		ChunkedInputStream chunk(&src, diag);
 		auto str = chunk.ReadLine();
-		xp_eq("ab", str);
+		xp_eq("0123456789", str);
 		str = chunk.ReadLine();
 		xp_eq("", str);
 	}
