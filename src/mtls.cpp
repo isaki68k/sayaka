@@ -2,9 +2,21 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <mbedtls/ctr_drbg.h>
 #include <mbedtls/debug.h>
+#include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
+#include <mbedtls/net_sockets.h>
 
 //#define DEBUG 1
 
@@ -54,6 +66,9 @@ struct mtls_global_ctx
 };
 static struct mtls_global_ctx gctx;
 
+static int mbedtls_net_connect_nonblock(mbedtls_net_context *ctx,
+	const char *host, const char *port, int proto, int family);
+
 // RSA のみを使う
 static const int ciphersuites_RSA[] = {
 	MBEDTLS_TLS_RSA_WITH_AES_128_CBC_SHA,
@@ -79,7 +94,23 @@ debug_callback(void *aux, int level, const char *file, int line,
 // コンストラクタ
 mTLSHandle::mTLSHandle()
 {
+	// 最初の1回だけグローバルコンテキストを初期化 (後始末はしない)
+	if (__predict_false(gctx.initialized == false)) {
+		mbedtls_entropy_init(&gctx.entropy);
+		mbedtls_ctr_drbg_init(&gctx.ctr_drbg);
+		// init RNG
+		int r = mbedtls_ctr_drbg_seed(&gctx.ctr_drbg, mbedtls_entropy_func,
+			&gctx.entropy, (const unsigned char *)"a", 1);
+		if (r != 0) {
+			ERROR("mbedtls_ctr_drbg_seed failed: %s\n", errmsg(r));
+			throw "initializing gctx failed";
+		}
+		gctx.initialized = true;
+	}
+
 	// メンバを初期化
+	family = AF_UNSPEC;
+	timeout = -1;
 	mbedtls_net_init(&net);
 	mbedtls_ssl_init(&ssl);
 	mbedtls_ssl_config_init(&conf);
@@ -90,11 +121,9 @@ mTLSHandle::~mTLSHandle()
 {
 	TRACE("called\n");
 
-	if (initialized) {
-		Close();
-		mbedtls_ssl_free(&ssl);
-		mbedtls_ssl_config_free(&conf);
-	}
+	Close();
+	mbedtls_ssl_free(&ssl);
+	mbedtls_ssl_config_free(&conf);
 }
 
 // mbedTLS のエラーコードを文字列にして返す
@@ -119,20 +148,6 @@ bool
 mTLSHandle::Init()
 {
 	int r;
-
-	// グローバルコンテキストの初期化
-	if (gctx.initialized == false) {
-		mbedtls_ctr_drbg_init(&gctx.ctr_drbg);
-		mbedtls_entropy_init(&gctx.entropy);
-		// init RNG
-		r = mbedtls_ctr_drbg_seed(&gctx.ctr_drbg, mbedtls_entropy_func,
-			&gctx.entropy, (const unsigned char *)"a", 1);
-		if (r != 0) {
-			ERROR("mbedtls_ctr_drbg_seed failed: %s\n", errmsg(r));
-			goto errexit;
-		}
-		gctx.initialized = true;
-	}
 
 	// TLS config
 	r = mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_CLIENT,
@@ -179,37 +194,67 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 
 	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
 
-#if 0
-	r = mbedtls_net_connect_timeout(&net, hostname, servname,
-		MBEDTLS_NET_PROTO_TCP, connect_timeout);
-#else
-	r = mbedtls_net_connect(&net, hostname, servname, MBEDTLS_NET_PROTO_TCP);
-#endif
-	if (r != 0) {
-		ERROR("mbedtls_net_connect_timeout %s:%s - %s\n",
-			hostname, servname, errmsg(r));
+	// 独自のノンブロッキングコネクト。(see net_socket2.cpp)
+	// 戻り値 -0x004b は EINPROGRESS 相当。
+	r = mbedtls_net_connect_nonblock(&net, hostname, servname,
+		MBEDTLS_NET_PROTO_TCP, family);
+	if (__predict_false(r != -0x004b)) {
+		if (__predict_false(r == 0)) {
+			// 起きることはないはずだが
+			// エラーメッセージが混乱しそうなので分けておく。
+			ERROR("mbedtls_net_connect_nonblock %s:%s - %s\n",
+				hostname, servname, "Success with blocking mode?");
+			goto abort;
+		} else {
+			ERROR("mbedtls_net_connect_nonblock %s:%s - %s\n",
+				hostname, servname, errmsg(r));
+		}
 		return false;
 	}
 
-	if (usessl == false) {
-		TRACE("connect plain OK\n");
-		return true;
+	// ブロッキングに戻す (ここからは net コンテキスト内のディスクリプタが
+	// オープンなので、用意されてる API が使える)
+	r = mbedtls_net_set_block(&net);
+	if (__predict_false(r != 0)) {
+		// mbedtls_net_set_block() は他の mbedTLS API とか違って fcntl(2) の
+		// 戻り値をそのまま返してしまっており、成功なら 0、エラーなら -1 が
+		// 返ってくる。そのため errmsg() ではエラーメッセージが表示できない。
+		ERROR("mbedtls_net_set_block failed\n");
+		goto abort;
 	}
 
-	while ((r = mbedtls_ssl_handshake(&ssl)) != 0) {
-		if (r != MBEDTLS_ERR_SSL_WANT_READ && r != MBEDTLS_ERR_SSL_WANT_WRITE) {
-			ERROR("mbedtls_ssl_handshake failed: %s\n", errmsg(r));
-			return false;
+	r = mbedtls_net_poll(&net, MBEDTLS_NET_POLL_WRITE, timeout);
+	if (__predict_false(r < 0)) {
+		ERROR("mbedtls_net_poll failed: %s\n", errmsg(r));
+		goto abort;
+	}
+	if (__predict_false(r == 0)) {
+		ERROR("mbedtls_net_poll: timed out\n");
+		goto abort;
+	}
+
+	if (usessl) {
+		while ((r = mbedtls_ssl_handshake(&ssl)) != 0) {
+			if (r != MBEDTLS_ERR_SSL_WANT_READ
+			 && r != MBEDTLS_ERR_SSL_WANT_WRITE) {
+				ERROR("mbedtls_ssl_handshake failed: %s\n", errmsg(r));
+				goto abort;
+			}
 		}
 	}
 
-	TRACE_tv(&end, "connect ssl OK\n");
-
+#if defined(DEBUG)
+	gettimeofday(&end, NULL);
 	timersub(&end, &start, &result);
-	TRACE("connect time = %d.%03d msec\n",
+	trace(&end, __func__, "connected, %d.%03d msec\n",
 		(int)result.tv_sec * 1000 + result.tv_usec / 1000,
 		(int)result.tv_usec % 1000);
+#endif
 	return true;
+
+ abort:
+	mbedtls_net_free(&net);
+	return false;
 }
 
 // クローズ。
@@ -217,13 +262,13 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 void
 mTLSHandle::Close()
 {
-	TRACE("called\n");
+	// これを知る方法はないのか…
+	if (net.fd >= 0) {
+		TRACE("called\n");
 
-	if (initialized) {
 		if (usessl) {
 			mbedtls_ssl_close_notify(&ssl);
 		}
-
 		// free という名前だが実は close
 		mbedtls_net_free(&net);
 	}
@@ -294,10 +339,115 @@ mTLSHandle::Write(const void *buf, int len)
 }
 
 
+//
+// mbedTLS 改良
+//
+
+// C なので mbedtls_net_context (struct) の中身が丸見えなことを悪用する。
+static_assert(sizeof(mbedtls_net_context) == sizeof(int),
+	"mbedtls_net_context has be changed?");
+
+// mbedtls_net_connect() のノンブロッキング connect(2) 対応版。
+// ついでにアドレスファミリ限定 connect も出来るようにする。
+//
+// mbedTLS には、ctx で示されるオープンされたディスクリプタをノンブロッキング
+// モードに設定する mbedtls_net_set_nonblock(ctx) は用意されているものの、
+// mbedtls_net_connect() は自分で socket(2) を作って即 connect(2) を呼んで
+// いるため、呼び出し側がこのソケットを connect 前にノンブロッキングに指定
+// できる余地がない。そのため mbedtls/library/net_socket.c を横目に見ながら
+// ほぼ同じものを書き起こす。orz
+//
+// ノンブロッキングモードで connect できれば戻り値 -0x004b を返す。
+// ノンブロッキングモードの設定に失敗すれば戻り値 -0x0043 を返す。
+// これらのエラーコードは mbedtls/include/net_socket.h を見て空いてるところを
+// 選んだもの。それ以外は mbedtls_net_connect() 本来のエラーコードを返す。
+// 本来ブロッキング connect に成功すれば 0 が返るが、それは起きないはず。
+static int
+mbedtls_net_connect_nonblock(mbedtls_net_context *ctx,
+	const char *host, const char *port, int proto, int family)
+{
+	struct addrinfo hints, *addr_list, *cur;
+	int ret;
+	int val;
+
+	// net_prepare()
+	signal(SIGPIPE, SIG_IGN);
+
+    /* Do name resolution with both IPv6 and IPv4 */
+	memset(&hints, 0, sizeof(hints));
+	// アドレスファミリを指定できるようにする
+	hints.ai_family = family;
+	if (proto == MBEDTLS_NET_PROTO_UDP) {
+		hints.ai_socktype = SOCK_DGRAM;
+		hints.ai_protocol = IPPROTO_UDP;
+	} else {
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_protocol = IPPROTO_TCP;
+	}
+
+	if (getaddrinfo(host, port, &hints, &addr_list) != 0)
+		return MBEDTLS_ERR_NET_UNKNOWN_HOST;
+
+    /* Try the sockaddrs until a connection succeeds */
+	ret = MBEDTLS_ERR_NET_UNKNOWN_HOST;
+	for (cur = addr_list; cur != NULL; cur = cur->ai_next) {
+		ctx->fd = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
+		if (ctx->fd < 0) {
+			ret = MBEDTLS_ERR_NET_SOCKET_FAILED;
+			continue;
+		}
+
+		// ここでノンブロックに設定
+		val = fcntl(ctx->fd, F_GETFL);
+		if (val < 0) {
+			// 勝手に空いてるエラーコードを拝借、EINVAL 的なもの。
+			ret = -0x0041;
+			continue;
+		}
+		if (fcntl(ctx->fd, F_SETFL, val | O_NONBLOCK) < 0) {
+			// 勝手に空いてるエラーコードを拝借、EINVAL 的なもの。
+			ret = -0x0041;
+			continue;
+		}
+
+		if (connect(ctx->fd, cur->ai_addr, cur->ai_addrlen) == 0) {
+			ret = 0;
+			break;
+		}
+		// ノンブロッキングなので connect() は EINPROGRESS を返す
+		if (errno == EINPROGRESS) {
+			// 勝手に空いてるエラーコードを拝借。
+			ret = -0x004b;
+			break;
+		}
+
+		close(ctx->fd);
+		ret = MBEDTLS_ERR_NET_CONNECT_FAILED;
+	}
+
+	freeaddrinfo(addr_list);
+	return ret;
+}
+
+
 #if defined(TEST)
+
+// Connection timeout のテストは -h 10.0.0.1 -p 80 -t 1000 とかで出来る。
 
 #include <err.h>
 #include <getopt.h>
+
+void
+usage()
+{
+	printf("usage: <options>\n");
+	printf(" -d <level>   : set debug level\n");
+	printf(" -h <hostname>: set hostname (default: www.google.com)\n");
+	printf(" -p <portname>: set portname or servname (default: 443)\n");
+	printf(" -r           : use RSA\n");
+	printf(" -t <timeout> : set timeout (default -1)\n");
+	exit(0);
+}
 
 int
 main(int ac, char *av[])
@@ -309,13 +459,18 @@ main(int ac, char *av[])
 	int c;
 	int debuglevel;
 	int use_rsa_only;
+	int timeout;
 
 	debuglevel = 0;
 	use_rsa_only = 0;
-	while ((c = getopt(ac, av, "d:p:r")) != -1) {
+	timeout = -1;
+	while ((c = getopt(ac, av, "d:h:p:rt:")) != -1) {
 		switch (c) {
 		 case 'd':
 			debuglevel = atoi(optarg);
+			break;
+		 case 'h':
+			hostname = optarg;
 			break;
 		 case 'p':
 			servname = optarg;
@@ -323,30 +478,40 @@ main(int ac, char *av[])
 		 case 'r':
 			use_rsa_only = 1;
 			break;
+		 case 't':
+			timeout = atoi(optarg);
+			break;
 		 default:
-			printf("usage: [-p servname] [hostname]\n");
+			usage();
 			break;
 		}
 	}
 	ac -= optind;
 	av += optind;
 	if (ac > 0) {
-		hostname = av[0];
+		usage();
 	}
-	mtls.SetDebugLevel(debuglevel);
 
 	fprintf(stderr, "Test to %s:%s\n", hostname, servname);
+	mtls.SetDebugLevel(debuglevel);
 
 	if (mtls.Init() == false) {
 		errx(1, "mtls.Init failed");
 	}
 
 	if (use_rsa_only) {
+		fprintf(stderr, "UseRSA\n");
 		mtls.UseRSA();
 	}
 
-	if (strcmp(servname, "443") == 0) {
+	if (strcmp(servname, "443") == 0 || strcmp(servname, "https") == 0) {
+		fprintf(stderr, "UseSSL\n");
 		mtls.UseSSL(true);
+	}
+
+	if (timeout != -1) {
+		fprintf(stderr, "Timeout=%d msec\n", timeout);
+		mtls.SetTimeout(timeout);
 	}
 
 	if (mtls.Connect(hostname, servname) == false) {
@@ -368,21 +533,28 @@ main(int ac, char *av[])
 
 	for (;;) {
 		char buf[1024];
-		r = mtls.Read(buf, sizeof(buf) - 1);
-		if (r == MBEDTLS_ERR_SSL_WANT_READ || r == MBEDTLS_ERR_SSL_WANT_WRITE) {
-			continue;
-		}
-		if (r == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-			break;
-		}
+		r = mtls.Read(buf, sizeof(buf));
+#if defined(DEBUG)
+		fprintf(stderr, "read=%d\n", r);
+#endif
 		if (r < 0) {
-			errx(1, "mtls.Read failed %d", r);
+			if (r == MBEDTLS_ERR_SSL_WANT_READ ||
+			    r == MBEDTLS_ERR_SSL_WANT_WRITE) {
+				continue;
+			}
+			if (r == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+				break;
+			}
+			fprintf(stderr, "mtls.Read failed\n");
+			break;
 		}
 		if (r == 0) {
 			break;
 		}
-		buf[r] = '\0';
-		fprintf(stderr, "%s", buf);
+		fwrite(buf, 1, sizeof(buf), stderr);
+#if defined(DEBUG)
+		fprintf(stderr, "\n");
+#endif
 	}
 
 	mtls.Close();

@@ -3,9 +3,6 @@
 #include <string>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/certs.h>
 
 class mTLSHandle
 {
@@ -28,10 +25,13 @@ class mTLSHandle
 	// Connect() より先に設定しておくこと。
 	// XXX どういう API にすべきか
 	void UseRSA();
-	
-	// 接続タイムアウトを設定する。
+
+	// アドレスファミリを指定する。デフォルトは AF_UNSPEC。
 	// Connect() より先に設定しておくこと。
-	void SetTimeout(int timeout) { connect_timeout = timeout; }
+	void SetFamily(int family_) { family = family_; }
+
+	// タイムアウトを設定する。デフォルトは -1 (タイムアウトしない)。
+	void SetTimeout(int timeout_) { timeout = timeout_; }
 
 	// mbedTLS ライブラリのデバッグレベルを指定する。
 	void SetDebugLevel(int level);
@@ -55,7 +55,8 @@ class mTLSHandle
  public:
 	bool initialized {};
 	bool usessl {};
-	int connect_timeout {};		// [msec]
+	int family {};
+	int timeout {};		// [msec]
 
 	// 内部コンテキスト
 	mbedtls_net_context net {};
