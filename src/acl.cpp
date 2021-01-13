@@ -184,8 +184,10 @@ acl(const Json& status, bool is_quoted)
 
 		// RT 先のリプ先がブロック氏かミュート氏なら弾く
 		replies = GetReplies(rt_status, rt_user_id, rt_user_name);
-		if (diagShow >= 2) {
-			diagShow.Print("%s", replies[""].c_str());
+		if (diagShow >= 1) {
+			if (diagShow >= 2) {
+				diagShow.Print("%s", replies[""].c_str());
+			}
 			replies.Remove("");
 		}
 		for (const auto& kv : replies) {
@@ -211,7 +213,9 @@ acl(const Json& status, bool is_quoted)
 }
 
 // このツイートが俺氏発か俺氏宛てで表示するなら true。
-// (本ツイートとリツイート先とから呼ばれる)
+// 本ツイートとリツイート先とから呼ばれる。
+// この時点で、デバッグレベルが 1 以上なら replies には "" => debug message
+// のエントリが含まれている場合がある。
 static bool
 acl_me(const std::string& user_id, const std::string& user_name,
 	const StringDictionary& replies)
@@ -228,6 +232,8 @@ acl_me(const std::string& user_id, const std::string& user_name,
 	// 俺氏宛てはブロック以外からは表示
 	for (const auto& kv : replies) {
 		const auto& id = kv.first;
+		if (id.empty())
+			continue;
 		if (id == myid) {
 			if (blocklist.ContainsKey(user_id)) {
 				diagShow.Print(1, "acl_me: block(@%s) to myid -> false",
@@ -382,7 +388,7 @@ GetReplies(const Json& status,
 	}
 
 	// デバッグメッセージ
-	if (diagShow >= 2) {
+	if (diagShow >= 1) {
 		if (!msgdict.empty()) {
 			msg += " mention=" + msgdict;
 		}
