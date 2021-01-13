@@ -24,9 +24,6 @@ class InputStream
 	// EOF またはエラーなら false を返し retval は不定。
 	// EOF とエラーの区別は付かない。
 	bool ReadLine(std::string *retval);
-
-	// 1行読み出す (エラーを返す手段のない版)
-	std::string ReadLine();
 };
 
 // 出力ストリームの基底クラス

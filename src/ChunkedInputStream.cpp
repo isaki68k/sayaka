@@ -71,7 +71,7 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 
 		if (intlen == 0) {
 			// データ終わり。CRLF を読み捨てる
-			src->ReadLine();
+			src->ReadLine(&slen);
 			diag.Debug("This was the last chunk");
 			break;
 		}
@@ -92,7 +92,7 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 		Chunks.AddData(bufp.get(), intlen);
 
 		// 最後の CRLF を読み捨てる
-		src->ReadLine();
+		src->ReadLine(&slen);
 	}
 
 	// dst に入るだけコピー
@@ -113,12 +113,13 @@ test_ChunkedInputStream()
 
 	printf("%s\n", __func__);
 
-	// 空入力
+	// 空入力 (EOF)
 	{
 		MemoryInputStream src;
 		ChunkedInputStream chunk(&src, diag);
-		auto str = chunk.ReadLine();
-		xp_eq("", str);
+		std::string str;
+		auto rv = chunk.ReadLine(&str);
+		xp_eq(false, rv);
 	}
 
 	// 入力行あり
@@ -134,10 +135,13 @@ test_ChunkedInputStream()
 		};
 		src.AddData(data);
 		ChunkedInputStream chunk(&src, diag);
-		auto str = chunk.ReadLine();
+		std::string str;
+		auto rv = chunk.ReadLine(&str);
+		xp_eq(true, rv);
 		xp_eq("0123456789", str);
-		str = chunk.ReadLine();
-		xp_eq("", str);
+
+		rv = chunk.ReadLine(&str);
+		xp_eq(false, rv);
 	}
 
 	// 複数チャンク

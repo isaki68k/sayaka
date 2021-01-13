@@ -15,34 +15,6 @@ InputStream::Close()
 {
 }
 
-// 1行読み出す
-std::string
-InputStream::ReadLine()
-{
-	std::string rv;
-#if 0
-	if (ReadLine(&rv) == false) {
-		rv.clear();
-	}
-	return rv;
-#else
-	char buf[1];
-	ssize_t len;
-
-	for (;;) {
-		len = Read(buf, sizeof(buf));
-		if (len < 1)
-			break;
-
-		rv += buf[0];
-		if (buf[0] == '\n')
-			break;
-	}
-
-	return rv;
-#endif
-}
-
 // 1行読み出す。
 // 改行まで読むが、retval に返す文字列は改行を取り除いたもの。
 // 改行が来ずに終端した場合はそこまでの文字列を返す。
