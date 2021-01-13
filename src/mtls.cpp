@@ -110,6 +110,7 @@ mTLSHandle::mTLSHandle()
 
 	// メンバを初期化
 	family = AF_UNSPEC;
+	timeout = -1;
 	mbedtls_net_init(&net);
 	mbedtls_ssl_init(&ssl);
 	mbedtls_ssl_config_init(&conf);
@@ -179,8 +180,17 @@ mTLSHandle::Init()
 void
 mTLSHandle::SetTimeout(int timeout_)
 {
+	// timeout は将来の拡張性を考慮して、
+	// -1 なら無期限、0  ならポーリングモードとしておきたい。
+	// mbedtls_net_poll() の timeout はこの仕様。
 	timeout = timeout_;
-	mbedtls_ssl_conf_read_timeout(&conf, timeout);
+
+	// 一方、mbedtls_ssl_conf_read_timeout() と mbedtls_net_recv_timeout() は
+	// timeout 0 が無期限となっている。どうしてこうなった…
+	// 仕方ないのでここで変数を2つ用意して、使い分けることにする。
+	ssl_timeout = (timeout_ > 0) ? timeout_ : 0;
+
+	mbedtls_ssl_conf_read_timeout(&conf, ssl_timeout);
 }
 
 void
@@ -312,12 +322,9 @@ mTLSHandle::Read(void *buf, int len)
 	if (usessl) {
 		rv = mbedtls_ssl_read(&ssl, (unsigned char *)buf, len);
 	} else {
-		if (timeout > 0) {
-			rv = mbedtls_net_recv_timeout(&net, (unsigned char *)buf, len,
-				timeout);
-		} else {
-			rv = mbedtls_net_recv(&net, (unsigned char *)buf, len);
-		}
+		// net_recv_timeout() は 0 が無期限のほう (SetTimeout() 参照)
+		rv = mbedtls_net_recv_timeout(&net, (unsigned char *)buf, len,
+			ssl_timeout);
 	}
 
 	if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {

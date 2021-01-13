@@ -57,6 +57,7 @@ class mTLSHandle
 	bool usessl {};
 	int family {};
 	int timeout {};		// [msec]
+	int ssl_timeout {};
 
 	// 内部コンテキスト
 	mbedtls_net_context net {};
