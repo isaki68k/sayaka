@@ -21,9 +21,15 @@ FileInputStream::Read(char *dst, size_t dstsize)
 
 	while (rv < dstsize) {
 		size_t reqsize = dstsize - rv;
-		int n = fread(dst + rv, 1, reqsize, fp);
-		if (n < 1)
-			break;
+		size_t n = fread(dst + rv, 1, reqsize, fp);
+		if (__predict_false(n == 0)) {
+			if (feof(fp)) {
+				return 0;
+			} else {
+				errno = ferror(fp);
+				return -1;
+			}
+		}
 		rv += n;
 	}
 

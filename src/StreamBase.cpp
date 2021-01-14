@@ -16,51 +16,44 @@ InputStream::Close()
 }
 
 // 1行読み出す。
-// 改行まで読むが、retval に返す文字列は改行を取り除いたもの。
-// 改行が来ずに終端した場合はそこまでの文字列を返す。
-// EOF またはエラーなら false を返し retval は不定。
-// EOF とエラーの区別は付かない。
-bool
+ssize_t
 InputStream::ReadLine(std::string *retval)
 {
-	std::string& rv = *retval;
+	std::string& str = *retval;
 	char buf[1];
-	ssize_t len;
+	ssize_t retlen;
 
-	rv.clear();
+	str.clear();
+	retlen = 0;
 
 	for (;;) {
-		len = Read(buf, sizeof(buf));
-		if (__predict_false(len < 0))
-			return false;
+		ssize_t readlen;
+		readlen = Read(buf, sizeof(buf));
+		if (__predict_false(readlen < 0))
+			return readlen;
 
-		if (__predict_false(len == 0)) {
-			if (rv.empty()) {
-				// 行頭で EOF なら false で帰る
-				return false;
-			} else {
-				// 行途中で EOF ならここまでの行を一旦返す
-				// (次の呼び出しで即 EOF になるはず)
-				break;
-			}
+		if (__predict_false(readlen == 0)) {
+			break;
 		}
 
-		rv += buf[0];
+		str += buf[0];
+		retlen++;
 		if (buf[0] == '\n')
 			break;
 	}
 
-	// 読み込んだ行から改行文字は取り除いて返す
+	// 返す文字列から改行を削除
 	for (;;) {
-		char c = rv.back();
+		char c = str.back();
 		if (c == '\r' || c == '\n') {
-			rv.pop_back();
+			str.pop_back();
 		} else {
 			break;
 		}
 	}
 
-	return true;
+	// (改行を削除する前の) 受信したバイト数を返す
+	return retlen;
 }
 
 // デストラクタ

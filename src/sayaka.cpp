@@ -306,11 +306,13 @@ cmd_stream()
 
 	for (;;) {
 		std::string line;
-		if (stream->ReadLine(&line) == false) {
-			errx(1, "statuses/filter: ReadLine failed");
+		auto r = stream->ReadLine(&line);
+		if (__predict_false(r < 0)) {
+			err(1, "statuses/filter: ReadLine failed");
 		}
-		if (line.empty())
-			break;
+		if (__predict_false(r == 0)) {
+			errx(0, "statuses/filter: Connection closed by peer");
+		}
 
 		if (showobject(line) == false) {
 			break;
@@ -323,11 +325,13 @@ void
 cmd_play()
 {
 	FileInputStream stdinstream(stdin, false);
-	std::string line;
 
-	while (stdinstream.ReadLine(&line)) {
-		if (line.empty())
+	for (;;) {
+		std::string line;
+		auto r = stdinstream.ReadLine(&line);
+		if (__predict_false(r <= 0)) {
 			break;
+		}
 		if (showobject(line) == false) {
 			break;
 		}

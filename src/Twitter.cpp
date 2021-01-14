@@ -160,8 +160,9 @@ Twitter::API2Json(const std::string& method, const std::string& apiRoot,
 		diag.Debug("%s: API failed", api.c_str());
 		return json;
 	}
-	if (stream->ReadLine(&line) == false) {
-		diag.Debug("%s: ReadLine failed", api.c_str());
+	auto r = stream->ReadLine(&line);
+	if (__predict_false(r < 0)) {
+		diag.Debug("%s: ReadLine failed: %s", api.c_str(), strerror(errno));
 		return json;
 	}
 	diag.Debug("ReadLine |%s|", line.c_str());

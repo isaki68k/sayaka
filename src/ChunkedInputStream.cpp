@@ -3,6 +3,7 @@
 //
 
 #include "ChunkedInputStream.h"
+#include <cstring>
 #include <memory>
 
 // コンストラクタ
@@ -27,7 +28,7 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 	// 要求サイズに満たない間 src から1チャンクずつ読み込む
 	for (;;) {
 		std::string slen;
-		bool rv;
+		ssize_t r;
 
 		// chunksLength は内部バッファ長
 		size_t chunksLength = Chunks.GetSize();
@@ -40,12 +41,12 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 		}
 
 		// 先頭行はチャンク長+CRLF
-		rv = src->ReadLine(&slen);
-		if (rv == false) {
-			diag.Debug("ReadLine failed");
+		r = src->ReadLine(&slen);
+		if (__predict_false(r < 0)) {
+			diag.Debug("ReadLine failed: %s", strerror(errno));
 			return -1;
 		}
-		if (slen.empty()) {
+		if (__predict_false(r == 0)) {
 			// EOF
 			diag.Debug("src is EOF");
 			break;
@@ -56,15 +57,16 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 		errno = 0;
 		auto intlen = strtol(slen.c_str(), &end, 16);
 		if (end == slen.c_str()) {
-			diag.Debug("Not a number: %s", slen.c_str());
+			diag.Debug("Chunk length is not a number: %s", slen.c_str());
 			return -1;
 		}
-		if (*end != '\0' && *end != '\r' && *end != '\n') {
-			diag.Debug("Trailing garbage: %s", slen.c_str());
+		if (*end != '\0') {
+			diag.Debug("Chunk length has a trailing garbage: %s", slen.c_str());
+			errno = EIO;
 			return -1;
 		}
 		if (errno) {
-			diag.Debug("Out of range: %s", slen.c_str());
+			diag.Debug("Chunk length is out of range: %s", slen.c_str());
 			return -1;
 		}
 		diag.Debug("intlen=%d", intlen);
@@ -78,13 +80,14 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 
 		std::unique_ptr<char[]> bufp = std::make_unique<char[]>(intlen);
 		ssize_t readlen = src->Read(bufp.get(), intlen);
-		if (readlen < 0) {
-			diag.Debug("Read failed");
+		if (__predict_false(readlen < 0)) {
+			diag.Debug("Read failed: %s", strerror(errno));
 			return -1;
 		}
 		diag.Debug("readlen=%zd", readlen);
-		if (readlen != intlen) {
+		if (__predict_false(readlen != intlen)) {
 			diag.Debug("readlen=%zd intlen=%d", readlen, intlen);
+			errno = EIO;
 			return -1;
 		}
 
@@ -101,7 +104,7 @@ ChunkedInputStream::Read(char *dst, size_t dstsize)
 
 	// Chunks の作り直しは C++ では不要なはず
 
-	return (ssize_t)copylen;
+	return copylen;
 }
 
 #if defined(SELFTEST)
@@ -118,8 +121,11 @@ test_ChunkedInputStream()
 		MemoryInputStream src;
 		ChunkedInputStream chunk(&src, diag);
 		std::string str;
-		auto rv = chunk.ReadLine(&str);
-		xp_eq(false, rv);
+		auto r = chunk.ReadLine(&str);
+		xp_eq(0, r);
+		// EOF からもう一度読んでも EOF
+		r = chunk.ReadLine(&str);
+		xp_eq(0, r);
 	}
 
 	// 入力行あり
@@ -136,12 +142,13 @@ test_ChunkedInputStream()
 		src.AddData(data);
 		ChunkedInputStream chunk(&src, diag);
 		std::string str;
-		auto rv = chunk.ReadLine(&str);
-		xp_eq(true, rv);
+		// 戻り値は改行分を含んだバイト数
+		auto r = chunk.ReadLine(&str);
+		xp_eq(10, r);
 		xp_eq("0123456789", str);
 
-		rv = chunk.ReadLine(&str);
-		xp_eq(false, rv);
+		r = chunk.ReadLine(&str);
+		xp_eq(0, r);
 	}
 
 	// 複数チャンク
@@ -167,30 +174,30 @@ test_ChunkedInputStream()
 		// ReadLine() なので chunk 境界に関わらず行ずつ取り出している。
 		// ついでに ReadLine(std::string*) のほうをテストする。
 		std::string str;
-		bool rv;
+		ssize_t r;
 		// ReadLine() は読み込んだ行から改行を除いて返す。
 		// 1行目 ("a\r\n")
-		rv = chunk.ReadLine(&str);
-		xp_eq(true, rv);
+		r = chunk.ReadLine(&str);
+		xp_eq(3, r);
 		xp_eq("a", str);
 
 		// 2行目 ("\r\n")
-		rv = chunk.ReadLine(&str);
-		xp_eq(true, rv);
+		r = chunk.ReadLine(&str);
+		xp_eq(2, r);
 		xp_eq("", str);
 
 		// 3行目 ("bc")。改行なしで終端すればそのまま返す
-		rv = chunk.ReadLine(&str);
-		xp_eq(true, rv);
+		r = chunk.ReadLine(&str);
+		xp_eq(2, r);
 		xp_eq("bc", str);
 
 		// EOF
-		rv = chunk.ReadLine(&str);
-		xp_eq(false, rv);
+		r = chunk.ReadLine(&str);
+		xp_eq(0, r);
 
 		// EOF 後にもう一度読んでも EOF
-		rv = chunk.ReadLine(&str);
-		xp_eq(false, rv);
+		r = chunk.ReadLine(&str);
+		xp_eq(0, r);
 	}
 }
 #endif // SELFTEST

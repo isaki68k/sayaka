@@ -124,15 +124,18 @@ HttpClient::SendRequest(const std::string& method)
 bool
 HttpClient::ReceiveHeader(InputStream *dIn)
 {
-	bool rv;
+	size_t r;
 
 	diag.Trace("ReceiveHeader()");
 
 	RecvHeaders.clear();
 
 	// 1行目は応答
-	rv = dIn->ReadLine(&ResultLine);
-	if (rv == false || ResultLine.empty()) {
+	r = dIn->ReadLine(&ResultLine);
+	if (r <= 0) {
+		return false;
+	}
+	if (ResultLine.empty()) {
 		return false;
 	}
 	diag.Debug("HEADER |%s|", ResultLine.c_str());
@@ -151,8 +154,11 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 	// XXX 1000行で諦める
 	for (int i = 0; i < 1000; i++) {
 		std::string s;
-		dIn->ReadLine(&s);
-		if (rv == false || s.empty()) {
+		r = dIn->ReadLine(&s);
+		if (r <= 0) {
+			return false;
+		}
+		if (s.empty()) {
 			return false;
 		}
 		diag.Debug("HEADER |%s|", s.c_str());

@@ -285,9 +285,9 @@ OAuth::RequestToken(const std::string& uri_request_token)
 	StringDictionary resultDict;
 	auto stream = client->GET();
 	// TODO: Content-Encoding とかに応じた処理
-	std::string buf;
 	for (;;) {
-		if (stream->ReadLine(&buf) == false)
+		std::string buf;
+		if (stream->ReadLine(&buf) <= 0)
 			break;
 		if (buf.empty())
 			break;
