@@ -87,9 +87,9 @@ static void print_(const std::string& text);
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
 static std::string coloring(const std::string& text, Color col);
-static UString coloring(const UString& utext, Color col);
 class TextTag;
 std::string formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
+static std::vector<TextTag> CountChars(const std::string& text);
 static void SetTag(std::vector<TextTag>& tags, const Json& list, Color color);
 static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
@@ -892,48 +892,33 @@ coloring(const std::string& text, Color col)
 	return rv;
 }
 
-// UString の utext を属性付けした新しい UString を返す。
-// (vala では unichar と string がもっと親和性が高かったのでこうなっている)
-static UString
-coloring(const UString& utext, Color col)
-{
-	UString rv;
-
-	if (opt_nocolor) {
-		// --nocolor なら一切属性を付けない
-		rv = utext;
-	} else if (__predict_false(color2esc.empty())) {
-		// ポカ避け (%d は省略)
-		const UString tmp { 'C', 'o', 'l', 'o', 'r', 'i', 'n', 'g', '(' };
-		rv += tmp;
-		rv += utext;
-		rv += ')';
-	} else {
-		// ( CSI + color2esc[col] + "m" ) + text + ( CSI + "0m" )
-		std::string pre = CSI + color2esc[col] + "m";
-		std::string post = CSI "0m";
-		rv.AppendChars(pre);
-		rv.Append(utext);
-		rv.AppendChars(post);
-	}
-	return rv;
-}
-
 class TextTag
 {
 	// 文字列先頭からタグが始まる場合は Start == 0 となるため、
 	// 未使用エントリは Start == -1 とする。
  public:
+	int Offset {};
 	int Start {};
 	int End {};
 	Color Type {};
 	std::string Text {};
 
 	TextTag()
-		: TextTag(-1, -1, (Color)0) { }
-	TextTag(int start_, int end_, Color type_)
-		: TextTag(start_, end_, type_, "") { }
-	TextTag(int start_, int end_, Color type_, const std::string& text_)
+	{
+		Start = -1;
+		End = -1;
+	}
+	TextTag(int offset_)
+		: TextTag()
+	{
+		Offset = offset_;
+	}
+
+	void Set(int start_, int end_, Color type_)
+	{
+		Set(start_, end_, type_, "");
+	}
+	void Set(int start_, int end_, Color type_, const std::string& text_)
 	{
 		Start = start_;
 		End = end_;
@@ -941,13 +926,8 @@ class TextTag
 		Text = text_;
 	}
 
-	int Length() const { return End - Start; }
-
+	// ここがタグの開始位置なら true
 	bool Valid() const { return (Start >= 0); }
-
-	std::string to_string() {
-		return string_format("(%d, %d, %d)", Start, End, (int)Type);
-	}
 };
 
 // 本文を整形して返す
@@ -996,8 +976,8 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	}
 	const std::string& text = (*textj).get<std::string>();
 
-	// 1文字ずつ分解して配列に
-	UString utext = StringToUString(text);
+	// テキストの1文字ごとの開始バイト位置を調べる
+	std::vector<TextTag> tags = CountChars(text);
 
 	// エンティティの位置が新旧で微妙に違うのを吸収
 	const Json *entities;
@@ -1017,7 +997,6 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	}
 
 	// エンティティを調べる
-	std::vector<TextTag> tags(utext.size());
 	if (entities) {
 		// ハッシュタグ情報を展開
 		if ((*entities).contains("hashtags")) {
@@ -1068,11 +1047,10 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 						if (opt_full_url
 						 && newurl.find("…") != std::string::npos)
 						{
-							newurl = expd_url;
-							string_replace(newurl, "http://", "");
+							newurl = string_replace(expd_url, "http://", "");
 						}
 
-						tags[start] = TextTag(start, end, Color::Url, newurl);
+						tags[start].Set(start, end, Color::Url, newurl);
 
 						// 外部画像サービスを解析
 						MediaInfo minfo;
@@ -1098,7 +1076,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 				if (indices.is_array() && indices.size() == 2) {
 					int start = indices[0].get<int>();
 					int end   = indices[1].get<int>();
-					tags[start] = TextTag(start, end, Color::Url, disp_url);
+					tags[start].Set(start, end, Color::Url, disp_url);
 				}
 			}
 
@@ -1115,51 +1093,69 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		}
 	}
 
-	// タグ情報をもとにテキストを整形
+	// デバッグ用
+	if (0) {
+		for (int i = 0; i < tags.size(); i++) {
+			const auto& t = tags[i];
+			const auto& next = tags[i + 1];
+			printf("[%d] offset=%d '%s'", i, t.Offset,
+				text.substr(t.Offset, next.Offset - t.Offset).c_str());
+			if (t.Valid()) {
+				printf(" [%d, %d] Type=%d", t.Start, t.End, t.Type);
+				if (!t.Text.empty()) {
+					printf(" Text=\"%s\"", t.Text.c_str());
+				}
+			}
+			printf("\n");
+		}
+	}
+
 	// 表示区間が指定されていたらそれに従う
 	// XXX 後ろは添付画像 URL とかなので削るとして
 	// XXX 前はメンションがどうなるか分からないのでとりあえず後回し
-	auto display_end = utext.size();
+	auto display_end = tags.size();
 	if (extw != NULL && (*extw).contains("display_text_range")) {
 		const Json& range = (*extw)["display_text_range"];
 		if (range.is_array() && range.size() >= 2) {
 			display_end = range[1].get<int>();
 		}
 	}
-	// 文字数を数える必要があるのでコードポイントのまま文字列を作っていく
-	UString new_utext;
+	// タグ情報をもとにテキストを整形
+	std::string new_text;
 	for (int i = 0; i < display_end; ) {
-		if (__predict_false(tags[i].Valid())) {
-			switch (tags[i].Type) {
+		const auto& tag = tags[i];
+		int s = tag.Offset;
+		if (__predict_false(tag.Valid())) {
+			switch (tag.Type) {
 			 case Color::Tag:
 			 case Color::UserId:
 			 {
-				UString sb;
-				for (int j = 0, jend = tags[i].Length(); j < jend; j++) {
-					sb.Append(utext[i + j]);
-				}
-				sb = coloring(sb, tags[i].Type);
-				new_utext.Append(sb);
-				i += tags[i].Length();
+				// i 文字目(の手前)から tags[i].End 文字目(の手前) までの
+				// 文字列を色付けする。
+				int e = tags[tag.End].Offset;
+				std::string tagtext = text.substr(s, e - s);
+				new_text += coloring(tagtext, tag.Type);
+				i = tag.End;
 				break;
 			 }
 			 case Color::Url:
 			 {
-				const UString tagtext = StringToUString(tags[i].Text);
-				const UString sb = coloring(tagtext, tags[i].Type);
-				new_utext.Append(sb);
-				i += tags[i].Length();
+				// i 文字目(の手前)から tags[i].End 文字目(の手前) までの
+				// 文字列の代わりに tags[i].Text を色付けして差し替える。
+				int e = tags[tag.End].Offset;
+				const std::string tagtext = tags[i].Text;
+				new_text += coloring(tagtext, tags[i].Type);
+				i = tag.End;
 				break;
 			 }
 			 default:
 				break;
 			}
 		} else {
-			new_utext.emplace_back(utext[i++]);
+			int e = tags[++i].Offset;
+			new_text += text.substr(s, e - s);
 		}
 	}
-	// ここで文字列に戻す
-	std::string new_text = UStringToString(new_utext);
 
 	// タグの整形が済んでからエスケープと改行を整形
 	new_text = unescape(new_text);
@@ -1167,6 +1163,63 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	string_inreplace(new_text, '\r', '\n');
 
 	return new_text;
+}
+
+// formatmsg() の下請け。
+// UTF-8 文字列 text の1文字ずつのバイトオフセットを数えて TextTag 配列に
+// して返す。
+// tag[0] が 1文字目の text 先頭からのバイトオフセット、
+// tag[1] が 2文字目の text 先頭からのバイトオフセット、
+//
+// ただし最後の文字のバイト長も統一的に扱うため、末尾に終端文字があるとして
+// そのオフセットも保持しておく。そのため以下のように2文字の文字列なら
+// TextTag 配列は要素数 3 になる。
+//
+// "Aあ" の2文字の場合
+//                   +0    +1    +2    +3    +4
+//                    'A'       'あ'
+//                  +-----+-----+-----+-----+
+//           text = | $41 | $e3   $81   $82 |
+//                  +-----+-----+-----+-----+
+//                   ^     ^                 ^
+// TextTag           |     |                 :
+//  [0].Offset = 0 --+     |                 :
+//  [1].Offset = 1 --------+                 :
+//  [2].Offset = 4 - - - - - - - - - - - - - +
+//
+static std::vector<TextTag>
+CountChars(const std::string& text)
+{
+	std::vector<TextTag> tags;
+
+	// 終端文字そのものでもループを回るため offset < end ではなく <= でループ。
+	// 文字列の終端(以降)は '\0' が読めることが保証されているのと、
+	// そうすると offset++ されるためループを抜けられる。
+	for (int offset = 0, end = text.size(); offset <= end; ) {
+		// 現在のバイトオフセットをセット
+		tags.emplace_back(offset);
+
+		// UTF-8 は1バイト目でこの文字のバイト数が分かるので、それだけ飛ばす
+		uint8 c = text[offset];
+		if (__predict_true(c < 0x80)) {
+			offset += 1;
+		} else if (__predict_true(0xc0 <= c && c < 0xe0)) {
+			offset += 2;
+		} else if (__predict_true(0xe0 <= c && c < 0xf0)) {
+			offset += 3;
+		} else if (__predict_true(0xf0 <= c && c < 0xf8)) {
+			offset += 4;
+		} else if (__predict_true(0xf8 <= c && c < 0xfc)) {
+			offset += 5;
+		} else if (__predict_true(0xfc <= c && c < 0xfe)) {
+			offset += 6;
+		} else {
+			// こないはずだけど、とりあえず
+			offset += 1;
+		}
+	}
+
+	return tags;
 }
 
 // formatmsg() の下請け。
@@ -1194,7 +1247,7 @@ SetTag(std::vector<TextTag>& tags, const Json& list, Color color)
 			if (indices.is_array() && indices.size() == 2) {
 				int start = indices[0].get<int>();
 				int end   = indices[1].get<int>();
-				tags[start] = TextTag(start, end, color);
+				tags[start].Set(start, end, color);
 			}
 		}
 	}
