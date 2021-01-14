@@ -49,7 +49,7 @@ class UString : public std::vector<unichar>
 	// (ASCII またはエスケープシーケンスのみの場合に使用できる)
 	void AppendChars(const std::string& s) {
 		for (auto c : s) {
-			emplace_back(c);
+			emplace_back((unsigned char)c);
 		}
 	}
 
