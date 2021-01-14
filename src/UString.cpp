@@ -38,8 +38,8 @@ StringToUString(const std::string& str)
 	const char *src = srcbuf.data();
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
-	auto r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-	if (r < 0) {
+	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	if (r == (size_t)-1) {
 		iconv_close(cd);
 		return ustr;
 	}
@@ -94,8 +94,8 @@ UStringToString(const UString& ustr)
 	const char *src = srcbuf.data();
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
-	auto r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-	if (r < 0) {
+	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	if (r == (size_t)-1) {
 		iconv_close(cd);
 		return str;
 	}
