@@ -1145,8 +1145,9 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 			 }
 			 case Color::Url:
 			 {
-				std::string sb = coloring(tags[i].Text, tags[i].Type);
-				new_utext.AppendChars(sb);
+				const UString tagtext = StringToUString(tags[i].Text);
+				const UString sb = coloring(tagtext, tags[i].Type);
+				new_utext.Append(sb);
 				i += tags[i].Length();
 				break;
 			 }
