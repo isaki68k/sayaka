@@ -11,6 +11,7 @@ SRCS=	\
 	NGWord.cpp \
 	OAuth.cpp \
 	ParsedUri.cpp \
+	RichString.cpp \
 	StreamBase.cpp \
 	StringUtil.cpp \
 	Twitter.cpp \

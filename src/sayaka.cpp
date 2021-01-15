@@ -29,6 +29,7 @@
 #include "acl.h"
 #include "sayaka.h"
 #include "FileInputStream.h"
+#include "RichString.h"
 #include "StringUtil.h"
 #include "UString.h"
 #include "main.h"
@@ -71,7 +72,6 @@ enum Color {
 	Url,
 	Tag,
 	Verified,
-	Protected,
 	NG,
 	Max,
 };
@@ -80,17 +80,18 @@ static void progress(const char *msg);
 static void get_access_token();
 static bool showobject(const std::string& line);
 static bool showstatus(const Json *status, bool is_quoted);
-static std::string format_rt_owner(const Json& s);
-static std::string format_rt_cnt(const Json& s);
-static std::string format_fav_cnt(const Json& s);
-static void print_(const std::string& text);
+static UString format_rt_owner(const Json& s);
+static UString format_rt_cnt(const Json& s);
+static UString format_fav_cnt(const Json& s);
+static void print_(const UString& utext);
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
-static std::string coloring(const std::string& text, Color col);
-class TextTag;
-std::string formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
-static std::vector<TextTag> CountChars(const std::string& text);
-static void SetTag(std::vector<TextTag>& tags, const Json& list, Color color);
+static UString ColorBegin(Color col);
+static UString ColorEnd(Color col);
+static UString coloring(const std::string& text, Color col);
+static UString formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
+static void SetTag(RichString& t, const Json& list, Color color);
+static void SetUrl(RichString& t, int start, int end, const std::string& url);
 static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
@@ -147,7 +148,7 @@ int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
 bool bg_white;					// 明るい背景用に暗い文字色を使う場合は true
 std::string iconv_tocode;		// 出力文字コード
-std::array<std::string, Color::Max> color2esc;	// 色エスケープ文字列
+std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
 Twitter tw;
 StringDictionary followlist;	// フォロー氏リスト
 StringDictionary blocklist;		// ブロック氏リスト
@@ -520,9 +521,10 @@ showstatus(const Json *status, bool is_quoted)
 	auto src = coloring(unescape(strip_tags((*s).value("source", ""))) + "から",
 		Color::Source);
 	auto time = coloring(formattime(*s), Color::Time);
-	auto verified = s_user.value("verified", false)
-		? coloring(" ●", Color::Verified)
-		: "";
+	UString verified;
+	if (s_user.value("verified", false)) {
+		verified = coloring(" ●", Color::Verified);
+	}
 
 	std::vector<MediaInfo> mediainfo;
 	auto msg = formatmsg(*s, &mediainfo);
@@ -574,7 +576,7 @@ showstatus(const Json *status, bool is_quoted)
 }
 
 // リツイート元通知を整形して返す
-static std::string
+static UString
 format_rt_owner(const Json& status)
 {
 	const Json& user = status["user"];
@@ -587,31 +589,36 @@ format_rt_owner(const Json& status)
 }
 
 // リツイート数を整形して返す
-static std::string
+static UString
 format_rt_cnt(const Json& s)
 {
+	UString str;
+
 	auto rtcnt = s.value("retweet_count", 0);
-	return (rtcnt > 0)
-		? coloring(string_format(" %dRT", rtcnt), Color::Retweet)
-		: "";
+	if (rtcnt > 0) {
+		str = coloring(string_format(" %dRT", rtcnt), Color::Retweet);
+	}
+	return str;
 }
 
 // ふぁぼ数を整形して返す
-static std::string
+static UString
 format_fav_cnt(const Json& s)
 {
+	UString str;
+
 	auto favcnt = s.value("favorite_count", 0);
-	return (favcnt > 0)
-		? coloring(string_format(" %dFav", favcnt), Color::Favorite)
-		: "";
+	if (favcnt > 0) {
+		str = coloring(string_format(" %dFav", favcnt), Color::Favorite);
+	}
+	return str;
 }
 
-// インデントを付けて文字列を表示する
+// RichString をインデントを付けて文字列を表示する
 static void
-print_(const std::string& text)
+print_(const UString& src)
 {
 	// まず Unicode 文字単位でいろいろフィルターかける。
-	UString src = StringToUString(text);
 	UString textarray;
 	for (const auto uni : src) {
 		// Private Use Area (外字) をコードポイント形式(?)にする
@@ -843,23 +850,22 @@ init_color()
 		verified = CYAN;
 	}
 
-	color2esc[Color::Username]	= username;
-	color2esc[Color::UserId]	= blue;
-	color2esc[Color::Time]		= gray;
-	color2esc[Color::Source]	= gray;
+	color2esc[Color::Username]	= UString(username);
+	color2esc[Color::UserId]	= UString(blue);
+	color2esc[Color::Time]		= UString(gray);
+	color2esc[Color::Source]	= UString(gray);
 
-	color2esc[Color::Retweet]	= str_join(";", BOLD, green);
-	color2esc[Color::Favorite]	= str_join(";", BOLD, fav);
-	color2esc[Color::Url]		= str_join(";", UNDERSCORE, blue);
-	color2esc[Color::Tag]		= blue;
-	color2esc[Color::Verified]	= verified;
-	color2esc[Color::Protected]	= gray;
-	color2esc[Color::NG]		= str_join(";", STRIKE, gray);
+	color2esc[Color::Retweet]	= UString(str_join(";", BOLD, green));
+	color2esc[Color::Favorite]	= UString(str_join(";", BOLD, fav));
+	color2esc[Color::Url]		= UString(str_join(";", UNDERSCORE, blue));
+	color2esc[Color::Tag]		= UString(blue);
+	color2esc[Color::Verified]	= UString(verified);
+	color2esc[Color::NG]		= UString(str_join(";", STRIKE, gray));
 }
 
-// 文字列を sep で結合した文字列を返します。
+// 文字列 s1 と s2 を sep で結合した文字列を返す。
 // ただし (glib の) string.join() と異なり、(null と)空文字列の要素は排除
-// した後に結合を行います。
+// した後に結合を行う。
 // XXX 今の所、引数は2つのケースしかないので手抜き。
 // 例)
 //   string.join(";", "AA", "") -> "AA;"
@@ -867,68 +873,57 @@ init_color()
 static std::string
 str_join(const std::string& sep, const std::string& s1, const std::string& s2)
 {
-	if (s1 == "" || s2 == "") {
-		return s1 + s2;
+	if (s1.empty()) {
+		return s2;
+	} else if (s2.empty()) {
+		return s1;
 	} else {
 		return s1 + sep + s2;
 	}
 }
 
-// 文字列 text を属性付けした新しい文字列を返す (std::string 版)
-static std::string
-coloring(const std::string& text, Color col)
+// 属性付け開始文字列を UString で返す
+static UString
+ColorBegin(Color col)
 {
-	std::string rv;
+	UString esc;
 
 	if (opt_nocolor) {
-		// --nocolor なら一切属性を付けない
-		rv = text;
-	} else if (__predict_false(color2esc.empty())) {
-		// ポカ避け
-		rv = string_format("Coloring(%s,%d)", text.c_str(), col);
+		// --no-color なら一切属性を付けない
 	} else {
-		rv = CSI + color2esc[col] + "m" + text + CSI + "0m";
+		esc.AppendChars(CSI);
+		esc.Append(color2esc[col]);
+		esc.Append('m');
 	}
-	return rv;
+	return esc;
 }
 
-class TextTag
+// 属性付け終了文字列を UString で返す
+static UString
+ColorEnd(Color col)
 {
-	// 文字列先頭からタグが始まる場合は Start == 0 となるため、
-	// 未使用エントリは Start == -1 とする。
- public:
-	int Offset {};
-	int Start {};
-	int End {};
-	Color Type {};
-	std::string Text {};
+	UString esc;
 
-	TextTag()
-	{
-		Start = -1;
-		End = -1;
+	if (opt_nocolor) {
+		// --no-color なら一切属性を付けない
+	} else {
+		esc.AppendChars(CSI "0m");
 	}
-	TextTag(int offset_)
-		: TextTag()
-	{
-		Offset = offset_;
-	}
+	return esc;
+}
 
-	void Set(int start_, int end_, Color type_)
-	{
-		Set(start_, end_, type_, "");
-	}
-	void Set(int start_, int end_, Color type_, const std::string& text_)
-	{
-		Start = start_;
-		End = end_;
-		Type = type_;
-		Text = text_;
-	}
+// 文字列 text を UString に変換して、色属性を付けた UString を返す
+static UString
+coloring(const std::string& text, Color col)
+{
+	UString utext;
 
-	// ここがタグの開始位置なら true
-	bool Valid() const { return (Start >= 0); }
-};
+	utext += ColorBegin(col);
+	utext += UString(text);
+	utext += ColorEnd(col);
+
+	return utext;
+}
 
 // 本文を整形して返す
 // (そのためにここでハッシュタグ、メンション、URL を展開)
@@ -953,7 +948,7 @@ class TextTag
 //     "media":[..]
 //   }
 // が追加されている。media の位置に注意。
-std::string
+static UString
 formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 {
 	const Json *extw = NULL;
@@ -972,16 +967,14 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	}
 	if (__predict_false(textj == NULL)) {
 		// ないことはないはず
-		return "";
+		return UString("(no text field?)");
 	}
 	const std::string& text = (*textj).get<std::string>();
-
-	// テキストの1文字ごとの開始バイト位置を調べる
-	std::vector<TextTag> tags = CountChars(text);
+	RichString richtext(text);
 
 	// エンティティの位置が新旧で微妙に違うのを吸収
-	const Json *entities;
-	const Json *media_entities;
+	const Json *entities = NULL;
+	const Json *media_entities = NULL;
 	if (extw) {
 		if ((*extw).contains("entities")) {
 			entities = &(*extw)["entities"];
@@ -1001,13 +994,13 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		// ハッシュタグ情報を展開
 		if ((*entities).contains("hashtags")) {
 			const Json& hashtags = (*entities)["hashtags"];
-			SetTag(tags, hashtags, Color::Tag);
+			SetTag(richtext, hashtags, Color::Tag);
 		}
 
 		// ユーザID情報を展開
 		if ((*entities).contains("user_mentions")) {
 			const Json& mentions = (*entities)["user_mentions"];
-			SetTag(tags, mentions, Color::UserId);
+			SetTag(richtext, mentions, Color::UserId);
 		}
 
 		// URL を展開
@@ -1049,8 +1042,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 						{
 							newurl = string_replace(expd_url, "http://", "");
 						}
-
-						tags[start].Set(start, end, Color::Url, newurl);
+						SetUrl(richtext, start, end, newurl);
 
 						// 外部画像サービスを解析
 						MediaInfo minfo;
@@ -1076,7 +1068,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 				if (indices.is_array() && indices.size() == 2) {
 					int start = indices[0].get<int>();
 					int end   = indices[1].get<int>();
-					tags[start].Set(start, end, Color::Url, disp_url);
+					SetUrl(richtext, start, end, disp_url);
 				}
 			}
 
@@ -1095,134 +1087,86 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 
 	// デバッグ用
 	if (0) {
-		for (int i = 0; i < tags.size(); i++) {
-			const auto& tag = tags[i];
-			const auto& next = tags[i + 1];
-			printf("[%d] offset=%d '%s'", i, tag.Offset,
-				text.substr(tag.Offset, next.Offset - tag.Offset).c_str());
-			for (int j = tag.Offset; j < next.Offset; j++) {
-				printf(" %02x", (unsigned char)text[j]);
-			}
-			if (tag.Valid()) {
-				printf(" [%d, %d] Type=%d", tag.Start, tag.End, tag.Type);
-				if (!tag.Text.empty()) {
-					printf(" Text=\"%s\"", tag.Text.c_str());
-				}
-			}
-			printf("\n");
-		}
+		printf("%s", richtext.dump().c_str());
 	}
 
 	// 表示区間が指定されていたらそれに従う
 	// XXX 後ろは添付画像 URL とかなので削るとして
 	// XXX 前はメンションがどうなるか分からないのでとりあえず後回し
-	auto display_end = tags.size();
+	auto display_end = richtext.size();
 	if (extw != NULL && (*extw).contains("display_text_range")) {
 		const Json& range = (*extw)["display_text_range"];
 		if (range.is_array() && range.size() >= 2) {
 			display_end = range[1].get<int>();
 		}
 	}
-	// タグ情報をもとにテキストを整形
-	std::string new_text;
-	for (int i = 0; i < display_end; ) {
-		const auto& tag = tags[i];
-		int s = tag.Offset;
-		if (__predict_false(tag.Valid())) {
-			switch (tag.Type) {
-			 case Color::Tag:
-			 case Color::UserId:
-			 {
-				// i 文字目(の手前)から tags[i].End 文字目(の手前) までの
-				// 文字列を色付けする。
-				int e = tags[tag.End].Offset;
-				std::string tagtext = text.substr(s, e - s);
-				new_text += coloring(tagtext, tag.Type);
-				i = tag.End;
-				break;
-			 }
-			 case Color::Url:
-			 {
-				// i 文字目(の手前)から tags[i].End 文字目(の手前) までの
-				// 文字列の代わりに tags[i].Text を色付けして差し替える。
-				int e = tags[tag.End].Offset;
-				const std::string tagtext = tags[i].Text;
-				new_text += coloring(tagtext, tags[i].Type);
-				i = tag.End;
-				break;
-			 }
-			 default:
-				break;
-			}
-		} else {
-			int e = tags[++i].Offset;
-			new_text += text.substr(s, e - s);
-		}
-	}
 
-	// タグの整形が済んでからエスケープと改行を整形
-	new_text = unescape(new_text);
-	new_text = string_replace(new_text, "\r\n", "\n");
-	string_inreplace(new_text, '\r', '\n');
+	// RichString を UString に変換。
+	// ついでに HTML unescape と 改行を処理。
+	UString new_text;
+	for (int i = 0; i < display_end; i++) {
+		auto& c = richtext[i];
+
+		// 直前に差し込むエスケープシーケンスがあれば先に処理
+		if (__predict_false(!c.altesc.empty())) {
+			new_text.Append(c.altesc);
+			// FALL THROUGH
+		}
+
+		// URL があれば展開
+		if (__predict_false(!c.alturl.empty())) {
+			new_text.Append(c.alturl);
+			// FALL THROUGH
+		}
+
+		// 文字を展開
+		// ついでに簡単なテキスト置換も同時にやってしまう。
+
+		// URL 展開元の文字は -1 で消してある
+		if (__predict_false((int32_t)c.code < 0)) {
+			continue;
+		}
+		// '\r' は無視
+		if (__predict_false(c.code == '\r')) {
+			continue;
+		}
+		// もう一度文字列にするのもあほらしいので、なんだかなあとは
+		// 思うけど、ここでついでに unescape() もやってしまう。
+		// "&amp;" -> "&"
+		// "&lt;"  -> "<"
+		// "&gt;"  -> ">"
+		if (__predict_false(c.code == '&')) {
+			if (richtext[i + 1].code == 'a' &&
+			    richtext[i + 2].code == 'm' &&
+			    richtext[i + 3].code == 'p' &&
+			    richtext[i + 4].code == ';'   )
+			{
+				new_text.Append('&');
+				i += 4;
+				continue;
+			}
+			if (richtext[i + 1].code == 'l' &&
+			    richtext[i + 2].code == 't' &&
+			    richtext[i + 3].code == ';'   )
+			{
+				new_text.Append('<');
+				i += 3;
+				continue;
+			}
+			if (richtext[i + 1].code == 'g' &&
+			    richtext[i + 2].code == 't' &&
+			    richtext[i + 3].code == ';'   )
+			{
+				new_text.Append('>');
+				i += 3;
+				continue;
+			}
+		}
+
+		new_text.Append(c.code);
+	}
 
 	return new_text;
-}
-
-// formatmsg() の下請け。
-// UTF-8 文字列 text の1文字ずつのバイトオフセットを数えて TextTag 配列に
-// して返す。
-// tag[0] が 1文字目の text 先頭からのバイトオフセット、
-// tag[1] が 2文字目の text 先頭からのバイトオフセット、
-//
-// ただし最後の文字のバイト長も統一的に扱うため、末尾に終端文字があるとして
-// そのオフセットも保持しておく。そのため以下のように2文字の文字列なら
-// TextTag 配列は要素数 3 になる。
-//
-// "Aあ" の2文字の場合
-//                   +0    +1    +2    +3    +4
-//                    'A'       'あ'
-//                  +-----+-----+-----+-----+
-//           text = | $41 | $e3   $81   $82 |
-//                  +-----+-----+-----+-----+
-//                   ^     ^                 ^
-// TextTag           |     |                 :
-//  [0].Offset = 0 --+     |                 :
-//  [1].Offset = 1 --------+                 :
-//  [2].Offset = 4 - - - - - - - - - - - - - +
-//
-static std::vector<TextTag>
-CountChars(const std::string& text)
-{
-	std::vector<TextTag> tags;
-
-	// 終端文字そのものでもループを回るため offset < end ではなく <= でループ。
-	// 文字列の終端(以降)は '\0' が読めることが保証されているのと、
-	// そうすると offset++ されるためループを抜けられる。
-	for (int offset = 0, end = text.size(); offset <= end; ) {
-		// 現在のバイトオフセットをセット
-		tags.emplace_back(offset);
-
-		// UTF-8 は1バイト目でこの文字のバイト数が分かるので、それだけ飛ばす
-		uint8 c = text[offset];
-		if (__predict_true(c < 0x80)) {
-			offset += 1;
-		} else if (__predict_true(0xc0 <= c && c < 0xe0)) {
-			offset += 2;
-		} else if (__predict_true(0xe0 <= c && c < 0xf0)) {
-			offset += 3;
-		} else if (__predict_true(0xf0 <= c && c < 0xf8)) {
-			offset += 4;
-		} else if (__predict_true(0xf8 <= c && c < 0xfc)) {
-			offset += 5;
-		} else if (__predict_true(0xfc <= c && c < 0xfe)) {
-			offset += 6;
-		} else {
-			// こないはずだけど、とりあえず
-			offset += 1;
-		}
-	}
-
-	return tags;
 }
 
 // formatmsg() の下請け。
@@ -1238,7 +1182,7 @@ CountChars(const std::string& text)
 //   }, ...
 // ]
 static void
-SetTag(std::vector<TextTag>& tags, const Json& list, Color color)
+SetTag(RichString& richtext, const Json& list, Color color)
 {
 	if (list.is_array() == false) {
 		return;
@@ -1250,8 +1194,47 @@ SetTag(std::vector<TextTag>& tags, const Json& list, Color color)
 			if (indices.is_array() && indices.size() == 2) {
 				int start = indices[0].get<int>();
 				int end   = indices[1].get<int>();
-				tags[start].Set(start, end, color);
+
+				// 色付けの開始位置
+				auto& c1 = richtext.GetNthChar(start);
+				c1.altesc += ColorBegin(color);
+				// 終了位置
+				auto& c2 = richtext.GetNthChar(end);
+				c2.altesc += ColorEnd(color);
 			}
+		}
+	}
+}
+
+// formatmsg() の下請け。
+// text の [start, end) を url で差し替える(ための処理をする)。
+static void
+SetUrl(RichString& text, int start, int end, const std::string& url)
+{
+	bool in_url = false;
+
+	for (int i = 0; i < text.size(); i++) {
+		RichChar& c = text[i];
+
+		if (in_url == false) {
+			// 開始位置を探す
+			if (c.charoffset == start) {
+				// 色
+				c.altesc = ColorBegin(Color::Url);
+				// 開始位置に URL を覚えておく
+				c.alturl = url;
+				// この文字から非表示
+				c.code = -1;
+				in_url = true;
+			}
+		} else {
+			// 終了位置自身は含まないのでここで終了
+			if (c.charoffset == end) {
+				c.altesc = ColorEnd(Color::Url);
+				break;
+			}
+			// ここは非表示
+			c.code = -1;
 		}
 	}
 }

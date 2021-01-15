@@ -1,14 +1,13 @@
 #include "UString.h"
 #include <cstring>
 #include <iconv.h>
-#include <sys/endian.h>
 
 // 文字列 s を(UString に変換して)末尾に追加
-void
+UString&
 UString::Append(const std::string& s)
 {
 	UString us = StringToUString(s);
-	Append(us);
+	return Append(us);
 }
 
 
@@ -21,11 +20,6 @@ StringToUString(const std::string& str)
 	iconv_t cd;
 	UString ustr;
 
-#if _BYTE_ORDER == _LITTLE_ENDIAN
-#define UTF32_HE "utf-32le"
-#else
-#define UTF32_HE "utf-32be"
-#endif
 	cd = iconv_open(UTF32_HE, "utf-8");
 	if (cd == (iconv_t)-1) {
 		return ustr;
