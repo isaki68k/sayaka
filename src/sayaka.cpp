@@ -1096,14 +1096,17 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	// デバッグ用
 	if (0) {
 		for (int i = 0; i < tags.size(); i++) {
-			const auto& t = tags[i];
+			const auto& tag = tags[i];
 			const auto& next = tags[i + 1];
-			printf("[%d] offset=%d '%s'", i, t.Offset,
-				text.substr(t.Offset, next.Offset - t.Offset).c_str());
-			if (t.Valid()) {
-				printf(" [%d, %d] Type=%d", t.Start, t.End, t.Type);
-				if (!t.Text.empty()) {
-					printf(" Text=\"%s\"", t.Text.c_str());
+			printf("[%d] offset=%d '%s'", i, tag.Offset,
+				text.substr(tag.Offset, next.Offset - tag.Offset).c_str());
+			for (int j = tag.Offset; j < next.Offset; j++) {
+				printf(" %02x", (unsigned char)text[j]);
+			}
+			if (tag.Valid()) {
+				printf(" [%d, %d] Type=%d", tag.Start, tag.End, tag.Type);
+				if (!tag.Text.empty()) {
+					printf(" Text=\"%s\"", tag.Text.c_str());
 				}
 			}
 			printf("\n");
