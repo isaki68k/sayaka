@@ -157,7 +157,6 @@ StringDictionary blocklist;		// ブロック氏リスト
 StringDictionary mutelist;		// ミュート氏リスト
 StringDictionary nortlist;		// RT非表示氏リスト
 bool opt_norest;				// REST API を発行しない
-bool opt_evs;					// EVS を使用する
 bool opt_show_ng;				// NG ツイートを隠さない
 std::string opt_ngword;			// NG ワード (追加削除コマンド用)
 std::string opt_ngword_user;	// NG 対象ユーザ (追加コマンド用)
@@ -630,17 +629,6 @@ print_(const UString& src)
 		{
 			auto tmp = string_format("<U+%X>", uni);
 			textarray.Append(tmp);
-			continue;
-		}
-
-		// ここで EVS 文字を抜く。
-		// 絵文字セレクタらしいけど、うちの mlterm + sayaka14 フォントだと
-		// U+FE0E とかの文字が前の文字に上書き出力されてぐちゃぐちゃに
-		// なってしまうので、mlterm が対応するまではこっちでパッチ対応。
-		if (__predict_false(uni == 0xfe0e || uni == 0xfe0f)) {
-			if (opt_evs) {
-				textarray += uni;
-			}
 			continue;
 		}
 

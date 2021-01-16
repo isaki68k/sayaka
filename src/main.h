@@ -45,7 +45,6 @@ extern bool bg_white;
 extern std::string iconv_tocode;
 extern Twitter tw;
 extern bool opt_norest;
-extern bool opt_evs;
 extern bool opt_show_ng;
 extern std::string opt_ngword;
 extern std::string opt_ngword_user;

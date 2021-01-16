@@ -84,7 +84,6 @@ enum {
 	OPT_record,
 	OPT_record_all,
 	OPT_show_ng,
-	OPT_support_evs,
 	OPT_timeout_image,
 	OPT_token,
 	OPT_version,
@@ -128,7 +127,6 @@ static const struct option longopts[] = {
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
-	{ "support-evs",	no_argument,		NULL,	OPT_support_evs },
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
 	{ "token",			required_argument,	NULL,	OPT_token },
 	{ "version",		no_argument,		NULL,	OPT_version },
@@ -155,7 +153,6 @@ main(int ac, char *av[])
 	address_family = AF_UNSPEC;
 	color_mode = 256;
 	bg_white = true;
-	opt_evs = false;
 	opt_show_ng = false;
 	opt_filter = "";
 	last_id = "";
@@ -322,9 +319,6 @@ main(int ac, char *av[])
 			break;
 		 case OPT_show_ng:
 			opt_show_ng = true;
-			break;
-		 case OPT_support_evs:
-			opt_evs = true;
 			break;
 		 case OPT_timeout_image:
 			opt_timeout_image = atoi(optarg) * 1000;
@@ -734,7 +728,6 @@ R"(usage: sayaka [<options>...] --home
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--show-ng
-	--support-evs
 	--token <file> : token file (default: ~/.sayaka/token.json)
 	--version
 	--x68k : preset options for x68k.
