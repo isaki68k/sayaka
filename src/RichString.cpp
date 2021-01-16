@@ -98,9 +98,23 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 
 		// 1文字としてカウントしない後置修飾文字(?)なら、
 		// 文字数カウンタを1文字前の状態に戻して再開。
-		if (__predict_false(0xe0100 <= rc.code && rc.code < 0xe01f0)) {
-			// 異字体セレクタ
-			charoffset = info.back().charoffset;
+#define RANGE(x, l, h) __predict_false((l) <= (x) && (x) <= (h))
+		if (RANGE(rc.code, 0xfe00,  0xfe0f)		// Variation Selector {1-16}
+		 || RANGE(rc.code, 0xe0100, 0xe01ef))	// Variation Selector {17-256}
+		{
+			// VS は 1文字としてカウントしないので、
+			// 文字数カウンタを1文字前の状態に戻して再開。
+			// …のはずだが twitter さんは、VS が連続していると2つ目の
+			// ほうを独立した1文字としてカウントした形跡があるので、
+			// 仕方ないので適当に対処。
+			auto& prev = info.back();
+			if (RANGE(prev.code, 0xfe00, 0xfe0f)
+			 || RANGE(prev.code, 0xe0100, 0xe01ef)) {
+				// 前も VS だと、VS 扱いしない?
+			} else {
+				// VS はカウントしない。(こっちが通常)
+				charoffset = prev.charoffset;
+			}
 		}
 		rc.charoffset = charoffset++;
 
@@ -196,11 +210,15 @@ test_RichString()
 		// SVS
 		// https://qiita.com/_sobataro/items/47989ee4b573e0c2adfc
 		// U+231b "Hourglass" (SVSなし)
-		{ "SVS,\xe8\x8c\x9b" "!",						{ 0, 1, 2 } },
-		// U+231b U+FE0E (TVPS)
-		{ "SVS+TVPS,\xe8\x8c\x9b\xef\xb8\x8e" "!",		{ 0, 0, 1, 2 } },
-		// U+231b U+FE0F (EVPS)
-		{ "SVS+EVPS,\xe8\x8c\x9b\xef\xb8\x8f" "!",		{ 0, 0, 1, 2 } },
+		{ "HG,\xe8\x8c\x9b" "!",						{ 0, 1, 2 } },
+		// U+231b U+FE0E (TPVS)
+		{ "HG+TPVS,\xe8\x8c\x9b\xef\xb8\x8e" "!",		{ 0, 0, 1, 2 } },
+		// U+231b U+FE0F (EPVS)
+		{ "HG+EPVS,\xe8\x8c\x9b\xef\xb8\x8f" "!",		{ 0, 0, 1, 2 } },
+
+		// VS が連続すると2つ目のほうを独立した1文字と数えたようだ。
+		// どう解釈したらそうなるのか分からんけど。
+		{ "VS2,\xe8\x8c\x9b\xef\xb8\x8f\xef\xb8\x8e" "!", { 0, 0, 1, 2, 3 } },
 	};
 	for (const auto& a : table) {
 		const auto& name_input = Split2(a.first, ',');
