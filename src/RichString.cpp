@@ -183,7 +183,9 @@ RichString::dump() const
 			i, c.charoffset, c.byteoffset);
 
 		if ((int32_t)c.code < 0) {
-			rv += " code=-1";
+			rv += string_format(" U+%02x '%s' Del", -(int32_t)c.code,
+				text.substr(c.byteoffset, next.byteoffset - c.byteoffset)
+					.c_str());
 		} else {
 			rv += string_format(" U+%02x '%s'", c.code,
 				text.substr(c.byteoffset, next.byteoffset - c.byteoffset)

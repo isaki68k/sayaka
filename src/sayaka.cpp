@@ -41,6 +41,8 @@
 #include <err.h>
 #include <unicode/uchar.h>
 
+//#define DEBUG_FORMAT 1
+
 #if !defined(PATH_SEPARATOR)
 #define PATH_SEPARATOR "/"
 #endif
@@ -1085,10 +1087,9 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		}
 	}
 
-	// デバッグ用
-	if (0) {
-		printf("%s", richtext.dump().c_str());
-	}
+#if defined(DEBUG_FORMAT)
+	printf("%s", richtext.dump().c_str());
+#endif
 
 	// 表示区間が指定されていたらそれに従う
 	// XXX 後ろは添付画像 URL とかなので削るとして
@@ -1122,7 +1123,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		// 文字を展開
 		// ついでに簡単なテキスト置換も同時にやってしまう。
 
-		// URL 展開元の文字は -1 で消してある
+		// URL 展開元の文字は負数にしてあるのでその部分は無視する
 		if (__predict_false((int32_t)c.code < 0)) {
 			continue;
 		}
@@ -1201,6 +1202,10 @@ SetTag(RichString& richtext, const Json& list, Color color)
 				// 終了位置
 				auto& c2 = richtext.GetNthChar(end);
 				c2.altesc += ColorEnd(color);
+
+#if defined(DEBUG_FORMAT)
+				printf("SetTag [%d,%d)\n", start, end);
+#endif
 			}
 		}
 	}
@@ -1213,6 +1218,10 @@ SetUrl(RichString& text, int start, int end, const std::string& url)
 {
 	bool in_url = false;
 
+#if defined(DEBUG_FORMAT)
+	printf("SetUrl [%d,%d)\n", start, end);
+#endif
+
 	for (int i = 0; i < text.size(); i++) {
 		RichChar& c = text[i];
 
@@ -1224,7 +1233,7 @@ SetUrl(RichString& text, int start, int end, const std::string& url)
 				// 開始位置に URL を覚えておく
 				c.alturl = url;
 				// この文字から非表示
-				c.code = -1;
+				c.code = -c.code;
 				in_url = true;
 			}
 		} else {
@@ -1234,7 +1243,7 @@ SetUrl(RichString& text, int start, int end, const std::string& url)
 				break;
 			}
 			// ここは非表示
-			c.code = -1;
+			c.code = -c.code;
 		}
 	}
 }
