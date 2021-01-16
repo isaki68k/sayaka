@@ -1343,8 +1343,8 @@ show_image(const std::string& img_file, const std::string& img_url,
 	i++;
 	errno = 0;
 	sx_width = strtol(buf + i, &ep, 10);
-	if (ep == buf + i || (*ep != ';' && *ep != ' ') || errno == ERANGE) {
-		sx_width = 0;
+	if (ep == buf + i || errno == ERANGE) {
+		return false;
 	}
 	// Pv
 	i = ep - buf;
@@ -1352,11 +1352,8 @@ show_image(const std::string& img_file, const std::string& img_url,
 	errno = 0;
 	sx_height = strtol(buf + i, &ep, 10);
 	if (ep == buf + i || errno == ERANGE) {
-		sx_height = 0;
-	}
-
-	if (sx_width == 0 || sx_height == 0)
 		return false;
+	}
 
 	// この画像が占める文字数
 	auto image_rows = (sx_height + fontheight - 1) / fontheight;
