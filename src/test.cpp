@@ -6,6 +6,7 @@
 #include "NGWord.h"
 #include "OAuth.h"
 #include "ParsedUri.h"
+#include "RichString.h"
 #include "StringUtil.h"
 #include "Twitter.h"
 #include "UString.h"
@@ -63,6 +64,7 @@ main(int ac, char *av[])
 	test_NGWord();
 	test_OAuth();
 	test_ParsedUri();
+	test_RichString();
 	test_StringUtil();
 	test_Twitter();
 	test_UString();
