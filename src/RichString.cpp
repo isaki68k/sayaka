@@ -49,6 +49,7 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 
 	int charoffset = 0;
 	int byteoffset = 0;
+	bool regional_flag = false;
 	for (int end = srcstr.size(); byteoffset < end; ) {
 		// この文字
 		RichChar rc;
@@ -95,10 +96,23 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 			return false;
 		}
 		rc.code = *(unichar *)&dstbuf[0];
+		if (0) {
+			printf("%02X\n", rc.code);
+		}
 
-		// 1文字としてカウントしない後置修飾文字(?)なら、
-		// 文字数カウンタを1文字前の状態に戻して再開。
+		// Unicode の文字数カウントは地獄だが、
+		// とりあえずこの記事の中盤以降にある独自方針を参考にする。
+		// https://qiita.com/_sobataro/items/47989ee4b573e0c2adfc
+
 #define RANGE(x, l, h) __predict_false((l) <= (x) && (x) <= (h))
+
+		if (__predict_false(rc.code == 0x20e3) // Combining Enclosing Keycap
+		 || RANGE(rc.code, 0x1f3fb, 0x1f3ff))
+								// Emoji Modifier Fitzpatrick Type 1-2 .. 6
+		{
+			// カウントしない
+			charoffset = info.back().charoffset;
+		} else
 		if (RANGE(rc.code, 0xfe00,  0xfe0f)		// Variation Selector {1-16}
 		 || RANGE(rc.code, 0xe0100, 0xe01ef))	// Variation Selector {17-256}
 		{
@@ -114,6 +128,17 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 			} else {
 				// VS はカウントしない。(こっちが通常)
 				charoffset = prev.charoffset;
+			}
+		} else if (RANGE(rc.code, 0x1f1e6, 0x1f1ff)) { // Regional Indicator
+			// 連続する2文字で1文字とカウントする…
+			// 連続しなかったらとかはとりあえず無視。
+			if (__predict_true(regional_flag == false)) {
+				// 1文字目はフラグを立てて文字をカウント
+				regional_flag = true;
+			} else {
+				// 2文字目は文字はカウントしない
+				regional_flag = false;
+				charoffset = info.back().charoffset;
 			}
 		}
 		rc.charoffset = charoffset++;
@@ -218,7 +243,18 @@ test_RichString()
 
 		// VS が連続すると2つ目のほうを独立した1文字と数えたようだ。
 		// どう解釈したらそうなるのか分からんけど。
-		{ "VS2,\xe8\x8c\x9b\xef\xb8\x8f\xef\xb8\x8e" "!", { 0, 0, 1, 2, 3 } },
+		{ "VS2,\xe8\x8c\x9b" "\xef\xb8\x8f" "\xef\xb8\x8e" "!",
+														{ 0, 0, 1, 2, 3 } },
+
+		// Emoji Combining Sequence (囲み文字)
+		{ "Keycap,1" "\xef\xb8\x8f" "\xe2\x83\xa3" "!",	{ 0, 0, 0, 1, 2 } },
+
+		// Skin tone
+		{ "Skin,\xf0\x9f\x91\xa8" "\xf0\x9f\x8f\xbd" "!", { 0, 0, 1, 2 } },
+
+		// Regional Indicator (国旗絵文字)
+		{ "Flag,\xf0\x9f\x87\xaf" "\xf0\x9f\x87\xb5"
+		       "\xf0\x9f\x87\xaf" "\xf0\x9f\x87\xb5",	{ 0, 0, 1, 1, 2 } },
 	};
 	for (const auto& a : table) {
 		const auto& name_input = Split2(a.first, ',');
@@ -235,6 +271,15 @@ test_RichString()
 			}
 		} else {
 			xp_eq(expected.size(), rtext.size(), testname);
+			printf("expected");
+			for (auto& x : expected) {
+				printf(" %d", x);
+			}
+			printf(" but");
+			for (int i = 0; i < rtext.size(); i++) {
+				printf(" %d", rtext[i].charoffset);
+			}
+			printf("\n");
 		}
 	}
 }
