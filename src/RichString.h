@@ -27,19 +27,14 @@ class RichChar
 };
 
 // いろいろ込みのテキスト
-class RichString
+class RichString : public std::vector<RichChar>
 {
+	// 文字ごとの情報は親クラスの配列で持っている
+	using inherited = std::vector<RichChar>;
+
  public:
 	RichString();
 	RichString(const std::string& text_);
-
-	// このテキストの長さ (charinfo のほうだけど) を返す
-	int size() const { return charinfo.size(); }
-
-	// [] 演算子は RichChar のほうを返す
-	RichChar& operator[](int idx) {
-		return charinfo[idx];
-	}
 
 	// ダンプ文字列を返す (デバッグ用)
 	std::string dump() const;
@@ -47,9 +42,6 @@ class RichString
  private:
 	// 元の文字列 (変更しない)
 	std::string text {};
-
-	// 文字ごとの情報
-	std::vector<RichChar> charinfo {};
 
 	// src から info を作成する。
 	bool MakeInfo(std::vector<RichChar> *info, const std::string& src) const;

@@ -1183,17 +1183,11 @@ SetTag(RichString& richtext, const Json& list, Color color)
 			if (indices.is_array() && indices.size() == 2) {
 				int start = indices[0].get<int>();
 				int end   = indices[1].get<int>();
-
-				// 色付けの開始位置
-				auto& c1 = richtext[start];
-				c1.altesc += ColorBegin(color);
-				// 終了位置
-				auto& c2 = richtext[end];
-				c2.altesc += ColorEnd(color);
-
 #if defined(DEBUG_FORMAT)
 				printf("SetTag [%d,%d)\n", start, end);
 #endif
+				richtext[start].altesc += ColorBegin(color);
+				richtext[end].altesc += ColorEnd(color);
 			}
 		}
 	}
@@ -1204,36 +1198,22 @@ SetTag(RichString& richtext, const Json& list, Color color)
 static void
 SetUrl(RichString& text, int start, int end, const std::string& url)
 {
-	bool in_url = false;
-
 #if defined(DEBUG_FORMAT)
 	printf("SetUrl [%d,%d)\n", start, end);
 #endif
 
-	for (int i = 0; i < text.size(); i++) {
-		RichChar& c = text[i];
+	int i = start;
 
-		if (in_url == false) {
-			// 開始位置を探す
-			if (c.charoffset == start) {
-				// 色
-				c.altesc = ColorBegin(Color::Url);
-				// 開始位置に URL を覚えておく
-				c.alturl = url;
-				// この文字から非表示
-				c.code = -c.code;
-				in_url = true;
-			}
-		} else {
-			// 終了位置自身は含まないのでここで終了
-			if (c.charoffset == end) {
-				c.altesc = ColorEnd(Color::Url);
-				break;
-			}
-			// ここは非表示
-			c.code = -c.code;
-		}
+	// 開始位置に URL を覚えておく
+	text[i].alturl = url;
+	text[i].altesc = ColorBegin(Color::Url);
+	// この範囲の元の文字列を非表示にマークする
+	for (; i < end; i++) {
+		auto& c = text[i];
+		c.code = -c.code;
 	}
+	// (この手前で)終了
+	text[i].altesc = ColorEnd(Color::Url);
 }
 
 // 現在行に user のアイコンを表示。

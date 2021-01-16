@@ -9,7 +9,7 @@ RichString::RichString(const std::string& text_)
 	text = text_;
 
 	// 先頭からの文字数とバイト数を数える
-	MakeInfo(&charinfo, text_);
+	MakeInfo(this, text_);
 }
 
 // UTF-8 文字列 srcstr から内部情報 info を作成する。
@@ -119,9 +119,9 @@ RichString::dump() const
 {
 	std::string rv;
 
-	for (int i = 0; i < charinfo.size(); i++) {
-		const auto& c = charinfo[i];
-		const auto& next = charinfo[i + 1];
+	for (int i = 0; i < size(); i++) {
+		const auto& c = (*this)[i];
+		const auto& next = (*this)[i + 1];
 		rv += string_format("[%d] char=%d byte=%d",
 			i, c.charoffset, c.byteoffset);
 
@@ -233,8 +233,8 @@ test_RichString()
 				printf(" %d", x);
 			}
 			printf(" but");
-			for (int i = 0; i < rtext.size(); i++) {
-				printf(" %d", rtext[i].charoffset);
+			for (auto& c : rtext) {
+				printf(" %d", c.charoffset);
 			}
 			printf("\n");
 		}
