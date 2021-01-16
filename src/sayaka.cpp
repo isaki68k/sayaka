@@ -1340,6 +1340,7 @@ show_image(const std::string& img_file, const std::string& img_url,
 	for (i++; i < n && buf[i] != ';'; i++)
 		;
 	// Ph
+	i++;
 	errno = 0;
 	sx_width = strtol(buf + i, &ep, 10);
 	if (ep == buf + i || (*ep != ';' && *ep != ' ') || errno == ERANGE) {
