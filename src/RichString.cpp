@@ -49,12 +49,12 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 
 	int charoffset = 0;
 	int byteoffset = 0;
-	bool regional_flag = false;
 	for (int end = srcstr.size(); byteoffset < end; ) {
 		// この文字
 		RichChar rc;
 
 		rc.byteoffset = byteoffset;
+		rc.charoffset = charoffset++;
 
 		// UTF-8 は1バイト目でこの文字のバイト数が分かる
 		uint8 c = srcstr[byteoffset];
@@ -99,49 +99,6 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 		if (0) {
 			printf("%02X\n", rc.code);
 		}
-
-		// Unicode の文字数カウントは地獄だが、
-		// とりあえずこの記事の中盤以降にある独自方針を参考にする。
-		// https://qiita.com/_sobataro/items/47989ee4b573e0c2adfc
-
-#define RANGE(x, l, h) __predict_false((l) <= (x) && (x) <= (h))
-
-		if (__predict_false(rc.code == 0x20e3) // Combining Enclosing Keycap
-		 || RANGE(rc.code, 0x1f3fb, 0x1f3ff))
-								// Emoji Modifier Fitzpatrick Type 1-2 .. 6
-		{
-			// カウントしない
-			charoffset = info.back().charoffset;
-		} else
-		if (RANGE(rc.code, 0xfe00,  0xfe0f)		// Variation Selector {1-16}
-		 || RANGE(rc.code, 0xe0100, 0xe01ef))	// Variation Selector {17-256}
-		{
-			// VS は 1文字としてカウントしないので、
-			// 文字数カウンタを1文字前の状態に戻して再開。
-			// …のはずだが twitter さんは、VS が連続していると2つ目の
-			// ほうを独立した1文字としてカウントした形跡があるので、
-			// 仕方ないので適当に対処。
-			auto& prev = info.back();
-			if (RANGE(prev.code, 0xfe00, 0xfe0f)
-			 || RANGE(prev.code, 0xe0100, 0xe01ef)) {
-				// 前も VS だと、VS 扱いしない?
-			} else {
-				// VS はカウントしない。(こっちが通常)
-				charoffset = prev.charoffset;
-			}
-		} else if (RANGE(rc.code, 0x1f1e6, 0x1f1ff)) { // Regional Indicator
-			// 連続する2文字で1文字とカウントする…
-			// 連続しなかったらとかはとりあえず無視。
-			if (__predict_true(regional_flag == false)) {
-				// 1文字目はフラグを立てて文字をカウント
-				regional_flag = true;
-			} else {
-				// 2文字目は文字はカウントしない
-				regional_flag = false;
-				charoffset = info.back().charoffset;
-			}
-		}
-		rc.charoffset = charoffset++;
 
 		info.emplace_back(rc);
 	}
@@ -218,6 +175,10 @@ test_RichString()
 {
 	printf("%s\n", __func__);
 
+	// Twitter のタグの位置とかは Unicode の正しい文字数の数え方ではなく、
+	// 何個目のコードポイント(?)かだけでカウントしているようなので、
+	// どんな不思議な合字が来ても1個ずつカウントする。
+
 	std::vector<std::pair<std::string, std::vector<int>>> table = {
 		// テスト表示名,入力文字列						期待値
 		{ "A,A!",										{ 0, 1, 2 } },
@@ -232,31 +193,39 @@ test_RichString()
 		// "葛" U+845B U+E0101 (IVSあり) (= くさかんむりに曷)
 		// https://seiai.ed.jp/sys/text/csd/cf14/c14a090.html
 		// https://xtech.nikkei.com/it/article/COLUMN/20100126/343783/
-		{ "葛IVS,\xe8\x91\x9b\xf3\xa0\x84\x81" "!",		{ 0, 0, 1, 2 } },
+		{ "葛IVS,\xe8\x91\x9b" "\xf3\xa0\x84\x81" "!",	{ 0, 1, 2, 3 } },
 
 		// SVS
 		// https://qiita.com/_sobataro/items/47989ee4b573e0c2adfc
 		// U+231b "Hourglass" (SVSなし)
 		{ "HG,\xe8\x8c\x9b" "!",						{ 0, 1, 2 } },
 		// U+231b U+FE0E (TPVS)
-		{ "HG+TPVS,\xe8\x8c\x9b\xef\xb8\x8e" "!",		{ 0, 0, 1, 2 } },
+		{ "HG+TPVS,\xe8\x8c\x9b\xef\xb8\x8e" "!",		{ 0, 1, 2, 3 } },
 		// U+231b U+FE0F (EPVS)
-		{ "HG+EPVS,\xe8\x8c\x9b\xef\xb8\x8f" "!",		{ 0, 0, 1, 2 } },
+		{ "HG+EPVS,\xe8\x8c\x9b\xef\xb8\x8f" "!",		{ 0, 1, 2, 3 } },
 
+#if 0
 		// VS が連続すると2つ目のほうを独立した1文字と数えたようだ。
 		// どう解釈したらそうなるのか分からんけど。
+		// ← これは別の原因でデータがバグったんじゃないかという気がする。
 		{ "VS2,\xe8\x8c\x9b" "\xef\xb8\x8f" "\xef\xb8\x8e" "!",
 														{ 0, 0, 1, 2, 3 } },
+#endif
 
 		// Emoji Combining Sequence (囲み文字)
-		{ "Keycap,1" "\xef\xb8\x8f" "\xe2\x83\xa3" "!",	{ 0, 0, 0, 1, 2 } },
+		//        1   U+FE0F         U+20E3
+		{ "Keycap,1" "\xef\xb8\x8f" "\xe2\x83\xa3" "!",	{ 0, 1, 2, 3, 4 } },
+
+		// (EPVS を挟まない)囲み文字
+		//         2   U+20E3
+		{ "Keycap2,2" "\xe2\x83\xa3" "!",				{ 0, 1, 2, 3 } },
 
 		// Skin tone
-		{ "Skin,\xf0\x9f\x91\xa8" "\xf0\x9f\x8f\xbd" "!", { 0, 0, 1, 2 } },
+		{ "Skin,\xf0\x9f\x91\xa8" "\xf0\x9f\x8f\xbd" "!", { 0, 1, 2, 3 } },
 
 		// Regional Indicator (国旗絵文字)
 		{ "Flag,\xf0\x9f\x87\xaf" "\xf0\x9f\x87\xb5"
-		       "\xf0\x9f\x87\xaf" "\xf0\x9f\x87\xb5",	{ 0, 0, 1, 1, 2 } },
+		       "\xf0\x9f\x87\xaf" "\xf0\x9f\x87\xb5",	{ 0, 1, 2, 3, 4 } },
 	};
 	for (const auto& a : table) {
 		const auto& name_input = Split2(a.first, ',');
