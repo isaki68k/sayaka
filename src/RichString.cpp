@@ -114,20 +114,6 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 	return true;
 }
 
-// n 文字目の文字(の先頭)を返す
-RichChar&
-RichString::GetNthChar(int n)
-{
-	for (auto& c : charinfo) {
-		if (c.charoffset == n) {
-			return c;
-		}
-	}
-
-	// 終端文字を返す
-	return charinfo.back();
-}
-
 std::string
 RichString::dump() const
 {

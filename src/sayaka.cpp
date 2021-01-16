@@ -1185,10 +1185,10 @@ SetTag(RichString& richtext, const Json& list, Color color)
 				int end   = indices[1].get<int>();
 
 				// 色付けの開始位置
-				auto& c1 = richtext.GetNthChar(start);
+				auto& c1 = richtext[start];
 				c1.altesc += ColorBegin(color);
 				// 終了位置
-				auto& c2 = richtext.GetNthChar(end);
+				auto& c2 = richtext[end];
 				c2.altesc += ColorEnd(color);
 
 #if defined(DEBUG_FORMAT)

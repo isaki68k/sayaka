@@ -33,9 +33,6 @@ class RichString
 	RichString();
 	RichString(const std::string& text_);
 
-	// n 文字目の文字(の先頭)を返す
-	RichChar& GetNthChar(int n);
-
 	// このテキストの長さ (charinfo のほうだけど) を返す
 	int size() const { return charinfo.size(); }
 
