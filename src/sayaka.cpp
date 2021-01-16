@@ -632,8 +632,10 @@ print_(const UString& src)
 			continue;
 		}
 
-		// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
 		if (iconv_tocode != "") {
+			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
+			// 本当は変換先がこれらの時だけのほうがいいだろうけど。
+
 			// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
 			if (uni == 0xff5e) {
 				textarray.Append(0x301c);
@@ -651,24 +653,24 @@ print_(const UString& src)
 				textarray.Append(0x30fb);
 				continue;
 			}
-		}
 
-		// NetBSD/x68k なら半角カナは表示できる。
-		// XXX 正確には JIS という訳ではないのだがとりあえず
-		if (__predict_false(iconv_tocode == "iso-2022-jp")) {
-			if (0xff61 <= uni && uni < 0xffa0) {
-				// 半角カナはそのまま、あるいは JIS に変換、SI/SO を
-				// 使うなどしても、この後の JIS-> UTF-8 変換を安全に
-				// 通せないので、ここで半角カナを文字コードではない
-				// 自前エスケープシーケンスに置き換えておいて、
-				// 変換後にもう一度デコードして復元することにする。
-				// ESC [ .. n は端末問い合わせの CSI シーケンスなので
-				// 入力には来ないはずだし、仮にそのまま出力されたと
-				// してもあまりまずいことにはならないんじゃないかな。
-				// 半角カナを GL に置いた時の10進数2桁でエンコード。
-				auto tmp = string_format(ESC "[%dn", uni - 0xff60 + 0x20);
-				textarray.Append(tmp);
-				continue;
+			// NetBSD/x68k なら半角カナは表示できる。
+			// XXX 正確には JIS という訳ではないのだがとりあえず
+			if (iconv_tocode == "iso-2022-jp") {
+				if (0xff61 <= uni && uni < 0xffa0) {
+					// 半角カナはそのまま、あるいは JIS に変換、SI/SO を
+					// 使うなどしても、この後の JIS-> UTF-8 変換を安全に
+					// 通せないので、ここで半角カナを文字コードではない
+					// 自前エスケープシーケンスに置き換えておいて、
+					// 変換後にもう一度デコードして復元することにする。
+					// ESC [ .. n は端末問い合わせの CSI シーケンスなので
+					// 入力には来ないはずだし、仮にそのまま出力されたと
+					// してもあまりまずいことにはならないんじゃないかな。
+					// 半角カナを GL に置いた時の10進数2桁でエンコード。
+					auto tmp = string_format(ESC "[%dn", uni - 0xff60 + 0x20);
+					textarray.Append(tmp);
+					continue;
+				}
 			}
 		}
 
