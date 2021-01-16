@@ -1250,7 +1250,7 @@ show_icon(const Json& user)
 
 		// URL のファイル名部分をキャッシュのキーにする
 		auto p = image_url.rfind('/');
-		if (__predict_false(p >= 0)) {
+		if (__predict_true(p >= 0)) {
 			auto img_file = string_format("icon-%dx%d-%s-%s",
 				iconsize, iconsize, screen_name.c_str(),
 				image_url.c_str() + p + 1);
