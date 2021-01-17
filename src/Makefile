@@ -4,6 +4,7 @@ SRCS=	\
 	ChunkedInputStream.cpp \
 	Diag.cpp \
 	Dictionary.cpp \
+	FdStream.cpp \
 	FileInputStream.cpp \
 	FileUtil.cpp \
 	HttpClient.cpp \
