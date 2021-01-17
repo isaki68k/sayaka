@@ -41,7 +41,9 @@ FileInputStream::Close()
 {
 	// この fp を所有するモードならクローズ
 	if (own) {
-		fclose(fp);
+		if (fp) {
+			fclose(fp);
+		}
 		fp = NULL;
 	}
 }
