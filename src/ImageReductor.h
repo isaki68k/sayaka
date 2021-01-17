@@ -37,7 +37,7 @@ enum ReductorReduceMode {
 };
 
 // カラーモード
-typedef enum {
+enum ReductorColorMode {
 	RCM_Mono,
 	RCM_Gray,
 	RCM_GrayMean,
@@ -57,23 +57,23 @@ typedef enum {
 	Fixed256		= RCM_Fixed256,
 	Fixed256RGBI	= RCM_Fixed256RGBI,
 	Custom			= RCM_Custom,
-} ReductorColorMode;
+};
 
 // ファインダーモード
-typedef enum {
+enum ReductorFinderMode {
 	RFM_Default,
 	RFM_HSV,
-} ReductorFinderMode;
+};
 
 // リターンコード
-typedef enum {
+enum ReductorImageCode {
 	RIC_OK = 0,
 	RIC_ARG_NULL = 1,
 	RIC_ABORT_JPEG = 2,
-} ReductorImageCode;
+};
 
 // 誤差拡散アルゴリズム
-typedef enum {
+enum ReductorDiffuseMethod {
 	RDM_FS,			// Floyd Steinberg
 	RDM_ATKINSON,	// Atkinson
 	RDM_JAJUNI,		// Jarvis, Judice, Ninke
@@ -82,9 +82,9 @@ typedef enum {
 	RDM_2,			// (x+1,y), (x,y+1)
 	RDM_3,			// (x+1,y), (x,y+1), (x+1,y+1)
 	RDM_RGB,		// RGB color sepalated
-} ReductorDiffuseMethod;
+};
 
-typedef enum {
+enum ResizeAxisMode {
 	// 幅が ResizeWidth になり、
 	// 高さが ResizeHeight になるようにリサイズする。
 	// ResizeWidth == 0 のときは Height と同じ動作をする。
@@ -157,39 +157,39 @@ typedef enum {
 	ScaleDownHeight	= RAX_SCALEDOWNHEIGHT,
 	ScaleDownLong	= RAX_SCALEDOWNLONG,
 	ScaleDownShort	= RAX_SCALEDOWNSHORT,
-} ResizeAxisMode;
+};
 
 //-------- 色の型
 
-typedef struct ColorRGBint_t {
+struct ColorRGBint {
 	int r;
 	int g;
 	int b;
-} ColorRGBint;
+};
 
-typedef struct ColorRGBuint8_t {
+struct ColorRGBuint8 {
 	uint8_t r;
 	uint8_t g;
 	uint8_t b;
-} ColorRGBuint8;
+};
 
-typedef struct ColorRGBint8_t {
+struct ColorRGBint8 {
 	int8_t r;
 	int8_t g;
 	int8_t b;
-} ColorRGBint8;
+};
 
-typedef struct ColorRGBint16_t {
+struct ColorRGBint16 {
 	int16_t r;
 	int16_t g;
 	int16_t b;
-} ColorRGBint16;
+};
 
-typedef struct ColorHSVuint8_t {
+struct ColorHSVuint8 {
 	uint8_t h;	// 0..239, 255=gray
 	uint8_t s;	// 0..255
 	uint8_t v;	// 0..255
-} ColorHSVuint8;
+};
 
 #if 0
 //typedef int (*ImageReductor_ReadCallback)(ImageReductor_Image *);
