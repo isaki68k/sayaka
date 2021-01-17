@@ -230,7 +230,6 @@ select_opt(const std::map<const std::string, T>& map, const char *key)
 int main(int ac, char *av[])
 {
 	struct utsname ut;
-	int nfiles = 0;
 	int c;
 	int r;
 
@@ -375,12 +374,11 @@ int main(int ac, char *av[])
 	ac -= optind;
 	av += optind;
 
-	nfiles = 0;
-	while (ac > 0) {
+	int nfiles;
+	for (nfiles = 0; nfiles < ac; nfiles++) {
 		if (nfiles > 0)
 			printf("\n");
-		Convert(av[0]);
-		nfiles++;
+		Convert(av[nfiles]);
 	}
 	if (nfiles == 0) {
 		usage();
@@ -570,7 +568,7 @@ Convert(const std::string& filename)
 			}
 			exit(1);
 		}
-	} else if (filename.find("://")) {
+	} else if (filename.find("://") != std::string::npos) {
 		diag.Debug("Downloading %s", filename.c_str());
 		HttpClient file;
 		if (file.Init(diagHttp, filename) == false) {
