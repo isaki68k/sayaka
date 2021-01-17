@@ -1200,3 +1200,196 @@ ImageReductor::ColorFactor(float factor)
 		col.b = saturate_mul_f(col.b, factor);
 	}
 }
+
+//
+// enum を文字列にしたやつ orz
+//
+
+static const char *RRM2str_[] = {
+	"Fast",
+	"Simple",
+	"HighQuality",
+};
+
+static const char *RCM2str_[] = {
+	"Mono",
+	"Gray",
+	"GrayMean",
+	"Fixed8",
+	"FixedX68k",
+	"FixedANSI16",
+	"Fixed256",
+	"Fixed256RGBI",
+	"Custom",
+};
+
+static const char *RFM2str_[] = {
+	"Default",
+	"HSV",
+};
+
+static const char *RDM2str_[] = {
+	"FS",
+	"Atkinson",
+	"Jajuni",
+	"Stucki",
+	"Burkes",
+	"2",
+	"3",
+	"RGB",
+};
+
+static const char *RAX2str_[] = {
+	"Both",
+	"Width",
+	"Height",
+	"Long",
+	"Short",
+	"ScaleDownBoth",
+	"ScaleDownWidth",
+	"ScaleDownHeight",
+	"ScaleDownLong",
+	"ScaleDownShort",
+};
+
+/*static*/ const char *
+ImageReductor::RRM2str(ReductorReduceMode val)
+{
+	return ::RRM2str_[(int)val];
+}
+
+/*static*/ const char *
+ImageReductor::RCM2str(ReductorColorMode val)
+{
+	return ::RCM2str_[(int)val];
+}
+
+/*static*/ const char *
+ImageReductor::RFM2str(ReductorFinderMode val)
+{
+	return ::RFM2str_[(int)val];
+}
+
+/*static*/ const char *
+ImageReductor::RDM2str(ReductorDiffuseMethod val)
+{
+	return ::RDM2str_[(int)val];
+}
+
+/*static*/ const char *
+ImageReductor::RAX2str(ResizeAxisMode val)
+{
+	return ::RAX2str_[(int)val];
+}
+
+#if defined(SELFTEST)
+#include "test.h"
+
+static void
+test_enum()
+{
+	std::vector<std::pair<const std::string, ReductorReduceMode>> table_RRM = {
+		{ "Fast",			ReductorReduceMode::Fast },
+		{ "Simple",			ReductorReduceMode::Simple },
+		{ "HighQuality",	ReductorReduceMode::HighQuality },
+	};
+	for (const auto& a : table_RRM) {
+		const auto& exp = a.first;
+		const auto n = a.second;
+		std::string act(ImageReductor::RRM2str(n));
+		xp_eq(exp, act, exp);
+	}
+
+	std::vector<std::pair<const std::string, ReductorColorMode>> table_RCM = {
+		{ "Mono",			ReductorColorMode::Mono },
+		{ "Gray",			ReductorColorMode::Gray },
+		{ "GrayMean",		ReductorColorMode::GrayMean },
+		{ "Fixed8",			ReductorColorMode::Fixed8 },
+		{ "FixedX68k",		ReductorColorMode::FixedX68k },
+		{ "FixedANSI16",	ReductorColorMode::FixedANSI16 },
+		{ "Fixed256",		ReductorColorMode::Fixed256 },
+		{ "Fixed256RGBI",	ReductorColorMode::Fixed256RGBI },
+		{ "Custom",			ReductorColorMode::Custom },
+
+		{ "Mono",			ReductorColorMode::RCM_Mono },
+		{ "Gray",			ReductorColorMode::RCM_Gray },
+		{ "GrayMean",		ReductorColorMode::RCM_GrayMean },
+		{ "Fixed8",			ReductorColorMode::RCM_Fixed8 },
+		{ "FixedX68k",		ReductorColorMode::RCM_FixedX68k },
+		{ "FixedANSI16",	ReductorColorMode::RCM_FixedANSI16 },
+		{ "Fixed256",		ReductorColorMode::RCM_Fixed256 },
+		{ "Fixed256RGBI",	ReductorColorMode::RCM_Fixed256RGBI },
+		{ "Custom",			ReductorColorMode::RCM_Custom },
+	};
+	for (const auto& a : table_RCM) {
+		const auto& exp = a.first;
+		const auto n = a.second;
+		std::string act(ImageReductor::RCM2str(n));
+		xp_eq(exp, act, exp);
+	}
+
+	std::vector<std::pair<const std::string, ReductorFinderMode>> table_RFM = {
+		{ "Default",		ReductorFinderMode::RFM_Default },
+		{ "HSV",			ReductorFinderMode::RFM_HSV },
+	};
+	for (const auto& a : table_RFM) {
+		const auto& exp = a.first;
+		const auto n = a.second;
+		std::string act(ImageReductor::RFM2str(n));
+		xp_eq(exp, act, exp);
+	}
+
+	std::vector<std::pair<const std::string, ReductorDiffuseMethod>> table_RDM={
+		{ "FS",				ReductorDiffuseMethod::RDM_FS },
+		{ "Atkinson",		ReductorDiffuseMethod::RDM_ATKINSON },
+		{ "Jajuni",			ReductorDiffuseMethod::RDM_JAJUNI },
+		{ "Stucki",			ReductorDiffuseMethod::RDM_STUCKI },
+		{ "Burkes",			ReductorDiffuseMethod::RDM_BURKES },
+		{ "2",				ReductorDiffuseMethod::RDM_2 },
+		{ "3",				ReductorDiffuseMethod::RDM_3 },
+		{ "RGB",			ReductorDiffuseMethod::RDM_RGB },
+	};
+	for (const auto& a : table_RDM) {
+		const auto& exp = a.first;
+		const auto n = a.second;
+		std::string act(ImageReductor::RDM2str(n));
+		xp_eq(exp, act, exp);
+	}
+
+	std::vector<std::pair<const std::string, ResizeAxisMode>> table_RAX = {
+		{ "Both",				ResizeAxisMode::RAX_BOTH },
+		{ "Width",				ResizeAxisMode::RAX_WIDTH },
+		{ "Height",				ResizeAxisMode::RAX_HEIGHT },
+		{ "Long",				ResizeAxisMode::RAX_LONG },
+		{ "Short",				ResizeAxisMode::RAX_SHORT },
+		{ "ScaleDownBoth",		ResizeAxisMode::RAX_SCALEDOWNBOTH },
+		{ "ScaleDownWidth",		ResizeAxisMode::RAX_SCALEDOWNWIDTH },
+		{ "ScaleDownHeight",	ResizeAxisMode::RAX_SCALEDOWNHEIGHT },
+		{ "ScaleDownLong",		ResizeAxisMode::RAX_SCALEDOWNLONG },
+		{ "ScaleDownShort",		ResizeAxisMode::RAX_SCALEDOWNSHORT },
+
+		{ "Both",				ResizeAxisMode::Both },
+		{ "Width",				ResizeAxisMode::Width },
+		{ "Height",				ResizeAxisMode::Height },
+		{ "Long",				ResizeAxisMode::Long },
+		{ "Short",				ResizeAxisMode::Short },
+		{ "ScaleDownBoth",		ResizeAxisMode::ScaleDownBoth },
+		{ "ScaleDownWidth",		ResizeAxisMode::ScaleDownWidth },
+		{ "ScaleDownHeight",	ResizeAxisMode::ScaleDownHeight },
+		{ "ScaleDownLong",		ResizeAxisMode::ScaleDownLong },
+		{ "ScaleDownShort",		ResizeAxisMode::ScaleDownShort },
+	};
+	for (const auto& a : table_RAX) {
+		const auto& exp = a.first;
+		const auto n = a.second;
+		std::string act(ImageReductor::RAX2str(n));
+		xp_eq(exp, act, exp);
+	}
+}
+
+void
+test_ImageReductor()
+{
+	test_enum();
+}
+#endif

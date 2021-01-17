@@ -2,11 +2,13 @@
 #include "ChunkedInputStream.h"
 #include "Dictionary.h"
 #include "FileUtil.h"
+#include "ImageReductor.h"
 #include "MemoryStream.h"
 #include "NGWord.h"
 #include "OAuth.h"
 #include "ParsedUri.h"
 #include "RichString.h"
+#include "SixelConverter.h"
 #include "StringUtil.h"
 #include "Twitter.h"
 #include "UString.h"
@@ -60,11 +62,13 @@ main(int ac, char *av[])
 	test_ChunkedInputStream();
 	test_Dictionary();
 	test_FileUtil();
+	test_ImageReductor();
 	test_MemoryInputStream();
 	test_NGWord();
 	test_OAuth();
 	test_ParsedUri();
 	test_RichString();
+	test_SixelConverter();
 	test_StringUtil();
 	test_Twitter();
 	test_UString();

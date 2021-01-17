@@ -343,3 +343,86 @@ SixelConverter::SixelToFILE(FILE *stream)
 {
 	printf("%s not implemented\n", __func__);
 }
+
+
+//
+// enum を文字列にしたやつ orz
+//
+
+static const char *SLM2str_[] = {
+	"Gdk",
+	"Lib",
+};
+
+static const char *SRM2str_[] = {
+	"ByLoad",
+	"ByScaleSimple",
+	"ByImageReductor",
+};
+
+/*static*/ const char *
+SixelConverter::SOM2str(SixelOutputMode val)
+{
+	if (val == Normal)	return "Normal";
+	if (val == Or)		return "Or";
+	return "?";
+}
+
+/*static*/ const char *
+SixelConverter::SLM2str(SixelLoaderMode val)
+{
+	return ::SLM2str_[(int)val];
+}
+
+/*static*/ const char *
+SixelConverter::SRM2str(SixelResizeMode val)
+{
+	return ::SRM2str_[(int)val];
+}
+
+#if defined(SELFTEST)
+#include "test.h"
+static int
+test_enum()
+{
+	std::vector<std::pair<SixelOutputMode, const std::string>> table_SOM = {
+		{ SixelOutputMode::Normal,			"Normal" },
+		{ SixelOutputMode::Or,				"Or" },
+	};
+	for (const auto& a : table_SOM) {
+		const auto n = a.first;
+		const auto& exp = a.second;
+		std::string act(SixelConverter::SOM2str(n));
+		xp_eq(exp, act, exp);
+	}
+
+	std::vector<std::pair<SixelLoaderMode, const std::string>> table_SLM = {
+		{ SixelLoaderMode::Gdk,				"Gdk" },
+		{ SixelLoaderMode::Lib,				"Lib" },
+	};
+	for (const auto& a : table_SLM) {
+		const auto n = a.first;
+		const auto& exp = a.second;
+		std::string act(SixelConverter::SLM2str(n));
+		xp_eq(exp, act, exp);
+	}
+
+	std::vector<std::pair<SixelResizeMode, const std::string>> table_SRM = {
+		{ SixelResizeMode::ByLoad,			"ByLoad" },
+		{ SixelResizeMode::ByScaleSimple,	"ByScaleSimple" },
+		{ SixelResizeMode::ByImageReductor,	"ByImageReductor" },
+	};
+	for (const auto& a : table_SRM) {
+		const auto n = a.first;
+		const auto& exp = a.second;
+		std::string act(SixelConverter::SRM2str(n));
+		xp_eq(exp, act, exp);
+	}
+}
+
+void
+test_SixelConverter()
+{
+	test_enum();
+}
+#endif

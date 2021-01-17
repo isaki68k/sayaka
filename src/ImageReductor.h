@@ -394,4 +394,16 @@ class ImageReductor
  private:
 	static void calcResize(int *req_w, int *req_h, int req_ax,
 		int org_w, int org_h);
+
+ public:
+	// enum 対応
+	static const char *RRM2str(ReductorReduceMode n);
+	static const char *RCM2str(ReductorColorMode n);
+	static const char *RFM2str(ReductorFinderMode n);
+	static const char *RDM2str(ReductorDiffuseMethod n);
+	static const char *RAX2str(ResizeAxisMode n);
 };
+
+#if defined(SELFTEST)
+extern void test_ImageReductor();
+#endif

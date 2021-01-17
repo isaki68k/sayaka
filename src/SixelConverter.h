@@ -131,4 +131,14 @@ class SixelConverter
 	ImageReductor::Image *img {};
 
 	Diag diag;
+
+ public:
+	// enum 対応
+	static const char *SOM2str(SixelOutputMode val);
+	static const char *SLM2str(SixelLoaderMode val);
+	static const char *SRM2str(SixelResizeMode val);
 };
+
+#if defined(SELFTEST)
+extern void test_SixelConverter();
+#endif
