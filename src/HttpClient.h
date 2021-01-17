@@ -6,6 +6,7 @@
 #include "StreamBase.h"
 #include <string>
 #include <vector>
+#include <sys/socket.h>
 
 class HttpClient
 {
