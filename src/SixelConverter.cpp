@@ -144,7 +144,7 @@ SixelConverter::LoadJpeg(FILE *fp)
 
 	auto r = ImageReductor::LoadJpeg(img,
 		ResizeWidth, ResizeHeight, ResizeAxis);
-	if (r == ReductorImageCode::RIC_OK) {
+	if (r != ReductorImageCode::RIC_OK) {
 		diag.Debug("ImageReductor::LoadJpeg failed");
 		return false;
 	}
@@ -177,8 +177,8 @@ SixelConverter::LoadAfter()
 static int
 img_readcallback(ImageReductor::Image *img)
 {
-	InputStream *s = (InputStream *)img->UserObject;
-	return s->Read((char *)img->ReadBuffer, sizeof(img->ReadBuffer));
+	FILE *fp = (FILE *)(img->UserObject);
+	return fread(img->ReadBuffer, 1, sizeof(img->ReadBuffer), fp);
 }
 
 static void
