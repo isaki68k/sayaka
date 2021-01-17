@@ -1,4 +1,8 @@
-#include "FileInputStream.h"
+#include "FileStream.h"
+
+//
+// FILE* 入力ストリーム
+//
 
 // コンストラクタ
 FileInputStream::FileInputStream(FILE *fp_, bool own_)

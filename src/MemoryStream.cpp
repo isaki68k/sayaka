@@ -1,9 +1,11 @@
-#include "MemoryInputStream.h"
+#include "MemoryStream.h"
 #include <cstring>
 #include <cstdio>
 #include <tuple>
 
+//
 // GLib の MemoryInputStream 互換っぽいもの
+//
 
 // コンストラクタ
 MemoryInputStream::MemoryInputStream()

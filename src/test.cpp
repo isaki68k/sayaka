@@ -2,7 +2,7 @@
 #include "ChunkedInputStream.h"
 #include "Dictionary.h"
 #include "FileUtil.h"
-#include "MemoryInputStream.h"
+#include "MemoryStream.h"
 #include "NGWord.h"
 #include "OAuth.h"
 #include "ParsedUri.h"

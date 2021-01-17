@@ -2,7 +2,7 @@
 
 #include "Diag.h"
 #include "StreamBase.h"
-#include "MemoryInputStream.h"
+#include "MemoryStream.h"
 
 class ChunkedInputStream : public InputStream
 {

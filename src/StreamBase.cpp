@@ -1,7 +1,7 @@
 #include "StreamBase.h"
 
 //
-// 基底ストリームクラス
+// 入力ストリームの基本クラス
 //
 
 // デストラクタ
@@ -56,6 +56,11 @@ InputStream::ReadLine(std::string *retval)
 	return retlen;
 }
 
+#if 0 // notused
+//
+// 出力ストリームの基本クラス
+//
+
 // デストラクタ
 OutputStream::~OutputStream()
 {
@@ -66,3 +71,4 @@ void
 OutputStream::Close()
 {
 }
+#endif

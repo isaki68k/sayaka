@@ -2,9 +2,10 @@
 
 #include "sayaka.h"
 #include <string>
-#include <vector>
 
+//
 // 入力ストリームの基底クラス
+//
 class InputStream
 {
  public:
@@ -34,7 +35,10 @@ class InputStream
 	ssize_t ReadLine(std::string *retval);
 };
 
+#if 0 // notused
+//
 // 出力ストリームの基底クラス
+//
 class OutputStream
 {
  public:
@@ -42,3 +46,4 @@ class OutputStream
 	virtual ssize_t Write(const char *buf, size_t len) = 0;
 	virtual void Close();
 };
+#endif

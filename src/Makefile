@@ -5,10 +5,10 @@ SRCS=	\
 	Diag.cpp \
 	Dictionary.cpp \
 	FdStream.cpp \
-	FileInputStream.cpp \
+	FileStream.cpp \
 	FileUtil.cpp \
 	HttpClient.cpp \
-	MemoryInputStream.cpp \
+	MemoryStream.cpp \
 	NGWord.cpp \
 	OAuth.cpp \
 	ParsedUri.cpp \

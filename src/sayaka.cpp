@@ -28,7 +28,7 @@
 
 #include "acl.h"
 #include "sayaka.h"
-#include "FileInputStream.h"
+#include "FileStream.h"
 #include "RichString.h"
 #include "StringUtil.h"
 #include "UString.h"

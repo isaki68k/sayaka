@@ -2,6 +2,7 @@
 
 #include "StreamBase.h"
 #include <list>
+#include <vector>
 
 class MemoryInputStream : public InputStream
 {
