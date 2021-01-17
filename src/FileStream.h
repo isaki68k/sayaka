@@ -13,7 +13,7 @@ class FileInputStream : public InputStream
 	ssize_t Read(char *dst, size_t dstsize) override;
 	void Close() override;
 
- private:
 	FILE *fp {};
+ private:
 	bool own {};
 };

@@ -32,6 +32,7 @@
 #include "RichString.h"
 #include "StringUtil.h"
 #include "UString.h"
+#include "fetch_image.h"
 #include "main.h"
 #include "subr.h"
 #include "term.h"
@@ -98,8 +99,6 @@ static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
-static FILE *fetch_image(const std::string& cache_filename,
-	const std::string& img_url, int resize_width);
 static void get_credentials();
 static StringDictionary get_paged_list(const std::string& api,
 	const char *funcname);
@@ -1412,20 +1411,6 @@ show_image(const std::string& img_file, const std::string& img_url,
 		}
 	}
 	return true;
-}
-
-// 画像をダウンロードして SIXEL に変換してキャッシュする。
-// 成功すれば、書き出したキャッシュファイルの FILE* (位置は先頭) を返す。
-// 失敗すれば NULL を返す。
-// cache_filename はキャッシュするファイルのファイル名
-// img_url は画像 URL
-// resize_width はリサイズすべき幅を指定、0 ならリサイズしない
-static
-FILE *fetch_image(const std::string& cache_filename, const std::string& img_url,
-	int resize_width)
-{
-	printf("%s not implemented\n", __func__);
-	return NULL;
 }
 
 // 自分の ID を取得

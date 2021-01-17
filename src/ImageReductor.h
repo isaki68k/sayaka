@@ -1,0 +1,397 @@
+/*
+ * Copyright (C) 2016 Y.Sugahara (moveccr)
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#pragma once
+
+#include "sayaka.h"
+#include <vector>
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
+// 減色モード
+enum ReductorReduceMode {
+	Fast,			// 速度優先法
+	Simple,			// 単純一致法
+	HighQuality,	// 二次元誤差分散法
+};
+
+// カラーモード
+typedef enum {
+	RCM_Mono,
+	RCM_Gray,
+	RCM_GrayMean,
+	RCM_Fixed8,
+	RCM_FixedX68k,
+	RCM_FixedANSI16,
+	RCM_Fixed256,
+	RCM_Fixed256RGBI,
+	RCM_Custom,
+
+	Mono			= RCM_Mono,
+	Gray			= RCM_Gray,
+	GrayMean		= RCM_GrayMean,
+	Fixed8			= RCM_Fixed8,
+	FixedX68k		= RCM_FixedX68k,
+	FixedANSI16		= RCM_FixedANSI16,
+	Fixed256		= RCM_Fixed256,
+	Fixed256RGBI	= RCM_Fixed256RGBI,
+	Custom			= RCM_Custom,
+} ReductorColorMode;
+
+// ファインダーモード
+typedef enum {
+	RFM_Default,
+	RFM_HSV,
+} ReductorFinderMode;
+
+// リターンコード
+typedef enum {
+	RIC_OK = 0,
+	RIC_ARG_NULL = 1,
+	RIC_ABORT_JPEG = 2,
+} ReductorImageCode;
+
+// 誤差拡散アルゴリズム
+typedef enum {
+	RDM_FS,			// Floyd Steinberg
+	RDM_ATKINSON,	// Atkinson
+	RDM_JAJUNI,		// Jarvis, Judice, Ninke
+	RDM_STUCKI,		// Stucki
+	RDM_BURKES,		// Burkes
+	RDM_2,			// (x+1,y), (x,y+1)
+	RDM_3,			// (x+1,y), (x,y+1), (x+1,y+1)
+	RDM_RGB,		// RGB color sepalated
+} ReductorDiffuseMethod;
+
+typedef enum {
+	// 幅が ResizeWidth になり、
+	// 高さが ResizeHeight になるようにリサイズする。
+	// ResizeWidth == 0 のときは Height と同じ動作をする。
+	// ResizeHeight == 0 のときは Width と同じ動作をする。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
+	RAX_BOTH,
+
+	// 幅が ResizeWidth になるように縦横比を保持してリサイズする。
+	// ResizeWidth == 0 のときは原寸大。
+	RAX_WIDTH,
+
+	// 高さが ResizeHeight になるように縦横比を保持してリサイズする。
+	// ResizeHeight == 0 のときは原寸大。
+	RAX_HEIGHT,
+
+	// 長辺優先リサイズ
+	// 原寸 Width >= Height のときは Width と同じ動作をする。
+	// 原寸 Width < Height のときは Height と同じ動作をする。
+	// 例:
+	// 長辺を特定のサイズにしたい場合は、ResizeWidth と ResizeHeight に
+	// 同じ値を設定する。
+	RAX_LONG,
+
+	// 短辺優先リサイズ
+	// 原寸 Width <= Height のときは Width と同じ動作をする。
+	// 原寸 Width > Height のときは Height と同じ動作をする。
+	RAX_SHORT,
+
+	// 縮小のみの Both
+	// 幅が ResizeWidth より大きいときは ResizeWidth になり、
+	// 高さが ResizeHeight より大きいときは ResizeHeight になるように
+	// リサイズする。
+	// ResizeWidth == 0 のときは ScaleDownHeight と同じ動作をする。
+	// ResizeHeight == 0 のときは ScaleDownWidth と同じ動作をする。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
+	RAX_SCALEDOWNBOTH,
+
+	// 縮小のみの Width
+	// 幅が ResizeWidth より大きいときは ResizeWidth になるように
+	// 縦横比を保持してリサイズする。
+	// ResizeWidth == 0 のときは原寸大。
+	RAX_SCALEDOWNWIDTH,
+
+	// 縮小のみの Height
+	// 幅が ResizeHeight より大きいときは ResizeHeight になるように
+	// 縦横比を保持してリサイズする。
+	// ResizeHeight == 0 のときは原寸大。
+	RAX_SCALEDOWNHEIGHT,
+
+	// 縮小のみの長辺優先リサイズ
+	// 原寸 Width >= Height のときは ScaleDownWidth と同じ動作をする。
+	// 原寸 Width < Height のときは ScaleDownHeight と同じ動作をする。
+	// 例:
+	// 長辺を特定のサイズ以下にしたい場合は、ResizeWidth と ResizeHeight に
+	// 同じ値を設定する。
+	RAX_SCALEDOWNLONG,
+
+	// 縮小のみの短辺優先リサイズ
+	// 原寸 Width <= Height のときは ScaleDownWidth と同じ動作をする。
+	// 原寸 Width > Height のときは ScaleDownHeight と同じ動作をする。
+	RAX_SCALEDOWNSHORT,
+
+	Both			= RAX_BOTH,
+	Width			= RAX_WIDTH,
+	Height			= RAX_HEIGHT,
+	Long			= RAX_LONG,
+	Short			= RAX_SHORT,
+	ScaleDownBoth	= RAX_SCALEDOWNBOTH,
+	ScaleDownWidth	= RAX_SCALEDOWNWIDTH,
+	ScaleDownHeight	= RAX_SCALEDOWNHEIGHT,
+	ScaleDownLong	= RAX_SCALEDOWNLONG,
+	ScaleDownShort	= RAX_SCALEDOWNSHORT,
+} ResizeAxisMode;
+
+//-------- 色の型
+
+typedef struct ColorRGBint_t {
+	int r;
+	int g;
+	int b;
+} ColorRGBint;
+
+typedef struct ColorRGBuint8_t {
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+} ColorRGBuint8;
+
+typedef struct ColorRGBint8_t {
+	int8_t r;
+	int8_t g;
+	int8_t b;
+} ColorRGBint8;
+
+typedef struct ColorRGBint16_t {
+	int16_t r;
+	int16_t g;
+	int16_t b;
+} ColorRGBint16;
+
+typedef struct ColorHSVuint8_t {
+	uint8_t h;	// 0..239, 255=gray
+	uint8_t s;	// 0..255
+	uint8_t v;	// 0..255
+} ColorHSVuint8;
+
+#if 0
+//typedef int (*ImageReductor_ReadCallback)(ImageReductor_Image *);
+
+struct ImageReductor_Image {
+	uint8_t *Data;
+	uint32_t DataLen;
+	uint32_t Width;
+	uint32_t Height;
+	uint32_t ChannelCount;
+	uint32_t RowStride;
+	uint32_t OriginalWidth;
+	uint32_t OriginalHeight;
+
+	ImageReductor_ReadCallback ReadCallback;
+
+	// ユーザが自由に使っていい。コールバック元の this 入れるとか
+	void *UserObject;
+
+	uint8_t ReadBuffer[4096];
+};
+#endif
+
+#if 0
+extern int ImageReductor_Fast(
+	uint8_t *dst, uint32_t dstlen,
+	int dstWidth, int dstHeight,
+	uint8_t *src, uint32_t srclen,
+	int srcWidth, int srcHeight,
+	int srcNch, int srcStride);
+
+extern int ImageReductor_Simple(
+	uint8_t *dst, uint32_t dstlen,
+	int dstWidth, int dstHeight,
+	uint8_t *src, uint32_t srclen,
+	int srcWidth, int srcHeight,
+	int srcNch, int srcStride);
+
+extern int ImageReductor_HighQuality(
+	uint8_t *dst, uint32_t dstlen,
+	int dstWidth, int dstHeight,
+	uint8_t *src, uint32_t srclen,
+	int srcWidth, int srcHeight,
+	int srcNch, int srcStride);
+
+
+extern ImageReductor_Image *ImageReductor_AllocImage();
+
+extern void ImageReductor_FreeImage(ImageReductor_Image *img);
+
+extern ReductorImageCode ImageReductor_LoadJpeg(
+	ImageReductor_Image *img,
+	int requestWidth, int requestHeight, ResizeAxisMode requestAxis);
+#endif
+
+
+class ImageReductor
+{
+	using FindColorFunc_t = int (ImageReductor::*)(ColorRGBuint8);
+
+ public:
+	struct Image;
+	struct Image
+	{
+		uint8_t *Data;
+		int32_t DataLen;
+		int32_t Width;
+		int32_t Height;
+		int32_t ChannelCount;
+		int32_t RowStride;
+		int32_t OriginalWidth;
+		int32_t OriginalHeight;
+
+		int (*ReadCallback)(Image *);
+		// ユーザが自由に使っていい。コールバック元の this 入れるとか。
+		void *UserObject;
+
+		uint8_t ReadBuffer[4096];
+	};
+
+ public:
+	static int Debug;
+
+	int GetPaletteCount() const { return PaletteCount; }
+
+	ColorRGBuint8 GetPalette(int n) const { return Palette[n]; }
+
+	// High 誤差分散アルゴリズム
+	ReductorDiffuseMethod HighQualityDiffuseMethod = RDM_FS;
+
+	// カラーモードを設定する。
+	// 変換関数を呼び出す前に、必ずカラーモードを設定すること。
+	// count はグレースケールでのみ使用。
+	void SetColorMode(ReductorColorMode mode, ReductorFinderMode finder,
+		int count = 0);
+
+	// ノイズ付加モードを設定する
+	void SetAddNoiseLevel(int level) {
+		AddNoiseLevel = level;
+	}
+
+	void Convert(ReductorReduceMode mode, GdkPixbuf *pix,
+		std::vector<uint8_t>& dst, int toWidth, int toHeight)
+	{
+		switch (mode) {
+		 case ReductorReduceMode::Fast:
+			Fast(pix, dst, toWidth, toHeight);
+			break;
+		 case ReductorReduceMode::Simple:
+			Simple(pix, dst, toWidth, toHeight);
+			break;
+		 case ReductorReduceMode::HighQuality:
+			HighQuality(pix, dst, toWidth, toHeight);
+			break;
+		}
+	}
+
+	void ColorFactor(float factor);
+
+ private:
+	int PaletteCount;
+
+	const ColorRGBuint8 *Palette;
+
+	int AddNoiseLevel {};
+
+	// 可変パレット用バッファ
+	ColorRGBuint8 Palette_Custom[256] {};
+
+	// 色変換関数の関数ポインタ
+	FindColorFunc_t ColorFinder;
+
+	// 固定2色パレット
+	static const ColorRGBuint8 Palette_Mono[];
+	int FindColor_Mono(ColorRGBuint8 c);
+
+	// グレースケールパレット
+	void SetPalette_Gray(int count);
+	int FindColor_Gray(ColorRGBuint8 c);
+	int FindColor_GrayMean(ColorRGBuint8 c);
+
+	// 固定8色パレット
+	static const ColorRGBuint8 Palette_Fixed8[];
+	int FindColor_Fixed8(ColorRGBuint8 c);
+
+	// X68k 固定 16 色パレット
+	static const ColorRGBuint8 Palette_FixedX68k[];
+	int FindColor_FixedX68k(ColorRGBuint8 c);
+
+	// ANSI 固定 16 色パレット
+	static const ColorRGBuint8 Palette_FixedANSI16[];
+	int FindColor_FixedANSI16(ColorRGBuint8 c);
+
+	// 固定 256 色 (RGB) パレット
+	void SetPalette_Fixed256();
+	int FindColor_Fixed256(ColorRGBuint8 c);
+
+	// 固定 256 色 (RGBI) パレット
+	void SetPalette_Fixed256RGBI();
+	int FindColor_Fixed256RGBI(ColorRGBuint8 c);
+
+	// 円錐型 HSV パレット
+	int FindColor_HSV(ColorRGBuint8 c);
+	static ColorHSVuint8 RGBtoHSV(ColorRGBuint8 c);
+	void CreateHSVPalette();
+	static int FindColor_HSV_subr(ColorHSVuint8 hsvpal, ColorHSVuint8 hsv);
+	ColorHSVuint8 HSVPalette[256];
+
+	//
+	// 変換関数
+	//
+
+	static uint8_t Saturate_uint8(int x);
+	static int RoundDownPow2(int x);
+	static int rnd(int level);
+
+	// 高速変換を行う
+	void Fast(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+		int toWidth, int toHeight);
+
+	// 単純変換を行う
+	void Simple(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+		int toWidth, int toHeight);
+
+	// 高品質変換を行う
+	void HighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+		int toWidth, int toHeight);
+
+	static int16_t Saturate_adderr(int16_t a, int b);
+	static void set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio);
+
+	//
+	// JPEG イメージ
+	//
+ public:
+	static Image *AllocImage();
+	static void FreeImage(Image *img);
+
+	static ReductorImageCode LoadJpeg(Image *img,
+		int requestWidth, int requestHeight, ResizeAxisMode requestAxis);
+
+ private:
+	static void calcResize(int *req_w, int *req_h, int req_ax,
+		int org_w, int org_h);
+};

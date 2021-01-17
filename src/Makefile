@@ -1,6 +1,6 @@
 # vi:set ts=8:
 
-SRCS=	\
+SRCS_common=	\
 	ChunkedInputStream.cpp \
 	Diag.cpp \
 	Dictionary.cpp \
@@ -8,75 +8,100 @@ SRCS=	\
 	FileStream.cpp \
 	FileUtil.cpp \
 	HttpClient.cpp \
+	ImageReductor.cpp \
 	MemoryStream.cpp \
-	NGWord.cpp \
-	OAuth.cpp \
 	ParsedUri.cpp \
-	RichString.cpp \
+	SixelConverter.cpp \
 	StreamBase.cpp \
 	StringUtil.cpp \
-	Twitter.cpp \
 	UString.cpp \
-	acl.cpp \
 	mtls.cpp \
+
+SRCS_sayaka=	\
+	${SRCS_common} \
+	NGWord.cpp \
+	OAuth.cpp \
+	RichString.cpp \
+	Twitter.cpp \
+	acl.cpp \
+	fetch_image.cpp \
 	sayaka.cpp \
-	subr.cpp \
 	term.cpp \
+	subr.cpp \
+
+SRCS_sixelv=	\
+	${SRCS_common} \
+	sixelv.cpp \
+
+
+PKGS=		glib-2.0 gdk-pixbuf-2.0 gio-unix-2.0
 
 CXX=		c++ -std=c++17
 CPPFLAGS+=	-g -O0
 CPPFLAGS+=	-I/usr/pkg/include
+CPPFLAGS+=	`pkg-config --cflags ${PKGS}`
 
 LIBS +=	\
 	-lssl \
 	-L/usr/pkg/lib -Wl,-R,/usr/pkg/lib \
 	-licuuc \
 	-lmbedtls \
+	`pkg-config --libs ${PKGS}` \
+	-ljpeg \
 
-all:	test sayaka
+all:	sayaka test sixelv
 
-sayaka:	main.o ${SRCS:.cpp=.o}
+sayaka:	main.o ${SRCS_sayaka:.cpp=.o}
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
 
-test:	test.o ${SRCS:.cpp=.test.o}
+test:	test.o ${SRCS_sayaka:.cpp=.test.o}
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
+
+sixelv:	sixelv.o ${SRCS_sixelv:.cpp=.o}
+	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
+
+.cpp.o:
+	${CXX} ${CPPFLAGS} -c ${.IMPSRC} -o $@
 
 main.o:	main.cpp
-	${CXX} ${CPPFLAGS} -c $> -o $@
+sixelv.o: sixelv.cpp
+.for S in ${SRCS_sayaka}
+${S:.cpp=.o}:	${S}
+.endfor
 
 test.o:	test.cpp
 	${CXX} ${CPPFLAGS} -DSELFTEST -c $> -o $@
 
-.for S in ${SRCS}
-${S:.cpp=.o}:	${S}
-	${CXX} ${CPPFLAGS} -c ${S} -o $@
-
+.for S in ${SRCS_sayaka}
 ${S:.cpp=.test.o}:	${S}
 	${CXX} ${CPPFLAGS} -DSELFTEST -c ${S} -o $@
 .endfor
 
 # XXX
 test_mtls:	mtls.cpp
-	${CXX} ${CPPFLAGS} -DTEST $> -o $@ ${LIBS}
+	${CXX} ${CPPFLAGS} -DTEST ${.MEMBER} -o $@ ${LIBS}
 
 
 .PHONY:	clean
 clean:
-	rm -f sayaka test *.o *.core
+	rm -f sayaka sixelv test test_mtls *.o *.core
 
 
 .PHONY:	depend
-depend:	${SRCS:.cpp=.d} ${SRCS:.cpp=.test.d}
+depend:	${SRCS_sayaka:.cpp=.d} ${SRCS_sayaka:.cpp=.test.d} sixelv.d
 	cat ${.ALLSRC} > .depends
 	-rm -f *.d
 
-.for S in ${SRCS}
+.for S in ${SRCS_sayaka}
 ${S:.cpp=.d}:
 	${CXX} ${CPPFLAGS} -E -MM ${S} > $@
 
 ${S:.cpp=.test.d}:
-	${CXX} ${CPPFLAGS} -DSELFTEST -E -MM -MT ${S:.cpp=.test.o} ${S} > $@
+	${CXX} ${CPPFLAGS} -E -MM -DSELFTEST -MT ${S:.cpp=.test.o} ${S} > $@
 .endfor
+
+sixelv.d:
+	${CXX} ${CPPFLAGS} -E -MM sixelv.cpp > $@
 
 .if exists(.depends)
 .include ".depends"
