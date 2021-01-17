@@ -602,8 +602,8 @@ Convert(const std::string& filename)
 		prof[Profile_Load] = system_clock::now();
 	}
 
-	diag.Debug("Converting w=%d, h=%d, axis=%d",
-		opt_width, opt_height, opt_resizeaxis);
+	diag.Debug("Converting w=%d, h=%d, axis=%s",
+		opt_width, opt_height, ImageReductor::RAX2str(opt_resizeaxis));
 	sx.ConvertToIndexed();
 
 	if (opt_profile) {

@@ -29,8 +29,8 @@ SixelConverter::Load(const std::string& filename)
 	GError *gerror;
 
 	diag.Debug("filename=%s", filename.c_str());
-	diag.Debug("LoaderMode=%d", LoaderMode);
-	diag.Debug("ResizeMode=%d", ResizeMode);
+	diag.Debug("LoaderMode=%s", SLM2str(LoaderMode));
+	diag.Debug("ResizeMode=%s", SRM2str(ResizeMode));
 
 	if (LoaderMode == SixelLoaderMode::Lib) {
 		FILE *fp = fopen(filename.c_str(), "r");
@@ -48,7 +48,7 @@ SixelConverter::Load(const std::string& filename)
 	}
 
 #if 1
-	printf("%s gdk not implemented\n");
+	printf("%s gdk not implemented\n", __func__);
 	return false;
 #else
 	if (ResizeMode == SixelResizeMode::ByLoad) {
@@ -93,7 +93,7 @@ SixelConverter::LoadFromStream(InputStream *stream)
 	}
 
 #if 1
-	printf("%s not implemented\n");
+	printf("%s not implemented\n", __func__);
 	return false;
 #else
 	GInputStream *gstream = g_unix_input_stream_new(fileno(fp), false);
@@ -327,13 +327,16 @@ SixelConverter::ConvertToIndexed()
 
 	ImageReductor ir;
 
-	diag.Debug("SetColorMode(%d, %d, %d)", ColorMode, FinderMode, GrayCount);
+	diag.Debug("SetColorMode(%s, %s, %d)",
+		ImageReductor::RCM2str(ColorMode),
+		ImageReductor::RFM2str(FinderMode),
+		GrayCount);
 	ir.SetColorMode(ColorMode, FinderMode, GrayCount);
 
 	diag.Debug("SetAddNoiseLevel=%d", AddNoiseLevel);
 	ir.SetAddNoiseLevel(AddNoiseLevel);
 
-	diag.Debug("ReduceMode=%d", ReduceMode);
+	diag.Debug("ReduceMode=%s", ImageReductor::RRM2str(ReduceMode));
 	ir.Convert(ReduceMode, pix, Indexed, Width, Height);
 	diag.Debug("Converted");
 }

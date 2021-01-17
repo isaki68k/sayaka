@@ -1050,8 +1050,8 @@ ImageReductor::calcResize(int *req_w, int *req_h, int req_ax,
 ImageReductor::LoadJpeg(ImageReductor::Image *img,
 	int requestWidth, int requestHeight, ResizeAxisMode requestAxis)
 {
-	DEBUG_PRINTF("LoadJpeg enter img=%p, w=%d, h=%d ax=%d\n",
-		img, requestWidth, requestHeight, requestAxis);
+	DEBUG_PRINTF("LoadJpeg enter img=%p, w=%d, h=%d ax=%s\n",
+		img, requestWidth, requestHeight, RAX2str(requestAxis));
 
 	if (img == NULL)
 		return RIC_ARG_NULL;
