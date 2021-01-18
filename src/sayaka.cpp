@@ -1086,7 +1086,8 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	// 表示区間が指定されていたらそれに従う
 	// XXX 後ろは添付画像 URL とかなので削るとして
 	// XXX 前はメンションがどうなるか分からないのでとりあえず後回し
-	auto display_end = richtext.size();
+	// richtext は終端文字も含んだ長さなので最後の文字は -1 したところ。
+	int display_end = richtext.size() - 1;
 	if (extw != NULL && (*extw).contains("display_text_range")) {
 		const Json& range = (*extw)["display_text_range"];
 		if (range.is_array() && range.size() >= 2) {
@@ -1097,7 +1098,8 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	// RichString を UString に変換。
 	// ついでに HTML unescape と 改行を処理。
 	UString new_text;
-	for (int i = 0; i < display_end; i++) {
+	int i;
+	for (i = 0; i < display_end; i++) {
 		auto& c = richtext[i];
 
 		// 直前に差し込むエスケープシーケンスがあれば先に処理
@@ -1157,6 +1159,11 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		}
 
 		new_text.Append(c.code);
+	}
+
+	// 表示する最後の文字の直後のエスケープシーケンスを出力
+	if (!richtext[i].altesc.empty()) {
+		new_text.Append(richtext[i].altesc);
 	}
 
 	return new_text;
