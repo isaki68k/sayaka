@@ -102,7 +102,7 @@ class mTLSInputStream : public InputStream
 	mTLSInputStream(mTLSHandle *mtls, const Diag& diag);
 	virtual ~mTLSInputStream() override;
 
-	ssize_t Read(char *buf, size_t buflen) override;
+	ssize_t Read(void *buf, size_t buflen) override;
 
  private:
 	mTLSHandle *mtls;

@@ -44,7 +44,7 @@ MemoryInputStream::AddData(const std::vector<uint8>& src)
 
 // dst に読み出す
 ssize_t
-MemoryInputStream::Read(char *dst, size_t dstsize)
+MemoryInputStream::Read(void *dst, size_t dstsize)
 {
 	ssize_t rv = 0;
 
@@ -53,7 +53,7 @@ MemoryInputStream::Read(char *dst, size_t dstsize)
 
 		// コピー
 		auto copylen = std::min(dstsize - rv, buf.size() - offset);
-		memcpy(dst + rv, buf.data() + offset, copylen);
+		memcpy((char *)dst + rv, buf.data() + offset, copylen);
 		rv += copylen;
 		offset += copylen;
 

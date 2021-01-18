@@ -10,7 +10,7 @@ class FdInputStream : public InputStream
 	FdInputStream(int fd, bool own);
 	virtual ~FdInputStream() override;
 
-	ssize_t Read(char *buf, size_t buflen) override;
+	ssize_t Read(void *buf, size_t buflen) override;
 	void Close() override;
 
  private:

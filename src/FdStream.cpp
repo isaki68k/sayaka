@@ -20,7 +20,7 @@ FdInputStream::~FdInputStream()
 
 // 読み出し
 ssize_t
-FdInputStream::Read(char *buf, size_t buflen)
+FdInputStream::Read(void *buf, size_t buflen)
 {
 	return read(fd, buf, buflen);
 }

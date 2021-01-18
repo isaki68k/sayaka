@@ -10,7 +10,7 @@ class FileInputStream : public InputStream
 	FileInputStream(FILE *fp, bool own);
 	virtual ~FileInputStream() override;
 
-	ssize_t Read(char *dst, size_t dstsize) override;
+	ssize_t Read(void *dst, size_t dstsize) override;
 	void Close() override;
 
 	FILE *fp {};
@@ -25,7 +25,7 @@ class FileOutputStream : public OutputStream
 	FileOutputStream(FILE *fp, bool own);
 	virtual ~FileOutputStream() override;
 
-	ssize_t Write(const char *buf, size_t len) override;
+	ssize_t Write(const void *buf, size_t len) override;
 	void Flush() override;
 	void Close() override;
 

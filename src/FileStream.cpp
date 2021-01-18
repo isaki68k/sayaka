@@ -19,13 +19,13 @@ FileInputStream::~FileInputStream()
 
 // dst に読み出す
 ssize_t
-FileInputStream::Read(char *dst, size_t dstsize)
+FileInputStream::Read(void *dst, size_t dstsize)
 {
 	ssize_t rv = 0;
 
 	while (rv < dstsize) {
 		size_t reqsize = dstsize - rv;
-		size_t n = fread(dst + rv, 1, reqsize, fp);
+		size_t n = fread((char *)dst + rv, 1, reqsize, fp);
 		if (__predict_false(n == 0)) {
 			if (feof(fp)) {
 				return 0;
@@ -72,7 +72,7 @@ FileOutputStream::~FileOutputStream()
 
 // buf を書き出す
 ssize_t
-FileOutputStream::Write(const char *buf, size_t len)
+FileOutputStream::Write(const void *buf, size_t len)
 {
 	return fwrite(buf, 1, len, fp);
 }

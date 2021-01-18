@@ -15,7 +15,7 @@ class InputStream
 	// dstsize までもしくは内部ストリームが EOF になるまで。
 	// 読み出したバイト数を返す。
 	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
-	virtual ssize_t Read(char *dst, size_t dstsize) = 0;
+	virtual ssize_t Read(void *dst, size_t dstsize) = 0;
 
 	virtual void Close();
 
@@ -43,7 +43,7 @@ class OutputStream
  public:
 	virtual ~OutputStream();
 
-	virtual ssize_t Write(const char *buf, size_t len) = 0;
+	virtual ssize_t Write(const void *buf, size_t len) = 0;
 
 	virtual void Flush() = 0;
 
