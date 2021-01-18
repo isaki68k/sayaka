@@ -27,6 +27,7 @@
  */
 
 #include "acl.h"
+#include "autofd.h"
 #include "sayaka.h"
 #include "FileStream.h"
 #include "RichString.h"
@@ -1310,12 +1311,12 @@ show_image(const std::string& img_file, const std::string& img_url,
 	diagImage.Debug("show_image: img_url=%s", img_url.c_str());
 	diagImage.Debug("show_image: img_path=%s", img_path.c_str());
 	auto cache_filename = img_path + ".sixel";
-	FILE *cache_file = fopen(cache_filename.c_str(), "r");
-	if (cache_file == NULL) {
+	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
+	if (!cache_file.Valid()) {
 		// キャッシュファイルがないので、画像を取得
 		diagImage.Debug("sixel cache is not found");
 		cache_file = fetch_image(cache_filename, img_url, resize_width);
-		if (cache_file == NULL) {
+		if (!cache_file.Valid()) {
 			return false;
 		}
 	}
