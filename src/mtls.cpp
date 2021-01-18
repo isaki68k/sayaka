@@ -18,7 +18,16 @@
 #include <mbedtls/error.h>
 #include <mbedtls/net_sockets.h>
 
+// ローカルのデバッグモード (on / off のみ)
 //#define DEBUG 1
+
+// mbedTLS のデバッグレベル (1でも結構多いし、2 でほぼ読めないくらい)
+// 0 .. No debug
+// 1 .. Error
+// 2 .. State Change
+// 3 .. Informational
+// 4 .. Verbose
+#define MTLS_DEBUG_LEVEL (0)
 
 #if defined(DEBUG)
 #define TRACE(fmt, ...) do { \
@@ -106,6 +115,9 @@ mTLSHandle::mTLSHandle()
 			throw "initializing gctx failed";
 		}
 		gctx.initialized = true;
+
+		// mbedTLS のデバッグレベルはグローバルなのでここでセットする。
+		mbedtls_debug_set_threshold(MTLS_DEBUG_LEVEL);
 	}
 
 	// メンバを初期化
@@ -133,13 +145,6 @@ mTLSHandle::errmsg(int code)
 {
 	mbedtls_strerror(code, errbuf, sizeof(errbuf));
 	return errbuf;
-}
-
-// mbedTLS のデバッグレベルを指定
-void
-mTLSHandle::SetDebugLevel(int level)
-{
-	mbedtls_debug_set_threshold(level);
 }
 
 

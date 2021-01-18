@@ -33,9 +33,6 @@ class mTLSHandle
 	// タイムアウトを設定する。デフォルトは 0 (タイムアウトしない)
 	void SetTimeout(int timeout_);
 
-	// mbedTLS ライブラリのデバッグレベルを指定する。
-	void SetDebugLevel(int level);
-
 	// 接続する
 	bool Connect(const std::string& hostname, const std::string& servname) {
 		return Connect(hostname.c_str(), servname.c_str());

@@ -201,8 +201,6 @@ HttpClient::GetHeader(const std::vector<std::string>& header,
 bool
 HttpClient::Connect()
 {
-	mtls.SetDebugLevel(diag.GetLevel());
-
 #if 0
 	// 透過プロキシ(?)設定があれば対応
 	std::string proxyTarget;
