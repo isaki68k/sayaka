@@ -1,12 +1,28 @@
 #pragma once
 
+#include "ChunkedInputStream.h"
 #include "Diag.h"
 #include "mtls.h"
 #include "ParsedUri.h"
 #include "StreamBase.h"
+#include <memory>
 #include <string>
 #include <vector>
 #include <sys/socket.h>
+
+class mTLSInputStream : public InputStream
+{
+ public:
+	mTLSInputStream(mTLSHandle *mtls, const Diag& diag);
+	virtual ~mTLSInputStream() override;
+
+	ssize_t NativeRead(void *buf, size_t buflen) override;
+
+ private:
+	mTLSHandle *mtls {};
+
+	Diag diag {};
+};
 
 class HttpClient
 {
@@ -92,21 +108,11 @@ class HttpClient
 	// mTLS ハンドル
 	mTLSHandle mtls {};
 
-	Diag diag {};
-};
+	// mTLS ストリーム
+	std::unique_ptr<mTLSInputStream> mstream {};
 
-class mTLSInputStream : public InputStream
-{
- public:
-	mTLSInputStream(mTLSHandle *mtls, const Diag& diag);
-	virtual ~mTLSInputStream() override;
-
-	ssize_t NativeRead(void *buf, size_t buflen) override;
-
- private:
-	mTLSHandle *mtls {};
+	// チャンク用
+	std::unique_ptr<ChunkedInputStream> chunk_stream {};
 
 	Diag diag {};
 };
-
-// mTLSOutputStream は不要なので作ってない

@@ -1,5 +1,4 @@
 #include "HttpClient.h"
-#include "ChunkedInputStream.h"
 #include "StringUtil.h"
 #include <err.h>
 #include <sys/socket.h>
@@ -33,16 +32,15 @@ InputStream *
 HttpClient::Act(const std::string& method)
 {
 	diag.Trace("%s()", method.c_str());
-	InputStream *dIn = NULL;
 
 	for (;;) {
 		Connect();
 
 		SendRequest(method);
 
-		dIn = new mTLSInputStream(&mtls, diag);
+		mstream.reset(new mTLSInputStream(&mtls, diag));
 
-		ReceiveHeader(dIn);
+		ReceiveHeader(mstream.get());
 
 		if (300 <= ResultCode && ResultCode < 400) {
 			Close();
@@ -76,9 +74,11 @@ HttpClient::Act(const std::string& method)
 	if (transfer_encoding == "chunked") {
 		// チャンク
 		diag.Debug("use ChunkedInputStream");
-		stream = new ChunkedInputStream(dIn, diag);
+		chunk_stream.reset(new ChunkedInputStream(mstream.get(), diag));
+		stream = chunk_stream.get();
 	} else {
-		stream = dIn;
+		// そうでなければ元ストリームをそのまま返す
+		stream = mstream.get();
 	}
 
 	return stream;
