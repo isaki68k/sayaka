@@ -317,26 +317,29 @@ mTLSHandle::Shutdown(int how)
 size_t
 mTLSHandle::Read(void *buf, size_t len)
 {
-	size_t rv;
+	ssize_t rv;
 
 	TRACE("called\n");
 
 	if (usessl) {
 		rv = mbedtls_ssl_read(&ssl, (unsigned char *)buf, len);
+		if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+			// EOF
+			TRACE("EOF\n");
+			return 0;
+		}
+		if (rv < 0) {
+			ERROR("mbedtls_ssl_read failed: %s\n", errmsg(rv));
+			return rv;
+		}
 	} else {
 		// net_recv_timeout() は 0 が無期限のほう (SetTimeout() 参照)
 		rv = mbedtls_net_recv_timeout(&net, (unsigned char *)buf, len,
 			ssl_timeout);
-	}
-
-	if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-		// EOF
-		TRACE("EOF\n");
-		return 0;
-	}
-	if (rv < 0) {
-		ERROR("mbedtls_*_read failed: %s\n", errmsg(rv));
-		return rv;
+		if (rv < 0) {
+			ERROR("mbedtls_net_recv_timeout failed: %s\n", errmsg(rv));
+			return rv;
+		}
 	}
 
 	TRACE("%zd bytes\n", rv);
@@ -347,19 +350,22 @@ mTLSHandle::Read(void *buf, size_t len)
 size_t
 mTLSHandle::Write(const void *buf, size_t len)
 {
-	size_t rv;
+	ssize_t rv;
 
 	TRACE("called\n");
 
 	if (usessl) {
 		rv = mbedtls_ssl_write(&ssl, (const unsigned char *)buf, len);
+		if (rv < 0) {
+			ERROR("mbedtls_ssl_write failed: %s\n", errmsg(rv));
+			return rv;
+		}
 	} else {
 		rv = mbedtls_net_send(&net, (const unsigned char *)buf, len);
-	}
-
-	if (rv < 0) {
-		ERROR("mbedtls_*_write failed: %s\n", errmsg(rv));
-		return rv;
+		if (rv < 0) {
+			ERROR("mbedtls_net_send failed: %s\n", errmsg(rv));
+			return rv;
+		}
 	}
 
 	TRACE("%zd bytes\n", rv);
