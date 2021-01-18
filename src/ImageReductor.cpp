@@ -536,7 +536,7 @@ ImageReductor::Fast(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int srcNch    = gdk_pixbuf_get_n_channels(pix);
 	int srcStride = gdk_pixbuf_get_rowstride(pix);
 
-	DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n",
+	DEBUG_PRINTF("ImageReductor::Fast dst=(%d,%d) src=(%d,%d)\n",
 		dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 螺旋状に一次元誤差分散させる。
@@ -622,7 +622,7 @@ ImageReductor::Simple(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int srcNch    = gdk_pixbuf_get_n_channels(pix);
 	int srcStride = gdk_pixbuf_get_rowstride(pix);
 
-	DEBUG_PRINTF("dst=(%d,%d) src=(%d,%d)\n",
+	DEBUG_PRINTF("ImageReductor::Simple dst=(%d,%d) src=(%d,%d)\n",
 		dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 水平方向はスキップサンプリング
@@ -702,7 +702,7 @@ ImageReductor::HighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int srcNch    = gdk_pixbuf_get_n_channels(pix);
 	int srcStride = gdk_pixbuf_get_rowstride(pix);
 
-	DEBUG_PRINTF("dst=(%p,%d,%d) src=(%p,%d,%d)\n",
+	DEBUG_PRINTF("ImageReductor::HighQuality dst=(%p,%d,%d) src=(%p,%d,%d)\n",
 		dst, dstWidth, dstHeight, src, srcWidth, srcHeight);
 
 	// 水平方向はピクセルを平均

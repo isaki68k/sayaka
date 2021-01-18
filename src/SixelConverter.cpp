@@ -308,7 +308,7 @@ SixelConverter::ConvertToIndexed()
 	int height = 0;
 	CalcResize(&width, &height);
 
-	diag.Debug("resize to (%d, %d)\n", width, height);
+	diag.Debug("resize to width=%d height=%d)", width, height);
 
 	if (ResizeMode == SixelResizeMode::ByScaleSimple) {
 		if (width == Width || height == Height) {
