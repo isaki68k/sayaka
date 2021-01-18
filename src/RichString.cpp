@@ -122,23 +122,32 @@ RichString::dump() const
 	// 通常の文字配列とは異なり、これは終端 '\0' も1要素を持つ配列
 	for (int i = 0, sz = size(); i < sz; i++) {
 		const auto& c = (*this)[i];
+		uint32_t abscode = abs((int32_t)c.code);
 
 		rv += string_format("[%d] char=%d byte=%d U+%02x ",
-			i, c.charoffset, c.byteoffset, abs((int32_t)c.code));
+			i, c.charoffset, c.byteoffset, abscode);
 
 		if (__predict_true(i < sz - 1)) {
 			// 最後の一つ手前までが通常の文字列。
 			// ただしこの c のバイト数は次の文字(next) の byteoffset を
 			// 見ないと分からない。
 			const auto& next = (*this)[i + 1];
+			auto bytelen = next.byteoffset - c.byteoffset;
 			rv += '\'';
-			rv += text.substr(c.byteoffset, next.byteoffset - c.byteoffset);
+			// とりあえず雑に改行だけ対処
+			if (abscode == '\n') {
+				rv += "\\n";
+			} else {
+				rv += text.substr(c.byteoffset, bytelen);
+			}
 			rv += '\'';
 			if ((int32_t)c.code < 0) {
 				rv += " Del";
 			}
-			for (int j = c.byteoffset; j < next.byteoffset; j++) {
-				rv += string_format(" %02x", (unsigned char)text[j]);
+			if (bytelen > 1) {
+				for (int j = c.byteoffset; j < next.byteoffset; j++) {
+					rv += string_format(" %02x", (unsigned char)text[j]);
+				}
 			}
 		} else {
 			// 最後のエントリ (終端文字) なので next はないし必要ない。
