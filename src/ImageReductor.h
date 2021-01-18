@@ -148,7 +148,7 @@ enum ResizeAxisMode {
 	ScaleDownShort,
 };
 
-//-------- 色の型
+// ----- 色の型
 
 struct ColorRGBint {
 	int r;
@@ -180,61 +180,6 @@ struct ColorHSVuint8 {
 	uint8_t v;	// 0..255
 };
 
-#if 0
-//typedef int (*ImageReductor_ReadCallback)(ImageReductor_Image *);
-
-struct ImageReductor_Image {
-	uint8_t *Data;
-	uint32_t DataLen;
-	uint32_t Width;
-	uint32_t Height;
-	uint32_t ChannelCount;
-	uint32_t RowStride;
-	uint32_t OriginalWidth;
-	uint32_t OriginalHeight;
-
-	ImageReductor_ReadCallback ReadCallback;
-
-	// ユーザが自由に使っていい。コールバック元の this 入れるとか
-	void *UserObject;
-
-	uint8_t ReadBuffer[4096];
-};
-#endif
-
-#if 0
-extern int ImageReductor_Fast(
-	uint8_t *dst, uint32_t dstlen,
-	int dstWidth, int dstHeight,
-	uint8_t *src, uint32_t srclen,
-	int srcWidth, int srcHeight,
-	int srcNch, int srcStride);
-
-extern int ImageReductor_Simple(
-	uint8_t *dst, uint32_t dstlen,
-	int dstWidth, int dstHeight,
-	uint8_t *src, uint32_t srclen,
-	int srcWidth, int srcHeight,
-	int srcNch, int srcStride);
-
-extern int ImageReductor_HighQuality(
-	uint8_t *dst, uint32_t dstlen,
-	int dstWidth, int dstHeight,
-	uint8_t *src, uint32_t srclen,
-	int srcWidth, int srcHeight,
-	int srcNch, int srcStride);
-
-
-extern ImageReductor_Image *ImageReductor_AllocImage();
-
-extern void ImageReductor_FreeImage(ImageReductor_Image *img);
-
-extern ReductorImageCode ImageReductor_LoadJpeg(
-	ImageReductor_Image *img,
-	int requestWidth, int requestHeight, ResizeAxisMode requestAxis);
-#endif
-
-
 class ImageReductor
 {
 	using FindColorFunc_t = int (ImageReductor::*)(ColorRGBuint8);
@@ -253,21 +198,18 @@ class ImageReductor
 		int32_t OriginalHeight;
 
 		int (*ReadCallback)(Image *);
-		// ユーザが自由に使っていい。コールバック元の this 入れるとか。
+		// ユーザが自由に使っていい。
 		void *UserObject;
 
 		uint8_t ReadBuffer[4096];
 	};
 
  public:
-	static int Debug;
-
+	// パレット数を取得
 	int GetPaletteCount() const { return PaletteCount; }
 
+	// n 番目のパレットデータを取得
 	ColorRGBuint8 GetPalette(int n) const { return Palette[n]; }
-
-	// High 誤差分散アルゴリズム
-	ReductorDiffuseMethod HighQualityDiffuseMethod = RDM_FS;
 
 	// カラーモードを設定する。
 	// 変換関数を呼び出す前に、必ずカラーモードを設定すること。
@@ -280,23 +222,16 @@ class ImageReductor
 		AddNoiseLevel = level;
 	}
 
+	// 変換
 	void Convert(ReductorReduceMode mode, GdkPixbuf *pix,
-		std::vector<uint8_t>& dst, int toWidth, int toHeight)
-	{
-		switch (mode) {
-		 case ReductorReduceMode::Fast:
-			Fast(pix, dst, toWidth, toHeight);
-			break;
-		 case ReductorReduceMode::Simple:
-			Simple(pix, dst, toWidth, toHeight);
-			break;
-		 case ReductorReduceMode::HighQuality:
-			HighQuality(pix, dst, toWidth, toHeight);
-			break;
-		}
-	}
+		std::vector<uint8_t>& dst, int toWidth, int toHeight);
 
 	void ColorFactor(float factor);
+
+	// High 誤差分散アルゴリズム
+	ReductorDiffuseMethod HighQualityDiffuseMethod = RDM_FS;
+
+	static int Debug;
 
  private:
 	int PaletteCount {};
@@ -356,15 +291,15 @@ class ImageReductor
 	static int rnd(int level);
 
 	// 高速変換を行う
-	void Fast(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+	void ConvertFast(GdkPixbuf *pix, std::vector<uint8_t>& dst,
 		int toWidth, int toHeight);
 
 	// 単純変換を行う
-	void Simple(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+	void ConvertSimple(GdkPixbuf *pix, std::vector<uint8_t>& dst,
 		int toWidth, int toHeight);
 
 	// 高品質変換を行う
-	void HighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+	void ConvertHighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst,
 		int toWidth, int toHeight);
 
 	static int16_t Saturate_adderr(int16_t a, int b);

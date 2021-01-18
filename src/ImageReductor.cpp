@@ -514,6 +514,23 @@ ImageReductor::rnd(int level)
 // 変換関数
 //
 
+void
+ImageReductor::Convert(ReductorReduceMode mode, GdkPixbuf *pix,
+	std::vector<uint8_t>& dst, int toWidth, int toHeight)
+{
+	switch (mode) {
+	 case ReductorReduceMode::Fast:
+		ConvertFast(pix, dst, toWidth, toHeight);
+		break;
+	 case ReductorReduceMode::Simple:
+		ConvertSimple(pix, dst, toWidth, toHeight);
+		break;
+	 case ReductorReduceMode::HighQuality:
+		ConvertHighQuality(pix, dst, toWidth, toHeight);
+		break;
+	}
+}
+
 // 画像を縮小しながら減色して変換する。
 // 出来る限り高速に、それなりの品質で変換する。
 // dst : 色コードを出力するバッファ。
@@ -526,7 +543,7 @@ ImageReductor::rnd(int level)
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::Fast(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertFast(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
@@ -612,7 +629,7 @@ ImageReductor::Fast(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::Simple(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertSimple(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
@@ -692,7 +709,7 @@ ImageReductor::set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio)
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::HighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertHighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
