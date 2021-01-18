@@ -45,7 +45,27 @@ enum SixelResizeMode
 class SixelConverter
 {
  public:
-	// 設定
+	// コンストラクタ
+	SixelConverter();
+	SixelConverter(int debuglv);
+
+	// stream から読み込む
+	bool LoadFromStream(InputStream *stream);
+
+	// インデックスカラーに変換する
+	void ConvertToIndexed();
+
+	// Sixel を stream に出力する
+	void SixelToStream(OutputStream *stream);
+
+	// 画像の幅・高さを取得する
+	int GetWidth() const { return Width; }
+	int GetHeight() const { return Height; }
+
+	// ImageReductor を取得する
+	ImageReductor& GetImageReductor() { return ir; }
+
+	// ----- 設定
 
 	// Sixel の出力カラーモード値
 	SixelOutputMode OutputMode = SixelOutputMode::Normal;
@@ -84,31 +104,8 @@ class SixelConverter
 	ResizeAxisMode ResizeAxis = ResizeAxisMode::Both;
 
  public:
-	// コンストラクタ
-	SixelConverter();
-	SixelConverter(int debuglv);
-
-	bool LoadFromStream(InputStream *stream);
-
-	// インデックスカラーに変換する
-	void ConvertToIndexed();
-
-	// Sixel を stream に出力する
-	void SixelToStream(OutputStream *stream);
-
-	// ImageReductor を取得する
-	ImageReductor& GetImageReductor() { return ir; }
-
- public:
-	// 元画像
-	GdkPixbuf *pix {};
-
 	// インデックスカラー画像バッファ
 	std::vector<uint8> Indexed {};
-
-	// 画像の幅・高さを取得
-	int GetWidth() const { return Width; }
-	int GetHeight() const { return Height; }
 
  private:
 	bool LoadJpeg(InputStream *stream);
@@ -124,13 +121,16 @@ class SixelConverter
 	std::string SixelPostamble();
 	static std::string SixelRepunit(int n, uint8 ptn);
 
-	// 画像の幅と高さ
-	int Width;
-	int Height;
-
 	ImageReductor ir {};
 
 	ImageReductor::Image *img {};
+
+	// 元画像
+	GdkPixbuf *pix {};
+
+	// 画像の幅と高さ
+	int Width;
+	int Height;
 
 	Diag diag;
 
