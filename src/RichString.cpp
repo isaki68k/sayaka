@@ -119,23 +119,29 @@ RichString::dump() const
 {
 	std::string rv;
 
-	for (int i = 0; i < size(); i++) {
+	// 通常の文字配列とは異なり、これは終端 '\0' も1要素を持つ配列
+	for (int i = 0, sz = size(); i < sz; i++) {
 		const auto& c = (*this)[i];
-		const auto& next = (*this)[i + 1];
-		rv += string_format("[%d] char=%d byte=%d",
-			i, c.charoffset, c.byteoffset);
 
-		if ((int32_t)c.code < 0) {
-			rv += string_format(" U+%02x '%s' Del", -(int32_t)c.code,
-				text.substr(c.byteoffset, next.byteoffset - c.byteoffset)
-					.c_str());
-		} else {
-			rv += string_format(" U+%02x '%s'", c.code,
-				text.substr(c.byteoffset, next.byteoffset - c.byteoffset)
-					.c_str());
+		rv += string_format("[%d] char=%d byte=%d U+%02x ",
+			i, c.charoffset, c.byteoffset, abs((int32_t)c.code));
+
+		if (__predict_true(i < sz - 1)) {
+			// 最後の一つ手前までが通常の文字列。
+			// ただしこの c のバイト数は次の文字(next) の byteoffset を
+			// 見ないと分からない。
+			const auto& next = (*this)[i + 1];
+			rv += '\'';
+			rv += text.substr(c.byteoffset, next.byteoffset - c.byteoffset);
+			rv += '\'';
+			if ((int32_t)c.code < 0) {
+				rv += " Del";
+			}
 			for (int j = c.byteoffset; j < next.byteoffset; j++) {
 				rv += string_format(" %02x", (unsigned char)text[j]);
 			}
+		} else {
+			// 最後のエントリ (終端文字) なので next はないし必要ない。
 		}
 
 		if (!c.altesc.empty()) {
