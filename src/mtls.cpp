@@ -203,7 +203,9 @@ mTLSHandle::UseRSA()
 bool
 mTLSHandle::Connect(const char *hostname, const char *servname)
 {
+#if defined(DEBUG)
 	struct timeval start, end, result;
+#endif
 	int r;
 
 	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);

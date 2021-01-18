@@ -762,6 +762,8 @@ print_(const UString& src)
 						sb += uni;
 						x += 2;
 						break;
+					 default:
+						break;
 					}
 				}
 				if (x > screen_cols - 1) {

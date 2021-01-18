@@ -231,7 +231,6 @@ int main(int ac, char *av[])
 {
 	struct utsname ut;
 	int c;
-	int r;
 
 	diagHttp.SetClassname("HttpClient");
 

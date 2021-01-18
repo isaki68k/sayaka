@@ -175,9 +175,8 @@ OAuth::CreateParams(const std::string& method, const std::string& uri)
 
 	// 追加パラメータは署名対象だが OAuth ヘッダには含まない
 	for (const auto& kv : AdditionalParams) {
-		auto& key = kv.first;
-		auto& val = kv.second;
-		Params[key] = val;
+		const auto& [ k, v ] = kv;
+		Params[k] = v;
 	}
 
 	auto encoded_params = UrlEncode(MakeQuery(Params));
@@ -372,7 +371,7 @@ static inline std::string operator"" _hex2str(const char *str, std::size_t len)
 	return v;
 }
 
-int
+void
 test_Base64Encode()
 {
 	printf("%s\n", __func__);
@@ -394,7 +393,7 @@ test_Base64Encode()
 	}
 }
 
-int
+void
 test_HMAC_SHA1()
 {
 	printf("%s\n", __func__);
@@ -511,8 +510,6 @@ test_CreateParams()
 		xp_eq(expected, actual);
 	}
 }
-
-
 
 void
 test_MakeQuery()

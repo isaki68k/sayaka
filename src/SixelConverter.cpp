@@ -28,8 +28,6 @@ SixelConverter::SixelConverter(int debuglv)
 bool
 SixelConverter::Load(const std::string& filename)
 {
-	GError *gerror;
-
 	diag.Debug("filename=%s", filename.c_str());
 	diag.Debug("LoaderMode=%s", SLM2str(LoaderMode));
 	diag.Debug("ResizeMode=%s", SRM2str(ResizeMode));
@@ -255,6 +253,10 @@ SixelConverter::CalcResize(int *widthp, int *heightp)
 	 case ResizeAxisMode::ScaleDownHeight:
 		ra = ResizeAxisMode::Height;
 		break;
+
+	 default:
+		__builtin_unreachable();
+		break;
 	}
 
 	auto rw = ResizeWidth;
@@ -286,6 +288,9 @@ SixelConverter::CalcResize(int *widthp, int *heightp)
 	 case ResizeAxisMode::Height:
 		height = rh;
 		width = Width * height / Height;
+		break;
+	 default:
+		__builtin_unreachable();
 		break;
 	}
 }
@@ -387,7 +392,7 @@ SixelConverter::SRM2str(SixelResizeMode val)
 
 #if defined(SELFTEST)
 #include "test.h"
-static int
+static void
 test_enum()
 {
 	std::vector<std::pair<SixelOutputMode, const std::string>> table_SOM = {

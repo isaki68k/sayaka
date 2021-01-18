@@ -1037,7 +1037,7 @@ test_showstatus_acl()
 			opt_pseudo_home = true;
 			auto result = acl(status, false);
 			if (result != expected_home.value()) {
-				fprintf(stderr, "%s (for home) expects '%s' but '%s'\n",
+				fprintf(stderr, "%s (for home) expects %d but %d\n",
 					input_str.c_str(), expected_home.value(), result);
 				nfail++;
 			}
@@ -1049,7 +1049,7 @@ test_showstatus_acl()
 			opt_pseudo_home = true;
 			auto result = acl(status, true);
 			if (result != expected_filt.value()) {
-				fprintf(stderr, "%s (for home/quoted) expectes '%s' but '%s'\n",
+				fprintf(stderr, "%s (for home/quoted) expectes %d but %d\n",
 					input_str.c_str(), expected_filt.value(), result);
 				nfail++;
 			}
@@ -1059,7 +1059,7 @@ test_showstatus_acl()
 			opt_pseudo_home = false;
 			result = acl(status, false);
 			if (result != expected_filt.value()) {
-				fprintf(stderr, "%s (for filter) expectes '%s' but '%s'\n",
+				fprintf(stderr, "%s (for filter) expectes %d but %d\n",
 					input_str.c_str(), expected_filt.value(), result);
 				nfail++;
 			}
@@ -1070,7 +1070,7 @@ test_showstatus_acl()
 			result = acl(status, true);
 			if (result != expected_filt.value()) {
 				fprintf(stderr,
-					"%s (for filter/quoted) expectes '%s' but '%s'\n",
+					"%s (for filter/quoted) expectes %d but %d\n",
 					input_str.c_str(), expected_filt.value(), result);
 				nfail++;
 			}
@@ -1078,7 +1078,7 @@ test_showstatus_acl()
 	}
 	printf("%d tests, %d passed", ntest, ntest - nfail);
 	if (nfail > 0) {
-		printf(", %s FAILED!", nfail);
+		printf(", %d FAILED!", nfail);
 	}
 	printf("\n");
 }

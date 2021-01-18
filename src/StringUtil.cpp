@@ -25,7 +25,6 @@ string_replace(const std::string& s,
 	const std::string& oldstr, const std::string& newstr)
 {
 	std::string rv;
-	char ofirst = oldstr[0];
 
 	for (auto i = 0; i < s.size(); ) {
 		if (strncmp(s.c_str() + i, oldstr.c_str(), oldstr.size()) == 0) {
@@ -122,6 +121,8 @@ Split(const std::string& s, const std::string& sep, int limit)
 		item = s.substr(p);
 		v.emplace_back(item);
 	}
+
+	return v;
 }
 
 // 文字列 s を最初に現れた文字列 c で2分割する。

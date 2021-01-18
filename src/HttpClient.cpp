@@ -105,7 +105,7 @@ HttpClient::SendRequest(const std::string& method)
 
 	if (method == "POST") {
 		sb += "Content-Type: application/x-www-form-urlencoded\r\n";
-		sb += string_format("Content-Length: %d\r\n", Uri.Query.length());
+		sb += string_format("Content-Length: %zd\r\n", Uri.Query.length());
 		sb += "\r\n";
 		sb += Uri.Query;
 	} else {
@@ -176,22 +176,22 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 		}
 		RecvHeaders.emplace_back(s);
 	}
+	return false;
 }
 
 // 指定のヘッダ配列から指定のヘッダを検索してボディを返す。
 // 指定されたヘッダが存在しない場合は "" を返す。
 std::string
 HttpClient::GetHeader(const std::vector<std::string>& header,
-	const std::string& key) const
+	const std::string& key_) const
 {
-	auto key2 = StringToLower(key);
+	auto key = StringToLower(key_);
 	for (const auto& h : header) {
-		auto kv = Split2(h, ":");
-		auto key = StringToLower(kv.first);
-		auto val = kv.second;
+		auto [ k, v ] = Split2(h, ":");
+		k = StringToLower(k);
 
-		if (key2 == key) {
-			return Chomp(val);
+		if (k == key) {
+			return Chomp(v);
 		}
 	}
 	return "";

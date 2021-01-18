@@ -256,7 +256,7 @@ ImageReductor::FindColor_FixedANSI16(ColorRGBuint8 c)
 				return 7;
 			}
 		}
-		return R + (G << 1) + (B << 2) | 8;
+		return (R + (G << 1) + (B << 2)) | 8;
 	} else {
 		R = (c.r >= 85);
 		G = (c.g >= 85);
@@ -530,9 +530,7 @@ ImageReductor::Fast(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
-	uint32_t dstLen = dst_.size();
 	uint8_t *src  = gdk_pixbuf_get_pixels(pix);
-	int srcLen    = gdk_pixbuf_get_byte_length(pix);
 	int srcWidth  = gdk_pixbuf_get_width(pix);
 	int srcHeight = gdk_pixbuf_get_height(pix);
 	int srcNch    = gdk_pixbuf_get_n_channels(pix);
@@ -618,9 +616,7 @@ ImageReductor::Simple(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
-	uint32_t dstLen = dst_.size();
 	uint8_t *src  = gdk_pixbuf_get_pixels(pix);
-	int srcLen    = gdk_pixbuf_get_byte_length(pix);
 	int srcWidth  = gdk_pixbuf_get_width(pix);
 	int srcHeight = gdk_pixbuf_get_height(pix);
 	int srcNch    = gdk_pixbuf_get_n_channels(pix);
@@ -700,9 +696,7 @@ ImageReductor::HighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
-	uint32_t dstLen = dst_.size();
 	uint8_t *src  = gdk_pixbuf_get_pixels(pix);
-	int srcLen    = gdk_pixbuf_get_byte_length(pix);
 	int srcWidth  = gdk_pixbuf_get_width(pix);
 	int srcHeight = gdk_pixbuf_get_height(pix);
 	int srcNch    = gdk_pixbuf_get_n_channels(pix);
