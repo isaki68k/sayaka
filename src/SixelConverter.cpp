@@ -24,56 +24,6 @@ SixelConverter::SixelConverter(int debuglv)
 // 画像の読み込み
 //
 
-#if 0
-bool
-SixelConverter::Load(const std::string& filename)
-{
-	diag.Debug("filename=%s", filename.c_str());
-	diag.Debug("LoaderMode=%s", SLM2str(LoaderMode));
-	diag.Debug("ResizeMode=%s", SRM2str(ResizeMode));
-
-	if (LoaderMode == SixelLoaderMode::Lib) {
-		FILE *fp = fopen(filename.c_str(), "r");
-		if (fp == NULL) {
-			return false;
-		}
-		bool loaded = LoadJpeg(fp);
-		fclose(fp);
-		if (loaded) {
-			LoadAfter();
-			return true;
-		} else {
-			diag.Debug("fallback to gdk");
-		}
-	}
-
-#if 1
-	printf("%s gdk not implemented\n", __func__);
-	return false;
-#else
-	if (ResizeMode == SixelResizeMode::ByLoad) {
-		int width = -1;
-		int height = -1;
-		CalcResizeGdkLoad(&width, &height);
-		pix = gdk_pixbuf_new_from_file_at_size(filename.c_str(), width, height,
-			&gerror);
-		if (__predict_false(pix == NULL)) {
-			diag.Debug("gdk_pixbuf_new_from_file_at_size failed");
-			return false;
-		}
-	} else {
-		pix = gdk_pixbuf_new_from_file(filename.c_str(), &gerror);
-		if (__predict_false(pix == NULL)) {
-			diag.Debug("gdk_pixbuf_new_from_file failed");
-			return false;
-		}
-	}
-	LoadAfter();
-	return true;
-#endif
-}
-#endif
-
 bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
