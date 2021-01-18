@@ -76,8 +76,8 @@ class OAuth
 	bool UseOAuthHeader {};
 
 	// アクセストークンとアクセスシークレット
-	std::string AccessToken;
-	std::string AccessSecret;
+	std::string AccessToken {};
+	std::string AccessSecret {};
 
  private:
 	// method と url から IHttpClient を生成して返す。
@@ -86,7 +86,7 @@ class OAuth
 	std::unique_ptr<HttpClient> CreateHttp(const std::string& method,
 		const std::string& uri);
 
-	Diag diag;
+	Diag diag {};
 
 	// HTTP クライアント
 	// (ローカル変数に出来そうに見えるが、HTTP コネクション張ってる間

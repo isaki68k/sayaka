@@ -129,10 +129,10 @@ class SixelConverter
 	GdkPixbuf *pix {};
 
 	// 画像の幅と高さ
-	int Width;
-	int Height;
+	int Width {};
+	int Height {};
 
-	Diag diag;
+	Diag diag {};
 
  public:
 	// enum 対応

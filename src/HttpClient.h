@@ -11,31 +11,6 @@
 class HttpClient
 {
  public:
-	// パース後の URI
-	ParsedUri Uri {};
-
-	// リクエスト時にサーバに送る追加のヘッダ
-	// Host: はこちらで生成するので呼び出し側は指定しないこと。
-	std::vector<std::string> SendHeaders {};
-
-	// 受け取ったヘッダ
-	std::vector<std::string> RecvHeaders {};
-
-	// 受け取った応答行
-	std::string ResultLine {};
-
-	// 受け取った応答コード
-	int ResultCode {};
-
-	// コネクションに使用するプロトコルファミリ
-	// XXX ただし mbedTLS 版は API が指定に対応していないので、未対応
-	int family {};
-
-	// 使用する CipherSuites
-	// ただし ""(デフォルト) と "RSA" しか対応していない
-	std::string Ciphers {};
-
- public:
 	// コンストラクタ
 	HttpClient();
 
@@ -80,6 +55,30 @@ class HttpClient
 		mtls.SetTimeout(timeout);
 	}
 
+	// パース後の URI
+	ParsedUri Uri {};
+
+	// リクエスト時にサーバに送る追加のヘッダ
+	// Host: はこちらで生成するので呼び出し側は指定しないこと。
+	std::vector<std::string> SendHeaders {};
+
+	// 受け取ったヘッダ
+	std::vector<std::string> RecvHeaders {};
+
+	// 受け取った応答行
+	std::string ResultLine {};
+
+	// 受け取った応答コード
+	int ResultCode {};
+
+	// コネクションに使用するプロトコルファミリ
+	// XXX ただし mbedTLS 版は API が指定に対応していないので、未対応
+	int family {};
+
+	// 使用する CipherSuites
+	// ただし ""(デフォルト) と "RSA" しか対応していない
+	std::string Ciphers {};
+
  private:
 	// GET/POST リクエストを発行する
 	void SendRequest(const std::string& method);
@@ -105,9 +104,9 @@ class mTLSInputStream : public InputStream
 	ssize_t NativeRead(void *buf, size_t buflen) override;
 
  private:
-	mTLSHandle *mtls;
+	mTLSHandle *mtls {};
 
-	Diag diag;
+	Diag diag {};
 };
 
 // mTLSOutputStream は不要なので作ってない

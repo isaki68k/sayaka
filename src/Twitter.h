@@ -8,8 +8,8 @@
 class TwitterToken
 {
  public:
-	std::string Token;
-	std::string Secret;
+	std::string Token {};
+	std::string Secret {};
 
 	bool LoadFromFile(const std::string& filename);
 	bool SaveToFile(const std::string& filename);
@@ -46,9 +46,9 @@ class Twitter
 		const std::string& apiRoot, const std::string& api,
 		const StringDictionary& options);
 
-	OAuth oauth;
+	OAuth oauth {};
 
-	Diag diag;
+	Diag diag {};
 
  public:
 	static const char accessTokenURL[];
