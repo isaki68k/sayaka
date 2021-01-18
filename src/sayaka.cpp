@@ -95,7 +95,8 @@ static UString ColorEnd(Color col);
 static UString coloring(const std::string& text, Color col);
 static UString formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
 static void SetTag(RichString& t, const Json& list, Color color);
-static void SetUrl(RichString& t, int start, int end, const std::string& url);
+static void SetUrl_main(RichString& text, int start, int end,
+	const std::string& url);
 static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
@@ -919,6 +920,26 @@ coloring(const std::string& text, Color col)
 	return utext;
 }
 
+// URL を差し替える
+#define SetUrl(r, s, e, u) SetUrl_inline(r, s, e, u, display_end)
+static inline void
+SetUrl_inline(RichString& richtext, int start, int end, const std::string& url,
+	int display_end)
+{
+	if (end <= display_end) {
+#if defined(DEBUG_FORMAT)
+		printf("SetUrl [%d,%d) |%s|\n", start, end, url.c_str());
+#endif
+		SetUrl_main(richtext, start, end, url);
+	}
+#if defined(DEBUG_FORMAT)
+	else {
+		printf("SetUrl [%d,%d) |%s| out of range\n",
+			start, end, url.c_str());
+	}
+#endif
+}
+
 // 本文を整形して返す
 // (そのためにここでハッシュタグ、メンション、URL を展開)
 //
@@ -966,6 +987,9 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	const std::string& text = (*textj).get<std::string>();
 	RichString richtext(text);
 
+	// richtext は終端文字も含んだ長さなので、最後の文字は一つ手前。
+	int display_end = richtext.size() - 1;
+
 	// エンティティの位置が新旧で微妙に違うのを吸収
 	const Json *entities = NULL;
 	const Json *media_entities = NULL;
@@ -974,6 +998,16 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 			entities = &(*extw)["entities"];
 		}
 		media_entities = entities;
+
+		// 表示区間が指定されていたら取得。
+		// 後ろの添付画像 URL とかを削るためのもので、
+		// 前がどうなるのかは不明。
+		if ((*extw).contains("display_text_range")) {
+			const Json& range = (*extw)["display_text_range"];
+			if (range.is_array() && range.size() >= 2) {
+				display_end = range[1].get<int>();
+			}
+		}
 	} else {
 		if (s.contains("entities")) {
 			entities = &s["entities"];
@@ -1081,19 +1115,8 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 
 #if defined(DEBUG_FORMAT)
 	printf("%s", richtext.dump().c_str());
+	printf("display_end = %d\n", display_end);
 #endif
-
-	// 表示区間が指定されていたらそれに従う
-	// XXX 後ろは添付画像 URL とかなので削るとして
-	// XXX 前はメンションがどうなるか分からないのでとりあえず後回し
-	// richtext は終端文字も含んだ長さなので最後の文字は -1 したところ。
-	int display_end = richtext.size() - 1;
-	if (extw != NULL && (*extw).contains("display_text_range")) {
-		const Json& range = (*extw)["display_text_range"];
-		if (range.is_array() && range.size() >= 2) {
-			display_end = range[1].get<int>();
-		}
-	}
 
 	// RichString を UString に変換。
 	// ついでに HTML unescape と 改行を処理。
@@ -1207,12 +1230,8 @@ SetTag(RichString& richtext, const Json& list, Color color)
 // formatmsg() の下請け。
 // text の [start, end) を url で差し替える(ための処理をする)。
 static void
-SetUrl(RichString& text, int start, int end, const std::string& url)
+SetUrl_main(RichString& text, int start, int end, const std::string& url)
 {
-#if defined(DEBUG_FORMAT)
-	printf("SetUrl [%d,%d) |%s|\n", start, end, url.c_str());
-#endif
-
 	int i = start;
 
 	// すでにあれば何もしない (もうちょっとチェックしたほうがいいかも)
