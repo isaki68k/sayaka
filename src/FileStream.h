@@ -13,8 +13,8 @@ class FileInputStream : public InputStream
 	ssize_t NativeRead(void *dst, size_t dstsize) override;
 	void Close() override;
 
-	FILE *fp {};
  private:
+	FILE *fp {};
 	bool own {};
 };
 
@@ -29,7 +29,7 @@ class FileOutputStream : public OutputStream
 	void Flush() override;
 	void Close() override;
 
-	FILE *fp {};
  private:
+	FILE *fp {};
 	bool own {};
 };
