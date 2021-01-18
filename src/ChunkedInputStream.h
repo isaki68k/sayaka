@@ -14,7 +14,7 @@ class ChunkedInputStream : public InputStream
 
  private:
 	// 入力ストリーム
-	InputStream *src;
+	InputStream *src {};
 
 	// 内部バッファ
 	MemoryInputStream Chunks {};
