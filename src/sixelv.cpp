@@ -25,6 +25,7 @@
 
 #include "sayaka.h"
 #include "Diag.h"
+#include "FdStream.h"
 #include "FileStream.h"
 #include "HttpClient.h"
 #include "ImageReductor.h"
@@ -36,7 +37,9 @@
 #include <memory>
 #include <tuple>
 #include <err.h>
+#include <fcntl.h>
 #include <getopt.h>
+#include <unistd.h>
 #include <sys/utsname.h>
 #include <gio/gunixoutputstream.h>
 
@@ -523,7 +526,7 @@ Convert(const std::string& filename)
 	// ソース別にストリームを作成
 	if (filename == "-") {
 		diag.Debug("Loading stdin");
-		FileInputStream stream(stdin, false);
+		FdInputStream stream(STDIN_FILENO, false);
 		ConvertFromStream(&stream);
 
 	} else if (filename.find("://") != std::string::npos) {
@@ -542,15 +545,15 @@ Convert(const std::string& filename)
 
 	} else {
 		diag.Debug("Loading %s", filename.c_str());
-		FILE *fp = fopen(filename.c_str(), "r");
-		if (fp == NULL) {
+		int fd = open(filename.c_str(), O_RDONLY);
+		if (fd < 0) {
 			warn("File load error: %s", filename.c_str());
 			if (opt_ignore_error) {
 				return;
 			}
 			exit(1);
 		}
-		FileInputStream stream(fp, true);
+		FdInputStream stream(fd, true);
 		ConvertFromStream(&stream);
 	}
 }
