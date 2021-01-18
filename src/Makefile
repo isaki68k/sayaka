@@ -12,6 +12,7 @@ SRCS_common=	\
 	MemoryStream.cpp \
 	ParsedUri.cpp \
 	SixelConverter.cpp \
+	SixelConverterOR.cpp \
 	StreamBase.cpp \
 	StringUtil.cpp \
 	UString.cpp \

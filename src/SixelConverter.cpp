@@ -4,9 +4,6 @@
 #include "sayaka.h"
 #include <cassert>
 
-extern int sixel_image_to_sixel_h6_ormode(uint8* dst, uint8* src,
-	int w, int h, int plane_count);
-
 static int  img_readcallback(ImageReductor::Image *img);
 static void img_freecallback(guchar *pixels, gpointer data);
 
@@ -379,7 +376,6 @@ SixelConverter::SixelPreamble()
 	return linebuf;
 }
 
-#if 0
 static int
 MyLog2(int n)
 {
@@ -390,13 +386,34 @@ MyLog2(int n)
 	}
 	return 8;
 }
-#endif
 
 // OR モードで Sixel コア部分を stream に出力する。
 void
 SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 {
-	printf("%s not implemented\n", __func__);
+	uint8 *p0 = Indexed.data();
+	int w = Width;
+	int h = Height;
+
+	// パレットのビット数
+	int bcnt = MyLog2(ir.GetPaletteCount());
+	diag.Debug("%s bcnt=%d\n", __func__, bcnt);
+
+	uint8 sixelbuf[(w + 5) * bcnt];
+
+	uint8 *p = p0;
+	int y;
+	// 一つ手前の SIXEL 行まで変換
+	for (y = 0; y < h - 6; y += 6) {
+		int len = sixel_image_to_sixel_h6_ormode(sixelbuf, p, w, 6, bcnt);
+		stream->Write(sixelbuf, len);
+		stream->Flush();
+		p += w * 6;
+	}
+	// 最終 SIXEL 行を変換
+	int len = sixel_image_to_sixel_h6_ormode(sixelbuf, p, w, h - y, bcnt);
+	stream->Write(sixelbuf, len);
+	stream->Flush();
 }
 
 // Sixel コア部分を stream に出力する。
