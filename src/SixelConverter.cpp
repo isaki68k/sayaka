@@ -81,11 +81,7 @@ SixelConverter::LoadFromStream(InputStream *stream)
 	diag.Debug("ResizeMode=%d", ResizeMode);
 
 	if (LoaderMode == SixelLoaderMode::Lib) {
-		FileInputStream *fstream = dynamic_cast<FileInputStream *>(stream);
-		if (fstream == NULL) {
-			return false;
-		}
-		if (LoadJpeg(fstream->fp) == true) {
+		if (LoadJpeg(stream) == true) {
 			LoadAfter();
 			return true;
 		} else {
@@ -120,18 +116,18 @@ SixelConverter::LoadFromStream(InputStream *stream)
 }
 
 bool
-SixelConverter::LoadJpeg(FILE *fp)
+SixelConverter::LoadJpeg(InputStream *stream)
 {
 	uint8 magic[2];
 
 	// マジックを読んで..
-	auto n = fread(magic, 1, sizeof(magic), fp);
+	auto n = stream->Read(magic, sizeof(magic));
 	if (n < sizeof(magic)) {
-		diag.Debug("fread(magic) failed: %s", strerror(ferror(fp)));
+		diag.Debug("Read(magic) failed: %s", strerror(errno));
 		return false;
 	}
 	// fp を戻す
-	fseek(fp, 0, SEEK_SET);
+	stream->Rewind();
 
 	// マジックを確認
 	if (magic[0] != 0xff || magic[1] != 0xd8) {
@@ -141,7 +137,7 @@ SixelConverter::LoadJpeg(FILE *fp)
 
 	img = ImageReductor::AllocImage();
 	img->ReadCallback = img_readcallback;
-	img->UserObject = fp;
+	img->UserObject = stream;
 
 	auto r = ImageReductor::LoadJpeg(img,
 		ResizeWidth, ResizeHeight, ResizeAxis);
@@ -178,8 +174,8 @@ SixelConverter::LoadAfter()
 static int
 img_readcallback(ImageReductor::Image *img)
 {
-	FILE *fp = (FILE *)(img->UserObject);
-	return fread(img->ReadBuffer, 1, sizeof(img->ReadBuffer), fp);
+	auto *stream = (InputStream *)img->UserObject;
+	return stream->Read(img->ReadBuffer, sizeof(img->ReadBuffer));
 }
 
 static void

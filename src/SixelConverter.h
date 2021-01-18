@@ -93,8 +93,6 @@ class SixelConverter
 #endif
 	bool LoadFromStream(InputStream *stream);
 
-	bool LoadJpeg(FILE *fp);
-
 	// インデックスカラーに変換する
 	void ConvertToIndexed();
 
