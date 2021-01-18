@@ -975,45 +975,45 @@ ImageReductor::calcResize(int *req_w, int *req_h, int req_ax,
 	int org_w, int org_h)
 {
 	int scaledown =
-		(req_ax == RAX_SCALEDOWNBOTH)
-	 || (req_ax == RAX_SCALEDOWNWIDTH)
-	 || (req_ax == RAX_SCALEDOWNHEIGHT)
-	 || (req_ax == RAX_SCALEDOWNLONG)
-	 || (req_ax == RAX_SCALEDOWNSHORT);
+		(req_ax == ResizeAxisMode::ScaleDownBoth)
+	 || (req_ax == ResizeAxisMode::ScaleDownWidth)
+	 || (req_ax == ResizeAxisMode::ScaleDownHeight)
+	 || (req_ax == ResizeAxisMode::ScaleDownLong)
+	 || (req_ax == ResizeAxisMode::ScaleDownShort);
 
 	// まず丸めていく
 	switch (req_ax) {
-	 case RAX_BOTH:
-	 case RAX_SCALEDOWNBOTH:
+	 case ResizeAxisMode::Both:
+	 case ResizeAxisMode::ScaleDownBoth:
 		if ((*req_w) <= 0) {
-			req_ax = RAX_HEIGHT;
+			req_ax = ResizeAxisMode::Height;
 		} else if ((*req_h) <= 0) {
-			req_ax = RAX_WIDTH;
+			req_ax = ResizeAxisMode::Width;
 		} else {
-			req_ax = RAX_BOTH;
+			req_ax = ResizeAxisMode::Both;
 		}
 		break;
-	 case RAX_LONG:
-	 case RAX_SCALEDOWNLONG:
+	 case ResizeAxisMode::Long:
+	 case ResizeAxisMode::ScaleDownLong:
 		if (org_w >= org_h) {
-			req_ax = RAX_WIDTH;
+			req_ax = ResizeAxisMode::Width;
 		} else {
-			req_ax = RAX_HEIGHT;
+			req_ax = ResizeAxisMode::Height;
 		}
 		break;
-	 case RAX_SHORT:
-	 case RAX_SCALEDOWNSHORT:
+	 case ResizeAxisMode::Short:
+	 case ResizeAxisMode::ScaleDownShort:
 		if (org_w <= org_h) {
-			req_ax = RAX_WIDTH;
+			req_ax = ResizeAxisMode::Width;
 		} else {
-			req_ax = RAX_HEIGHT;
+			req_ax = ResizeAxisMode::Height;
 		}
 		break;
-	 case RAX_SCALEDOWNWIDTH:
-		req_ax = RAX_WIDTH;
+	 case ResizeAxisMode::ScaleDownWidth:
+		req_ax = ResizeAxisMode::Width;
 		break;
-	 case RAX_SCALEDOWNHEIGHT:
-		req_ax = RAX_HEIGHT;
+	 case ResizeAxisMode::ScaleDownHeight:
+		req_ax = ResizeAxisMode::Height;
 		break;
 	}
 
@@ -1031,10 +1031,10 @@ ImageReductor::calcResize(int *req_w, int *req_h, int req_ax,
 	}
 
 	switch (req_ax) {
-	 case RAX_WIDTH:
+	 case ResizeAxisMode::Width:
 		(*req_h) = org_h * (*req_w) / org_w;
 		break;
-	 case RAX_HEIGHT:
+	 case ResizeAxisMode::Height:
 		(*req_w) = org_w * (*req_h) / org_h;
 		break;
 	}
@@ -1351,17 +1351,6 @@ test_enum()
 	}
 
 	std::vector<std::pair<const std::string, ResizeAxisMode>> table_RAX = {
-		{ "Both",				ResizeAxisMode::RAX_BOTH },
-		{ "Width",				ResizeAxisMode::RAX_WIDTH },
-		{ "Height",				ResizeAxisMode::RAX_HEIGHT },
-		{ "Long",				ResizeAxisMode::RAX_LONG },
-		{ "Short",				ResizeAxisMode::RAX_SHORT },
-		{ "ScaleDownBoth",		ResizeAxisMode::RAX_SCALEDOWNBOTH },
-		{ "ScaleDownWidth",		ResizeAxisMode::RAX_SCALEDOWNWIDTH },
-		{ "ScaleDownHeight",	ResizeAxisMode::RAX_SCALEDOWNHEIGHT },
-		{ "ScaleDownLong",		ResizeAxisMode::RAX_SCALEDOWNLONG },
-		{ "ScaleDownShort",		ResizeAxisMode::RAX_SCALEDOWNSHORT },
-
 		{ "Both",				ResizeAxisMode::Both },
 		{ "Width",				ResizeAxisMode::Width },
 		{ "Height",				ResizeAxisMode::Height },

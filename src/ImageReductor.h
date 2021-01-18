@@ -90,15 +90,15 @@ enum ResizeAxisMode {
 	// ResizeWidth == 0 のときは Height と同じ動作をする。
 	// ResizeHeight == 0 のときは Width と同じ動作をする。
 	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
-	RAX_BOTH,
+	Both,
 
 	// 幅が ResizeWidth になるように縦横比を保持してリサイズする。
 	// ResizeWidth == 0 のときは原寸大。
-	RAX_WIDTH,
+	Width,
 
 	// 高さが ResizeHeight になるように縦横比を保持してリサイズする。
 	// ResizeHeight == 0 のときは原寸大。
-	RAX_HEIGHT,
+	Height,
 
 	// 長辺優先リサイズ
 	// 原寸 Width >= Height のときは Width と同じ動作をする。
@@ -106,12 +106,12 @@ enum ResizeAxisMode {
 	// 例:
 	// 長辺を特定のサイズにしたい場合は、ResizeWidth と ResizeHeight に
 	// 同じ値を設定する。
-	RAX_LONG,
+	Long,
 
 	// 短辺優先リサイズ
 	// 原寸 Width <= Height のときは Width と同じ動作をする。
 	// 原寸 Width > Height のときは Height と同じ動作をする。
-	RAX_SHORT,
+	Short,
 
 	// 縮小のみの Both
 	// 幅が ResizeWidth より大きいときは ResizeWidth になり、
@@ -120,19 +120,19 @@ enum ResizeAxisMode {
 	// ResizeWidth == 0 のときは ScaleDownHeight と同じ動作をする。
 	// ResizeHeight == 0 のときは ScaleDownWidth と同じ動作をする。
 	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
-	RAX_SCALEDOWNBOTH,
+	ScaleDownBoth,
 
 	// 縮小のみの Width
 	// 幅が ResizeWidth より大きいときは ResizeWidth になるように
 	// 縦横比を保持してリサイズする。
 	// ResizeWidth == 0 のときは原寸大。
-	RAX_SCALEDOWNWIDTH,
+	ScaleDownWidth,
 
 	// 縮小のみの Height
 	// 幅が ResizeHeight より大きいときは ResizeHeight になるように
 	// 縦横比を保持してリサイズする。
 	// ResizeHeight == 0 のときは原寸大。
-	RAX_SCALEDOWNHEIGHT,
+	ScaleDownHeight,
 
 	// 縮小のみの長辺優先リサイズ
 	// 原寸 Width >= Height のときは ScaleDownWidth と同じ動作をする。
@@ -140,23 +140,12 @@ enum ResizeAxisMode {
 	// 例:
 	// 長辺を特定のサイズ以下にしたい場合は、ResizeWidth と ResizeHeight に
 	// 同じ値を設定する。
-	RAX_SCALEDOWNLONG,
+	ScaleDownLong,
 
 	// 縮小のみの短辺優先リサイズ
 	// 原寸 Width <= Height のときは ScaleDownWidth と同じ動作をする。
 	// 原寸 Width > Height のときは ScaleDownHeight と同じ動作をする。
-	RAX_SCALEDOWNSHORT,
-
-	Both			= RAX_BOTH,
-	Width			= RAX_WIDTH,
-	Height			= RAX_HEIGHT,
-	Long			= RAX_LONG,
-	Short			= RAX_SHORT,
-	ScaleDownBoth	= RAX_SCALEDOWNBOTH,
-	ScaleDownWidth	= RAX_SCALEDOWNWIDTH,
-	ScaleDownHeight	= RAX_SCALEDOWNHEIGHT,
-	ScaleDownLong	= RAX_SCALEDOWNLONG,
-	ScaleDownShort	= RAX_SCALEDOWNSHORT,
+	ScaleDownShort,
 };
 
 //-------- 色の型
