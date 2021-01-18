@@ -1203,10 +1203,15 @@ static void
 SetUrl(RichString& text, int start, int end, const std::string& url)
 {
 #if defined(DEBUG_FORMAT)
-	printf("SetUrl [%d,%d)\n", start, end);
+	printf("SetUrl [%d,%d) |%s|\n", start, end, url.c_str());
 #endif
 
 	int i = start;
+
+	// すでにあれば何もしない (もうちょっとチェックしたほうがいいかも)
+	if (!text[i].alturl.empty()) {
+		return;
+	}
 
 	// 開始位置に URL を覚えておく
 	text[i].alturl = url;
