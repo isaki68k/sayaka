@@ -51,3 +51,47 @@ FileInputStream::Close()
 		fp = NULL;
 	}
 }
+
+
+//
+// FILE* 出力ストリーム
+//
+
+// コンストラクタ
+FileOutputStream::FileOutputStream(FILE *fp_, bool own_)
+{
+	fp = fp_;
+	own = own_;
+}
+
+// デストラクタ
+FileOutputStream::~FileOutputStream()
+{
+	Close();
+}
+
+// buf を書き出す
+ssize_t
+FileOutputStream::Write(const char *buf, size_t len)
+{
+	return fwrite(buf, 1, len, fp);
+}
+
+// フラッシュする
+void
+FileOutputStream::Flush()
+{
+	fflush(fp);
+}
+
+void
+FileOutputStream::Close()
+{
+	// この fp を所有するモードならクローズ
+	if (own) {
+		if (fp) {
+			fclose(fp);
+		}
+		fp = NULL;
+	}
+}

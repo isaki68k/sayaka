@@ -35,7 +35,6 @@ class InputStream
 	ssize_t ReadLine(std::string *retval);
 };
 
-#if 0 // notused
 //
 // 出力ストリームの基底クラス
 //
@@ -43,7 +42,15 @@ class OutputStream
 {
  public:
 	virtual ~OutputStream();
+
 	virtual ssize_t Write(const char *buf, size_t len) = 0;
+
+	virtual void Flush() = 0;
+
 	virtual void Close();
+
+	// std::string を書き出す
+	ssize_t Write(const std::string& str) {
+		return Write(str.c_str(), str.size());
+	}
 };
-#endif

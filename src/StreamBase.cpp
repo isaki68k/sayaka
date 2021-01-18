@@ -56,7 +56,6 @@ InputStream::ReadLine(std::string *retval)
 	return retlen;
 }
 
-#if 0 // notused
 //
 // 出力ストリームの基本クラス
 //
@@ -71,4 +70,3 @@ void
 OutputStream::Close()
 {
 }
-#endif
