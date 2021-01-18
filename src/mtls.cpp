@@ -322,21 +322,31 @@ mTLSHandle::Read(void *buf, size_t len)
 	TRACE("called\n");
 
 	if (usessl) {
+	 ssl_again:
 		rv = mbedtls_ssl_read(&ssl, (unsigned char *)buf, len);
-		if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
-			// EOF
-			TRACE("EOF\n");
-			return 0;
-		}
 		if (rv < 0) {
+			if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+				// EOF
+				TRACE("EOF\n");
+				return 0;
+			}
+			if (rv == MBEDTLS_ERR_SSL_WANT_READ) {
+				// EINTR ?
+				goto ssl_again;
+			}
 			ERROR("mbedtls_ssl_read failed: %s\n", errmsg(rv));
 			return rv;
 		}
 	} else {
+	 net_again:
 		// net_recv_timeout() は 0 が無期限のほう (SetTimeout() 参照)
 		rv = mbedtls_net_recv_timeout(&net, (unsigned char *)buf, len,
 			ssl_timeout);
 		if (rv < 0) {
+			// XXX ?
+			if (errno == EINTR) {
+				goto net_again;
+			}
 			ERROR("mbedtls_net_recv_timeout failed: %s\n", errmsg(rv));
 			return rv;
 		}
