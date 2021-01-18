@@ -1054,6 +1054,8 @@ ImageReductor::LoadJpeg(ImageReductor::Image *img,
 
 	struct jpeg_decompress_struct jinfo;
 	struct jpeg_error_mgr jerr;
+	memset(&jinfo, 0, sizeof(jinfo));
+	memset(&jerr, 0, sizeof(jerr));
 	jinfo.err = jpeg_std_error(&jerr);
 	jerr.output_message = debug_handler;
 
