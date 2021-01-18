@@ -11,10 +11,12 @@ static void img_freecallback(guchar *pixels, gpointer data);
 // コンストラクタ
 SixelConverter::SixelConverter()
 {
+	diag.SetClassname("SixelConverter");
 }
 
 // コンストラクタ
 SixelConverter::SixelConverter(int debuglv)
+	: SixelConverter()
 {
 	diag.SetLevel(debuglv);
 }

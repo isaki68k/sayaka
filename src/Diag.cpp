@@ -33,6 +33,7 @@ Diag::SetLevel(int lv)
 }
 
 #define VPRINTF(fmt) do { \
+	fputs(classname.c_str(), stderr); \
 	va_list ap; \
 	va_start(ap, (fmt)); \
 	vfprintf(stderr, (fmt), ap); \
