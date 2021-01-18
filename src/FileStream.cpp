@@ -19,7 +19,7 @@ FileInputStream::~FileInputStream()
 
 // dst に読み出す
 ssize_t
-FileInputStream::Read(void *dst, size_t dstsize)
+FileInputStream::NativeRead(void *dst, size_t dstsize)
 {
 	ssize_t rv = 0;
 
@@ -38,17 +38,6 @@ FileInputStream::Read(void *dst, size_t dstsize)
 	}
 
 	return rv;
-}
-
-// 巻き戻す
-bool
-FileInputStream::Rewind()
-{
-	auto r = fseek(fp, 0, SEEK_SET);
-	if (r < 0) {
-		return false;
-	}
-	return 0;
 }
 
 void

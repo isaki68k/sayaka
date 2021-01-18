@@ -21,7 +21,7 @@ ChunkedInputStream::~ChunkedInputStream()
 }
 
 ssize_t
-ChunkedInputStream::Read(void *dst, size_t dstsize)
+ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 {
 	diag.Debug("Read(%zd)", dstsize);
 

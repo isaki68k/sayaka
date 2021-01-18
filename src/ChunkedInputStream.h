@@ -10,7 +10,7 @@ class ChunkedInputStream : public InputStream
 	ChunkedInputStream(InputStream *src_, Diag& diag_);
 	virtual ~ChunkedInputStream() override;
 
-	ssize_t Read(void *dst, size_t dstsize) override;
+	ssize_t NativeRead(void *dst, size_t dstsize) override;
 
  private:
 	// 入力ストリーム

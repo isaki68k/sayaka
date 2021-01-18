@@ -120,15 +120,12 @@ SixelConverter::LoadJpeg(InputStream *stream)
 {
 	uint8 magic[2];
 
-	// マジックを読んで..
-	auto n = stream->Read(magic, sizeof(magic));
+	// バッファを覗き見して..
+	auto n = stream->Peek(magic, sizeof(magic));
 	if (n < sizeof(magic)) {
 		diag.Debug("Read(magic) failed: %s", strerror(errno));
 		return false;
 	}
-	// fp を戻す
-	stream->Rewind();
-
 	// マジックを確認
 	if (magic[0] != 0xff || magic[1] != 0xd8) {
 		diag.Debug("Bad magic");
@@ -174,7 +171,7 @@ SixelConverter::LoadAfter()
 static int
 img_readcallback(ImageReductor::Image *img)
 {
-	auto *stream = (InputStream *)img->UserObject;
+	InputStream *stream = (InputStream *)img->UserObject;
 	return stream->Read(img->ReadBuffer, sizeof(img->ReadBuffer));
 }
 

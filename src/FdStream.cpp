@@ -20,20 +20,9 @@ FdInputStream::~FdInputStream()
 
 // 読み出し
 ssize_t
-FdInputStream::Read(void *buf, size_t buflen)
+FdInputStream::NativeRead(void *buf, size_t buflen)
 {
 	return read(fd, buf, buflen);
-}
-
-// 巻き戻し
-bool
-FdInputStream::Rewind()
-{
-	auto r = lseek(fd, 0, SEEK_SET);
-	if (r < 0) {
-		return false;
-	}
-	return true;
 }
 
 // クローズ

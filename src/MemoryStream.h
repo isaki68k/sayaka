@@ -12,7 +12,7 @@ class MemoryInputStream : public InputStream
 	virtual ~MemoryInputStream() override;
 
 	// エラーなら -1 を返す仕様だが現状ここではエラーは起きない。
-	ssize_t Read(void *buf, size_t bufsize) override;
+	ssize_t NativeRead(void *buf, size_t bufsize) override;
 
 	// データを末尾に追加
 	void AddData(const std::vector<uint8>& src);

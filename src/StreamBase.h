@@ -2,6 +2,7 @@
 
 #include "sayaka.h"
 #include <string>
+#include <vector>
 
 //
 // 入力ストリームの基底クラス
@@ -15,13 +16,12 @@ class InputStream
 	// dstsize までもしくは内部ストリームが EOF になるまで。
 	// 読み出したバイト数を返す。
 	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
-	virtual ssize_t Read(void *dst, size_t dstsize) = 0;
+	ssize_t Read(void *dst, size_t dstsize);
 
-	// このストリームのポインタを先頭に戻す。
-	// 成功すれば true、失敗すれば errno をセットし false を返す。
-	virtual bool Rewind();
-
-	virtual void Close();
+	// 読み込みポインタを進めず、このストリームから dst に読み出す。
+	// 読み出したバイト数を返す。
+	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
+	ssize_t Peek(void *dst, size_t dstsize);
 
 	// 1行読み出す。
 	// 改行まで読み込み、その改行を取り除いた文字列を *retval に書き戻す。
@@ -37,6 +37,19 @@ class InputStream
 	// o 戻り値が -1 ならエラー
 	// となる。
 	ssize_t ReadLine(std::string *retval);
+
+	virtual void Close();
+
+ protected:
+	// このストリームから dst に読み出す。
+	// dstsize までもしくは内部ストリームが EOF になるまで。
+	// 読み出したバイト数を返す。
+	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
+	virtual ssize_t NativeRead(void *dst, size_t dstsize) = 0;
+
+ private:
+	// ピーク用のバッファ
+	std::vector<uint8> peekbuf {};
 };
 
 //

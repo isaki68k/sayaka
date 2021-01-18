@@ -44,7 +44,7 @@ MemoryInputStream::AddData(const std::vector<uint8>& src)
 
 // dst に読み出す
 ssize_t
-MemoryInputStream::Read(void *dst, size_t dstsize)
+MemoryInputStream::NativeRead(void *dst, size_t dstsize)
 {
 	ssize_t rv = 0;
 
@@ -132,6 +132,53 @@ test_MemoryInputStream()
 		xp_eq('b', buf[1]);
 		xp_eq('a', buf[2]);
 		xp_eq('b', buf[3]);
+	}
+
+	// Peek1
+	{
+		std::vector<uint8> src { 'a', 'b', 'c' };
+		MemoryInputStream ms(src);
+
+		// Peek してみる
+		std::vector<uint8> buf(2);
+		auto actual = ms.Peek(buf.data(), buf.size());
+		xp_eq(2, actual);
+		xp_eq('a', buf[0]);
+		xp_eq('b', buf[1]);
+
+		// Read すると同じものが読める
+		actual = ms.Read(buf.data(), 1);
+		xp_eq(1, actual);
+		xp_eq('a', buf[0]);
+		actual = ms.Read(buf.data(), 1);
+		xp_eq(1, actual);
+		xp_eq('b', buf[0]);
+
+		// 残りを Read
+		actual = ms.Read(buf.data(), buf.size());
+		xp_eq(1, actual);
+		xp_eq('c', buf[0]);
+	}
+
+	// Peek2
+	{
+		std::vector<uint8> src { 'a', 'b', 'c' };
+		MemoryInputStream ms(src);
+
+		// Peek してみる
+		std::vector<uint8> buf(2);
+		auto actual = ms.Peek(buf.data(), buf.size());
+		xp_eq(2, actual);
+		xp_eq('a', buf[0]);
+		xp_eq('b', buf[1]);
+
+		// Peek した以上に Read する
+		buf.resize(3);
+		actual = ms.Read(buf.data(), buf.size());
+		xp_eq(3, actual);
+		xp_eq('a', buf[0]);
+		xp_eq('b', buf[1]);
+		xp_eq('c', buf[2]);
 	}
 }
 #endif // SELFTEST

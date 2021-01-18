@@ -273,7 +273,7 @@ mTLSInputStream::~mTLSInputStream()
 
 // 読み出し
 ssize_t
-mTLSInputStream::Read(void *buf, size_t buflen)
+mTLSInputStream::NativeRead(void *buf, size_t buflen)
 {
 	int r;
 

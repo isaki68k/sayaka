@@ -10,8 +10,7 @@ class FileInputStream : public InputStream
 	FileInputStream(FILE *fp, bool own);
 	virtual ~FileInputStream() override;
 
-	ssize_t Read(void *dst, size_t dstsize) override;
-	bool Rewind() override;
+	ssize_t NativeRead(void *dst, size_t dstsize) override;
 	void Close() override;
 
 	FILE *fp {};
