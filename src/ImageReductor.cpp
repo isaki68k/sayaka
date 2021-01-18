@@ -45,15 +45,12 @@ int ImageReductor::Debug = 0;
 // 分数計算機
 // DDA 計算の基礎となる I + N / D 型の分数ステップ加減算計算機。
 //
-typedef struct StepRational_t
+struct StepRational
 {
-	// 整数項です。
-	int I;
-	// 分子です。
-	int N;
-	// 分母です。
-	int D;
-} StepRational;
+	int I;	// 整数項
+	int N;	// 分子
+	int D;	// 分母
+};
 
 static StepRational
 StepRationalCreate(int i, int n, int d)
@@ -71,7 +68,7 @@ StepRationalCreate(int i, int n, int d)
 }
 
 static void
-StepRationalAdd(StepRational* sr, StepRational* x)
+StepRationalAdd(StepRational *sr, StepRational *x)
 {
 	sr->I += x->I;
 	sr->N += x->N;
