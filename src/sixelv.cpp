@@ -214,6 +214,7 @@ std::map<const std::string, std::pair<RRM, RDM>> reduce_map = {
 [[noreturn]] static void usage();
 static bool optbool(const char *arg);
 static void Convert(const std::string& filename);
+static void ConvertFromStream(InputStream *stream);
 static void signal_handler(int signo);
 
 // map から key を検索しその値を返す。
@@ -519,6 +520,44 @@ static const char *profile_name[] = {
 static void
 Convert(const std::string& filename)
 {
+	// ソース別にストリームを作成
+	if (filename == "-") {
+		diag.Debug("Loading stdin");
+		FileInputStream stream(stdin, false);
+		ConvertFromStream(&stream);
+
+	} else if (filename.find("://") != std::string::npos) {
+		diag.Debug("Downloading %s", filename.c_str());
+		HttpClient file;
+		if (file.Init(diagHttp, filename) == false) {
+			warn("File error: %s", filename.c_str());
+			if (opt_ignore_error) {
+				return;
+			}
+			exit(1);
+		}
+		file.family = opt_address_family;
+		InputStream *stream = file.GET();
+		ConvertFromStream(stream);
+
+	} else {
+		diag.Debug("Loading %s", filename.c_str());
+		FILE *fp = fopen(filename.c_str(), "r");
+		if (fp == NULL) {
+			warn("File load error: %s", filename.c_str());
+			if (opt_ignore_error) {
+				return;
+			}
+			exit(1);
+		}
+		FileInputStream stream(fp, true);
+		ConvertFromStream(&stream);
+	}
+}
+
+static void
+ConvertFromStream(InputStream *istream)
+{
 	// プロファイル時間
 	time_point<system_clock> prof[Profile_Max];
 
@@ -554,47 +593,12 @@ Convert(const std::string& filename)
 		prof[Profile_Create] = system_clock::now();
 	}
 
-	// ファイル読み込み
-
-	if (filename == "-") {
-		diag.Debug("Loading stdin");
-		std::unique_ptr<FileInputStream> stream;
-		stream.reset(new FileInputStream(stdin, false));
-		if (sx.LoadFromStream(stream.get()) == false) {
-			warn("LoadFromStream failed");
-			if (opt_ignore_error) {
-				return;
-			}
-			exit(1);
+	if (sx.LoadFromStream(istream) == false) {
+		warn("Stream error");
+		if (opt_ignore_error) {
+			return;
 		}
-	} else if (filename.find("://") != std::string::npos) {
-		diag.Debug("Downloading %s", filename.c_str());
-		HttpClient file;
-		if (file.Init(diagHttp, filename) == false) {
-			warn("File error: %s", filename.c_str());
-			if (opt_ignore_error) {
-				return;
-			}
-			exit(1);
-		}
-		file.family = opt_address_family;
-		InputStream *stream = file.GET();
-		if (sx.LoadFromStream(stream) == false) {
-			warn("Stream error");
-			if (opt_ignore_error) {
-				return;
-			}
-			exit(1);
-		}
-	} else {
-		diag.Debug("Loading %s", filename.c_str());
-		if (sx.Load(filename) == false) {
-			warn("File load error: %s", filename.c_str());
-			if (opt_ignore_error) {
-				return;
-			}
-			exit(1);
-		}
+		exit(1);
 	}
 
 	if (opt_profile) {

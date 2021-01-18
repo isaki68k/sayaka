@@ -24,6 +24,7 @@ SixelConverter::SixelConverter(int debuglv)
 // 画像の読み込み
 //
 
+#if 0
 bool
 SixelConverter::Load(const std::string& filename)
 {
@@ -71,6 +72,7 @@ SixelConverter::Load(const std::string& filename)
 	return true;
 #endif
 }
+#endif
 
 bool
 SixelConverter::LoadFromStream(InputStream *stream)

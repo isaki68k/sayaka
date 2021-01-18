@@ -88,8 +88,9 @@ class SixelConverter
 	SixelConverter();
 	SixelConverter(int debuglv);
 
+#if 0
 	bool Load(const std::string& filename);
-
+#endif
 	bool LoadFromStream(InputStream *stream);
 
 	bool LoadJpeg(FILE *fp);
