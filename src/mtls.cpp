@@ -314,10 +314,10 @@ mTLSHandle::Shutdown(int how)
 }
 
 // 読み込み
-int
-mTLSHandle::Read(void *buf, int len)
+size_t
+mTLSHandle::Read(void *buf, size_t len)
 {
-	int rv;
+	size_t rv;
 
 	TRACE("called\n");
 
@@ -339,15 +339,15 @@ mTLSHandle::Read(void *buf, int len)
 		return rv;
 	}
 
-	TRACE("%d bytes\n", rv);
+	TRACE("%zd bytes\n", rv);
 	return rv;
 }
 
 // 書き出し
-int
-mTLSHandle::Write(const void *buf, int len)
+size_t
+mTLSHandle::Write(const void *buf, size_t len)
 {
-	int rv;
+	size_t rv;
 
 	TRACE("called\n");
 
@@ -362,7 +362,7 @@ mTLSHandle::Write(const void *buf, int len)
 		return rv;
 	}
 
-	TRACE("%d bytes\n", rv);
+	TRACE("%zd bytes\n", rv);
 	return rv;
 }
 

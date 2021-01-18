@@ -49,8 +49,8 @@ class mTLSHandle
 	int Shutdown(int how);
 
 	// 読み書き
-	int Read(void *buf, int len);
-	int Write(const void *buf, int len);
+	size_t Read(void *buf, size_t len);
+	size_t Write(const void *buf, size_t len);
 
  public:
 	bool initialized {};
