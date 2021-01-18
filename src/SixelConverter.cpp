@@ -24,6 +24,7 @@ SixelConverter::SixelConverter(int debuglv)
 // 画像の読み込み
 //
 
+// stream から画像を pix に読み込む
 bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
@@ -65,6 +66,7 @@ SixelConverter::LoadFromStream(InputStream *stream)
 #endif
 }
 
+// libjpeg を使って stream から JPEG 画像を pix に読み込む
 bool
 SixelConverter::LoadJpeg(InputStream *stream)
 {
@@ -118,6 +120,7 @@ SixelConverter::LoadAfter()
 		gdk_pixbuf_get_rowstride(pix));
 }
 
+// LoadJpeg から呼ばれるコールバック
 static int
 img_readcallback(ImageReductor::Image *img)
 {
@@ -125,6 +128,7 @@ img_readcallback(ImageReductor::Image *img)
 	return stream->Read(img->ReadBuffer, sizeof(img->ReadBuffer));
 }
 
+// LoadJpeg から呼ばれるコールバック
 static void
 img_freecallback(guchar *pixels, gpointer data)
 {
@@ -142,6 +146,7 @@ img_freecallback(guchar *pixels, gpointer data)
 void
 SixelConverter::CalcResizeGdkLoad(int *width, int *height)
 {
+	printf("%s not implemented\n", __func__);
 }
 
 // Loader::Gdk 以外の時のリサイズ計算
