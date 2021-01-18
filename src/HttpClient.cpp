@@ -235,7 +235,7 @@ HttpClient::Connect()
 		// XXX RSA 専用
 		mtls.UseRSA();
 	}
-	diag.Trace("Connect(): %s", Uri.to_string());
+	diag.Trace("Connect(): %s", Uri.to_string().c_str());
 	if (mtls.Connect(Uri.Host, Uri.Port) != 0) {
 		diag.Debug("mTLSHandle.Connect failed");
 		return false;

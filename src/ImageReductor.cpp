@@ -389,9 +389,6 @@ ImageReductor::FindColor_HSV_subr(ColorHSVuint8 hsvpal, ColorHSVuint8 hsv)
 	if (dh >  120) dh -= 240;
 	if (dh < -120) dh += 240;
 
-	ds = ds;
-	dv = dv;
-
 	d = abs(dh)*(hsv.s + 1) / 32 + abs(ds) * 3 + abs(dv) * 5;
 	return d;
 }

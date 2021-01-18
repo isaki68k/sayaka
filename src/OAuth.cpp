@@ -593,7 +593,7 @@ test_ParseQuery()
 		OAuth::ParseQuery(parsed, src);
 		// 照合
 		if (exp.size() == parsed.size()) {
-			for (const auto [key, val] : exp) {
+			for (const auto& [key, val] : exp) {
 				xp_eq(val, parsed[key], src);
 			}
 		} else {

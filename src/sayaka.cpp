@@ -1461,7 +1461,7 @@ get_credentials()
 	if (json.is_null()) {
 		errx(1, "get_credentials API2Json failed");
 	}
-	diag.Debug("json=|%s|", json.dump());
+	diag.Debug("json=|%s|", json.dump().c_str());
 	if (json.contains("errors")) {
 		errx(1, "get_credentials failed%s", errors2string(json).c_str());
 	}
@@ -1492,7 +1492,7 @@ get_paged_list(const std::string& api, const char *funcname)
 		if (json.is_null()) {
 			errx(1, "%s API2Json failed", funcname);
 		}
-		diag.Debug("json=|%s|", json.dump());
+		diag.Debug("json=|%s|", json.dump().c_str());
 		if (json.contains("errors")) {
 			errx(1, "%s failed: %s", funcname, errors2string(json).c_str());
 		}
@@ -1551,7 +1551,7 @@ get_nort_list()
 	if (json.is_null()) {
 		errx(1, "get_nort_list API2Json failed");
 	}
-	diag.Debug("json=|%s|", json.dump());
+	diag.Debug("json=|%s|", json.dump().c_str());
 
 	if (!json.is_array()) {
 		// どうするかね
