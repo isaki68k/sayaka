@@ -97,8 +97,8 @@ class SixelConverter
 	// インデックスカラーに変換する
 	void ConvertToIndexed();
 
-	// Sixel を FILE * に出力する
-	void SixelToFILE(FILE *fp);
+	// Sixel を stream に出力する
+	void SixelToStream(OutputStream *stream);
 
 	// ImageReductor を取得する
 	ImageReductor& GetImageReductor() { return ir; }
@@ -121,6 +121,12 @@ class SixelConverter
 
 	void CalcResizeGdkLoad(int *width, int *height);
 	void CalcResize(int *width, int *height);
+
+	std::string SixelPreamble();
+	void SixelToStreamCore_ORmode(OutputStream *stream);
+	void SixelToStreamCore(OutputStream *stream);
+	std::string SixelPostamble();
+	static std::string SixelRepunit(int n, uint8 ptn);
 
 	// 画像の幅と高さ
 	int Width;

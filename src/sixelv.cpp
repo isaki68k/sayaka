@@ -615,9 +615,12 @@ Convert(const std::string& filename)
 
 	switch (opt_outputformat) {
 	 case OutputFormat::SIXEL:
+	 {
 		signal(SIGINT, signal_handler);
-		sx.SixelToFILE(stdout);
+		FileOutputStream stream(stdout, false);
+		sx.SixelToStream(&stream);
 		break;
+	 }
 	 case OutputFormat::GVRAM:
 	 {
 		if (opt_output_x < 0 || opt_output_y < 0) {

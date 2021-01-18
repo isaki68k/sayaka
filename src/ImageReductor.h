@@ -299,9 +299,9 @@ class ImageReductor
 	void ColorFactor(float factor);
 
  private:
-	int PaletteCount;
+	int PaletteCount {};
 
-	const ColorRGBuint8 *Palette;
+	const ColorRGBuint8 *Palette {};
 
 	int AddNoiseLevel {};
 
@@ -309,7 +309,7 @@ class ImageReductor
 	ColorRGBuint8 Palette_Custom[256] {};
 
 	// 色変換関数の関数ポインタ
-	FindColorFunc_t ColorFinder;
+	FindColorFunc_t ColorFinder {};
 
 	// 固定2色パレット
 	static const ColorRGBuint8 Palette_Mono[];

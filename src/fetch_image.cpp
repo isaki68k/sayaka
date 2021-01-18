@@ -1,3 +1,4 @@
+#include "FileStream.h"
 #include "HttpClient.h"
 #include "SixelConverter.h"
 #include "StringUtil.h"
@@ -84,7 +85,8 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	sx.ConvertToIndexed();
 
 	FILE *fp = fopen(cache_filename.c_str(), "w+");
-	sx.SixelToFILE(fp);
+	FileOutputStream outstream(fp, false);
+	sx.SixelToStream(&outstream);
 	fseek(fp, 0, SEEK_SET);
 	return fp;
 }

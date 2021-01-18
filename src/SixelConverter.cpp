@@ -1,6 +1,8 @@
 #include "FileStream.h"
 #include "SixelConverter.h"
+#include "StringUtil.h"
 #include "sayaka.h"
+#include <cassert>
 
 extern int sixel_image_to_sixel_h6_ormode(uint8* dst, uint8* src,
 	int w, int h, int plane_count);
@@ -332,8 +334,6 @@ SixelConverter::ConvertToIndexed()
 
 	Indexed.resize(Width * Height);
 
-	ImageReductor ir;
-
 	diag.Debug("SetColorMode(%s, %s, %d)",
 		ImageReductor::RCM2str(ColorMode),
 		ImageReductor::RFM2str(FinderMode),
@@ -348,12 +348,223 @@ SixelConverter::ConvertToIndexed()
 	diag.Debug("Converted");
 }
 
+//
+// ----- Sixel 出力
+//
+
+#define ESC "\x1b"
+#define DCS ESC "P"
+
+// Sixel の開始コードとパレットを文字列で返す。
+std::string
+SixelConverter::SixelPreamble()
+{
+	std::string linebuf;
+
+	// Sixel 開始コード
+	linebuf += DCS;
+	linebuf += string_format("7;%d;q\"1;1;%d;%d", OutputMode, Width, Height);
+
+	// パレットを出力
+	if (OutputPalette) {
+		for (int i = 0; i < ir.GetPaletteCount(); i++) {
+			const auto& col = ir.GetPalette(i);
+			linebuf += string_format("#%d;%d;%d;%d;%d", i, 2,
+				col.r * 100 / 255,
+				col.g * 100 / 255,
+				col.b * 100 / 255);
+		}
+	}
+
+	return linebuf;
+}
+
+#if 0
+static int
+MyLog2(int n)
+{
+	for (int i = 0; i < 8; i++) {
+		if (n <= (1 << i)) {
+			return i;
+		}
+	}
+	return 8;
+}
+#endif
+
+// OR モードで Sixel コア部分を stream に出力する。
 void
-SixelConverter::SixelToFILE(FILE *stream)
+SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 {
 	printf("%s not implemented\n", __func__);
 }
 
+// Sixel コア部分を stream に出力する。
+void
+SixelConverter::SixelToStreamCore(OutputStream *stream)
+{
+	// 030 ターゲット
+
+	uint8 *p0 = Indexed.data();
+	int w = Width;
+	int h = Height;
+	int src = 0;
+
+	int PaletteCount = ir.GetPaletteCount();
+	diag.Debug("%s PaletteCount=%d", __func__, PaletteCount);
+
+	// カラー番号ごとの、X 座標の min, max を計算する。
+	// short でいいよね…
+	int16 min_x[PaletteCount];
+	int16 max_x[PaletteCount];
+
+	for (int16 y = 0; y < h; y += 6) {
+		std::string linebuf;
+
+		src = y * w;
+
+		memset(min_x, -1, sizeof(min_x));
+		memset(max_x,  0, sizeof(max_x));
+
+		// h が 6 の倍数でない時には溢れてしまうので、上界を計算する
+		int16 max_dy = 6;
+		if (y + max_dy > h) {
+			max_dy = (int16)(h - y);
+		}
+
+		// 各カラーの X 座標範囲を計算する
+		for (int16 dy = 0; dy < max_dy; dy++) {
+			for (int16 x = 0; x < w; x++) {
+				uint8 I = p0[src++];
+				if (min_x[I] < 0 || min_x[I] > x)
+					min_x[I] = x;
+				if (max_x[I] < x)
+					max_x[I] = x;
+			}
+		}
+
+		for (;;) {
+			// 出力するべきカラーがなくなるまでのループ
+			diag.Trace("for1");
+			int16 mx = -1;
+
+			for (;;) {
+				// 1行の出力で出力できるカラーのループ
+				diag.Trace("for2");
+
+				uint8 min_color = 0;
+				int16 min = INT16_MAX;
+
+				// min_x から、mx より大きいもののうち最小のカラーを探して、
+				// 塗っていく
+				for (int16 c = 0; c < PaletteCount; c++) {
+					if (mx < min_x[c] && min_x[c] < min) {
+						min_color = (uint8)c;
+						min = min_x[c];
+					}
+				}
+				// なければ抜ける
+				if (min_x[min_color] <= mx) {
+					break;
+				}
+
+				// Sixel に色コードを出力
+				linebuf += string_format("#%d", min_color);
+
+				// 相対 X シーク処理
+				int16 space = min_x[min_color] - (mx + 1);
+				if (space > 0) {
+					linebuf += SixelRepunit(space, 0);
+				}
+
+				// パターンが変わったら、それまでのパターンを出していく
+				// アルゴリズム
+				uint8 prev_t = 0;
+				int16 n = 0;
+				for (int16 x = min_x[min_color]; x <= max_x[min_color]; x++) {
+					uint8 t = 0;
+					for (int16 dy = 0; dy < max_dy; dy++) {
+						uint8 I = p0[(y + dy) * w + x];
+						if (I == min_color) {
+							t |= 1 << dy;
+						}
+					}
+
+					if (prev_t != t) {
+						if (n > 0) {
+							linebuf += SixelRepunit(n, prev_t);
+						}
+						prev_t = t;
+						n = 1;
+					} else {
+						n++;
+					}
+				}
+				// 最後のパターン
+				if (prev_t != 0 && n > 0) {
+					linebuf += SixelRepunit(n, prev_t);
+				}
+
+				// X 位置を更新
+				mx = max_x[min_color];
+				// 済んだ印
+				min_x[min_color] = -1;
+			}
+
+			linebuf += '$';
+
+			// 最後までやったら抜ける
+			if (mx == -1)
+				break;
+		}
+
+		linebuf += '-';
+
+		stream->Write(linebuf);
+		stream->Flush();
+	}
+}
+
+// Sixel の終了コードを文字列で返す
+std::string
+SixelConverter::SixelPostamble()
+{
+	return ESC "\\";
+}
+
+// Sixel を stream に出力する
+void
+SixelConverter::SixelToStream(OutputStream *stream)
+{
+	diag.Debug("SixelToStream");
+	assert(ir.GetPaletteCount() != 0);
+
+	// 開始コードとかの出力
+	stream->Write(SixelPreamble());
+
+	if (OutputMode == SixelOutputMode::Or) {
+		SixelToStreamCore_ORmode(stream);
+	} else {
+		SixelToStreamCore(stream);
+	}
+
+	stream->Write(SixelPostamble());
+	stream->Flush();
+}
+
+// 繰り返しのコードを考慮して、Sixel パターン文字列を返す
+/*static*/ std::string
+SixelConverter::SixelRepunit(int n, uint8 ptn)
+{
+	std::string v;
+
+	if (n >= 4) {
+		v = string_format("!%d%c", n, ptn + 0x3f);
+	} else {
+		v = std::string(n, ptn + 0x3f);
+	}
+	return v;
+}
 
 //
 // enum を文字列にしたやつ orz
