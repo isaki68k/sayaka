@@ -40,6 +40,17 @@ FileInputStream::Read(void *dst, size_t dstsize)
 	return rv;
 }
 
+// 巻き戻す
+bool
+FileInputStream::Rewind()
+{
+	auto r = fseek(fp, 0, SEEK_SET);
+	if (r < 0) {
+		return false;
+	}
+	return 0;
+}
+
 void
 FileInputStream::Close()
 {

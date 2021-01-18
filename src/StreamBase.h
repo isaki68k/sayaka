@@ -17,6 +17,10 @@ class InputStream
 	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
 	virtual ssize_t Read(void *dst, size_t dstsize) = 0;
 
+	// このストリームのポインタを先頭に戻す。
+	// 成功すれば true、失敗すれば errno をセットし false を返す。
+	virtual bool Rewind();
+
 	virtual void Close();
 
 	// 1行読み出す。

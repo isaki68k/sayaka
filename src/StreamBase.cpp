@@ -9,6 +9,14 @@ InputStream::~InputStream()
 {
 }
 
+// 先頭に戻す
+bool
+InputStream::Rewind()
+{
+	errno = EOPNOTSUPP;
+	return false;
+}
+
 // クローズ
 void
 InputStream::Close()

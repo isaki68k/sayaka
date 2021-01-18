@@ -11,6 +11,7 @@ class FileInputStream : public InputStream
 	virtual ~FileInputStream() override;
 
 	ssize_t Read(void *dst, size_t dstsize) override;
+	bool Rewind() override;
 	void Close() override;
 
 	FILE *fp {};

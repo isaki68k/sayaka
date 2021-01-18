@@ -11,6 +11,7 @@ class FdInputStream : public InputStream
 	virtual ~FdInputStream() override;
 
 	ssize_t Read(void *buf, size_t buflen) override;
+	bool Rewind() override;
 	void Close() override;
 
  private:
