@@ -123,7 +123,7 @@ static const struct option longopts[] = {
 	{ "loader",			required_argument,	NULL,	OPT_loader },
 	{ "monochrome",		no_argument,		NULL,	'e' },
 	{ "noerr",			no_argument,		NULL,	OPT_noerr },
-	{ "ormode",			no_argument,		NULL,	OPT_ormode },
+	{ "ormode",			required_argument,	NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	OPT_output_format },
 	{ "output-x",		required_argument,	NULL,	OPT_output_x },
 	{ "output-y",		required_argument,	NULL,	OPT_output_y },
@@ -385,13 +385,13 @@ int main(int ac, char *av[])
 	return 0;
 }
 
-// 引数の "yes", "no" をブール値にして返す
+// 引数をブール値にして返す
 static bool
 optbool(const char *arg_)
 {
 	std::string arg(arg_);
 
-	if (arg == "yes") {
+	if (arg == "yes" || arg == "on" || arg == "true") {
 		return true;
 	}
 	return false;
