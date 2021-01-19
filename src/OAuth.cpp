@@ -3,8 +3,7 @@
 #include "StringUtil.h"
 #include <array>
 #include <random>
-#include <openssl/sha.h>
-#include <openssl/hmac.h>
+#include <mbedtls/md.h>
 
 // コンストラクタ
 OAuth::OAuth()
@@ -110,20 +109,17 @@ OAuth::Base64Encode(const std::vector<uint8>& src)
 /*static*/ std::vector<uint8>
 OAuth::HMAC_SHA1(const std::string& key, const std::string& msg)
 {
-	// HMAC SHA1
-	std::array<unsigned char, EVP_MAX_MD_SIZE> hash;
-	unsigned int hashlen;
+	mbedtls_md_context_t ctx;
+	std::vector<uint8> result(20);	// SHA-1 は 20バイト (決め打ち…)
 
-	HMAC(EVP_sha1(),
-		key.data(),
-		static_cast<int>(key.size()),
-		(const unsigned char *)msg.data(),
-		static_cast<int>(msg.size()),
-		hash.data(),
-		&hashlen
-	);
+	mbedtls_md_init(&ctx);
+	mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), 1);
+	mbedtls_md_hmac_starts(&ctx, (const uint8 *)key.c_str(), key.size());
+	mbedtls_md_hmac_update(&ctx, (const uint8 *)msg.c_str(), msg.size());
+	mbedtls_md_hmac_finish(&ctx, result.data());
+	mbedtls_md_free(&ctx);
 
-	return std::vector<uint8>(hash.begin(), hash.begin() + hashlen);
+	return result;
 }
 
 // HMAC-SHA1 してバイナリを Base64 した文字列を返す。

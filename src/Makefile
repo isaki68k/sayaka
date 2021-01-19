@@ -49,7 +49,6 @@ INCLUDES+=	-I/usr/pkg/include
 INCLUDES+=	`pkg-config --cflags ${PKGS}`
 
 LIBS +=	\
-	-lssl \
 	-L/usr/pkg/lib -Wl,-R,/usr/pkg/lib \
 	-lmbedtls \
 	`pkg-config --libs ${PKGS}` \
