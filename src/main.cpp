@@ -169,7 +169,7 @@ main(int ac, char *av[])
 	opt_output_palette = true;
 	opt_timeout_image = 3000;
 	opt_eaw_a = 2;
-	opt_eaw_n = 2;
+	opt_eaw_n = 1;
 
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
