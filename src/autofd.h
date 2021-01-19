@@ -1,6 +1,45 @@
 #pragma once
 
 #include <cstdio>
+#include <unistd.h>
+
+// 自動変数みたいな生存期間を持つディスクリプタ
+class autofd
+{
+ public:
+	autofd() {
+		fd = -1;
+	}
+	autofd(int fd_) {
+		fd = fd_;
+	}
+
+	~autofd() {
+		if (fd >= 0)
+			close(fd);
+	}
+
+	autofd& operator=(int fd_) {
+		fd = fd_;
+		return *this;
+	}
+	operator int() const {
+		return fd;
+	}
+
+	// 明示的にクローズする
+	int Close() {
+		int r = 0;
+		if (fd >= 0) {
+			r = close(fd);
+			fd = -1;
+		}
+		return r;
+	}
+
+ private:
+	int fd;
+};
 
 // 自動変数みたいな生存期間を持つ FILE ポインタ
 class AutoFILE

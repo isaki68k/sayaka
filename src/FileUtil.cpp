@@ -1,4 +1,5 @@
 #include "FileUtil.h"
+#include "autofd.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -10,7 +11,7 @@ std::string
 FileReadAllText(const std::string& filename)
 {
 	struct stat st;
-	int fd;
+	autofd fd;
 	void *m;
 
 	fd = open(filename.c_str(), O_RDONLY);
@@ -19,13 +20,11 @@ FileReadAllText(const std::string& filename)
 	}
 
 	if (fstat(fd, &st) < 0) {
-		close(fd);
 		return "";
 	}
 
 	m = mmap(NULL, st.st_size, PROT_READ, MAP_FILE, fd, 0);
 	if (m == MAP_FAILED) {
-		close(fd);
 		return "";
 	}
 
@@ -33,8 +32,6 @@ FileReadAllText(const std::string& filename)
 	std::string rv((const char *)m, st.st_size);
 
 	munmap(m, st.st_size);
-	close(fd);
-
 	return rv;
 }
 
@@ -42,7 +39,7 @@ FileReadAllText(const std::string& filename)
 bool
 FileWriteAllText(const std::string& filename, const std::string& text)
 {
-	int fd;
+	autofd fd;
 
 	fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (fd < 0) {
@@ -50,7 +47,6 @@ FileWriteAllText(const std::string& filename, const std::string& text)
 	}
 
 	auto r = write(fd, text.c_str(), text.size());
-	close(fd);
 	if (r < text.size()) {
 		return false;
 	}
