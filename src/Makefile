@@ -38,10 +38,15 @@ SRCS_sixelv=	\
 PKGS=		glib-2.0 gdk-pixbuf-2.0 gio-unix-2.0
 
 CXX=		c++ -std=c++17
-CPPFLAGS+=	-g -O0
+OPT=		-g
+#OPT+=		-fsanitize=undefined
+
+CPPFLAGS+=	${OPT}
+CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
 CPPFLAGS+=	-I/usr/pkg/include
 CPPFLAGS+=	`pkg-config --cflags ${PKGS}`
+LDFLAGS+=	${OPT}
 
 LIBS +=	\
 	-lssl \
