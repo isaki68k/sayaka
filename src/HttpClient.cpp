@@ -273,10 +273,5 @@ mTLSInputStream::~mTLSInputStream()
 ssize_t
 mTLSInputStream::NativeRead(void *buf, size_t buflen)
 {
-	int r;
-
-	r = mtls->Read(buf, buflen);
-	diag.Trace("read=%d", r);
-
-	return (ssize_t)r;
+	return (ssize_t)mtls->Read(buf, buflen);
 }
