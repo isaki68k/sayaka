@@ -91,10 +91,10 @@ enum {
 	OPT_gray,
 	OPT_height,
 	OPT_help,
+	OPT_ignore_error,
 	OPT_ipv4,
 	OPT_ipv6,
 	OPT_loader,
-	OPT_noerr,
 	OPT_x68k,
 	OPT_ormode,
 	OPT_output_format,
@@ -121,11 +121,11 @@ static const struct option longopts[] = {
 	{ "finder",			required_argument,	NULL,	OPT_finder },
 	{ "gray",			required_argument,	NULL,	OPT_gray },
 	{ "height",			required_argument,	NULL,	'h' },
+	{ "ignore-error",	no_argument,		NULL,	OPT_ignore_error },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "loader",			required_argument,	NULL,	OPT_loader },
 	{ "monochrome",		no_argument,		NULL,	'e' },
-	{ "noerr",			no_argument,		NULL,	OPT_noerr },
 	{ "ormode",			required_argument,	NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	OPT_output_format },
 	{ "output-x",		required_argument,	NULL,	OPT_output_x },
@@ -318,8 +318,8 @@ int main(int ac, char *av[])
 			opt_outputpalette = false;
 			break;
 
-		 case OPT_noerr:
-			opt_ignore_error = optbool(optarg);
+		 case OPT_ignore_error:
+			opt_ignore_error = true;
 			break;
 
 		 case OPT_ipv4:
