@@ -10,7 +10,8 @@ class Diag
 	// レベル。目安と後方互換製を兼ねて
 	// 0: なし
 	// 1: デバッグ
-	// 2: トレース(詳細)
+	// 2: トレース
+	// 3: うるさい
 	// としておく。
 	int debuglevel {};
 
@@ -39,4 +40,6 @@ class Diag
 	void Debug(const char *fmt, ...);
 	// トレースログ表示 (改行はこちらで付加する)
 	void Trace(const char *fmt, ...);
+	// 詳細ログ表示 (改行はこちらで付加する)
+	void Verbose(const char *fmt, ...);
 };
