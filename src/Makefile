@@ -88,12 +88,14 @@ eaw_gen:	eaw_gen.cpp
 
 # XXX
 test_mtls:	mtls.cpp
-	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST ${.MEMBER} -o $@ ${LIBS}
+	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST $> -o $@ ${LIBS}
+test_term:	term.cpp
+	${CXX} ${CPPFLAGS} -DTEST $> -o $@
 
 
 .PHONY:	clean
 clean:
-	rm -f sayaka sixelv test test_mtls eaw_gen *.o *.core
+	rm -f sayaka sixelv test test_mtls test_term eaw_gen *.o *.core
 
 
 .PHONY:	depend

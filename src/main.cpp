@@ -159,7 +159,6 @@ main(int ac, char *av[])
 
 	address_family = AF_UNSPEC;
 	color_mode = 256;
-	bg_white = true;
 	opt_show_ng = false;
 	opt_filter = "";
 	last_id = "";
@@ -172,6 +171,14 @@ main(int ac, char *av[])
 	opt_timeout_image = 3000;
 	opt_eaw_a = 2;
 	opt_eaw_n = 1;
+
+	// デフォルト値を決めるために背景色を調べる。
+	// 判定できなければ背景色白をデフォルトにしておく。
+	bg_white = true;
+	c = terminal_bgcolor();
+	if (c >= 0) {
+		bg_white = (bool)c;
+	}
 
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
