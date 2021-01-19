@@ -1,4 +1,5 @@
 #include "StringUtil.h"
+#include "eaw_code.h"
 #include "main.h"
 #include "term.h"
 #include <err.h>
@@ -58,6 +59,8 @@ enum {
 	OPT_debug_image,
 	OPT_debug_show,
 	OPT_debug_sixel,
+	OPT_eaw_a,
+	OPT_eaw_n,
 	OPT_euc_jp,
 	OPT_filter,
 	OPT_followlist,
@@ -101,6 +104,8 @@ static const struct option longopts[] = {
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-show",		required_argument,	NULL,	OPT_debug_show },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
+	{ "eaw-a",			required_argument,	NULL,	OPT_eaw_a },
+	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "filter",			required_argument,	NULL,	OPT_filter },
 	{ "followlist",		no_argument,		NULL,	OPT_followlist },
@@ -163,6 +168,8 @@ main(int ac, char *av[])
 	opt_ormode = false;
 	opt_output_palette = true;
 	opt_timeout_image = 3000;
+	opt_eaw_a = 2;
+	opt_eaw_n = 2;
 
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
@@ -205,6 +212,18 @@ main(int ac, char *av[])
 		 case OPT_debug_sixel:
 			opt_debug_sixel = atoi(optarg);
 			max_image_count = 1;
+			break;
+		 case OPT_eaw_a:
+			opt_eaw_a = atoi(optarg);
+			if (opt_eaw_a < 1 || opt_eaw_a > 2) {
+				usage();
+			}
+			break;
+		 case OPT_eaw_n:
+			opt_eaw_n = atoi(optarg);
+			if (opt_eaw_n < 1 || opt_eaw_n > 2) {
+				usage();
+			}
 			break;
 		 case OPT_euc_jp:
 			iconv_tocode = "euc-jp";

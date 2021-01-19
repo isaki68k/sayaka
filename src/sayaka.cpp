@@ -28,6 +28,7 @@
 
 #include "acl.h"
 #include "autofd.h"
+#include "eaw_code.h"
 #include "sayaka.h"
 #include "FileStream.h"
 #include "RichString.h"
@@ -41,7 +42,6 @@
 #include <cstdio>
 #include <cstring>
 #include <err.h>
-#include <unicode/uchar.h>
 
 //#define DEBUG_FORMAT 1
 
@@ -741,21 +741,13 @@ print_(const UString& src)
 					sb += indent;
 					x = left;
 				} else {
-					// Neutral と Ambiguous は安全のため2桁側に振っておく。
-					// 2桁で数えておけば端末が1桁しか進まなくても、改行が
-					// 想定より早まるだけで、逆よりはマシ。
-					auto eaw = (UEastAsianWidth)u_getIntPropertyValue(uni,
-						UCHAR_EAST_ASIAN_WIDTH);
-					switch (eaw) {
-					 case U_EA_NARROW:
-					 case U_EA_HALFWIDTH:
+					// 文字幅を取得
+					auto width = get_eaw_width(uni);
+					if (width == 1) {
 						sb += uni;
 						x++;
-						break;
-					 case U_EA_WIDE:
-					 case U_EA_FULLWIDTH:
-					 case U_EA_NEUTRAL:
-					 case U_EA_AMBIGUOUS:
+					} else {
+						assert(width == 2);
 						if (x > screen_cols - 2) {
 							sb += '\n';
 							sb += indent;
@@ -763,9 +755,6 @@ print_(const UString& src)
 						}
 						sb += uni;
 						x += 2;
-						break;
-					 default:
-						break;
 					}
 				}
 				if (x > screen_cols - 1) {
