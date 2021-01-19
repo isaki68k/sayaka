@@ -91,6 +91,7 @@ enum {
 	OPT_gray,
 	OPT_height,
 	OPT_help,
+	OPT_help_all,
 	OPT_ignore_error,
 	OPT_ipv4,
 	OPT_ipv6,
@@ -136,6 +137,7 @@ static const struct option longopts[] = {
 	{ "width",			no_argument,		NULL,	'w' },
 	{ "x68k",			no_argument,		NULL,	OPT_x68k },
 	{ "help",			no_argument,		NULL,	OPT_help },
+	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ NULL },
 };
 
@@ -214,7 +216,7 @@ std::map<const std::string, std::pair<RRM, RDM>> reduce_map = {
 #undef RRM
 #undef RDM
 
-[[noreturn]] static void usage();
+[[noreturn]] static void usage(bool all = false);
 static bool optbool(const char *arg);
 static void Convert(const std::string& filename);
 static void ConvertFromStream(InputStream *stream);
@@ -369,8 +371,13 @@ int main(int ac, char *av[])
 			opt_addnoise = atoi(optarg);
 			break;
 
+		 case OPT_help_all:
+			usage(true);
+			break;
+
 		 default:
-			usage();
+		 case OPT_help:
+			usage(false);
 			break;
 		}
 	}
@@ -401,105 +408,87 @@ optbool(const char *arg_)
 	return false;
 }
 
-static void
-usage()
-{
-	warnx(R"**(usage: sixelv [color] [size] [algorithm] [colorfind] file...
+static const char short_help[] = R"**(
+   -p <color>, --color[s]=<color> : Select color mode (default: 256)
+    <color> := 8, 16, 256, 256rgbi, mono, gray, graymean, x68k
+   -8, -16, -256      : Shortcut for -p 8, -p 16, -p 256
+   -e, --monochrome   : Shortcut for -p mono
+   --gray=<graylevel> : Specify grayscale tone from 2 to 256 (default: 256)
+   -w <width>         : Resize width to <width> pixel.
+   -h <height>        : Resize height to <height> pixel.
+   -d <type>, --diffusion=<type>  : Select diffuse algorithm (default: high)
+    <type> := none, fast, high(=fs), auto(=high)
+              fs, atkinson, jajuni, stucki, burkes, 2, 3, rgb
+   --axis={both, w, width, h, height, long, short}
+   --ignore-error                   --debug      <0..2>
+   --loader={gdk, lib}              --debug-http <0..2>
+   --profile                        --debug-sixel
+   --help-all
+)**";
 
- color
-   --gray={graylevel}
-     Select grayscale mode and set grayscale level.
-     graylevel allows 2 .. 256. default = 256
-
-   -p {color}
-   --color[s]={color}
-     Select {color} mode.
+static const char long_help[] = R"**( 
+ color options
+   -p <color>, --color[s]=<color> : Select color mode (default: 256)
        8        : Fixed 8 colors
        16       : Fixed 16 colors
        256      : Fixed 256 colors (MSX SCREEN 8 compatible palette)
-                  This is default.
        256rgbi  : Fixed 256 colors (R2G2B2I2 palette)
        mono     : monochrome (1bit)
        gray     : grayscale with NTSC intensity
        graymean : grayscale with mean of RGB
        x68k     : Fixed x68k 16 color palette
+   -8, -16, -256   : Shortcut for -p 8, -p 16, -p 256
+   -e, --monochrome: Shortcut for -p mono
+   --gray=<graylevel> : Specify grayscale tone from 2 to 256 (default: 256)
 
-   -8, -16, -256
-     Shortcut for -p 8, -p 16, -p 256
-
-   -e
-   --monochrome
-     Shortcut for -p mono
-
- size
-   -w {width}
-   --width={width}
-     Resize width (pixel).
-     If omit -w, width = original image width.
-     If set -w but omit -h, height follows aspect ratio by width.
-   -h {height}
-   --height={height}
-     Resize height (pixel). Must need -w.
+ size options
+   -w <width>, --width=<width>:    Resize width to <width> pixel.
+   -h <height>, --height=<height>: Resize height to <height> pixel.
    --resize={load, scale, imagereductor, libjpeg}
-     Select Resize alogrithm. (for debug)
+                   : Select resize algorighm (for debug).
 
- algorithm
-   -d
-   --diffusion={diffuse type}
-     auto : This is default. (now implements = high)
-     none : Simple algorithm. (no diffuser)
-     fast : Fast algorithm.
-     high : 2D-Diffusion algorithm.
+ algorithm options
+   -d <type>, --diffusion=<type>: Select diffuse algorithm. (default: high)
+       none : Simple (No diffuse)   fs       : Floyd Steinberg
+       fast : Fast algorithm        atkinson : Atkinson
+       high : one of 2D Diffusion   jajuni   : Jarvis, Judice, Ninke
+              algorithm listed      stucki   : Stucki
+              right column.         burkes   : Burkes
+              (default: fs)         2        : 2pixels (right, down)
+       auto : alias to high         3        : 3pixels (right, down, rightdown)
+                                    rgb      : for debug
 
-     Following options, select detailed algorithm with 2D-Diffusion.
-     fs       : Floyd Steinberg (default)
-     atkinson : Atkinson
-     jajuni   : Jarvis, Judice, Ninke
-     stucki   : Stucki
-     burkes   : Burkes
-     2        : 2 pixel (right, down)
-     3        : 3 pixel (right, down, rightdown)
-     rgb      : for debug
+ misc options
+   --x68k             : alias to "-p x68k --ormode=on --palette=off"
+   --ormode={on|off}  : Output OR-mode SIXEL. (default: off)
+   --palette={on|off} : Output palette definition (default: on)
+   --output-format={sixel, gvram}: Select output format (default: sixel)
+   --output-x=<xoffset>, --output-y=<yoffset>
+                      : Specify X, Y offset for gvram format file.
+   --ipv4, --ipv6
+   --ignore-error
+   --axis={both, w, width, h, height, long, short}
+   --loader={gdk, lib}
+   --color-factor=<factor>
+   --finder={rgb, hsv} (default: rgb)
+   --addnoise=<noiselevel>
+   --debug      <0..2>
+   --debug-http <0..2>
+   --debug-sixel
+   --profile
+   --help, --help-all
+)**";
 
- misc
-   --x68k
-     SHARP X680x0 mode.
-     force X68k 16 fixed color, ormode=on, palette=off
-
-   --ormode={on|off}
-     Output OR-mode Sixel.  Default = off
-
-   --palette={on|off}
-     Output palette definision. Default = on
-
-   --outputformat={sixel|gvram}
-     Output SIXEL or original X68k gvram file format.
-
-   --output-x={y}, --output-y={y}
-     X, Y offset for gvram format file. No effect for SIXEL.
-
-   --ipv4
-     Connect IPv4 only.
-
-   --ipv6
-     Connect IPv6 only.
-
-   --noerr={on|off}
-     if turn on, ignore error at open.
-
-   --axis={ both | w | width | h | height | long | short }
-
-   --loader={ gdk | lib }
-
-   --color-factor={factor}
-
-   --finder={ rgb | hsv | default }
-
-   --addnoise={noiselevel}
-
- debug
-   --debug <0..2>, --profile, --debug-sixel, --debug-http <0..3>
-)**");
+static void
+usage(bool all)
+{
+	fprintf(stderr, "usage: sixelv [<options>] <file>...\n");
+	// 定義文字列は見やすさのため先頭に改行を入れてあるのでこっちで取り除く
+	if (all) {
+		fprintf(stderr, "%s", long_help + 1);
+	} else {
+		fprintf(stderr, "%s", short_help + 1);
+	}
 	exit(1);
 }
 
