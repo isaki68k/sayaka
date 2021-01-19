@@ -222,14 +222,18 @@ static void Convert(const std::string& filename);
 static void ConvertFromStream(InputStream *stream);
 static void signal_handler(int signo);
 
-// map から key を検索しその値を返す。
-// 見付からなければ自分で usage() を呼ぶ。
+// map から key を検索する。
+// 見付かればその値を返し、result に true を格納する。
+// 見付からなければ(何かを返し) result に false を返す。
 template <typename T> T
-select_opt(const std::map<const std::string, T>& map, const char *key)
+select_opt(const std::map<const std::string, T>& map, const char *key,
+	bool *result)
 {
 	if (map.find(key) == map.end()) {
-		usage();
+		*result = false;
+		return T();
 	}
+	*result = true;
 	return map.at(key);
 }
 
@@ -237,6 +241,8 @@ int main(int ac, char *av[])
 {
 	struct utsname ut;
 	int c;
+	int val;
+	bool res;
 
 	diagHttp.SetClassname("HttpClient");
 
@@ -251,11 +257,19 @@ int main(int ac, char *av[])
 	while ((c = getopt_long(ac, av, "d:eh:p:w:", longopts, NULL)) != -1) {
 		switch (c) {
 		 case OPT_debug:
-			diag.SetLevel(atoi(optarg));
+			val = atoi(optarg);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug: debug level must be 0..2");
+			}
+			diag.SetLevel(val);
 			break;
 
 		 case OPT_debug_http:
-			diagHttp.SetLevel(atoi(optarg));
+			val = atoi(optarg);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-http: debug level must be 0..2");
+			}
+			diagHttp.SetLevel(val);
 			break;
 
 		 case OPT_debug_sixel:
@@ -268,11 +282,12 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_gray:
-			opt_colormode = ReductorColorMode::Gray;
-			opt_graylevel = atoi(optarg);
-			if (opt_graylevel <= 1 || opt_graylevel > 256) {
-				usage();
+			val = atoi(optarg);
+			if (val < 2 || val > 256) {
+				errx(1, "--gray: grayscale must be 2..256");
 			}
+			opt_colormode = ReductorColorMode::Gray;
+			opt_graylevel = val;
 			break;
 
 		 case OPT_profile:
@@ -280,7 +295,10 @@ int main(int ac, char *av[])
 			break;
 
 		 case 'p':
-			opt_colormode = select_opt(colormode_map, optarg);
+			opt_colormode = select_opt(colormode_map, optarg, &res);
+			if (res == false) {
+				errx(1, "--color %s: invalid parameter", optarg);
+			}
 			break;
 
 		 case OPT_8:
@@ -301,12 +319,18 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_axis:
-			opt_resizeaxis = select_opt(resizeaxis_map, optarg);
+			opt_resizeaxis = select_opt(resizeaxis_map, optarg, &res);
+			if (res == false) {
+				errx(1, "--axis %s: invalid parameter", optarg);
+			}
 			break;
 
 		 case 'd':
 		 {
-			auto [ reduce, diffuse ] = select_opt(reduce_map, optarg);
+			auto [ reduce, diffuse ] = select_opt(reduce_map, optarg, &res);
+			if (res == false) {
+				errx(1, "--diffusion %s: invalid parameter", optarg);
+			}
 			opt_reduce = reduce;
 			if (diffuse != (ReductorDiffuseMethod)-1) {
 				opt_highqualitydiffusemethod = diffuse;
@@ -341,22 +365,40 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_resize:
-			opt_resizemode = select_opt(resizemode_map, optarg);
+			opt_resizemode = select_opt(resizemode_map, optarg, &res);
+			if (res == false) {
+				errx(1, "--resize %s: invalid parameter", optarg);
+			}
 			break;
 
 		 case OPT_loader:
-			opt_loadermode = select_opt(loadermode_map, optarg);
+			opt_loadermode = select_opt(loadermode_map, optarg, &res);
+			if (res == false) {
+				errx(1, "--loader %s: must be either 'gdk' or 'lib'", optarg);
+			}
 			break;
 
 		 case OPT_output_format:
-			opt_outputformat = select_opt(outputformat_map, optarg);
+			opt_outputformat = select_opt(outputformat_map, optarg, &res);
+			if (res == false) {
+				errx(1, "--output-format %s: must be either 'sixel' or 'gvram'",
+					optarg);
+			}
 			break;
 
 		 case OPT_output_x:
-			opt_output_x = atoi(optarg);
+			val = atoi(optarg);
+			if (val < 0) {
+				errx(1, "--output-x %d: offset must be >= 0", val);
+			}
+			opt_output_x = val;
 			break;
 		 case OPT_output_y:
-			opt_output_y = atoi(optarg);
+			val = atoi(optarg);
+			if (val < 0) {
+				errx(1, "--output-y %d: offset must be >= 0", val);
+			}
+			opt_output_y = val;
 			break;
 
 		 case OPT_color_factor:
@@ -364,7 +406,10 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_finder:
-			opt_findermode = select_opt(findermode_map, optarg);
+			opt_findermode = select_opt(findermode_map, optarg, &res);
+			if (res == false) {
+				errx(1, "--finder %s: must be either 'rgb' or 'hsv'", optarg);
+			}
 			break;
 
 		 case OPT_addnoise:
@@ -391,7 +436,9 @@ int main(int ac, char *av[])
 		Convert(av[nfiles]);
 	}
 	if (nfiles == 0) {
-		usage();
+		if (!opt_ignore_error) {
+			errx(1, "No input files");
+		}
 	}
 	return 0;
 }
@@ -619,10 +666,6 @@ ConvertFromStream(InputStream *istream)
 	 }
 	 case OutputFormat::GVRAM:
 	 {
-		if (opt_output_x < 0 || opt_output_y < 0) {
-			warnx("invalid offset");
-			return;
-		}
 		if (opt_output_y + sx.GetHeight() > 512) {
 			warnx("Image height %d is larger than GVRAM",
 				opt_output_y + sx.GetHeight());
