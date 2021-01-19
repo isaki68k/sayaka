@@ -13,6 +13,7 @@
 #include "Twitter.h"
 #include "UString.h"
 #include "acl.h"
+#include "eaw_code.h"
 #include "subr.h"
 
 int test_count;
@@ -72,6 +73,7 @@ main(int ac, char *av[])
 	test_StringUtil();
 	test_Twitter();
 	test_UString();
+	test_eaw_code();
 	test_subr();
 
 	printf("%d tests", test_count);
