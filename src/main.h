@@ -7,6 +7,8 @@
 #include <array>
 #include <string>
 
+#define DEBUG_FORMAT 1
+
 // sayaka.cpp で定義されてるやつだけど、sayaka.h はグローバルなのでちょっと
 // どうすべ。
 extern void cmd_tweet();
@@ -26,6 +28,7 @@ extern Diag diag;
 extern Diag diagHttp;
 extern Diag diagImage;
 extern Diag diagShow;
+extern bool opt_debug_format;
 extern int  opt_debug_sixel;
 extern bool opt_debug;
 extern int  screen_cols;

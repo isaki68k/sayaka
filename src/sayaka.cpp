@@ -43,8 +43,6 @@
 #include <cstring>
 #include <err.h>
 
-//#define DEBUG_FORMAT 1
-
 #if !defined(PATH_SEPARATOR)
 #define PATH_SEPARATOR "/"
 #endif
@@ -134,6 +132,7 @@ Diag diag;						// デバッグ (無分類)
 Diag diagHttp;					// デバッグ (HTTP コネクション)
 Diag diagImage;					// デバッグ (画像周り)
 Diag diagShow;					// デバッグ (メッセージ表示判定)
+bool opt_debug_format;			// デバッグフラグ (formatmsg 周り)
 int  opt_debug_sixel;			// デバッグレベル (SIXEL変換周り)
 bool opt_debug;					// デバッグオプション (後方互換用)
 int  screen_cols;				// 画面の桁数
@@ -917,12 +916,14 @@ SetUrl_inline(RichString& richtext, int start, int end, const std::string& url,
 {
 	if (end <= display_end) {
 #if defined(DEBUG_FORMAT)
-		printf("SetUrl [%d,%d) |%s|\n", start, end, url.c_str());
+		if (__predict_false(opt_debug_format)) {
+			printf("SetUrl [%d,%d) |%s|\n", start, end, url.c_str());
+		}
 #endif
 		SetUrl_main(richtext, start, end, url);
 	}
 #if defined(DEBUG_FORMAT)
-	else {
+	else if (__predict_false(opt_debug_format)) {
 		printf("SetUrl [%d,%d) |%s| out of range\n",
 			start, end, url.c_str());
 	}
@@ -1103,8 +1104,10 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	}
 
 #if defined(DEBUG_FORMAT)
-	printf("%s", richtext.dump().c_str());
-	printf("display_end = %d\n", display_end);
+	if (__predict_false(opt_debug_format)) {
+		printf("%s", richtext.dump().c_str());
+		printf("display_end = %d\n", display_end);
+	}
 #endif
 
 	// RichString を UString に変換。
@@ -1207,7 +1210,9 @@ SetTag(RichString& richtext, const Json& list, Color color)
 				int start = indices[0].get<int>();
 				int end   = indices[1].get<int>();
 #if defined(DEBUG_FORMAT)
-				printf("SetTag [%d,%d)\n", start, end);
+				if (__predict_false(opt_debug_format)) {
+					printf("SetTag [%d,%d)\n", start, end);
+				}
 #endif
 				richtext[start].altesc += ColorBegin(color);
 				richtext[end].altesc += ColorEnd(color);

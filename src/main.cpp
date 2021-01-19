@@ -55,6 +55,7 @@ enum {
 	OPT_ciphers,
 	OPT_color,
 	OPT_debug,
+	OPT_debug_format,
 	OPT_debug_http,
 	OPT_debug_image,
 	OPT_debug_show,
@@ -100,6 +101,7 @@ static const struct option longopts[] = {
 	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	OPT_color },
 	{ "debug",			required_argument,	NULL,	OPT_debug },
+	{ "debug-format",	no_argument,		NULL,	OPT_debug_format },
 	{ "debug-http",		required_argument,	NULL,	OPT_debug_http },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-show",		required_argument,	NULL,	OPT_debug_show },
@@ -199,6 +201,12 @@ main(int ac, char *av[])
 			diag.SetLevel(atoi(optarg));
 			// とりあえず後方互換
 			opt_debug = (diag > 0);
+			break;
+		 case OPT_debug_format:
+#if !defined(DEBUG_FORMAT)
+			warnx("DEBUG_FORMAT is not compiled. ignored.");
+#endif
+			opt_debug_format = true;
 			break;
 		 case OPT_debug_http:
 			diagHttp.SetLevel(atoi(optarg));
@@ -756,6 +764,7 @@ R"(usage: sayaka [<options>...] --home
 	--blocklist
 	--ciphers <ciphers>
 	--debug
+	--debug-format
 	--debug-http <0-2>
 	--debug-show <0-2>
 	--debug-image <0-1>
