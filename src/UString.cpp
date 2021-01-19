@@ -33,13 +33,12 @@ StringToUString(const std::string& str)
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
 	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	iconv_close(cd);
 	if (r == (size_t)-1) {
-		iconv_close(cd);
 		return ustr;
 	}
 	if (r > 0) {
 		// 戻り値は invalid conversion の数
-		iconv_close(cd);
 		// どうすべ
 		errno = 0;
 		return ustr;
@@ -89,13 +88,12 @@ UStringToString(const UString& ustr)
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
 	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	iconv_close(cd);
 	if (r == (size_t)-1) {
-		iconv_close(cd);
 		return str;
 	}
 	if (r > 0) {
 		// 戻り値は invalid conversion の数
-		iconv_close(cd);
 		// どうすべ
 		errno = 0;
 		return str;
