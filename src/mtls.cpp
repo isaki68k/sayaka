@@ -449,11 +449,13 @@ mbedtls_net_connect_nonblock(mbedtls_net_context *ctx,
 		// ここでノンブロックに設定
 		val = fcntl(ctx->fd, F_GETFL);
 		if (val < 0) {
+			close(ctx->fd);
 			// 勝手に空いてるエラーコードを拝借、EINVAL 的なもの。
 			ret = -0x0041;
 			continue;
 		}
 		if (fcntl(ctx->fd, F_SETFL, val | O_NONBLOCK) < 0) {
+			close(ctx->fd);
 			// 勝手に空いてるエラーコードを拝借、EINVAL 的なもの。
 			ret = -0x0041;
 			continue;
