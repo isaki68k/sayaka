@@ -46,7 +46,7 @@ StringToUString(const std::string& str)
 	UString ustr;
 
 	cd = iconv_open(UTF32_HE, "utf-8");
-	if (cd == (iconv_t)-1) {
+	if (__predict_false(cd == (iconv_t)-1)) {
 		return ustr;
 	}
 
@@ -59,14 +59,16 @@ StringToUString(const std::string& str)
 	size_t dstlen = dstbuf.size();
 	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
 	iconv_close(cd);
-	if (r == (size_t)-1) {
-		return ustr;
-	}
-	if (r > 0) {
-		// 戻り値は invalid conversion の数
-		// どうすべ
-		errno = 0;
-		return ustr;
+	if (__predict_false(r != 0)) {
+		if (r == (size_t)-1) {
+			return ustr;
+		}
+		if (r > 0) {
+			// 戻り値は invalid conversion の数
+			// どうすべ
+			errno = 0;
+			return ustr;
+		}
 	}
 
 	// デバッグ用
@@ -101,7 +103,7 @@ UStringToString(const UString& ustr)
 	std::string str;
 
 	cd = iconv_open("utf-8", UTF32_HE);
-	if (cd == (iconv_t)-1) {
+	if (__predict_false(cd == (iconv_t)-1)) {
 		return str;
 	}
 
@@ -114,14 +116,16 @@ UStringToString(const UString& ustr)
 	size_t dstlen = dstbuf.size();
 	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
 	iconv_close(cd);
-	if (r == (size_t)-1) {
-		return str;
-	}
-	if (r > 0) {
-		// 戻り値は invalid conversion の数
-		// どうすべ
-		errno = 0;
-		return str;
+	if (__predict_false(r != 0)) {
+		if (r == (size_t)-1) {
+			return str;
+		}
+		if (r > 0) {
+			// 戻り値は invalid conversion の数
+			// どうすべ
+			errno = 0;
+			return str;
+		}
 	}
 
 	const char *s = (const char *)dstbuf.data();
