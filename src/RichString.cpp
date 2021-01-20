@@ -68,7 +68,7 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 	iconv_t cd;
 
 	cd = iconv_open(UTF32_HE, "utf-8");
-	if (cd == (iconv_t)-1) {
+	if (__predict_false(cd == (iconv_t)-1)) {
 		return false;
 	}
 
@@ -109,18 +109,18 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 		char *dst = dstbuf;
 		size_t dstlen = sizeof(dstbuf);
 		size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-		if (r == (size_t)-1) {
-			// どうすべ
-			iconv_close(cd);
-			return false;
+		if (__predict_true(r == 0)) {
+			// 成功すればその文字コード
+			rc.code = *(unichar *)&dstbuf[0];
+		} else {
+			// 変換できないとすれば src のバイトストリームが壊れていると
+			// 思われるので、わりと出来ることはない気がするが、とりあえず
+			// 埋めて先へ進むことにしてみる。
+			// rc.code はコードポイントとして評価する時、それが示す文字列が
+			// 必要な時は text から substr() するという運用のため、rc.code
+			// だけ代替文字に差し替えてもあまり意味はないのだが。
+			rc.code = '?';
 		}
-		if (r > 0) {
-			// どうすべ
-			iconv_close(cd);
-			errno = 0;
-			return false;
-		}
-		rc.code = *(unichar *)&dstbuf[0];
 		if (0) {
 			printf("%02X\n", rc.code);
 		}
@@ -252,6 +252,10 @@ test_RichString()
 		// Regional Indicator (国旗絵文字)
 		{ "Flag,\xf0\x9f\x87\xaf" "\xf0\x9f\x87\xb5"
 		       "\xf0\x9f\x87\xaf" "\xf0\x9f\x87\xb5",	{ 0, 1, 2, 3, 4 } },
+
+		// 正しくない UTF-8 ストリーム
+		// あ            (不正) あ
+		{ "Invalid,\xe3\x81\x82" "\x80" "\xe3\x81\x82",	{ 0, 1, 2, 3 } },
 	};
 	for (const auto& a : table) {
 		const auto& name_input = Split2(a.first, ',');
