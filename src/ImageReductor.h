@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2016 Y.Sugahara (moveccr)
+ * Copyright (C) 2021 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

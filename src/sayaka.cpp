@@ -1,7 +1,4 @@
 /*
- * sayaka - twitter client
- */
-/*
  * Copyright (C) 2014-2021 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
