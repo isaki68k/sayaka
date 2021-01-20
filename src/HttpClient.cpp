@@ -201,22 +201,6 @@ HttpClient::GetHeader(const std::vector<std::string>& header,
 bool
 HttpClient::Connect()
 {
-#if 0
-	// 透過プロキシ(?)設定があれば対応
-	std::string proxyTarget;
-	ParsedUri proxyUri;
-	if (!ProxyMap.empty()) {
-		auto map = ProxyMap.Split("=");
-		proxyTarget = map.first;
-		proxyUri = ParsedUri::Parse(map.second);
-
-		// 宛先がプロキシサーバのアドレスなら、差し替える
-		if (Uri.Host == proxyTarget) {
-			Uri = proxyUri;
-		}
-	}
-#endif
-
 	// デフォルトポートの処理
 	// ParsedUri はポート番号がない URL だと Port = "" になる。
 	if (Uri.Port == "") {
