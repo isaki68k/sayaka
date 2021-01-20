@@ -131,7 +131,6 @@ Diag diagImage;					// デバッグ (画像周り)
 Diag diagShow;					// デバッグ (メッセージ表示判定)
 bool opt_debug_format;			// デバッグフラグ (formatmsg 周り)
 int  opt_debug_sixel;			// デバッグレベル (SIXEL変換周り)
-bool opt_debug;					// デバッグオプション (後方互換用)
 int  screen_cols;				// 画面の桁数
 int  opt_fontwidth;				// オプション指定のフォント幅
 int  opt_fontheight;			// オプション指定のフォント高さ
@@ -221,7 +220,7 @@ cmd_tweet()
 static void
 progress(const char *msg)
 {
-	if (opt_debug || opt_progress) {
+	if (diag >= 1 || opt_progress) {
 		fputs(msg, stdout);
 		fflush(stdout);
 	}

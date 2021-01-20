@@ -231,8 +231,6 @@ main(int ac, char *av[])
 			break;
 		 case OPT_debug:
 			diag.SetLevel(atoi(optarg));
-			// とりあえず後方互換
-			opt_debug = (diag > 0);
 			break;
 		 case OPT_debug_format:
 #if !defined(DEBUG_FORMAT)
