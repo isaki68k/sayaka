@@ -46,6 +46,11 @@ terminal_support_sixel()
 	char result[128];
 	int n;
 
+	// 出力先が端末でない(パイプとか)なら帰る。
+	if (isatty(STDOUT_FILENO) == 0) {
+		return false;
+	}
+
 	// 問い合わせる。
 	query = ESC "[c";
 	n = query_terminal(query, result, sizeof(result));
@@ -91,6 +96,11 @@ terminal_bgcolor()
 	char result[128];
 	int n;
 	int ri, gi, bi;
+
+	// 出力先が端末でない(パイプとか)なら帰る。
+	if (isatty(STDOUT_FILENO) == 0) {
+		return -1;
+	}
 
 	// 問い合わせる
 	query = ESC "]11;?" ESC "\\";
