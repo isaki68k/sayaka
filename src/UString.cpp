@@ -28,159 +28,124 @@
 #include <cstring>
 #include <iconv.h>
 
-static std::string UStringToStringFallback(iconv_t cd, const UString& str);
-static std::string UCharToString(iconv_t cd, const char *src);
+// UTF-8 から UTF-32 への変換用。
+// 運用時は ^C でとめるので解放せず放置する。
+static iconv_t cd_utf8;
 
-// 文字列 s を(UString に変換して)末尾に追加
-UString&
-UString::Append(const std::string& s)
+// UTF-32 から出力文字コードへの変換用。
+// 運用時は ^C でとめるので解放せず放置する。
+static iconv_t cd_out;
+
+// 文字コードの初期化。codeset は出力文字コード名。
+/*static*/ bool
+UString::Init(const std::string& codeset)
 {
-	UString us = StringToUString(s);
-	return Append(us);
+	const char *codeset_c;
+
+	// UTF-8 -> UTF-32 変換用
+	cd_utf8 = iconv_open(UTF32_HE, "utf-8");
+	if (cd_utf8 == (iconv_t)-1) {
+		return false;
+	}
+
+	// 出力用
+	if (codeset.empty()) {
+		codeset_c = "utf-8";
+	} else {
+		codeset_c = codeset.c_str();
+	}
+	cd_out = iconv_open(codeset_c, UTF32_HE);
+	if (cd_out == (iconv_t)-1) {
+		return false;
+	}
+
+	return true;
 }
 
-// 文字列 str を UString (Unicode コードポイント配列) に変換する。
-// str の文字コードは from で指定する (省略不可)。
+// UTF-8 文字列 str を UString に変換する。
 // Unicode コードポイントといいつつ UTF-32 なのだが (実際は別物)。
-// 変換できなければ空配列を返す。
-UString
-StringToUString(const std::string& str, const std::string& from)
+/*static*/ UString
+UString::FromUTF8(const std::string& str)
 {
-	iconv_t cd;
 	UString ustr;
 
-	cd = iconv_open(UTF32_HE, from.c_str());
-	if (__predict_false(cd == (iconv_t)-1)) {
-		return ustr;
-	}
-
+	const char *src = str.data();
 	size_t srcleft = str.size();
-	std::vector<char> srcbuf(srcleft + 1);
-	std::vector<char> dstbuf(srcleft * 4 + 1);
-	memcpy(srcbuf.data(), str.c_str(), srcbuf.size());
-	const char *src = srcbuf.data();
+	std::vector<char> dstbuf(srcleft * 4);
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
-	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-	iconv_close(cd);
-	if (__predict_false(r != 0)) {
-		if (r == (size_t)-1) {
-			return ustr;
-		}
-		if (r > 0) {
-			// 戻り値は invalid conversion の数
-			// どうすべ
-			errno = 0;
-			return ustr;
-		}
-	}
+	size_t r = iconv(cd_utf8, &src, &srcleft, &dst, &dstlen);
 
-	// デバッグ用
-	if (0) {
-		printf("src=+%x srcleft=%d->%d dst=+%x dstlen=%d:",
-			(int)(src-srcbuf.data()),
-			(int)str.size(),
-			(int)srcleft,
-			(int)(dst-dstbuf.data()),
-			(int)dstlen);
-		for (int i = 0; i < (dst - dstbuf.data()); i++) {
-			printf(" %02x", (unsigned char)dstbuf[i]);
-		}
-		printf("\n");
-	}
-
-	const uint32_t *s = (const uint32_t *)dstbuf.data();
-	const uint32_t *e = (const uint32_t *)dst;
+	// 変換できたところまでの文字列にする
+	const unichar *s = (const unichar *)dstbuf.data();
+	const unichar *e = (const unichar *)dst;
 	while (s < e) {
 		ustr.Append(*s++);
 	}
+
+	// iconv(3) の戻り値は正数なら (変換できなかった文字をゲタに差し替えて
+	// 変換した上で) 変換できなかった(差し替えた)文字数を返す。
+	// またそもそも失敗した場合は -1 を返すらしいが、こっちの場合は
+	// どうしたらいいか分からないのでとりあえずメッセージでも足しておくか。
+	if (__predict_false(r == (size_t)-1)) {
+		ustr.Append("\"iconv to utf-8 failed\"");
+	}
+
 	return ustr;
 }
 
-// UString (Unicode コードポイント配列) を std::string に変換する。
-// 変換先の文字コードを to で指定する (省略不可)。
-// Unicode コードポイントといいつつ実際は UTF-32 なのだが。
-// 変換できなければ "" を返す。
+// この UString を文字コード codeset の std::string に変換する。
 std::string
-UStringToString(const UString& ustr, const std::string& to)
+UString::ToString() const
 {
-	iconv_t cd;
-	std::string str;
-
-	cd = iconv_open(to.c_str(), UTF32_HE);
-	if (__predict_false(cd == (iconv_t)-1)) {
-		return str;
-	}
-
-	size_t srcleft = ustr.size() * 4;
-	std::vector<char> srcbuf(srcleft);
+	// 文字列全体を変換してみる
+	const char *src = (const char *)data();
+	size_t srcleft = size() * 4;		// 1文字は常に4バイト
 	std::vector<char> dstbuf(srcleft);	// 足りるはず?
-	memcpy(srcbuf.data(), ustr.data(), ustr.size() * 4);
-	const char *src = srcbuf.data();
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
-	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-	if (__predict_true(r == 0)) {
-		// 成功なら、文字列にして返す
-		iconv_close(cd);
-		*dst = '\0';
-		return std::string((const char *)dstbuf.data());
-	} else {
-		// iconv() の戻り値は -1 なら失敗、>0 なら変換できなかった文字数。
-		// とりあえずどちらの場合も1文字ずつフォールバックしながらやってみる
-		// ことにする。
-		str = UStringToStringFallback(cd, ustr);
-		iconv_close(cd);
-		return str;
-	}
-}
+	size_t r = iconv(cd_out, &src, &srcleft, &dst, &dstlen);
 
-// Unicode コードポイント配列 str を1文字ずつ文字コード変換した文字列を返す。
-// 変換できない文字は下駄(〓) に変換する (それも出来なければ '?' になるけど)。
-static std::string
-UStringToStringFallback(iconv_t cd, const UString& ustr)
-{
-	std::string str;
+	// 変換できたところまでの文字列にする
+	*dst = '\0';
+	std::string str((const char *)dstbuf.data());
 
-	for (int i = 0, end = ustr.size(); i < end; i++) {
-		// i 番目の文字を変換
-		std::string chr = UCharToString(cd,
-			(const char *)ustr.data() + (i * 4));
-		if (__predict_false(chr.empty())) {
-			// 出来なければ下駄を変換
-			uint32 altchr = 0x3013;	// U+3013
-			chr = UCharToString(cd, (const char *)&altchr);
-			if (__predict_false(chr.empty())) {
-				// それでも出来なければ知らん…
-				chr = "?";
-			}
-		}
-		str += chr;
+	// iconv(3) の戻り値は正数なら (変換出来なかった文字をゲタに差し替えて
+	// 変換した上で) 変換できなかった(差し替えた)文字数を返す。
+	// またそもそも失敗した場合は -1 を返すらしいが、こっちの場合は
+	// どうしたらいいか分からないのでとりあえずメッセージでも足しておくか。
+	if (__predict_false(r == (size_t)-1)) {
+		str += "\"iconv failed\"";
 	}
 
 	return str;
 }
 
-// src から始まる UTF-32 の1文字を変換して返す。
-// 変換できなければ empty を返す。
-static std::string
-UCharToString(iconv_t cd, const char *src)
+// UTF-32 文字 uni が Init() で指定した文字コードに変換できるかどうかを返す。
+// 変換できれば true、出来なければ false を返す。
+/*static*/ bool
+UString::IsUCharConvertible(unichar uni)
 {
-	// UTF-32 が変換先で最大何バイトになるか分からんけど。
+	union {
+		unichar u;
+		char b[4];
+	} srcbuf;
+	// UTF-32 が変換先で最大何バイトになるか分からんので適当
 	std::array<char, 6> dstbuf;
 
-	size_t srcleft = 4;	// 入力1文字は常に4バイト
+	srcbuf.u = uni;
+	const char *src = &srcbuf.b[0];
+	size_t srcleft = sizeof(srcbuf);
+
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
 
-	auto r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	auto r = iconv(cd_out, &src, &srcleft, &dst, &dstlen);
 	if (__predict_false(r != 0)) {
-		// ここではフォールバックしない
-		return "";
+		// 変換できない(>0)でもエラー(<0)でもとりあえず false で帰る
+		return false;
 	}
-	const char *s = (const char *)dstbuf.data();
-	const char *e = (const char *)dst;
-	return std::string(s, (size_t)(e - s));
+	return true;
 }
 
 std::string
@@ -213,60 +178,43 @@ UString::dump() const
 #include "test.h"
 
 void
-test_StringToUString()
+test_FromUTF8()
 {
 	printf("%s\n", __func__);
 
 	std::vector<std::pair<std::string, UString>> table = {
-		// [encoding],input		expected
+		// input				expected
 
-		// --- UTF-8 からの変換 ---
-		{ ",AB\n",				{ 0x41, 0x42, 0x0a } },
-		{ ",亜",				{ 0x4e9c } },
-		{ ",￥",				{ 0xffe5 } },	// FULLWIDTH YEN SIGN
-		{ ",\xf0\x9f\x98\xad",	{ 0x1f62d } },	// LOUDLY CRYING FACE
+		{ "AB\n",				{ 0x41, 0x42, 0x0a } },
+		{ "亜",					{ 0x4e9c } },
+		{ "￥",					{ 0xffe5 } },	// FULLWIDTH YEN SIGN
+		{ "\xf0\x9f\x98\xad",	{ 0x1f62d } },	// LOUDLY CRYING FACE
 		// UTF-8 -> UTF-32 の不正シーケンスいる?
-
-		// --- euc-jp からの変換 ---
-
-		// 亜
-		{ "euc-jp,\xb0\xa1",				{ 0x4e9c } },
-
-		// "あいA"
-		{ "euc-jp,\xa4\xa2\xa4\xa4" "A",	{ 0x3042, 0x3044, 0x41 } },
-
-		// ￥(FULLWIDTH YEN SIGN)
-		{ "euc-jp,\xa1\xef",				{ 0xffe5 } },
-
-		// euc-jp -> UTF-32 の不正シーケンスいる?
-		// "あ" "\xff\xff" "あ"
-		//{ "euc-jp,\xa4\xa2\xff\xff\xa4\xa2",{ 0x3042, 0x303c, 0x3042 } },
 	};
 
-	int n = 0;
-	for (const auto& a : table) {
-		const auto& enc_input = a.first;
-		const auto& expected = a.second;
-		auto [ enc, input ] = Split2(enc_input, ',');
-		auto where = string_format("[%d] %s", n++, enc_input.c_str());
+	UString::Init("");
 
-		const char *from = NULL;
-		if (!enc.empty()) {
-			from = enc.c_str();
-		}
-		auto actual = StringToUString(input, from);
+	for (const auto& a : table) {
+		const auto& input = a.first;
+		const auto& expected = a.second;
+
+		auto actual = UString::FromUTF8(input);
 		if (expected.size() == actual.size()) {
 			for (int i = 0; i < expected.size(); i++) {
-				xp_eq(expected[i], actual[i], where);
+				xp_eq(expected[i], actual[i], input);
 			}
 		} else {
-			xp_eq(expected.size(), actual.size(), where);
+			xp_eq(expected.size(), actual.size(), input);
 		}
 	}
+
+	// 実運用系ではこれらを解放しないので、テストでは手動で解放しておく
+	iconv_close(cd_utf8);
+	iconv_close(cd_out);
 }
 
 void
-test_UStringToString()
+test_ToString()
 {
 	printf("%s\n", __func__);
 
@@ -302,19 +250,21 @@ test_UStringToString()
 		auto [ enc, expected] = Split2(enc_exp, ',');
 		auto where = string_format("[%d] %s", n++, enc_exp.c_str());
 
-		const char *to = NULL;
-		if (!enc.empty()) {
-			to = enc.c_str();
-		}
-		auto actual = UStringToString(input, to);
+		bool init = UString::Init(enc);
+		xp_eq(true, init, where);
+		auto actual = input.ToString();
 		xp_eq(expected, actual, where);
+
+		// 実運用系ではこれらを解放しないので、テストでは手動で解放しておく
+		iconv_close(cd_utf8);
+		iconv_close(cd_out);
 	}
 }
 
 void
 test_UString()
 {
-	test_StringToUString();
-	test_UStringToString();
+	test_FromUTF8();
+	test_ToString();
 }
 #endif

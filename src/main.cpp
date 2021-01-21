@@ -24,6 +24,7 @@
  */
 
 #include "StringUtil.h"
+#include "UString.h"
 #include "eaw_code.h"
 #include "main.h"
 #include "term.h"
@@ -264,7 +265,7 @@ main(int ac, char *av[])
 			}
 			break;
 		 case OPT_euc_jp:
-			iconv_tocode = "euc-jp";
+			output_codeset = "euc-jp";
 			break;
 		 case OPT_filter:
 			cmd = SayakaCmd::Stream;
@@ -293,7 +294,7 @@ main(int ac, char *av[])
 			opt_pseudo_home = true;
 			break;
 		 case OPT_jis:
-			iconv_tocode = "iso-2022-jp";
+			output_codeset = "iso-2022-jp";
 			break;
 		 case OPT_max_cont:
 			last_id_max = atoi(optarg);
@@ -401,7 +402,7 @@ main(int ac, char *av[])
 			color_mode = ColorFixedX68k;
 			fontwidth = 8;
 			fontheight = 16;
-			iconv_tocode = "iso-2022-jp";
+			output_codeset = "iso-2022-jp";
 			bg_white = false;
 			opt_progress = true;
 			opt_ormode = true;
@@ -565,6 +566,9 @@ init_stream()
 		}
 		opt_noimage = true;
 	}
+
+	// 文字コードの初期化
+	UString::Init(output_codeset);
 
 	// 色の初期化
 	init_color();

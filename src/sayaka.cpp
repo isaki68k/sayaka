@@ -145,7 +145,7 @@ int  image_count;				// この列に表示している画像の数
 int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
 bool bg_white;					// 明るい背景用に暗い文字色を使う場合は true
-std::string iconv_tocode;		// 出力文字コード
+std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
 Twitter tw;
 StringDictionary followlist;	// フォロー氏リスト
@@ -615,8 +615,8 @@ format_fav_cnt(const Json& s)
 static void
 print_(const UString& src)
 {
-	// まず Unicode 文字単位でいろいろフィルターかける。
-	UString textarray;
+	// Stage1: Unicode 文字単位でいろいろフィルターかける。
+	UString utext;
 	for (const auto uni : src) {
 		// Private Use Area (外字) をコードポイント形式(?)にする
 		if (__predict_false((  0xe000 <= uni && uni <=   0xf8ff))	// BMP
@@ -624,183 +624,121 @@ print_(const UString& src)
 		 || __predict_false((0x100000 <= uni && uni <= 0x10fffd))) 	// 第16面
 		{
 			auto tmp = string_format("<U+%X>", uni);
-			textarray.Append(tmp);
+			utext.Append(tmp);
 			continue;
 		}
 
-		if (iconv_tocode != "") {
+		if (__predict_false(!output_codeset.empty())) {
 			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
 			// 本当は変換先がこれらの時だけのほうがいいだろうけど。
 
 			// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
 			if (uni == 0xff5e) {
-				textarray.Append(0x301c);
+				utext.Append(0x301c);
 				continue;
 			}
 
 			// 全角ハイフンマイナス(U+FF0D) -> マイナス記号(U+2212)
 			if (uni == 0xff0d) {
-				textarray.Append(0x2212);
+				utext.Append(0x2212);
 				continue;
 			}
 
 			// BULLET (U+2022) -> 中黒(U+30FB)
 			if (uni == 0x2022) {
-				textarray.Append(0x30fb);
+				utext.Append(0x30fb);
 				continue;
 			}
 
 			// NetBSD/x68k なら半角カナは表示できる。
 			// XXX 正確には JIS という訳ではないのだがとりあえず
-			if (iconv_tocode == "iso-2022-jp") {
-				if (0xff61 <= uni && uni < 0xffa0) {
-					// 半角カナはそのまま、あるいは JIS に変換、SI/SO を
-					// 使うなどしても、この後の JIS-> UTF-8 変換を安全に
-					// 通せないので、ここで半角カナを文字コードではない
-					// 自前エスケープシーケンスに置き換えておいて、
-					// 変換後にもう一度デコードして復元することにする。
-					// ESC [ .. n は端末問い合わせの CSI シーケンスなので
-					// 入力には来ないはずだし、仮にそのまま出力されたと
-					// してもあまりまずいことにはならないんじゃないかな。
-					// 半角カナを GL に置いた時の10進数2桁でエンコード。
-					auto tmp = string_format(ESC "[%dn", uni - 0xff60 + 0x20);
-					textarray.Append(tmp);
+			if (output_codeset == "iso-2022-jp") {
+				if (__predict_false(0xff61 <= uni && uni < 0xffa0)) {
+					utext.Append(ESC "(I");
+					utext.Append(uni - 0xff60 + 0x20);
+					utext.Append(ESC "(B");
 					continue;
 				}
 			}
-		}
 
-		textarray += uni;
-	}
-
-	// 文字コードを変換する場合は、
-	// ここで一度変換してみて、それを Unicode に戻す。
-	// この後の改行処理で、Unicode では半角幅だが変換すると全角ゲタ(〓)
-	// になるような文字の文字幅が合わなくなるのを避けるため。
-	if (__predict_false(!iconv_tocode.empty())) {
-		// 変換してみる (変換できない文字をフォールバックさせる)
-		std::string converted_str = UStringToString(textarray, iconv_tocode);
-
-		// UString に戻す (フォールバックはしなくていいはず)
-		UString ustr = StringToUString(converted_str, iconv_tocode);
-
-		// ただし ESC [ %d n があれば NetBSD/x68k コンソールの半角カナ
-		// ESC ( I %c ESC %( B に置換する。なんだかなあ…。
-		textarray.clear();
-		int in_escape = 0;
-		std::string argstr;
-		for (const auto& uni : ustr) {
-			if (__predict_true(in_escape == 0)) {
-				if (uni == ESCchar) {
-					// ESC は出力せず次へ
-					in_escape = 1;
-				} else {
-					// 通常文字
-					textarray.Append(uni);
-				}
-			} else if (in_escape == 1) {
-				if (uni == '[') {
-					// ESC [ なら出力せず次へ
-					in_escape = 2;
-					argstr.clear();
-				} else {
-					// ESC だが [ でなければ通常文字に戻す
-					textarray.Append(ESCchar);
-					textarray.Append(uni);
-					in_escape = 0;
-				}
-			} else {	// in_escape == 2
-				if ('0' <= uni && uni <= '9') {
-					argstr += uni;
-				} else if (uni == 'n') {
-					// ESC [ \d+ n なら半角カナを出力
-					auto ch = std::stoi(argstr);
-					auto str = string_format(ESC "(I%c" ESC "(B", ch);
-					textarray.Append(str);
-					in_escape = 0;
-				} else {
-					// 'n' 以外ならそのまま出力しておく。
-					// ';' だとここでエスケープが切れるけど、エスケープを
-					// 処理してるわけではないので、問題ないはず。
-					textarray.Append(ESC "[");
-					textarray.Append(argstr);
-					textarray.Append(uni);
-					in_escape = 0;
-				}
+			// 変換先に対応する文字がなければゲタ'〓'(U+3013)にする
+			if (__predict_false(UString::IsUCharConvertible(uni) == false)) {
+				utext.Append(0x3013);
+				continue;
 			}
 		}
+
+		utext.Append(uni);
 	}
 
-	// ここからインデント
-	UString sb;
-
+	// Stage2: インデントつけていく。
+	UString utext2;
 	// インデント階層
 	auto left = indent_cols * (indent_depth + 1);
-	auto indent_str = string_format(CSI "%dC", left);
-	auto indent = StringToUString(indent_str);
-	sb.Append(indent);
+	auto indent = string_format(CSI "%dC", left);
+	utext2.Append(indent);
 
 	if (__predict_false(screen_cols == 0)) {
 		// 桁数が分からない場合は何もしない
-		sb.Append(textarray);
+		utext2.Append(utext);
 	} else {
 		// 1文字ずつ文字幅を数えながら出力用に整形していく
-		int inescape = 0;
+		int in_escape = 0;
 		auto x = left;
-		for (auto uni : textarray) {
-			if (__predict_false(inescape > 0)) {
+		for (auto uni : utext) {
+			if (__predict_false(in_escape > 0)) {
 				// 1: ESC直後
 				// 2: ESC [
 				// 3: ESC (
-				sb.Append(uni);
-				switch (inescape) {
+				utext2.Append(uni);
+				switch (in_escape) {
 				 case 1:
 					// ESC 直後の文字で二手に分かれる
 					if (uni == '[') {
-						inescape = 2;
+						in_escape = 2;
 					} else {
-						inescape = 3;	// 手抜き
+						in_escape = 3;	// 手抜き
 					}
 					break;
 				 case 2:
 					// ESC [ 以降 'm' まで
 					if (uni == 'm') {
-						inescape = 0;
+						in_escape = 0;
 					}
 					break;
 				 case 3:
 					// ESC ( の次の1文字だけ
-					inescape = 0;
+					in_escape = 0;
 					break;
 				}
 			} else {
 				if (uni == ESCchar) {
-					sb += uni;
-					inescape = 1;
+					utext2.Append(uni);
+					in_escape = 1;
 				} else if (uni == '\n') {
-					sb += uni;
-					sb += indent;
+					utext2.Append(uni);
+					utext2.Append(indent);
 					x = left;
 				} else {
 					// 文字幅を取得
 					auto width = get_eaw_width(uni);
 					if (width == 1) {
-						sb += uni;
+						utext2.Append(uni);
 						x++;
 					} else {
 						assert(width == 2);
 						if (x > screen_cols - 2) {
-							sb += '\n';
-							sb += indent;
+							utext2.Append('\n');
+							utext2.Append(indent);
 							x = left;
 						}
-						sb += uni;
+						utext2.Append(uni);
 						x += 2;
 					}
 				}
 				if (x > screen_cols - 1) {
-					sb += '\n';
-					sb += indent;
+					utext2.Append('\n');
+					utext2.Append(indent);
 					x = left;
 				}
 			}
@@ -808,14 +746,8 @@ print_(const UString& src)
 	}
 
 	// 出力文字コードに変換
-	std::string outtext;
-	if (__predict_true(iconv_tocode.empty())) {
-		outtext = UStringToString(sb);
-	} else {
-		outtext = UStringToString(sb, iconv_tocode);
-	}
-
-	fputs(outtext.c_str(), stdout);
+	std::string outstr = utext2.ToString();
+	fputs(outstr.c_str(), stdout);
 }
 
 void
@@ -919,7 +851,7 @@ ColorBegin(Color col)
 	if (opt_nocolor) {
 		// --no-color なら一切属性を付けない
 	} else {
-		esc.AppendChars(CSI);
+		esc.Append(CSI);
 		esc.Append(color2esc[col]);
 		esc.Append('m');
 	}
@@ -935,7 +867,7 @@ ColorEnd(Color col)
 	if (opt_nocolor) {
 		// --no-color なら一切属性を付けない
 	} else {
-		esc.AppendChars(CSI "0m");
+		esc.Append(CSI "0m");
 	}
 	return esc;
 }
@@ -947,7 +879,7 @@ coloring(const std::string& text, Color col)
 	UString utext;
 
 	utext += ColorBegin(col);
-	utext += UString(text);
+	utext += UString::FromUTF8(text);
 	utext += ColorEnd(col);
 
 	return utext;

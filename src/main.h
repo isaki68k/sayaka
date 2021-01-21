@@ -69,7 +69,7 @@ extern int  image_count;
 extern int  image_next_cols;
 extern int  image_max_rows;
 extern bool bg_white;
-extern std::string iconv_tocode;
+extern std::string output_codeset;
 extern Twitter tw;
 extern bool opt_norest;
 extern bool opt_show_ng;

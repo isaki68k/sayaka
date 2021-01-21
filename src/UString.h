@@ -28,6 +28,7 @@
 #include "sayaka.h"
 #include "StringUtil.h"
 #include <vector>
+#include <iconv.h>
 
 // Unicode コードポイントの配列。
 // UString とは言っているが文字列ではなく vector 派生なことに留意。
@@ -37,6 +38,9 @@ class UString : public std::vector<unichar>
 	using inherited = std::vector<unichar>;
 	using size_type = std::size_t;
  public:
+	// 出力文字コードの初期化
+	static bool Init(const std::string& codeset);
+
 	// コンストラクタ
 	explicit UString()				// デフォルトコンストラクタ
 		: inherited() { }
@@ -79,20 +83,23 @@ class UString : public std::vector<unichar>
 		return Append(u);
 	}
 
-	// 文字列 s (UTF-8) を UString に変換して末尾に追加
-	UString& Append(const std::string& s);
-	UString& operator+=(const std::string& s) {
-		return Append(s);
-	}
-
 	// 文字列 s (ASCII) を1文字ずつ末尾に追加
 	// (ASCII またはエスケープシーケンスのみの場合に使用できる)
-	UString& AppendChars(const std::string& s) {
+	UString& Append(const std::string& s) {
 		for (auto c : s) {
 			emplace_back((unsigned char)c);
 		}
 		return *this;
 	}
+
+	// Init() で設定した文字コードの std::string に変換
+	std::string ToString() const;
+
+	// UTF-8 文字列 str を UString に変換する
+	static UString FromUTF8(const std::string& str);
+
+	// uni が Init() で設定した文字コードに変換できるか
+	static bool IsUCharConvertible(unichar uni);
 
 	std::string dump() const;
 };
@@ -137,23 +144,6 @@ static inline UString operator+(const UString& lhs, char rhs) {
 }
 static inline UString operator+(UString&& lhs, char rhs) {
 	return std::move(lhs.Append(rhs));		// (12)
-}
-
-
-// 文字列との相互変換
-
-// 文字コード enc の std::string を UString に変換する
-extern UString StringToUString(const std::string& str, const std::string& enc);
-// UTF-8 の std::string を UString に変換する
-static inline UString StringToUString(const std::string& str) {
-	return StringToUString(str, "utf-8");
-}
-
-// UString を文字コード enc の std::string に変換する
-extern std::string UStringToString(const UString& ustr, const std::string& enc);
-// UString を UTF-8 の std::string に変換する
-static inline std::string UStringToString(const UString& ustr) {
-	return UStringToString(ustr, "utf-8");
 }
 
 #if defined(SELFTEST)
