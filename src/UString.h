@@ -93,6 +93,8 @@ class UString : public std::vector<unichar>
 		}
 		return *this;
 	}
+
+	std::string dump() const;
 };
 
 // + 演算子
@@ -139,8 +141,20 @@ static inline UString operator+(UString&& lhs, char rhs) {
 
 
 // 文字列との相互変換
-extern UString StringToUString(const std::string& str);
-extern std::string UStringToString(const UString& ustr);
+
+// 文字コード enc の std::string を UString に変換する
+extern UString StringToUString(const std::string& str, const std::string& enc);
+// UTF-8 の std::string を UString に変換する
+static inline UString StringToUString(const std::string& str) {
+	return StringToUString(str, "utf-8");
+}
+
+// UString を文字コード enc の std::string に変換する
+extern std::string UStringToString(const UString& ustr, const std::string& enc);
+// UString を UTF-8 の std::string に変換する
+static inline std::string UStringToString(const UString& ustr) {
+	return UStringToString(ustr, "utf-8");
+}
 
 #if defined(SELFTEST)
 extern void test_UString();

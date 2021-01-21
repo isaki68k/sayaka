@@ -677,13 +677,59 @@ print_(const UString& src)
 	// ここで一度変換してみて、それを Unicode に戻す。
 	// この後の改行処理で、Unicode では半角幅だが変換すると全角ゲタ(〓)
 	// になるような文字の文字幅が合わなくなるのを避けるため。
-#if 0
-	if (__predict_false(!iconv_tocode.empty()) {
-		sb = UStringToString(textarray);
-
+	if (__predict_false(!iconv_tocode.empty())) {
 		// 変換してみる (変換できない文字をフォールバックさせる)
+		std::string converted_str = UStringToString(textarray, iconv_tocode);
+
+		// UString に戻す (フォールバックはしなくていいはず)
+		UString ustr = StringToUString(converted_str, iconv_tocode);
+
+		// ただし ESC [ %d n があれば NetBSD/x68k コンソールの半角カナ
+		// ESC ( I %c ESC %( B に置換する。なんだかなあ…。
+		textarray.clear();
+		int in_escape = 0;
+		std::string argstr;
+		for (const auto& uni : ustr) {
+			if (__predict_true(in_escape == 0)) {
+				if (uni == ESCchar) {
+					// ESC は出力せず次へ
+					in_escape = 1;
+				} else {
+					// 通常文字
+					textarray.Append(uni);
+				}
+			} else if (in_escape == 1) {
+				if (uni == '[') {
+					// ESC [ なら出力せず次へ
+					in_escape = 2;
+					argstr.clear();
+				} else {
+					// ESC だが [ でなければ通常文字に戻す
+					textarray.Append(ESCchar);
+					textarray.Append(uni);
+					in_escape = 0;
+				}
+			} else {	// in_escape == 2
+				if ('0' <= uni && uni <= '9') {
+					argstr += uni;
+				} else if (uni == 'n') {
+					// ESC [ \d+ n なら半角カナを出力
+					auto ch = std::stoi(argstr);
+					auto str = string_format(ESC "(I%c" ESC "(B", ch);
+					textarray.Append(str);
+					in_escape = 0;
+				} else {
+					// 'n' 以外ならそのまま出力しておく。
+					// ';' だとここでエスケープが切れるけど、エスケープを
+					// 処理してるわけではないので、問題ないはず。
+					textarray.Append(ESC "[");
+					textarray.Append(argstr);
+					textarray.Append(uni);
+					in_escape = 0;
+				}
+			}
+		}
 	}
-#endif
 
 	// ここからインデント
 	UString sb;
@@ -760,10 +806,13 @@ print_(const UString& src)
 			}
 		}
 	}
-	std::string outtext = UStringToString(sb);
 
-	// 出力文字コードの変換
-	if (__predict_false(!iconv_tocode.empty())) {
+	// 出力文字コードに変換
+	std::string outtext;
+	if (__predict_true(iconv_tocode.empty())) {
+		outtext = UStringToString(sb);
+	} else {
+		outtext = UStringToString(sb, iconv_tocode);
 	}
 
 	fputs(outtext.c_str(), stdout);
