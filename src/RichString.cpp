@@ -96,9 +96,7 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 		byteoffset += bytelen;
 
 		// この1文字を UTF-32 に変換
-		const char *src = &srcstr[rc.byteoffset];
-		size_t srcleft = bytelen;
-		rc.code = UString::UCharFromUTF8(&src, srcleft);
+		rc.code = UString::UCharFromUTF8(&srcstr[rc.byteoffset], bytelen);
 		if (0) {
 			printf("%02X\n", rc.code);
 		}

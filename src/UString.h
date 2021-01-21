@@ -101,8 +101,8 @@ class UString : public std::vector<unichar>
 	// uni が Init() で設定した文字コードに変換できるか
 	static bool IsUCharConvertible(unichar uni);
 
-	// *src から srclen バイトの UTF-8 文字を unichar に変換する
-	static unichar UCharFromUTF8(const char **src, size_t srclen);
+	// src から srclen バイトの UTF-8 文字を unichar に変換する
+	static unichar UCharFromUTF8(const char *src, size_t srclen);
 
 	std::string dump() const;
 };

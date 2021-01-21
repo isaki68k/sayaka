@@ -148,11 +148,10 @@ UString::IsUCharConvertible(unichar uni)
 	return true;
 }
 
-// *srcp から srclen バイトの UTF-8 文字を unichar に変換する。
+// src から srclen バイトの UTF-8 文字を unichar に変換する。
 /*static*/ unichar
-UString::UCharFromUTF8(const char **srcp, size_t srclen)
+UString::UCharFromUTF8(const char *src, size_t srclen)
 {
-	const char *src = *srcp;
 	union {
 		unichar u;
 		char b[4];
@@ -162,14 +161,11 @@ UString::UCharFromUTF8(const char **srcp, size_t srclen)
 
 	auto r = iconv(cd_utf8, &src, &srclen, &dst, &dstlen);
 	if (__predict_true(r == 0)) {
-		// 成功なら進んだ src を書き戻して取得した unichar を返す
-		*srcp = src;
+		// 成功なら取得した unichar を返す
 		return dstbuf.u;
 	} else {
 		// 変換できないとすれば元の UTF-8 バイトストリームが壊れていると
-		// 思われるので、わりと出来ることはない気がするが、とりあえず
-		// 適当に先へ進むことにしてみる。戻り値はたぶんもはや意味ない。
-		*srcp = *srcp + 1;
+		// 思われるので、わりと出来ることはない気がする。
 		return '?';
 	}
 }
