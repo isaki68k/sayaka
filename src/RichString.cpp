@@ -24,9 +24,8 @@
  */
 
 #include "RichString.h"
+#include "UString.h"
 #include "StringUtil.h"
-#include <iconv.h>
-#include <sys/endian.h>
 
 // コンストラクタ
 RichString::RichString(const std::string& text_)
@@ -65,12 +64,6 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 	const
 {
 	std::vector<RichChar>& info = *info_;
-	iconv_t cd;
-
-	cd = iconv_open(UTF32_HE, "utf-8");
-	if (__predict_false(cd == (iconv_t)-1)) {
-		return false;
-	}
 
 	int charoffset = 0;
 	int byteoffset = 0;
@@ -105,29 +98,13 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 		// この1文字を UTF-32 に変換
 		const char *src = &srcstr[rc.byteoffset];
 		size_t srcleft = bytelen;
-		char dstbuf[4];	// 32bit で足りるはず
-		char *dst = dstbuf;
-		size_t dstlen = sizeof(dstbuf);
-		size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
-		if (__predict_true(r == 0)) {
-			// 成功すればその文字コード
-			rc.code = *(unichar *)&dstbuf[0];
-		} else {
-			// 変換できないとすれば src のバイトストリームが壊れていると
-			// 思われるので、わりと出来ることはない気がするが、とりあえず
-			// 埋めて先へ進むことにしてみる。
-			// rc.code はコードポイントとして評価する時、それが示す文字列が
-			// 必要な時は text から substr() するという運用のため、rc.code
-			// だけ代替文字に差し替えてもあまり意味はないのだが。
-			rc.code = '?';
-		}
+		rc.code = UString::UCharFromUTF8(&src, srcleft);
 		if (0) {
 			printf("%02X\n", rc.code);
 		}
 
 		info.emplace_back(rc);
 	}
-	iconv_close(cd);
 
 	// 終端文字分を持っておくほうが何かと都合がよい
 	RichChar t;
