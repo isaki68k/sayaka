@@ -37,7 +37,7 @@ SRCS_sixelv=	\
 	sixelv.cpp \
 
 
-PKGS=		glib-2.0 gdk-pixbuf-2.0 gio-unix-2.0
+PKGS=		glib-2.0 gdk-pixbuf-2.0 gio-unix-2.0 libjpeg
 
 CXX=		c++ -std=c++17
 CXX+=		-g
