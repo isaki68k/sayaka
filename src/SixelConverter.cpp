@@ -29,6 +29,7 @@
 #include "StringUtil.h"
 #include "sayaka.h"
 #include <cassert>
+#include <errno.h>
 
 static int  img_readcallback(ImageReductor::Image *img);
 static void img_freecallback(guchar *pixels, gpointer data);

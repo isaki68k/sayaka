@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <string>
 #include <err.h>
+#include <errno.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>

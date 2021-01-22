@@ -24,6 +24,7 @@
  */
 
 #include "FileStream.h"
+#include <errno.h>
 
 //
 // FILE* 入力ストリーム

@@ -27,6 +27,7 @@
 #include "HttpClient.h"
 #include "StringUtil.h"
 #include <err.h>
+#include <errno.h>
 #include <sys/socket.h>
 
 // コンストラクタ

@@ -30,6 +30,7 @@
 #include "ChunkedInputStream.h"
 #include <cstring>
 #include <memory>
+#include <errno.h>
 
 // コンストラクタ
 ChunkedInputStream::ChunkedInputStream(InputStream *src_, Diag& diag_)

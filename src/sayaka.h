@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <sys/endian.h>
 #include <sys/types.h>
 
