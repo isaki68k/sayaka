@@ -92,19 +92,29 @@ class UString : public std::vector<unichar>
 		return *this;
 	}
 
-	// Init() で設定した文字コードの std::string に変換
-	std::string ToString() const;
-
 	// UTF-8 文字列 str を UString に変換する
 	static UString FromUTF8(const std::string& str);
+
+	// Init() で設定した文字コードの std::string に変換
+	std::string ToString() const;
 
 	// uni が Init() で設定した文字コードに変換できるか
 	static bool IsUCharConvertible(unichar uni);
 
-	// src から srclen バイトの UTF-8 文字を unichar に変換する
-	static unichar UCharFromUTF8(const char *src, size_t srclen);
+	// src からの UTF-8 1文字を unichar に変換する
+	static std::pair<unichar, int> UCharFromUTF8(const char *src);
+
+	// unichar 1文字を UTF-8 に変換して dst に書き出す
+	static int UCharToUTF8(char *dst, unichar code);
 
 	std::string dump() const;
+
+ private:
+	// UTF-8 文字列を Init() で設定した出力文字コードに変換する
+	static std::string UTF8ToOutCode(const std::string& utf8);
+
+	// 出力文字コードにするのに iconv 変換が必要かどうか
+	static bool use_iconv;
 };
 
 // + 演算子

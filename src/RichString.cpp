@@ -74,29 +74,11 @@ RichString::MakeInfo(std::vector<RichChar> *info_, const std::string& srcstr)
 		rc.byteoffset = byteoffset;
 		rc.charoffset = charoffset++;
 
-		// UTF-8 は1バイト目でこの文字のバイト数が分かる
-		uint8 c = srcstr[byteoffset];
-		int bytelen;
-		if (__predict_true(c < 0x80)) {
-			bytelen = 1;
-		} else if (__predict_true(0xc0 <= c && c < 0xe0)) {
-			bytelen = 2;
-		} else if (__predict_true(0xe0 <= c && c < 0xf0)) {
-			bytelen = 3;
-		} else if (__predict_true(0xf0 <= c && c < 0xf8)) {
-			bytelen = 4;
-		} else if (__predict_true(0xf8 <= c && c < 0xfc)) {
-			bytelen = 5;
-		} else if (__predict_true(0xfc <= c && c < 0xfe)) {
-			bytelen = 6;
-		} else {
-			// こないはずだけど、とりあえず
-			bytelen = 1;
-		}
-		byteoffset += bytelen;
+		auto pair = UString::UCharFromUTF8(srcstr.c_str() + byteoffset);
+		auto [ code, bytelen ] = pair;
 
-		// この1文字を UTF-32 に変換
-		rc.code = UString::UCharFromUTF8(&srcstr[rc.byteoffset], bytelen);
+		rc.code = code;
+		byteoffset += bytelen;
 		if (0) {
 			printf("%02X\n", rc.code);
 		}

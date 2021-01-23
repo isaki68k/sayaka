@@ -26,14 +26,7 @@
 #pragma once
 
 #include <cstdint>
-#include <sys/endian.h>
 #include <sys/types.h>
-
-#if _BYTE_ORDER == _LITTLE_ENDIAN
-#define UTF32_HE "utf-32le"
-#else
-#define UTF32_HE "utf-32be"
-#endif
 
 using int8    = int8_t;
 using int16   = int16_t;
