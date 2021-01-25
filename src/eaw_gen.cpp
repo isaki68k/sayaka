@@ -48,23 +48,49 @@ static const int MAXCHARS = 0x20000;
 char
 conv(int c)
 {
+	char r;
+
 	auto eaw = (UEastAsianWidth)u_getIntPropertyValue(c,
 		UCHAR_EAST_ASIAN_WIDTH);
 	switch (eaw) {
 	 case U_EA_NARROW:
 	 case U_EA_HALFWIDTH:
-		return 'H';
+		r ='H';
+		break;
 	 case U_EA_WIDE:
 	 case U_EA_FULLWIDTH:
-		return 'F';
+		r ='F';
+		break;
 
 	 case U_EA_NEUTRAL:
-		return 'N';
+		r ='N';
+		break;
 	 case U_EA_AMBIGUOUS:
-		return 'A';
+		r ='A';
+		break;
 	 default:
 		errx(1, "0x%x has unknown width %d\n", c, (int)eaw);
 	}
+
+	// どう見ても絵文字が並んでるのに
+	// 文字によって Full (全角幅) ではなく Neutral (半角幅) の文字が
+	// ちらほらあって、どう考えてもおかしいので、勝手に変更する。
+	// クソすぎる…。orz
+	auto block = (UBlockCode)ublock_getCode(c);
+	switch (block) {
+	 case UBLOCK_CONTROL_PICTURES:
+	 case UBLOCK_MISCELLANEOUS_SYMBOLS_AND_PICTOGRAPHS:
+	 case UBLOCK_SUPPLEMENTAL_SYMBOLS_AND_PICTOGRAPHS:
+	 case UBLOCK_SYMBOLS_AND_PICTOGRAPHS_EXTENDED_A:
+		if (r == 'N') {
+			r = 'F';
+		}
+		break;
+	 default:
+		break;
+	}
+
+	return r;
 }
 
 void

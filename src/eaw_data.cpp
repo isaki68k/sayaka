@@ -306,8 +306,8 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 23a0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 23c0
  NN, NN, NN, NN, NF, FF, FN, NN, FN, NF, NN, NN, NN, NN, NN, NN, // 23e0
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 2400
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 2420
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 2400
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 2420
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 2440
  AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, // 2460
  AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, AA, // 2480
@@ -4011,29 +4011,29 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f2c0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f2e0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f300
- FN, NN, NN, NN, NN, NN, NF, FF, FF, FF, FF, NF, FF, FF, FF, FF, // 1f320
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f320
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f340
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, FF, // 1f360
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, NN, NN, NN, NN, NN, NN, // 1f380
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f360
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f380
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f3a0
- FF, FF, FF, FF, FF, FN, NN, NF, FF, FF, NN, NN, NN, NN, NN, NN, // 1f3c0
- FF, FF, FF, FF, FF, FF, FF, FF, FN, NN, FN, NN, FF, FF, FF, FF, // 1f3e0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f3c0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f3e0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f400
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, // 1f420
- FN, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f440
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f420
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f440
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f460
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f480
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f4a0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f4c0
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, NF, // 1f4e0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f4e0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f500
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, NN, // 1f520
- NN, NN, NN, NN, NN, NF, FF, FN, FF, FF, FF, FF, FF, FF, FF, FF, // 1f540
- FF, FF, FF, FF, NN, NN, NN, NN, NN, NN, NN, NN, NN, FN, NN, NN, // 1f560
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NF, FN, NN, NN, NN, NN, // 1f580
- NN, NN, FN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f5a0
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f5c0
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NF, FF, FF, // 1f5e0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f520
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f540
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f560
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f580
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f5a0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f5c0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f5e0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f600
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f620
  FF, FF, FF, FF, FF, FF, FF, FF, NN, NN, NN, NN, NN, NN, NN, NN, // 1f640
@@ -4058,22 +4058,22 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f8a0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f8c0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f8e0
- NN, NN, NN, NN, NN, NN, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f900
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, FF, FF, // 1f920
- FF, FF, FF, NF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f940
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, FF, FF, FF, // 1f960
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f900
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f920
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f940
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f960
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f980
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f9a0
- FF, FF, FF, FF, FF, FF, NF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f9c0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f9c0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f9e0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1fa00
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1fa20
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1fa40
- NN, NN, NN, NN, NN, NN, NN, NN, FF, FF, FN, NN, FF, FN, NN, NN, // 1fa60
- FF, FF, FF, FN, NN, NN, NN, NN, FF, FF, FF, FF, FF, FF, FF, FF, // 1fa80
- FF, FF, FF, FF, FN, NN, NN, NN, FF, FF, FF, FN, NN, NN, NN, NN, // 1faa0
- FF, FN, NN, NN, NN, NN, NN, NN, FF, FF, FF, FN, NN, NN, NN, NN, // 1fac0
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1fae0
+ NN, NN, NN, NN, NN, NN, NN, NN, FF, FF, FF, FF, FF, FF, FF, FF, // 1fa60
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1fa80
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1faa0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1fac0
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1fae0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1fb00
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1fb20
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1fb40
