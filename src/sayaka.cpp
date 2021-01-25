@@ -624,7 +624,7 @@ print_(const UString& src)
 		 || __predict_false((0x100000 <= uni && uni <= 0x10fffd))) 	// 第16面
 		{
 			auto tmp = string_format("<U+%X>", uni);
-			utext.Append(tmp);
+			utext.AppendASCII(tmp);
 			continue;
 		}
 
@@ -654,9 +654,9 @@ print_(const UString& src)
 			// XXX 正確には JIS という訳ではないのだがとりあえず
 			if (output_codeset == "iso-2022-jp") {
 				if (__predict_false(0xff61 <= uni && uni < 0xffa0)) {
-					utext.Append(ESC "(I");
+					utext.AppendASCII(ESC "(I");
 					utext.Append(uni - 0xff60 + 0x20);
-					utext.Append(ESC "(B");
+					utext.AppendASCII(ESC "(B");
 					continue;
 				}
 			}
@@ -675,7 +675,7 @@ print_(const UString& src)
 	UString utext2;
 	// インデント階層
 	auto left = indent_cols * (indent_depth + 1);
-	auto indent = string_format(CSI "%dC", left);
+	auto indent = UString(string_format(CSI "%dC", left));
 	utext2.Append(indent);
 
 	if (__predict_false(screen_cols == 0)) {
@@ -851,7 +851,7 @@ ColorBegin(Color col)
 	if (opt_nocolor) {
 		// --no-color なら一切属性を付けない
 	} else {
-		esc.Append(CSI);
+		esc.AppendASCII(CSI);
 		esc.Append(color2esc[col]);
 		esc.Append('m');
 	}
@@ -867,7 +867,7 @@ ColorEnd(Color col)
 	if (opt_nocolor) {
 		// --no-color なら一切属性を付けない
 	} else {
-		esc.Append(CSI "0m");
+		esc.AppendASCII(CSI "0m");
 	}
 	return esc;
 }
@@ -1102,7 +1102,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 
 		// URL があれば展開
 		if (__predict_false(!c.alturl.empty())) {
-			new_text.Append(c.alturl);
+			new_text.Append(UString::FromUTF8(c.alturl));
 			// FALL THROUGH
 		}
 

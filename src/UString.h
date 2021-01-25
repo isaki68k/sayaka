@@ -51,18 +51,14 @@ class UString : public std::vector<unichar>
 	UString(std::initializer_list<unichar> il)	// 初期化子リストを受け取る
 		: inherited(il) { }
 
-	UString(const std::string& s) {	// std::string からの変換
-		Append(s);
+	UString(const std::string& s) {	// std::string (ASCII)からの変換
+		AppendASCII(s);
 	}
 
 	// 代入演算子
 	UString& operator=(const UString& s) {
 		inherited::operator=(s);
 		return *this;
-	}
-	UString& operator=(const std::string& s) {
-		clear();
-		return Append(s);
 	}
 
 	// UString s を末尾に追加
@@ -85,8 +81,8 @@ class UString : public std::vector<unichar>
 
 	// 文字列 s (ASCII) を1文字ずつ末尾に追加
 	// (ASCII またはエスケープシーケンスのみの場合に使用できる)
-	UString& Append(const std::string& s) {
-		for (auto c : s) {
+	UString& AppendASCII(const std::string& s) {
+		for (const auto c : s) {
 			emplace_back((unsigned char)c);
 		}
 		return *this;
@@ -125,33 +121,36 @@ static inline UString operator+(const UString& lhs, const UString& rhs) {
 static inline UString operator+(UString&& lhs, const UString& rhs) {
 	return std::move(lhs.Append(rhs));		// (2)
 }
-/*
+#if 0
 static inline UString operator+(const UString& lhs, UString&& rhs) {
 	return std::move(rhs.insert(0, lhs));	// (3)
-}*/
+}
+#endif
 static inline UString operator+(UString&& lhs, UString&& rhs) {
 	return std::move(lhs.Append(rhs));		// (4)
 }
+#if 0
 static inline UString operator+(const char *lhs, const UString& rhs) {
 	return UString(lhs) + rhs;				// (5)
 }
-/*
 static inline UString operator+(const char *lhs, UString&& rhs) {
 	return std::move(rhs.insert(0, lhs));	// (6)
-}*/
+}
+#endif
 static inline UString operator+(char lhs, const UString& rhs) {
 	return UString().Append(lhs) + rhs;		// (7)
 }
-/*
+#if 0
 static inline UString operator+(char lhs, UString&& rhs) {
 	return std::move(rhs.insert(0, 1, lhs)); // (8)
-}*/
+}
 static inline UString operator+(const UString& lhs, const char *rhs) {
 	return lhs + UString(rhs);				// (9)
 }
 static inline UString operator+(UString&& lhs, const char *rhs) {
 	return std::move(lhs.Append(rhs));		// (10)
 }
+#endif
 static inline UString operator+(const UString& lhs, char rhs) {
 	return lhs + UString().Append(rhs);		// (11)
 }
