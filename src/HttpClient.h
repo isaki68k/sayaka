@@ -121,6 +121,9 @@ class HttpClient
 	// ただし ""(デフォルト) と "RSA" しか対応していない
 	std::string Ciphers {};
 
+	// User-Agent
+	std::string user_agent {};
+
  private:
 	// GET/POST リクエストを発行する
 	void SendRequest(const std::string& method);

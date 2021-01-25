@@ -569,6 +569,7 @@ Convert(const std::string& filename)
 	} else if (filename.find("://") != std::string::npos) {
 		diag.Debug("Downloading %s", filename.c_str());
 		HttpClient file;
+		file.user_agent = "sixelv";
 		if (file.Init(diagHttp, filename) == false) {
 			warn("File error: %s", filename.c_str());
 			if (opt_ignore_error) {

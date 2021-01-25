@@ -34,6 +34,7 @@
 HttpClient::HttpClient()
 {
 	family = AF_UNSPEC;
+	user_agent = "sayaka";
 }
 
 // uri をターゲットにして初期化する
@@ -128,7 +129,7 @@ HttpClient::SendRequest(const std::string& method)
 	sb += string_format("Host: %s\r\n", Uri.Host.c_str());
 
 	// User-Agent は SHOULD
-	sb += "User-Agent: HttpClient\r\n";
+	sb += "User-Agent: " + user_agent + "\r\n";
 
 	if (method == "POST") {
 		sb += "Content-Type: application/x-www-form-urlencoded\r\n";
