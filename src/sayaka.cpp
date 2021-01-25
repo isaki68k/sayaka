@@ -446,8 +446,8 @@ showstatus(const Json *status, bool is_quoted)
 			auto time = coloring(ngstat.time, Color::NG);
 			auto msg = coloring("NG:" + ngstat.ngword, Color::NG);
 
-			print_(name + " " + userid + "\n"
-			     + time + " " + msg + "\n");
+			print_(name + ' ' + userid + '\n'
+			     + time + ' ' + msg + '\n');
 			return true;
 		}
 		return false;
@@ -474,7 +474,7 @@ showstatus(const Json *status, bool is_quoted)
 					auto rtmsg = format_rt_owner(*status);
 					auto rtcnt = format_rt_cnt(*s);
 					auto favcnt = format_fav_cnt(*s);
-					print_(rtmsg + rtcnt + favcnt + "\n");
+					print_(rtmsg + rtcnt + favcnt + '\n');
 					// これ以降のリツイートは連続とみなす
 					last_id += "_RT";
 					return true;
@@ -489,7 +489,7 @@ showstatus(const Json *status, bool is_quoted)
 					auto rtcnt = format_rt_cnt(*s);
 					auto favcnt = format_fav_cnt(*s);
 					printf(CSI "1A");
-					print_(rtmsg + rtcnt + favcnt + "\n");
+					print_(rtmsg + rtcnt + favcnt + '\n');
 					return true;
 				}
 			}
@@ -527,7 +527,7 @@ showstatus(const Json *status, bool is_quoted)
 	auto msg = formatmsg(*s, &mediainfo);
 
 	show_icon(s_user);
-	print_(name + " " + userid + verified);
+	print_(name + ' ' + userid + verified);
 	printf("\n");
 	print_(msg);
 	printf("\n");
@@ -558,7 +558,7 @@ showstatus(const Json *status, bool is_quoted)
 	// このステータスの既 RT、既ふぁぼ数
 	auto rtmsg = format_rt_cnt(*s);
 	auto favmsg = format_fav_cnt(*s);
-	print_(time + " " + src + rtmsg + favmsg);
+	print_(time + ' ' + src + rtmsg + favmsg);
 	printf("\n");
 
 	// リツイート元
