@@ -685,7 +685,8 @@ print_(const UString& src)
 		// 1文字ずつ文字幅を数えながら出力用に整形していく
 		int in_escape = 0;
 		auto x = left;
-		for (auto uni : utext) {
+		for (int i = 0, end = utext.size(); i < end; i++) {
+			const auto uni = utext[i];
 			if (__predict_false(in_escape > 0)) {
 				// 1: ESC直後
 				// 2: ESC [
@@ -741,6 +742,19 @@ print_(const UString& src)
 					utext2.Append(indent);
 					x = left;
 				}
+			}
+
+			// デバッグ用
+			if (0) {
+				printf("[%d] U+%04x, x = %d", i, uni, x);
+				if (uni == ESCchar) {
+					printf(" ESC");
+				} else if (uni == '\n') {
+					printf(" '\\n'");
+				} else if (0x20 <= uni && uni < 0x7f) {
+					printf(" '%c'", uni);
+				}
+				printf("\n");
 			}
 		}
 	}
