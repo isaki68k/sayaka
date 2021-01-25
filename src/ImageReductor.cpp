@@ -947,13 +947,13 @@ fill_input_buffer(j_decompress_ptr cinfo)
 		if (n > 0) {
 			cinfo->src->next_input_byte = img->ReadBuffer;
 			cinfo->src->bytes_in_buffer = n;
-			return TRUE;
+			return (boolean)TRUE;
 		}
 	}
 
 	cinfo->src->next_input_byte = fake_EOI;
 	cinfo->src->bytes_in_buffer = sizeof(fake_EOI);
-	return TRUE;
+	return (boolean)TRUE;
 }
 
 static void
@@ -1090,7 +1090,7 @@ ImageReductor::LoadJpeg(ImageReductor::Image *img,
 
 	DEBUG_PRINTF("LoadJpeg readheader\n");
 	// ヘッダ読み込み
-	jpeg_read_header(&jinfo, TRUE);
+	jpeg_read_header(&jinfo, (boolean)TRUE);
 	DEBUG_PRINTF("LoadJpeg readheader OK\n");
 
 	img->OriginalWidth = jinfo.image_width;
@@ -1124,8 +1124,8 @@ ImageReductor::LoadJpeg(ImageReductor::Image *img,
 	jinfo.scale_num = 1;
 	jinfo.scale_denom = scale;
 
-	jinfo.do_fancy_upsampling = FALSE;
-	jinfo.do_block_smoothing = FALSE;
+	jinfo.do_fancy_upsampling = (boolean)FALSE;
+	jinfo.do_block_smoothing = (boolean)FALSE;
 	jinfo.dct_method = JDCT_FASTEST;
 	jinfo.out_color_space = JCS_RGB;
 	jinfo.output_components = 3;
