@@ -148,7 +148,7 @@ ImageLoaderJPEG::Load(Image& img)
 	Debug(diag, "%s img.buf=%zd", __method__, img.buf.size());
 
 	// スキャンラインメモリのポインタ配列
-	std::vector<uint8 *> lines(img.size.h);
+	std::vector<uint8 *> lines(img.GetHeight());
 	for (int y = 0, end = lines.size(); y < end; y++) {
 		lines[y] = img.buf.data() + (y * img.GetStride());
 	}
