@@ -78,8 +78,8 @@ SixelConverter::LoadAfter()
 	Debug(diag, "Loaded size=(%d,%d) bits=%d nCh=%d rowstride=%d",
 		Width,
 		Height,
-		img.GetBitsPerPixel(),
-		img.GetChPerPixel(),
+		img.GetChDepth(),
+		img.GetChannels(),
 		img.GetStride());
 }
 

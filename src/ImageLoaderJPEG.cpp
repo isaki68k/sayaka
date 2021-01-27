@@ -140,11 +140,12 @@ ImageLoaderJPEG::Load(Image& img)
 
 	img.size.w = jinfo.output_width;
 	img.size.h = jinfo.output_height;
-	img.ch_per_pixel = jinfo.output_components;
-	img.bits_per_pixel = img.ch_per_pixel * 8;	// ?
-	img.stridebyte = jinfo.output_width * jinfo.output_components;
+	img.stride = jinfo.output_width * jinfo.output_components;
+	img.channels = jinfo.output_components;
+	img.ch_depth = 8;
 
-	img.buf.resize(img.stridebyte * img.size.h);
+	img.buf.resize(img.GetStride() * img.GetHeight());
+	Debug(diag, "%s img.buf=%zd", __method__, img.buf.size());
 
 	// スキャンラインメモリのポインタ配列
 	std::vector<uint8 *> lines(img.size.h);

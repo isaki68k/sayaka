@@ -552,8 +552,8 @@ ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
 	uint8_t *src  = img.GetBuf();
 	int srcWidth  = img.GetWidth();
 	int srcHeight = img.GetHeight();
-	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
+	int srcNch    = img.GetChannels();
 
 	Debug(diag, "%s dst=(%d,%d) src=(%d,%d)", __func__,
 		dstWidth, dstHeight, srcWidth, srcHeight);
@@ -638,8 +638,8 @@ ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
 	uint8_t *src  = img.GetBuf();
 	int srcWidth  = img.GetWidth();
 	int srcHeight = img.GetHeight();
-	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
+	int srcNch    = img.GetChannels();
 
 	Debug(diag, "%s dst=(%d,%d) src=(%d,%d)", __func__,
 		dstWidth, dstHeight, srcWidth, srcHeight);
@@ -718,8 +718,8 @@ ImageReductor::ConvertHighQuality(Image& img, std::vector<uint8_t>& dst_,
 	uint8_t *src  = img.GetBuf();
 	int srcWidth  = img.GetWidth();
 	int srcHeight = img.GetHeight();
-	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
+	int srcNch    = img.GetChannels();
 
 	Debug(diag, "%s dst=(%p,%d,%d) src=(%p,%d,%d)", __func__,
 		dst, dstWidth, dstHeight, src, srcWidth, srcHeight);

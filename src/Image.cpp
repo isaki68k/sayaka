@@ -35,15 +35,15 @@ Image::Image()
 }
 
 // コンストラクタ (サイズ指定)
-Image::Image(int width_, int height_, int stride_, int ch_)
+Image::Image(int width_, int height_, int stride_, int channels_)
 {
 	size.w = width_;
 	size.h = height_;
-	stridebyte = stride_;
-	ch_per_pixel = ch_;
-	bits_per_pixel = ch_per_pixel * 8;	// ?
+	stride = stride_;
+	channels = channels_;
+	ch_depth = 8;	// ?
 
-	buf.resize(size.w * size.h);
+	buf.resize(GetWidth() * GetHeight());
 }
 
 // デストラクタ

@@ -116,16 +116,16 @@ class Image
 	Size GetSize() const	{ return size; }
 	int GetWidth() const	{ return size.w; }
 	int GetHeight() const	{ return size.h; }
-	int GetStride() const	{ return stridebyte; }
-	int GetChPerPixel() const	{ return ch_per_pixel; }
-	int GetBitsPerPixel() const	{ return bits_per_pixel; }
+	int GetStride() const	{ return stride; }
+	int GetChannels() const	{ return channels; }
+	int GetChDepth() const 	{ return ch_depth; }
 
 	std::vector<uint8> buf {};
-	Size size {};				// 画像サイズ (pixel)
-	int stridebyte {};			// ストライド (bytes)
+	Size size {};			// 画像サイズ (pixel)
+	int stride {};			// 横1ラインのバイト数
 
-	int ch_per_pixel {};		// 1ピクセルあたりのチャンネル数
-	int bits_per_pixel {};		// 1ピクセルあたりのビット数
+	int channels {};		// 1ピクセルあたりのチャンネル数
+	int ch_depth {};		// 1チャンネルあたりのビット数
 };
 
 //
