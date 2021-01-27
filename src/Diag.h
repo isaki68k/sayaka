@@ -28,12 +28,25 @@
 
 #include <string>
 
+#define Debug(diag, fmt...)	do {	\
+	if (diag >= 1)	\
+		diag.Print(fmt);	\
+} while (0)
+#define Trace(diag, fmt...) do {	\
+	if (diag >= 2)	\
+		diag.Print(fmt);	\
+} while (0)
+#define Verbose(diag, fmt...) do {	\
+	if (diag >= 3)	\
+		diag.Print(fmt);	\
+} while (0)
+
 class Diag
 {
 	// 分類名
 	std::string classname {};
 
-	// レベル。目安と後方互換製を兼ねて
+	// レベル。目安と後方互換性を兼ねて
 	// 0: なし
 	// 1: デバッグ
 	// 2: トレース
@@ -55,17 +68,7 @@ class Diag
 	// (int) 評価するとデバッグレベルを返すと便利
 	operator int() const { return GetLevel(); }
 
-	// レベル可変のメッセージ出力 (改行はこちらで付加する)
-	void Print(int lv, const char *fmt, ...);
-
-	// レベル不問のメッセージ出力 (改行はこちらで付加する)
-	// 呼び出し側でレベルを判定した後で使う
+	// メッセージ出力 (改行はこちらで付加する)
+	// 呼び出し側でレベルを判定してから呼ぶこと
 	void Print(const char *fmt, ...);
-
-	// デバッグログ表示 (改行はこちらで付加する)
-	void Debug(const char *fmt, ...);
-	// トレースログ表示 (改行はこちらで付加する)
-	void Trace(const char *fmt, ...);
-	// 詳細ログ表示 (改行はこちらで付加する)
-	void Verbose(const char *fmt, ...);
 };

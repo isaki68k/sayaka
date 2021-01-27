@@ -275,7 +275,7 @@ int main(int ac, char *av[])
 
 		 case OPT_debug_sixel:
 			opt_debug_sixel = 1;
-			ImageReductor::Debug = 1;
+			ImageReductor::debug = 1;
 			break;
 
 		 case 'e':
@@ -562,12 +562,12 @@ Convert(const std::string& filename)
 {
 	// ソース別にストリームを作成
 	if (filename == "-") {
-		diag.Debug("Loading stdin");
+		Debug(diag, "Loading stdin");
 		FdInputStream stream(STDIN_FILENO, false);
 		ConvertFromStream(&stream);
 
 	} else if (filename.find("://") != std::string::npos) {
-		diag.Debug("Downloading %s", filename.c_str());
+		Debug(diag, "Downloading %s", filename.c_str());
 		HttpClient file;
 		file.user_agent = "sixelv";
 		if (file.Init(diagHttp, filename) == false) {
@@ -582,7 +582,7 @@ Convert(const std::string& filename)
 		ConvertFromStream(stream);
 
 	} else {
-		diag.Debug("Loading %s", filename.c_str());
+		Debug(diag, "Loading %s", filename.c_str());
 		int fd = open(filename.c_str(), O_RDONLY);
 		if (fd < 0) {
 			warn("File load error: %s", filename.c_str());
@@ -646,7 +646,7 @@ ConvertFromStream(InputStream *istream)
 		prof[Profile_Load] = system_clock::now();
 	}
 
-	diag.Debug("Converting w=%d, h=%d, axis=%s",
+	Debug(diag, "Converting w=%d, h=%d, axis=%s",
 		opt_width, opt_height, ImageReductor::RAX2str(opt_resizeaxis));
 	sx.ConvertToIndexed();
 

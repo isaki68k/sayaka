@@ -232,7 +232,7 @@ class ImageReductor
 	// High 誤差分散アルゴリズム
 	ReductorDiffuseMethod HighQualityDiffuseMethod = RDM_FS;
 
-	static int Debug;
+	static int debug;
 
  private:
 	int PaletteCount {};

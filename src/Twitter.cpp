@@ -114,7 +114,7 @@ Twitter::GetAccessToken()
 {
 	oauth.AdditionalParams.clear();
 
-	diag.Debug("----- Request Token -----");
+	Debug(diag, "----- Request Token -----");
 	oauth.RequestToken(requestTokenURL);
 
 	printf("Please go to:\n"
@@ -126,7 +126,7 @@ Twitter::GetAccessToken()
 	char pin_str[1024];
 	fgets(pin_str, sizeof(pin_str), stdin);
 
-	diag.Debug("----- Access Token -----");
+	Debug(diag, "----- Access Token -----");
 
 	oauth.AdditionalParams["oauth_verifier"] = pin_str;
 	oauth.RequestToken(accessTokenURL);
@@ -164,9 +164,9 @@ Twitter::API(const std::string& method, const std::string& apiRoot,
 		}
 	}
 
-	diag.Trace("RequestAPI call");
+	Trace(diag, "RequestAPI call");
 	auto stream = oauth.RequestAPI(method, apiRoot + api + ".json");
-	diag.Trace("RequestAPI return");
+	Trace(diag, "RequestAPI return");
 
 	return stream;
 }
@@ -183,15 +183,15 @@ Twitter::API2Json(const std::string& method, const std::string& apiRoot,
 
 	stream = API(method, apiRoot, api, options);
 	if (stream == NULL) {
-		diag.Debug("%s: API failed", api.c_str());
+		Debug(diag, "%s: API failed", api.c_str());
 		return json;
 	}
 	auto r = stream->ReadLine(&line);
 	if (__predict_false(r < 0)) {
-		diag.Debug("%s: ReadLine failed: %s", api.c_str(), strerror(errno));
+		Debug(diag, "%s: ReadLine failed: %s", api.c_str(), strerror(errno));
 		return json;
 	}
-	diag.Debug("ReadLine |%s|", line.c_str());
+	Debug(diag, "ReadLine |%s|", line.c_str());
 
 	if (line.empty()) {
 		return json;

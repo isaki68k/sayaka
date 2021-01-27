@@ -277,7 +277,7 @@ cmd_stream()
 	fflush(stdout);
 
 	// ストリーミング開始
-	diag.Debug("PostAPI call");
+	Debug(diag, "PostAPI call");
 	{
 		StringDictionary dict;
 		if (opt_pseudo_home) {
@@ -385,7 +385,7 @@ showobject(const std::string& line)
 {
 	// 空行がちょくちょく送られてくるようだ
 	if (line.empty()) {
-		diag.Debug("empty line");
+		Debug(diag, "empty line");
 		return true;
 	}
 
@@ -439,7 +439,7 @@ showstatus(const Json *status, bool is_quoted)
 	bool match = ngword.Match(&ngstat, *status);
 	if (match) {
 		// マッチしたらここで表示
-		diagShow.Print(1, "showstatus: ng -> false");
+		Debug(diagShow, "showstatus: ng -> false");
 		if (opt_show_ng) {
 			auto userid = coloring(formatid(ngstat.screen_name), Color::NG);
 			auto name = coloring(formatname(ngstat.name), Color::NG);
@@ -1324,13 +1324,13 @@ show_image(const std::string& img_file, const std::string& img_url,
 
 	std::string img_path = cachedir + PATH_SEPARATOR + img_file;
 
-	diagImage.Debug("show_image: img_url=%s", img_url.c_str());
-	diagImage.Debug("show_image: img_path=%s", img_path.c_str());
+	Debug(diagImage, "show_image: img_url=%s", img_url.c_str());
+	Debug(diagImage, "show_image: img_path=%s", img_path.c_str());
 	auto cache_filename = img_path + ".sixel";
 	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
 	if (!cache_file.Valid()) {
 		// キャッシュファイルがないので、画像を取得
-		diagImage.Debug("sixel cache is not found");
+		Debug(diagImage, "sixel cache is not found");
 		cache_file = fetch_image(cache_filename, img_url, resize_width);
 		if (!cache_file.Valid()) {
 			return false;
@@ -1446,7 +1446,7 @@ get_credentials()
 	if (json.is_null()) {
 		errx(1, "get_credentials API2Json failed");
 	}
-	diag.Debug("json=|%s|", json.dump().c_str());
+	Debug(diag, "json=|%s|", json.dump().c_str());
 	if (json.contains("errors")) {
 		errx(1, "get_credentials failed%s", errors2string(json).c_str());
 	}
@@ -1477,7 +1477,7 @@ get_paged_list(const std::string& api, const char *funcname)
 		if (json.is_null()) {
 			errx(1, "%s API2Json failed", funcname);
 		}
-		diag.Debug("json=|%s|", json.dump().c_str());
+		Debug(diag, "json=|%s|", json.dump().c_str());
 		if (json.contains("errors")) {
 			errx(1, "%s failed: %s", funcname, errors2string(json).c_str());
 		}
@@ -1490,7 +1490,7 @@ get_paged_list(const std::string& api, const char *funcname)
 		}
 
 		cursor = json.value("next_cursor_str", "");
-		diag.Debug("cursor=|%s|", cursor.c_str());
+		Debug(diag, "cursor=|%s|", cursor.c_str());
 		if (__predict_false(cursor.empty())) {
 			cursor = "0";
 		}
@@ -1536,7 +1536,7 @@ get_nort_list()
 	if (json.is_null()) {
 		errx(1, "get_nort_list API2Json failed");
 	}
-	diag.Debug("json=|%s|", json.dump().c_str());
+	Debug(diag, "json=|%s|", json.dump().c_str());
 
 	if (!json.is_array()) {
 		// どうするかね

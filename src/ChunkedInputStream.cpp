@@ -49,7 +49,7 @@ ChunkedInputStream::~ChunkedInputStream()
 ssize_t
 ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 {
-	diag.Debug("Read(%zd)", dstsize);
+	Debug(diag, "Read(%zd)", dstsize);
 
 	// 要求サイズに満たない間 src から1チャンクずつ読み込む
 	for (;;) {
@@ -58,23 +58,23 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 
 		// chunksLength は内部バッファ長
 		size_t chunksLength = Chunks.GetSize();
-		diag.Debug("dstsize=%zd chunksLength=%zd", dstsize, chunksLength);
+		Debug(diag, "dstsize=%zd chunksLength=%zd", dstsize, chunksLength);
 		if (chunksLength >= dstsize) {
-			diag.Debug("Filled");
+			Debug(diag, "Filled");
 			break;
 		} else {
-			diag.Debug("Need to fill");
+			Debug(diag, "Need to fill");
 		}
 
 		// 先頭行はチャンク長+CRLF
 		r = src->ReadLine(&slen);
 		if (__predict_false(r < 0)) {
-			diag.Debug("ReadLine failed: %s", strerror(errno));
+			Debug(diag, "ReadLine failed: %s", strerror(errno));
 			return -1;
 		}
 		if (__predict_false(r == 0)) {
 			// EOF
-			diag.Debug("src is EOF");
+			Debug(diag, "src is EOF");
 			break;
 		}
 
@@ -83,36 +83,37 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 		errno = 0;
 		auto intlen = strtol(slen.c_str(), &end, 16);
 		if (end == slen.c_str()) {
-			diag.Debug("Chunk length is not a number: %s", slen.c_str());
+			Debug(diag, "Chunk length is not a number: %s", slen.c_str());
 			return -1;
 		}
 		if (*end != '\0') {
-			diag.Debug("Chunk length has a trailing garbage: %s", slen.c_str());
+			Debug(diag, "Chunk length has a trailing garbage: %s",
+				slen.c_str());
 			errno = EIO;
 			return -1;
 		}
 		if (errno) {
-			diag.Debug("Chunk length is out of range: %s", slen.c_str());
+			Debug(diag, "Chunk length is out of range: %s", slen.c_str());
 			return -1;
 		}
-		diag.Debug("intlen=%d", intlen);
+		Debug(diag, "intlen=%d", intlen);
 
 		if (intlen == 0) {
 			// データ終わり。CRLF を読み捨てる
 			src->ReadLine(&slen);
-			diag.Debug("This was the last chunk");
+			Debug(diag, "This was the last chunk");
 			break;
 		}
 
 		std::unique_ptr<char[]> bufp = std::make_unique<char[]>(intlen);
 		ssize_t readlen = src->Read(bufp.get(), intlen);
 		if (__predict_false(readlen < 0)) {
-			diag.Debug("Read failed: %s", strerror(errno));
+			Debug(diag, "Read failed: %s", strerror(errno));
 			return -1;
 		}
-		diag.Debug("readlen=%zd", readlen);
+		Debug(diag, "readlen=%zd", readlen);
 		if (__predict_false(readlen != intlen)) {
-			diag.Debug("readlen=%zd intlen=%d", readlen, intlen);
+			Debug(diag, "readlen=%zd intlen=%d", readlen, intlen);
 			errno = EIO;
 			return -1;
 		}
@@ -126,7 +127,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 
 	// dst に入るだけコピー
 	auto copylen = Chunks.Read(dst, dstsize);
-	diag.Debug("copylen=%d\n", copylen);
+	Debug(diag, "copylen=%d\n", copylen);
 
 	// Chunks の作り直しは C++ では不要なはず
 

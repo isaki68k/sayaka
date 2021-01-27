@@ -445,7 +445,7 @@ main(int ac, char *av[])
 		usage();
 	}
 
-	diag.Debug("tokenfile = %s", tokenfile.c_str());
+	Debug(diag, "tokenfile = %s", tokenfile.c_str());
 	init();
 
 	// コマンド別処理
@@ -687,12 +687,12 @@ sigwinch()
 	// そこからインデント幅を決定
 	indent_cols = ((int)(iconsize / fontwidth)) + 1;
 
-	diag.Debug("screen columns=%d%s", screen_cols, msg_cols);
-	diag.Debug("font height=%d%s", fontheight, msg_height);
-	diag.Debug("font width=%d%s", fontwidth, msg_width);
-	diag.Debug("iconsize=%d", iconsize);
-	diag.Debug("indent columns=%d", indent_cols);
-	diag.Debug("imagesize=%d", imagesize);
+	Debug(diag, "screen columns=%d%s", screen_cols, msg_cols);
+	Debug(diag, "font height=%d%s", fontheight, msg_height);
+	Debug(diag, "font width=%d%s", fontwidth, msg_width);
+	Debug(diag, "iconsize=%d", iconsize);
+	Debug(diag, "indent columns=%d", indent_cols);
+	Debug(diag, "imagesize=%d", imagesize);
 }
 // ユーザ一覧を表示するコマンド(共通部分)
 static void

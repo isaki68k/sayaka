@@ -323,18 +323,18 @@ OAuth::RequestToken(const std::string& uri_request_token)
 InputStream *
 OAuth::RequestAPI(const std::string& method, const std::string& uri_api)
 {
-	diag.Trace("CreateHttp call");
+	Trace(diag, "CreateHttp call");
 	RequestAPIClient = CreateHttp(method, uri_api);
-	diag.Trace("CreateHttp return");
+	Trace(diag, "CreateHttp return");
 
 	// Ciphers 指定があれば指示
 	if (!Ciphers.empty()) {
 		RequestAPIClient->SetCiphers(Ciphers);
 	}
 
-	diag.Trace("client.%s call", method.c_str());
+	Trace(diag, "client.%s call", method.c_str());
 	auto stream = RequestAPIClient->Act(method);
-	diag.Trace("client.%s return", method.c_str());
+	Trace(diag, "client.%s return", method.c_str());
 
 	return stream;
 }

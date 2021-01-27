@@ -49,7 +49,7 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 	}
 
 	Uri = ParsedUri::Parse(uri_);
-	diag.Debug("Uri=|%s|", Uri.to_string().c_str());
+	Debug(diag, "Uri=|%s|", Uri.to_string().c_str());
 
 	return true;
 }
@@ -59,7 +59,7 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 InputStream *
 HttpClient::Act(const std::string& method)
 {
-	diag.Trace("%s()", method.c_str());
+	Trace(diag, "%s()", method.c_str());
 
 	for (;;) {
 		Connect();
@@ -73,7 +73,7 @@ HttpClient::Act(const std::string& method)
 		if (300 <= ResultCode && ResultCode < 400) {
 			Close();
 			auto location = GetHeader(RecvHeaders, "Location");
-			diag.Debug("Redirect to %s", location.c_str());
+			Debug(diag, "Redirect to %s", location.c_str());
 			if (!location.empty()) {
 				auto newUri = ParsedUri::Parse(location);
 				if (!newUri.Scheme.empty()) {
@@ -85,7 +85,7 @@ HttpClient::Act(const std::string& method)
 					Uri.Query = newUri.Query;
 					Uri.Fragment = newUri.Fragment;
 				}
-				diag.Debug("%s", Uri.to_string().c_str());
+				Debug(diag, "%s", Uri.to_string().c_str());
 				continue;
 			}
 		} else if (ResultCode >= 400) {
@@ -101,7 +101,7 @@ HttpClient::Act(const std::string& method)
 	auto transfer_encoding = GetHeader(RecvHeaders, "Transfer-Encoding");
 	if (transfer_encoding == "chunked") {
 		// チャンク
-		diag.Debug("use ChunkedInputStream");
+		Debug(diag, "use ChunkedInputStream");
 		chunk_stream.reset(new ChunkedInputStream(mstream.get(), diag));
 		stream = chunk_stream.get();
 	} else {
@@ -140,12 +140,12 @@ HttpClient::SendRequest(const std::string& method)
 		sb += "\r\n";
 	}
 
-	diag.Debug("Request %s\n%s", method.c_str(), sb.c_str());
+	Debug(diag, "Request %s\n%s", method.c_str(), sb.c_str());
 
 	mtls.Write(sb.c_str(), sb.length());
 	mtls.Shutdown(SHUT_WR);
 
-	diag.Trace("SendRequest() request sent");
+	Trace(diag, "SendRequest() request sent");
 }
 
 // ヘッダを受信する
@@ -154,7 +154,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 {
 	size_t r;
 
-	diag.Trace("ReceiveHeader()");
+	Trace(diag, "ReceiveHeader()");
 
 	RecvHeaders.clear();
 
@@ -166,7 +166,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 	if (ResultLine.empty()) {
 		return false;
 	}
-	diag.Debug("HEADER |%s|", ResultLine.c_str());
+	Debug(diag, "HEADER |%s|", ResultLine.c_str());
 
 	auto proto_arg = Split2(ResultLine, " ");
 	auto protocol = proto_arg.first;
@@ -175,7 +175,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 		auto code_msg = Split2(arg, " ");
 		auto code = code_msg.first;
 		ResultCode = stoi(code);
-		diag.Debug("ResultCode=%d", ResultCode);
+		Debug(diag, "ResultCode=%d", ResultCode);
 	}
 
 	// 2行目以降のヘッダを読み込む
@@ -189,7 +189,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 		if (s.empty()) {
 			return false;
 		}
-		diag.Debug("HEADER |%s|", s.c_str());
+		Debug(diag, "HEADER |%s|", s.c_str());
 
 		// まず行継続の処理
 		if (s[0] == ' ') {
@@ -247,9 +247,9 @@ HttpClient::Connect()
 		// XXX RSA 専用
 		mtls.UseRSA();
 	}
-	diag.Trace("Connect(): %s", Uri.to_string().c_str());
+	Trace(diag, "Connect(): %s", Uri.to_string().c_str());
 	if (mtls.Connect(Uri.Host, Uri.Port) != 0) {
-		diag.Debug("mTLSHandle.Connect failed");
+		Debug(diag, "mTLSHandle.Connect failed");
 		return false;
 	}
 
@@ -260,7 +260,7 @@ HttpClient::Connect()
 void
 HttpClient::Close()
 {
-	diag.Trace("Close");
+	Trace(diag, "Close");
 	// nothing to do ?
 }
 

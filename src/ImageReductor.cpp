@@ -36,9 +36,9 @@
 #define __packed __attribute__((__packed__))
 #endif
 
-int ImageReductor::Debug = 0;
+int ImageReductor::debug = 0;
 #define DEBUG_PRINTF(x...) do { \
-	if (ImageReductor::Debug) \
+	if (ImageReductor::debug) \
 		fprintf(stderr, x); \
 } while (0)
 

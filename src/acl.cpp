@@ -29,6 +29,13 @@
 #include "StringUtil.h"
 #include "main.h"
 
+// ここの diagShow は Debug, Trace, Verbose という分類というより
+// 単に表示の詳しさを 1, 2, 3 としているだけなので、別名にする。
+#define DiagPrint(lv, fmt...)	do {	\
+	if (diagShow >= (lv))	\
+		diagShow.Print(fmt);	\
+} while (0)
+
 static bool acl_me(const std::string& user_id, const std::string& user_name,
 	const StringDictionary& replies);
 static bool acl_home(const Json& status, const std::string& user_id,
@@ -80,7 +87,7 @@ acl(const Json& status, bool is_quoted)
 
 	// ブロック氏の発言はすべて非表示
 	if (blocklist.ContainsKey(user_id)) {
-		diagShow.Print(3, "acl: block(@%s) -> false", user_name.c_str());
+		DiagPrint(3, "acl: block(@%s) -> false", user_name.c_str());
 		return false;
 	}
 
@@ -100,7 +107,7 @@ acl(const Json& status, bool is_quoted)
 		// フォローしてなければ Lv3 のみで表示する
 		if (diagShow >= 1) {
 			int lv = followlist.ContainsKey(user_id) ? 1 : 3;
-			diagShow.Print(lv, "acl: mute(@%s) -> false", user_name.c_str());
+			DiagPrint(lv, "acl: mute(@%s) -> false", user_name.c_str());
 		}
 		return false;
 	}
@@ -147,12 +154,12 @@ acl(const Json& status, bool is_quoted)
 		const auto& name = kv.second;
 
 		if (blocklist.ContainsKey(id)) {
-			diagShow.Print(1, "acl: @%s replies block(@%s) -> false",
+			DiagPrint(1, "acl: @%s replies block(@%s) -> false",
 				user_name.c_str(), name.c_str());
 			return false;
 		}
 		if (mutelist.ContainsKey(id)) {
-			diagShow.Print(1, "acl: @%s replies mute(@%s) -> false",
+			DiagPrint(1, "acl: @%s replies mute(@%s) -> false",
 				user_name.c_str(), name.c_str());
 			return false;
 		}
@@ -197,12 +204,12 @@ acl(const Json& status, bool is_quoted)
 
 		// RT 先発言者がブロック氏かミュート氏なら弾く
 		if (blocklist.ContainsKey(rt_user_id)) {
-			diagShow.Print(1, "acl: @%s retweets block(@%s) -> false",
+			DiagPrint(1, "acl: @%s retweets block(@%s) -> false",
 				user_name.c_str(), rt_user_name.c_str());
 			return false;
 		}
 		if (mutelist.ContainsKey(rt_user_id)) {
-			diagShow.Print(1, "acl: @%s retweets mute(@%s) -> false",
+			DiagPrint(1, "acl: @%s retweets mute(@%s) -> false",
 				user_name.c_str(), rt_user_name.c_str());
 			return false;
 		}
@@ -210,23 +217,19 @@ acl(const Json& status, bool is_quoted)
 		// RT 先のリプ先がブロック氏かミュート氏なら弾く
 		replies = GetReplies(rt_status, rt_user_id, rt_user_name);
 		if (diagShow >= 1) {
-			if (diagShow >= 2) {
-				diagShow.Print("%s", replies[""].c_str());
-			}
+			DiagPrint(2, "%s", replies[""].c_str());
 			replies.Remove("");
 		}
 		for (const auto& kv : replies) {
 			const auto& id = kv.first;
 			const auto& name = kv.second;
 			if (blocklist.ContainsKey(id)) {
-				diagShow.Print(1,
-					"acl: @%s retweets (* to block(@%s)) -> false",
+				DiagPrint(1, "acl: @%s retweets (* to block(@%s)) -> false",
 					user_name.c_str(), name.c_str());
 				return false;
 			}
 			if (mutelist.ContainsKey(id)) {
-				diagShow.Print(1,
-					"acl: @%s retweets (* to mute(@%s)) -> false",
+				DiagPrint(1, "acl: @%s retweets (* to mute(@%s)) -> false",
 					user_name.c_str(), name.c_str());
 				return false;
 			}
@@ -250,7 +253,7 @@ acl_me(const std::string& user_id, const std::string& user_name,
 
 	// 俺氏の発言はすべて表示
 	if (user_id == myid) {
-		diagShow.Print(1, "acl_me: myid -> true");
+		DiagPrint(1, "acl_me: myid -> true");
 		return true;
 	}
 
@@ -261,14 +264,14 @@ acl_me(const std::string& user_id, const std::string& user_name,
 			continue;
 		if (id == myid) {
 			if (blocklist.ContainsKey(user_id)) {
-				diagShow.Print(1, "acl_me: block(@%s) to myid -> false",
+				DiagPrint(1, "acl_me: block(@%s) to myid -> false",
 					user_name.c_str());
 				return false;
 			}
 			if (diagShow >= 2 && replies.ContainsKey("")) {
 				diagShow.Print("%s", replies.at("").c_str());
 			}
-			diagShow.Print(1, "acl_me: * to myid -> true");
+			DiagPrint(1, "acl_me: * to myid -> true");
 			return true;
 		}
 	}
@@ -286,14 +289,14 @@ acl_home(const Json& status, const std::string& user_id,
 	// RT非表示氏のリツイートは弾く。
 	if (status.contains("retweeted_status") &&
 	    nortlist.ContainsKey(user_id)) {
-		diagShow.Print(1, "acl_home: nort(@%s) retweet -> false",
+		DiagPrint(1, "acl_home: nort(@%s) retweet -> false",
 			user_name.c_str());
 		return false;
 	}
 
 	// 他人氏の発言はもう全部弾いてよい
 	if (!followlist.ContainsKey(user_id)) {
-		diagShow.Print(3, "acl_home: others(@%s) -> false", user_name.c_str());
+		DiagPrint(3, "acl_home: others(@%s) -> false", user_name.c_str());
 		return false;
 	}
 

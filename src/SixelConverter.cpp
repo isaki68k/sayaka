@@ -55,15 +55,15 @@ SixelConverter::SixelConverter(int debuglv)
 bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
-	diag.Debug("LoaderMode=%d", LoaderMode);
-	diag.Debug("ResizeMode=%d", ResizeMode);
+	Debug(diag, "LoaderMode=%d", LoaderMode);
+	Debug(diag, "ResizeMode=%d", ResizeMode);
 
 	if (LoaderMode == SixelLoaderMode::Lib) {
 		if (LoadJpeg(stream) == true) {
 			LoadAfter();
 			return true;
 		} else {
-			diag.Debug("fallback to gdk");
+			Debug(diag, "fallback to gdk");
 		}
 	}
 
@@ -78,13 +78,13 @@ SixelConverter::LoadFromStream(InputStream *stream)
 		CalcResizeGdkLoad(&width, &height);
 		pix = gdk_pixbuf_from_stream_at_scale(gstream, width, height, true);
 		if (pix == NULL) {
-			diag.Debug("gdk_pixbuf_from_stream_at_scale() failed");
+			Debug(diag, "gdk_pixbuf_from_stream_at_scale() failed");
 			return false;
 		}
 	} else {
 		pix = gtk_pixbuf_from_stream(gstream);
 		if (pix == NULL) {
-			diag.Debug("gdk_pixbuf_from_stream() failed");
+			Debug(diag, "gdk_pixbuf_from_stream() failed");
 			return false;
 		}
 	}
@@ -102,12 +102,12 @@ SixelConverter::LoadJpeg(InputStream *stream)
 	// バッファを覗き見して..
 	auto n = stream->Peek(magic, sizeof(magic));
 	if (n < sizeof(magic)) {
-		diag.Debug("Read(magic) failed: %s", strerror(errno));
+		Debug(diag, "Read(magic) failed: %s", strerror(errno));
 		return false;
 	}
 	// マジックを確認
 	if (magic[0] != 0xff || magic[1] != 0xd8) {
-		diag.Debug("Bad magic");
+		Debug(diag, "Bad magic");
 		return false;
 	}
 
@@ -118,10 +118,10 @@ SixelConverter::LoadJpeg(InputStream *stream)
 	auto r = ImageReductor::LoadJpeg(img,
 		ResizeWidth, ResizeHeight, ResizeAxis);
 	if (r != ReductorImageCode::RIC_OK) {
-		diag.Debug("ImageReductor::LoadJpeg failed");
+		Debug(diag, "ImageReductor::LoadJpeg failed");
 		return false;
 	}
-	diag.Debug("img.Width=%d img.Height=%d img.RowStride=%d",
+	Debug(diag, "img.Width=%d img.Height=%d img.RowStride=%d",
 		img->Width, img->Height, img->RowStride);
 	pix = gdk_pixbuf_new_from_data(
 		img->Data,
@@ -140,7 +140,7 @@ SixelConverter::LoadAfter()
 {
 	Width = gdk_pixbuf_get_width(pix);
 	Height = gdk_pixbuf_get_height(pix);
-	diag.Debug("Size=(%d,%d) bits=%d nCh=%d rowstride=%d",
+	Debug(diag, "Size=(%d,%d) bits=%d nCh=%d rowstride=%d",
 		Width, Height,
 		gdk_pixbuf_get_bits_per_sample(pix),
 		gdk_pixbuf_get_n_channels(pix),
@@ -284,18 +284,18 @@ SixelConverter::ConvertToIndexed()
 	int height = 0;
 	CalcResize(&width, &height);
 
-	diag.Debug("resize to width=%d height=%d)", width, height);
+	Debug(diag, "resize to width=%d height=%d)", width, height);
 
 	if (ResizeMode == SixelResizeMode::ByScaleSimple) {
 		if (width == Width || height == Height) {
-			diag.Debug("no need to resize");
+			Debug(diag, "no need to resize");
 		} else {
 			// GdkPixbuf で事前リサイズする。
 			// ImageReductor は減色とリサイズを同時実行できるので、
 			// 事前リサイズは品質の問題が出た時のため。
 			GdkPixbuf *pix2 = gdk_pixbuf_scale_simple(pix, width, height,
 				GDK_INTERP_BILINEAR);
-			diag.Debug("scale_simple resized");
+			Debug(diag, "scale_simple resized");
 
 			// 差し替える
 			g_object_unref(pix);
@@ -308,18 +308,18 @@ SixelConverter::ConvertToIndexed()
 
 	Indexed.resize(Width * Height);
 
-	diag.Debug("SetColorMode(%s, %s, %d)",
+	Debug(diag, "SetColorMode(%s, %s, %d)",
 		ImageReductor::RCM2str(ColorMode),
 		ImageReductor::RFM2str(FinderMode),
 		GrayCount);
 	ir.SetColorMode(ColorMode, FinderMode, GrayCount);
 
-	diag.Debug("SetAddNoiseLevel=%d", AddNoiseLevel);
+	Debug(diag, "SetAddNoiseLevel=%d", AddNoiseLevel);
 	ir.SetAddNoiseLevel(AddNoiseLevel);
 
-	diag.Debug("ReduceMode=%s", ImageReductor::RRM2str(ReduceMode));
+	Debug(diag, "ReduceMode=%s", ImageReductor::RRM2str(ReduceMode));
 	ir.Convert(ReduceMode, pix, Indexed, Width, Height);
-	diag.Debug("Converted");
+	Debug(diag, "Converted");
 }
 
 //
@@ -374,7 +374,7 @@ SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 
 	// パレットのビット数
 	int bcnt = MyLog2(ir.GetPaletteCount());
-	diag.Debug("%s bcnt=%d\n", __func__, bcnt);
+	Debug(diag, "%s bcnt=%d\n", __func__, bcnt);
 
 	uint8 sixelbuf[(w + 5) * bcnt];
 
@@ -405,7 +405,7 @@ SixelConverter::SixelToStreamCore(OutputStream *stream)
 	int src = 0;
 
 	int PaletteCount = ir.GetPaletteCount();
-	diag.Debug("%s PaletteCount=%d", __func__, PaletteCount);
+	Debug(diag, "%s PaletteCount=%d", __func__, PaletteCount);
 
 	// カラー番号ごとの、X 座標の min, max を計算する。
 	// short でいいよね…
@@ -439,12 +439,12 @@ SixelConverter::SixelToStreamCore(OutputStream *stream)
 
 		for (;;) {
 			// 出力するべきカラーがなくなるまでのループ
-			diag.Trace("for1");
+			Trace(diag, "for1");
 			int16 mx = -1;
 
 			for (;;) {
 				// 1行の出力で出力できるカラーのループ
-				diag.Trace("for2");
+				Trace(diag, "for2");
 
 				uint8 min_color = 0;
 				int16 min = INT16_MAX;
@@ -530,7 +530,7 @@ SixelConverter::SixelPostamble()
 void
 SixelConverter::SixelToStream(OutputStream *stream)
 {
-	diag.Debug("SixelToStream");
+	Debug(diag, "SixelToStream");
 	assert(ir.GetPaletteCount() != 0);
 
 	// 開始コードとかの出力
