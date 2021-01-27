@@ -25,14 +25,14 @@
  */
 
 #include "FileStream.h"
+#include "Image.h"
+#include "ImageLoaderJPEG.h"
 #include "SixelConverter.h"
 #include "StringUtil.h"
 #include "sayaka.h"
 #include <cassert>
+#include <cstring>
 #include <errno.h>
-
-static int  img_readcallback(ImageReductor::Image *img);
-static void img_freecallback(guchar *pixels, gpointer data);
 
 // コンストラクタ
 SixelConverter::SixelConverter()
@@ -47,136 +47,43 @@ SixelConverter::SixelConverter(int debuglv)
 	diag.SetLevel(debuglv);
 }
 
-//
-// 画像の読み込み
-//
-
-// stream から画像を pix に読み込む
+// stream から画像を img に読み込む
 bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
-	Debug(diag, "LoaderMode=%d", LoaderMode);
 	Debug(diag, "ResizeMode=%d", ResizeMode);
 
-	if (LoaderMode == SixelLoaderMode::Lib) {
-		if (LoadJpeg(stream) == true) {
-			LoadAfter();
-			return true;
-		} else {
-			Debug(diag, "fallback to gdk");
+	{
+		ImageLoaderJPEG loader(stream, diag);
+		if (loader.Check()) {
+			if (loader.Load(img)) {
+				LoadAfter();
+				return true;
+			}
+			return false;
 		}
 	}
 
-#if 1
-	printf("%s not implemented\n", __func__);
+	printf("Unknown picture format");
 	return false;
-#else
-	GInputStream *gstream = g_unix_input_stream_new(fileno(fp), false);
-	if (ResizeMode == SixelResizeMode::ByLoad) {
-		int width = -1;
-		int height = -1;
-		CalcResizeGdkLoad(&width, &height);
-		pix = gdk_pixbuf_from_stream_at_scale(gstream, width, height, true);
-		if (pix == NULL) {
-			Debug(diag, "gdk_pixbuf_from_stream_at_scale() failed");
-			return false;
-		}
-	} else {
-		pix = gtk_pixbuf_from_stream(gstream);
-		if (pix == NULL) {
-			Debug(diag, "gdk_pixbuf_from_stream() failed");
-			return false;
-		}
-	}
-	LoadAfter();
-	return true;
-#endif
-}
-
-// libjpeg を使って stream から JPEG 画像を pix に読み込む
-bool
-SixelConverter::LoadJpeg(InputStream *stream)
-{
-	uint8 magic[2];
-
-	// バッファを覗き見して..
-	auto n = stream->Peek(magic, sizeof(magic));
-	if (n < sizeof(magic)) {
-		Debug(diag, "Read(magic) failed: %s", strerror(errno));
-		return false;
-	}
-	// マジックを確認
-	if (magic[0] != 0xff || magic[1] != 0xd8) {
-		Debug(diag, "Bad magic");
-		return false;
-	}
-
-	img = ImageReductor::AllocImage();
-	img->ReadCallback = img_readcallback;
-	img->UserObject = stream;
-
-	auto r = ImageReductor::LoadJpeg(img,
-		ResizeWidth, ResizeHeight, ResizeAxis);
-	if (r != ReductorImageCode::RIC_OK) {
-		Debug(diag, "ImageReductor::LoadJpeg failed");
-		return false;
-	}
-	Debug(diag, "img.Width=%d img.Height=%d img.RowStride=%d",
-		img->Width, img->Height, img->RowStride);
-	pix = gdk_pixbuf_new_from_data(
-		img->Data,
-		GDK_COLORSPACE_RGB,
-		false,	// has_alpha
-		8,		// bits_per_sample
-		img->Width,
-		img->Height,
-		img->RowStride,
-		img_freecallback, NULL);
-	return true;
 }
 
 void
 SixelConverter::LoadAfter()
 {
-	Width = gdk_pixbuf_get_width(pix);
-	Height = gdk_pixbuf_get_height(pix);
+	Width  = img.GetWidth();
+	Height = img.GetHeight();
+
 	Debug(diag, "Size=(%d,%d) bits=%d nCh=%d rowstride=%d",
-		Width, Height,
-		gdk_pixbuf_get_bits_per_sample(pix),
-		gdk_pixbuf_get_n_channels(pix),
-		gdk_pixbuf_get_rowstride(pix));
+		Width,
+		Height,
+		img.GetBitsPerPixel(),
+		img.GetChPerPixel(),
+		img.GetStride());
 }
 
-// LoadJpeg から呼ばれるコールバック
-static int
-img_readcallback(ImageReductor::Image *img)
-{
-	InputStream *stream = (InputStream *)img->UserObject;
-	return stream->Read(img->ReadBuffer, sizeof(img->ReadBuffer));
-}
 
-// LoadJpeg から呼ばれるコールバック
-static void
-img_freecallback(guchar *pixels, gpointer data)
-{
-	ImageReductor::Image *img = (ImageReductor::Image *)data;
-	if (img != NULL) {
-		ImageReductor::FreeImage(img);
-	}
-}
-
-//
-// ----- リサイズ計算
-//
-
-// Loader::Gdk の時、scale に渡す幅と高さを計算する
-void
-SixelConverter::CalcResizeGdkLoad(int *width, int *height)
-{
-	printf("%s not implemented\n", __func__);
-}
-
-// Loader::Gdk 以外の時のリサイズ計算
+// リサイズ計算
 void
 SixelConverter::CalcResize(int *widthp, int *heightp)
 {
@@ -284,24 +191,7 @@ SixelConverter::ConvertToIndexed()
 	int height = 0;
 	CalcResize(&width, &height);
 
-	Debug(diag, "resize to width=%d height=%d)", width, height);
-
-	if (ResizeMode == SixelResizeMode::ByScaleSimple) {
-		if (width == Width || height == Height) {
-			Debug(diag, "no need to resize");
-		} else {
-			// GdkPixbuf で事前リサイズする。
-			// ImageReductor は減色とリサイズを同時実行できるので、
-			// 事前リサイズは品質の問題が出た時のため。
-			GdkPixbuf *pix2 = gdk_pixbuf_scale_simple(pix, width, height,
-				GDK_INTERP_BILINEAR);
-			Debug(diag, "scale_simple resized");
-
-			// 差し替える
-			g_object_unref(pix);
-			pix = pix2;
-		}
-	}
+	Debug(diag, "resize to (width=%d height=%d)", width, height);
 
 	Width = width;
 	Height = height;
@@ -318,7 +208,7 @@ SixelConverter::ConvertToIndexed()
 	ir.SetAddNoiseLevel(AddNoiseLevel);
 
 	Debug(diag, "ReduceMode=%s", ImageReductor::RRM2str(ReduceMode));
-	ir.Convert(ReduceMode, pix, Indexed, Width, Height);
+	ir.Convert(ReduceMode, img, Indexed, Width, Height);
 	Debug(diag, "Converted");
 }
 
@@ -564,14 +454,8 @@ SixelConverter::SixelRepunit(int n, uint8 ptn)
 // enum を文字列にしたやつ orz
 //
 
-static const char *SLM2str_[] = {
-	"Gdk",
-	"Lib",
-};
-
 static const char *SRM2str_[] = {
 	"ByLoad",
-	"ByScaleSimple",
 	"ByImageReductor",
 };
 
@@ -581,12 +465,6 @@ SixelConverter::SOM2str(SixelOutputMode val)
 	if (val == Normal)	return "Normal";
 	if (val == Or)		return "Or";
 	return "?";
-}
-
-/*static*/ const char *
-SixelConverter::SLM2str(SixelLoaderMode val)
-{
-	return ::SLM2str_[(int)val];
 }
 
 /*static*/ const char *
@@ -611,20 +489,8 @@ test_enum()
 		xp_eq(exp, act, exp);
 	}
 
-	std::vector<std::pair<SixelLoaderMode, const std::string>> table_SLM = {
-		{ SixelLoaderMode::Gdk,				"Gdk" },
-		{ SixelLoaderMode::Lib,				"Lib" },
-	};
-	for (const auto& a : table_SLM) {
-		const auto n = a.first;
-		const auto& exp = a.second;
-		std::string act(SixelConverter::SLM2str(n));
-		xp_eq(exp, act, exp);
-	}
-
 	std::vector<std::pair<SixelResizeMode, const std::string>> table_SRM = {
 		{ SixelResizeMode::ByLoad,			"ByLoad" },
-		{ SixelResizeMode::ByScaleSimple,	"ByScaleSimple" },
 		{ SixelResizeMode::ByImageReductor,	"ByImageReductor" },
 	};
 	for (const auto& a : table_SRM) {

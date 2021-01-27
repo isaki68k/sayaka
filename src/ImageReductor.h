@@ -27,8 +27,8 @@
 #pragma once
 
 #include "sayaka.h"
+#include "Image.h"
 #include <vector>
-#include <gdk-pixbuf/gdk-pixbuf.h>
 
 // 減色モード
 enum ReductorReduceMode {
@@ -85,70 +85,6 @@ enum ReductorDiffuseMethod {
 	RDM_RGB,		// RGB color sepalated
 };
 
-enum ResizeAxisMode {
-	// 幅が ResizeWidth になり、
-	// 高さが ResizeHeight になるようにリサイズする。
-	// ResizeWidth == 0 のときは Height と同じ動作をする。
-	// ResizeHeight == 0 のときは Width と同じ動作をする。
-	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
-	Both,
-
-	// 幅が ResizeWidth になるように縦横比を保持してリサイズする。
-	// ResizeWidth == 0 のときは原寸大。
-	Width,
-
-	// 高さが ResizeHeight になるように縦横比を保持してリサイズする。
-	// ResizeHeight == 0 のときは原寸大。
-	Height,
-
-	// 長辺優先リサイズ
-	// 原寸 Width >= Height のときは Width と同じ動作をする。
-	// 原寸 Width < Height のときは Height と同じ動作をする。
-	// 例:
-	// 長辺を特定のサイズにしたい場合は、ResizeWidth と ResizeHeight に
-	// 同じ値を設定する。
-	Long,
-
-	// 短辺優先リサイズ
-	// 原寸 Width <= Height のときは Width と同じ動作をする。
-	// 原寸 Width > Height のときは Height と同じ動作をする。
-	Short,
-
-	// 縮小のみの Both
-	// 幅が ResizeWidth より大きいときは ResizeWidth になり、
-	// 高さが ResizeHeight より大きいときは ResizeHeight になるように
-	// リサイズする。
-	// ResizeWidth == 0 のときは ScaleDownHeight と同じ動作をする。
-	// ResizeHeight == 0 のときは ScaleDownWidth と同じ動作をする。
-	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
-	ScaleDownBoth,
-
-	// 縮小のみの Width
-	// 幅が ResizeWidth より大きいときは ResizeWidth になるように
-	// 縦横比を保持してリサイズする。
-	// ResizeWidth == 0 のときは原寸大。
-	ScaleDownWidth,
-
-	// 縮小のみの Height
-	// 幅が ResizeHeight より大きいときは ResizeHeight になるように
-	// 縦横比を保持してリサイズする。
-	// ResizeHeight == 0 のときは原寸大。
-	ScaleDownHeight,
-
-	// 縮小のみの長辺優先リサイズ
-	// 原寸 Width >= Height のときは ScaleDownWidth と同じ動作をする。
-	// 原寸 Width < Height のときは ScaleDownHeight と同じ動作をする。
-	// 例:
-	// 長辺を特定のサイズ以下にしたい場合は、ResizeWidth と ResizeHeight に
-	// 同じ値を設定する。
-	ScaleDownLong,
-
-	// 縮小のみの短辺優先リサイズ
-	// 原寸 Width <= Height のときは ScaleDownWidth と同じ動作をする。
-	// 原寸 Width > Height のときは ScaleDownHeight と同じ動作をする。
-	ScaleDownShort,
-};
-
 // ----- 色の型
 
 struct ColorRGBint {
@@ -186,26 +122,6 @@ class ImageReductor
 	using FindColorFunc_t = int (ImageReductor::*)(ColorRGBuint8);
 
  public:
-	struct Image;
-	struct Image
-	{
-		uint8_t *Data;
-		int32_t DataLen;
-		int32_t Width;
-		int32_t Height;
-		int32_t ChannelCount;
-		int32_t RowStride;
-		int32_t OriginalWidth;
-		int32_t OriginalHeight;
-
-		int (*ReadCallback)(Image *);
-		// ユーザが自由に使っていい。
-		void *UserObject;
-
-		uint8_t ReadBuffer[4096];
-	};
-
- public:
 	// パレット数を取得
 	int GetPaletteCount() const { return PaletteCount; }
 
@@ -224,7 +140,7 @@ class ImageReductor
 	}
 
 	// 変換
-	void Convert(ReductorReduceMode mode, GdkPixbuf *pix,
+	void Convert(ReductorReduceMode mode, Image& img,
 		std::vector<uint8_t>& dst, int toWidth, int toHeight);
 
 	void ColorFactor(float factor);
@@ -292,33 +208,19 @@ class ImageReductor
 	static int rnd(int level);
 
 	// 高速変換を行う
-	void ConvertFast(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+	void ConvertFast(Image& img, std::vector<uint8_t>& dst,
 		int toWidth, int toHeight);
 
 	// 単純変換を行う
-	void ConvertSimple(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+	void ConvertSimple(Image& img, std::vector<uint8_t>& dst,
 		int toWidth, int toHeight);
 
 	// 高品質変換を行う
-	void ConvertHighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst,
+	void ConvertHighQuality(Image& img, std::vector<uint8_t>& dst,
 		int toWidth, int toHeight);
 
 	static int16_t Saturate_adderr(int16_t a, int b);
 	static void set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio);
-
-	//
-	// JPEG イメージ
-	//
- public:
-	static Image *AllocImage();
-	static void FreeImage(Image *img);
-
-	static ReductorImageCode LoadJpeg(Image *img,
-		int requestWidth, int requestHeight, ResizeAxisMode requestAxis);
-
- private:
-	static void calcResize(int *req_w, int *req_h, int req_ax,
-		int org_w, int org_h);
 
  public:
 	// enum 対応

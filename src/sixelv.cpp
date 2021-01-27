@@ -34,15 +34,16 @@
 #include "term.h"
 #include <array>
 #include <chrono>
+#include <cstring>
 #include <map>
 #include <memory>
 #include <tuple>
 #include <err.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/utsname.h>
-#include <gio/gunixoutputstream.h>
 
 using namespace std::chrono;
 
@@ -67,7 +68,6 @@ bool opt_ignore_error = false;
 bool opt_ormode = false;
 bool opt_profile = false;
 SixelResizeMode opt_resizemode = SixelResizeMode::ByLoad;
-SixelLoaderMode opt_loadermode = SixelLoaderMode::Gdk;
 OutputFormat opt_outputformat = OutputFormat::SIXEL;
 int opt_output_x = 0;
 int opt_output_y = 0;
@@ -96,7 +96,6 @@ enum {
 	OPT_ignore_error,
 	OPT_ipv4,
 	OPT_ipv6,
-	OPT_loader,
 	OPT_x68k,
 	OPT_ormode,
 	OPT_output_format,
@@ -126,7 +125,6 @@ static const struct option longopts[] = {
 	{ "ignore-error",	no_argument,		NULL,	OPT_ignore_error },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
-	{ "loader",			required_argument,	NULL,	OPT_loader },
 	{ "monochrome",		no_argument,		NULL,	'e' },
 	{ "ormode",			required_argument,	NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	OPT_output_format },
@@ -177,13 +175,7 @@ std::map<const std::string, ResizeAxisMode> resizeaxis_map = {
 
 std::map<const std::string, SixelResizeMode> resizemode_map = {
 	{ "load",				SixelResizeMode::ByLoad },
-	{ "scale",				SixelResizeMode::ByScaleSimple },
 	{ "imagereductor",		SixelResizeMode::ByImageReductor },
-};
-
-std::map<const std::string, SixelLoaderMode> loadermode_map = {
-	{ "gdk",				SixelLoaderMode::Gdk },
-	{ "lib",				SixelLoaderMode::Lib },
 };
 
 std::map<const std::string, OutputFormat> outputformat_map = {
@@ -372,13 +364,6 @@ int main(int ac, char *av[])
 			}
 			break;
 
-		 case OPT_loader:
-			opt_loadermode = select_opt(loadermode_map, optarg, &res);
-			if (res == false) {
-				errx(1, "--loader %s: must be either 'gdk' or 'lib'", optarg);
-			}
-			break;
-
 		 case OPT_output_format:
 			opt_outputformat = select_opt(outputformat_map, optarg, &res);
 			if (res == false) {
@@ -469,9 +454,8 @@ static const char short_help[] = R"**(
               fs, atkinson, jajuni, stucki, burkes, 2, 3, rgb
    --axis={both, w, width, h, height, long, short}
    --ignore-error                   --debug      <0..2>
-   --loader={gdk, lib}              --debug-http <0..2>
-   --profile                        --debug-sixel
-   --help-all
+   --profile                        --debug-http <0..2>
+   --help-all                       --debug-sixel
 )**";
 
 static const char long_help[] = R"**( 
@@ -492,7 +476,7 @@ static const char long_help[] = R"**(
  size options
    -w <width>, --width=<width>:    Resize width to <width> pixel.
    -h <height>, --height=<height>: Resize height to <height> pixel.
-   --resize={load, scale, imagereductor, libjpeg}
+   --resize={load, imagereductor}
                    : Select resize algorighm (for debug).
 
  algorithm options
@@ -516,7 +500,6 @@ static const char long_help[] = R"**(
    --ipv4, --ipv6
    --ignore-error
    --axis={both, w, width, h, height, long, short}
-   --loader={gdk, lib}
    --color-factor=<factor>
    --finder={rgb, hsv} (default: rgb)
    --addnoise=<noiselevel>
@@ -613,7 +596,6 @@ ConvertFromStream(InputStream *istream)
 	sx.ColorMode = opt_colormode;
 	sx.ReduceMode = opt_reduce;
 	sx.ResizeMode = opt_resizemode;
-	sx.LoaderMode = opt_loadermode;
 	sx.OutputPalette = opt_outputpalette;
 	sx.GrayCount = opt_graylevel;
 	sx.FinderMode = opt_findermode;
@@ -737,6 +719,7 @@ ConvertFromStream(InputStream *istream)
 	 }
 
 	 case OutputFormat::PALETTEPNG:
+#if 0
 		// 11 x 11 はどうなのかとか。img2sixel 合わせだが、
 		// img2sixel 側の問題でうまくいかない。
 		const bool has_alpha = false;
@@ -765,6 +748,7 @@ ConvertFromStream(InputStream *istream)
 			}
 			exit(1);
 		}
+#endif
 		break;
 	}
 

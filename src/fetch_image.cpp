@@ -44,7 +44,6 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 
 	// 共通の設定
 	// 一番高速になる設定
-	sx.LoaderMode = SixelLoaderMode::Lib;
 	sx.ResizeMode = SixelResizeMode::ByLoad;
 	// 縮小するので X68k でも画質 High でいける
 	sx.ReduceMode = ReductorReduceMode::HighQuality;

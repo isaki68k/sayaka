@@ -30,7 +30,6 @@
 #include "ImageReductor.h"
 #include "StreamBase.h"
 #include <vector>
-#include <gdk-pixbuf/gdk-pixbuf.h>
 
 // SIXEL 出力モード。
 // SIXEL のカラーモード値と同じにする。
@@ -39,30 +38,11 @@ enum SixelOutputMode {
 	Or = 5,		// OR モード SIXEL を出力する。
 };
 
-// ローダモード。
-// 画像のロードに使うライブラリを指定する。
-enum SixelLoaderMode
-{
-	// gdk pixbuf を使用する。
-	Gdk,
-
-	// 個別ライブラリを使用する。
-	// 現在は jpeg 画像で、libjpeg を使用する。
-	// 将来的に libpng などをサポートしたときもこのフラグになる予定。
-	// 個別ライブラリが対応していないフォーマットの場合は
-	// gdk pixbuf にフォールバックする。
-	Lib,
-};
-
 // リサイズモード
 enum SixelResizeMode
 {
 	// リサイズ処理をロード時にライブラリで行う。
 	ByLoad,
-
-	// ロードは等倍で行い、その後にリサイズ処理を
-	// Gdk.Pixbuf.scale_simple で行う。
-	ByScaleSimple,
 
 	// ロードは等倍で行い、その後にリサイズ処理を ImageReductor で行う。
 	ByImageReductor,
@@ -114,9 +94,6 @@ class SixelConverter
 	// リサイズモード
 	SixelResizeMode ResizeMode = SixelResizeMode::ByLoad;
 
-	// ローダモード
-	SixelLoaderMode LoaderMode = SixelLoaderMode::Gdk;
-
 	// ノイズ付加
 	// ベタ塗り画像で少ない色数に減色する時、ノイズを付加すると画質改善出来る
 	int AddNoiseLevel {};
@@ -134,11 +111,8 @@ class SixelConverter
 	std::vector<uint8> Indexed {};
 
  private:
-	bool LoadJpeg(InputStream *stream);
-
 	void LoadAfter();
 
-	void CalcResizeGdkLoad(int *width, int *height);
 	void CalcResize(int *width, int *height);
 
 	std::string SixelPreamble();
@@ -149,12 +123,11 @@ class SixelConverter
 
 	ImageReductor ir {};
 
-	ImageReductor::Image *img {};
-
 	// 元画像
-	GdkPixbuf *pix {};
+	Image img {};
 
-	// 画像の幅と高さ
+	// (出力する画像の)幅と高さ
+	// リサイズしなければ img.Size.{w,h} と同じ
 	int Width {};
 	int Height {};
 
@@ -163,7 +136,6 @@ class SixelConverter
  public:
 	// enum 対応
 	static const char *SOM2str(SixelOutputMode val);
-	static const char *SLM2str(SixelLoaderMode val);
 	static const char *SRM2str(SixelResizeMode val);
 };
 

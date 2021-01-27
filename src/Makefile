@@ -8,6 +8,8 @@ SRCS_common=	\
 	FileStream.cpp \
 	FileUtil.cpp \
 	HttpClient.cpp \
+	Image.cpp \
+	ImageLoaderJPEG.cpp \
 	ImageReductor.cpp \
 	MemoryStream.cpp \
 	ParsedUri.cpp \
@@ -37,7 +39,7 @@ SRCS_sixelv=	\
 	sixelv.cpp \
 
 
-PKGS=		glib-2.0 gdk-pixbuf-2.0 gio-unix-2.0 libjpeg
+PKGS=		libjpeg
 
 CXX=		c++ -std=c++17
 CXX+=		-g

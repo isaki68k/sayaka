@@ -24,13 +24,11 @@
  * SUCH DAMAGE.
  */
 
-#include <limits.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <jpeglib.h>
-#include <glib.h>
 #include "ImageReductor.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <limits.h>
 
 #ifndef __packed
 #define __packed __attribute__((__packed__))
@@ -510,18 +508,18 @@ ImageReductor::rnd(int level)
 //
 
 void
-ImageReductor::Convert(ReductorReduceMode mode, GdkPixbuf *pix,
+ImageReductor::Convert(ReductorReduceMode mode, Image& img,
 	std::vector<uint8_t>& dst, int toWidth, int toHeight)
 {
 	switch (mode) {
 	 case ReductorReduceMode::Fast:
-		ConvertFast(pix, dst, toWidth, toHeight);
+		ConvertFast(img, dst, toWidth, toHeight);
 		break;
 	 case ReductorReduceMode::Simple:
-		ConvertSimple(pix, dst, toWidth, toHeight);
+		ConvertSimple(img, dst, toWidth, toHeight);
 		break;
 	 case ReductorReduceMode::HighQuality:
-		ConvertHighQuality(pix, dst, toWidth, toHeight);
+		ConvertHighQuality(img, dst, toWidth, toHeight);
 		break;
 	}
 }
@@ -538,15 +536,15 @@ ImageReductor::Convert(ReductorReduceMode mode, GdkPixbuf *pix,
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::ConvertFast(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
-	uint8_t *src  = gdk_pixbuf_get_pixels(pix);
-	int srcWidth  = gdk_pixbuf_get_width(pix);
-	int srcHeight = gdk_pixbuf_get_height(pix);
-	int srcNch    = gdk_pixbuf_get_n_channels(pix);
-	int srcStride = gdk_pixbuf_get_rowstride(pix);
+	uint8_t *src  = img.GetBuf();
+	int srcWidth  = img.GetWidth();
+	int srcHeight = img.GetHeight();
+	int srcNch    = img.GetChPerPixel();
+	int srcStride = img.GetStride();
 
 	DEBUG_PRINTF("ImageReductor::Fast dst=(%d,%d) src=(%d,%d)\n",
 		dstWidth, dstHeight, srcWidth, srcHeight);
@@ -624,15 +622,15 @@ ImageReductor::ConvertFast(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::ConvertSimple(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
-	uint8_t *src  = gdk_pixbuf_get_pixels(pix);
-	int srcWidth  = gdk_pixbuf_get_width(pix);
-	int srcHeight = gdk_pixbuf_get_height(pix);
-	int srcNch    = gdk_pixbuf_get_n_channels(pix);
-	int srcStride = gdk_pixbuf_get_rowstride(pix);
+	uint8_t *src  = img.GetBuf();
+	int srcWidth  = img.GetWidth();
+	int srcHeight = img.GetHeight();
+	int srcNch    = img.GetChPerPixel();
+	int srcStride = img.GetStride();
 
 	DEBUG_PRINTF("ImageReductor::Simple dst=(%d,%d) src=(%d,%d)\n",
 		dstWidth, dstHeight, srcWidth, srcHeight);
@@ -704,15 +702,15 @@ ImageReductor::set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio)
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::ConvertHighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertHighQuality(Image& img, std::vector<uint8_t>& dst_,
 	int dstWidth, int dstHeight)
 {
 	uint8_t *dst = dst_.data();
-	uint8_t *src  = gdk_pixbuf_get_pixels(pix);
-	int srcWidth  = gdk_pixbuf_get_width(pix);
-	int srcHeight = gdk_pixbuf_get_height(pix);
-	int srcNch    = gdk_pixbuf_get_n_channels(pix);
-	int srcStride = gdk_pixbuf_get_rowstride(pix);
+	uint8_t *src  = img.GetBuf();
+	int srcWidth  = img.GetWidth();
+	int srcHeight = img.GetHeight();
+	int srcNch    = img.GetChPerPixel();
+	int srcStride = img.GetStride();
 
 	DEBUG_PRINTF("ImageReductor::HighQuality dst=(%p,%d,%d) src=(%p,%d,%d)\n",
 		dst, dstWidth, dstHeight, src, srcWidth, srcHeight);
@@ -910,272 +908,6 @@ ImageReductor::ConvertHighQuality(GdkPixbuf *pix, std::vector<uint8_t>& dst_,
 	free(errbuf_mem);
 }
 
-
-//
-// JPEG イメージ
-//
-
-/*static*/ ImageReductor::Image *
-ImageReductor::AllocImage()
-{
-	return (Image *)calloc(1, sizeof(Image));
-}
-
-/*static*/ void
-ImageReductor::FreeImage(ImageReductor::Image *img)
-{
-	if (img->Data != NULL) {
-		free(img->Data);
-	}
-	free(img);
-}
-
-static const JOCTET fake_EOI[] = { 0xff, JPEG_EOI };
-
-static void
-init_source(j_decompress_ptr cinfo)
-{
-}
-
-static boolean
-fill_input_buffer(j_decompress_ptr cinfo)
-{
-	if (cinfo->client_data != NULL) {
-		auto *img = (ImageReductor::Image *)cinfo->client_data;
-
-		int n = img->ReadCallback(img);
-		if (n > 0) {
-			cinfo->src->next_input_byte = img->ReadBuffer;
-			cinfo->src->bytes_in_buffer = n;
-			return (boolean)TRUE;
-		}
-	}
-
-	cinfo->src->next_input_byte = fake_EOI;
-	cinfo->src->bytes_in_buffer = sizeof(fake_EOI);
-	return (boolean)TRUE;
-}
-
-static void
-skip_input_data(j_decompress_ptr cinfo, long num_bytes)
-{
-	while (num_bytes > (long)(cinfo->src->bytes_in_buffer)) {
-		num_bytes -= cinfo->src->bytes_in_buffer;
-		fill_input_buffer(cinfo);
-	}
-	cinfo->src->next_input_byte += num_bytes;
-	cinfo->src->bytes_in_buffer -= num_bytes;
-}
-
-static void
-term_source(j_decompress_ptr cinfo)
-{
-}
-
-static void
-debug_handler(j_common_ptr cinfo)
-{
-	char buffer[JMSG_LENGTH_MAX];
-	(*cinfo->err->format_message)(cinfo, buffer);
-
-	DEBUG_PRINTF("%s\n", buffer);
-}
-
-// リサイズ計算
-/*static*/ void
-ImageReductor::calcResize(int *req_w, int *req_h, int req_ax,
-	int org_w, int org_h)
-{
-	int scaledown =
-		(req_ax == ResizeAxisMode::ScaleDownBoth)
-	 || (req_ax == ResizeAxisMode::ScaleDownWidth)
-	 || (req_ax == ResizeAxisMode::ScaleDownHeight)
-	 || (req_ax == ResizeAxisMode::ScaleDownLong)
-	 || (req_ax == ResizeAxisMode::ScaleDownShort);
-
-	// まず丸めていく
-	switch (req_ax) {
-	 case ResizeAxisMode::Both:
-	 case ResizeAxisMode::ScaleDownBoth:
-		if ((*req_w) <= 0) {
-			req_ax = ResizeAxisMode::Height;
-		} else if ((*req_h) <= 0) {
-			req_ax = ResizeAxisMode::Width;
-		} else {
-			req_ax = ResizeAxisMode::Both;
-		}
-		break;
-	 case ResizeAxisMode::Long:
-	 case ResizeAxisMode::ScaleDownLong:
-		if (org_w >= org_h) {
-			req_ax = ResizeAxisMode::Width;
-		} else {
-			req_ax = ResizeAxisMode::Height;
-		}
-		break;
-	 case ResizeAxisMode::Short:
-	 case ResizeAxisMode::ScaleDownShort:
-		if (org_w <= org_h) {
-			req_ax = ResizeAxisMode::Width;
-		} else {
-			req_ax = ResizeAxisMode::Height;
-		}
-		break;
-	 case ResizeAxisMode::ScaleDownWidth:
-		req_ax = ResizeAxisMode::Width;
-		break;
-	 case ResizeAxisMode::ScaleDownHeight:
-		req_ax = ResizeAxisMode::Height;
-		break;
-	}
-
-	if ((*req_w) <= 0)
-		(*req_w) = org_w;
-	if ((*req_h) <= 0)
-		(*req_h) = org_h;
-
-	// 縮小のみ指示
-	if (scaledown) {
-		if (org_w < (*req_w))
-			(*req_w) = org_w;
-		if (org_h < (*req_h))
-			(*req_h) = org_h;
-	}
-
-	switch (req_ax) {
-	 case ResizeAxisMode::Width:
-		(*req_h) = org_h * (*req_w) / org_w;
-		break;
-	 case ResizeAxisMode::Height:
-		(*req_w) = org_w * (*req_h) / org_h;
-		break;
-	}
-}
-
-/*static*/ ReductorImageCode
-ImageReductor::LoadJpeg(ImageReductor::Image *img,
-	int requestWidth, int requestHeight, ResizeAxisMode requestAxis)
-{
-	DEBUG_PRINTF("LoadJpeg enter img=%p, w=%d, h=%d ax=%s\n",
-		img, requestWidth, requestHeight, RAX2str(requestAxis));
-
-	if (img == NULL)
-		return RIC_ARG_NULL;
-	if (img->ReadCallback == NULL)
-		return RIC_ARG_NULL;
-
-	struct jpeg_decompress_struct jinfo;
-	struct jpeg_error_mgr jerr;
-	memset(&jinfo, 0, sizeof(jinfo));
-	memset(&jerr, 0, sizeof(jerr));
-	jinfo.err = jpeg_std_error(&jerr);
-	jerr.output_message = debug_handler;
-
-	jpeg_create_decompress(&jinfo);
-
-	jinfo.client_data = img;
-
-	struct jpeg_source_mgr src_mgr;
-	memset(&src_mgr, 0, sizeof(src_mgr));
-
-	src_mgr.init_source = init_source;
-	src_mgr.fill_input_buffer = fill_input_buffer;
-	src_mgr.skip_input_data = skip_input_data;
-	src_mgr.resync_to_restart = jpeg_resync_to_restart;
-	src_mgr.term_source = term_source;
-	src_mgr.bytes_in_buffer = 0;
-	src_mgr.next_input_byte = NULL;
-
-	jinfo.src = &src_mgr;
-
-	DEBUG_PRINTF("LoadJpeg readheader\n");
-	// ヘッダ読み込み
-	jpeg_read_header(&jinfo, (boolean)TRUE);
-	DEBUG_PRINTF("LoadJpeg readheader OK\n");
-
-	img->OriginalWidth = jinfo.image_width;
-	img->OriginalHeight = jinfo.image_height;
-
-	// スケールの計算
-	calcResize(&requestWidth, &requestHeight, requestAxis,
-		img->OriginalWidth, img->OriginalHeight);
-
-	if (requestWidth <= 0) {
-		requestWidth = 1;
-	}
-	if (requestHeight <= 0) {
-		requestHeight = 1;
-	}
-
-	// libjpeg では 1/16 までサポート
-	// 1/1, 1/2, 1/4, 1/8 しかサポートしないとも書いてある
-	int scalew = img->OriginalWidth / requestWidth;
-	int scaleh = img->OriginalHeight / requestHeight;
-	int scale = scalew < scaleh ? scalew : scaleh;
-	if (scale < 1) {
-		scale = 1;
-	} else if (scale > 16) {
-		scale = 16;
-	}
-
-	DEBUG_PRINTF("LoadJpeg org=(%d,%d) scalewh=(%d,%d) scale=%d\n",
-		img->OriginalWidth, img->OriginalHeight, scalew, scaleh, scale);
-
-	jinfo.scale_num = 1;
-	jinfo.scale_denom = scale;
-
-	jinfo.do_fancy_upsampling = (boolean)FALSE;
-	jinfo.do_block_smoothing = (boolean)FALSE;
-	jinfo.dct_method = JDCT_FASTEST;
-	jinfo.out_color_space = JCS_RGB;
-	jinfo.output_components = 3;
-
-	jpeg_calc_output_dimensions(&jinfo);
-
-	img->Width = jinfo.output_width;
-	img->Height = jinfo.output_height;
-	img->ChannelCount = jinfo.output_components;
-	img->RowStride = jinfo.output_width * jinfo.output_components;
-
-	img->DataLen = img->RowStride * img->Height;
-	img->Data = (uint8_t *)malloc(img->DataLen);
-
-	DEBUG_PRINTF("LoadJpeg dim wh=(%d,%d) datalen=%d\n",
-		img->Width, img->Height, img->DataLen);
-
-	// スキャンラインメモリのポインタ配列が必要
-	JSAMPARRAY lines =
-		(JSAMPARRAY)malloc(jinfo.output_height * sizeof(uint8_t *));
-	for (int y = 0; y < jinfo.output_height; y++) {
-		lines[y] = img->Data + (y * img->RowStride);
-	}
-
-	DEBUG_PRINTF("LoadJpeg startdecompress\n");
-	jpeg_start_decompress(&jinfo);
-	DEBUG_PRINTF("LoadJpeg startdecompress OK\n");
-
-	while (jinfo.output_scanline < jinfo.output_height) {
-		int prev_scanline = jinfo.output_scanline;
-
-		jpeg_read_scanlines(&jinfo,
-			&lines[jinfo.output_scanline],
-			jinfo.rec_outbuf_height);
-
-		if (prev_scanline == jinfo.output_scanline) {
-			// スキャンラインが進まない
-			jpeg_abort_decompress(&jinfo);
-			free(lines);
-			return RIC_ABORT_JPEG;
-		}
-	}
-
-	DEBUG_PRINTF("LoadJpeg finishdecompress\n");
-	jpeg_finish_decompress(&jinfo);
-	DEBUG_PRINTF("LoadJpeg finishdecompress OK\n");
-	free(lines);
-
-	return RIC_OK;
-}
 
 static uint8
 saturate_mul_f(uint8 a, float b)
