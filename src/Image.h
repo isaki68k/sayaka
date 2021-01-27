@@ -116,25 +116,6 @@ class Image
 	int GetChPerPixel() const	{ return ch_per_pixel; }
 	int GetBitsPerPixel() const	{ return bits_per_pixel; }
 
-#if 0
-	void SetSize(Size& size_) {
-		size = size_;
-	}
-	void SetSize(int w, int h) {
-		size.w = w;
-		size.h = h;
-	}
-	void SetStride(int stridebyte_) {
-		stridebyte = stridebyte_;
-	}
-	void SetChPerPixel(int ch_per_pixel_) {
-		ch_per_pixel = ch_per_pixel_;
-	}
-	void SetBitsPerPixel(int bits_per_pixel_) {
-		bits_per_pixel = bits_per_pixel_;
-	}
-#endif
-
 	std::vector<uint8> buf {};
 	Size size {};				// 画像サイズ (pixel)
 	int stridebyte {};			// ストライド (bytes)
