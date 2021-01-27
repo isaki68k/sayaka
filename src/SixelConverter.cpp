@@ -27,6 +27,7 @@
 #include "FileStream.h"
 #include "Image.h"
 #include "ImageLoaderJPEG.h"
+#include "ImageLoaderPNG.h"
 #include "SixelConverter.h"
 #include "StringUtil.h"
 #include "sayaka.h"
@@ -48,7 +49,8 @@ SixelConverter::SixelConverter(int debuglv)
 	ir.Init(diag);
 }
 
-// stream から画像を img に読み込む
+// stream から画像を img に読み込む。
+// 成功すれば true、失敗すれば false を返す。
 bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
@@ -57,6 +59,18 @@ SixelConverter::LoadFromStream(InputStream *stream)
 	{
 		ImageLoaderJPEG loader(stream, diag);
 		if (loader.Check()) {
+			Trace(diag, "%s filetype is JPEG", __func__);
+			if (loader.Load(img)) {
+				LoadAfter();
+				return true;
+			}
+			return false;
+		}
+	}
+	{
+		ImageLoaderPNG loader(stream, diag);
+		if (loader.Check()) {
+			Trace(diag, "%s filetype is PNG", __func__);
 			if (loader.Load(img)) {
 				LoadAfter();
 				return true;

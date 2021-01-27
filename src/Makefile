@@ -10,6 +10,7 @@ SRCS_common=	\
 	HttpClient.cpp \
 	Image.cpp \
 	ImageLoaderJPEG.cpp \
+	ImageLoaderPNG.cpp \
 	ImageReductor.cpp \
 	MemoryStream.cpp \
 	ParsedUri.cpp \
@@ -39,7 +40,7 @@ SRCS_sixelv=	\
 	sixelv.cpp \
 
 
-PKGS=		libjpeg
+PKGS=		libjpeg libpng
 
 CXX=		c++ -std=c++17
 CXX+=		-g
