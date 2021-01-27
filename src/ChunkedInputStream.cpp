@@ -81,7 +81,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 		// チャンク長を取り出す
 		char *end;
 		errno = 0;
-		auto intlen = strtol(slen.c_str(), &end, 16);
+		long intlen = strtol(slen.c_str(), &end, 16);
 		if (end == slen.c_str()) {
 			Debug(diag, "Chunk length is not a number: %s", slen.c_str());
 			return -1;
@@ -96,7 +96,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 			Debug(diag, "Chunk length is out of range: %s", slen.c_str());
 			return -1;
 		}
-		Debug(diag, "intlen=%d", intlen);
+		Debug(diag, "intlen=%ld", intlen);
 
 		if (intlen == 0) {
 			// データ終わり。CRLF を読み捨てる
@@ -113,7 +113,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 		}
 		Debug(diag, "readlen=%zd", readlen);
 		if (__predict_false(readlen != intlen)) {
-			Debug(diag, "readlen=%zd intlen=%d", readlen, intlen);
+			Debug(diag, "readlen=%zd intlen=%ld", readlen, intlen);
 			errno = EIO;
 			return -1;
 		}
@@ -127,7 +127,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 
 	// dst に入るだけコピー
 	auto copylen = Chunks.Read(dst, dstsize);
-	Debug(diag, "copylen=%d\n", copylen);
+	Debug(diag, "copylen=%zd\n", copylen);
 
 	// Chunks の作り直しは C++ では不要なはず
 
