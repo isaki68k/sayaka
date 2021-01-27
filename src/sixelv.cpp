@@ -117,7 +117,7 @@ static const struct option longopts[] = {
 	{ "color-factor",	required_argument,	NULL,	OPT_color_factor },
 	{ "debug",			required_argument,	NULL,	OPT_debug },
 	{ "debug-http",		required_argument,	NULL,	OPT_debug_http },
-	{ "debug-sixel",	no_argument,		NULL,	OPT_debug_sixel },
+	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
 	{ "diffusion",		required_argument,	NULL,	'd' },
 	{ "finder",			required_argument,	NULL,	OPT_finder },
 	{ "gray",			required_argument,	NULL,	OPT_gray },
@@ -266,8 +266,12 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_debug_sixel:
-			opt_debug_sixel = 1;
-			ImageReductor::debug = 1;
+			val = atoi(optarg);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-sixel: debug level must be 0..2");
+			}
+			opt_debug_sixel = val;
+			ImageReductor::debug = val > 0 ? 1 : 0;
 			break;
 
 		 case 'e':
@@ -453,9 +457,9 @@ static const char short_help[] = R"**(
     <type> := none, fast, high(=fs), auto(=high)
               fs, atkinson, jajuni, stucki, burkes, 2, 3, rgb
    --axis={both, w, width, h, height, long, short}
-   --ignore-error                   --debug      <0..2>
-   --profile                        --debug-http <0..2>
-   --help-all                       --debug-sixel
+   --ignore-error                   --debug       <0..2>
+   --profile                        --debug-http  <0..2>
+   --help-all                       --debug-sixel <0..2>
 )**";
 
 static const char long_help[] = R"**( 
@@ -503,9 +507,9 @@ static const char long_help[] = R"**(
    --color-factor=<factor>
    --finder={rgb, hsv} (default: rgb)
    --addnoise=<noiselevel>
-   --debug      <0..2>
-   --debug-http <0..2>
-   --debug-sixel
+   --debug       <0..2>
+   --debug-http  <0..2>
+   --debug-sixel <0..2>
    --profile
    --help, --help-all
 )**";
