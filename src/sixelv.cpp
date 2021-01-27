@@ -719,20 +719,20 @@ ConvertFromStream(InputStream *istream)
 	 }
 
 	 case OutputFormat::PALETTEPNG:
+	 {
 #if 0
 		// 11 x 11 はどうなのかとか。img2sixel 合わせだが、
 		// img2sixel 側の問題でうまくいかない。
-		const bool has_alpha = false;
-		const int bits_per_sample = 8;
-		int width = ir.GetPaletteCount() * 11;
-		int height = 11;
-		GdkPixbuf *palpix = gdk_pixbuf_new(GDK_COLORSPACE_RGB,
-			has_alpha, bits_per_sample, width, height);
-		uint8_t *p = gdk_pixbuf_get_pixels(palpix);
+		const int width = ir.GetPaletteCount() * 11;
+		const int height = 11;
+		const int channels = 3;
+		const int stride = width * channels;	// ?
+		Image img(width, height, stride, channels);
+		uint8 *p = img.GetBuf();
 		for (int y = 0; y < height; y++) {
 			for (int i = 0; i < ir.GetPaletteCount(); i++) {
+				auto col = ir.GetPalette(i);
 				for (int x = 0; x < width; x++) {
-					auto col = ir.GetPalette(i);
 					p[0] = col.r;
 					p[1] = col.g;
 					p[2] = col.b;
@@ -740,16 +740,12 @@ ConvertFromStream(InputStream *istream)
 				}
 			}
 		}
-		GOutputStream *stream = g_unix_output_stream_new(STDOUT_FILENO, false);
-		if (!gdk_pixbuf_save_to_stream(palpix, stream, "png", NULL, NULL)) {
-			warnx("gdk_pixbuf_save_to_stream faile");
-			if (opt_ignore_error) {
-				return;
-			}
-			exit(1);
-		}
+		// XXX PNG に出力
+#else
+		warn("output-format=palettepng is not supported");
 #endif
 		break;
+	 }
 	}
 
 	if (opt_profile) {

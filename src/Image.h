@@ -104,7 +104,11 @@ struct Size
 class Image
 {
  public:
+	// 空のビットマップを作成
 	Image();
+	// 指定の大きさのビットマップを作成 (ゼロ初期化)
+	Image(int width, int height, int stride, int ch);
+
 	~Image();
 
 	uint8 *GetBuf()			{ return buf.data(); }
