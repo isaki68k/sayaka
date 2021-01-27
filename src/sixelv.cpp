@@ -620,7 +620,7 @@ ConvertFromStream(InputStream *istream)
 	}
 
 	if (sx.LoadFromStream(istream) == false) {
-		warn("Stream error");
+		warnx("Load error");
 		if (opt_ignore_error) {
 			return;
 		}
