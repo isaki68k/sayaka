@@ -70,7 +70,7 @@ class Diag
 
 	// メッセージ出力 (改行はこちらで付加する)
 	// 呼び出し側でレベルを判定してから呼ぶこと
-	void Print(const char *fmt, ...) __printflike(2, 3);
+	void Print(const char *fmt, ...) const __printflike(2, 3);
 };
 
 // __func__ のようだけどクラス名と関数名だけを表示するやつ。

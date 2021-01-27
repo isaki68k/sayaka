@@ -60,7 +60,7 @@ Diag::SetLevel(int lv)
 
 // メッセージ出力 (改行はこちらで付加する)
 void
-Diag::Print(const char *fmt, ...)
+Diag::Print(const char *fmt, ...) const
 {
 	va_list ap;
 
