@@ -54,7 +54,6 @@ LIBS +=	\
 	-L/usr/pkg/lib -Wl,-R,/usr/pkg/lib \
 	-lmbedtls \
 	`pkg-config --libs ${PKGS}` \
-	-ljpeg \
 
 all:	sayaka test sixelv
 
