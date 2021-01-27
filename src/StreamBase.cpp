@@ -67,22 +67,27 @@ InputStream::Read(void *dst, size_t dstsize)
 ssize_t
 InputStream::Peek(void *dst, size_t dstsize)
 {
-	std::vector<uint8> tmp(dstsize);
+	ssize_t rv = 0;
 
-	auto r = NativeRead(tmp.data(), tmp.size());
-	if (__predict_false(r <= 0)) {
-		return r;
+	// (不足なら)内部バッファに追加する
+	auto peeksize = peekbuf.size();
+	if (peeksize < dstsize) {
+		std::vector<uint8> tmp(dstsize - peeksize);
+		auto r = NativeRead(tmp.data(), tmp.size());
+		if (__predict_false(r <= 0)) {
+			return r;
+		}
+
+		tmp.resize(r);
+		for (const auto c : tmp) {
+			peekbuf.emplace_back(c);
+		}
 	}
 
-	// 内部バッファに追加して
-	tmp.resize(r);
-	for (const auto c : tmp) {
-		peekbuf.emplace_back(c);
-	}
-
-	// dst に書き出す
-	memcpy(dst, tmp.data(), r);
-	return r;
+	// その上で内部バッファから取り出す
+	rv = std::min(peekbuf.size(), dstsize);
+	memcpy(dst, peekbuf.data(), rv);
+	return rv;
 }
 
 // 1行読み出す。

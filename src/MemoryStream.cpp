@@ -205,5 +205,37 @@ test_MemoryInputStream()
 		xp_eq('b', buf[1]);
 		xp_eq('c', buf[2]);
 	}
+
+	// Peek3
+	{
+		std::vector<uint8> src { 'a', 'b', 'c', 'd' };
+		MemoryInputStream ms(src);
+		std::vector<uint8> buf(4);
+
+		// 2バイト Peek
+		auto actual = ms.Peek(buf.data(), 2);
+		xp_eq(2, actual);
+		xp_eq('a', buf[0]);
+		xp_eq('b', buf[1]);
+
+		// 今度は 3バイト Peek してみる。まだポインタは先頭にある
+		actual = ms.Peek(buf.data(), 3);
+		xp_eq(3, actual);
+		xp_eq('a', buf[0]);
+		xp_eq('b', buf[1]);
+		xp_eq('c', buf[2]);
+
+		// 1バイト Read
+		actual = ms.Read(buf.data(), 1);
+		xp_eq(1, actual);
+		xp_eq('a', buf[0]);
+
+		// ここから 3バイト Peek。1バイト目から3バイト覗き見れるはず
+		actual = ms.Peek(buf.data(), 3);
+		xp_eq(3, actual);
+		xp_eq('b', buf[0]);
+		xp_eq('c', buf[1]);
+		xp_eq('d', buf[2]);
+	}
 }
 #endif // SELFTEST
