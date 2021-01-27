@@ -91,7 +91,7 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	fg.SetTimeout(opt_timeout_image);
 	InputStream *stream = fg.GET();
 	if (stream == NULL) {
-		Debug(diag, "Warning: fetch_image GET failed");
+		Debug(diag, "Warning: %s GET failed", __func__);
 		return NULL;
 	}
 
@@ -102,7 +102,7 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 		return NULL;
 	}
 	if (sx.LoadFromStream(stream) == false) {
-		Debug(diag, "Warning: fetch_image LoadFromStream failed");
+		Debug(diag, "Warning: %s LoadFromStream failed", __func__);
 		return NULL;
 	}
 

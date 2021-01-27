@@ -145,7 +145,7 @@ HttpClient::SendRequest(const std::string& method)
 	mtls.Write(sb.c_str(), sb.length());
 	mtls.Shutdown(SHUT_WR);
 
-	Trace(diag, "SendRequest() request sent");
+	Trace(diag, "%s() request sent", __func__);
 }
 
 // ヘッダを受信する
@@ -154,7 +154,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 {
 	size_t r;
 
-	Trace(diag, "ReceiveHeader()");
+	Trace(diag, "%s()", __func__);
 
 	RecvHeaders.clear();
 
@@ -247,7 +247,7 @@ HttpClient::Connect()
 		// XXX RSA 専用
 		mtls.UseRSA();
 	}
-	Trace(diag, "Connect(): %s", Uri.to_string().c_str());
+	Trace(diag, "%s: %s", __func__, Uri.to_string().c_str());
 	if (mtls.Connect(Uri.Host, Uri.Port) != 0) {
 		Debug(diag, "mTLSHandle.Connect failed");
 		return false;
@@ -260,7 +260,7 @@ HttpClient::Connect()
 void
 HttpClient::Close()
 {
-	Trace(diag, "Close");
+	Trace(diag, "%s()", __func__);
 	// nothing to do ?
 }
 

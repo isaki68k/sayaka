@@ -1324,8 +1324,8 @@ show_image(const std::string& img_file, const std::string& img_url,
 
 	std::string img_path = cachedir + PATH_SEPARATOR + img_file;
 
-	Debug(diagImage, "show_image: img_url=%s", img_url.c_str());
-	Debug(diagImage, "show_image: img_path=%s", img_path.c_str());
+	Debug(diagImage, "%s: img_url=%s", __func__, img_url.c_str());
+	Debug(diagImage, "%s: img_path=%s", __func__, img_path.c_str());
 	auto cache_filename = img_path + ".sixel";
 	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
 	if (!cache_file.Valid()) {

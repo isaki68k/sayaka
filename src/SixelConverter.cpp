@@ -530,7 +530,7 @@ SixelConverter::SixelPostamble()
 void
 SixelConverter::SixelToStream(OutputStream *stream)
 {
-	Debug(diag, "SixelToStream");
+	Debug(diag, "%s", __func__);
 	assert(ir.GetPaletteCount() != 0);
 
 	// 開始コードとかの出力
