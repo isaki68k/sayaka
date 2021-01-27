@@ -45,6 +45,7 @@ SixelConverter::SixelConverter(int debuglv)
 	: SixelConverter()
 {
 	diag.SetLevel(debuglv);
+	ir.Init(diag);
 }
 
 // stream から画像を img に読み込む

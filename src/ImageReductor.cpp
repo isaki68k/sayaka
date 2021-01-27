@@ -34,12 +34,6 @@
 #define __packed __attribute__((__packed__))
 #endif
 
-int ImageReductor::debug = 0;
-#define DEBUG_PRINTF(x...) do { \
-	if (ImageReductor::debug) \
-		fprintf(stderr, x); \
-} while (0)
-
 //
 // 分数計算機
 // DDA 計算の基礎となる I + N / D 型の分数ステップ加減算計算機。
@@ -78,6 +72,18 @@ StepRationalAdd(StepRational *sr, StepRational *x)
 		sr->I++;
 		sr->N -= sr->D;
 	}
+}
+
+
+//
+// ImageReductor
+//
+
+// 初期化
+void
+ImageReductor::Init(const Diag& diag_)
+{
+	diag = diag_;
 }
 
 //
@@ -546,7 +552,7 @@ ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
 	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
 
-	DEBUG_PRINTF("ImageReductor::Fast dst=(%d,%d) src=(%d,%d)\n",
+	Debug(diag, "ImageReductor::Fast dst=(%d,%d) src=(%d,%d)",
 		dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 螺旋状に一次元誤差分散させる。
@@ -632,7 +638,7 @@ ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
 	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
 
-	DEBUG_PRINTF("ImageReductor::Simple dst=(%d,%d) src=(%d,%d)\n",
+	Debug(diag, "ImageReductor::Simple dst=(%d,%d) src=(%d,%d)",
 		dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 水平方向はスキップサンプリング
@@ -712,7 +718,7 @@ ImageReductor::ConvertHighQuality(Image& img, std::vector<uint8_t>& dst_,
 	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
 
-	DEBUG_PRINTF("ImageReductor::HighQuality dst=(%p,%d,%d) src=(%p,%d,%d)\n",
+	Debug(diag, "ImageReductor::HighQuality dst=(%p,%d,%d) src=(%p,%d,%d)",
 		dst, dstWidth, dstHeight, src, srcWidth, srcHeight);
 
 	// 水平方向はピクセルを平均

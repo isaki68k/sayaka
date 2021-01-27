@@ -122,6 +122,9 @@ class ImageReductor
 	using FindColorFunc_t = int (ImageReductor::*)(ColorRGBuint8);
 
  public:
+	// デバッグレベル設定
+	void Init(const Diag& diag);
+
 	// パレット数を取得
 	int GetPaletteCount() const { return PaletteCount; }
 
@@ -147,8 +150,6 @@ class ImageReductor
 
 	// High 誤差分散アルゴリズム
 	ReductorDiffuseMethod HighQualityDiffuseMethod = RDM_FS;
-
-	static int debug;
 
  private:
 	int PaletteCount {};
@@ -221,6 +222,8 @@ class ImageReductor
 
 	static int16_t Saturate_adderr(int16_t a, int b);
 	static void set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio);
+
+	Diag diag {};
 
  public:
 	// enum 対応

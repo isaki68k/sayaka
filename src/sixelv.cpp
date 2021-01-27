@@ -271,7 +271,6 @@ int main(int ac, char *av[])
 				errx(1, "--debug-sixel: debug level must be 0..2");
 			}
 			opt_debug_sixel = val;
-			ImageReductor::debug = val > 0 ? 1 : 0;
 			break;
 
 		 case 'e':
