@@ -91,9 +91,9 @@ ImageLoaderJPEG::Load(Image& img)
 	jinfo.src = &jsrc;
 
 	// ヘッダ読み込み
-	Debug(diag, "%s: read header", __method__);
+	Trace(diag, "%s read header", __method__);
 	jpeg_read_header(&jinfo, (boolean)TRUE);
-	Debug(diag, "%s: read header done", __method__);
+	Trace(diag, "%s read header done", __method__);
 
 	Size origsize;
 	Size reqsize;
@@ -125,7 +125,7 @@ ImageLoaderJPEG::Load(Image& img)
 		scale = 16;
 	}
 
-	Debug(diag, "%s org=(%d,%d) scalewh=(%d,%d) scale=%d", __method__,
+	Debug(diag, "%s size=(%d,%d) scalewh=(%d,%d) scale=%d", __method__,
 		origsize.w, origsize.h, scalew, scaleh, scale);
 
 	jinfo.scale_num = 1;
@@ -152,9 +152,9 @@ ImageLoaderJPEG::Load(Image& img)
 		lines[y] = img.buf.data() + (y * img.GetStride());
 	}
 
-	Debug(diag, "%s: start_decompress", __method__);
+	Trace(diag, "%s start_decompress", __method__);
 	jpeg_start_decompress(&jinfo);
-	Debug(diag, "%s: start_decompress done", __method__);
+	Trace(diag, "%s start_decompress done", __method__);
 
 	while (jinfo.output_scanline < jinfo.output_height) {
 		int prev_scanline = jinfo.output_scanline;
@@ -171,9 +171,9 @@ ImageLoaderJPEG::Load(Image& img)
 		}
 	}
 
-	Debug(diag, "%s finish_decompress", __method__);
+	Trace(diag, "%s finish_decompress", __method__);
 	jpeg_finish_decompress(&jinfo);
-	Debug(diag, "%s finish_decompress done", __method__);
+	Trace(diag, "%s finish_decompress done", __method__);
 
 	return true;
 }

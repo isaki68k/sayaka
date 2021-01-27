@@ -52,7 +52,7 @@ SixelConverter::SixelConverter(int debuglv)
 bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
-	Debug(diag, "ResizeMode=%d", ResizeMode);
+	Debug(diag, "ResizeMode=%s", SRM2str(ResizeMode));
 
 	{
 		ImageLoaderJPEG loader(stream, diag);
@@ -75,7 +75,7 @@ SixelConverter::LoadAfter()
 	Width  = img.GetWidth();
 	Height = img.GetHeight();
 
-	Debug(diag, "Size=(%d,%d) bits=%d nCh=%d rowstride=%d",
+	Debug(diag, "Loaded size=(%d,%d) bits=%d nCh=%d rowstride=%d",
 		Width,
 		Height,
 		img.GetBitsPerPixel(),
@@ -192,7 +192,7 @@ SixelConverter::ConvertToIndexed()
 	int height = 0;
 	CalcResize(&width, &height);
 
-	Debug(diag, "resize to (width=%d height=%d)", width, height);
+	Debug(diag, "Resize to (%d,%d)", width, height);
 
 	Width = width;
 	Height = height;
@@ -208,9 +208,8 @@ SixelConverter::ConvertToIndexed()
 	Debug(diag, "SetAddNoiseLevel=%d", AddNoiseLevel);
 	ir.SetAddNoiseLevel(AddNoiseLevel);
 
-	Debug(diag, "ReduceMode=%s", ImageReductor::RRM2str(ReduceMode));
 	ir.Convert(ReduceMode, img, Indexed, Width, Height);
-	Debug(diag, "Converted");
+	Trace(diag, "Converted");
 }
 
 //
@@ -296,7 +295,7 @@ SixelConverter::SixelToStreamCore(OutputStream *stream)
 	int src = 0;
 
 	int PaletteCount = ir.GetPaletteCount();
-	Debug(diag, "%s PaletteCount=%d", __func__, PaletteCount);
+	Debug(diag, "%s Output=Normal PaletteCount=%d", __func__, PaletteCount);
 
 	// カラー番号ごとの、X 座標の min, max を計算する。
 	// short でいいよね…
@@ -330,12 +329,12 @@ SixelConverter::SixelToStreamCore(OutputStream *stream)
 
 		for (;;) {
 			// 出力するべきカラーがなくなるまでのループ
-			Trace(diag, "for1");
+			Verbose(diag, "for1");
 			int16 mx = -1;
 
 			for (;;) {
 				// 1行の出力で出力できるカラーのループ
-				Trace(diag, "for2");
+				Verbose(diag, "for2");
 
 				uint8 min_color = 0;
 				int16 min = INT16_MAX;
@@ -421,7 +420,7 @@ SixelConverter::SixelPostamble()
 void
 SixelConverter::SixelToStream(OutputStream *stream)
 {
-	Debug(diag, "%s", __func__);
+	Trace(diag, "%s", __func__);
 	assert(ir.GetPaletteCount() != 0);
 
 	// 開始コードとかの出力

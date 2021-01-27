@@ -30,6 +30,7 @@
 #include "FileStream.h"
 #include "HttpClient.h"
 #include "ImageReductor.h"
+#include "StringUtil.h"
 #include "SixelConverter.h"
 #include "term.h"
 #include <array>
@@ -237,6 +238,7 @@ int main(int ac, char *av[])
 	int val;
 	bool res;
 
+	diag.SetClassname("sixelv");
 	diagHttp.SetClassname("HttpClient");
 
 	// X68k なら、デフォルトで --x68k 相当にする。
@@ -631,8 +633,11 @@ ConvertFromStream(InputStream *istream)
 		prof[Profile_Load] = system_clock::now();
 	}
 
-	Debug(diag, "Converting w=%d, h=%d, axis=%s",
-		opt_width, opt_height, ImageReductor::RAX2str(opt_resizeaxis));
+	std::string s = string_format("Converting axis=%s",
+		ImageReductor::RAX2str(opt_resizeaxis));
+	if (opt_width != 0 || opt_height != 0)
+		s += string_format(" --width=%d --height=%d", opt_width, opt_height);
+	Debug(diag, "%s", s.c_str());
 	sx.ConvertToIndexed();
 
 	if (opt_profile) {

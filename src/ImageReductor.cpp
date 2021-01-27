@@ -527,6 +527,9 @@ ImageReductor::Convert(ReductorReduceMode mode, Image& img,
 	 case ReductorReduceMode::HighQuality:
 		ConvertHighQuality(img, dst, toWidth, toHeight);
 		break;
+	 default:
+		Debug(diag, "Unknown ReduceMode=%s", RRM2str(mode));
+		break;
 	}
 }
 
@@ -552,7 +555,7 @@ ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
 	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
 
-	Debug(diag, "ImageReductor::Fast dst=(%d,%d) src=(%d,%d)",
+	Debug(diag, "%s dst=(%d,%d) src=(%d,%d)", __func__,
 		dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 螺旋状に一次元誤差分散させる。
@@ -638,7 +641,7 @@ ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
 	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
 
-	Debug(diag, "ImageReductor::Simple dst=(%d,%d) src=(%d,%d)",
+	Debug(diag, "%s dst=(%d,%d) src=(%d,%d)", __func__,
 		dstWidth, dstHeight, srcWidth, srcHeight);
 
 	// 水平方向はスキップサンプリング
@@ -718,7 +721,7 @@ ImageReductor::ConvertHighQuality(Image& img, std::vector<uint8_t>& dst_,
 	int srcNch    = img.GetChPerPixel();
 	int srcStride = img.GetStride();
 
-	Debug(diag, "ImageReductor::HighQuality dst=(%p,%d,%d) src=(%p,%d,%d)",
+	Debug(diag, "%s dst=(%p,%d,%d) src=(%p,%d,%d)", __func__,
 		dst, dstWidth, dstHeight, src, srcWidth, srcHeight);
 
 	// 水平方向はピクセルを平均
