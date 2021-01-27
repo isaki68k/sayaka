@@ -694,6 +694,7 @@ sigwinch()
 	Debug(diag, "indent columns=%d", indent_cols);
 	Debug(diag, "imagesize=%d", imagesize);
 }
+
 // ユーザ一覧を表示するコマンド(共通部分)
 static void
 cmd_users_list(const StringDictionary& list)
