@@ -25,6 +25,7 @@
 
 #include "test.h"
 #include "ChunkedInputStream.h"
+#include "Diag.h"
 #include "Dictionary.h"
 #include "FileUtil.h"
 #include "ImageReductor.h"
@@ -86,6 +87,7 @@ main(int ac, char *av[])
 	test_fail = 0;
 
 	test_ChunkedInputStream();
+	test_Diag();
 	test_Dictionary();
 	test_FileUtil();
 	test_ImageReductor();

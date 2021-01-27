@@ -72,3 +72,14 @@ class Diag
 	// 呼び出し側でレベルを判定してから呼ぶこと
 	void Print(const char *fmt, ...);
 };
+
+// __func__ のようだけどクラス名と関数名だけを表示するやつ。
+// __PRETTY_FUNCTION__ が近いけど、あれは戻り値やら引数全部表示するので。
+#define __method__ \
+	(get_classfunc_name(__PRETTY_FUNCTION__, __FUNCTION__).c_str())
+
+extern std::string get_classfunc_name(const char *pretty, const char *func);
+
+#if defined(SELFTEST)
+extern void test_Diag();
+#endif
