@@ -1571,15 +1571,15 @@ invalidate_cache()
 {
 	char cmd[1024];
 
-	// アイコンは7日分くらいか
+	// アイコンは1か月分くらいか
 	snprintf(cmd, sizeof(cmd),
-		"find %s -name icon-\\* -type f -atime +7 -exec rm {} +",
+		"find %s -name icon-\\* -type f -atime +30 -exec rm {} +",
 		cachedir.c_str());
 	system(cmd);
 
-	// 写真は24時間分くらいか
+	// 写真は2日分くらいか
 	snprintf(cmd, sizeof(cmd),
-		"find %s -name http\\* -type f -atime +1 -exec rm {} +",
+		"find %s -name http\\* -type f -atime +2 -exec rm {} +",
 		cachedir.c_str());
 	system(cmd);
 }
