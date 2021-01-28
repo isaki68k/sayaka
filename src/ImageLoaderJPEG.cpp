@@ -171,6 +171,8 @@ ImageLoaderJPEG::Load(Image& img)
 	jpeg_finish_decompress(&jinfo);
 	Trace(diag, "%s finish_decompress done", __method__);
 
+	jpeg_destroy_decompress(&jinfo);
+
 	return true;
 }
 
