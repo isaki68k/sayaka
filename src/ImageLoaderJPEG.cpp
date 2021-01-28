@@ -138,14 +138,9 @@ ImageLoaderJPEG::Load(Image& img)
 
 	jpeg_calc_output_dimensions(&jinfo);
 
-	img.size.w = jinfo.output_width;
-	img.size.h = jinfo.output_height;
-	img.stride = jinfo.output_width * jinfo.output_components;
-	img.channels = jinfo.output_components;
-	img.ch_depth = 8;
-
-	img.buf.resize(img.GetStride() * img.GetHeight());
-	Debug(diag, "%s img.buf=%zd", __method__, img.buf.size());
+	int width  = jinfo.output_width;
+	int height = jinfo.output_height;
+	img.Create(width, height);
 
 	// スキャンラインメモリのポインタ配列
 	std::vector<uint8 *> lines(img.GetHeight());

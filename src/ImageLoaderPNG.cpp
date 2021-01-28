@@ -125,14 +125,7 @@ ImageLoaderPNG::Load(Image& img)
 		png_set_strip_alpha(png);
 	}
 
-	img.size.w = width;
-	img.size.h = height;
-	img.channels = 3;
-	img.ch_depth = 8;
-	img.stride = img.GetWidth() * img.GetChannels();
-
-	img.buf.resize(img.GetStride() * img.GetHeight());
-	Debug(diag, "%s img.buf=%zd", __method__, img.buf.size());
+	img.Create(width, height);
 
 	// スキャンラインメモリのポインタ配列
 	lines.resize(img.GetHeight());

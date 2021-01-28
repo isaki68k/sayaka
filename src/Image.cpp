@@ -35,20 +35,23 @@ Image::Image()
 }
 
 // コンストラクタ (サイズ指定)
-Image::Image(int width_, int height_, int stride_, int channels_)
+Image::Image(int width_, int height_)
 {
-	size.w = width_;
-	size.h = height_;
-	stride = stride_;
-	channels = channels_;
-	ch_depth = 8;	// ?
-
-	buf.resize(GetWidth() * GetHeight());
+	Create(width_, height_);
 }
 
 // デストラクタ
 Image::~Image()
 {
+}
+
+// 初期化
+void
+Image::Create(int width_, int height_)
+{
+	size.w = width_;
+	size.h = height_;
+	buf.resize(GetStride() * GetHeight());
 }
 
 //

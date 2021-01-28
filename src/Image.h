@@ -101,13 +101,18 @@ struct Size
 };
 
 // 画像
+// 今の所扱うのは RGB24 形式、パディングなしの画像フォーマットのみ。
+// つまり channels = 3, bit_depth = 8, stride = width * 3 固定。
 class Image
 {
  public:
 	// 空のビットマップを作成
 	Image();
 	// 指定の大きさのビットマップを作成 (ゼロ初期化)
-	Image(int width, int height, int stride, int ch);
+	Image(int width, int height);
+
+	// 初期化
+	void Create(int width, int height);
 
 	~Image();
 
@@ -116,16 +121,12 @@ class Image
 	Size GetSize() const	{ return size; }
 	int GetWidth() const	{ return size.w; }
 	int GetHeight() const	{ return size.h; }
-	int GetStride() const	{ return stride; }
-	int GetChannels() const	{ return channels; }
-	int GetChDepth() const 	{ return ch_depth; }
+	int GetStride() const	{ return GetWidth() * GetChannels(); }
+	int GetChannels() const	{ return 3; }
+	int GetChDepth() const 	{ return 8; }
 
 	std::vector<uint8> buf {};
 	Size size {};			// 画像サイズ (pixel)
-	int stride {};			// 横1ラインのバイト数
-
-	int channels {};		// 1ピクセルあたりのチャンネル数
-	int ch_depth {};		// 1チャンネルあたりのビット数
 };
 
 //
