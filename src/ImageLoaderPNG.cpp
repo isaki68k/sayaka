@@ -90,6 +90,11 @@ ImageLoaderPNG::Load(Image& img)
 		goto done;
 	}
 
+	// libpng 内のエラーからは大域ジャンプで戻ってくるらしい…
+	if (setjmp(png_jmpbuf(png))) {
+		goto done;
+	}
+
 	// コールバック設定
 	png_set_read_fn(png, stream, png_read);
 
