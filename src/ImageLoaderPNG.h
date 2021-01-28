@@ -37,4 +37,7 @@ class ImageLoaderPNG : public ImageLoader
 
 	bool Check() const override;
 	bool Load(Image& img) override;
+
+ private:
+	static std::string ColorType2str(int type);
 };

@@ -24,6 +24,7 @@
  */
 
 #include "ImageLoaderPNG.h"
+#include "StringUtil.h"
 #include <cstring>
 #include <png.h>
 
@@ -97,12 +98,26 @@ ImageLoaderPNG::Load(Image& img)
 	png_get_IHDR(png, info, &width, &height, &bitdepth,
 		&color_type, &interlace_type, &compression_type, &filter_type);
 	Debug(diag, "IHDR width=%d height=%d bitdepth=%d", width, height, bitdepth);
-	Debug(diag, "IHDR colortype=%d interlace=%d compression=%d filter=%d",
-		color_type, interlace_type, compression_type, filter_type);
+	Debug(diag, "IHDR colortype=%s interlace=%d compression=%d filter=%d",
+		ColorType2str(color_type).c_str(), interlace_type,
+		compression_type, filter_type);
 
-	if (color_type != PNG_COLOR_TYPE_RGB) {
-		printf("unsupported color_type %d\n", color_type);
-		goto done;
+	// color_type によっていろいろ設定が必要。
+	// see libpng(4)
+	if (color_type == PNG_COLOR_TYPE_PALETTE) {
+		png_set_palette_to_rgb(png);
+	}
+	if (png_get_valid(png, info, PNG_INFO_tRNS)) {
+		png_set_tRNS_to_alpha(png);
+	}
+	if ((color_type & PNG_COLOR_MASK_COLOR) == 0) {
+		if (bitdepth < 8) {
+			png_set_expand_gray_1_2_4_to_8(png);
+		}
+		png_set_gray_to_rgb(png);
+	}
+	if ((color_type & PNG_COLOR_MASK_ALPHA)) {
+		png_set_strip_alpha(png);
 	}
 
 	img.size.w = width;
@@ -127,6 +142,26 @@ ImageLoaderPNG::Load(Image& img)
  done:
 	png_destroy_read_struct(&png, &info, (png_infopp)NULL);
 	return rv;
+}
+
+// PNG の color type
+/*static*/ std::string
+ImageLoaderPNG::ColorType2str(int type)
+{
+	switch (type) {
+	 case PNG_COLOR_TYPE_GRAY:
+		return "Gray";
+	 case PNG_COLOR_TYPE_PALETTE:
+		return "Palette";
+	 case PNG_COLOR_TYPE_RGB:
+		return "RGB";
+	 case PNG_COLOR_TYPE_RGBA:
+		return "RGBA";
+	 case PNG_COLOR_TYPE_GRAY_ALPHA:
+		return "GrayA";
+	 default:
+		return string_format("%d(?)", type);
+	}
 }
 
 // コールバック
