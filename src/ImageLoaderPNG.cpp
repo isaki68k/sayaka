@@ -167,5 +167,12 @@ static void
 png_read(png_structp png, png_bytep data, png_size_t length)
 {
 	InputStream *stream = (InputStream *)png_get_io_ptr(png);
-	stream->Read((char *)data, length);
+
+	size_t total = 0;
+	while (total < length) {
+		auto r = stream->Read((char *)data + total, length - total);
+		if (r <= 0)
+			break;
+		total += r;
+	}
 }
