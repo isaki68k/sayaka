@@ -1,5 +1,7 @@
 # vi:set ts=8:
 
+.include "../Makefile.cfg"
+
 SRCS_common=	\
 	ChunkedInputStream.cpp \
 	Diag.cpp \
@@ -40,21 +42,11 @@ SRCS_sixelv=	\
 	sixelv.cpp \
 
 
-PKGS=		libjpeg libpng
-
-CXX=		c++ -std=c++17
 CXX+=		-g
 #CXX+=		-fsanitize=undefined
 
 CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
-INCLUDES+=	-I/usr/pkg/include
-INCLUDES+=	`pkg-config --cflags ${PKGS}`
-
-LIBS +=	\
-	-L/usr/pkg/lib -Wl,-R,/usr/pkg/lib \
-	-lmbedtls \
-	`pkg-config --libs ${PKGS}` \
 
 all:	sayaka test sixelv
 

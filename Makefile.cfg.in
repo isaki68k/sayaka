@@ -1,0 +1,8 @@
+#
+# sayaka
+# Copyright (C) 2021 isaki@NetBSD.org
+#
+
+CXX= @CXX@
+CPPFLAGS+= @CPPFLAGS@
+LIBS+= @LIBS@

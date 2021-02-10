@@ -1,0 +1,8 @@
+//
+// sayaka
+// Copyright (C) 2021 isaki@NetBSD.org
+//
+
+#pragma once
+
+#undef HAVE_ICONV_CONST
