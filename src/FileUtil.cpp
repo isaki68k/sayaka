@@ -49,7 +49,7 @@ FileReadAllText(const std::string& filename)
 		return "";
 	}
 
-	m = mmap(NULL, st.st_size, PROT_READ, MAP_FILE, fd, 0);
+	m = mmap(NULL, st.st_size, PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
 	if (m == MAP_FAILED) {
 		return "";
 	}
