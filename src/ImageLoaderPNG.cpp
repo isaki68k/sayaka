@@ -26,6 +26,7 @@
 #include "ImageLoaderPNG.h"
 #include "StringUtil.h"
 #include <cstring>
+#include <errno.h>
 #include <png.h>
 
 static void png_read(png_structp png, png_bytep data, png_size_t length);
