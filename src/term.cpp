@@ -116,8 +116,9 @@ terminal_support_sixel()
 }
 
 // 端末の背景色を調べる。
-// 黒に近ければ 0 を、白に近ければ 1 を、取得できなければ -1 を返す。
-int
+// 黒に近ければ BG_BLACK、白に近ければ BG_WHITE、取得できなければ BG_NONE を
+// 返す。
+enum bgcolor
 terminal_bgcolor()
 {
 	std::string query;
@@ -127,7 +128,7 @@ terminal_bgcolor()
 
 	// 出力先が端末でない(パイプとか)なら帰る。
 	if (isatty(STDOUT_FILENO) == 0) {
-		return -1;
+		return BG_NONE;
 	}
 
 	// 問い合わせる
@@ -135,11 +136,11 @@ terminal_bgcolor()
 	n = query_terminal(query, result, sizeof(result));
 	if (n < 0) {
 		warn("terminal failed");
-		return -1;
+		return BG_NONE;
 	}
 	if (n == 0) {
 		warnx("%s: timeout", __func__);
-		return -1;
+		return BG_NONE;
 	}
 
 	// 背景色を調べる。応答は
@@ -149,28 +150,28 @@ terminal_bgcolor()
 	char *e;
 	p = strstr(result, "rgb:");
 	if (p == NULL) {
-		return -1;
+		return BG_NONE;
 	}
 	// R
 	p += 4;
 	errno = 0;
 	ri = strtol(p, &e, 16);
 	if (p == e || *e != '/' || errno == ERANGE) {
-		return -1;
+		return BG_NONE;
 	}
 	// G
 	p = e + 1;
 	errno = 0;
 	gi = strtol(p, &e, 16);
 	if (p == e || *e != '/' || errno == ERANGE) {
-		return -1;
+		return BG_NONE;
 	}
 	// B
 	p = e + 1;
 	errno = 0;
 	bi = strtol(p, &e, 16);
 	if (p == e || *e != ESCchar || errno == ERANGE) {
-		return -1;
+		return BG_NONE;
 	}
 
 	float r = (float)ri / 65536;
@@ -181,8 +182,9 @@ terminal_bgcolor()
 	// ここは前景色と背景色が常用に耐えるレベルで明るさに違いがあるはずで、
 	// その背景色の明暗だけ分かればいいはずなので、細かいことは気にしない。
 	float I = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
-	// 四捨五入
-	return (int)(I + 0.5);
+	// 四捨五入。
+	// 白が 1、黒が 0 だと知っている。
+	return (enum bgcolor)(int)(I + 0.5);
 }
 
 // ファイルディスクリプタ fd から dstbuf に読み込む。

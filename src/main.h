@@ -34,6 +34,12 @@
 
 #define DEBUG_FORMAT 1
 
+enum bgcolor {
+	BG_NONE = -1,
+	BG_BLACK = 0,
+	BG_WHITE = 1,
+};
+
 // sayaka.cpp で定義されてるやつだけど、sayaka.h はグローバルなのでちょっと
 // どうすべ。
 extern void cmd_tweet();
@@ -68,7 +74,7 @@ extern int  max_image_count;
 extern int  image_count;
 extern int  image_next_cols;
 extern int  image_max_rows;
-extern bool bg_white;
+extern enum bgcolor bgcolor;
 extern std::string output_codeset;
 extern Twitter tw;
 extern bool opt_norest;

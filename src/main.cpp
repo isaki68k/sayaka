@@ -184,6 +184,7 @@ main(int ac, char *av[])
 	ngword.SetFileName(basedir + "ngword.json");
 
 	address_family = AF_UNSPEC;
+	bgcolor = BG_NONE;
 	color_mode = 256;
 	opt_show_ng = false;
 	opt_filter = "";
@@ -198,14 +199,6 @@ main(int ac, char *av[])
 	opt_eaw_a = 2;
 	opt_eaw_n = 1;
 
-	// デフォルト値を決めるために背景色を調べる。
-	// 判定できなければ背景色白をデフォルトにしておく。
-	bg_white = true;
-	c = terminal_bgcolor();
-	if (c >= 0) {
-		bg_white = (bool)c;
-	}
-
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
 		 case '4':
@@ -215,7 +208,7 @@ main(int ac, char *av[])
 			address_family = AF_INET6;
 			break;
 		 case OPT_black:
-			bg_white = false;
+			bgcolor = BG_BLACK;
 			break;
 		 case OPT_blocklist:
 			cmd = SayakaCmd::Blocklist;
@@ -395,7 +388,7 @@ main(int ac, char *av[])
 			cmd = SayakaCmd::Version;
 			break;
 		 case OPT_white:
-			bg_white = true;
+			bgcolor = BG_WHITE;
 			break;
 		 case OPT_x68k:
 			// 以下を指定したのと同じ
@@ -403,7 +396,7 @@ main(int ac, char *av[])
 			fontwidth = 8;
 			fontheight = 16;
 			output_codeset = "iso-2022-jp";
-			bg_white = false;
+			bgcolor = BG_BLACK;
 			opt_progress = true;
 			opt_ormode = true;
 			opt_output_palette = false;
@@ -559,6 +552,15 @@ GetHomeDir()
 void
 init_stream()
 {
+	// 端末の背景色を調べる (オプションで指定されてなければ)。
+	// 判定できなければ背景色白をデフォルトにしておく。
+	if (bgcolor == BG_NONE) {
+		bgcolor = terminal_bgcolor();
+		if (bgcolor == BG_NONE) {
+			bgcolor = BG_WHITE;
+		}
+	}
+
 	// 端末が SIXEL をサポートしてなければ画像オフ
 	if (terminal_support_sixel() == false) {
 		if (opt_noimage == false) {

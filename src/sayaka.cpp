@@ -144,7 +144,7 @@ int  max_image_count;			// この列に表示する画像の最大数
 int  image_count;				// この列に表示している画像の数
 int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
-bool bg_white;					// 明るい背景用に暗い文字色を使う場合は true
+enum bgcolor bgcolor;			// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
 Twitter tw;
@@ -764,6 +764,9 @@ print_(const UString& src)
 	fputs(outstr.c_str(), stdout);
 }
 
+#define BG_ISBLACK(c)	((c) == BG_BLACK)
+#define BG_ISWHITE(c)	((c) != BG_BLACK) // 姑息な最適化
+
 void
 init_color()
 {
@@ -782,14 +785,14 @@ init_color()
 		// それ以外のケースは色ごとに個別調整。
 
 		// 青は黒背景か白背景かで色合いを変えたほうが読みやすい
-		if (bg_white) {
+		if (BG_ISWHITE(bgcolor)) {
 			blue = BLUE;
 		} else {
 			blue = CYAN;
 		}
 
 		// ユーザ名。白地の場合は出来ればもう少し暗めにしたい
-		if (bg_white && color_mode > 16) {
+		if (BG_ISWHITE(bgcolor) && color_mode > 16) {
 			username = "38;5;28";
 		} else {
 			username = BROWN;
@@ -806,7 +809,7 @@ init_color()
 
 		// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
 		// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
-		if (bg_white && color_mode > 16) {
+		if (BG_ISWHITE(bgcolor) && color_mode > 16) {
 			fav = "38;5;184";
 		} else {
 			fav = BROWN;
