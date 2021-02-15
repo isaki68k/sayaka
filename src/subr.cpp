@@ -23,6 +23,7 @@
  * SUCH DAMAGE.
  */
 
+#include "sayaka.h"
 #include "StringUtil.h"
 #include "subr.h"
 

@@ -33,6 +33,15 @@ AC_CHECK_HEADERS([bsd/bsd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
+AC_MSG_CHECKING(for __builtin_expect)
+AC_TRY_COMPILE(,
+	[
+		if (__builtin_expect(1, 1)) return 0;
+	],
+	AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___BUILTIN_EXPECT]),
+	AC_MSG_RESULT([no]))
+
 # Checks for library functions.
 
 AC_MSG_CHECKING(for iconv const)

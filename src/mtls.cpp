@@ -23,6 +23,7 @@
  * SUCH DAMAGE.
  */
 
+#include "sayaka.h"
 #include "mtls.h"
 #include <cstdarg>
 #include <cstdlib>

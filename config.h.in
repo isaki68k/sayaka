@@ -5,4 +5,5 @@
 
 #pragma once
 
+#undef HAVE___BUILTIN_EXPECT
 #undef HAVE_ICONV_CONST

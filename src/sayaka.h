@@ -36,4 +36,14 @@ using uint16  = uint16_t;
 using uint32  = uint32_t;
 using unichar = uint32_t;
 
+#if !defined(__predict_true)
+#if defined(HAVE___BUILTIN_EXPECT)
+# define __predict_true(exp)	__builtin_expect((exp) != 0, 1)
+# define __predict_false(exp)	__builtin_expect((exp) != 0, 0)
+#else
+# define __predict_true(exp)	(exp)
+# define __predict_false(exp)	(exp)
+#endif
+#endif
+
 static const int ColorFixedX68k = -1;

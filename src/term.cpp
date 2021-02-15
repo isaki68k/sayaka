@@ -24,6 +24,7 @@
  * SUCH DAMAGE.
  */
 
+#include "sayaka.h"
 #include "term.h"
 #include <cstdio>
 #include <string>
