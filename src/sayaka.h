@@ -46,4 +46,12 @@ using unichar = uint32_t;
 #endif
 #endif
 
+// iconv() の第2引数の型は OS によって違う…
+#if defined(HAVE_ICONV_CONST)
+#define ICONV(cd, s, slen, d, dlen)	iconv((cd), (s), (slen), (d), (dlen))
+#else
+#define ICONV(cd, s, slen, d, dlen)	\
+	iconv((cd), (char **)(s), (slen), (d), (dlen))
+#endif
+
 static const int ColorFixedX68k = -1;

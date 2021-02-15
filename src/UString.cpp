@@ -121,7 +121,7 @@ UString::UTF8ToOutCode(const std::string& utf8)
 	std::vector<char> dstbuf(srcleft * 4 + 1);	// 適当だけど足りるはず
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
-	size_t r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	size_t r = ICONV(cd, &src, &srcleft, &dst, &dstlen);
 
 	// 変換できたところまでの文字列にする
 	*dst = '\0';
@@ -155,7 +155,7 @@ UString::IsUCharConvertible(unichar uni)
 	size_t dstlen = dstbuf.size();
 
 	// UTF-8 を出力文字コードに変換してみる
-	auto r = iconv(cd, &src, &srcleft, &dst, &dstlen);
+	auto r = ICONV(cd, &src, &srcleft, &dst, &dstlen);
 	if (__predict_true(r == 0)) {
 		return true;
 	}

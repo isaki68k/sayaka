@@ -44,7 +44,13 @@ AC_TRY_COMPILE(,
 
 # Checks for library functions.
 
-AC_MSG_CHECKING(for iconv const)
+AC_SEARCH_LIBS(iconv, iconv,
+	AC_DEFINE([HAVE_ICONV]),
+)
+
+AC_MSG_CHECKING(whether iconv needs const)
+old_CPPFLAGS="${CPPFLAGS}"
+CPPFLAGS="${CPPFLAGS} -Werror"
 AC_TRY_COMPILE(
 	[
 		#include <iconv.h>
@@ -55,6 +61,7 @@ AC_TRY_COMPILE(
 	AC_MSG_RESULT([yes])
 		AC_DEFINE([HAVE_ICONV_CONST]),
 	AC_MSG_RESULT([no]))
+CPPFLAGS="${old_CPPFLAGS}"
 
 # libbsd on Linux
 AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
