@@ -800,12 +800,12 @@ R"(usage: sayaka [<options>...] --home
 	-6
 	--blocklist
 	--ciphers <ciphers>
-	--debug
-	--debug-format
-	--debug-http <0-2>
-	--debug-show <0-2>
+	--debug       <0-2>
+	--debug-http  <0-2>
+	--debug-show  <0-2>
 	--debug-image <0-1>
 	--debug-sixel <0-2>
+	--debug-format
 	--followlist
 	--max-cont <n>
 	--max-image-cols <n>
