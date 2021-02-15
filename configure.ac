@@ -112,15 +112,19 @@ done
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
 
+# libmbedtls と libmbedcrypto を同時に探す
 AC_MSG_CHECKING([for mbedtls])
 old_LIBS=${LIBS}
-LIBS="${LIBS} -lmbedtls"
+LIBS="${LIBS} -lmbedtls -lmbedcrypto"
 AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[
 		#include <mbedtls/net_sockets.h>
+		#include <mbedtls/entropy.h>
 	], [
 		mbedtls_net_context net;
+		mbedtls_entropy_context e;
 		mbedtls_net_init(&net);
+		mbedtls_entropy_init(&e);
 	])], has_mbedtls=yes, has_mbedtls=no
 )
 if test "x${has_mbedtls}" = "xyes"; then
@@ -137,14 +141,17 @@ else
 			LIBS="${LIBS} -Wl,-R,${p}/lib"
 			;;
 		esac
-		LIBS="${LIBS} -L${p}/lib -lmbedtls"
+		LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
 
 		AC_LINK_IFELSE([AC_LANG_PROGRAM(
 			[
 				#include <mbedtls/net_sockets.h>
+				#include <mbedtls/entropy.h>
 			], [
 				mbedtls_net_context net;
+				mbedtls_entropy_context e;
 				mbedtls_net_init(&net);
+				mbedtls_entropy_init(&e);
 			])], has_mbedtls=yes, has_mbedtls=no
 		)
 		if test "x${has_mbedtls}" = "xyes"; then

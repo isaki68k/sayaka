@@ -3901,21 +3901,25 @@ done
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
 
+# libmbedtls と libmbedcrypto を同時に探す
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
 $as_echo_n "checking for mbedtls... " >&6; }
 old_LIBS=${LIBS}
-LIBS="${LIBS} -lmbedtls"
+LIBS="${LIBS} -lmbedtls -lmbedcrypto"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 		#include <mbedtls/net_sockets.h>
+		#include <mbedtls/entropy.h>
 
 int
 main ()
 {
 
 		mbedtls_net_context net;
+		mbedtls_entropy_context e;
 		mbedtls_net_init(&net);
+		mbedtls_entropy_init(&e);
 
   ;
   return 0;
@@ -3944,19 +3948,22 @@ else
 			LIBS="${LIBS} -Wl,-R,${p}/lib"
 			;;
 		esac
-		LIBS="${LIBS} -L${p}/lib -lmbedtls"
+		LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
 
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 				#include <mbedtls/net_sockets.h>
+				#include <mbedtls/entropy.h>
 
 int
 main ()
 {
 
 				mbedtls_net_context net;
+				mbedtls_entropy_context e;
 				mbedtls_net_init(&net);
+				mbedtls_entropy_init(&e);
 
   ;
   return 0;
