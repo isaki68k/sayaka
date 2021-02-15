@@ -138,7 +138,7 @@ terminal_bgcolor()
 		return -1;
 	}
 	if (n == 0) {
-		warnx("timeout");
+		warnx("%s: timeout", __func__);
 		return -1;
 	}
 
