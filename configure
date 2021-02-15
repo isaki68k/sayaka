@@ -3796,7 +3796,7 @@ for p in ${PKGS}; do
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ${p}" >&5
 $as_echo_n "checking for ${p}... " >&6; }
 
-	if ${PKG_CONFIG} --exist ${p}; then
+	if ${PKG_CONFIG} --exists ${p}; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 		H=`${PKG_CONFIG} --cflags ${p}`

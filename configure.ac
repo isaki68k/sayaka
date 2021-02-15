@@ -80,7 +80,7 @@ PKGS="libjpeg libpng"
 for p in ${PKGS}; do
 	AC_MSG_CHECKING([for ${p}])
 
-	if ${PKG_CONFIG} --exist ${p}; then
+	if ${PKG_CONFIG} --exists ${p}; then
 		AC_MSG_RESULT([yes])
 		H=`${PKG_CONFIG} --cflags ${p}`
 		L=`${PKG_CONFIG} --libs ${p}`
