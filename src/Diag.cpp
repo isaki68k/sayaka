@@ -84,7 +84,7 @@ get_classfunc_name(const char *pretty_, const char *func_)
 	std::string_view pretty(pretty_);
 
 	auto namepos = pretty.find(func);
-	auto begin = pretty.rfind(" ", namepos) + 1;
+	auto begin = pretty.find_last_of(" *", namepos) + 1;
 	auto end   = pretty.find("(", namepos + func.size());
 	auto classfunc = pretty.substr(begin, end - begin);
 
