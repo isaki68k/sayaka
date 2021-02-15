@@ -177,7 +177,8 @@ conv_twtime_to_unixtime(const std::string& instr)
 	tm.tm_min  = min;
 	tm.tm_sec  = sec;
 	// タイムゾーン欄 (+0000) は常に 0 っぽいので、他は対応してない
-	return mktime_z(NULL, &tm);
+	// XXX C++20 になったらまた考える
+	return timegm(&tm);
 }
 
 // strptime() っぽい俺様版。
