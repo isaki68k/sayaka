@@ -1,0 +1,11 @@
+*.json
+*.o
+.depends
+.gitignore
+Makefile.cfg
+config.h
+config.log
+config.status
+src/sayaka
+src/sixelv
+src/test
