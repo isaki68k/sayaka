@@ -26,7 +26,6 @@
 #include "UString.h"
 #include <array>
 #include <cstring>
-#define HAVE_ICONV
 #if defined(HAVE_ICONV)
 #include <iconv.h>
 #endif

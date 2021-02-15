@@ -30,8 +30,37 @@ AC_LANG_POP([C++])
 
 # Checks for header files.
 AC_CHECK_HEADERS([bsd/bsd.h])
+AC_CHECK_HEADERS([endian.h])
+AC_CHECK_HEADERS([sys/endian.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
+
+AC_MSG_CHECKING(for __builtin_bswap16)
+AC_TRY_COMPILE(,
+	[
+		return __builtin_bswap16(0);
+	],
+	AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___BUILTIN_BSWAP16]),
+	AC_MSG_RESULT([no]))
+
+AC_MSG_CHECKING(for __builtin_bswap32)
+AC_TRY_COMPILE(,
+	[
+		return __builtin_bswap32(0);
+	],
+	AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___BUILTIN_BSWAP32]),
+	AC_MSG_RESULT([no]))
+
+AC_MSG_CHECKING(for __builtin_bswap64)
+AC_TRY_COMPILE(,
+	[
+		return __builtin_bswap64(0);
+	],
+	AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___BUILTIN_BSWAP64]),
+	AC_MSG_RESULT([no]))
 
 AC_MSG_CHECKING(for __builtin_expect)
 AC_TRY_COMPILE(,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Tetsuya Isaki
+ * Copyright (C) 2020 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,42 +25,50 @@
 
 #pragma once
 
-#include "config.h"
-#include <cstdint>
-#include <sys/types.h>
+#if !defined(_LITTLE_ENDIAN)
+# define _LITTLE_ENDIAN	1234
+# define _BIG_ENDIAN	4321
+#endif
 
-using int8    = int8_t;
-using int16   = int16_t;
-using int32   = int32_t;
-using uint8   = uint8_t;
-using uint16  = uint16_t;
-using uint32  = uint32_t;
-using unichar = uint32_t;
+#if !defined(_BYTE_ORDER)
+# if defined(WORDS_BIGENDIAN)
+#  define _BYTE_ORDER _BIG_ENDIAN
+# else
+#  define _BYTE_ORDER _LITTLE_ENDIAN
+# endif
+#endif
 
-#if defined(HAVE_ENDIAN_H)
-#include <endian.h>
-#elif defined(HAVE_SYS_ENDIAN_H)
-#include <sys/endian.h>
+// __builtin_bswap* がないような環境があったらその時考える
+#if !defined(HAVE___BUILTIN_BSWAP16) || \
+    !defined(HAVE___BUILTIN_BSWAP32) || \
+    !defined(HAVE___BUILTIN_BSWAP64)
+#error No __builtin_bswap*
+#endif
+
+#define bswap16(x)	__builtin_bswap16(x)
+#define bswap32(x)	__builtin_bswap32(x)
+#define bswap64(x)	__builtin_bswap64(x)
+
+#if _BYTE_ORDER == _BIG_ENDIAN
+#define be16toh(x)	((uint16)(x))
+#define be32toh(x)	((uint32)(x))
+#define be64toh(x)	((uint64)(x))
+#define le16toh(x)	bswap16((uint16)(x))
+#define le32toh(x)	bswap32((uint32)(x))
+#define le64toh(x)	bswap64((uint64)(x))
 #else
-#include "missing_endian.h"
+#define be16toh(x)	bswap16((uint16)(x))
+#define be32toh(x)	bswap32((uint32)(x))
+#define be64toh(x)	bswap64((uint64)(x))
+#define le16toh(x)	((uint16)(x))
+#define le32toh(x)	((uint32)(x))
+#define le64toh(x)	((uint64)(x))
 #endif
 
-#if !defined(__predict_true)
-#if defined(HAVE___BUILTIN_EXPECT)
-# define __predict_true(exp)	__builtin_expect((exp) != 0, 1)
-# define __predict_false(exp)	__builtin_expect((exp) != 0, 0)
-#else
-# define __predict_true(exp)	(exp)
-# define __predict_false(exp)	(exp)
-#endif
-#endif
+#define htobe16(x)	be16toh(x)
+#define htobe32(x)	be32toh(x)
+#define htobe64(x)	be64toh(x)
 
-// iconv() の第2引数の型は OS によって違う…
-#if defined(HAVE_ICONV_CONST)
-#define ICONV(cd, s, slen, d, dlen)	iconv((cd), (s), (slen), (d), (dlen))
-#else
-#define ICONV(cd, s, slen, d, dlen)	\
-	iconv((cd), (char **)(s), (slen), (d), (dlen))
-#endif
-
-static const int ColorFixedX68k = -1;
+#define htole16(x)	le16toh(x)
+#define htole32(x)	le32toh(x)
+#define htole64(x)	le64toh(x)

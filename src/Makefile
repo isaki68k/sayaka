@@ -47,6 +47,7 @@ CXX+=		-g
 
 CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
+INCLUDES+=	-I..
 
 all:	sayaka test sixelv
 
