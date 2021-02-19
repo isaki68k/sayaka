@@ -633,11 +633,15 @@ ConvertFromStream(InputStream *istream)
 		prof[Profile_Load] = system_clock::now();
 	}
 
-	std::string s = string_format("Converting axis=%s",
-		ImageReductor::RAX2str(opt_resizeaxis));
-	if (opt_width != 0 || opt_height != 0)
-		s += string_format(" --width=%d --height=%d", opt_width, opt_height);
-	Debug(diag, "%s", s.c_str());
+	if (diag >= 1) {
+		// これ以上詳しいパラメータは --debug-sixel 1 で SixelConverter 側で
+		// 表示できているので、ここでは不要。
+		std::string s = string_format("Converting axis=%s",
+			ImageReductor::RAX2str(opt_resizeaxis));
+		if (opt_width != 0 || opt_height != 0)
+			s += string_format(" width=%d height=%d", opt_width, opt_height);
+		diag.Print("%s", s.c_str());
+	}
 	sx.ConvertToIndexed();
 
 	if (opt_profile) {
