@@ -54,14 +54,15 @@ ImageLoaderJPEG::Check() const
 
 	auto n = stream->Peek(magic, sizeof(magic));
 	if (n < sizeof(magic)) {
-		Debug(diag, "%s Read(magic) failed: %s", __method__, strerror(errno));
+		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerror(errno));
 		return false;
 	}
 	// マジックを確認
 	if (magic[0] != 0xff || magic[1] != 0xd8) {
-		Debug(diag, "%s Bad magic", __method__);
+		Trace(diag, "%s: Bad magic", __method__);
 		return false;
 	}
+	Trace(diag, "%s: OK", __method__);
 	return true;
 }
 
