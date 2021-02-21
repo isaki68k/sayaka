@@ -135,7 +135,7 @@ terminal_bgcolor()
 	query = ESC "]11;?" ESC "\\";
 	n = query_terminal(query, result, sizeof(result));
 	if (n < 0) {
-		warn("terminal failed");
+		warn("%s: query_terminal failed", __func__);
 		return BG_NONE;
 	}
 	if (n == 0) {
