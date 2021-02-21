@@ -25,10 +25,10 @@
  */
 
 #include "sayaka.h"
+#include "Diag.h"
 #include "term.h"
 #include <cstdio>
 #include <string>
-#include <err.h>
 #include <errno.h>
 #include <string.h>
 #include <termios.h>
@@ -84,11 +84,11 @@ terminal_support_sixel()
 	query = ESC "[c";
 	n = query_terminal(query, result, sizeof(result));
 	if (n < 0) {
-		warn("%s query_terminal failed", __func__);
+		Debug(diag, "%s query_terminal failed: %s", __func__, strerror(errno));
 		return false;
 	}
 	if (n == 0) {
-		warnx("%s: timeout", __func__);
+		Debug(diag, "%s: timeout", __func__);
 		return false;
 	}
 
@@ -135,11 +135,11 @@ terminal_bgcolor()
 	query = ESC "]11;?" ESC "\\";
 	n = query_terminal(query, result, sizeof(result));
 	if (n < 0) {
-		warn("%s: query_terminal failed", __func__);
+		Debug(diag, "%s query_terminal failed: %s", __func__, strerror(errno));
 		return BG_NONE;
 	}
 	if (n == 0) {
-		warnx("%s: timeout", __func__);
+		Debug(diag, "%s: timeout", __func__);
 		return BG_NONE;
 	}
 
