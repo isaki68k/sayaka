@@ -552,17 +552,24 @@ GetHomeDir()
 void
 init_stream()
 {
+	bool r;
+
 	// 端末の背景色を調べる (オプションで指定されてなければ)。
 	// 判定できなければ背景色白をデフォルトにしておく。
 	if (bgcolor == BG_NONE) {
+		progress("Checking bgcolor of the terminal...");
 		bgcolor = terminal_bgcolor();
+		progress("done\n");
 		if (bgcolor == BG_NONE) {
 			bgcolor = BG_WHITE;
 		}
 	}
 
 	// 端末が SIXEL をサポートしてなければ画像オフ
-	if (terminal_support_sixel() == false) {
+	progress("Checking whether the terminal supports sixel...");
+	r = terminal_support_sixel();
+	progress("done\n");
+	if (r == false) {
 		if (opt_noimage == false) {
 			printf("Terminal doesn't support sixel, switch to --no-image\n");
 		}

@@ -107,3 +107,13 @@ extern StringDictionary followlist;
 extern StringDictionary blocklist;
 extern StringDictionary mutelist;
 extern StringDictionary nortlist;
+
+// 起動経過を表示 (遅マシン用)
+static inline void
+progress(const char *msg)
+{
+	if (__predict_false(diag >= 1) || __predict_false(opt_progress)) {
+		fputs(msg, stdout);
+		fflush(stdout);
+	}
+}

@@ -75,7 +75,6 @@ enum Color {
 	Max,
 };
 
-static void progress(const char *msg);
 static void get_access_token();
 static bool showobject(const std::string& line);
 static bool showstatus(const Json *status, bool is_quoted);
@@ -214,16 +213,6 @@ cmd_tweet()
 		errx(1, "statuses/update failed%s", errors2string(json).c_str());
 	}
 	printf("Posted.\n");
-}
-
-// 起動経過を表示 (遅マシン用)
-static void
-progress(const char *msg)
-{
-	if (diag >= 1 || opt_progress) {
-		fputs(msg, stdout);
-		fflush(stdout);
-	}
 }
 
 // フィルタストリーム
