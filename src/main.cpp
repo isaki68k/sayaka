@@ -561,6 +561,8 @@ init_stream()
 		bgcolor = terminal_bgcolor();
 		progress("done\n");
 		if (bgcolor == BG_NONE) {
+			printf("Terminal doesn't support control sequence, "
+			       "switch to --white\n");
 			bgcolor = BG_WHITE;
 		}
 	}
