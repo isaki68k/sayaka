@@ -35,3 +35,7 @@
 
 extern bool terminal_support_sixel();
 extern enum bgcolor terminal_bgcolor();
+
+#if defined(SELFTEST)
+extern void test_term();
+#endif

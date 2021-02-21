@@ -41,6 +41,7 @@
 #include "acl.h"
 #include "eaw_code.h"
 #include "subr.h"
+#include "term.h"
 
 int test_count;
 int test_fail;
@@ -102,6 +103,7 @@ main(int ac, char *av[])
 	test_UString();
 	test_eaw_code();
 	test_subr();
+	test_term();
 
 	printf("%d tests", test_count);
 	if (test_fail == 0) {
