@@ -208,7 +208,7 @@ query_terminal(const std::string& query, char *dst, size_t dstsize)
 #if defined(SLOW_MACHINES)
 	timeout.tv_sec = 10;
 #else
-	timeout.tv_sec = 2;
+	timeout.tv_usec = 500 * 1000;
 #endif
 
 	// 応答受け取るため非カノニカルモードにするのと
