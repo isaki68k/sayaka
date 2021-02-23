@@ -50,7 +50,7 @@
 static enum bgcolor parse_bgcolor(char *result);
 static int query_terminal(const std::string& query, char *dst, size_t dstsize);
 
-#if defined(TEST) || defined(SELFTEST)
+// デバッグ表示用
 static std::string
 dump(const char *src)
 {
@@ -65,7 +65,6 @@ dump(const char *src)
 	}
 	return r;
 }
-#endif
 
 // 端末が SIXEL をサポートしていれば true を返す
 bool
@@ -91,6 +90,7 @@ terminal_support_sixel()
 		Debug(diag, "%s: timeout", __func__);
 		return false;
 	}
+	Trace(diag, "result |%s|", dump(result).c_str());
 
 	// ケーパビリティを調べる。応答は
 	// ESC "[?63;1;2;3;4;7;29c" のような感じで "4" があれば SIXEL 対応。
@@ -142,6 +142,7 @@ terminal_bgcolor()
 		Debug(diag, "%s: timeout", __func__);
 		return BG_NONE;
 	}
+	Trace(diag, "result |%s|", dump(result).c_str());
 
 	return parse_bgcolor(result);
 }
@@ -240,6 +241,7 @@ query_terminal(const std::string& query, char *dst, size_t dstsize)
 	tcsetattr(STDOUT_FILENO, TCSANOW, &tc);
 
 	// 問い合わせ
+	Trace(diag, "\nquery  |%s|", dump(query.c_str()).c_str());
 	r = write(STDOUT_FILENO, query.c_str(), query.size());
 
 	// 念のため応答がなければタイムアウトするようにしておく
@@ -254,13 +256,6 @@ query_terminal(const std::string& query, char *dst, size_t dstsize)
 	}
 	dst[r] = '\0';
 
-#if defined(TEST)
-	// デバッグ表示
-	if (0) {
-		fprintf(stderr, "dst=\"%s\"\n", dump(dst).c_str());
-	}
-#endif
-
 	// 端末を元に戻して r を持って帰る
  done:
 	tcsetattr(STDOUT_FILENO, TCSANOW, &old);
@@ -268,6 +263,9 @@ query_terminal(const std::string& query, char *dst, size_t dstsize)
 }
 
 #if defined(TEST)
+#include <err.h>
+
+Diag diag;
 
 int
 test_sixel()
@@ -296,6 +294,8 @@ test_bg()
 int
 main(int ac, char *av[])
 {
+	diag.SetLevel(2);
+
 	if (ac > 1) {
 		std::string av1 = std::string(av[1]);
 		if (av1 == "sixel") {

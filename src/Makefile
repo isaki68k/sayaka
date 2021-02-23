@@ -84,8 +84,8 @@ eaw_gen:	eaw_gen.cpp
 # XXX
 test_mtls:	mtls.cpp
 	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST $> -o $@ ${LIBS}
-test_term:	term.cpp
-	${CXX} ${CPPFLAGS} -DTEST $> -o $@
+test_term:	term.cpp Diag.o
+	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST $> -o $@
 
 
 .PHONY:	clean
