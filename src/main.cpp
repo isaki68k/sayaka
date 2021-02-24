@@ -393,8 +393,8 @@ main(int ac, char *av[])
 		 case OPT_x68k:
 			// 以下を指定したのと同じ
 			color_mode = ColorFixedX68k;
-			fontwidth = 8;
-			fontheight = 16;
+			opt_fontwidth = 8;
+			opt_fontheight = 16;
 			output_codeset = "iso-2022-jp";
 			bgcolor = BG_BLACK;
 			opt_progress = true;
@@ -638,9 +638,9 @@ sigwinch()
 		}
 	}
 
-	const char *msg_cols;
-	const char *msg_width;
-	const char *msg_height;
+	const char *msg_cols = "";
+	const char *msg_width = "";
+	const char *msg_height = "";
 
 	// 画面幅は常に更新
 	if (ws_cols > 0) {
