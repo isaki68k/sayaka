@@ -679,7 +679,7 @@ sigwinch()
 	}
 	if (use_default_font) {
 		printf("sayaka: Fontsize not detected. "
-			"Application default %dx%d is used.", fontwidth, fontheight);
+			"Application default %dx%d is used.\n", fontwidth, fontheight);
 	}
 
 	// フォントの高さからアイコンサイズを決定する。
