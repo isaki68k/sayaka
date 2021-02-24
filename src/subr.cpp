@@ -136,7 +136,7 @@ get_datetime(const Json& status)
 	if (status.contains("timestamp_ms")) {
 		// 数値のようにみえる文字列で格納されている
 		const auto& timestamp_ms = status.value("timestamp_ms", "0");
-		unixtime = (time_t)(std::stol(timestamp_ms) / 1000);
+		unixtime = (time_t)(std::stoll(timestamp_ms) / 1000);
 	} else {
 		const auto& created_at = status.value("created_at", "");
 		unixtime = conv_twtime_to_unixtime(created_at);
@@ -253,7 +253,7 @@ test_get_datetime()
 	printf("%s\n", __func__);
 
 	std::vector<std::pair<std::string, time_t>> table = {
-		{ R"( "timestamp_ms":"1234999" )",	1234 },
+		{ R"( "timestamp_ms":"1258538052000" )",				1258538052 },
 		{ R"( "created_at":"Wed Nov 18 09:54:12 +0000 2009" )", 1258538052 },
 	};
 	for (const auto& a : table) {
