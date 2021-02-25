@@ -336,7 +336,7 @@ test_parse_bgcolor()
 		char buf[128];
 		strlcpy(buf, src.c_str(), sizeof(buf));
 		auto actual = parse_bgcolor(buf);
-		xp_eq(expected, actual, dump(src.c_str()).c_str());
+		xp_eq((int)expected, (int)actual, dump(src.c_str()).c_str());
 	}
 }
 

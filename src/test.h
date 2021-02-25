@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "sayaka.h"
 #include <unistd.h>
 #include <array>
 #include <cstdio>
@@ -70,10 +71,12 @@ extern int test_fail;
 // C++ では xp_eq(exp, act) と xp_eq(exp, act, msg) のように 2つか3つの
 // ようなのを受け取るのが難しい。ただ、どうせここを雑にしといても関数定義に
 // マッチしなければエラーになるので、気にしないことにする。
-#define xp_eq(...) xp_eq_(__FILE__, __LINE__, __func__, __VA_ARGS__)
+#define xp_eq(...) 		xp_eq_(__FILE__, __LINE__, __func__, __VA_ARGS__)
 
 extern void xp_eq_(const char *file, int line, const char *func,
 	int exp, int act, const std::string& msg = "");
+extern void xp_eq_u_(const char *file, int line, const char *func,
+	uint64 exp, uint64 act, const std::string& msg = "");
 extern void xp_eq_(const char *file, int line, const char *func,
 	const std::string& exp, const std::string& act, const std::string& msg="");
 

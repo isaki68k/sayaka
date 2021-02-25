@@ -411,6 +411,7 @@ stox32(const char *s, char **endp)
 	return stouT<uint32, 16>(s, endp);
 }
 
+
 #if defined(SELFTEST)
 #include "test.h"
 #include <tuple>
@@ -751,7 +752,7 @@ test_stou32()
 {
 	printf("%s\n", __func__);
 
-	std::vector<std::tuple<std::string, int, uint32, int>> table = {
+	std::vector<std::tuple<std::string, uint32, int, int>> table = {
 		// input		val			error	endoffset
 		{ "0",			0,			0,		1 },
 		{ "9",			9,			0,		1 },
@@ -795,6 +796,102 @@ test_stou32()
 }
 
 void
+test_stou64()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::tuple<std::string, uint64, int, int>> table = {
+	 // input					val		error	endoffset
+	 { "0",						0,		0,		1 },
+	 { "9",						9,		0,		1 },
+	 { "12",					12,		0,		2 },
+	 { "4294967289",			4294967289,	0,	10 },	// 32MAX近く
+	 { "4294967295",			4294967295,	0,	10 },	// 32MAX
+	 { "4294967296",			4294967296,	0,	10 },	// 32bitの範囲外
+	 { "1844674407370955161",	1844674407370955161,  0, 19 }, // 1桁小
+	 { "18446744073709551615",	18446744073709551615ULL, 0, 20 }, // U64MAX
+	 { "18446744073709551616",	0,		ERANGE,	-1 },	// 範囲外
+	 { "18446744073709551615a",	18446744073709551615ULL, 0, 20 }, // 正常
+	 { "",						0,		EINVAL,	-1 },	// 空
+	 { "-1",					0,		EINVAL,	-1 },	// 負数
+	 { "-2147483648",			0,		EINVAL,	-1 },	// 負数(INT_MIN)
+	 { "-2147483649",			0,		EINVAL,	-1 },	// 負数(INT_MIN外)
+	 { "-4294967295",			0,		EINVAL,	-1 },	// 負数(-UINT_MAX)
+	 { "-9223372036854775808",	0,		EINVAL,	-1 },	// 負数(INT64_MIN)
+	 { "-9223372036854775809",	0,		EINVAL,	-1 },	// 負数(INT64_MIN外)
+	 { "-18446744073709551615",	0,		EINVAL, -1 },	// 負数(-UINT64_MAX)
+	 { "1.9",					1,		0,		1 },	// 整数以外は無視
+	 { "000000000000000000009",	9,		0,		21 },	// 8進数にしない
+	};
+	for (const auto& a : table) {
+		const auto& src = std::get<0>(a);
+		const auto expval = std::get<1>(a);
+		const auto experr = std::get<2>(a);
+		const auto expend = std::get<3>(a);
+
+		char *actend = const_cast<char *>(src.data()) - 1;
+		auto [actval, acterr] = stou64(src.c_str(), &actend);
+		xp_eq(expval, actval, src);
+		xp_eq(experr, acterr, src);
+		xp_eq(expend, actend - src.data(), src);
+	}
+
+	// NULL
+	{
+		char *actend;
+		auto [actval, acterr] = stou64(NULL, &actend);
+		xp_eq(0, actval);
+		xp_eq(EINVAL, acterr);
+		// actend どうするか
+	}
+}
+
+void
+test_stox32()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::tuple<std::string, uint32, int, int>> table = {
+		// input		val			error	endoffset
+		{ "0",			0,			0,		1 },
+		{ "9",			0x9,		0,		1 },
+		{ "F",			0xf,		0,		1 },
+		{ "f",			0xf,		0,		1 },
+		{ "1f",			0x1f,		0,		2 },
+		{ "fffffff",	0x0fffffff,	0,		7 },	// 一桁少ない
+		{ "ffffffff",	0xffffffff,	0,		8 },	// UINT32_MAX
+		{ "fffffffff",	0,			ERANGE,	-1 },	// 一桁多い
+		{ "ffffffffg",	0xffffffff,	0,		8 },	// これは正常...
+		{ "",			0,			EINVAL,	-1 },	// 空
+		{ "-1",			0,			EINVAL,	-1 },	// 負数
+		{ "0xff",		0,			0,		1 },	// 正常な 0 で終わる...
+		{ "1.9",		1,			0,		1 },	// 整数以外は無視
+		{ "00000000009",9,			0,		11 },	// 先頭のゼロを8進数にしない
+	};
+	for (const auto& a : table) {
+		const auto& src = std::get<0>(a);
+		const auto expval = std::get<1>(a);
+		const auto experr = std::get<2>(a);
+		const auto expend = std::get<3>(a);
+
+		char *actend = const_cast<char *>(src.data()) - 1;
+		auto [actval, acterr] = stox32(src.c_str(), &actend);
+		xp_eq(expval, actval, src);
+		xp_eq(experr, acterr, src);
+		xp_eq(expend, actend - src.data(), src);
+	}
+
+	// NULL
+	{
+		char *actend;
+		auto [actval, acterr] = stox32(NULL, &actend);
+		xp_eq(0, actval);
+		xp_eq(EINVAL, acterr);
+		// actend どうするか
+	}
+}
+
+void
 test_StringUtil()
 {
 	test_string_replace();
@@ -809,5 +906,7 @@ test_StringUtil()
 	test_StartWith();
 	test_EndWith();
 	test_stou32();
+	test_stou64();
+	test_stox32();
 }
 #endif

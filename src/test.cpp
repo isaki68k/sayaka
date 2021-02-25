@@ -24,6 +24,7 @@
  */
 
 #include "test.h"
+#include <inttypes.h>
 #include "ChunkedInputStream.h"
 #include "Diag.h"
 #include "Dictionary.h"
@@ -55,6 +56,19 @@ xp_eq_(const char *file, int line, const char *func,
 	if (exp != act) {
 		test_fail++;
 		printf("%s:%d: %s(%s) expects %d but %d\n",
+			file, line, func, msg.c_str(), exp, act);
+	}
+}
+
+void
+xp_eq_(const char *file, int line, const char *func,
+	uint64 exp, uint64 act, const std::string& msg)
+{
+	test_count++;
+
+	if (exp != act) {
+		test_fail++;
+		printf("%s:%d: %s(%s) expects %" PRIu64 "d but %" PRIu64 "d\n",
 			file, line, func, msg.c_str(), exp, act);
 	}
 }
