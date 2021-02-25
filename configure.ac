@@ -119,7 +119,13 @@ fi
 #	]
 #)
 
-PKG_CONFIG=pkg-config
+if test -z "${PKG_CONFIG}"; then
+	PKG_CONFIG=pkg-config
+fi
+${PKG_CONFIG} --version 2>&1 > /dev/null
+if test $? \!= 0 ; then
+	AC_MSG_ERROR([*** pkg-config (or \$PKG_CONFIG) not found])
+fi
 
 PKGS="libjpeg libpng"
 for p in ${PKGS}; do

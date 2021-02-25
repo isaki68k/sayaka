@@ -3978,7 +3978,13 @@ fi
 #	]
 #)
 
-PKG_CONFIG=pkg-config
+if test -z "${PKG_CONFIG}"; then
+	PKG_CONFIG=pkg-config
+fi
+${PKG_CONFIG} --version 2>&1 > /dev/null
+if test $? \!= 0 ; then
+	as_fn_error $? "*** pkg-config (or \$PKG_CONFIG) not found" "$LINENO" 5
+fi
 
 PKGS="libjpeg libpng"
 for p in ${PKGS}; do
