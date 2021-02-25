@@ -1037,7 +1037,7 @@ test_showstatus_acl()
 			um["id_str"] = umid_str;
 			um["screen_name"] = umid_str;
 			um["indices"] = { 0, 2 };
-			status["entities"]["user_mentions"] = { um };
+			status["entities"]["user_mentions"] = Json::array({ um });
 
 			// display_text_range
 			status["display_text_range"] = { 3, 5 };
