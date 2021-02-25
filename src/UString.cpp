@@ -146,22 +146,24 @@ UString::UTF8ToOutCode(const std::string& utf8)
 UString::IsUCharConvertible(unichar uni)
 {
 #if defined(HAVE_ICONV)
-	// UTF-32 の uni を UTF-8 の srcbuf に変換
-	std::array<char, 4> srcbuf;
-	size_t srcleft = UCharToUTF8(srcbuf.data(), uni);
-	const char *src = srcbuf.data();
-	// dstbuf は EUC-JP なら 2バイト、
-	// JIS なら前後のエスケープシーケンスも含めるので8バイト必要。
-	std::array<char, 8> dstbuf;
-	char *dst = dstbuf.data();
-	size_t dstlen = dstbuf.size();
+	if (use_iconv) {
+		// UTF-32 の uni を UTF-8 の srcbuf に変換
+		std::array<char, 4> srcbuf;
+		size_t srcleft = UCharToUTF8(srcbuf.data(), uni);
+		const char *src = srcbuf.data();
+		// dstbuf は EUC-JP なら 2バイト、
+		// JIS なら前後のエスケープシーケンスも含めるので8バイト必要。
+		std::array<char, 8> dstbuf;
+		char *dst = dstbuf.data();
+		size_t dstlen = dstbuf.size();
 
-	// UTF-8 を出力文字コードに変換してみる
-	auto r = ICONV(cd, &src, &srcleft, &dst, &dstlen);
-	if (__predict_true(r == 0)) {
-		return true;
+		// UTF-8 を出力文字コードに変換してみる
+		auto r = ICONV(cd, &src, &srcleft, &dst, &dstlen);
+		if (__predict_true(r == 0)) {
+			return true;
+		}
+		// 変換できない(>0)でもエラー(<0)でもとりあえず false で帰る
 	}
-	// 変換できない(>0)でもエラー(<0)でもとりあえず false で帰る
 #else
 	// これは起きないはずなので、これでいい
 #endif
