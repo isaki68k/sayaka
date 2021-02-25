@@ -37,7 +37,7 @@ bool UString::use_iconv = false;
 // UTF-32 から UTF-8 以外の出力文字コードへの変換用。
 // 運用時は ^C でとめるので解放せず放置する。
 // 本来は UString の static メンバにすべきだがヘッダに持ち出さないため。
-static iconv_t cd;
+static iconv_t cd = (iconv_t)-1;
 #endif
 
 // 文字コードの初期化。codeset は出力文字コード名。
@@ -115,11 +115,13 @@ UString::ToString() const
 UString::UTF8ToOutCode(const std::string& utf8)
 {
 	// 文字列全体を変換してみる
+	// 変換先バッファは変換元文字数 n に対して、EUC-JP なら 2n+1 でいいが
+	// JIS なら前後のエスケープシーケンスがあるので 2n+6+1。
 	const char *src = (const char *)utf8.data();
 	size_t srcleft = utf8.size();
-	std::vector<char> dstbuf(srcleft * 4 + 1);	// 適当だけど足りるはず
+	size_t dstlen = srcleft * 2 + 6 + 1;
+	std::vector<char> dstbuf(dstlen);
 	char *dst = dstbuf.data();
-	size_t dstlen = dstbuf.size();
 	size_t r = ICONV(cd, &src, &srcleft, &dst, &dstlen);
 
 	// 変換できたところまでの文字列にする
@@ -148,8 +150,9 @@ UString::IsUCharConvertible(unichar uni)
 	std::array<char, 4> srcbuf;
 	size_t srcleft = UCharToUTF8(srcbuf.data(), uni);
 	const char *src = srcbuf.data();
-
-	std::array<char, 4> dstbuf;
+	// dstbuf は EUC-JP なら 2バイト、
+	// JIS なら前後のエスケープシーケンスも含めるので8バイト必要。
+	std::array<char, 8> dstbuf;
 	char *dst = dstbuf.data();
 	size_t dstlen = dstbuf.size();
 
@@ -312,11 +315,13 @@ test_iconv_close()
 std::map<std::string, bool> table_Init = {
 	// encoding		expected
 #if defined(HAVE_ICONV)
-	{ "",			true },
-	{ "euc-jp",		true },
+	{ "",				true },
+	{ "euc-jp",			true },
+	{ "iso-2022-jp",	true },
 #else
-	{ "",			true },		// UTF-8 へは変換可能
-	{ "euc-jp",		false },
+	{ "",				true },		// UTF-8 へは変換可能
+	{ "euc-jp",			false },
+	{ "iso-2022-jp",	false },
 #endif
 };
 
@@ -402,6 +407,29 @@ test_ToString()
 		// (e4 ba 9c は U+4e9c の UTF-8 表現)
 		{ { 0x4e9c },					"euc-jp,\xe4\xba\x9c" },
 #endif
+
+		// --- jis への変換 ---
+		// 日本語で終わる文字列ではASCIIに戻すエスケープは出力されないっぽい。
+#if defined(HAVE_ICONV)
+		// 亜
+		{ { 0x4e9c },					"iso-2022-jp,\x1b$B0!" },
+
+		// "あい"
+		{ { 0x3042, 0x3044 },			"iso-2022-jp,\x1b$B$\"$$" },
+
+		// "あいA"
+		{ { 0x3042, 0x3044, 0x41 },		"iso-2022-jp,\x1b$B$\"$$\x1b(BA" },
+
+		// ￥ (FULLWIDTH YEN SIGN)
+		{ { 0xffe5 },					"iso-2022-jp,\x1b$B!o" },
+
+		//  "あ" 'LOUDLY CRYING FACE' "あ"
+		{ { 0x3042, 0x1f62d, 0x3042 },	"iso-2022-jp,\x1b$B$\"\".$\"" },
+#else
+		// iconv サポートがない時にこの変換は起きないはずなのでこれでいい
+		// (e4 ba 9c は U+4e9c の UTF-8 表現)
+		{ { 0x4e9c },					"iso-2022-jp,\xe4\xba\x9c" },
+#endif
 	};
 
 	for (const auto& a : table) {
@@ -442,6 +470,12 @@ test_IsUCharConvertible()
 		// 変換先が euc-jp の場合
 		UString::Init("euc-jp");
 		auto act = UString::IsUCharConvertible(uni);
+		xp_eq(exp, act, where);
+		test_iconv_close();
+
+		// 変換先が jis の場合
+		UString::Init("iso-2022-jp");
+		act = UString::IsUCharConvertible(uni);
 		xp_eq(exp, act, where);
 		test_iconv_close();
 
