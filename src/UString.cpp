@@ -122,19 +122,32 @@ UString::UTF8ToOutCode(const std::string& utf8)
 	size_t dstlen = srcleft * 2 + 6 + 1;
 	std::vector<char> dstbuf(dstlen);
 	char *dst = dstbuf.data();
-	size_t r = ICONV(cd, &src, &srcleft, &dst, &dstlen);
+	while (*src) {
+		size_t r = ICONV(cd, &src, &srcleft, &dst, &dstlen);
+		if (r == (size_t)-1) {
+			if (errno == EILSEQ) {
+				// 変換できない文字の場合、
+				// 入力の UTF-8 を1文字飛ばす。
+				auto [uc, uclen] = UCharFromUTF8(src);
+				src += uclen;
+				srcleft -= uclen;
 
-	// 変換できたところまでの文字列にする
+				// 代わりにゲタを出力。(再帰呼び出し)
+				auto alt = UTF8ToOutCode("〓");
+				strlcpy(dst, alt.c_str(), dstlen);
+				dst += alt.size();
+				dstlen--;
+
+				continue;
+			} else {
+				// それ以外のエラーならどうする?
+				break;
+			}
+		}
+	}
+
 	*dst = '\0';
 	std::string str((const char *)dstbuf.data());
-
-	// iconv(3) の戻り値は正数なら (変換出来なかった文字をゲタに差し替えて
-	// 変換した上で) 変換できなかった(差し替えた)文字数を返す。
-	// またそもそも失敗した場合は -1 を返すらしいが、こっちの場合は
-	// どうしたらいいか分からないのでとりあえずメッセージでも足しておくか。
-	if (__predict_false(r == (size_t)-1)) {
-		str += "\"iconv failed\"";
-	}
 
 	return str;
 }
@@ -404,6 +417,9 @@ test_ToString()
 
 		//  "あ" 'LOUDLY CRYING FACE' "あ"
 		{ { 0x3042, 0x1f62d, 0x3042 },	"euc-jp,\xa4\xa2\xa2\xae\xa4\xa2" },
+
+		// 'LOUDLY CRYING FACE' のみ
+		{ { 0x1f62d },					"euc-jp,\xa2\xae" },
 #else
 		// iconv サポートがない時にこの変換は起きないはずなのでこれでいい
 		// (e4 ba 9c は U+4e9c の UTF-8 表現)
@@ -427,6 +443,9 @@ test_ToString()
 
 		//  "あ" 'LOUDLY CRYING FACE' "あ"
 		{ { 0x3042, 0x1f62d, 0x3042 },	"iso-2022-jp,\x1b$B$\"\".$\"" },
+
+		// 'LOUDLY CRYING FACE' のみ
+		{ { 0x1f62d },					"iso-2022-jp,\x1b$B\"." },
 #else
 		// iconv サポートがない時にこの変換は起きないはずなのでこれでいい
 		// (e4 ba 9c は U+4e9c の UTF-8 表現)
