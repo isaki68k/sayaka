@@ -32,6 +32,7 @@ AC_LANG_POP([C++])
 AC_CHECK_HEADERS([bsd/bsd.h])
 AC_CHECK_HEADERS([endian.h])
 AC_CHECK_HEADERS([sys/endian.h])
+AC_CHECK_HEADERS([sys/ttycom.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 

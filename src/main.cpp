@@ -35,7 +35,9 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#if defined(HAVE_SYS_TTYCOM_H)
 #include <sys/ttycom.h>
+#endif
 
 static const char version[] = "3.5.x (2021/01/09)";
 
