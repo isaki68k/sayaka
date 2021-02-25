@@ -47,6 +47,14 @@ using unichar = uint32_t;
 #include "missing_endian.h"
 #endif
 
+#if !defined(__printflike)
+#if defined(HAVE___ATTRIBUTE_FORMAT)
+# define __printflike(a,b)	__attribute__((__format__(__printf__, (a), (b))))
+#else
+# define __printflike(a,b)
+#endif
+#endif
+
 #if !defined(__predict_true)
 #if defined(HAVE___BUILTIN_EXPECT)
 # define __predict_true(exp)	__builtin_expect((exp) != 0, 1)

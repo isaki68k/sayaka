@@ -72,6 +72,22 @@ AC_TRY_COMPILE(,
 		AC_DEFINE([HAVE___BUILTIN_EXPECT]),
 	AC_MSG_RESULT([no]))
 
+AC_MSG_CHECKING(for __attribute__((__format__)))
+old_CXXFLAGS="${CXXFLAGS}"
+CXXFLAGS="${CXXFLAGS} -Wall -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+	[
+		extern int f(const char *f, ...)
+			__attribute__((__format__(__printf__, 1, 2)));
+	], [
+	])],
+	AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___ATTRIBUTE_FORMAT]),
+	AC_MSG_RESULT([no]))
+CXXFLAGS="${old_CXXFLAGS}"
+
+
+
 # Checks for library functions.
 
 AC_SEARCH_LIBS(iconv, iconv,
