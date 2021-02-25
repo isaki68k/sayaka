@@ -200,7 +200,8 @@ else
 fi
 if test "x${has_mbedtls}" = "xno"; then
 	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([*** mbedtls not found])
+	AC_MSG_ERROR([*** mbedtls not found.
+	On Ubuntu, sudo apt install libmbedtls-dev])
 fi
 
 AC_CONFIG_HEADERS([config.h])

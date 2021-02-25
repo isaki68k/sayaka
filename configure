@@ -4098,7 +4098,8 @@ fi
 if test "x${has_mbedtls}" = "xno"; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	as_fn_error $? "*** mbedtls not found" "$LINENO" 5
+	as_fn_error $? "*** mbedtls not found.
+	On Ubuntu, sudo apt install libmbedtls-dev" "$LINENO" 5
 fi
 
 ac_config_headers="$ac_config_headers config.h"
