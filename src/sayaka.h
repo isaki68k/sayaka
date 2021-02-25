@@ -47,6 +47,10 @@ using unichar = uint32_t;
 #include "missing_endian.h"
 #endif
 
+#if defined(HAVE_BSD_BSD_H)
+#include <bsd/bsd.h>
+#endif
+
 #if !defined(__printflike)
 #if defined(HAVE___ATTRIBUTE_FORMAT)
 # define __printflike(a,b)	__attribute__((__format__(__printf__, (a), (b))))
