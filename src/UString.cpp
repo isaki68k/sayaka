@@ -128,7 +128,8 @@ UString::UTF8ToOutCode(const std::string& utf8)
 			if (errno == EILSEQ) {
 				// 変換できない文字の場合、
 				// 入力の UTF-8 を1文字飛ばす。
-				auto [uc, uclen] = UCharFromUTF8(src);
+				auto p = UCharFromUTF8(src);
+				auto uclen = p.second;
 				src += uclen;
 				srcleft -= uclen;
 
