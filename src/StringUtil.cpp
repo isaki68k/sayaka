@@ -317,20 +317,20 @@ EndWith(const std::string& s, char suffix)
 	return (s.back() == suffix);
 }
 
-// 文字列 s を10進数符号なし32bit整数とみなして数値に変換して返す。
+// 文字列 s を N 進数符号なし T型 整数とみなして数値に変換して返す。
 // 数値以外の文字が来たところで変換を終了する。
 // 変換できれば pair.first にその値、pair.second は 0 を返す。
 // 変換できなければ pair.first は 0、pair.second にはエラー原因を返す。
 // EINVAL なら文字列が数値でない、
-// ERANGE なら数値が uint32 で表現できない。
+// ERANGE なら数値が T型 で表現できない。
 // endp が NULL でない場合、変換できれば数値の次の文字の位置を返す。
 // 変換できない場合は endp は変更しない。
-std::pair<uint32, int>
-stou32(const char *s, char **endp)
+template <typename T, int N>
+std::pair<T, int>
+stouT(const char *s, char **endp)
 {
-	uint32_t val;
-	unsigned char c;
-	int i;
+	T val;
+	int c;
 	int error;
 
 	val = 0;
@@ -340,55 +340,75 @@ stou32(const char *s, char **endp)
 		return { val, error };
 	}
 
-	for (i = 0; i < 9; i++) {
-		c = (unsigned char)(s[i] - '0');
-		if (c > 9) {
-			// 数値以外が来たのでここで終わり。桁溢れはおきていない
- done:
-			if (endp != NULL) {
-				*endp = const_cast<char *>(&s[i]);
+	for (; *s; s++) {
+		T n;
+		c = *s;
+
+		// テンプレート分岐で c を求める
+		if (N == 10) {
+			if (c < '0' || c > '9') {
+				break;
 			}
-			return { val, error };
+			c -= '0';
+		} else if (N == 16) {
+			if ('0' <= c && c <= '9') {
+				c -= '0';
+			} else if ('A' <= c && c <= 'F') {
+				c -= 'A' + 10;
+			} else if ('a' <= c && c <= 'f') {
+				c -= 'a' + 10;
+			} else {
+				break;
+			}
+		} else {
+			// ここにはこないはず
 		}
 
-		val = val * 10 + c;
-		error = 0;	// ここで EINVAL をクリア
+		n = val * N + c;
+		if (n < val) {
+			// overflow
+			error = ERANGE;
+			break;
+		}
+		val = n;
+		error = 0;
 	}
 
-	// 10桁目
-	c = (unsigned char)(s[i] - '0');
-	if (c > 9) {
-		// 数値以外が来たのでここで終わり。桁溢れはおきていない
-		goto done;
-	}
-	i++;
-
-	// UINT_MAX は 4294967295。
-
-	if (__predict_false(val > UINT_MAX / 10)) {
+	if (__predict_true(error == 0)) {
+		if (endp) {
+			*endp = const_cast<char *>(s);
+		}
+	} else {
 		val = 0;
-		error = ERANGE;
-		goto done;
 	}
 
-	val *= 10;
-	if (__predict_false(val == (UINT_MAX / 10) * 10) && c > 5) {
-		val = 0;
-		error = ERANGE;
-		goto done;
-	}
+	return { val, error };
+}
 
-	val += c;
+// 文字列 s を10進数符号なし64bit整数とみなして数値に変換して返す。
+// 数値以外の文字が来たところで変換を終了する。
+// 変換できれば pair.first にその値、pair.second は 0 を返す。
+// 変換できなければ pair.first は 0、pair.second にはエラー原因を返す。
+// EINVAL なら文字列が数値でない、
+// ERANGE なら数値が uint64 で表現できない。
+// endp が NULL でない場合、変換できれば数値の次の文字の位置を返す。
+// 変換できない場合は endp は変更しない。
+std::pair<uint64, int>
+stou64(const char *s, char **endp)
+{
+	return stouT<uint64, 10>(s, endp);
+}
 
-	// 11桁目があればエラー
-	c = s[i];
-	if ('0' <= s[i] && s[i] <= '9') {
-		val = 0;
-		error = ERANGE;
-		goto done;
-	}
-	// 11桁目が数値以外なら正常終了
-	goto done;
+std::pair<uint32, int>
+stou32(const char *s, char **endp)
+{
+	return stouT<uint32, 10>(s, endp);
+}
+
+std::pair<uint32, int>
+stox32(const char *s, char **endp)
+{
+	return stouT<uint32, 16>(s, endp);
 }
 
 #if defined(SELFTEST)
