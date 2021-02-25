@@ -341,7 +341,6 @@ stouT(const char *s, char **endp)
 	}
 
 	for (; *s; s++) {
-		T n;
 		c = *s;
 
 		// テンプレート分岐で c を求める
@@ -364,13 +363,15 @@ stouT(const char *s, char **endp)
 			// ここにはこないはず
 		}
 
-		n = val * N + c;
-		if (n < val) {
+		// オーバーフローチェックは演算ごとに必要
+		T n1 = val * N;
+		T n2 = n1 + c;
+		if (n1 < val || n2 < val) {
 			// overflow
 			error = ERANGE;
 			break;
 		}
-		val = n;
+		val = n2;
 		error = 0;
 	}
 
