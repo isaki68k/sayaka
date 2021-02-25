@@ -25,6 +25,7 @@
  */
 #pragma once
 
+#include "sayaka.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -75,6 +76,12 @@ extern bool StartWith(const std::string& s, char prefix);
 // s が suffix で終わっていれば true を返す
 extern bool EndWith(const std::string& s, const std::string& suffix);
 extern bool EndWith(const std::string& s, char suffix);
+
+// s を10進数符号なし整数とみなして、数値に変換して返す
+extern std::pair<uint32, int> stou32(const char *s, char **endp = NULL);
+extern std::pair<uint64, int> stou64(const char *s, char **endp = NULL);
+// s を16進整数とみなして、数値に変換して返す
+extern std::pair<uint32, int> stox32(const char *s, char **endp = NULL);
 
 
 #if defined(SELFTEST)

@@ -28,6 +28,7 @@
 #include "StringUtil.h"
 #include <cstdarg>
 #include <cstring>
+#include <errno.h>
 
 // sprintf() の std::string を返すような版。
 std::string
@@ -316,6 +317,79 @@ EndWith(const std::string& s, char suffix)
 	return (s.back() == suffix);
 }
 
+// 文字列 s を10進数符号なし32bit整数とみなして数値に変換して返す。
+// 数値以外の文字が来たところで変換を終了する。
+// 変換できれば pair.first にその値、pair.second は 0 を返す。
+// 変換できなければ pair.first は 0、pair.second にはエラー原因を返す。
+// EINVAL なら文字列が数値でない、
+// ERANGE なら数値が uint32 で表現できない。
+// endp が NULL でない場合、変換できれば数値の次の文字の位置を返す。
+// 変換できない場合は endp は変更しない。
+std::pair<uint32, int>
+stou32(const char *s, char **endp)
+{
+	uint32_t val;
+	unsigned char c;
+	int i;
+	int error;
+
+	val = 0;
+	error = EINVAL;	// 1桁もなければエラー
+
+	if (__predict_false(s == NULL)) {
+		return { val, error };
+	}
+
+	for (i = 0; i < 9; i++) {
+		c = (unsigned char)(s[i] - '0');
+		if (c > 9) {
+			// 数値以外が来たのでここで終わり。桁溢れはおきていない
+ done:
+			if (endp != NULL) {
+				*endp = const_cast<char *>(&s[i]);
+			}
+			return { val, error };
+		}
+
+		val = val * 10 + c;
+		error = 0;	// ここで EINVAL をクリア
+	}
+
+	// 10桁目
+	c = (unsigned char)(s[i] - '0');
+	if (c > 9) {
+		// 数値以外が来たのでここで終わり。桁溢れはおきていない
+		goto done;
+	}
+	i++;
+
+	// UINT_MAX は 4294967295。
+
+	if (__predict_false(val > UINT_MAX / 10)) {
+		val = 0;
+		error = ERANGE;
+		goto done;
+	}
+
+	val *= 10;
+	if (__predict_false(val == (UINT_MAX / 10) * 10) && c > 5) {
+		val = 0;
+		error = ERANGE;
+		goto done;
+	}
+
+	val += c;
+
+	// 11桁目があればエラー
+	c = s[i];
+	if ('0' <= s[i] && s[i] <= '9') {
+		val = 0;
+		error = ERANGE;
+		goto done;
+	}
+	// 11桁目が数値以外なら正常終了
+	goto done;
+}
 
 #if defined(SELFTEST)
 #include "test.h"
@@ -653,6 +727,54 @@ test_EndWith()
 }
 
 void
+test_stou32()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::tuple<std::string, int, uint32, int>> table = {
+		// input		val			error	endoffset
+		{ "0",			0,			0,		1 },
+		{ "9",			9,			0,		1 },
+		{ "12",			12,			0,		2 },
+		{ "429496729",	429496729,	0,		9 },	// MAXの一桁少ないやつ
+		{ "429496730",	429496730,	0,		9 },
+		{ "4294967289",	4294967289, 0,		10 },	// MAX近く
+		{ "4294967295",	4294967295, 0,		10 },	// MAX
+		{ "4294967296",	0,			ERANGE,	-1 },	// 範囲外
+		{ "42949672950",0,			ERANGE,	-1 },	// MAX より一桁多い
+		{ "4294967295a",4294967295,	0,		10 },	// 正常
+		{ "",			0,			EINVAL,	-1 },	// 空
+		{ "-1",			0,			EINVAL,	-1 },	// 負数
+		{ "-2147483648",0,			EINVAL,	-1 },	// 負数(INT_MIN)
+		{ "-2147483649",0,			EINVAL,	-1 },	// 負数(INT_MIN外)
+		{ "-4294967295",0,			EINVAL,	-1 },	// 負数(-UINT_MAX)
+		{ "1.9",		1,			0,		1 },	// 整数以外は無視
+		{ "00000000009",9,			0,		11 },	// 先頭のゼロを8進数にしない
+	};
+	for (const auto& a : table) {
+		const auto& src = std::get<0>(a);
+		const auto expval = std::get<1>(a);
+		const auto experr = std::get<2>(a);
+		const auto expend = std::get<3>(a);
+
+		char *actend = const_cast<char *>(src.data()) - 1;
+		auto [actval, acterr] = stou32(src.c_str(), &actend);
+		xp_eq(expval, actval, src);
+		xp_eq(experr, acterr, src);
+		xp_eq(expend, actend - src.data(), src);
+	}
+
+	// NULL
+	{
+		char *actend;
+		auto [actval, acterr] = stou32(NULL, &actend);
+		xp_eq(0, actval);
+		xp_eq(EINVAL, acterr);
+		// actend どうするか
+	}
+}
+
+void
 test_StringUtil()
 {
 	test_string_replace();
@@ -666,5 +788,6 @@ test_StringUtil()
 	test_StringToLower();
 	test_StartWith();
 	test_EndWith();
+	test_stou32();
 }
 #endif
