@@ -34,6 +34,21 @@ AC_CHECK_HEADERS([endian.h])
 AC_CHECK_HEADERS([sys/endian.h])
 AC_CHECK_HEADERS([sys/ttycom.h])
 
+# Ubuntu 20.04 の <sys/sysctl.h> は AC_CHECK_HEADERS() では yes になるけど
+# #warning が入ってて実際には使えない
+AC_MSG_CHECKING([for sys/sysctl.h])
+old_CPPFLAGS="${CPPFLAGS}"
+CPPFLAGS="${CPPFLAGS} -Wcpp -Werror"
+AC_TRY_COMPILE(
+	[
+		#include <sys/sysctl.h>
+	],[],
+	AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE_SYS_SYSCTL_H]),
+	AC_MSG_RESULT([no]))
+CPPFLAGS="${old_CPPFLAGS}"
+
+
 # Checks for typedefs, structures, and compiler characteristics.
 
 AC_MSG_CHECKING(for __builtin_bswap16)

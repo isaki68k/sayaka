@@ -36,7 +36,9 @@
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <sys/select.h>
+#if defined(HAVE_SYS_SYSCTL_H)
 #include <sys/sysctl.h>
+#endif
 
 // ざっくり遅マシン判定
 #if defined(__hppa__)	|| \
