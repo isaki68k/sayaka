@@ -537,18 +537,13 @@ main(int ac, char *av[])
 	const char *pathname = "/";
 	int r;
 	int c;
-	int debuglevel;
 	int use_rsa_only;
 	int timeout;
 
-	debuglevel = 0;
 	use_rsa_only = 0;
 	timeout = -1;
-	while ((c = getopt(ac, av, "d:h:p:rs:t:")) != -1) {
+	while ((c = getopt(ac, av, "h:p:rs:t:")) != -1) {
 		switch (c) {
-		 case 'd':
-			debuglevel = atoi(optarg);
-			break;
 		 case 'h':
 			hostname = optarg;
 			break;
@@ -576,7 +571,6 @@ main(int ac, char *av[])
 	}
 
 	fprintf(stderr, "Test to %s:%s\n", hostname, servname);
-	mtls.SetDebugLevel(debuglevel);
 
 	if (mtls.Init() == false) {
 		errx(1, "mtls.Init failed");
