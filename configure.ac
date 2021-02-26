@@ -221,6 +221,15 @@ if test "x${has_mbedtls}" = "xno"; then
 	On Ubuntu, sudo apt install libmbedtls-dev])
 fi
 
+# Check mbedtls version. need >= 2.9.0(?)
+AC_CHECK_LIB(mbedtls, mbedtls_net_poll,
+	has_mbedtls_net_poll=yes,
+	has_mbedtls_net_poll=no)
+if test "x${has_mbedtls_net_poll}" = "xno"; then
+	AC_MSG_ERROR([*** mbedtls doesn't have mbedtls_net_poll().
+	Please update your mbedtls to >= 2.9.0(?).])
+fi
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile.cfg])
 AC_OUTPUT
