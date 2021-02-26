@@ -30,6 +30,11 @@
 #include <cstring>
 #include <errno.h>
 
+// 今の所これらは外部では使っていないのでこっちに置いておく
+static std::pair<uint32, int> stou32(const char *s, char **endp = NULL);
+static std::pair<uint64, int> stou64(const char *s, char **endp = NULL);
+static std::pair<uint32, int> stox32(const char *s, char **endp = NULL);
+
 // sprintf() の std::string を返すような版。
 std::string
 string_format(const char *fmt, ...)
@@ -394,19 +399,19 @@ stouT(const char *s, char **endp)
 // ERANGE なら数値が uint64 で表現できない。
 // endp が NULL でない場合、変換できれば数値の次の文字の位置を返す。
 // 変換できない場合は endp は変更しない。
-std::pair<uint64, int>
+static std::pair<uint64, int>
 stou64(const char *s, char **endp)
 {
 	return stouT<uint64, 10>(s, endp);
 }
 
-std::pair<uint32, int>
+static std::pair<uint32, int>
 stou32(const char *s, char **endp)
 {
 	return stouT<uint32, 10>(s, endp);
 }
 
-std::pair<uint32, int>
+static std::pair<uint32, int>
 stox32(const char *s, char **endp)
 {
 	return stouT<uint32, 16>(s, endp);
