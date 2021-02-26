@@ -88,8 +88,8 @@ AC_TRY_COMPILE(,
 	AC_MSG_RESULT([no]))
 
 AC_MSG_CHECKING(for __attribute__((__format__)))
-old_CXXFLAGS="${CXXFLAGS}"
-CXXFLAGS="${CXXFLAGS} -Wall -Werror"
+old_CPPFLAGS="${CPPFLAGS}"
+CPPFLAGS="${CPPFLAGS} -Wall -Werror"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	[
 		extern int f(const char *f, ...)
@@ -99,7 +99,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
 	AC_MSG_RESULT([yes])
 		AC_DEFINE([HAVE___ATTRIBUTE_FORMAT]),
 	AC_MSG_RESULT([no]))
-CXXFLAGS="${old_CXXFLAGS}"
+CPPFLAGS="${old_CPPFLAGS}"
 
 
 
