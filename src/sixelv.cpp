@@ -252,25 +252,25 @@ int main(int ac, char *av[])
 	while ((c = getopt_long(ac, av, "d:eh:p:w:", longopts, NULL)) != -1) {
 		switch (c) {
 		 case OPT_debug:
-			val = atoi(optarg);
+			val = stou32def(optarg, -1);
 			if (val < 0 || val > 2) {
-				errx(1, "--debug: debug level must be 0..2");
+				errx(1, "--debug %s: debug level must be 0..2", optarg);
 			}
 			diag.SetLevel(val);
 			break;
 
 		 case OPT_debug_http:
-			val = atoi(optarg);
+			val = stou32def(optarg, -1);
 			if (val < 0 || val > 2) {
-				errx(1, "--debug-http: debug level must be 0..2");
+				errx(1, "--debug-http %s: debug level must be 0..2", optarg);
 			}
 			diagHttp.SetLevel(val);
 			break;
 
 		 case OPT_debug_sixel:
-			val = atoi(optarg);
+			val = stou32def(optarg, -1);
 			if (val < 0 || val > 2) {
-				errx(1, "--debug-sixel: debug level must be 0..2");
+				errx(1, "--debug-sixel %s: debug level must be 0..2", optarg);
 			}
 			opt_debug_sixel = val;
 			break;
@@ -280,12 +280,11 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_gray:
-			val = atoi(optarg);
-			if (val < 2 || val > 256) {
-				errx(1, "--gray: grayscale must be 2..256");
+			opt_graylevel = stou32def(optarg, 0);
+			if (opt_graylevel < 2 || opt_graylevel > 256) {
+				errx(1, "--gray %s: grayscale must be 2..256", optarg);
 			}
 			opt_colormode = ReductorColorMode::Gray;
-			opt_graylevel = val;
 			break;
 
 		 case OPT_profile:
@@ -310,10 +309,18 @@ int main(int ac, char *av[])
 			break;
 
 		 case 'w':
-			opt_width = atoi(optarg);
+			opt_width = stou32def(optarg, -1);
+			if (opt_width < 0) {
+				errno = EINVAL;
+				err(1, "--width %s", optarg);
+			}
 			break;
 		 case 'h':
-			opt_height = atoi(optarg);
+			opt_height = stou32def(optarg, -1);
+			if (opt_height < 0) {
+				errno = EINVAL;
+				err(1, "--height %s", optarg);
+			}
 			break;
 
 		 case OPT_axis:
@@ -378,23 +385,35 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_output_x:
-			val = atoi(optarg);
-			if (val < 0) {
-				errx(1, "--output-x %d: offset must be >= 0", val);
+			opt_output_x = stou32def(optarg, -1);
+			if (opt_output_x < 0) {
+				errx(1, "--output-x %s: offset must be >= 0", optarg);
 			}
-			opt_output_x = val;
 			break;
 		 case OPT_output_y:
-			val = atoi(optarg);
-			if (val < 0) {
-				errx(1, "--output-y %d: offset must be >= 0", val);
+			opt_output_y = stou32def(optarg, -1);
+			if (opt_output_y < 0) {
+				errx(1, "--output-y %s: offset must be >= 0", optarg);
 			}
-			opt_output_y = val;
 			break;
 
 		 case OPT_color_factor:
-			opt_color_factor = atof(optarg);
+		 {
+			char *end;
+
+			errno = 0;
+			opt_color_factor = strtof(optarg, &end);
+			if (end == optarg || *end != '\0') {
+				errno = EINVAL;
+			}
+			if (opt_color_factor < 0) {
+				errno = EINVAL;
+			}
+			if (errno) {
+				err(1, "--color-factor %s", optarg);
+			}
 			break;
+		 }
 
 		 case OPT_finder:
 			opt_findermode = select_opt(findermode_map, optarg, &res);
@@ -404,7 +423,11 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_addnoise:
-			opt_addnoise = atoi(optarg);
+			opt_addnoise = stou32def(optarg, -1);
+			if (opt_addnoise < 0) {
+				errno = EINVAL;
+				err(1, "--addnoise %s", optarg);
+			}
 			break;
 
 		 case OPT_help_all:

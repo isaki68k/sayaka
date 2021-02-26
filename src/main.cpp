@@ -175,6 +175,7 @@ int
 main(int ac, char *av[])
 {
 	int c;
+	int val;
 
 	diagHttp.SetClassname("HttpClient");
 
@@ -222,11 +223,19 @@ main(int ac, char *av[])
 			if (strcmp(optarg, "x68k") == 0) {
 				color_mode = ColorFixedX68k;
 			} else {
-				color_mode = atoi(optarg);
+				color_mode = stou32def(optarg, -1);
+				if (color_mode < 0) {
+					errno = EINVAL;
+					err(1, "--color %s", optarg);
+				}
 			}
 			break;
 		 case OPT_debug:
-			diag.SetLevel(atoi(optarg));
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug %s: debug level must be 0..2", optarg);
+			}
+			diag.SetLevel(val);
 			break;
 		 case OPT_debug_format:
 #if !defined(DEBUG_FORMAT)
@@ -235,28 +244,44 @@ main(int ac, char *av[])
 			opt_debug_format = true;
 			break;
 		 case OPT_debug_http:
-			diagHttp.SetLevel(atoi(optarg));
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-http %s: debug level must be 0..2", optarg);
+			}
+			diagHttp.SetLevel(val);
 			break;
 		 case OPT_debug_image:
-			diagImage.SetLevel(atoi(optarg));
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 1) {
+				errx(1, "--debug-image %s: debug level must be 0..1", optarg);
+			}
+			diagImage.SetLevel(val);
 			break;
 		 case OPT_debug_show:
-			diagShow.SetLevel(atoi(optarg));
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-show %s: debug level must be 0..2", optarg);
+			}
+			diagShow.SetLevel(val);
 			break;
 		 case OPT_debug_sixel:
-			opt_debug_sixel = atoi(optarg);
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-sixel %s: debug level must be 0..2", optarg);
+			}
+			opt_debug_sixel = val;
 			max_image_count = 1;
 			break;
 		 case OPT_eaw_a:
-			opt_eaw_a = atoi(optarg);
+			opt_eaw_a = stou32def(optarg, -1);
 			if (opt_eaw_a < 1 || opt_eaw_a > 2) {
-				usage();
+				errx(1, "--eaw-a %s: must be either 1 or 2", optarg);
 			}
 			break;
 		 case OPT_eaw_n:
-			opt_eaw_n = atoi(optarg);
+			opt_eaw_n = stou32def(optarg, -1);
 			if (opt_eaw_n < 1 || opt_eaw_n > 2) {
-				usage();
+				errx(1, "--eaw-n %s: must be either 1 or 2", optarg);
 			}
 			break;
 		 case OPT_euc_jp:
@@ -275,10 +300,14 @@ main(int ac, char *av[])
 			std::string str(optarg);
 			auto metric = Split(str, "x");
 			if (metric.size() != 2) {
-				usage();
+				errx(1, "--font %s: argument must be <W>x<H>", optarg);
 			}
 			opt_fontwidth = stou32def(metric[0], 0);
 			opt_fontheight = stou32def(metric[1], 0);
+			if (opt_fontwidth < 1 || opt_fontheight < 1) {
+				errno = EINVAL;
+				err(1, "--font %s", optarg);
+			}
 			break;
 		 }
 		 case OPT_full_url:
@@ -292,12 +321,17 @@ main(int ac, char *av[])
 			output_codeset = "iso-2022-jp";
 			break;
 		 case OPT_max_cont:
-			last_id_max = atoi(optarg);
+			last_id_max = stou32def(optarg, -1);
+			if (last_id_max < 0) {
+				errno = EINVAL;
+				err(1, "--max-cont %s", optarg);
+			}
 			break;
 		 case OPT_max_image_cols:
-			max_image_count = atoi(optarg);
-			if (max_image_count < 1) {
-				max_image_count = 0;
+			max_image_count = stou32def(optarg, -1);
+			if (max_image_count < 0) {
+				errno = EINVAL;
+				err(1, "--max-image-cols %s", optarg);
 			}
 			break;
 		 case OPT_mutelist:
@@ -335,7 +369,7 @@ main(int ac, char *av[])
 			} else if (strcmp(optarg, "off") == 0) {
 				opt_ormode = false;
 			} else {
-				usage();
+				errx(1, "--ormode %s: must be either 'on' or 'off'", optarg);
 			}
 			break;
 		 case OPT_palette:
@@ -344,7 +378,7 @@ main(int ac, char *av[])
 			} else if (strcmp(optarg, "off") == 0) {
 				opt_output_palette = false;
 			} else {
-				usage();
+				errx(1, "--palette %s: must be either 'on' or 'off'", optarg);
 			}
 			break;
 		 case OPT_play:
@@ -357,16 +391,10 @@ main(int ac, char *av[])
 			opt_progress = true;
 			break;
 		 case OPT_record:
-			if (opt_record_mode != 0) {
-				usage();
-			}
 			opt_record_mode = 1;
 			record_file = optarg;
 			break;
 		 case OPT_record_all:
-			if (opt_record_mode != 0) {
-				usage();
-			}
 			opt_record_mode = 2;
 			record_file = optarg;
 			break;
@@ -374,7 +402,12 @@ main(int ac, char *av[])
 			opt_show_ng = true;
 			break;
 		 case OPT_timeout_image:
-			opt_timeout_image = atoi(optarg) * 1000;
+			val = stou32def(optarg, -1);
+			if (val < 0) {
+				errno = EINVAL;
+				err(1, "--timeout-image %s", optarg);
+			}
+			opt_timeout_image = val * 1000;
 			break;
 		 case OPT_token:
 		 {
@@ -803,6 +836,7 @@ R"(usage: sayaka [<options>...] --home
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--show-ng
+	--timeout-image <sec>
 	--token <file> : token file (default: ~/.sayaka/token.json)
 	--version
 	--x68k : preset options for x68k.
