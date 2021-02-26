@@ -1351,17 +1351,15 @@ show_image(const std::string& img_file, const std::string& img_url,
 		;
 	// Ph
 	i++;
-	errno = 0;
-	sx_width = strtol(buf + i, &ep, 10);
-	if (ep == buf + i || errno == ERANGE) {
+	sx_width = stou32def(buf + i, -1, &ep);
+	if (sx_width < 0) {
 		return false;
 	}
 	// Pv
 	i = ep - buf;
 	i++;
-	errno = 0;
-	sx_height = strtol(buf + i, &ep, 10);
-	if (ep == buf + i || errno == ERANGE) {
+	sx_height = stou32def(buf + i, -1);
+	if (sx_height < 0) {
 		return false;
 	}
 

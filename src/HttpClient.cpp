@@ -174,7 +174,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 	if (protocol == "HTTP/1.1" || protocol == "HTTP/1.0") {
 		auto code_msg = Split2(arg, " ");
 		auto code = code_msg.first;
-		ResultCode = stoi(code);
+		ResultCode = stou32def(code, -1);
 		Debug(diag, "ResultCode=%d", ResultCode);
 	}
 

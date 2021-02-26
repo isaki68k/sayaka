@@ -26,6 +26,7 @@
 
 #include "sayaka.h"
 #include "Diag.h"
+#include "StringUtil.h"
 #include "term.h"
 #include <cstdio>
 #include <string>
@@ -173,27 +174,24 @@ parse_bgcolor(char *result)
 	}
 	// R
 	p += 4;
-	errno = 0;
-	ri = strtol(p, &e, 16);
-	if (p == e || *e != '/' || errno == ERANGE) {
+	ri = stox32def(p, -1, &e);
+	if (ri < 0 || *e != '/') {
 		return BG_NONE;
 	}
 	rn = e - p;
 
 	// G
 	p = e + 1;
-	errno = 0;
-	gi = strtol(p, &e, 16);
-	if (p == e || *e != '/' || errno == ERANGE) {
+	gi = stox32def(p, -1, &e);
+	if (gi < 0 || *e != '/') {
 		return BG_NONE;
 	}
 	gn = e - p;
 
 	// B
 	p = e + 1;
-	errno = 0;
-	bi = strtol(p, &e, 16);
-	if (p == e || *e != ESCchar || errno == ERANGE) {
+	bi = stox32def(p, -1, &e);
+	if (bi < 0 || *e != ESCchar) {
 		return BG_NONE;
 	}
 	bn = e - p;

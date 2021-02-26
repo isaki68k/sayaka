@@ -80,9 +80,27 @@ extern bool EndWith(const std::string& s, char suffix);
 // s を10進数符号なし整数とみなして、数値に変換して返す
 extern std::pair<uint32, int> stou32(const char *s, char **endp = NULL);
 extern std::pair<uint64, int> stou64(const char *s, char **endp = NULL);
+extern uint32 stou32def(const char *s, uint32 def, char **endp = NULL);
+extern uint64 stou64def(const char *s, uint64 def, char **endp = NULL);
 // s を16進整数とみなして、数値に変換して返す
 extern std::pair<uint32, int> stox32(const char *s, char **endp = NULL);
+extern uint32 stox32def(const char *s, uint32 def, char **endp = NULL);
 
+static inline uint32
+stou32def(const std::string& s, uint32 def, char **endp = NULL)
+{
+	return stou32def(s.c_str(), def, endp);
+}
+static inline uint64
+stou64def(const std::string& s, uint64 def, char **endp = NULL)
+{
+	return stou64def(s.c_str(), def, endp);
+}
+static inline uint32
+stox32def(const std::string& s, uint32 def, char **endp = NULL)
+{
+	return stox32def(s.c_str(), def, endp);
+}
 
 #if defined(SELFTEST)
 extern void test_StringUtil();

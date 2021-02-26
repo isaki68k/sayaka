@@ -359,7 +359,7 @@ static inline std::vector<uint8> operator"" _hex2vec(const char *str,
 		buf[0] = str[0];
 		buf[1] = str[1];
 		buf[2] = '\0';
-		uint8 x = strtol(buf, NULL, 16);
+		uint8 x = stox32def(buf, 0);
 		v.emplace_back(x);
 	}
 	return v;
@@ -388,7 +388,7 @@ static inline std::string operator"" _hex2str(const char *str, std::size_t len)
 		buf[0] = str[0];
 		buf[1] = str[1];
 		buf[2] = '\0';
-		v += strtol(buf, NULL, 16);
+		v += stox32def(buf, 0);
 	}
 	return v;
 }

@@ -277,8 +277,8 @@ main(int ac, char *av[])
 			if (metric.size() != 2) {
 				usage();
 			}
-			opt_fontwidth = std::stoi(metric[0]);
-			opt_fontheight = std::stoi(metric[1]);
+			opt_fontwidth = stou32def(metric[0], 0);
+			opt_fontheight = stou32def(metric[1], 0);
 			break;
 		 }
 		 case OPT_full_url:

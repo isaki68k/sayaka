@@ -136,7 +136,7 @@ get_datetime(const Json& status)
 	if (status.contains("timestamp_ms")) {
 		// 数値のようにみえる文字列で格納されている
 		const auto& timestamp_ms = status.value("timestamp_ms", "0");
-		unixtime = (time_t)(std::stoll(timestamp_ms) / 1000);
+		unixtime = (time_t)(stou64def(timestamp_ms, 0) / 1000);
 	} else {
 		const auto& created_at = status.value("created_at", "");
 		unixtime = conv_twtime_to_unixtime(created_at);
@@ -155,18 +155,18 @@ conv_twtime_to_unixtime(const std::string& instr)
 
 	auto w = Split(instr, " ");
 	auto& monname = w[1];
-	int mday = std::stoi(w[2]);
+	int mday = stou32def(w[2], 1);
 	auto timestr = w[3];
-	int year = std::stoi(w[5]);
+	int year = stou32def(w[5], 1900);
 
 	static const std::string monnames = "JanFebMarAprMayJunJulAugSepOctNovDec";
 	int mon0 = monnames.find(monname);
 	mon0 = (mon0 / 3);
 
 	auto t = Split(timestr, ":");
-	int hour = std::stoi(t[0]);
-	int min  = std::stoi(t[1]);
-	int sec  = std::stoi(t[2]);
+	int hour = stou32def(t[0], 0);
+	int min  = stou32def(t[1], 0);
+	int sec  = stou32def(t[2], 0);
 
 	struct tm tm;
 	memset(&tm, 0, sizeof(tm));
@@ -203,17 +203,9 @@ my_strptime(const std::string& buf, const std::string& fmt)
 		if (hhmm.size() != 2) {
 			return -1;
 		}
-		auto hh = hhmm[0];
-		auto mm = hhmm[1];
-		if (hh.size() < 1 || hh.size() > 2) {
-			return -1;
-		}
-		if (mm.size() < 1 || mm.size() > 2) {
-			return -1;
-		}
-		auto h = std::stoi(hh);
-		auto m = std::stoi(mm);
-		if (h < 0 || m < 0) {
+		int h = stou32def(hhmm[0], -1);
+		int m = stou32def(hhmm[1], -1);
+		if (h < 0 || m < 0 || h > 99 || m > 59) {
 			return -1;
 		}
 		return (h * 60) + m;

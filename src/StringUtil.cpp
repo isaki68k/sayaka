@@ -412,6 +412,37 @@ stox32(const char *s, char **endp)
 	return stouT<uint32, 16>(s, endp);
 }
 
+// エラーの代わりにデフォルト値を返す版
+uint32
+stou32def(const char *s, uint32 defval, char **endp)
+{
+	auto [val, error] = stou32(s, endp);
+	if (error) {
+		val = defval;
+	}
+	return val;
+}
+
+uint64
+stou64def(const char *s, uint64 defval, char **endp)
+{
+	auto [val, error] = stou64(s, endp);
+	if (error) {
+		val = defval;
+	}
+	return val;
+}
+
+uint32
+stox32def(const char *s, uint32 defval, char **endp)
+{
+	auto [val, error] = stox32(s, endp);
+	if (error) {
+		val = defval;
+	}
+	return val;
+}
+
 
 #if defined(SELFTEST)
 #include "test.h"

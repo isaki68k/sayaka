@@ -165,9 +165,9 @@ NGWord::Parse(const Json& ng)
 		auto hourstr = tmp[1];
 		auto hour = 0;
 		if (EndWith(hourstr, 'd')) {
-			hour = std::stoi(hourstr) * 24;
+			hour = stou32def(hourstr, 0) * 24;
 		} else {
-			hour = std::stoi(hourstr);
+			hour = stou32def(hourstr, 0);
 		}
 		ng2["type"] = tmp[0];
 		ng2["delay"] = hour;
@@ -179,7 +179,7 @@ NGWord::Parse(const Json& ng)
 	if (StartWith(ngword, "%RT,")) {
 		auto tmp = Split(ngword, ",", 2);
 		ng2["type"] = tmp[0];
-		ng2["rtnum"] = std::stoi(tmp[1]);
+		ng2["rtnum"] = stou32def(tmp[1], 0);
 		return ng2;
 	}
 

@@ -28,6 +28,7 @@
 //
 
 #include "ChunkedInputStream.h"
+#include "StringUtil.h"
 #include <cstring>
 #include <memory>
 #include <errno.h>
@@ -80,10 +81,10 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 
 		// チャンク長を取り出す
 		char *end;
-		errno = 0;
-		long intlen = strtol(slen.c_str(), &end, 16);
-		if (end == slen.c_str()) {
-			Debug(diag, "Chunk length is not a number: %s", slen.c_str());
+		int intlen = stox32def(slen.c_str(), -1, &end);
+		if (intlen < 0) {
+			Debug(diag, "Invalid chunk length: %s", slen.c_str());
+			errno = 0;
 			return -1;
 		}
 		if (*end != '\0') {
@@ -92,11 +93,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 			errno = EIO;
 			return -1;
 		}
-		if (errno) {
-			Debug(diag, "Chunk length is out of range: %s", slen.c_str());
-			return -1;
-		}
-		Debug(diag, "intlen=%ld", intlen);
+		Debug(diag, "intlen=%d", intlen);
 
 		if (intlen == 0) {
 			// データ終わり。CRLF を読み捨てる
@@ -113,7 +110,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 		}
 		Debug(diag, "readlen=%zd", readlen);
 		if (__predict_false(readlen != intlen)) {
-			Debug(diag, "readlen=%zd intlen=%ld", readlen, intlen);
+			Debug(diag, "readlen=%zd intlen=%d", readlen, intlen);
 			errno = EIO;
 			return -1;
 		}
