@@ -402,12 +402,11 @@ main(int ac, char *av[])
 			opt_show_ng = true;
 			break;
 		 case OPT_timeout_image:
-			val = stou32def(optarg, -1);
-			if (val < 0) {
+			opt_timeout_image = stou32def(optarg, -1);
+			if (opt_timeout_image < 0) {
 				errno = EINVAL;
 				err(1, "--timeout-image %s", optarg);
 			}
-			opt_timeout_image = val * 1000;
 			break;
 		 case OPT_token:
 		 {
