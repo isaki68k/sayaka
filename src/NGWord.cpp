@@ -213,7 +213,7 @@ NGWord::Match(NGStatus *ngstatp, const Json& status) const
 
 			if (nguser.empty()) {
 				// ユーザ指定がなければ、RT先本文を比較
-				if (MatchMain(ng, s)) {
+				if (MatchMainRT(ng, s)) {
 					user = &s["user"];
 				}
 			} else {
@@ -334,7 +334,8 @@ NGWord::MatchMain(const Json& ng, const Json& status)
 			}
 		}
 
-	// } else if (ngtype == "%RT") {	// 未実装
+	} else if (ngtype == "%RT") {		// RT 数
+		// これは MatchMainRT() 側でやる
 
 	} else if (ngtype == "%SOURCE") {	// クライアント名
 		const auto& stsource = status.value("source", "");
@@ -389,7 +390,7 @@ NGWord::MatchRegular(const std::string& ngword, const Json& status)
 }
 
 // status の本文その他を NG ワード ng と照合する。
-// リツイートメッセージ用。
+// リツイートメッセージ用。status は RT 先。
 bool
 NGWord::MatchMainRT(const Json& ng, const Json& status) const
 {
@@ -398,9 +399,21 @@ NGWord::MatchMainRT(const Json& ng, const Json& status) const
 		return true;
 	}
 
-	// 名前も比較
 	const auto& ngtype = ng["type"].get<std::string>();
-	if (ngtype == "regular") {
+	if (ngtype == "%RT") {
+		// RT 数
+		int thres = ng["rtnum"].get<int>();
+		if (status.contains("retweet_count")) {
+			const Json& retweet_count = status["retweet_count"];
+			int rtcnt = retweet_count.get<int>();
+			if (rtcnt <= thres) {
+				return true;
+			}
+		}
+		return false;
+
+	} else if (ngtype == "regular") {
+		// 名前も比較
 		if (__predict_false(status.contains("user") == false)) {
 			return false;
 		}
@@ -630,8 +643,6 @@ test_NGWord_MatchMain()
 
 		// %DELAY はストリームでは使いみちがあまりないので省略
 
-		// %RT
-
 		// %SOURCE
 		{ "test1",	"%SOURCE,client",			true },
 		{ "test1",	"%SOURCE,tests",			false },
@@ -722,6 +733,131 @@ test_NGWord_MatchRegular()
 }
 
 void
+test_NGWord_Match()
+{
+	printf("%s\n", __func__);
+
+	// RT元とRT先が関係するテスト
+	std::vector<std::tuple<std::string, std::string, std::string, bool>> table =
+	{	// testname	ngword			@user		expected
+
+		// regular
+		// 本文のみ検索
+		{ "rt0",	"nomatch",		"",			false },
+		{ "rt0",	"hello",		"",			true },
+		{ "rt0",	"ange",			"",			false },
+		{ "rt0",	"nomatch",		"@other",	false },
+		{ "rt0",	"hello",		"@other",	false },
+		{ "rt0",	"ange",			"@other",	false },
+		{ "rt0",	"nomatch",		"@ange",	false },
+		{ "rt0",	"hello",		"@ange",	true },
+		{ "rt0",	"ange",			"@ange",	false },
+		// 通常キーワードは本文のほかにRT先のユーザ名も比較する
+		{ "rt2",	"nomatch",		"",			false },
+		{ "rt2",	"hello",		"",			true },
+		{ "rt2",	"ange",			"",			false },
+		{ "rt2",	"seven",		"",			true },
+		{ "rt2",	"nomatch",		"@other",	false },
+		{ "rt2",	"hello",		"@other",	false },
+		{ "rt2",	"ange",			"@other",	false },
+		{ "rt2",	"seven",		"@other",	false },
+		{ "rt2",	"nomatch",		"@ange",	false },
+		{ "rt2",	"hello",		"@ange",	true },
+		{ "rt2",	"ange",			"@ange",	false },
+		{ "rt2",	"seven",		"@ange",	true },
+		{ "rt2",	"nomatch",		"@seven",	false },
+		{ "rt2",	"hello",		"@seven",	true },
+		{ "rt2",	"ange",			"@seven",	false },
+		// XXX これはどうするか?
+		{ "rt2",	"seven",		"@seven",	false },
+
+		// %RT
+		{ "rt0",	"%RT,2",		"",			false },
+		{ "rt0",	"%RT,3",		"",			false },
+		{ "rt0",	"%RT,2",		"@other",	false },
+		{ "rt0",	"%RT,3",		"@other",	false },
+		{ "rt0",	"%RT,2",		"@ange",	false },
+		{ "rt0",	"%RT,3",		"@ange",	false },
+		{ "rt1",	"%RT,2",		"",			false },
+		{ "rt1",	"%RT,3",		"",			false },
+		{ "rt1",	"%RT,2",		"@other",	false },
+		{ "rt1",	"%RT,3",		"@other",	false },
+		{ "rt1",	"%RT,2",		"@ange",	false },
+		{ "rt1",	"%RT,3",		"@ange",	false },
+		{ "rt2",	"%RT,2",		"",			false },
+		{ "rt2",	"%RT,3",		"",			true },
+		{ "rt2",	"%RT,2",		"@other",	false },
+		{ "rt2",	"%RT,3",		"@other",	false },
+		{ "rt2",	"%RT,2",		"@ange",	false },
+		{ "rt2",	"%RT,3",		"@ange",	true },
+		// RT先ユーザがマッチしても RT 数ルールは適用しない
+		{ "rt2",	"%RT,2",		"@seven",	false },
+		{ "rt2",	"%RT,3",		"@seven",	false },
+	};
+	Json statuses {
+		{ "rt0", {		// RTされていない通常ツイート
+			{ "text", "abc hello..." },
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+			{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+			{ "source", "test client v0" },
+			{ "user", { { "id_str", "100" }, { "screen_name", "ange" } } },
+		} },
+		{ "rt1", {		// これ自身がRTされているだけの通常ツイート
+			{ "text", "abc hello..." },
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+			{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+			{ "source", "test client v0" },
+			{ "user", { { "id_str", "100" }, { "screen_name", "ange" } } },
+			{ "retweet_count", 3 },
+		} },
+		{ "rt2", {		// RTしたツイート(3リツイートされている)
+			{ "text", "RT: abc hello..." },
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+			{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+			{ "source", "test client v0" },
+			{ "user", { { "id_str", "100" }, { "screen_name", "ange" } } },
+			{ "retweet_count", 3 },
+			{ "retweeted_status", {
+				{ "text", "abc hello..." },
+				{ "extended_tweet", { { "full_text", "abc hello world" } } },
+				{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+				{ "source", "other client v0" },
+				{ "user", { { "id_str", "101" }, { "screen_name", "seven" } } },
+				{ "retweet_count", 3 },
+			} },
+		} },
+	};
+
+	NGWord ngword;
+	for (const auto& a : table) {
+		const auto& testname = std::get<0>(a);
+		const auto& word = std::get<1>(a);
+		const auto& user = std::get<2>(a);
+		bool expected = std::get<3>(a);
+
+		// ng を作成
+		Json ng_file;
+		ng_file["user"]   = user;
+		ng_file["ngword"] = word;
+		auto ng2 = NGWord::Parse(ng_file);
+		ngword.ngwords.clear();
+		ngword.ngwords.push_back(ng2);
+
+		// テストを選択
+		if (statuses.contains(testname) == false) {
+			xp_fail("invalid testname: " + testname);
+		}
+		const Json& status = statuses[testname];
+
+		NGStatus ngstat;
+		auto actual = ngword.Match(&ngstat, status);
+		xp_eq(expected, actual,
+			std::string(testname) + "," + word + "," + user + "," +
+				(expected ? "true" : "false"));
+	}
+}
+
+void
 test_NGWord()
 {
 	test_NGWord_ReadFile();
@@ -729,5 +865,6 @@ test_NGWord()
 	test_NGWord_MatchUser();
 	test_NGWord_MatchMain();
 	test_NGWord_MatchRegular();
+	test_NGWord_Match();
 }
 #endif
