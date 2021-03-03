@@ -820,25 +820,24 @@ usage()
 R"(usage: sayaka [<options>...] --home
        sayaka [<options>...] <keyword>
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
-	--font <w>x<h> : font width x height. default 7x14.
+	--font <width>x<height> : (default: 7x14)
 	--filter <keyword>
 	--full-url : display full URL even if the URL is abbreviated.
-	--home : pseudo home timeline using filter stream
-	--white / --black : darken/lighten the text color. (default: --white)
+	--white / --black : darken/lighten the text color. (default: autodetect)
 	--no-color : disable all text color sequences
-	--no-image / --noimg
+	--no-image : disable image
 	--jis
 	--eucjp
 	--play : read JSON from stdin.
 	--post : post tweet from stdin (utf-8 is expected).
-	--progress: show start up progress.
+	--progress: show startup progress (for very slow machines).
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--show-ng
-	--timeout-image <sec>
+	--timeout-image <msec>
 	--token <file> : token file (default: ~/.sayaka/token.json)
 	--version
-	--x68k : preset options for x68k.
+	--x68k : preset options for x68k (with SIXEL kernel).
 
 	-4
 	-6
