@@ -225,28 +225,6 @@ NGWordList::Match(NGStatus *ngstatp, const Json& status) const
 			ngstat.ngword = ng.GetWord();
 			return true;
 		}
-#if 0
-		// QT 元ユーザ名がマッチするなら QT 先も RT チェック
-		if (user == NULL && status.contains("quoted_status")) {
-			if (ng.HasUser() == false || ng.MatchUser(status)) {
-				const Json& qt_status = status["quoted_status"];
-				if (ng.MatchMain(qt_status)) {
-					user = &status["user"];
-				}
-			}
-		}
-
-		if (user) {
-			const Json& u = *user;
-
-			ngstat.match = true;
-			ngstat.screen_name = u.value("screen_name", "");
-			ngstat.name = u.value("name", "");
-			ngstat.time = formattime(status);
-			ngstat.ngword = ng.ngword;
-			return true;
-		}
-#endif
 	}
 
 	return false;
@@ -637,62 +615,81 @@ NGWordRegular::~NGWordRegular()
 bool
 NGWordRegular::Match(const Json& status, const Json **matched_user) const
 {
-	// userなし, plain -> status.text
-	// userなし, RT    -> MatchRT(RT先status)
-	// userあり, plain -> if (user) status.text
-	// userあり, RT    -> if (RT元user || RT先user) MatchRT(RT先status)
-	// ここで matchRT(rt) := (rt.text, rt.screen_name)
+	const Json *user = NULL;
 
-	if (status.contains("retweeted_status") == false) {
-		// RT でない場合
-
-		// ユーザ指定があって一致しないケースを先に弾く。
-		if (HasUser() && MatchUser(status) == false) {
-			return false;
-		}
-
-		// 本文を調べる
-		if (MatchText(status, ngword)) {
-			*matched_user = &status["user"];
-			return true;
-		}
-
-	} else if (HasUser() == false) {
-		// RT があって、ユーザ指定がない場合、
-		// RT 先本文と RT 先 screen_name を調べる。
-
-		const Json& s = status["retweeted_status"];
-
-		if (MatchText(s, ngword) || MatchName(s, ngword)) {
-			// おそらくRT元ユーザ名を示すほうが分かりやすいはず
-			*matched_user = &status["user"];
-			return true;
-		}
-
+	if (status.contains("retweeted_status")) {
+		// RT あり
+		const Json& rt_status = status["retweeted_status"];
+		user = MatchStatus(status, &rt_status);
 	} else {
-		// RT があって、ユーザ指定もある場合、
-		// ユーザの比較は RT元ユーザ、RT先ユーザ両方行う。
-		// また RT 先本文と RT 先 screen_name を調べる。
+		// RT なし
+		user = MatchStatus(status, NULL);
+	}
 
-		const Json& s = status["retweeted_status"];
-		const Json *u = NULL;
+	// 本文が一致せず、QT があれば QT 側も調べる。
+	if (user == NULL && status.contains("quoted_status")) {
+		const Json& qt_status = status["quoted_status"];
 
-		// ユーザ指定がある場合、マッチしたほうを示すほうがよかろう
-		if (MatchUser(status)) {
-			u = &status["user"];
-		} else if (MatchUser(s)) {
-			u = &s["user"];
+		if (qt_status.contains("retweeted_status")) {
+			// 引用先が RT あり
+			const Json& rt_status = qt_status["retweeted_status"];
+			user = MatchStatus(status, &rt_status);
 		} else {
-			return false;
-		}
-
-		// 比較するのは RT 先だが、誰でマッチしたかとは別
-		if (MatchText(s, ngword) || MatchName(s, ngword)) {
-			*matched_user = u;
-			return true;
+			// 引用先が RT なし
+			user = MatchStatus(status, &qt_status);
 		}
 	}
-	return false;
+
+	if (user == NULL) {
+		return false;
+	}
+	*matched_user = user;
+	return true;
+}
+
+// status (と status2) から比較する。
+// status は常に発言元 status、NULL になり得ないので実体参照。
+// status2 はあれば RT か QT 先 status、なければ NULL。
+// 戻り値は、一致すれば表示用のユーザ情報、一致しなければ NULL。
+const Json *
+NGWordRegular::MatchStatus(const Json& status, const Json *status2) const
+{
+	const Json *user = NULL;
+
+	if (HasUser() == false) {
+		// ユーザ指定がなければ、比較へ進む。
+		// その際の user は発言元ユーザでいい。
+		user = &status["user"];
+
+	} else if (MatchUser(status)) {
+		// ユーザ指定があって status と一致すれば、user は status のユーザ。
+		user = &status["user"];
+
+	} else if (status2 != NULL && MatchUser(*status2)) {
+		// ユーザ指定があって status2 と一致すれば、user は status2 のユーザ。
+		const Json& s = *status2;
+		user = &s["user"];
+
+	} else {
+		// ユーザ指定があってどちらとも一致しなければ、ここで終了。
+		return NULL;
+	}
+	assert(user);
+
+	if (status2 == NULL) {
+		// status2 がなければ status の本文のみを調べる。
+		// RT も QT もない地の文の時だけこっち。
+		if (MatchText(status, ngword)) {
+			return user;
+		}
+	} else {
+		// status2 があれば status2 の本文と screen_name を調べる。
+		if (MatchText(*status2, ngword) || MatchName(*status2, ngword)) {
+			return user;
+		}
+	}
+
+	return NULL;
 }
 
 // status の screen_name を正規表現 word と比較する。
@@ -1033,6 +1030,44 @@ test_NGWordList_Match()
 		{ "rt2",	"ange",			"@seven",	false },
 		// XXX これはどうするか?
 		{ "rt2",	"seven",		"@seven",	true },
+
+		// QT 本文のみ
+		{ "qt1",	"nomatch",		"",			false },
+		{ "qt1",	"hello",		"",			true },
+		{ "qt1",	"foo",			"",			true },
+		{ "qt1",	"seven",		"",			true },
+		{ "qt1",	"nomatch",		"@ange",	false },
+		{ "qt1",	"hello",		"@ange",	true },
+		{ "qt1",	"foo",			"@ange",	true },
+		{ "qt1",	"seven",		"@ange",	true },
+		{ "qt1",	"nomatch",		"@other",	false },
+		{ "qt1",	"hello",		"@other",	false },
+		{ "qt1",	"foo",			"@other",	false },
+		{ "qt1",	"seven",		"@other",	false },
+		{ "qt1",	"nomatch",		"@seven",	false },
+		{ "qt1",	"hello",		"@seven",	false },
+		{ "qt1",	"foo",			"@seven",	true },
+		// XXX これはどうする?
+		{ "qt1",	"seven",		"@seven",	true },
+
+		// QT 先が RT
+		{ "qt2",	"nomatch",		"",			false },
+		{ "qt2",	"hello",		"",			true },
+		{ "qt2",	"foo",			"",			true },
+		{ "qt2",	"seven",		"",			true },
+		{ "qt2",	"nomatch",		"@ange",	false },
+		{ "qt2",	"hello",		"@ange",	true },
+		{ "qt2",	"foo",			"@ange",	true },
+		{ "qt2",	"seven",		"@ange",	true },
+		{ "qt2",	"nomatch",		"@other",	false },
+		{ "qt2",	"hello",		"@other",	false },
+		{ "qt2",	"foo",			"@other",	false },
+		{ "qt2",	"seven",		"@other",	false },
+		{ "qt2",	"nomatch",		"@seven",	false },
+		{ "qt2",	"hello",		"@seven",	false },
+		{ "qt2",	"foo",			"@seven",	true },
+		// XXX これはどうする?
+		{ "qt2",	"seven",		"@seven",	true },
 	};
 	Json statuses {
 		{ "std", {		// 基本形式
@@ -1071,6 +1106,43 @@ test_NGWordList_Match()
 				{ "source", "other client v0" },
 				{ "user", { { "id_str", "101" }, { "screen_name", "seven" } } },
 				{ "retweet_count", 3 },
+			} },
+		} },
+		{ "qt1", {		// QT (RTなし)
+			{ "text", "abc hello..." },
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+			{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+			{ "source", "test client v0" },
+			{ "user", { { "id_str", "100" }, { "screen_name", "ange" } } },
+			{ "quoted_status", {
+				{ "text", "foo bar" },
+				{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+				{ "source", "other client v0" },
+				{ "user", { { "id_str", "101" }, { "screen_name", "seven" } } },
+			} },
+		} },
+		{ "qt2", {		// QT (RTあり)
+			{ "text", "abc hello..." },
+			{ "extended_tweet", { { "full_text", "abc hello world" } } },
+			{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+			{ "source", "test client v0" },
+			{ "user", { { "id_str", "100" }, { "screen_name", "ange" } } },
+			{ "quoted_status", {
+				{ "text", "RT: foo bar" },
+				{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+				{ "source", "test client v0" },
+				{ "user", { { "id_str", "100" }, { "screen_name", "ange" } } },
+				{ "retweet_count", 3 },
+				{ "retweeted_status", {
+					{ "text", "foo bar" },
+					{ "created_at", "Sun Jan 10 12:20:00 +0000 2021" },
+					{ "user", {
+						{ "id_str", "101" },
+						{ "screen_name", "seven" }
+					} },
+					{ "retweet_count", 3 },
+					{ "source", "other client v0" },
+				} },
 			} },
 		} },
 	};

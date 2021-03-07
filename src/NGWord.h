@@ -211,6 +211,7 @@ class NGWordRegular : public NGWord
 	bool Match(const Json& status, const Json **matched_user) const override;
 
  private:
+	const Json *MatchStatus(const Json& status, const Json *status2) const;
 	bool MatchName(const Json& status, const std::string& word) const;
 };
 
