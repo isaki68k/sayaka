@@ -184,7 +184,7 @@ main(int ac, char *av[])
 	cachedir    = basedir + "cache";
 	tokenfile   = basedir + "token.json";
 	colormapdir = basedir;
-	ngword.SetFileName(basedir + "ngword.json");
+	ngword_list.SetFileName(basedir + "ngword.json");
 
 	address_family = AF_UNSPEC;
 	bgcolor = BG_NONE;
@@ -622,7 +622,7 @@ init_stream()
 	sigwinch();
 
 	// NG ワード取得
-	ngword.ParseFile();
+	ngword_list.ReadFile();
 }
 
 static void
@@ -790,21 +790,21 @@ cmd_nortlist()
 static void
 cmd_ngword_add()
 {
-	ngword.CmdAdd(opt_ngword, opt_ngword_user);
+	ngword_list.CmdAdd(opt_ngword, opt_ngword_user);
 }
 
 // NG ワードを削除するコマンド
 static void
 cmd_ngword_del()
 {
-	ngword.CmdDel(opt_ngword);
+	ngword_list.CmdDel(opt_ngword);
 }
 
 // NG ワード一覧を表示するコマンド
 static void
 cmd_ngword_list()
 {
-	ngword.CmdList();
+	ngword_list.CmdList();
 }
 
 static void

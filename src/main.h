@@ -90,7 +90,7 @@ extern bool in_sixel;
 extern std::string opt_ciphers;
 extern bool opt_full_url;
 extern bool opt_progress;
-extern NGWord ngword;
+extern NGWordList ngword_list;
 extern bool opt_ormode;
 extern bool opt_output_palette;
 extern int  opt_timeout_image;

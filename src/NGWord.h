@@ -28,6 +28,48 @@
 #include "sayaka.h"
 #include "Json.h"
 
+class NGStatus;
+class NGWord;
+
+// NGワードリスト
+class NGWordList
+	: public std::vector<NGWord *>
+{
+ public:
+	NGWordList();
+	NGWordList(const std::string& filename_)
+		: NGWordList()
+	{
+		SetFileName(filename_);
+	}
+	~NGWordList();
+
+	// ファイル名をセットする
+	bool SetFileName(const std::string& filename);
+
+	// NG ワードリストをファイルから読み込む
+	bool ReadFile();
+
+	// NG ワードリストをファイルに保存する
+	bool WriteFile();
+
+	// NG ワードを追加する
+	NGWord *Add(const std::string& word, const std::string& user);
+
+	// src から NG ワードインスタンスを生成する
+	static NGWord *Parse(const Json& src);
+
+	// NG ワードリストと照合する
+	bool Match(NGStatus *ngstat, const Json& status) const;
+
+	// コマンド
+	bool CmdAdd(const std::string& word, const std::string& user);
+	bool CmdDel(const std::string& ngword_id);
+	bool CmdList();
+
+	std::string Filename {};
+};
+
 class NGStatus
 {
  public:
@@ -38,54 +80,138 @@ class NGStatus
 	std::string ngword {};
 };
 
+// NGワード1項目の基本クラス
 class NGWord
 {
  public:
-	NGWord();
-	NGWord(const std::string& filename_);
+	enum Type
+	{
+		Regular = 0,
+		Live,
+		Delay,
+		LessRT,
+		Source,
+		MAX,
+	};
 
-	// ファイル名をセットする
-	bool SetFileName(const std::string& filename);
+ protected:
+	// 必ず継承で作る
+	NGWord(Type type_, int id_,
+		const std::string& ngword_, const std::string& nguser_);
+ public:
+	virtual ~NGWord();
 
-	// NG ワードをファイルから読み込む
-	bool ReadFile();
+	int GetId() const { return id; }
+	const std::string& GetWord() const { return ngword; }
+	const std::string& GetUser() const { return nguser; }
 
-	// NG ワードをファイルに保存する
-	bool WriteFile();
+	// ユーザ指定があれば true を返す
+	bool HasUser() const { return (nguser.empty() == false); }
 
-	// NG ワードをファイルから読み込んで、前処理する。
-	bool ParseFile();
+	// ツイート status がこのユーザのものなら true を返す
+	bool MatchUser(const Json& status) const;
 
-	// NG ワードと照合する。
-	bool Match(NGStatus *ngstat, const Json& status) const;
+	// status と照合する。
+	virtual bool Match(const Json& status, const Json **matched_user) const = 0;
 
-	// コマンド
-	bool CmdAdd(const std::string& word, const std::string& user);
-	bool CmdDel(const std::string& ngword_id);
-	bool CmdList();
+	// この NG ワードの内部状態を文字列にして返す
+	// (ベースクラス自身も実体を持っている)
+	virtual std::string Dump() const;
+
+	// type を文字列にして返す
+	static std::string Type2str(Type type);
 
  public:
-	// NG ワード1つを前処理して返す
-	static Json Parse(const Json& ng);
+	// 本文を照合する
+	bool MatchText(const Json& status, const std::string& word) const;
 
-	// ツイート status がユーザ ng_user のものか調べる。
-	static bool MatchUser(const std::string& ng_user, const Json& status);
+ protected:
+	// 種別
+	Type type {};
+	// 元データ
+	int id {};
+	std::string ngword {};
+	std::string nguser {};
+};
 
-	// status の本文その他を NG ワード ng と照合する。
-	static bool MatchMain(const Json& ng, const Json& status);
+class NGWordLive : public NGWord
+{
+	using inherited = NGWord;
+ public:
+	NGWordLive(int id_,
+		const std::string& ngword_, const std::string& nguser_,
+		int wday_, int start_, int end1_, int end2_);
+	virtual ~NGWordLive() override;
 
-	// 正規表現のNGワード ngword が status 中の本文にマッチするか調べる。
-	static bool MatchRegular(const std::string& ngword, const Json& status);
+	bool Match(const Json& status, const Json **matched_user) const override;
+	std::string Dump() const override;
 
-	// status の本文その他を NG ワード ng と照合する。
-	bool MatchMainRT(const Json& ng, const Json& status) const;
+ private:
+	int wday {};
+	int start {};
+	int end1 {};
+	int end2 {};
+};
 
-	std::string Filename {};
+class NGWordDelay : public NGWord
+{
+	using inherited = NGWord;
+ public:
+	NGWordDelay(int id_,
+		const std::string& ngword_, const std::string& nguser_,
+		int hour_, const std::string& ngtext);
+	virtual ~NGWordDelay() override;
 
-	Json ngwords {};
+	bool Match(const Json& status, const Json **matched_user) const override;
+	std::string Dump() const override;
 
-	// 直近のエラーメッセージ
-	std::string LastErr {};
+ private:
+	int delay_sec {};
+	std::string ngtext {};
+};
+
+class NGWordLessRT : public NGWord
+{
+	using inherited = NGWord;
+ public:
+	NGWordLessRT(int id_,
+		const std::string& ngword_, const std::string& nguser_, int threshold_);
+	virtual ~NGWordLessRT() override;
+
+	bool Match(const Json& status, const Json **matched_user) const override;
+	std::string Dump() const override;
+
+ private:
+	int threshold {};
+};
+
+class NGWordSource : public NGWord
+{
+	using inherited = NGWord;
+ public:
+	NGWordSource(int id_,
+		const std::string& ngword_, const std::string& nguser_);
+	virtual ~NGWordSource() override;
+
+	bool Match(const Json& status, const Json **matched_user) const override;
+	std::string Dump() const override;
+
+ private:
+	std::string ngsource {};
+};
+
+class NGWordRegular : public NGWord
+{
+	using inherited = NGWord;
+ public:
+	NGWordRegular(int id_,
+		const std::string& ngword_, const std::string& nguser_);
+	virtual ~NGWordRegular() override;
+
+	bool Match(const Json& status, const Json **matched_user) const override;
+
+ private:
+	bool MatchName(const Json& status, const std::string& word) const;
 };
 
 #if defined(SELFTEST)

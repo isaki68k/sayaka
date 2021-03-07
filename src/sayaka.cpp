@@ -164,7 +164,7 @@ bool in_sixel;					// SIXEL 出力中なら true
 std::string opt_ciphers;		// 暗号スイート
 bool opt_full_url;				// URL を省略表示しない
 bool opt_progress;				// 起動時の途中経過表示
-NGWord ngword;					// NG ワード
+NGWordList ngword_list;			// NG ワードリスト
 bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
 int  opt_timeout_image;			// 画像取得の(接続)タイムアウト [msec]
@@ -425,7 +425,7 @@ showstatus(const Json *status, bool is_quoted)
 
 	// NGワード
 	NGStatus ngstat;
-	bool match = ngword.Match(&ngstat, *status);
+	bool match = ngword_list.Match(&ngstat, *status);
 	if (match) {
 		// マッチしたらここで表示
 		Debug(diagShow, "showstatus: ng -> false");
