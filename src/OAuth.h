@@ -62,10 +62,6 @@ class OAuth
 	static std::string HMAC_SHA1_Base64(const std::string& key,
 		const std::string& msg);
 
-	// Unix 時刻を返す
-	// テスト側で差し替えるため weak 指定。
-	static time_t GetUnixTime() __attribute__((__weak__));
-
 	// パラメータを作ってアクセス URI を返す
 	std::string CreateParams(const std::string& method,
 		const std::string& uri);

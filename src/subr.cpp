@@ -31,9 +31,6 @@
 // 雑多なサブルーチン
 //
 
-// テスト側で差し替えるため
-time_t Now() __attribute((__weak__));
-
 // 名前表示用に整形
 std::string
 formatname(const std::string& text)
@@ -87,9 +84,8 @@ strip_tags(const std::string& text)
 
 // 現在時刻を返す
 time_t
-Now()
+GetUnixTime()
 {
-	// 現在時刻を返す
 	return time(NULL);
 }
 
@@ -99,7 +95,7 @@ formattime(const Json& obj)
 	char buf[64];
 
 	// 現在時刻
-	time_t now = Now();
+	time_t now = GetUnixTime();
 	struct tm ntm;
 	localtime_r(&now, &ntm);
 

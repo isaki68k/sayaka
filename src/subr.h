@@ -34,6 +34,7 @@ extern std::string formatid(const std::string& text);
 extern std::string unescape(const std::string& text);
 extern std::string strip_tags(const std::string& text);
 
+extern time_t GetUnixTime() __attribute__((__weak__));
 extern std::string formattime(const Json& obj);
 extern time_t get_datetime(const Json& status);
 extern time_t conv_twtime_to_unixtime(const std::string& s);

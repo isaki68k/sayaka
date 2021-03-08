@@ -83,13 +83,6 @@ OAuth::GetNonce()
 	return "testnonce";
 }
 
-// テスト用に固定値を返す GetUnixTime()
-/*static*/ time_t
-OAuth::GetUnixTime()
-{
-	return 123456789;
-}
-
 void
 test_Base64Encode()
 {
@@ -221,9 +214,9 @@ test_CreateParams()
 			"cursor=-1&"
 			"oauth_consumer_key=consumerkey&"
 			"oauth_nonce=testnonce&"
-			"oauth_signature=Vlinu3NEGfcaO50JgPIQj1LGgQw%3D&"
+			"oauth_signature=KkjnHlghrW3uPecD8PNcTBQr0SU%3D&"
 			"oauth_signature_method=HMAC-SHA1&"
-			"oauth_timestamp=123456789&"
+			"oauth_timestamp=1258538052&"
 			"oauth_token=accesstoken&"
 			"oauth_version=1.0";
 		xp_eq(expected, actual);

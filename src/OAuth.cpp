@@ -27,6 +27,7 @@
 #include "HttpClient.h"
 #include "OAuth.h"
 #include "StringUtil.h"
+#include "subr.h"
 #include <array>
 #include <random>
 #include <mbedtls/md.h>
@@ -149,13 +150,6 @@ OAuth::HMAC_SHA1_Base64(const std::string& key, const std::string& msg)
 {
 	std::vector<uint8> bin = HMAC_SHA1(key, msg);
 	return Base64Encode(bin);
-}
-
-// UNIX 時刻を返す。
-/*static*/ time_t
-OAuth::GetUnixTime()
-{
-	return time(NULL);
 }
 
 // パラメータを作ってアクセス URI を返す。
