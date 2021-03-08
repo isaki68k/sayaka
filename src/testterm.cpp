@@ -23,11 +23,40 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include "test.h"
+#include "term.h"
 
-#include "sayaka.h"
+Diag diag;
 
-extern int opt_eaw_a;
-extern int opt_eaw_n;
+void
+test_parse_bgcolor()
+{
+	printf("%s\n", __func__);
 
-extern int get_eaw_width(unichar c);
+	std::vector<std::pair<std::string, enum bgcolor>> table = {
+		{ ESC "]11;rgb:0000/0000/0000" ESC "\\",	BG_BLACK },
+		{ ESC "]11;rgb:ffff/ffff/ffff" ESC "\\",	BG_WHITE },
+
+		// ヘッダ部分が誤り
+		{ ESC "]0;rgb:0100/0100/0100"  ESC "\\",	BG_BLACK },
+		// RGB が各2桁
+		{ ESC "]11;rgb:f0/f0/f0"       ESC "\\",	BG_WHITE },
+		// 実は RGB は何桁でも受け付けている
+		{ ESC "]11;rgb:f/fff/fffff"    ESC "\\",	BG_WHITE },
+	};
+	for (const auto& a : table) {
+		const auto& src = a.first;
+		auto expected = a.second;
+
+		char buf[128];
+		strlcpy(buf, src.c_str(), sizeof(buf));
+		auto actual = parse_bgcolor(buf);
+		xp_eq((int)expected, (int)actual, termdump(src.c_str()).c_str());
+	}
+}
+
+void
+test_term()
+{
+	test_parse_bgcolor();
+}

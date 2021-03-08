@@ -233,7 +233,3 @@ class ImageReductor
 	static const char *RDM2str(ReductorDiffuseMethod n);
 	static const char *RAX2str(ResizeAxisMode n);
 };
-
-#if defined(SELFTEST)
-extern void test_ImageReductor();
-#endif

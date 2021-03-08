@@ -37,7 +37,3 @@ class FileUtil
  public:
 	static bool Exists(const std::string& filename);
 };
-
-#if defined(SELFTEST)
-extern void test_FileUtil();
-#endif

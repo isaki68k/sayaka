@@ -77,6 +77,11 @@ extern bool StartWith(const std::string& s, char prefix);
 extern bool EndWith(const std::string& s, const std::string& suffix);
 extern bool EndWith(const std::string& s, char suffix);
 
+// 今の所テストからしか呼んでいないがどうしたもんか
+extern std::pair<uint32, int> stou32(const char *s, char **endp = NULL);
+extern std::pair<uint64, int> stou64(const char *s, char **endp = NULL);
+extern std::pair<uint32, int> stox32(const char *s, char **endp = NULL);
+
 // s を10進数符号なし整数とみなして、数値に変換して返す
 extern uint32 stou32def(const char *s, uint32 def, char **endp = NULL);
 extern uint64 stou64def(const char *s, uint64 def, char **endp = NULL);
@@ -98,7 +103,3 @@ stox32def(const std::string& s, uint32 def, char **endp = NULL)
 {
 	return stox32def(s.c_str(), def, endp);
 }
-
-#if defined(SELFTEST)
-extern void test_StringUtil();
-#endif

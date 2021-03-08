@@ -87,7 +87,3 @@ class Twitter
 	static const char ConsumerKey[];
 	static const char ConsumerSecret[];
 };
-
-#if defined(SELFTEST)
-extern void test_Twitter();
-#endif

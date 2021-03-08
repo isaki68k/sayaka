@@ -23,11 +23,36 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include "test.h"
+#include "ParsedUri.h"
 
-#include "sayaka.h"
+void
+test_ParsedUri()
+{
+	printf("%s\n", __func__);
 
-extern int opt_eaw_a;
-extern int opt_eaw_n;
+	std::vector<std::array<std::string, 5>> table = {
+		// input		scheme	host	port	pqf
+		{ "a://b",		"a",	"b",	"",		"/" },
+		{ "a://b/",		"a",	"b",	"",		"/" },
+		{ "a://b:c",	"a",	"b",	"c",	"/" },
+		{ "a://b:c/d",	"a",	"b",	"c",	"/d" },
+		{ "/d",			"",		"",		"",		"/d" },
+		{ "b:c",		"",		"b",	"c",	"/" },
+		{ "b:c/d/e",	"",		"b",	"c",	"/d/e" },
+	};
 
-extern int get_eaw_width(unichar c);
+	for (const auto& a : table) {
+		auto input      = a[0];
+		auto exp_scheme = a[1];
+		auto exp_host   = a[2];
+		auto exp_port   = a[3];
+		auto exp_pqf    = a[4];
+
+		auto uri = ParsedUri::Parse(input);
+		xp_eq(exp_scheme, uri.Scheme, input);
+		xp_eq(exp_host, uri.Host, input);
+		xp_eq(exp_port, uri.Port, input);
+		xp_eq(exp_pqf, uri.PQF(), input);
+	}
+}

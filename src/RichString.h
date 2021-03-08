@@ -71,7 +71,3 @@ class RichString : public std::vector<RichChar>
 	// src から info を作成する。
 	bool MakeInfo(std::vector<RichChar> *info, const std::string& src) const;
 };
-
-#if defined(SELFTEST)
-extern void test_RichString();
-#endif

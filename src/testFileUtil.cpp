@@ -23,11 +23,63 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include "test.h"
+#include "FileUtil.h"
+#include <fcntl.h>
+#include <unistd.h>
 
-#include "sayaka.h"
+void
+test_FileReadWriteAllText()
+{
+	// File{Read,Write}AllText() を両方一度にテストする
+	printf("%s\n", __func__);
 
-extern int opt_eaw_a;
-extern int opt_eaw_n;
+	autotemp filename("a.txt");
+	{
+		std::string exp = "hoge";
 
-extern int get_eaw_width(unichar c);
+		auto r = FileWriteAllText(filename, exp);
+		xp_eq(true, r);
+
+		auto actual = FileReadAllText(filename);
+		xp_eq(exp, actual);
+	}
+	{
+		// 空文字列
+		std::string exp;
+
+		auto r = FileWriteAllText(filename, exp);
+		xp_eq(true, r);
+
+		auto actual = FileReadAllText(filename);
+		xp_eq(exp, actual);
+	}
+}
+
+void
+test_FileUtil_Exists()
+{
+	autotemp filename("a");
+	bool r;
+
+	printf("%s\n", __func__);
+
+	// 適当なチェックしかしてない
+
+	// ファイルがない
+	r = FileUtil::Exists(filename);
+	xp_eq(false, r);
+
+	// ファイルがある
+	int fd = open(filename.c_str(), O_WRONLY | O_CREAT, 0644);
+	if (fd >= 0)
+		close(fd);
+	r = FileUtil::Exists(filename);
+}
+
+void
+test_FileUtil()
+{
+	test_FileReadWriteAllText();
+	test_FileUtil_Exists();
+}

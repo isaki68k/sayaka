@@ -27,7 +27,12 @@
 #include "StringUtil.h"
 #include "subr.h"
 
+//
 // 雑多なサブルーチン
+//
+
+// テスト側で差し替えるため
+time_t Now() __attribute((__weak__));
 
 // 名前表示用に整形
 std::string
@@ -81,16 +86,11 @@ strip_tags(const std::string& text)
 }
 
 // 現在時刻を返す
-static time_t
+time_t
 Now()
 {
-#if defined(SELFTEST)
-	// 固定の時刻を返す (2009/11/18 18:54:12)
-	return 1258538052;
-#else
 	// 現在時刻を返す
 	return time(NULL);
-#endif
 }
 
 std::string
@@ -213,93 +213,3 @@ my_strptime(const std::string& buf, const std::string& fmt)
 
 	return -1;
 }
-
-#if defined(SELFTEST)
-#include "test.h"
-
-void
-test_formattime()
-{
-	printf("%s\n", __func__);
-
-	// テスト中は Now() が固定時刻を返す
-	std::vector<std::array<std::string, 2>> table = {
-		// 入力時刻							期待値
-		{ "Wed Nov 18 11:54:12 +0000 2009",	"20:54:12" },			// 同日
-		{ "Tue Nov 17 09:54:12 +0000 2009", "11/17 18:54:12" },		// 年内
-		{ "Tue Nov 18 11:54:12 +0000 2008", "2008/11/18 20:54" },	// それ以前
-	};
-	for (const auto& a : table) {
-		const auto& inp = a[0];
-		const auto& exp = a[1];
-
-		Json json = Json::parse("{\"created_at\":\"" + inp + "\"}");
-		auto actual = formattime(json);
-		xp_eq(exp, actual, inp);
-	}
-}
-
-void
-test_get_datetime()
-{
-	printf("%s\n", __func__);
-
-	std::vector<std::pair<std::string, time_t>> table = {
-		{ R"( "timestamp_ms":"1258538052000" )",				1258538052 },
-		{ R"( "created_at":"Wed Nov 18 09:54:12 +0000 2009" )", 1258538052 },
-	};
-	for (const auto& a : table) {
-		auto& src = a.first;
-		time_t exp = a.second;
-
-		Json json = Json::parse("{" + src + "}");
-		auto actual = get_datetime(json);
-		xp_eq(exp, actual, src);
-	}
-}
-
-void
-test_my_strptime()
-{
-	printf("%s\n", __func__);
-
-	std::vector<std::tuple<std::string, std::string, int>> table = {
-		{ "%a",	"Sun",	0 },
-		{ "%a", "mon",	1 },
-		{ "%a", "tue",	2 },
-		{ "%a", "WED",	3 },
-		{ "%a", "THU",	4 },
-		{ "%a", "fri",	5 },
-		{ "%a", "sAT",	6 },
-		{ "%a", "",		-1 },
-
-		{ "%R", "00:00",	0 },
-		{ "%R", "00:01",	1 },
-		{ "%R", "01:02",	62 },
-		{ "%R", "23:59",	1439 },
-		{ "%R", "24:01",	1441 },
-		{ "%R",	"00:01:02",	-1 },
-		{ "%R",	"00",		-1 },
-		{ "%R", "-1:-1",	-1 },
-		{ "%R",	"02:",		-1 },
-		{ "%R",	":",		-1 },
-		{ "%R", "0:2",		2 },	// 悩ましいが弾くほどでもないか
-	};
-	for (const auto& a : table) {
-		const auto& fmt = std::get<0>(a);
-		const auto& buf = std::get<1>(a);
-		int exp = std::get<2>(a);
-
-		auto actual = my_strptime(buf, fmt);
-		xp_eq(exp, actual, fmt + "," + buf);
-	}
-}
-
-void
-test_subr()
-{
-	test_formattime();
-	test_get_datetime();
-	test_my_strptime();
-}
-#endif

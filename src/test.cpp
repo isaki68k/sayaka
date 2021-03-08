@@ -25,24 +25,6 @@
 
 #include "test.h"
 #include <inttypes.h>
-#include "ChunkedInputStream.h"
-#include "Diag.h"
-#include "Dictionary.h"
-#include "FileUtil.h"
-#include "ImageReductor.h"
-#include "MemoryStream.h"
-#include "NGWord.h"
-#include "OAuth.h"
-#include "ParsedUri.h"
-#include "RichString.h"
-#include "SixelConverter.h"
-#include "StringUtil.h"
-#include "Twitter.h"
-#include "UString.h"
-#include "acl.h"
-#include "eaw_code.h"
-#include "subr.h"
-#include "term.h"
 
 int test_count;
 int test_fail;

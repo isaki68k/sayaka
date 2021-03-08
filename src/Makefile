@@ -5,7 +5,6 @@
 SRCS_common=	\
 	ChunkedInputStream.cpp \
 	Diag.cpp \
-	Dictionary.cpp \
 	FdStream.cpp \
 	FileStream.cpp \
 	FileUtil.cpp \
@@ -15,32 +14,57 @@ SRCS_common=	\
 	ImageLoaderPNG.cpp \
 	ImageReductor.cpp \
 	MemoryStream.cpp \
+	NGWord.cpp \
+	OAuth.cpp \
 	ParsedUri.cpp \
+	RichString.cpp \
 	SixelConverter.cpp \
 	SixelConverterOR.cpp \
 	StreamBase.cpp \
 	StringUtil.cpp \
-	UString.cpp \
-	mtls.cpp \
-
-SRCS_sayaka=	\
-	${SRCS_common} \
-	NGWord.cpp \
-	OAuth.cpp \
-	RichString.cpp \
 	Twitter.cpp \
+	UString.cpp \
 	acl.cpp \
 	eaw_code.cpp \
 	eaw_data.cpp \
 	fetch_image.cpp \
-	sayaka.cpp \
+	mtls.cpp \
 	term.cpp \
 	subr.cpp \
 
+SRCS_sayaka=	\
+	main.cpp \
+	sayaka.cpp \
+
 SRCS_sixelv=	\
-	${SRCS_common} \
 	sixelv.cpp \
 
+SRCS_test=	\
+	testChunkedInputStream.cpp \
+	testDiag.cpp \
+	testDictionary.cpp \
+	testFileUtil.cpp \
+	testImageReductor.cpp \
+	testMemoryStream.cpp \
+	testNGWord.cpp \
+	testOAuth.cpp \
+	testParseUri.cpp \
+	testRichString.cpp \
+	testSixelConverter.cpp \
+	testStringUtil.cpp \
+	testTwitter.cpp \
+	testUString.cpp \
+	testacl.cpp \
+	testeaw_code.cpp \
+	testsubr.cpp \
+	testterm.cpp \
+	test.cpp
+
+SRCS_all=	\
+	${SRCS_common} \
+	${SRCS_sayaka} \
+	${SRCS_sixelv} \
+	${SRCS_test} \
 
 CXX+=		-g
 #CXX+=		-fsanitize=undefined
@@ -51,30 +75,24 @@ INCLUDES+=	-I..
 
 all:	sayaka test sixelv
 
-sayaka:	main.o ${SRCS_sayaka:.cpp=.o}
+sayaka:	${SRCS_sayaka:.cpp=.o} libsayaka.a
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
 
-test:	test.o ${SRCS_sayaka:.cpp=.test.o}
+test:	test.o ${SRCS_test:.cpp=.o} libsayaka.a
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
 
-sixelv:	sixelv.o ${SRCS_sixelv:.cpp=.o}
+sixelv:	${SRCS_sixelv:.cpp=.o} libsayaka.a
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
+
+libsayaka.a:	${SRCS_common:.cpp=.o}
+	rm -f $@
+	ar r $@ $>
 
 .cpp.o:
 	${CXX} ${CPPFLAGS} ${INCLUDES} -c ${.IMPSRC} -o $@
 
-main.o:	main.cpp
-sixelv.o: sixelv.cpp
-.for S in ${SRCS_sayaka}
+.for S in ${SRCS_all}
 ${S:.cpp=.o}:	${S}
-.endfor
-
-test.o:	test.cpp
-	${CXX} ${CPPFLAGS} ${INCLUDES} -DSELFTEST -c $> -o $@
-
-.for S in ${SRCS_sayaka}
-${S:.cpp=.test.o}:	${S}
-	${CXX} ${CPPFLAGS} ${INCLUDES} -DSELFTEST -c ${S} -o $@
 .endfor
 
 # Developpers only
@@ -90,24 +108,18 @@ test_term:	term.cpp Diag.o
 
 .PHONY:	clean
 clean:
-	rm -f sayaka sixelv test test_mtls test_term eaw_gen *.o *.core
+	rm -f sayaka sixelv test test_mtls test_term eaw_gen libsayaka.a *.o *.core
 
 
 .PHONY:	depend
-depend:	${SRCS_sayaka:.cpp=.d} ${SRCS_sayaka:.cpp=.test.d} sixelv.d
+depend:	${SRCS_all:.cpp=.d}
 	cat ${.ALLSRC} > .depends
 	-rm -f *.d
 
-.for S in ${SRCS_sayaka}
+.for S in ${SRCS_all}
 ${S:.cpp=.d}:
 	${CXX} ${CPPFLAGS} ${INCLUDES} -E -MM ${S} > $@
-
-${S:.cpp=.test.d}:
-	${CXX} ${CPPFLAGS} ${INCLUDES} -E -MM -DSELFTEST -MT ${S:.cpp=.test.o} ${S} > $@
 .endfor
-
-sixelv.d:
-	${CXX} ${CPPFLAGS} ${INCLUDES} -E -MM sixelv.cpp > $@
 
 .if exists(.depends)
 .include ".depends"

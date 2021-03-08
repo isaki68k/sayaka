@@ -142,7 +142,3 @@ class SixelConverter
 // SixelConverterOR.cpp
 extern int sixel_image_to_sixel_h6_ormode(uint8* dst, const uint8* src,
 	int w, int h, int plane_count);
-
-#if defined(SELFTEST)
-extern void test_SixelConverter();
-#endif

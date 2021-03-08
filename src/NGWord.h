@@ -214,7 +214,3 @@ class NGWordRegular : public NGWord
 	const Json *MatchStatus(const Json& status, const Json *status2) const;
 	bool MatchName(const Json& status, const std::string& word) const;
 };
-
-#if defined(SELFTEST)
-extern void test_NGWord();
-#endif

@@ -50,7 +50,3 @@ class MemoryInputStream : public InputStream
 	// 内部バッファ list< pair(vector<uint8>, int) >
 	std::list<std::pair<std::vector<uint8>, int>> chunks {};
 };
-
-#if defined(SELFTEST)
-extern void test_MemoryInputStream();
-#endif

@@ -50,12 +50,11 @@
 #define SLOW_MACHINES
 #endif
 
-static enum bgcolor parse_bgcolor(char *result);
 static int query_terminal(const std::string& query, char *dst, size_t dstsize);
 
 // デバッグ表示用
-static std::string
-dump(const char *src)
+std::string
+termdump(const char *src)
 {
 	std::string r;
 
@@ -93,7 +92,7 @@ terminal_support_sixel()
 		Debug(diag, "%s: timeout", __func__);
 		return false;
 	}
-	Trace(diag, "result |%s|", dump(result).c_str());
+	Trace(diag, "result |%s|", termdump(result).c_str());
 
 	// ケーパビリティを調べる。応答は
 	// ESC "[?63;1;2;3;4;7;29c" のような感じで "4" があれば SIXEL 対応。
@@ -145,7 +144,7 @@ terminal_bgcolor()
 		Debug(diag, "%s: timeout", __func__);
 		return BG_NONE;
 	}
-	Trace(diag, "result |%s|", dump(result).c_str());
+	Trace(diag, "result |%s|", termdump(result).c_str());
 
 	return parse_bgcolor(result);
 }
@@ -153,7 +152,7 @@ terminal_bgcolor()
 // 端末からの背景色応答行から、背景色を調べる。
 // 黒に近ければ BG_BLACK、白に近ければ BG_WHITE、取得できなければ BG_NONE を
 // 返す。
-static enum bgcolor
+enum bgcolor
 parse_bgcolor(char *result)
 {
 	int ri, gi, bi;
@@ -241,7 +240,7 @@ query_terminal(const std::string& query, char *dst, size_t dstsize)
 	tcsetattr(STDOUT_FILENO, TCSANOW, &tc);
 
 	// 問い合わせ
-	Trace(diag, "\nquery  |%s|", dump(query.c_str()).c_str());
+	Trace(diag, "\nquery  |%s|", termdump(query.c_str()).c_str());
 	r = write(STDOUT_FILENO, query.c_str(), query.size());
 
 	// 念のため応答がなければタイムアウトするようにしておく
@@ -309,40 +308,3 @@ main(int ac, char *av[])
 }
 
 #endif // TEST
-
-#if defined(SELFTEST)
-#include "test.h"
-
-void
-test_parse_bgcolor()
-{
-	printf("%s\n", __func__);
-
-	std::vector<std::pair<std::string, enum bgcolor>> table = {
-		{ ESC "]11;rgb:0000/0000/0000" ESC "\\",	BG_BLACK },
-		{ ESC "]11;rgb:ffff/ffff/ffff" ESC "\\",	BG_WHITE },
-
-		// ヘッダ部分が誤り
-		{ ESC "]0;rgb:0100/0100/0100"  ESC "\\",	BG_BLACK },
-		// RGB が各2桁
-		{ ESC "]11;rgb:f0/f0/f0"       ESC "\\",	BG_WHITE },
-		// 実は RGB は何桁でも受け付けている
-		{ ESC "]11;rgb:f/fff/fffff"    ESC "\\",	BG_WHITE },
-	};
-	for (const auto& a : table) {
-		const auto& src = a.first;
-		auto expected = a.second;
-
-		char buf[128];
-		strlcpy(buf, src.c_str(), sizeof(buf));
-		auto actual = parse_bgcolor(buf);
-		xp_eq((int)expected, (int)actual, dump(src.c_str()).c_str());
-	}
-}
-
-void
-test_term()
-{
-	test_parse_bgcolor();
-}
-#endif

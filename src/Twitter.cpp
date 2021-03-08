@@ -199,34 +199,3 @@ Twitter::API2Json(const std::string& method, const std::string& apiRoot,
 
 	return Json::parse(line);
 }
-
-
-#if defined(SELFTEST)
-#include "test.h"
-
-void
-test_TwitterToken()
-{
-	printf("%s\n", __func__);
-	autotemp filename("a.json");
-
-	// Save, Load して復元できるかだけテストする
-	TwitterToken t;
-	t.Token = "token_aaa";
-	t.Secret = "secret_aaa";
-	bool r = t.SaveToFile(filename);
-	xp_eq(true, r);
-
-	TwitterToken t2;
-	r = t2.LoadFromFile(filename);
-	xp_eq(true, r);
-	xp_eq(t.Token, t2.Token);
-	xp_eq(t.Secret, t2.Secret);
-}
-
-void
-test_Twitter()
-{
-	test_TwitterToken();
-}
-#endif

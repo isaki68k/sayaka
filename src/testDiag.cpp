@@ -23,11 +23,70 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include "test.h"
+#include "Diag.h"
+#include "StringUtil.h"
+#include <memory>
 
-#include "sayaka.h"
+// テスト用のクラス
+class Test;
+class Test
+{
+ public:
+	// コンストラクタの場合
+	Test() {
+		name = string_format("%s", __method__);
+	}
+	// デストラクタの場合
+	~Test() {
+		name = string_format("%s", __method__);
+	}
 
-extern int opt_eaw_a;
-extern int opt_eaw_n;
+	// ノーマルな関数
+	void test1() {
+		name = string_format("%s", __method__);
+	}
+	// 紛らわしそうなやつ、ポインタを返す、同じクラスを受け取る
+	int *test2(Test *h) {
+		name = string_format("%s", __method__);
+		return NULL;
+	}
+	// 関数ポインタを受け取り、関数ポインタを返す
+	using func_t = int (*)();
+	func_t test3(func_t a) {
+		name = string_format("%s", __method__);
+		return NULL;
+	}
 
-extern int get_eaw_width(unichar c);
+	// 結果を格納する
+	static std::string name;
+};
+
+std::string Test::name;
+
+void
+test_get_classfunc_name()
+{
+	printf("%s\n", __func__);
+
+	std::unique_ptr<Test> t(new Test());
+	xp_eq("Test::Test", Test::name);
+
+	t->test1();
+	xp_eq("Test::test1", Test::name);
+
+	t->test2(NULL);
+	xp_eq("Test::test2", Test::name);
+
+	t->test3(NULL);
+	xp_eq("Test::test3", Test::name);
+
+	t.reset();
+	xp_eq("Test::~Test", Test::name);
+}
+
+void
+test_Diag()
+{
+	test_get_classfunc_name();
+}

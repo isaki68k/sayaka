@@ -23,11 +23,37 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include "test.h"
+#include "SixelConverter.h"
 
-#include "sayaka.h"
+static void
+test_enum()
+{
+	std::vector<std::pair<SixelOutputMode, const std::string>> table_SOM = {
+		{ SixelOutputMode::Normal,			"Normal" },
+		{ SixelOutputMode::Or,				"Or" },
+	};
+	for (const auto& a : table_SOM) {
+		const auto n = a.first;
+		const auto& exp = a.second;
+		std::string act(SixelConverter::SOM2str(n));
+		xp_eq(exp, act, exp);
+	}
 
-extern int opt_eaw_a;
-extern int opt_eaw_n;
+	std::vector<std::pair<SixelResizeMode, const std::string>> table_SRM = {
+		{ SixelResizeMode::ByLoad,			"ByLoad" },
+		{ SixelResizeMode::ByImageReductor,	"ByImageReductor" },
+	};
+	for (const auto& a : table_SRM) {
+		const auto n = a.first;
+		const auto& exp = a.second;
+		std::string act(SixelConverter::SRM2str(n));
+		xp_eq(exp, act, exp);
+	}
+}
 
-extern int get_eaw_width(unichar c);
+void
+test_SixelConverter()
+{
+	test_enum();
+}

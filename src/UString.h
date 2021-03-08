@@ -28,7 +28,9 @@
 #include "sayaka.h"
 #include "StringUtil.h"
 #include <vector>
+#if defined(HAVE_ICONV)
 #include <iconv.h>
+#endif
 
 // Unicode コードポイントの配列。
 // UString とは言っているが文字列ではなく vector 派生なことに留意。
@@ -111,6 +113,13 @@ class UString : public std::vector<unichar>
 
 	// 出力文字コードにするのに iconv 変換が必要かどうか
 	static bool use_iconv;
+
+ protected:	// テストから参照する
+#if defined(HAVE_ICONV)
+	// UTF-32 から UTF-8 以外の出力文字コードへの変換用。
+	// 運用時は ^C でとめるので解放せず放置する。
+	static iconv_t cd;
+#endif
 };
 
 // + 演算子
@@ -157,7 +166,3 @@ static inline UString operator+(const UString& lhs, char rhs) {
 static inline UString operator+(UString&& lhs, char rhs) {
 	return std::move(lhs.Append(rhs));		// (12)
 }
-
-#if defined(SELFTEST)
-extern void test_UString();
-#endif

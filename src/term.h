@@ -33,9 +33,7 @@
 
 #define ESCchar '\x1b'
 
+extern std::string termdump(const char *src);
 extern bool terminal_support_sixel();
 extern enum bgcolor terminal_bgcolor();
-
-#if defined(SELFTEST)
-extern void test_term();
-#endif
+extern enum bgcolor parse_bgcolor(char *result);

@@ -486,38 +486,3 @@ SixelConverter::SRM2str(SixelResizeMode val)
 {
 	return ::SRM2str_[(int)val];
 }
-
-#if defined(SELFTEST)
-#include "test.h"
-static void
-test_enum()
-{
-	std::vector<std::pair<SixelOutputMode, const std::string>> table_SOM = {
-		{ SixelOutputMode::Normal,			"Normal" },
-		{ SixelOutputMode::Or,				"Or" },
-	};
-	for (const auto& a : table_SOM) {
-		const auto n = a.first;
-		const auto& exp = a.second;
-		std::string act(SixelConverter::SOM2str(n));
-		xp_eq(exp, act, exp);
-	}
-
-	std::vector<std::pair<SixelResizeMode, const std::string>> table_SRM = {
-		{ SixelResizeMode::ByLoad,			"ByLoad" },
-		{ SixelResizeMode::ByImageReductor,	"ByImageReductor" },
-	};
-	for (const auto& a : table_SRM) {
-		const auto n = a.first;
-		const auto& exp = a.second;
-		std::string act(SixelConverter::SRM2str(n));
-		xp_eq(exp, act, exp);
-	}
-}
-
-void
-test_SixelConverter()
-{
-	test_enum();
-}
-#endif

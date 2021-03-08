@@ -102,10 +102,6 @@ static void record(const Json& obj);
 static void invalidate_cache();
 static std::string errors2string(const Json& json);
 
-#if defined(SELFTEST)
-extern void test_showstatus_acl();
-#endif
-
 // 色定数
 static const std::string BOLD		= "1";
 static const std::string UNDERSCORE	= "4";

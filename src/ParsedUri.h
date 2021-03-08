@@ -57,7 +57,3 @@ class ParsedUri
 	// デバッグ用文字列を返す
 	std::string to_debug_string() const;
 };
-
-#if defined(SELFTEST)
-extern int test_ParsedUri();
-#endif

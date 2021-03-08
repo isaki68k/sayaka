@@ -70,36 +70,3 @@ get_eaw_width(unichar c)
 		__builtin_unreachable();
 	}
 }
-
-#if defined(SELFTEST)
-#include "test.h"
-void
-test_eaw_code()
-{
-	// 1バイト内に Full と Half が同居してるところでチェック。
-	// U+FF60 (FULLWIDTH RIGHT WHITE PARENTHESIS) は FullWidth、
-	// U+FF61 (HALFWIDTH IDEOGRAPHIC FULL STOP) は HalfWidth。
-	xp_eq(2, get_eaw_width(0xff60));
-	xp_eq(1, get_eaw_width(0xff61));
-
-	// Neutral が変数と連動するかチェック。
-	// U+00A9 (COPYRIGHT SIGN) は Neutral。
-	opt_eaw_n = 1;
-	xp_eq(opt_eaw_n, get_eaw_width(0x00a9));
-	opt_eaw_n = 2;
-	xp_eq(opt_eaw_n, get_eaw_width(0x00a9));
-
-	// Ambiguous が変数と連動するかチェック。
-	// U+0411 (CYRILLIC CAPITAL LETTER BE) は Ambiguous。
-	opt_eaw_a = 1;
-	xp_eq(opt_eaw_a, get_eaw_width(0x0411));
-	opt_eaw_a = 2;
-	xp_eq(opt_eaw_a, get_eaw_width(0x0411));
-
-	// U+1F43F (リスの絵文字) は仕様上は何故か Neutral (幅=1) なのだが
-	// それではたぶん困るので回避したい。
-	opt_eaw_n = -1;
-	xp_eq(2, get_eaw_width(0x1f43e));	// Paw Prints (猫の足跡) は Wide
-	xp_eq(2, get_eaw_width(0x1f43f));	// Chipmunk (リス)       は Neutral…
-}
-#endif

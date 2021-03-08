@@ -83,3 +83,23 @@ extern void xp_eq_(const char *file, int line, const char *func,
 #define xp_fail(msg) xp_fail_(__FILE__, __LINE__, __func__, msg)
 extern void xp_fail_(const char *file, int line, const char *func,
 	const std::string& msg);
+
+
+extern void test_ChunkedInputStream();
+extern void test_Diag();
+extern void test_Dictionary();
+extern void test_FileUtil();
+extern void test_ImageReductor();
+extern void test_MemoryInputStream();
+extern void test_NGWord();
+extern void test_OAuth();
+extern void test_ParsedUri();
+extern void test_RichString();
+extern void test_SixelConverter();
+extern void test_StringUtil();
+extern void test_Twitter();
+extern void test_UString();
+extern void test_acl();
+extern void test_eaw_code();
+extern void test_subr();
+extern void test_term();

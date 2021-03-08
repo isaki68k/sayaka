@@ -48,7 +48,8 @@ class OAuth
 
 	// Nonce のための文字列を返す。
 	// (呼び出すたびに異なる文字列を生成する)
-	static std::string GetNonce();
+	// テスト側で差し替えるため weak 指定。
+	static std::string GetNonce() __attribute__((__weak__));
 
 	// Base64 した文字列を返す
 	static std::string Base64Encode(const std::vector<uint8>& src);
@@ -62,7 +63,8 @@ class OAuth
 		const std::string& msg);
 
 	// Unix 時刻を返す
-	static time_t GetUnixTime();
+	// テスト側で差し替えるため weak 指定。
+	static time_t GetUnixTime() __attribute__((__weak__));
 
 	// パラメータを作ってアクセス URI を返す
 	std::string CreateParams(const std::string& method,
@@ -122,7 +124,3 @@ class OAuth
 	// TLS で使用する cipher list。"" ならデフォルト。
 	std::string Ciphers {};
 };
-
-#if defined(SELFTEST)
-extern void test_OAuth();
-#endif

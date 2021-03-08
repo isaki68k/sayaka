@@ -153,38 +153,3 @@ ParsedUri::to_debug_string() const
 
 	return sb;
 }
-
-#if defined(SELFTEST)
-#include "test.h"
-int
-test_ParsedUri()
-{
-	printf("%s\n", __func__);
-
-	std::vector<std::array<std::string, 5>> table = {
-		// input		scheme	host	port	pqf
-		{ "a://b",		"a",	"b",	"",		"/" },
-		{ "a://b/",		"a",	"b",	"",		"/" },
-		{ "a://b:c",	"a",	"b",	"c",	"/" },
-		{ "a://b:c/d",	"a",	"b",	"c",	"/d" },
-		{ "/d",			"",		"",		"",		"/d" },
-		{ "b:c",		"",		"b",	"c",	"/" },
-		{ "b:c/d/e",	"",		"b",	"c",	"/d/e" },
-	};
-
-	for (const auto& a : table) {
-		auto input      = a[0];
-		auto exp_scheme = a[1];
-		auto exp_host   = a[2];
-		auto exp_port   = a[3];
-		auto exp_pqf    = a[4];
-
-		auto uri = ParsedUri::Parse(input);
-		xp_eq(exp_scheme, uri.Scheme, input);
-		xp_eq(exp_host, uri.Host, input);
-		xp_eq(exp_port, uri.Port, input);
-		xp_eq(exp_pqf, uri.PQF(), input);
-	}
-	return 0;
-}
-#endif // SELFTEST

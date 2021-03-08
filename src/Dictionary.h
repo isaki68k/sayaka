@@ -78,7 +78,3 @@ class Dictionary
 
 // よく使うのでショートカット
 using StringDictionary = Dictionary<std::string, std::string>;
-
-#if defined(SELFTEST)
-extern void test_Dictionary();
-#endif

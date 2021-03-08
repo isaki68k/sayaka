@@ -46,7 +46,3 @@ class ChunkedInputStream : public InputStream
 
 	Diag& diag;
 };
-
-#if defined(SELFTEST)
-extern void test_ChunkedInputStream();
-#endif
