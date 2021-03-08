@@ -27,8 +27,10 @@
 #include "SixelConverter.h"
 
 static void
-test_enum()
+test_SixelConverter_enum()
 {
+	printf("%s\n", __func__);
+
 	std::vector<std::pair<SixelOutputMode, const std::string>> table_SOM = {
 		{ SixelOutputMode::Normal,			"Normal" },
 		{ SixelOutputMode::Or,				"Or" },
@@ -55,5 +57,5 @@ test_enum()
 void
 test_SixelConverter()
 {
-	test_enum();
+	test_SixelConverter_enum();
 }

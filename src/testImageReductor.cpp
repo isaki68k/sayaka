@@ -27,8 +27,10 @@
 #include "ImageReductor.h"
 
 static void
-test_enum()
+test_ImageReductor_enum()
 {
+	printf("%s\n", __func__);
+
 	std::vector<std::pair<const std::string, ReductorReduceMode>> table_RRM = {
 		{ "Fast",			ReductorReduceMode::Fast },
 		{ "Simple",			ReductorReduceMode::Simple },
@@ -120,5 +122,5 @@ test_enum()
 void
 test_ImageReductor()
 {
-	test_enum();
+	test_ImageReductor_enum();
 }

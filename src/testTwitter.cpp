@@ -30,6 +30,7 @@ void
 test_TwitterToken()
 {
 	printf("%s\n", __func__);
+
 	autotemp filename("a.json");
 
 	// Save, Load して復元できるかだけテストする

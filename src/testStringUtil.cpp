@@ -300,6 +300,8 @@ test_StringToLower()
 void
 test_StartWith()
 {
+	printf("%s\n", __func__);
+
 	std::vector<std::tuple<std::string, std::string, bool>> table = {
 		{ "abc",	"",		false },
 		{ "abc",	"a",	true },
@@ -330,6 +332,8 @@ test_StartWith()
 void
 test_EndWith()
 {
+	printf("%s\n", __func__);
+
 	std::vector<std::tuple<std::string, std::string, bool>> table = {
 		{ "abc",	"",		false },
 		{ "abc",	"c",	true },

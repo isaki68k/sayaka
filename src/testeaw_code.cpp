@@ -29,6 +29,8 @@
 void
 test_eaw_code()
 {
+	printf("%s\n", __func__);
+
 	// 1バイト内に Full と Half が同居してるところでチェック。
 	// U+FF60 (FULLWIDTH RIGHT WHITE PARENTHESIS) は FullWidth、
 	// U+FF61 (HALFWIDTH IDEOGRAPHIC FULL STOP) は HalfWidth。
