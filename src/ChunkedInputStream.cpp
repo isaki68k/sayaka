@@ -50,7 +50,7 @@ ChunkedInputStream::~ChunkedInputStream()
 ssize_t
 ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 {
-	Debug(diag, "Read(%zd)", dstsize);
+	Trace(diag, "Read(%zd)", dstsize);
 
 	// 要求サイズに満たない間 src から1チャンクずつ読み込む
 	for (;;) {
@@ -59,12 +59,12 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 
 		// chunksLength は内部バッファ長
 		size_t chunksLength = Chunks.GetSize();
-		Debug(diag, "dstsize=%zd chunksLength=%zd", dstsize, chunksLength);
+		Trace(diag, "dstsize=%zd chunksLength=%zd", dstsize, chunksLength);
 		if (chunksLength >= dstsize) {
-			Debug(diag, "Filled");
+			Trace(diag, "Filled");
 			break;
 		} else {
-			Debug(diag, "Need to fill");
+			Trace(diag, "Need to fill");
 		}
 
 		// 先頭行はチャンク長+CRLF
@@ -75,7 +75,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 		}
 		if (__predict_false(r == 0)) {
 			// EOF
-			Debug(diag, "src is EOF");
+			Trace(diag, "src is EOF");
 			break;
 		}
 
@@ -93,12 +93,12 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 			errno = EIO;
 			return -1;
 		}
-		Debug(diag, "intlen=%d", intlen);
+		Trace(diag, "intlen=%d", intlen);
 
 		if (intlen == 0) {
 			// データ終わり。CRLF を読み捨てる
 			src->ReadLine(&slen);
-			Debug(diag, "This was the last chunk");
+			Trace(diag, "This was the last chunk");
 			break;
 		}
 
@@ -108,7 +108,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 			Debug(diag, "Read failed: %s", strerror(errno));
 			return -1;
 		}
-		Debug(diag, "readlen=%zd", readlen);
+		Trace(diag, "readlen=%zd", readlen);
 		if (__predict_false(readlen != intlen)) {
 			Debug(diag, "readlen=%zd intlen=%d", readlen, intlen);
 			errno = EIO;
@@ -124,7 +124,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 
 	// dst に入るだけコピー
 	auto copylen = Chunks.Read(dst, dstsize);
-	Debug(diag, "copylen=%zd\n", copylen);
+	Trace(diag, "copylen=%zd\n", copylen);
 
 	// Chunks の作り直しは C++ では不要なはず
 
