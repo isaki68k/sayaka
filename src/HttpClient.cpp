@@ -248,7 +248,7 @@ HttpClient::Connect()
 		mtls.UseRSA();
 	}
 	Trace(diag, "%s: %s", __func__, Uri.to_string().c_str());
-	if (mtls.Connect(Uri.Host, Uri.Port) != 0) {
+	if (mtls.Connect(Uri.Host, Uri.Port) == false) {
 		Debug(diag, "mTLSHandle.Connect failed");
 		return false;
 	}
