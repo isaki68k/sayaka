@@ -102,8 +102,12 @@ eaw_gen:	eaw_gen.cpp
 # XXX
 test_mtls:	mtls.cpp
 	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST $> -o $@ ${LIBS}
-test_term:	term.cpp Diag.o
-	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST $> -o $@
+
+test_term:	test_term.o libsayaka.a
+	${CXX} ${LDFLAGS} -o $@ $>
+
+test_term.o:	term.cpp
+	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST -c $> -o $@
 
 
 .PHONY:	clean
