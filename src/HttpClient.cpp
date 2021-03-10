@@ -62,7 +62,9 @@ HttpClient::Act(const std::string& method)
 	Trace(diag, "%s()", method.c_str());
 
 	for (;;) {
-		Connect();
+		if (Connect() == false) {
+			return NULL;
+		}
 
 		SendRequest(method);
 
