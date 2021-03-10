@@ -1230,6 +1230,12 @@ SetUrl_main(RichString& text, int start, int end, const std::string& url)
 static void
 show_icon(const Json& user)
 {
+	const std::array<std::string, 2> urls = {
+		"profile_image_url",
+		"profile_image_url_https",
+	};
+	std::string screen_name;
+
 	// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
 	// 発生させ、アイコン表示時にスクロールしないようにしてから
 	// カーソル位置を保存する
@@ -1245,26 +1251,31 @@ show_icon(const Json& user)
 
 	bool shown = false;
 	if (__predict_false(opt_noimage)) {
-		// shown = false;
-	} else {
-		auto screen_name = unescape(user.value("screen_name", ""));
-		const auto& image_url = user.contains("profile_image_url_https")
-			? user["profile_image_url_https"].get<std::string>()
-			: (user.contains("profile_image_url")
-				? user["profile_image_url"].get<std::string>()
-				: "");
+		goto done;
+	}
 
-		// URL のファイル名部分をキャッシュのキーにする
-		auto p = image_url.rfind('/');
-		if (__predict_true(p >= 0)) {
-			auto img_file = string_format("icon-%dx%d-%s-%s",
-				iconsize, iconsize, screen_name.c_str(),
-				image_url.c_str() + p + 1);
-			show_image(img_file, image_url, iconsize, -1);
-			shown = true;
+	screen_name = unescape(user.value("screen_name", ""));
+	// http, https の順で試す
+	for (const auto& url : urls) {
+		if (user.contains(url)) {
+			const Json& image_url_json = user[url];
+			const std::string& image_url = image_url_json.get<std::string>();
+
+			// URL のファイル名部分をキャッシュのキーにする
+			auto p = image_url.rfind('/');
+			if (__predict_true(p >= 0)) {
+				auto img_file = string_format("icon-%dx%d-%s-%s",
+					iconsize, iconsize, screen_name.c_str(),
+					image_url.c_str() + p + 1);
+				if (show_image(img_file, image_url, iconsize, -1)) {
+					shown = true;
+					goto done;
+				}
+			}
 		}
 	}
 
+ done:
 	if (__predict_true(shown)) {
 		// アイコン表示後、カーソル位置を復帰
 		printf("\r");
