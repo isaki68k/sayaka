@@ -26,6 +26,7 @@
 #include "test.h"
 #include "StringUtil.h"
 #include <tuple>
+#include <errno.h>
 
 void
 test_string_replace()
