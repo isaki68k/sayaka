@@ -262,10 +262,13 @@ NGWord::MatchUser(const Json& status) const
 		}
 	}
 	if (StartWith(nguser, '@')) {
-		std::string_view ngname = std::string_view(nguser).substr(1);
-		std::string_view screen_name = user.value("screen_name", "");
-		// XXX 大文字小文字は区別しないにしないといけない気がする
-		if (ngname == screen_name) {
+		if (__predict_false(user.contains("screen_name") == false)) {
+			return false;
+		}
+		const auto& screen_name = user["screen_name"].get<std::string>();
+		// Twitter のユーザ名は比較の際は大文字小文字の区別はない
+		// (Human68k のファイル名のような感じ)
+		if (strcasecmp(nguser.c_str() + 1, screen_name.c_str()) == 0) {
 			return true;
 		}
 	}

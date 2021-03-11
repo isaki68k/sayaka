@@ -123,8 +123,8 @@ test_NGWord_MatchUser()
 		{ "id:123",	R"( "id_str":"12","screen_name":"ab" )",	false },
 		{ "@a",		R"( "id_str":"12","screen_name":"ab" )",	false },
 		{ "@ab",	R"( "id_str":"12","screen_name":"ab" )",	true },
+		{ "@AB",	R"( "id_str":"12","screen_name":"ab" )",	true },
 		{ "@abc",	R"( "id_str":"12","screen_name":"ab" )",	false },
-		{ "@AB",	R"( "id_str":"12","screen_name":"ab" )",	false },
 	};
 	for (const auto& a : table) {
 		const std::string& nguser = std::get<0>(a);
