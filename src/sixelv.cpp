@@ -681,6 +681,7 @@ ConvertFromStream(InputStream *istream)
 		signal(SIGINT, signal_handler);
 		FileOutputStream stream(stdout, false);
 		sx.SixelToStream(&stream);
+		stream.Flush();
 		break;
 	 }
 	 case OutputFormat::GVRAM:

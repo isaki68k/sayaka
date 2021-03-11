@@ -293,7 +293,6 @@ SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 		if (n < len) {
 			return false;
 		}
-		stream->Flush();
 		p += w * 6;
 	}
 	// 最終 SIXEL 行を変換
@@ -302,7 +301,6 @@ SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 	if (n < len) {
 		return false;
 	}
-	stream->Flush();
 	return true;
 }
 
@@ -431,7 +429,6 @@ SixelConverter::SixelToStreamCore(OutputStream *stream)
 		if (stream->Write(linebuf) == false) {
 			return false;
 		}
-		stream->Flush();
 	}
 	return true;
 }
@@ -469,7 +466,6 @@ SixelConverter::SixelToStream(OutputStream *stream)
 	if (stream->Write(SixelPostamble()) == false) {
 		return false;
 	}
-	stream->Flush();
 	return true;
 }
 
