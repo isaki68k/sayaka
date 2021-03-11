@@ -110,7 +110,10 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 
 	FILE *fp = fopen(cache_filename.c_str(), "w+");
 	FileOutputStream outstream(fp, false);
-	sx.SixelToStream(&outstream);
+	if (sx.SixelToStream(&outstream) == false) {
+		fclose(fp);
+		return NULL;
+	}
 	fseek(fp, 0, SEEK_SET);
 	return fp;
 }

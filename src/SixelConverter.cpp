@@ -269,12 +269,14 @@ MyLog2(int n)
 }
 
 // OR モードで Sixel コア部分を stream に出力する。
-void
+// 成功すれば true、(書き込みに)失敗すれば false を返す。
+bool
 SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 {
 	uint8 *p0 = Indexed.data();
 	int w = Width;
 	int h = Height;
+	int n;
 
 	// パレットのビット数
 	int bcnt = MyLog2(ir.GetPaletteCount());
@@ -287,18 +289,26 @@ SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 	// 一つ手前の SIXEL 行まで変換
 	for (y = 0; y < h - 6; y += 6) {
 		int len = sixel_image_to_sixel_h6_ormode(sixelbuf, p, w, 6, bcnt);
-		stream->Write(sixelbuf, len);
+		n = stream->Write(sixelbuf, len);
+		if (n < len) {
+			return false;
+		}
 		stream->Flush();
 		p += w * 6;
 	}
 	// 最終 SIXEL 行を変換
 	int len = sixel_image_to_sixel_h6_ormode(sixelbuf, p, w, h - y, bcnt);
-	stream->Write(sixelbuf, len);
+	n = stream->Write(sixelbuf, len);
+	if (n < len) {
+		return false;
+	}
 	stream->Flush();
+	return true;
 }
 
 // Sixel コア部分を stream に出力する。
-void
+// 成功すれば true、(書き込みに)失敗すれば false を返す。
+bool
 SixelConverter::SixelToStreamCore(OutputStream *stream)
 {
 	// 030 ターゲット
@@ -418,9 +428,12 @@ SixelConverter::SixelToStreamCore(OutputStream *stream)
 
 		linebuf += '-';
 
-		stream->Write(linebuf);
+		if (stream->Write(linebuf) == false) {
+			return false;
+		}
 		stream->Flush();
 	}
+	return true;
 }
 
 // Sixel の終了コードを文字列で返す
@@ -430,24 +443,34 @@ SixelConverter::SixelPostamble()
 	return ESC "\\";
 }
 
-// Sixel を stream に出力する
-void
+// Sixel を stream に出力する。
+// 成功すれば true、失敗すれば false を返す。
+bool
 SixelConverter::SixelToStream(OutputStream *stream)
 {
 	Trace(diag, "%s", __func__);
 	assert(ir.GetPaletteCount() != 0);
 
 	// 開始コードとかの出力
-	stream->Write(SixelPreamble());
-
-	if (OutputMode == SixelOutputMode::Or) {
-		SixelToStreamCore_ORmode(stream);
-	} else {
-		SixelToStreamCore(stream);
+	if (stream->Write(SixelPreamble()) == false) {
+		return false;
 	}
 
-	stream->Write(SixelPostamble());
+	if (OutputMode == SixelOutputMode::Or) {
+		if (SixelToStreamCore_ORmode(stream) == false) {
+			return false;
+		}
+	} else {
+		if (SixelToStreamCore(stream) == false) {
+			return false;
+		}
+	}
+
+	if (stream->Write(SixelPostamble()) == false) {
+		return false;
+	}
 	stream->Flush();
+	return true;
 }
 
 // 繰り返しのコードを考慮して、Sixel パターン文字列を返す

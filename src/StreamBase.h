@@ -85,14 +85,25 @@ class OutputStream
  public:
 	virtual ~OutputStream();
 
+	// buf から len バイトを書き出す。
+	// 書き出したバイト数を返す。
+	// エラーなら errno をセットし -1 を返す。この場合書き出し内容は不定。
 	virtual ssize_t Write(const void *buf, size_t len) = 0;
 
 	virtual void Flush() = 0;
 
 	virtual void Close();
 
-	// std::string を書き出す
-	ssize_t Write(const std::string& str) {
-		return Write(str.c_str(), str.size());
+	// std::string を書き出す。
+	// 成功すれば true、失敗すれば false を返す。
+	// 下位の Write() が size 未満の値を返したのか -1 を返したのかは
+	// 判別できないので errno も参照不可。
+	bool Write(const std::string& str) {
+		auto len = str.size();
+		auto n = Write(str.c_str(), len);
+		if (n < len) {
+			return false;
+		}
+		return true;
 	}
 };
