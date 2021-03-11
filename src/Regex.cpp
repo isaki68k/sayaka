@@ -51,7 +51,8 @@ Regex::Assign(const std::string& regex)
 {
 	bool rv = true;
 	try {
-		inner->re.assign(regex);
+		// どのケースも大文字小文字は無視でよい
+		inner->re.assign(regex, std::regex_constants::icase);
 	} catch (...) {
 		rv = false;
 	}

@@ -157,6 +157,12 @@ test_NGWord_MatchText()
 		{ "text_only",	"hellox",	false },
 		{ "full_only",	"hellox",	false },
 		{ "full_text",	"hellox",	false },
+		{ "text_only",	"HELL",		true },
+		{ "full_only",	"HELL",		true },
+		{ "full_text",	"HELL",		true },
+		{ "text_only",	"HELLOX",	false },
+		{ "full_only",	"HELLOX",	false },
+		{ "full_text",	"HELLOX",	false },
 
 		{ "text_only",	"\\.\\.\\.",	false },
 		{ "full_only",	"\\.\\.\\.",	false },
@@ -243,13 +249,14 @@ test_NGWordList_Match()
 
 		// --- Source
 		{ "std",	"%SOURCE,client",	"",		true },
+		{ "std",	"%SOURCE,CLIENT",	"",		true },		// CaseIgnore
 		{ "std",	"%SOURCE,clientx",	"",		false },
 		{ "std",	"%SOURCE, v\\d",	"",		true },		// 正規表現
 
 		// --- Regular
 		// 通常ワード
 		{ "std",	"abc",				"",		true },
-		{ "std",	"ABC",				"",		false },
+		{ "std",	"ABC",				"",		true },		// CaseIgnore
 		// 正規表現
 		{ "std",	"a(b|d)c",			"",		true },
 		{ "std",	"ad?c",				"",		false },
