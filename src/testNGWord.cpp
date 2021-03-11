@@ -150,10 +150,13 @@ test_NGWord_MatchText()
 	printf("%s\n", __func__);
 
 	std::vector<std::tuple<std::string, std::string, bool>> table = {
-		// testname ngword			expected
-		{ "text_only",	"hello",	true },
-		{ "full_only",	"hello",	true },
-		{ "full_text",	"hello",	true },
+		// testname 	ngword		expected
+		{ "text_only",	"hell",		true },
+		{ "full_only",	"hell",		true },
+		{ "full_text",	"hell",		true },
+		{ "text_only",	"hellox",	false },
+		{ "full_only",	"hellox",	false },
+		{ "full_text",	"hellox",	false },
 
 		{ "text_only",	"\\.\\.\\.",	false },
 		{ "full_only",	"\\.\\.\\.",	false },
