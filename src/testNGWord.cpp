@@ -193,7 +193,7 @@ test_NGWord_MatchText()
 		NGWordList nglist;
 		NGWord *ng = nglist.Add(ngword, "");
 
-		auto actual = ng->MatchText(statuses[testname], ng->GetWord());
+		auto actual = ng->MatchText(statuses[testname]);
 		xp_eq(expected, actual, testname + "," + ngword);
 	}
 }

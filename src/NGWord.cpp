@@ -28,7 +28,6 @@
 #include "NGWord.h"
 #include "StringUtil.h"
 #include "subr.h"
-#include <regex>
 
 //
 // NGワードリスト
@@ -143,8 +142,8 @@ NGWordList::Add(const std::string& word, const std::string& user)
 // "%RT" なら
 //   rtnum  => RT数閾値
 // "%SOURCE" なら
-//   source => クライアント名(regex)
-// それ以外なら ngword をそのまま regex として比較に使用。
+//   source => クライアント名(正規表現)
+// それ以外なら ngword をそのまま正規表現として比較に使用。
 /*static*/ NGWord *
 NGWordList::Parse(const Json& src)
 {
@@ -274,10 +273,10 @@ NGWord::MatchUser(const Json& status) const
 	return false;
 }
 
-// status の本文を正規表現 word と比較する。マッチすれば true を返す。
+// status の本文を正規表現 re と比較する。マッチすれば true を返す。
 // status が RT かどうかには関知しない。
 bool
-NGWord::MatchText(const Json& status, const std::string& word) const
+NGWord::MatchText(const Json& status) const
 {
 	const Json *textp = NULL;
 
@@ -298,15 +297,10 @@ NGWord::MatchText(const Json& status, const std::string& word) const
 	} while (0);
 
 	const auto& text = (*textp).get<std::string>();
-	try {
-		std::regex re(word);
-		if (regex_search(text, re)) {
-			return true;
-		}
-	} catch (...) {
-		// 正規表現周りで失敗したらそのまま、マッチしなかった、でよい
+	if (regex.Search(text) == false) {
+		return false;
 	}
-	return false;
+	return true;
 }
 
 std::string
@@ -414,6 +408,9 @@ NGWordDelay::NGWordDelay(int id_,
 	// UI は時間単位で指定だが比較する時は time_t なのでここで秒にする
 	delay_sec = hour * 3600;
 	ngtext = ngtext_;
+
+	// 正規表現オブジェクトを作成
+	regex.Assign(ngtext);
 }
 
 // デストラクタ
@@ -446,7 +443,7 @@ NGWordDelay::Match(const Json& status, const Json **matched_user) const
 			? status["retweeted_status"]
 			: status;
 
-		if (MatchText(s, ngtext) == false) {
+		if (MatchText(s) == false) {
 			// 本文指定があって、本文が一致しない
 			return false;
 		}
@@ -540,6 +537,9 @@ NGWordSource::NGWordSource(int id_,
 	: inherited(Source, id_, ngword_, nguser_)
 {
 	ngsource = ngword.substr(strlen("%SOURCE,"));
+
+	// 正規表現オブジェクトを作成
+	regex.Assign(ngsource);
 }
 
 // デストラクタ
@@ -574,16 +574,12 @@ NGWordSource::Match(const Json& status, const Json **matched_user) const
 
 	const Json& source_json = s["source"];
 	const auto& source = source_json.get<std::string>();
-	try {
-		std::regex re(ngsource);
-		if (regex_search(source, re)) {
-			*matched_user = &s["user"];
-			return true;
-		}
-	} catch (...) {
-		// 正規表現周りで失敗したらそのまま、マッチしなかった、でよい
+	if (regex.Search(source) == false) {
+		return false;
 	}
-	return false;
+
+	*matched_user = &s["user"];
+	return true;
 }
 
 std::string
@@ -602,6 +598,8 @@ NGWordRegular::NGWordRegular(int id_,
 	const std::string& ngword_, const std::string& nguser_)
 	: inherited(Regular, id_, ngword_, nguser_)
 {
+	// 正規表現オブジェクトを作成
+	regex.Assign(ngword);
 }
 
 // デストラクタ
@@ -679,12 +677,12 @@ NGWordRegular::MatchStatus(const Json& status, const Json *status2) const
 	if (status2 == NULL) {
 		// status2 がなければ status の本文のみを調べる。
 		// RT も QT もない地の文の時だけこっち。
-		if (MatchText(status, ngword)) {
+		if (MatchText(status)) {
 			return user;
 		}
 	} else {
 		// status2 があれば status2 の本文と screen_name を調べる。
-		if (MatchText(*status2, ngword) || MatchName(*status2, ngword)) {
+		if (MatchText(*status2) || MatchName(*status2)) {
 			return user;
 		}
 	}
@@ -692,11 +690,11 @@ NGWordRegular::MatchStatus(const Json& status, const Json *status2) const
 	return NULL;
 }
 
-// status の screen_name を正規表現 word と比較する。
+// status の screen_name を正規表現 re と比較する。
 // マッチすれば true を返す。
 // status が RT かどうかには関知しない。
 bool
-NGWordRegular::MatchName(const Json& status, const std::string& word) const
+NGWordRegular::MatchName(const Json& status) const
 {
 	if (__predict_false(status.contains("user") == false)) {
 		return false;
@@ -708,15 +706,10 @@ NGWordRegular::MatchName(const Json& status, const std::string& word) const
 	}
 	const Json& screen_name_json = user["screen_name"];
 	const auto& screen_name = screen_name_json.get<std::string>();
-	try {
-		std::regex re(word);
-		if (regex_search(screen_name, re)) {
-			return true;
-		}
-	} catch (...) {
-		// 正規表現周りで失敗したらそのまま、マッチしなかった、でよい
+	if (regex.Search(screen_name) == false) {
+		return false;
 	}
-	return false;
+	return true;
 }
 
 

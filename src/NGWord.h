@@ -27,6 +27,7 @@
 
 #include "sayaka.h"
 #include "Json.h"
+#include "Regex.h"
 
 class NGStatus;
 class NGWord;
@@ -122,8 +123,8 @@ class NGWord
 	static std::string Type2str(Type type);
 
  public:
-	// 本文を照合する
-	bool MatchText(const Json& status, const std::string& word) const;
+	// 本文を正規表現 re と照合する
+	bool MatchText(const Json& status) const;
 
  protected:
 	// 種別
@@ -132,6 +133,8 @@ class NGWord
 	int id {};
 	std::string ngword {};
 	std::string nguser {};
+	// ワーク
+	Regex regex {};
 };
 
 class NGWordLive : public NGWord
@@ -212,5 +215,5 @@ class NGWordRegular : public NGWord
 
  private:
 	const Json *MatchStatus(const Json& status, const Json *status2) const;
-	bool MatchName(const Json& status, const std::string& word) const;
+	bool MatchName(const Json& status) const;
 };
