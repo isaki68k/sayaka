@@ -256,7 +256,7 @@ NGWord::MatchUser(const Json& status) const
 
 	if (StartWith(nguser, "id:")) {
 		std::string_view nguser_id = std::string_view(nguser).substr(3);
-		std::string_view id_str = user.value("id_str", "");
+		const auto& id_str = user.value("id_str", "");
 		if (nguser_id == id_str) {
 			return true;
 		}
