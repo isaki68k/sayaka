@@ -39,7 +39,7 @@
 #include <sys/ttycom.h>
 #endif
 
-static const char version[] = "3.5.0 (2021/03/03)";
+static const char version[] = "3.5.1 (2021/03/18)";
 
 enum SayakaCmd {
 	Noop = 0,
