@@ -67,10 +67,10 @@ SRCS_all=	\
 	${SRCS_sixelv} \
 	${SRCS_test} \
 
-CXX+=		-g
+#CXX+=		-g
 #CXX+=		-fsanitize=undefined
 
-CPPFLAGS+=	-O0
+CPPFLAGS+=	-O2
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
 CPPFLAGS+=	-Wignored-qualifiers
 CPPFLAGS+=	-Wpointer-arith
