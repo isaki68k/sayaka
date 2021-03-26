@@ -125,7 +125,7 @@ NGWordList::Add(const std::string& word, const std::string& user)
 	emplace_back(Parse(obj));
 
 	return back();
-};
+}
 
 // 入力ファイル上の NG ワード(JSON形式) 1つを NGWord クラスにして返す。
 //   ngword => NGワード ("ngword") (ファイルから読んだまま変更しない)

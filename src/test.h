@@ -43,16 +43,16 @@ class autotemp
 		strcpy(tempname, "/tmp/sayakatest.XXXXXX");
 		cdirname = mkdtemp(tempname);
 		filename = std::string(cdirname) + "/" + name;
-	};
+	}
 	~autotemp() {
 		unlink(filename.c_str());
 		rmdir(cdirname);
-	};
+	}
 
 	// std::string として評価されるとファイル名を返す
 	operator std::string() const {
 		return filename;
-	};
+	}
 
 	const char *c_str() const {
 		return filename.c_str();
