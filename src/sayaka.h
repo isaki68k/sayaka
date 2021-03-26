@@ -74,7 +74,7 @@ using unichar = uint32_t;
 #define ICONV(cd, s, slen, d, dlen)	iconv((cd), (s), (slen), (d), (dlen))
 #else
 #define ICONV(cd, s, slen, d, dlen)	\
-	iconv((cd), (char **)(s), (slen), (d), (dlen))
+	iconv((cd), const_cast<char **>(s), (slen), (d), (dlen))
 #endif
 
 static const int ColorFixedX68k = -1;
