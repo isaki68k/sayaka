@@ -28,6 +28,29 @@ CXXFLAGS="${old_CXXFLAGS}"
 CXX="${CXX} ${CXX_STD}"
 AC_LANG_POP([C++])
 
+# C++ コンパイラのワーニングオプション
+AC_LANG_CPLUSPLUS
+AC_DEFUN([ADD_CXX_WARN_IF],[
+	AC_MSG_CHECKING([whether c++ accepts $1])
+	old_CXXFLAGS="${CXXFLAGS}"
+	CXXFLAGS="${CXXFLAGS} -Werror $1"
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+		AC_MSG_RESULT([yes])
+		WARNFLAGS="${WARNFLAGS} $1",
+		AC_MSG_RESULT([no]))
+	CXXFLAGS="${old_CXXFLAGS}"
+])
+ADD_CXX_WARN_IF(-Wcast-qual)
+ADD_CXX_WARN_IF(-Wdisabled-macro-expansion)
+ADD_CXX_WARN_IF(-Wextra-semi)
+ADD_CXX_WARN_IF(-Winconsistent-missing-override)
+ADD_CXX_WARN_IF(-Winconsistent-missing-destructor-override)
+ADD_CXX_WARN_IF(-Wlogical-op)
+ADD_CXX_WARN_IF(-Wmissing-prototypes)
+ADD_CXX_WARN_IF(-Wmissing-variable-declarations)
+ADD_CXX_WARN_IF(-Wvla-extension)
+AC_SUBST([WARNFLAGS])
+
 # Checks for header files.
 AC_CHECK_HEADERS([bsd/bsd.h])
 AC_CHECK_HEADERS([endian.h])

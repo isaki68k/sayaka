@@ -72,7 +72,13 @@ CXX+=		-g
 
 CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
+CPPFLAGS+=	-Wignored-qualifiers
+CPPFLAGS+=	-Wpointer-arith
+CPPFLAGS+=	-Wnon-virtual-dtor
 INCLUDES+=	-I..
+
+# libpng が使ってるので無視
+CPPFLAGS.ImageLoaderPNG.cpp+=	-Wno-disabled-macro-expansion
 
 all:	sayaka test sixelv
 
@@ -90,7 +96,7 @@ libsayaka.a:	${SRCS_common:.cpp=.o}
 	ar r $@ $>
 
 .cpp.o:
-	${CXX} ${CPPFLAGS} ${INCLUDES} -c ${.IMPSRC} -o $@
+	${CXX} ${CPPFLAGS} ${CPPFLAGS.${.IMPSRC}} ${INCLUDES} -c ${.IMPSRC} -o $@
 
 .for S in ${SRCS_all}
 ${S:.cpp=.o}:	${S}

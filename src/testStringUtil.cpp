@@ -28,7 +28,7 @@
 #include <tuple>
 #include <errno.h>
 
-void
+static void
 test_string_replace()
 {
 	printf("%s\n", __func__);
@@ -55,7 +55,7 @@ test_string_replace()
 	}
 }
 
-void
+static void
 test_string_inreplace()
 {
 	printf("%s\n", __func__);
@@ -77,7 +77,7 @@ test_string_inreplace()
 	}
 }
 
-void
+static void
 test_string_rtrim()
 {
 	printf("%s\n", __func__);
@@ -99,7 +99,7 @@ test_string_rtrim()
 	}
 }
 
-void
+static void
 test_Split()
 {
 	printf("%s\n", __func__);
@@ -135,7 +135,7 @@ test_Split()
 	}
 }
 
-void
+static void
 test_Split_limit()
 {
 	printf("%s\n", __func__);
@@ -176,7 +176,7 @@ test_Split_limit()
 	}
 }
 
-void
+static void
 test_Split2()
 {
 	printf("%s\n", __func__);
@@ -228,7 +228,7 @@ test_Split2()
 	}
 }
 
-void
+static void
 test_UrlEncode()
 {
 	printf("%s\n", __func__);
@@ -255,7 +255,7 @@ test_UrlEncode()
 	}
 }
 
-void
+static void
 test_Chomp()
 {
 	printf("%s\n", __func__);
@@ -279,7 +279,7 @@ test_Chomp()
 	}
 }
 
-void
+static void
 test_StringToLower()
 {
 	printf("%s\n", __func__);
@@ -298,7 +298,7 @@ test_StringToLower()
 	}
 }
 
-void
+static void
 test_StartWith()
 {
 	printf("%s\n", __func__);
@@ -330,7 +330,7 @@ test_StartWith()
 	}
 }
 
-void
+static void
 test_EndWith()
 {
 	printf("%s\n", __func__);
@@ -363,7 +363,7 @@ test_EndWith()
 	}
 }
 
-void
+static void
 test_stou32()
 {
 	printf("%s\n", __func__);
@@ -411,7 +411,7 @@ test_stou32()
 	}
 }
 
-void
+static void
 test_stou64()
 {
 	printf("%s\n", __func__);
@@ -462,7 +462,7 @@ test_stou64()
 	}
 }
 
-void
+static void
 test_stox32()
 {
 	printf("%s\n", __func__);

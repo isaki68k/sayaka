@@ -57,27 +57,26 @@ enum OutputFormat {
 Diag diag;
 Diag diagHttp;
 int opt_debug_sixel = 0;
-ReductorColorMode opt_colormode = ReductorColorMode::Fixed256;
-int opt_graylevel = 256;
-int opt_width = 0;
-int opt_height = 0;
-ResizeAxisMode opt_resizeaxis = ResizeAxisMode::Both;
-ReductorReduceMode opt_reduce = ReductorReduceMode::HighQuality;
-bool opt_x68k = false;
-bool opt_outputpalette = true;
-bool opt_ignore_error = false;
+static ReductorColorMode opt_colormode = ReductorColorMode::Fixed256;
+static int opt_graylevel = 256;
+static int opt_width = 0;
+static int opt_height = 0;
+static ResizeAxisMode opt_resizeaxis = ResizeAxisMode::Both;
+static ReductorReduceMode opt_reduce = ReductorReduceMode::HighQuality;
+static bool opt_outputpalette = true;
+static bool opt_ignore_error = false;
 bool opt_ormode = false;
-bool opt_profile = false;
-SixelResizeMode opt_resizemode = SixelResizeMode::ByLoad;
-OutputFormat opt_outputformat = OutputFormat::SIXEL;
-int opt_output_x = 0;
-int opt_output_y = 0;
-float opt_color_factor = 1.0f;
-ReductorDiffuseMethod opt_highqualitydiffusemethod =
+static bool opt_profile = false;
+static SixelResizeMode opt_resizemode = SixelResizeMode::ByLoad;
+static OutputFormat opt_outputformat = OutputFormat::SIXEL;
+static int opt_output_x = 0;
+static int opt_output_y = 0;
+static float opt_color_factor = 1.0f;
+static ReductorDiffuseMethod opt_highqualitydiffusemethod =
 	ReductorDiffuseMethod::RDM_FS;
-ReductorFinderMode opt_findermode = ReductorFinderMode::RFM_Default;
-int opt_addnoise = 0;
-int opt_address_family = AF_UNSPEC;
+static ReductorFinderMode opt_findermode = ReductorFinderMode::RFM_Default;
+static int opt_addnoise = 0;
+static int opt_address_family = AF_UNSPEC;
 
 enum {
 	OPT_8 = 0x80,
@@ -141,7 +140,7 @@ static const struct option longopts[] = {
 	{ NULL },
 };
 
-std::map<const std::string, ReductorColorMode> colormode_map = {
+static std::map<const std::string, ReductorColorMode> colormode_map = {
 	{ "8",					ReductorColorMode::Fixed8 },
 	{ "16",					ReductorColorMode::FixedANSI16 },
 	{ "256",				ReductorColorMode::Fixed256 },
@@ -152,7 +151,7 @@ std::map<const std::string, ReductorColorMode> colormode_map = {
 	{ "x68k",				ReductorColorMode::FixedX68k },
 };
 
-std::map<const std::string, ResizeAxisMode> resizeaxis_map = {
+static std::map<const std::string, ResizeAxisMode> resizeaxis_map = {
 	{ "both",				ResizeAxisMode::Both },
 	{ "w",					ResizeAxisMode::Width },
 	{ "width",				ResizeAxisMode::Width },
@@ -174,18 +173,18 @@ std::map<const std::string, ResizeAxisMode> resizeaxis_map = {
 	{ "scaledown-short",	ResizeAxisMode::ScaleDownShort },
 };
 
-std::map<const std::string, SixelResizeMode> resizemode_map = {
+static std::map<const std::string, SixelResizeMode> resizemode_map = {
 	{ "load",				SixelResizeMode::ByLoad },
 	{ "imagereductor",		SixelResizeMode::ByImageReductor },
 };
 
-std::map<const std::string, OutputFormat> outputformat_map = {
+static std::map<const std::string, OutputFormat> outputformat_map = {
 	{ "sixel",				OutputFormat::SIXEL },
 	{ "gvram",				OutputFormat::GVRAM },
 	{ "palettepng",			OutputFormat::PALETTEPNG },
 };
 
-std::map<const std::string, ReductorFinderMode> findermode_map = {
+static std::map<const std::string, ReductorFinderMode> findermode_map = {
 	{ "default",			ReductorFinderMode::RFM_Default },
 	{ "rgb",				ReductorFinderMode::RFM_Default },
 	{ "hsv",				ReductorFinderMode::RFM_HSV },
@@ -193,7 +192,7 @@ std::map<const std::string, ReductorFinderMode> findermode_map = {
 
 #define RRM ReductorReduceMode
 #define RDM ReductorDiffuseMethod
-std::map<const std::string, std::pair<RRM, RDM>> reduce_map = {
+static std::map<const std::string, std::pair<RRM, RDM>> reduce_map = {
 	{ "auto",		{ RRM::HighQuality,	(RDM)-1 } },
 	{ "none",		{ RRM::Simple,		(RDM)-1 } },
 	{ "fast",		{ RRM::Fast,		(RDM)-1 } },

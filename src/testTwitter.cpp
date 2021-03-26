@@ -26,7 +26,7 @@
 #include "test.h"
 #include "Twitter.h"
 
-void
+static void
 test_TwitterToken()
 {
 	printf("%s\n", __func__);

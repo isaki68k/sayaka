@@ -64,7 +64,7 @@ class Test
 
 std::string Test::name;
 
-void
+static void
 test_get_classfunc_name()
 {
 	printf("%s\n", __func__);

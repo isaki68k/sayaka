@@ -141,7 +141,6 @@ int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
 enum bgcolor bgcolor;			// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
-std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
 Twitter tw;
 StringDictionary followlist;	// フォロー氏リスト
 StringDictionary blocklist;		// ブロック氏リスト
@@ -172,6 +171,8 @@ std::string basedir;
 std::string cachedir;
 std::string tokenfile;
 std::string colormapdir;
+
+static std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
 
 // 投稿する
 void

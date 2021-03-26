@@ -34,7 +34,7 @@ GetUnixTime()
 	return 1258538052;
 }
 
-void
+static void
 test_formattime()
 {
 	printf("%s\n", __func__);
@@ -56,7 +56,7 @@ test_formattime()
 	}
 }
 
-void
+static void
 test_get_datetime()
 {
 	printf("%s\n", __func__);
@@ -75,7 +75,7 @@ test_get_datetime()
 	}
 }
 
-void
+static void
 test_my_strptime()
 {
 	printf("%s\n", __func__);

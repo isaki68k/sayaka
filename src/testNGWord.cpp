@@ -29,7 +29,7 @@
 #include "StringUtil.h"
 #include <tuple>
 
-void
+static void
 test_NGWordList_ReadFile()
 {
 	printf("%s\n", __func__);
@@ -67,7 +67,7 @@ test_NGWordList_ReadFile()
 	}
 }
 
-void
+static void
 test_NGWordList_Parse()
 {
 	printf("%s\n", __func__);
@@ -110,7 +110,7 @@ test_NGWordList_Parse()
 	}
 }
 
-void
+static void
 test_NGWord_MatchUser()
 {
 	printf("%s\n", __func__);
@@ -144,7 +144,7 @@ test_NGWord_MatchUser()
 	}
 }
 
-void
+static void
 test_NGWord_MatchText()
 {
 	printf("%s\n", __func__);
@@ -204,7 +204,7 @@ test_NGWord_MatchText()
 	}
 }
 
-void
+static void
 test_NGWordList_Match()
 {
 	printf("%s\n", __func__);

@@ -31,6 +31,7 @@
 #include "SixelConverter.h"
 #include "StringUtil.h"
 #include "sayaka.h"
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <errno.h>
@@ -277,27 +278,27 @@ SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 	int w = Width;
 	int h = Height;
 	int n;
+	int len;
 
 	// パレットのビット数
 	int bcnt = MyLog2(ir.GetPaletteCount());
 	Debug(diag, "%s bcnt=%d\n", __func__, bcnt);
-
-	uint8 sixelbuf[(w + 5) * bcnt];
+	std::vector<uint8> sixelbuf((w + 5) * bcnt);
 
 	uint8 *p = p0;
 	int y;
 	// 一つ手前の SIXEL 行まで変換
 	for (y = 0; y < h - 6; y += 6) {
-		int len = sixel_image_to_sixel_h6_ormode(sixelbuf, p, w, 6, bcnt);
-		n = stream->Write(sixelbuf, len);
+		len = sixel_image_to_sixel_h6_ormode(sixelbuf.data(), p, w, 6, bcnt);
+		n = stream->Write(sixelbuf.data(), len);
 		if (n < len) {
 			return false;
 		}
 		p += w * 6;
 	}
 	// 最終 SIXEL 行を変換
-	int len = sixel_image_to_sixel_h6_ormode(sixelbuf, p, w, h - y, bcnt);
-	n = stream->Write(sixelbuf, len);
+	len = sixel_image_to_sixel_h6_ormode(sixelbuf.data(), p, w, h - y, bcnt);
+	n = stream->Write(sixelbuf.data(), len);
 	if (n < len) {
 		return false;
 	}
@@ -321,16 +322,16 @@ SixelConverter::SixelToStreamCore(OutputStream *stream)
 
 	// カラー番号ごとの、X 座標の min, max を計算する。
 	// short でいいよね…
-	int16 min_x[PaletteCount];
-	int16 max_x[PaletteCount];
+	std::vector<int16> min_x(PaletteCount);
+	std::vector<int16> max_x(PaletteCount);
 
 	for (int16 y = 0; y < h; y += 6) {
 		std::string linebuf;
 
 		src = y * w;
 
-		memset(min_x, -1, sizeof(min_x));
-		memset(max_x,  0, sizeof(max_x));
+		std::fill(min_x.begin(), min_x.end(), -1);
+		std::fill(max_x.begin(), max_x.end(), 0);
 
 		// h が 6 の倍数でない時には溢れてしまうので、上界を計算する
 		int16 max_dy = 6;

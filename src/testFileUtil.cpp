@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-void
+static void
 test_FileReadWriteAllText()
 {
 	// File{Read,Write}AllText() を両方一度にテストする
@@ -56,7 +56,7 @@ test_FileReadWriteAllText()
 	}
 }
 
-void
+static void
 test_FileUtil_Exists()
 {
 	autotemp filename("a");

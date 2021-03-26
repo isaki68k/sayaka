@@ -28,7 +28,7 @@
 
 Diag diag;
 
-void
+static void
 test_parse_bgcolor()
 {
 	printf("%s\n", __func__);

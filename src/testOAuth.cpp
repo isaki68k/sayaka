@@ -83,7 +83,7 @@ OAuth::GetNonce()
 	return "testnonce";
 }
 
-void
+static void
 test_Base64Encode()
 {
 	printf("%s\n", __func__);
@@ -105,7 +105,7 @@ test_Base64Encode()
 	}
 }
 
-void
+static void
 test_HMAC_SHA1()
 {
 	printf("%s\n", __func__);
@@ -166,7 +166,7 @@ test_HMAC_SHA1()
 	}
 }
 
-void
+static void
 test_CreateParams()
 {
 	Diag diag;
@@ -223,7 +223,7 @@ test_CreateParams()
 	}
 }
 
-void
+static void
 test_MakeQuery()
 {
 	printf("%s\n", __func__);
@@ -265,7 +265,7 @@ test_MakeQuery()
 	}
 }
 
-void
+static void
 test_ParseQuery()
 {
 	printf("%s\n", __func__);
@@ -323,7 +323,7 @@ test_ParseQuery()
 	}
 }
 
-void
+static void
 test_MakeOAuthHeader()
 {
 	printf("%s\n", __func__);

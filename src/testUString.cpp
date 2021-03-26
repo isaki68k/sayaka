@@ -35,7 +35,7 @@ class TestUString : public UString
 };
 
 // 実運用系では cd を解放しないので、テストでは手動で解放しておく
-void
+static void
 test_iconv_close()
 {
 #if defined(HAVE_ICONV)
@@ -48,7 +48,7 @@ test_iconv_close()
 }
 
 // テスト表示用に文字列をクォートする
-std::string
+static std::string
 quote(const std::string& s)
 {
 	std::string q;
@@ -68,7 +68,7 @@ quote(const std::string& s)
 }
 
 // test_Init() 以外にも後でポカ避けにも使う
-std::map<std::string, bool> table_Init = {
+static std::map<std::string, bool> table_Init = {
 	// encoding		expected
 #if defined(HAVE_ICONV)
 	{ "",				true },
@@ -81,7 +81,7 @@ std::map<std::string, bool> table_Init = {
 #endif
 };
 
-void
+static void
 test_Init()
 {
 	printf("%s\n", __func__);
@@ -96,7 +96,7 @@ test_Init()
 	}
 }
 
-void
+static void
 test_FromUTF8()
 {
 	printf("%s\n", __func__);
@@ -130,7 +130,7 @@ test_FromUTF8()
 	test_iconv_close();
 }
 
-void
+static void
 test_ToString()
 {
 	printf("%s\n", __func__);
@@ -210,7 +210,7 @@ test_ToString()
 	}
 }
 
-void
+static void
 test_IsUCharConvertible()
 {
 	printf("%s\n", __func__);
@@ -249,14 +249,14 @@ test_IsUCharConvertible()
 	}
 }
 
-std::vector<std::pair<unichar, std::vector<uint8>>> table_UCharToUTF8 = {
+static std::vector<std::pair<unichar, std::vector<uint8>>> table_UCharToUTF8 = {
 	// code		expected_bytes
 	{ 0x0041,	{ 0x41 } },						// 'A'
 	{ 0x07b0,	{ 0xde, 0xb0 } },				// THAANA SUKUN
 	{ 0xffe5,	{ 0xef, 0xbf, 0xa5 } },			// FULLWIDTH YEN SIGN
 	{ 0x10280,	{ 0xf0, 0x90, 0x8a, 0x80 } },	// LYCIAN LETTER A
 };
-void
+static void
 test_UCharFromUTF8()
 {
 	printf("%s\n", __func__);
@@ -277,7 +277,7 @@ test_UCharFromUTF8()
 	}
 }
 
-void
+static void
 test_UCharToUTF8()
 {
 	printf("%s\n", __func__);

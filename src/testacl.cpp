@@ -28,6 +28,7 @@
 #include "Dictionary.h"
 #include "StringUtil.h"
 #include "acl.h"
+#include "main.h"
 
 std::string myid;
 Diag diagShow;
@@ -37,7 +38,7 @@ StringDictionary blocklist;
 StringDictionary mutelist;
 StringDictionary nortlist;
 
-void
+static void
 test_showstatus_acl()
 {
 	printf("%s\n", __func__);

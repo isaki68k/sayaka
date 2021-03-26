@@ -29,6 +29,7 @@
 //
 
 #include "sayaka.h"
+#include "SixelConverter.h"
 #include <cstdint>
 #include <cstdio>
 #include <vector>

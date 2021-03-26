@@ -43,7 +43,7 @@ xp_eq_(const char *file, int line, const char *func,
 }
 
 void
-xp_eq_(const char *file, int line, const char *func,
+xp_eq_u_(const char *file, int line, const char *func,
 	uint64 exp, uint64 act, const std::string& msg)
 {
 	test_count++;
