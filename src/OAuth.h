@@ -103,11 +103,6 @@ class OAuth
 	std::unique_ptr<HttpClient> CreateHttp(const std::string& method,
 		const std::string& uri);
 
-	// HTTP クライアント
-	// (HTTP コネクション張ってる間ずっと生存している必要があるので、
-	// メンバ変数でなければならない)
-	std::unique_ptr<HttpClient> RequestAPIClient {};
-
  private:
 	Diag diag {};
 };

@@ -99,8 +99,9 @@ static StringDictionary get_paged_list(const std::string& api,
 	const char *funcname);
 static Json API2Json(const std::string& method, const std::string& apiRoot,
 	const std::string& api, const StringDictionary& options);
-static InputStream *API(const std::string& method, const std::string& apiRoot,
-	const std::string& api, const StringDictionary& options);
+static std::unique_ptr<HttpClient> API(const std::string& method,
+	const std::string& apiRoot, const std::string& api,
+	const StringDictionary& options);
 static void record(const Json& obj);
 static void invalidate_cache();
 static std::string errors2string(const Json& json);
@@ -266,6 +267,7 @@ cmd_stream()
 	fflush(stdout);
 
 	// ストリーミング開始
+	std::unique_ptr<HttpClient> stream_client;
 	Debug(diag, "PostAPI call");
 	{
 		StringDictionary dict;
@@ -284,7 +286,10 @@ cmd_stream()
 			// キーワード検索
 			dict.AddOrUpdate("track", opt_filter);
 		}
-		stream = API("POST", STREAM_APIROOT, "statuses/filter", dict);
+
+		const std::string method = "POST";
+		stream_client = API(method, STREAM_APIROOT, "statuses/filter", dict);
+		stream = stream_client->Act(method);
 		if (stream == NULL) {
 			errx(1, "statuses/filter failed");
 		}
@@ -1509,7 +1514,7 @@ get_nort_list()
 	}
 }
 
-static InputStream *
+static std::unique_ptr<HttpClient>
 API(const std::string& method, const std::string& apiRoot,
 	const std::string& api, const StringDictionary& options)
 {
@@ -1522,19 +1527,15 @@ API(const std::string& method, const std::string& apiRoot,
 	}
 
 	Trace(diag, "CreateHttp call");
-	oauth.RequestAPIClient = oauth.CreateHttp(method, apiRoot + api + ".json");
+	auto client = oauth.CreateHttp(method, apiRoot + api + ".json");
 	Trace(diag, "CreateHttp return");
 
 	// Ciphers 指定があれば指示
 	if (!opt_ciphers.empty()) {
-		oauth.RequestAPIClient->SetCiphers(opt_ciphers);
+		client->SetCiphers(opt_ciphers);
 	}
 
-	Trace(diag, "client.%s call", method.c_str());
-	auto stream = oauth.RequestAPIClient->Act(method);
-	Trace(diag, "client.%s return", method.c_str());
-
-	return stream;
+	return client;
 }
 
 // API に接続し、結果の JSON を返す。
@@ -1547,7 +1548,12 @@ API2Json(const std::string& method, const std::string& apiRoot,
 	std::string line;
 	Json json;
 
-	stream = API(method, apiRoot, api, options);
+	std::unique_ptr<HttpClient> client = API(method, apiRoot, api, options);
+	// XXX エラーは?
+
+	Trace(diag, "client.Act call");
+	stream = client->Act(method);
+	Trace(diag, "client.Act return");
 	if (stream == NULL) {
 		Debug(diag, "%s: API failed", api.c_str());
 		return json;
