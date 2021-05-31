@@ -1521,9 +1521,18 @@ API(const std::string& method, const std::string& apiRoot,
 		}
 	}
 
-	Trace(diag, "RequestAPI call");
-	auto stream = oauth.RequestAPI(method, apiRoot + api + ".json");
-	Trace(diag, "RequestAPI return");
+	Trace(diag, "CreateHttp call");
+	oauth.RequestAPIClient = oauth.CreateHttp(method, apiRoot + api + ".json");
+	Trace(diag, "CreateHttp return");
+
+	// Ciphers 指定があれば指示
+	if (!opt_ciphers.empty()) {
+		oauth.RequestAPIClient->SetCiphers(opt_ciphers);
+	}
+
+	Trace(diag, "client.%s call", method.c_str());
+	auto stream = oauth.RequestAPIClient->Act(method);
+	Trace(diag, "client.%s return", method.c_str());
 
 	return stream;
 }

@@ -40,12 +40,6 @@ class OAuth
 
 	void SetDiag(const Diag& diag_);
 
-	// Ciphers を設定する
-	void SetCiphers(std::string ciphers_)
-	{
-		Ciphers = ciphers_;
-	}
-
 	// access token, secret をファイルから読み込む。
 	bool LoadTokenFromFile(const std::string& filename);
 	bool SaveTokenToFile(const std::string& filename) const;
@@ -85,10 +79,6 @@ class OAuth
 	// 取得したトークンとシークレットは AccessToken, AccessSecret に格納する。
 	void RequestToken(const std::string& uri_request_token);
 
-	// uri_api に method (GET/POST) で接続する。
-	InputStream *RequestAPI(const std::string& method,
-		const std::string& uri_api);
-
  public:
 	std::string ConsumerKey {};
 	std::string ConsumerSecret {};
@@ -107,20 +97,17 @@ class OAuth
 	std::string AccessToken {};
 	std::string AccessSecret {};
 
- private:
 	// method と url から HttpClient を生成して返す。
 	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意する。
 	// 接続はまだ行わない。
 	std::unique_ptr<HttpClient> CreateHttp(const std::string& method,
 		const std::string& uri);
 
-	Diag diag {};
-
 	// HTTP クライアント
-	// (ローカル変数に出来そうに見えるが、HTTP コネクション張ってる間
-	// ずっと生存している必要があるので、メンバ変数でなければならない)
+	// (HTTP コネクション張ってる間ずっと生存している必要があるので、
+	// メンバ変数でなければならない)
 	std::unique_ptr<HttpClient> RequestAPIClient {};
 
-	// TLS で使用する cipher list。"" ならデフォルト。
-	std::string Ciphers {};
+ private:
+	Diag diag {};
 };

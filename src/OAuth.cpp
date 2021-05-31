@@ -330,23 +330,3 @@ OAuth::RequestToken(const std::string& uri_request_token)
 	AccessToken  = resultDict["oauth_token"];
 	AccessSecret = resultDict["oauth_token_secret"];
 }
-
-// uri_api に method (GET/POST) で接続する。
-InputStream *
-OAuth::RequestAPI(const std::string& method, const std::string& uri_api)
-{
-	Trace(diag, "CreateHttp call");
-	RequestAPIClient = CreateHttp(method, uri_api);
-	Trace(diag, "CreateHttp return");
-
-	// Ciphers 指定があれば指示
-	if (!Ciphers.empty()) {
-		RequestAPIClient->SetCiphers(Ciphers);
-	}
-
-	Trace(diag, "client.%s call", method.c_str());
-	auto stream = RequestAPIClient->Act(method);
-	Trace(diag, "client.%s return", method.c_str());
-
-	return stream;
-}

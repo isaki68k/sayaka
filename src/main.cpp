@@ -645,10 +645,6 @@ InitOAuth()
 		if (r == false) {
 			get_access_token();
 		}
-
-		if (!opt_ciphers.empty()) {
-			oauth.SetCiphers(opt_ciphers);
-		}
 	}
 }
 
