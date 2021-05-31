@@ -108,7 +108,7 @@ class OAuth
 	std::string AccessSecret {};
 
  private:
-	// method と url から IHttpClient を生成して返す。
+	// method と url から HttpClient を生成して返す。
 	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意する。
 	// 接続はまだ行わない。
 	std::unique_ptr<HttpClient> CreateHttp(const std::string& method,

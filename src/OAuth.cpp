@@ -293,7 +293,7 @@ OAuth::MakeOAuthHeader()
 	return sb;
 }
 
-// method と url から IHttpClient を生成して返す。
+// method と url から HttpClient を生成して返す。
 std::unique_ptr<HttpClient>
 OAuth::CreateHttp(const std::string& method, const std::string& uri)
 {
