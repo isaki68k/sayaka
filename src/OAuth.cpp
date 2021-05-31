@@ -24,6 +24,7 @@
  * SUCH DAMAGE.
  */
 
+#include "FileUtil.h"
 #include "HttpClient.h"
 #include "OAuth.h"
 #include "StringUtil.h"
@@ -49,6 +50,33 @@ void
 OAuth::SetDiag(const Diag& diag_)
 {
 	diag = diag_;
+}
+
+// access token, secret をファイルから読み込む。
+bool
+OAuth::LoadTokenFromFile(const std::string& filename)
+{
+	auto text = FileReadAllText(filename);
+	if (text.empty()) {
+		return false;
+	}
+
+	auto json = Json::parse(text);
+	AccessToken  = json["token"];
+	AccessSecret = json["secret"];
+	return true;
+}
+
+// access token, secret をファイルに書き出す。
+bool
+OAuth::SaveTokenToFile(const std::string& filename) const
+{
+	Json json;
+
+	json["token"]  = AccessToken;
+	json["secret"] = AccessSecret;
+
+	return FileWriteAllText(filename, json.dump());
 }
 
 // Nonce のための文字列を返す。

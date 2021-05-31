@@ -41,6 +41,9 @@
 
 static const char version[] = "3.5.1 (2021/03/18)";
 
+#define CONSUMER_KEY		"jPY9PU5lvwb6s9mqx3KjRA"
+#define CONSUMER_SECRET		"faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw"
+
 enum SayakaCmd {
 	Noop = 0,
 	Stream,
@@ -62,6 +65,7 @@ static const int DEFAULT_FONT_HEIGHT = 14;
 static std::string GetHomeDir();
 static void init();
 static void init_stream();
+static void get_access_token();
 static void signal_handler(int signo);
 static void sigwinch();
 static void cmd_users_list(const StringDictionary& list);
@@ -625,6 +629,63 @@ init_stream()
 	ngword_list.ReadFile();
 }
 
+// OAuth オブジェクトを初期化
+void
+InitOAuth()
+{
+	// XXX まだこの再入チェックいるかな?
+	if (oauth.ConsumerKey.empty()) {
+		oauth.SetDiag(diagHttp);
+		oauth.ConsumerKey    = CONSUMER_KEY;
+		oauth.ConsumerSecret = CONSUMER_SECRET;
+
+		// ファイルからトークンを取得
+		// なければトークンを取得してファイルに保存
+		bool r = oauth.LoadTokenFromFile(tokenfile);
+		if (r == false) {
+			get_access_token();
+		}
+
+		if (!opt_ciphers.empty()) {
+			oauth.SetCiphers(opt_ciphers);
+		}
+	}
+}
+
+// アクセストークンを取得する。
+// 取得できなければ errx(3) で終了する。
+static void
+get_access_token()
+{
+	oauth.AdditionalParams.clear();
+
+	Debug(diag, "----- Request Token -----");
+	oauth.RequestToken(REQUEST_TOKEN_URL);
+
+	printf("Please go to:\n"
+		AUTHORIZE_URL "?oauth_token=%s\n", oauth.AccessToken.c_str());
+	printf("\n");
+	printf("And input PIN code: ");
+	fflush(stdout);
+
+	char pin_str[1024];
+	fgets(pin_str, sizeof(pin_str), stdin);
+
+	Debug(diag, "----- Access Token -----");
+
+	oauth.AdditionalParams["oauth_verifier"] = pin_str;
+	oauth.RequestToken(ACCESS_TOKEN_URL);
+
+	if (oauth.AccessToken.empty()) {
+		errx(1, "GIVE UP");
+	}
+
+	bool r = oauth.SaveTokenToFile(tokenfile);
+	if (r == false) {
+		errx(1, "Token save failed");
+	}
+}
+
 static void
 signal_handler(int signo)
 {
@@ -754,7 +815,7 @@ cmd_users_list(const StringDictionary& list)
 static void
 cmd_followlist()
 {
-	CreateTwitter();
+	InitOAuth();
 	get_follow_list();
 	cmd_users_list(followlist);
 }
@@ -763,7 +824,7 @@ cmd_followlist()
 static void
 cmd_blocklist()
 {
-	CreateTwitter();
+	InitOAuth();
 	get_block_list();
 	cmd_users_list(blocklist);
 }
@@ -772,7 +833,7 @@ cmd_blocklist()
 static void
 cmd_mutelist()
 {
-	CreateTwitter();
+	InitOAuth();
 	get_mute_list();
 	cmd_users_list(mutelist);
 }
@@ -781,7 +842,7 @@ cmd_mutelist()
 static void
 cmd_nortlist()
 {
-	CreateTwitter();
+	InitOAuth();
 	get_nort_list();
 	cmd_users_list(nortlist);
 }

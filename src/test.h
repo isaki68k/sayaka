@@ -97,7 +97,6 @@ extern void test_ParsedUri();
 extern void test_RichString();
 extern void test_SixelConverter();
 extern void test_StringUtil();
-extern void test_Twitter();
 extern void test_UString();
 extern void test_acl();
 extern void test_eaw_code();

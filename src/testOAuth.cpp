@@ -84,6 +84,27 @@ OAuth::GetNonce()
 }
 
 static void
+test_AccessToken()
+{
+	printf("%s\n", __func__);
+
+	autotemp filename("a.json");
+
+	// Save, Load して復元できるかだけテストする
+	OAuth o;
+	o.AccessToken  = "token_aaa";
+	o.AccessSecret = "secret_aaa";
+	bool r = o.SaveTokenToFile(filename);
+	xp_eq(true, r);
+
+	OAuth o2;
+	r = o2.LoadTokenFromFile(filename);
+	xp_eq(true, r);
+	xp_eq(o.AccessToken, o2.AccessToken);
+	xp_eq(o.AccessSecret, o2.AccessSecret);
+}
+
+static void
 test_Base64Encode()
 {
 	printf("%s\n", __func__);
@@ -356,6 +377,7 @@ test_MakeOAuthHeader()
 void
 test_OAuth()
 {
+	test_AccessToken();
 	test_Base64Encode();
 	test_HMAC_SHA1();
 	test_CreateParams();

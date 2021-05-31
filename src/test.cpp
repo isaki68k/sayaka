@@ -95,7 +95,6 @@ main(int ac, char *av[])
 	test_RichString();
 	test_SixelConverter();
 	test_StringUtil();
-	test_Twitter();
 	test_UString();
 	test_eaw_code();
 	test_subr();

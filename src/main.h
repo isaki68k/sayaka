@@ -28,11 +28,17 @@
 #include "Diag.h"
 #include "Dictionary.h"
 #include "NGWord.h"
-#include "Twitter.h"
+#include "OAuth.h"
 #include <array>
 #include <string>
 
 #define DEBUG_FORMAT 1
+
+#define AUTHORIZE_URL		"https://twitter.com/oauth/authorize"
+#define ACCESS_TOKEN_URL	"https://api.twitter.com/oauth/access_token"
+#define REQUEST_TOKEN_URL	"https://api.twitter.com/oauth/request_token"
+#define APIROOT				"https://api.twitter.com/1.1/"
+#define STREAM_APIROOT		"https://stream.twitter.com/1.1/"
 
 enum bgcolor {
 	BG_NONE = -1,
@@ -45,7 +51,6 @@ enum bgcolor {
 extern void cmd_tweet();
 extern void cmd_stream();
 extern void cmd_play();
-extern void CreateTwitter();
 extern void get_follow_list();
 extern void get_block_list();
 extern void get_mute_list();
@@ -76,7 +81,7 @@ extern int  image_next_cols;
 extern int  image_max_rows;
 extern enum bgcolor bgcolor;
 extern std::string output_codeset;
-extern Twitter tw;
+extern OAuth oauth;
 extern bool opt_norest;
 extern bool opt_show_ng;
 extern std::string opt_ngword;
@@ -107,6 +112,8 @@ extern StringDictionary followlist;
 extern StringDictionary blocklist;
 extern StringDictionary mutelist;
 extern StringDictionary nortlist;
+
+extern void InitOAuth();
 
 // 起動経過を表示 (遅マシン用)
 static inline void

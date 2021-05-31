@@ -46,6 +46,10 @@ class OAuth
 		Ciphers = ciphers_;
 	}
 
+	// access token, secret をファイルから読み込む。
+	bool LoadTokenFromFile(const std::string& filename);
+	bool SaveTokenToFile(const std::string& filename) const;
+
 	// Nonce のための文字列を返す。
 	// (呼び出すたびに異なる文字列を生成する)
 	// テスト側で差し替えるため weak 指定。

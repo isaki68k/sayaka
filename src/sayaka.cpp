@@ -75,7 +75,6 @@ enum Color {
 	Max,
 };
 
-static void get_access_token();
 static bool showobject(const std::string& line);
 static bool showstatus(const Json *status, bool is_quoted);
 static UString format_rt_owner(const Json& s);
@@ -98,6 +97,10 @@ static bool show_image(const std::string& img_file, const std::string& img_url,
 static void get_credentials();
 static StringDictionary get_paged_list(const std::string& api,
 	const char *funcname);
+static Json API2Json(const std::string& method, const std::string& apiRoot,
+	const std::string& api, const StringDictionary& options);
+static InputStream *API(const std::string& method, const std::string& apiRoot,
+	const std::string& api, const StringDictionary& options);
 static void record(const Json& obj);
 static void invalidate_cache();
 static std::string errors2string(const Json& json);
@@ -141,7 +144,7 @@ int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
 enum bgcolor bgcolor;			// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
-Twitter tw;
+OAuth oauth;
 StringDictionary followlist;	// フォロー氏リスト
 StringDictionary blocklist;		// ブロック氏リスト
 StringDictionary mutelist;		// ミュート氏リスト
@@ -193,7 +196,7 @@ cmd_tweet()
 	text = Chomp(text);
 
 	// アクセストークンを取得
-	CreateTwitter();
+	InitOAuth();
 
 	// 投稿するパラメータを用意
 	StringDictionary options;
@@ -201,7 +204,7 @@ cmd_tweet()
 	options.AddOrUpdate("trim_user", "1");
 
 	// 投稿
-	auto json = tw.API2Json("POST", Twitter::APIRoot, "statuses/update",
+	auto json = API2Json("POST", APIROOT, "statuses/update",
 		options);
 	if (json.is_null()) {
 		errx(1, "statuses/update API2Json failed");
@@ -224,7 +227,7 @@ cmd_stream()
 	progress("done\n");
 
 	// アクセストークンを取得
-	CreateTwitter();
+	InitOAuth();
 
 	if (opt_norest == false) {
 		if (opt_pseudo_home) {
@@ -281,7 +284,7 @@ cmd_stream()
 			// キーワード検索
 			dict.AddOrUpdate("track", opt_filter);
 		}
-		stream = tw.PostAPI(Twitter::StreamAPIRoot, "statuses/filter", dict);
+		stream = API("POST", STREAM_APIROOT, "statuses/filter", dict);
 		if (stream == NULL) {
 			errx(1, "statuses/filter failed");
 		}
@@ -321,48 +324,6 @@ cmd_play()
 		}
 	}
 }
-
-// Twitter オブジェクトを初期化
-void
-CreateTwitter()
-{
-	static bool initialized = false;
-
-	// XXX 元はここで tw を必要なら new していたからこうなっている
-	if (!initialized) {
-		initialized = true;
-
-		tw.SetDiag(diagHttp);
-		get_access_token();
-
-		if (!opt_ciphers.empty()) {
-			tw.SetCiphers(opt_ciphers);
-		}
-	}
-}
-
-// アクセストークンを取得する
-static void
-get_access_token()
-{
-	bool r;
-
-	// ファイルからトークンを取得
-	r = tw.AccessToken.LoadFromFile(tokenfile);
-	if (r == false) {
-		// なければトークンを取得してファイルに保存
-		tw.GetAccessToken();
-		if (tw.AccessToken.Token.empty()) {
-			errx(1, "GIVE UP");
-		}
-
-		r = tw.AccessToken.SaveToFile(tokenfile);
-		if (r == false) {
-			errx(1, "Token save failed");
-		}
-	}
-}
-
 // ストリームから受け取った何かの1行 line を処理する共通部分。
 // line はイベントかメッセージの JSON 文字列1行分。
 // たぶんイベントは userstream 用なので、もう来ないはず。
@@ -1434,12 +1395,12 @@ show_image(const std::string& img_file, const std::string& img_url,
 static void
 get_credentials()
 {
-	CreateTwitter();
+	InitOAuth();
 
 	StringDictionary options;
 	options["include_entities"] = "false";
 	options["include_email"] = "false";
-	auto json = tw.API2Json("GET", Twitter::APIRoot,
+	auto json = API2Json("GET", APIROOT,
 		"account/verify_credentials", options);
 	if (json.is_null()) {
 		errx(1, "get_credentials API2Json failed");
@@ -1471,7 +1432,7 @@ get_paged_list(const std::string& api, const char *funcname)
 		options["cursor"] = cursor;
 
 		// JSON を取得
-		auto json = tw.API2Json("GET", Twitter::APIRoot, api, options);
+		auto json = API2Json("GET", APIROOT, api, options);
 		if (json.is_null()) {
 			errx(1, "%s API2Json failed", funcname);
 		}
@@ -1529,7 +1490,7 @@ get_nort_list()
 	nortlist.clear();
 
 	// JSON を取得
-	auto json = tw.API2Json("GET", Twitter::APIRoot,
+	auto json = API2Json("GET", APIROOT,
 		"friendships/no_retweets/ids", {});
 	if (json.is_null()) {
 		errx(1, "get_nort_list API2Json failed");
@@ -1547,6 +1508,55 @@ get_nort_list()
 		nortlist[id_str] = id_str;
 	}
 }
+
+static InputStream *
+API(const std::string& method, const std::string& apiRoot,
+	const std::string& api, const StringDictionary& options)
+{
+	oauth.AdditionalParams.clear();
+
+	if (!options.empty()) {
+		for (const auto& [key, val] : options) {
+			oauth.AdditionalParams[key] = val;
+		}
+	}
+
+	Trace(diag, "RequestAPI call");
+	auto stream = oauth.RequestAPI(method, apiRoot + api + ".json");
+	Trace(diag, "RequestAPI return");
+
+	return stream;
+}
+
+// API に接続し、結果の JSON を返す。
+// 接続が失敗、あるいは JSON が正しく受け取れなかった場合は {} を返す。
+static Json
+API2Json(const std::string& method, const std::string& apiRoot,
+	const std::string& api, const StringDictionary& options)
+{
+	InputStream *stream = NULL;
+	std::string line;
+	Json json;
+
+	stream = API(method, apiRoot, api, options);
+	if (stream == NULL) {
+		Debug(diag, "%s: API failed", api.c_str());
+		return json;
+	}
+	auto r = stream->ReadLine(&line);
+	if (__predict_false(r < 0)) {
+		Debug(diag, "%s: ReadLine failed: %s", api.c_str(), strerror(errno));
+		return json;
+	}
+	Debug(diag, "ReadLine |%s|", line.c_str());
+
+	if (line.empty()) {
+		return json;
+	}
+
+	return Json::parse(line);
+}
+
 
 // ツイートを保存する
 static void

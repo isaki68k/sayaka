@@ -23,7 +23,6 @@ SRCS_common=	\
 	SixelConverterOR.cpp \
 	StreamBase.cpp \
 	StringUtil.cpp \
-	Twitter.cpp \
 	UString.cpp \
 	acl.cpp \
 	eaw_code.cpp \
@@ -53,7 +52,6 @@ SRCS_test=	\
 	testRichString.cpp \
 	testSixelConverter.cpp \
 	testStringUtil.cpp \
-	testTwitter.cpp \
 	testUString.cpp \
 	testacl.cpp \
 	testeaw_code.cpp \
