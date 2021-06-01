@@ -289,6 +289,9 @@ cmd_stream()
 
 		const std::string method = "POST";
 		stream_client = API(method, STREAM_APIROOT, "statuses/filter", dict);
+		if ((bool)stream_client == false) {
+			errx(1, "statuses/filter API failed");
+		}
 		stream = stream_client->Act(method);
 		if (stream == NULL) {
 			errx(1, "statuses/filter failed");
@@ -1514,6 +1517,8 @@ get_nort_list()
 	}
 }
 
+// API に接続し、その HttpClient を返す。
+// エラーが起きた場合は空の unique_ptr を返す。
 static std::unique_ptr<HttpClient>
 API(const std::string& method, const std::string& apiRoot,
 	const std::string& api, const StringDictionary& options)
@@ -1529,6 +1534,9 @@ API(const std::string& method, const std::string& apiRoot,
 	Trace(diag, "CreateHttp call");
 	auto client = oauth.CreateHttp(method, apiRoot + api + ".json");
 	Trace(diag, "CreateHttp return");
+	if ((bool)client == false) {
+		return client;
+	}
 
 	// Ciphers 指定があれば指示
 	if (!opt_ciphers.empty()) {
@@ -1549,13 +1557,16 @@ API2Json(const std::string& method, const std::string& apiRoot,
 	Json json;
 
 	std::unique_ptr<HttpClient> client = API(method, apiRoot, api, options);
-	// XXX エラーは?
+	if ((bool)client == false) {
+		Debug(diag, "%s: API failed", api.c_str());
+		return json;
+	}
 
 	Trace(diag, "client.Act call");
 	stream = client->Act(method);
 	Trace(diag, "client.Act return");
 	if (stream == NULL) {
-		Debug(diag, "%s: API failed", api.c_str());
+		Debug(diag, "%s: API %s failed", api.c_str(), method.c_str());
 		return json;
 	}
 	auto r = stream->ReadLine(&line);

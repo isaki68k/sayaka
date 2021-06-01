@@ -294,6 +294,7 @@ OAuth::MakeOAuthHeader()
 }
 
 // method と url から HttpClient を生成して返す。
+// エラーならメッセージを表示して、空の unique_ptr を返す。
 std::unique_ptr<HttpClient>
 OAuth::CreateHttp(const std::string& method, const std::string& uri)
 {
@@ -301,7 +302,8 @@ OAuth::CreateHttp(const std::string& method, const std::string& uri)
 
 	std::unique_ptr<HttpClient> client(new HttpClient());
 	if (client->Init(diag, conn_uri) == false) {
-		// XXX エラーは?
+		client.reset();
+		return client;
 	}
 	if (UseOAuthHeader) {
 		client->AddHeader(MakeOAuthHeader());
