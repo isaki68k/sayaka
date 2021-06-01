@@ -37,6 +37,16 @@ HttpClient::HttpClient()
 	user_agent = "sayaka";
 }
 
+// デストラクタ
+HttpClient::~HttpClient()
+{
+	Close();
+
+	// mtls より前に解放する
+	chunk_stream.reset();
+	mstream.reset();
+}
+
 // uri をターゲットにして初期化する
 bool
 HttpClient::Init(const Diag& diag_, const std::string& uri_)

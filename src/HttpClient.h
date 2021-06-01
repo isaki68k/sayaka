@@ -53,8 +53,8 @@ class mTLSInputStream : public InputStream
 class HttpClient
 {
  public:
-	// コンストラクタ
 	HttpClient();
+	~HttpClient();
 
 	// uri をターゲットにして初期化する
 	bool Init(const Diag& diag, const std::string& uri);
