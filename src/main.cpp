@@ -117,6 +117,7 @@ enum {
 	OPT_play,
 	OPT_post,
 	OPT_progress,
+	OPT_reconnect,
 	OPT_record,
 	OPT_record_all,
 	OPT_show_ng,
@@ -163,6 +164,7 @@ static const struct option longopts[] = {
 	{ "play",			no_argument,		NULL,	OPT_play },
 	{ "post",			no_argument,		NULL,	OPT_post },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
+	{ "reconnect",		required_argument,	NULL,	OPT_reconnect },
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
@@ -205,6 +207,7 @@ main(int ac, char *av[])
 	opt_timeout_image = 3000;
 	opt_eaw_a = 2;
 	opt_eaw_n = 1;
+	opt_reconnect = 5;
 
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
@@ -393,6 +396,9 @@ main(int ac, char *av[])
 			break;
 		 case OPT_progress:
 			opt_progress = true;
+			break;
+		 case OPT_reconnect:
+			opt_reconnect = stou32def(optarg, 0);
 			break;
 		 case OPT_record:
 			opt_record_mode = 1;
@@ -888,6 +894,8 @@ R"(usage: sayaka [<options>...] --home
 	--play : read JSON from stdin.
 	--post : post tweet from stdin (utf-8 is expected).
 	--progress: show startup progress (for very slow machines).
+	--reconnect <sec> : interval before reconnection.  0 doesn't reconnect.
+                        (default: 5)
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--show-ng

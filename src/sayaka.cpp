@@ -75,6 +75,7 @@ enum Color {
 	Max,
 };
 
+static std::unique_ptr<HttpClient> APIStream();
 static bool showobject(const std::string& line);
 static bool showstatus(const Json *status, bool is_quoted);
 static UString format_rt_owner(const Json& s);
@@ -171,6 +172,7 @@ bool opt_pseudo_home;			// 疑似ホームタイムライン
 std::string myid;				// 自身の user id
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
+int  opt_reconnect;				// 再接続までの秒数 (0 なら再接続しない)
 std::string basedir;
 std::string cachedir;
 std::string tokenfile;
@@ -220,8 +222,6 @@ cmd_tweet()
 void
 cmd_stream()
 {
-	InputStream *stream = NULL;
-
 	// 古いキャッシュを削除
 	progress("Deleting expired cache files...");
 	invalidate_cache();
@@ -267,52 +267,102 @@ cmd_stream()
 	fflush(stdout);
 
 	// ストリーミング開始
-	std::unique_ptr<HttpClient> stream_client;
-	Debug(diag, "PostAPI call");
-	{
-		StringDictionary dict;
-		if (opt_pseudo_home) {
-			// 疑似ホームタイムライン
-			std::string liststr;
-			for (const auto& kv : followlist) {
-				const auto& key = kv.first;
-				liststr += key + ",";
-			}
-			// followlist には自分自身を加えているので必ず1人以上いるので、
-			// 最後の ',' だけ取り除けば join(",") 相当になる。
-			liststr.pop_back();
-			dict.AddOrUpdate("follow", liststr);
-		} else {
-			// キーワード検索
-			dict.AddOrUpdate("track", opt_filter);
-		}
+	for (int connect_count = 0;;) {
+		std::unique_ptr<HttpClient> stream_client;
+		InputStream *stream = NULL;
+		std::string errmsg;
 
-		const std::string method = "POST";
-		stream_client = API(method, STREAM_APIROOT, "statuses/filter", dict);
+		// 接続開始
+		Debug(diag, "PostAPI call");
+		stream_client = APIStream();
 		if ((bool)stream_client == false) {
-			errx(1, "statuses/filter API failed");
+			// まだ接続してないこの時点でのエラーはリトライしない
+			errmsg = "statuses/filter API failed";
+			opt_reconnect = 0;
+			goto error;
 		}
-		stream = stream_client->Act(method);
+		stream = stream_client->POST();
 		if (stream == NULL) {
-			errx(1, "statuses/filter failed");
-		}
-	}
-	printf("Connected.\n");
-
-	for (;;) {
-		std::string line;
-		auto r = stream->ReadLine(&line);
-		if (__predict_false(r < 0)) {
-			err(1, "statuses/filter: ReadLine failed");
-		}
-		if (__predict_false(r == 0)) {
-			errx(0, "statuses/filter: Connection closed by peer");
+			errmsg = "statuses/filter failed";
+			goto error;
 		}
 
-		if (showobject(line) == false) {
+		// 接続できた
+		if (connect_count == 0) {
+			// 1回目は Ready... が表示してあるのでそれに続ける
+			printf("Connected.\n");
+		} else {
+			// 2回目以降はスリープ後の接続なので時刻も表示してみる
+			char buf[16];
+			time_t now = GetUnixTime();
+			struct tm tm;
+			localtime_r(&now, &tm);
+			strftime(buf, sizeof(buf), "%T", &tm);
+			printf("%s Reconnected.\n", buf);
+		}
+		connect_count++;
+
+		// 受信ループ
+		for (;;) {
+			std::string line;
+			auto r = stream->ReadLine(&line);
+			if (__predict_false(r < 0)) {
+				errmsg = "statuses/filter: ReadLine failed: ";
+				errmsg += strerror(errno);
+				break;
+			}
+			if (__predict_false(r == 0)) {
+				errmsg = "statuses/filter: Connection closed by peer";
+				break;
+			}
+
+			if (showobject(line) == false) {
+				break;
+			}
+		}
+
+		// ストリーミング開始後のエラー
+	 error:
+		if (!errmsg.empty()) {
+			warnx("%s", errmsg.c_str());
+		}
+		// stream は stream_client が解放する
+		stream_client.reset();
+
+		if (opt_reconnect == 0) {
 			break;
 		}
+
+		// 指定秒数待つ
+		sleep(opt_reconnect);
 	}
+}
+
+// コマンドラインオプションに従って filter stream を開始する。
+// 失敗すれば空の unique_ptr を返す。
+std::unique_ptr<HttpClient>
+APIStream()
+{
+	StringDictionary dict;
+
+	if (opt_pseudo_home) {
+		// 疑似ホームタイムライン
+		std::string liststr;
+		for (const auto& kv : followlist) {
+			const auto& key = kv.first;
+			liststr += key + ",";
+		}
+		// followlist には自分自身を加えているので必ず1人以上いるので、
+		// 最後の ',' だけ取り除けば join(",") 相当になる。
+		liststr.pop_back();
+		dict.AddOrUpdate("follow", liststr);
+	} else {
+		// キーワード検索
+		dict.AddOrUpdate("track", opt_filter);
+	}
+
+	const std::string method = "POST";
+	return API("POST", STREAM_APIROOT, "statuses/filter", dict);
 }
 
 // 再生モード

@@ -103,6 +103,7 @@ extern bool opt_pseudo_home;
 extern std::string myid;
 extern bool opt_nocolor;
 extern int  opt_record_mode;
+extern int  opt_reconnect;
 extern std::string basedir;
 extern std::string cachedir;
 extern std::string tokenfile;
