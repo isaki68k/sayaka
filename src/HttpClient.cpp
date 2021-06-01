@@ -54,8 +54,8 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 	return true;
 }
 
-// uri へ GET/POST して、ストリームを返す。
-// (GET と POST の共通部)
+// uri へ GET/POST して、ストリームを返す (GET と POST の共通部)。
+// ストリームはこちらが所有するので、呼び出し側は解放しないこと。
 InputStream *
 HttpClient::Act(const std::string& method)
 {
