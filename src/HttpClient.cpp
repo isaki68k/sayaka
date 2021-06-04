@@ -273,7 +273,7 @@ void
 HttpClient::Close()
 {
 	Trace(diag, "%s()", __func__);
-	// nothing to do ?
+	mtls.Close();
 }
 
 
