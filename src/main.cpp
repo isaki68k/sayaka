@@ -39,7 +39,7 @@
 #include <sys/ttycom.h>
 #endif
 
-static const char version[] = "3.5.1 (2021/03/18)";
+static const char version[] = "3.5.2 (2021/07/22)";
 
 #define CONSUMER_KEY		"jPY9PU5lvwb6s9mqx3KjRA"
 #define CONSUMER_SECRET		"faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw"
