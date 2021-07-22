@@ -27,6 +27,7 @@
 #include "sayaka.h"
 #include "Diag.h"
 #include "StringUtil.h"
+#include "subr.h"
 #include "term.h"
 #include <cstdio>
 #include <string>
@@ -85,7 +86,7 @@ terminal_support_sixel()
 	query = ESC "[c";
 	n = query_terminal(query, result, sizeof(result));
 	if (n < 0) {
-		Debug(diag, "%s query_terminal failed: %s", __func__, strerror(errno));
+		Debug(diag, "%s query_terminal failed: %s", __func__, strerrno());
 		return false;
 	}
 	if (n == 0) {
@@ -137,7 +138,7 @@ terminal_bgcolor()
 	query = ESC "]11;?" ESC "\\";
 	n = query_terminal(query, result, sizeof(result));
 	if (n < 0) {
-		Debug(diag, "%s query_terminal failed: %s", __func__, strerror(errno));
+		Debug(diag, "%s query_terminal failed: %s", __func__, strerrno());
 		return BG_NONE;
 	}
 	if (n == 0) {

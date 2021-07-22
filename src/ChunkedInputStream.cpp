@@ -29,6 +29,7 @@
 
 #include "ChunkedInputStream.h"
 #include "StringUtil.h"
+#include "subr.h"
 #include <cstring>
 #include <memory>
 #include <errno.h>
@@ -70,7 +71,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 		// 先頭行はチャンク長+CRLF
 		r = src->ReadLine(&slen);
 		if (__predict_false(r < 0)) {
-			Debug(diag, "ReadLine failed: %s", strerror(errno));
+			Debug(diag, "ReadLine failed: %s", strerrno());
 			return -1;
 		}
 		if (__predict_false(r == 0)) {
@@ -105,7 +106,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 		std::unique_ptr<char[]> bufp = std::make_unique<char[]>(intlen);
 		ssize_t readlen = src->Read(bufp.get(), intlen);
 		if (__predict_false(readlen < 0)) {
-			Debug(diag, "Read failed: %s", strerror(errno));
+			Debug(diag, "Read failed: %s", strerrno());
 			return -1;
 		}
 		Trace(diag, "readlen=%zd", readlen);

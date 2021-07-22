@@ -308,7 +308,7 @@ cmd_stream()
 			auto r = stream->ReadLine(&line);
 			if (__predict_false(r < 0)) {
 				errmsg = "statuses/filter: ReadLine failed: ";
-				errmsg += strerror(errno);
+				errmsg += strerrno();
 				break;
 			}
 			if (__predict_false(r == 0)) {
@@ -1621,7 +1621,7 @@ API2Json(const std::string& method, const std::string& apiRoot,
 	}
 	auto r = stream->ReadLine(&line);
 	if (__predict_false(r < 0)) {
-		Debug(diag, "%s: ReadLine failed: %s", api.c_str(), strerror(errno));
+		Debug(diag, "%s: ReadLine failed: %s", api.c_str(), strerrno());
 		return json;
 	}
 	Debug(diag, "ReadLine |%s|", line.c_str());

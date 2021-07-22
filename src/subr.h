@@ -39,3 +39,5 @@ extern std::string formattime(const Json& obj);
 extern time_t get_datetime(const Json& status);
 extern time_t conv_twtime_to_unixtime(const std::string& s);
 extern int my_strptime(const std::string& buf, const std::string& fmt);
+
+extern const char *strerrno();

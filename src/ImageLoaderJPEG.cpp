@@ -24,6 +24,7 @@
  */
 
 #include "ImageLoaderJPEG.h"
+#include "subr.h"
 #include <cassert>
 #include <cstring>
 #include <errno.h>
@@ -54,7 +55,7 @@ ImageLoaderJPEG::Check() const
 
 	auto n = stream->Peek(magic, sizeof(magic));
 	if (n < sizeof(magic)) {
-		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerror(errno));
+		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerrno());
 		return false;
 	}
 	// マジックを確認
