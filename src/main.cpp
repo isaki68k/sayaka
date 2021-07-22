@@ -894,8 +894,8 @@ R"(usage: sayaka [<options>...] --home
 	--play : read JSON from stdin.
 	--post : post tweet from stdin (utf-8 is expected).
 	--progress: show startup progress (for very slow machines).
-	--reconnect <sec> : interval before reconnection.  0 doesn't reconnect.
-                        (default: 5)
+	--reconnect <sec> : interval seconds before reconnection.
+	                    0 means no reconnection. (default: 5)
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--show-ng
