@@ -196,7 +196,6 @@ main(int ac, char *av[])
 	bgcolor = BG_NONE;
 	color_mode = 256;
 	opt_show_ng = false;
-	opt_filter = "";
 	last_id = "";
 	last_id_count = 0;
 	last_id_max = 10;
@@ -296,7 +295,7 @@ main(int ac, char *av[])
 			break;
 		 case OPT_filter:
 			cmd = SayakaCmd::Stream;
-			opt_filter = optarg;
+			opt_filter.emplace_back(optarg);
 			break;
 		 case OPT_followlist:
 			cmd = SayakaCmd::Followlist;
@@ -453,9 +452,13 @@ main(int ac, char *av[])
 			usage();
 		}
 	}
-	if (ac > optind) {
+	ac -= optind;
+	av += optind;
+	if (optind > 0) {
 		cmd = SayakaCmd::Stream;
-		opt_filter = av[optind];
+		for (int i = 0; i < ac; i++) {
+			opt_filter.emplace_back(av[i]);
+		}
 	}
 
 	// --progress ならそれを展開したコマンドラインを表示してみるか

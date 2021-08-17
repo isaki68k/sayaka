@@ -31,6 +31,7 @@
 #include "OAuth.h"
 #include <array>
 #include <string>
+#include <vector>
 
 #define DEBUG_FORMAT 1
 
@@ -87,7 +88,7 @@ extern bool opt_show_ng;
 extern std::string opt_ngword;
 extern std::string opt_ngword_user;
 extern std::string record_file;
-extern std::string opt_filter;
+extern std::vector<std::string> opt_filter;
 extern std::string last_id;
 extern int  last_id_count;
 extern int  last_id_max;

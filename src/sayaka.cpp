@@ -156,7 +156,7 @@ bool opt_show_ng;				// NG ツイートを隠さない
 std::string opt_ngword;			// NG ワード (追加削除コマンド用)
 std::string opt_ngword_user;	// NG 対象ユーザ (追加コマンド用)
 std::string record_file;		// 記録用ファイルパス
-std::string opt_filter;			// フィルタキーワード
+std::vector<std::string> opt_filter;	// フィルタキーワード
 std::string last_id;			// 直前に表示したツイート
 int  last_id_count;				// 連続回数
 int  last_id_max;				// 連続回数の上限
@@ -358,7 +358,14 @@ APIStream()
 		dict.AddOrUpdate("follow", liststr);
 	} else {
 		// キーワード検索
-		dict.AddOrUpdate("track", opt_filter);
+		std::string track;
+		for (const auto& keyword : opt_filter) {
+			if (track.empty() == false) {
+				track += ",";
+			}
+			track += keyword;
+		}
+		dict.AddOrUpdate("track", track);
 	}
 
 	const std::string method = "POST";
