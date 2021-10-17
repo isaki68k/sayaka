@@ -80,7 +80,7 @@ twitter クライアント sayaka ちゃん version 3.5.2 (2021/07/22)
 * C++17 compiler
 * jpeg (libjpeg)
 * libpng
-* mbedtls (2.9.0 or later?)
+* mbedtls 2.x (2.9.0 or later?)
 * BSD make (not GNU make)
 
 pkgsrc をお使いなら
