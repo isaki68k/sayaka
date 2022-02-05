@@ -454,7 +454,9 @@ main(int ac, char *av[])
 	}
 	ac -= optind;
 	av += optind;
-	if (optind > 0) {
+
+	// どのコマンドでもなくキーワードだけならフィルタモード
+	if (ac > 0 && cmd == SayakaCmd::Noop) {
 		cmd = SayakaCmd::Stream;
 		for (int i = 0; i < ac; i++) {
 			opt_filter.emplace_back(av[i]);
