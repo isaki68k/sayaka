@@ -13,6 +13,7 @@ SRCS_common=	\
 	ImageLoaderJPEG.cpp \
 	ImageLoaderPNG.cpp \
 	ImageReductor.cpp \
+	MathAlphaSymbols.cpp \
 	MemoryStream.cpp \
 	NGWord.cpp \
 	OAuth.cpp \

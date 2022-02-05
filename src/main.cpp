@@ -101,6 +101,7 @@ enum {
 	OPT_full_url,
 	OPT_home,
 	OPT_jis,
+	OPT_mathalpha,
 	OPT_max_cont,
 	OPT_max_image_cols,
 	OPT_mutelist,
@@ -148,6 +149,7 @@ static const struct option longopts[] = {
 	{ "full-url",		no_argument,		NULL,	OPT_full_url },
 	{ "home",			no_argument,		NULL,	OPT_home },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
+	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-cont",		required_argument,	NULL,	OPT_max_cont },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "mutelist",		no_argument,		NULL,	OPT_mutelist },
@@ -325,6 +327,9 @@ main(int ac, char *av[])
 			break;
 		 case OPT_jis:
 			output_codeset = "iso-2022-jp";
+			break;
+		 case OPT_mathalpha:
+			opt_mathalpha = true;
 			break;
 		 case OPT_max_cont:
 			last_id_max = stou32def(optarg, -1);

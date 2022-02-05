@@ -28,6 +28,7 @@
 #include "eaw_code.h"
 #include "sayaka.h"
 #include "FileStream.h"
+#include "MathAlphaSymbols.h"
 #include "RichString.h"
 #include "StringUtil.h"
 #include "UString.h"
@@ -173,6 +174,7 @@ std::string myid;				// 自身の user id
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
 int  opt_reconnect;				// 再接続までの秒数 (0 なら再接続しない)
+bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 std::string basedir;
 std::string cachedir;
 std::string tokenfile;
@@ -637,6 +639,14 @@ print_(const UString& src)
 		{
 			auto tmp = string_format("<U+%X>", uni);
 			utext.AppendASCII(tmp);
+			continue;
+		}
+
+		if (__predict_false((0x1d400 <= uni && uni <= 0x1d7ff)) &&
+		    opt_mathalpha == true)
+		{
+			// Mathematical Alphanumeric Symbols を全角英数字に変換
+			utext.Append(ConvMathAlpha(uni));
 			continue;
 		}
 
