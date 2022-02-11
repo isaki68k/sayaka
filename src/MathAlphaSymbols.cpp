@@ -23,7 +23,7 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
+#include "MathAlphaSymbols.h"
 #include <array>
 #include <cassert>
 
