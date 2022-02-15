@@ -169,7 +169,7 @@ sayaka ver 3.4 以降はフィルタストリームのみ対応しています�
 * `--jis` … 文字コードを JIS に変換して出力します。
 	NetBSD/x68k コンソール等の JIS に対応したターミナルで使えます。
 
-* `--mathalpha` … Unicode の Mathematical Alphanumeric Symbols
+* `--mathalpha` … Unicode の [Mathematical Alphanumeric Symbols](https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols)
 	を全角英数字に変換します。
 	お使いのフォントが Mathematical Alphanumeric Symbols に対応しておらず
 	全角英数字なら表示できる人を救済するためです。
