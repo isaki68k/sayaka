@@ -511,10 +511,10 @@ NGWordLessRT::Match(const Json& status, const Json **matched_user) const
 		return false;
 	}
 
-	// RT元の retweet_count (status.retweet_count) と
-	// RT先の retweet_count (status.retweeted_status.retweet_count) は
-	// 同じ値のようだ。
-	const Json& retweet_count = status["retweet_count"];
+	// RT元の retweet_count (status.retweet_count) ではなく
+	// RT先の retweet_count (status.retweeted_status.retweet_count) のほう。
+	const Json& rt = status["retweeted_status"];
+	const Json& retweet_count = rt["retweet_count"];
 	int rtcnt = retweet_count.get<int>();
 	if (rtcnt > threshold) {
 		return false;
