@@ -491,9 +491,16 @@ main(int ac, char *av[])
 		usage();
 	}
 
-	if (opt_pseudo_home && !opt_filter.empty()) {
-		warnx("filter keyword and --home must be exclusive.");
-		usage();
+	if (opt_pseudo_home) {
+		if (!opt_filter.empty()) {
+			warnx("filter keyword and --home must be exclusive.");
+			usage();
+		}
+		// --home は REST 必須なので --no-rest が指定されたらエラー。
+		if (opt_norest) {
+			warnx("--no-rest is not allowed with --home.");
+			usage();
+		}
 	}
 
 	Debug(diag, "tokenfile = %s", tokenfile.c_str());
