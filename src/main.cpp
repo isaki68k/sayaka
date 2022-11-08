@@ -98,6 +98,7 @@ enum {
 	OPT_filter,
 	OPT_followlist,
 	OPT_font,
+	OPT_force_sixel,
 	OPT_full_url,
 	OPT_home,
 	OPT_jis,
@@ -146,6 +147,7 @@ static const struct option longopts[] = {
 	{ "filter",			required_argument,	NULL,	OPT_filter },
 	{ "followlist",		no_argument,		NULL,	OPT_followlist },
 	{ "font",			required_argument,	NULL,	OPT_font },
+	{ "force-sixel",	no_argument,		NULL,	OPT_force_sixel },
 	{ "full-url",		no_argument,		NULL,	OPT_full_url },
 	{ "home",			no_argument,		NULL,	OPT_home },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
@@ -209,6 +211,7 @@ main(int ac, char *av[])
 	opt_eaw_a = 2;
 	opt_eaw_n = 1;
 	opt_reconnect = 5;
+	use_sixel = UseSixel::AutoDetect;
 
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
@@ -318,6 +321,9 @@ main(int ac, char *av[])
 			}
 			break;
 		 }
+		 case OPT_force_sixel:
+			use_sixel = UseSixel::Yes;
+			break;
 		 case OPT_full_url:
 			opt_full_url = true;
 			break;
@@ -366,7 +372,7 @@ main(int ac, char *av[])
 			opt_nocolor = true;
 			break;
 		 case OPT_no_image:
-			opt_noimage = true;
+			use_sixel = UseSixel::No;
 			break;
 		 case OPT_no_rest:
 			opt_norest = true;
@@ -619,15 +625,24 @@ init_stream()
 		}
 	}
 
-	// 端末が SIXEL をサポートしてなければ画像オフ
-	progress("Checking whether the terminal supports sixel...");
-	r = terminal_support_sixel();
-	progress("done\n");
-	if (r == false) {
-		if (opt_noimage == false) {
-			printf("Terminal doesn't support sixel, switch to --no-image\n");
+	// 端末が SIXEL をサポートしているか。
+	//
+	//             termianl_support_sixel() ?
+	// use_sixel \  true	false
+	// -----------+--------	------
+	// AutoDetect | ->Yes	-> No
+	// No         | No		No
+	// Yes        | Yes		Yes
+	if (use_sixel == UseSixel::AutoDetect) {
+		progress("Checking whether the terminal supports sixel...");
+		r = terminal_support_sixel();
+		if (r) {
+			progress("yes\n");
+			use_sixel = UseSixel::Yes;
+		} else {
+			progress("no\n");
+			use_sixel = UseSixel::No;
 		}
-		opt_noimage = true;
 	}
 
 	// 文字コードの初期化
@@ -896,7 +911,8 @@ R"(usage: sayaka [<options>...] --home
 	--full-url : display full URL even if the URL is abbreviated.
 	--white / --black : darken/lighten the text color. (default: autodetect)
 	--no-color : disable all text color sequences
-	--no-image : disable image
+	--no-image : force disable (SIXEL) images.
+	--force-sixel : force enable SIXEL images.
 	--jis
 	--eucjp
 	--play : read JSON from stdin.

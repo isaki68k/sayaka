@@ -47,6 +47,13 @@ enum bgcolor {
 	BG_WHITE = 1,
 };
 
+// use_sixel
+enum class UseSixel {
+	AutoDetect = -1,
+	No = 0,
+	Yes = 1,
+};
+
 // sayaka.cpp で定義されてるやつだけど、sayaka.h はグローバルなのでちょっと
 // どうすべ。
 extern void cmd_tweet();
@@ -59,7 +66,7 @@ extern void get_nort_list();
 extern void init_color();
 
 extern int  address_family;
-extern bool opt_noimage;
+extern UseSixel use_sixel;
 extern int  color_mode;
 extern Diag diag;
 extern Diag diagHttp;

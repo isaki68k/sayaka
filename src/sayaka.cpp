@@ -124,7 +124,7 @@ static const std::string GRAY		= "90";
 static const std::string YELLOW		= "93";
 
 int  address_family;			// AF_INET*
-bool opt_noimage;				// 画像を表示しないなら true
+UseSixel use_sixel;				// SIXEL 画像を表示するかどうか
 int  color_mode;				// 色数もしくはカラーモード
 Diag diag;						// デバッグ (無分類)
 Diag diagHttp;					// デバッグ (HTTP コネクション)
@@ -1287,7 +1287,7 @@ show_icon(const Json& user)
 	}
 
 	bool shown = false;
-	if (__predict_false(opt_noimage)) {
+	if (__predict_false(use_sixel == UseSixel::No)) {
 		goto done;
 	}
 
@@ -1355,7 +1355,7 @@ static bool
 show_image(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index)
 {
-	if (opt_noimage)
+	if (use_sixel == UseSixel::No)
 		return false;
 
 	std::string img_path = cachedir + PATH_SEPARATOR + img_file;
