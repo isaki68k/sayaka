@@ -457,13 +457,11 @@ main(int ac, char *av[])
 			usage();
 		}
 	}
-	ac -= optind;
-	av += optind;
 
 	// どのコマンドでもなくキーワードだけならフィルタモード
-	if (ac > 0 && cmd == SayakaCmd::Noop) {
+	if (optind < ac && cmd == SayakaCmd::Noop) {
 		cmd = SayakaCmd::Stream;
-		for (int i = 0; i < ac; i++) {
+		for (int i = optind; i < ac; i++) {
 			opt_filter.emplace_back(av[i]);
 		}
 	}
