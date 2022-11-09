@@ -3,8 +3,8 @@
 # Copyright (C) 2021 isaki@NetBSD.org
 #
 
-AC_PREREQ([2.69])
-AC_INIT([sayaka], [3.5], [])
+AC_PREREQ([2.71])
+AC_INIT([sayaka],[3.5],[])
 AC_CONFIG_SRCDIR([src/sayaka.cpp])
 AC_CONFIG_AUX_DIR([scripts])
 
@@ -29,7 +29,7 @@ CXX="${CXX} ${CXX_STD}"
 AC_LANG_POP([C++])
 
 # C++ コンパイラのワーニングオプション
-AC_LANG_CPLUSPLUS
+AC_LANG([C++])
 AC_DEFUN([ADD_CXX_WARN_IF],[
 	AC_MSG_CHECKING([whether c++ accepts $1])
 	old_CXXFLAGS="${CXXFLAGS}"
@@ -62,66 +62,71 @@ AC_CHECK_HEADERS([sys/ttycom.h])
 AC_MSG_CHECKING([for sys/sysctl.h])
 old_CPPFLAGS="${CPPFLAGS}"
 CPPFLAGS="${CPPFLAGS} -Wcpp -Werror"
-AC_TRY_COMPILE(
-	[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 		#include <sys/sysctl.h>
-	],[],
-	AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE_SYS_SYSCTL_H]),
-	AC_MSG_RESULT([no]))
+	]], [[]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SYS_SYSCTL_H)
+	],[
+		AC_MSG_RESULT(no)
+	])
 CPPFLAGS="${old_CPPFLAGS}"
 
 
 # Checks for typedefs, structures, and compiler characteristics.
 
 AC_MSG_CHECKING(for __builtin_bswap16)
-AC_TRY_COMPILE(,
-	[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		return __builtin_bswap16(0);
-	],
-	AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE___BUILTIN_BSWAP16]),
-	AC_MSG_RESULT([no]))
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE___BUILTIN_BSWAP16)
+	],[
+		AC_MSG_RESULT(no)
+	])
 
 AC_MSG_CHECKING(for __builtin_bswap32)
-AC_TRY_COMPILE(,
-	[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		return __builtin_bswap32(0);
-	],
-	AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE___BUILTIN_BSWAP32]),
-	AC_MSG_RESULT([no]))
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE___BUILTIN_BSWAP32)
+	],[
+		AC_MSG_RESULT(no)
+	])
 
 AC_MSG_CHECKING(for __builtin_bswap64)
-AC_TRY_COMPILE(,
-	[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		return __builtin_bswap64(0);
-	],
-	AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE___BUILTIN_BSWAP64]),
-	AC_MSG_RESULT([no]))
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE___BUILTIN_BSWAP64)
+	],[
+		AC_MSG_RESULT(no)
+	])
 
 AC_MSG_CHECKING(for __builtin_expect)
-AC_TRY_COMPILE(,
-	[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		if (__builtin_expect(1, 1)) return 0;
-	],
-	AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE___BUILTIN_EXPECT]),
-	AC_MSG_RESULT([no]))
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE___BUILTIN_EXPECT)
+	],[
+		AC_MSG_RESULT(no)
+	])
 
 AC_MSG_CHECKING(for __attribute__((__format__)))
 old_CPPFLAGS="${CPPFLAGS}"
 CPPFLAGS="${CPPFLAGS} -Wall -Werror"
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-	[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 		extern int f(const char *f, ...)
 			__attribute__((__format__(__printf__, 1, 2)));
-	], [
-	])],
-	AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE___ATTRIBUTE_FORMAT]),
-	AC_MSG_RESULT([no]))
+	], [])],[
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___ATTRIBUTE_FORMAT])
+	],[
+		AC_MSG_RESULT([no])
+	])
 CPPFLAGS="${old_CPPFLAGS}"
 
 
@@ -135,16 +140,17 @@ AC_SEARCH_LIBS(iconv, iconv,
 AC_MSG_CHECKING(whether iconv needs const)
 old_CPPFLAGS="${CPPFLAGS}"
 CPPFLAGS="${CPPFLAGS} -Werror"
-AC_TRY_COMPILE(
-	[
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 		#include <iconv.h>
-	], [
+	]], [[
 		const char **a;
 		iconv(0, a, 0, 0, 0);
-	],
-	AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE_ICONV_CONST]),
-	AC_MSG_RESULT([no]))
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_ICONV_CONST)
+	],[
+		AC_MSG_RESULT(no)
+	])
 CPPFLAGS="${old_CPPFLAGS}"
 
 # libbsd on Linux
