@@ -26,6 +26,7 @@
 
 #include "FileStream.h"
 #include "Image.h"
+#include "ImageLoaderGIF.h"
 #include "ImageLoaderJPEG.h"
 #include "ImageLoaderPNG.h"
 #include "SixelConverter.h"
@@ -34,6 +35,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <err.h>
 #include <errno.h>
 
 // コンストラクタ
@@ -72,6 +74,17 @@ SixelConverter::LoadFromStream(InputStream *stream)
 		ImageLoaderPNG loader(stream, diag);
 		if (loader.Check()) {
 			Trace(diag, "%s filetype is PNG", __func__);
+			if (loader.Load(img)) {
+				LoadAfter();
+				return true;
+			}
+			return false;
+		}
+	}
+	{
+		ImageLoaderGIF loader(stream, diag);
+		if (loader.Check()) {
+			Trace(diag, "%s filetype is GIF", __func__);
 			if (loader.Load(img)) {
 				LoadAfter();
 				return true;

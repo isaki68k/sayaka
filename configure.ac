@@ -205,6 +205,10 @@ for p in ${PKGS}; do
 	fi
 done
 
+AC_CHECK_LIB(gif, DGifOpen,
+	LIBS="${LIBS} -lgif"
+)
+
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
 

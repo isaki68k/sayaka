@@ -10,6 +10,7 @@ SRCS_common=	\
 	FileUtil.cpp \
 	HttpClient.cpp \
 	Image.cpp \
+	ImageLoaderGIF.cpp \
 	ImageLoaderJPEG.cpp \
 	ImageLoaderPNG.cpp \
 	ImageReductor.cpp \

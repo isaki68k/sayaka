@@ -82,13 +82,14 @@ twitter クライアント sayaka ちゃん version 3.5.4 (2022/11/08)
 必要なもの
 ---
 * C++17 compiler
+* giflib (maybe >= 5.0)
 * jpeg (libjpeg)
 * libpng
 * mbedtls 2.x (2.9.0 or later?)
 * BSD make (not GNU make)
 
 pkgsrc をお使いなら
-graphics/jpeg, graphics/png, security/mbedtls
+graphics/giflib, graphics/jpeg, graphics/png, security/mbedtls
 をインストールします。
 
 
