@@ -80,7 +80,7 @@ SixelConverter::LoadFromStream(InputStream *stream)
 		}
 	}
 
-	printf("Unknown picture format");
+	warnx("Unknown picture format");
 	return false;
 }
 
