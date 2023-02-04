@@ -185,6 +185,25 @@ NGWordList::Parse(const Json& src)
 		return new NGWordDelay(ngid, ngword, nguser, hour, ngtext);
 	}
 
+	// 遅延2
+	if (StartWith(ngword, "%DELAY2,")) {
+		auto tmp = Split(ngword, ",", 5);
+		if (tmp.size() < 4 || tmp.size() > 5) {
+			goto regular;
+		}
+
+		auto wday      = my_strptime(tmp[1], "%a");
+		auto startmin  = my_strptime(tmp[2], "%R");
+		auto delayhour = stou32def(tmp[3], 0);
+		std::string ngtext;
+		if (tmp.size() > 4) {
+			ngtext = tmp[4];
+		}
+
+		return new NGWordDelay2(ngid, ngword, nguser,
+			wday, startmin, delayhour, ngtext);
+	}
+
 	// RT NG
 	if (StartWith(ngword, "%RT,")) {
 		auto tmp = Split(ngword, ",", 2);
@@ -199,6 +218,7 @@ NGWordList::Parse(const Json& src)
 	}
 
 	// 通常ワード
+ regular:
 	return new NGWordRegular(ngid, ngword, nguser);
 }
 
@@ -323,6 +343,8 @@ NGWord::Type2str(Type type)
 		return "Live";
 	 case Type::Delay:
 		return "Delay";
+	 case Type::Delay2:
+		return "Delay2";
 	 case Type::LessRT:
 		return "LessRT";
 	 case Type::Source:
@@ -472,6 +494,94 @@ NGWordDelay::Dump() const
 	return inherited::Dump() +
 		string_format(" delay_sec=%d ngtext=|%s|", delay_sec, ngtext.c_str());
 }
+
+//
+// NG ワード (%DELAY2)
+// XXX 遅延は実装してなくて単に非表示になるだけ
+//
+
+// コンストラクタ
+NGWordDelay2::NGWordDelay2(int id_,
+	const std::string& ngword_, const std::string& nguser_,
+	int wday_, int start_, int delay_, const std::string& ngtext_)
+	: inherited(Delay2, id_, ngword_, nguser_)
+{
+	startwday = wday_;
+	startmin  = start_;
+	delayhour = delay_;
+
+	// 正規表現オブジェクトを作成
+	regex.Assign(ngtext);
+}
+
+// デストラクタ
+NGWordDelay2::~NGWordDelay2()
+{
+}
+
+// status がこの NG ワードに一致するか調べる。
+// 一致すれば matched_user にユーザ情報を格納して true を返す。
+// 一致しなければ matched_user は触らず false を返す。
+bool
+NGWordDelay2::Match(const Json& status, const Json **matched_user) const
+{
+	// RT先とRT元が入り混じっているので注意。
+	// userなし, plain -> status.text, status.time
+	// userなし, RT    -> RT先status.text, RT元status.time
+	// userあり, plain -> if (元user) { status.text, status.time }
+	// userあり, RT    -> if (元user) { RT先status.text, RT元status.time }
+
+	// ユーザは RT の有無に関わらず、元 status だけ見る。
+	// ユーザ指定があって一致しないケースを先に弾く。
+	if (HasUser() && MatchUser(status) == false) {
+		return false;
+	}
+
+	// 本文指定があれば本文を比較
+	if (ngtext.empty() == false) {
+		// 本文は、RT なら RT 先本文。
+		const Json& s = status.contains("retweeted_status")
+			? status["retweeted_status"]
+			: status;
+
+		if (MatchText(s) == false) {
+			// 本文指定があって、本文が一致しない
+			return false;
+		}
+	}
+
+	// 一致したら発言時刻と現在時刻を比較
+	time_t dt = get_datetime(status);
+	// 日曜0時からの経過分にする
+	struct tm *tm = localtime(&dt);
+	int min = tm->tm_wday * 24 * 60 +
+		tm->tm_hour * 60 +
+		tm->tm_min;
+
+	// 開始時刻も経過分にする
+	int start = startwday * 24 * 60 + startmin;
+	// 終了時刻(解禁時刻)
+	int open  = start + delayhour * 60;
+
+	int min2 = min + 7 * 24 * 60;
+	if ((start <= min  && min  < open) ||
+	    (start <= min2 && min2 < open)   )
+	{
+		// 一致した(NG)
+		*matched_user = &status["user"];
+		return true;
+	}
+	return false;
+}
+
+std::string
+NGWordDelay2::Dump() const
+{
+	return inherited::Dump() +
+		string_format(" wday=%d start=%d hour=%d ngtext=|%s|",
+			startwday, startmin, delayhour, ngtext.c_str());
+}
+
 
 //
 // NG ワード(RT数)

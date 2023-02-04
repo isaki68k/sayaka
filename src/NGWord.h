@@ -90,6 +90,7 @@ class NGWord
 		Regular = 0,
 		Live,
 		Delay,
+		Delay2,
 		LessRT,
 		Source,
 		MAX,
@@ -170,6 +171,25 @@ class NGWordDelay : public NGWord
 
  private:
 	int delay_sec {};
+	std::string ngtext {};
+};
+
+class NGWordDelay2 : public NGWord
+{
+	using inherited = NGWord;
+ public:
+	NGWordDelay2(int id_,
+		const std::string& ngword_, const std::string& nguser_,
+		int wday_, int min_, int delay_, const std::string& ngtext);
+	virtual ~NGWordDelay2() override;
+
+	bool Match(const Json& status, const Json **matched_user) const override;
+	std::string Dump() const override;
+
+ private:
+	int startwday {};
+	int startmin  {};
+	int delayhour {};
 	std::string ngtext {};
 };
 
