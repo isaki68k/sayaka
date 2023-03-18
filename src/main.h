@@ -59,10 +59,10 @@ enum class UseSixel {
 extern void cmd_tweet();
 extern void cmd_stream();
 extern void cmd_play();
-extern void get_follow_list();
-extern void get_block_list();
-extern void get_mute_list();
-extern void get_nort_list();
+extern StringDictionary get_follow_list();
+extern StringDictionary get_block_list();
+extern StringDictionary get_mute_list();
+extern StringDictionary get_nort_list();
 extern void init_color();
 
 extern int  address_family;
@@ -90,7 +90,6 @@ extern int  image_max_rows;
 extern enum bgcolor bgcolor;
 extern std::string output_codeset;
 extern OAuth oauth;
-extern bool opt_norest;
 extern bool opt_show_ng;
 extern std::string opt_ngword;
 extern std::string opt_ngword_user;
@@ -117,11 +116,6 @@ extern std::string basedir;
 extern std::string cachedir;
 extern std::string tokenfile;
 extern std::string colormapdir;
-
-extern StringDictionary followlist;
-extern StringDictionary blocklist;
-extern StringDictionary mutelist;
-extern StringDictionary nortlist;
 
 extern void InitOAuth();
 

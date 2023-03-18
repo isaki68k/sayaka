@@ -23,7 +23,6 @@
  * SUCH DAMAGE.
  */
 
-#include "acl.h"
 #include "autofd.h"
 #include "eaw_code.h"
 #include "sayaka.h"
@@ -76,8 +75,8 @@ enum Color {
 	Max,
 };
 
-static std::unique_ptr<HttpClient> APIStream();
 static bool showobject(const std::string& line);
+static bool showobject(const Json& obj);
 static bool showstatus(const Json *status, bool is_quoted);
 static UString format_rt_owner(const Json& s);
 static UString format_rt_cnt(const Json& s);
@@ -96,7 +95,6 @@ static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
-static void get_credentials();
 static StringDictionary get_paged_list(const std::string& api,
 	const char *funcname);
 static Json API2Json(const std::string& method, const std::string& apiRoot,
@@ -148,11 +146,6 @@ int  image_max_rows;			// この列で最大の画像の高さ(行数)
 enum bgcolor bgcolor;			// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 OAuth oauth;
-StringDictionary followlist;	// フォロー氏リスト
-StringDictionary blocklist;		// ブロック氏リスト
-StringDictionary mutelist;		// ミュート氏リスト
-StringDictionary nortlist;		// RT非表示氏リスト
-bool opt_norest;				// REST API を発行しない
 bool opt_show_ng;				// NG ツイートを隠さない
 std::string opt_ngword;			// NG ワード (追加削除コマンド用)
 std::string opt_ngword_user;	// NG 対象ユーザ (追加コマンド用)
@@ -232,146 +225,33 @@ cmd_stream()
 	// アクセストークンを取得
 	InitOAuth();
 
-	if (opt_norest == false) {
-		if (opt_pseudo_home) {
-			// 疑似タイムライン用に自分の ID 取得
-			progress("Getting credentials...");
-			get_credentials();
-			progress("done\n");
-
-			// 疑似タイムライン用にフォローユーザ取得
-			progress("Getting follow list...");
-			get_follow_list();
-			progress("done\n");
-
-			// ストリームの場合だけフォローの中に自身を入れておく。
-			// 表示するかどうかの判定はほぼフォローと同じなので。
-			followlist.AddOrUpdate(myid, myid);
-		}
-
-		// ブロックユーザ取得
-		progress("Getting block users list...");
-		get_block_list();
-		progress("done\n");
-
-		// ミュートユーザ取得
-		progress("Getting mute users list...");
-		get_mute_list();
-		progress("done\n");
-
-		// RT非表示ユーザ取得
-		progress("Getting nort users list...");
-		get_nort_list();
-		progress("done\n");
-	}
-
-	printf("Ready..");
-	fflush(stdout);
-
-	// ストリーミング開始
-	for (int connect_count = 0;;) {
-		std::unique_ptr<HttpClient> stream_client;
-		InputStream *stream = NULL;
-		std::string errmsg;
-
-		// 接続開始
-		Debug(diag, "PostAPI call");
-		stream_client = APIStream();
-		if ((bool)stream_client == false) {
-			// まだ接続してないこの時点でのエラーはリトライしない
-			errmsg = "statuses/filter API failed";
-			opt_reconnect = 0;
-			goto error;
-		}
-		stream = stream_client->POST();
-		if (stream == NULL) {
-			errmsg = "statuses/filter failed";
-			goto error;
-		}
-
-		// 接続できた
-		if (connect_count == 0) {
-			// 1回目は Ready... が表示してあるのでそれに続ける
-			printf("Connected.\n");
+	for (;;) {
+		StringDictionary options;
+		if (__predict_false(last_id.empty())) {
+			// 最初の1回は home から直近の1件を取得。
+			options["count"] = "1";
 		} else {
-			// 2回目以降はスリープ後の接続なので時刻も表示してみる
-			char buf[16];
-			time_t now = GetUnixTime();
-			struct tm tm;
-			localtime_r(&now, &tm);
-			strftime(buf, sizeof(buf), "%T", &tm);
-			printf("%s Reconnected.\n", buf);
+			// 次からは前回以降を取得。
+			printf("sleep\n");
+			sleep(120);
+			options["since_id"] = last_id;
 		}
-		connect_count++;
 
-		// 受信ループ
-		for (;;) {
-			std::string line;
-			auto r = stream->ReadLine(&line);
-			if (__predict_false(r < 0)) {
-				errmsg = "statuses/filter: ReadLine failed: ";
-				errmsg += strerrno();
-				break;
+		auto json = API2Json("GET", APIROOT, "statuses/home_timeline",
+			options);
+		if (json.is_array()) {
+			for (const Json& j : json) {
+				showobject(j);
+
+				if (j["id_str"] > last_id) {
+					last_id = j["id_str"];
+				}
 			}
-			if (__predict_false(r == 0)) {
-				errmsg = "statuses/filter: Connection closed by peer";
-				break;
-			}
-
-			if (showobject(line) == false) {
-				break;
-			}
+		} else {
+			printf("Not array: %s\n", json.dump().c_str());
+			return;
 		}
-
-		// ストリーミング開始後のエラー
-	 error:
-		if (!errmsg.empty()) {
-			warnx("%s", errmsg.c_str());
-		}
-		// stream は stream_client が解放する
-		stream_client.reset();
-
-		if (opt_reconnect == 0) {
-			break;
-		}
-
-		// 指定秒数待つ
-		sleep(opt_reconnect);
 	}
-}
-
-// コマンドラインオプションに従って filter stream を開始する。
-// 失敗すれば空の unique_ptr を返す。
-std::unique_ptr<HttpClient>
-APIStream()
-{
-	StringDictionary dict;
-
-	if (opt_pseudo_home) {
-		// 疑似ホームタイムライン
-		std::string liststr;
-		for (const auto& kv : followlist) {
-			const auto& key = kv.first;
-			liststr += key + ",";
-		}
-		// followlist には自分自身を加えているので必ず1人以上いるので、
-		// 最後の ',' だけ取り除けば join(",") 相当になる。
-		liststr.pop_back();
-		dict.AddOrUpdate("follow", liststr);
-	} else {
-		// キーワード検索
-		std::string track;
-		for (const auto& keyword : opt_filter) {
-			if (track.empty() == false) {
-				track += ",";
-			}
-			track += keyword;
-		}
-		dict.AddOrUpdate("track", track);
-	}
-
-	const std::string method = "POST";
-	return API("POST", STREAM_APIROOT, "statuses/filter", dict);
 }
 
 // 再生モード
@@ -391,6 +271,7 @@ cmd_play()
 		}
 	}
 }
+
 // ストリームから受け取った何かの1行 line を処理する共通部分。
 // line はイベントかメッセージの JSON 文字列1行分。
 // たぶんイベントは userstream 用なので、もう来ないはず。
@@ -411,6 +292,13 @@ showobject(const std::string& line)
 		return false;
 	}
 
+	return showobject(obj);
+}
+
+// 1ツイート分の JSON を処理する。
+static bool
+showobject(const Json& obj)
+{
 	// 全ツイートを録画
 	if (opt_record_mode == 2) {
 		record(obj);
@@ -434,13 +322,6 @@ showobject(const std::string& line)
 static bool
 showstatus(const Json *status, bool is_quoted)
 {
-	// このツイートを表示するかどうかの判定。
-	// これは、このツイートがリツイートを持っているかどうかも含めた判定を
-	// 行うのでリツイート分離前に行う。
-	if (acl(*status, is_quoted) == false) {
-		return false;
-	}
-
 	// 表示範囲だけ録画ならここで保存。
 	// 実際にはここから NG ワードと鍵垢の非表示判定があるけど
 	// もういいだろう。
@@ -1466,28 +1347,6 @@ show_image(const std::string& img_file, const std::string& img_url,
 	return true;
 }
 
-// 自分の ID を取得
-static void
-get_credentials()
-{
-	InitOAuth();
-
-	StringDictionary options;
-	options["include_entities"] = "false";
-	options["include_email"] = "false";
-	auto json = API2Json("GET", APIROOT,
-		"account/verify_credentials", options);
-	if (json.is_null()) {
-		errx(1, "get_credentials API2Json failed");
-	}
-	Debug(diag, "json=|%s|", json.dump().c_str());
-	if (json.contains("errors")) {
-		errx(1, "get_credentials failed%s", errors2string(json).c_str());
-	}
-
-	myid = json.value("id_str", "");
-}
-
 // ユーザ一覧を読み込む(共通)。
 // フォロー(friends)、ブロックユーザ、ミュートユーザは同じ形式。
 // 読み込んだリストを Dictionary 形式で返す。エラーなら終了する。
@@ -1534,34 +1393,35 @@ get_paged_list(const std::string& api, const char *funcname)
 }
 
 // フォローユーザ一覧の読み込み
-void
+StringDictionary
 get_follow_list()
 {
-	followlist = get_paged_list("friends/ids", __func__);
+	return get_paged_list("friends/ids", __func__);
 }
 
 // ブロックユーザ一覧の読み込み
-void
+StringDictionary
 get_block_list()
 {
-	blocklist = get_paged_list("blocks/ids", __func__);
+	return get_paged_list("blocks/ids", __func__);
 }
 
 // ミュートユーザ一覧の読み込み
-void
+StringDictionary
 get_mute_list()
 {
-	mutelist = get_paged_list("mutes/users/ids", __func__);
+	return get_paged_list("mutes/users/ids", __func__);
 }
 
 // RT非表示ユーザ一覧の読み込み
-void
+StringDictionary
 get_nort_list()
 {
 	// ミュートユーザ一覧等とは違って、リスト一発で送られてくるっぽい。
 	// ただの数値の配列 [1,2,3,4] の形式。
 	// なんであっちこっちで仕様が違うんだよ…。
 
+	StringDictionary nortlist;
 	nortlist.clear();
 
 	// JSON を取得
@@ -1574,7 +1434,7 @@ get_nort_list()
 
 	if (!json.is_array()) {
 		// どうするかね
-		return;
+		return nortlist;
 	}
 
 	for (const auto& u : json) {
@@ -1582,6 +1442,8 @@ get_nort_list()
 		auto id_str = std::to_string(id);
 		nortlist[id_str] = id_str;
 	}
+
+	return nortlist;
 }
 
 // API に接続し、その HttpClient を返す。

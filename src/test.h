@@ -98,7 +98,6 @@ extern void test_RichString();
 extern void test_SixelConverter();
 extern void test_StringUtil();
 extern void test_UString();
-extern void test_acl();
 extern void test_eaw_code();
 extern void test_subr();
 extern void test_term();

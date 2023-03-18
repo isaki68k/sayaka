@@ -26,7 +26,6 @@ SRCS_common=	\
 	StreamBase.cpp \
 	StringUtil.cpp \
 	UString.cpp \
-	acl.cpp \
 	eaw_code.cpp \
 	eaw_data.cpp \
 	fetch_image.cpp \
@@ -55,7 +54,6 @@ SRCS_test=	\
 	testSixelConverter.cpp \
 	testStringUtil.cpp \
 	testUString.cpp \
-	testacl.cpp \
 	testeaw_code.cpp \
 	testsubr.cpp \
 	testterm.cpp \
