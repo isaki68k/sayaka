@@ -98,7 +98,8 @@ static bool show_image(const std::string& img_file, const std::string& img_url,
 static StringDictionary get_paged_list(const std::string& api,
 	const char *funcname);
 static Json API2Json(const std::string& method, const std::string& apiRoot,
-	const std::string& api, const StringDictionary& options);
+	const std::string& api, const StringDictionary& options,
+	std::vector<std::string> *recvp = NULL);
 static std::unique_ptr<HttpClient> API(const std::string& method,
 	const std::string& apiRoot, const std::string& api,
 	const StringDictionary& options);
@@ -225,20 +226,23 @@ cmd_stream()
 	// アクセストークンを取得
 	InitOAuth();
 
+	int sleep_sec = 120;
 	for (;;) {
 		StringDictionary options;
+		std::vector<std::string> recvhdrs;
+
 		if (__predict_false(last_id.empty())) {
 			// 最初の1回は home から直近の1件を取得。
 			options["count"] = "1";
 		} else {
 			// 次からは前回以降を取得。
-			printf("sleep\n");
-			sleep(120);
+			//printf("sleep %d\n", sleep_sec);
+			sleep(sleep_sec);
 			options["since_id"] = last_id;
 		}
 
 		auto json = API2Json("GET", APIROOT, "statuses/home_timeline",
-			options);
+			options, &recvhdrs);
 		if (json.is_array()) {
 			// json は新→旧の順に並んでいるので、逆順に取り出す。
 			for (int i = json.size() -1; i >= 0; i--) {
@@ -253,6 +257,30 @@ cmd_stream()
 		} else {
 			printf("Not array: %s\n", json.dump().c_str());
 			return;
+		}
+
+		// x-rate-limit-reset: <UNIXTIME> と
+		// x-rate-limit-remaining: <num> から次の接続までの待ち時間を決定。
+		// 15分間で 15回しかないが、リセット時間までに 3回くらいは残して
+		// おいてみる。つまり 15分で最大 12回分。
+		auto resettime_str = HttpClient::GetHeader(recvhdrs,
+			"x-rate-limit-reset");
+		auto remaining_str = HttpClient::GetHeader(recvhdrs,
+			"x-rate-limit-remaining");
+
+		uint64 resettime = strtoull(resettime_str.c_str(), NULL, 10);
+		uint32 remaining = strtoul(remaining_str.c_str(), NULL, 10);
+		time_t now = time(NULL);
+		//printf("remain=%d until reset=%ld\n", remaining, (resettime - now));
+		if (resettime > now) {
+			if (remaining >= 3) {
+				sleep_sec = (resettime - now) / (remaining - 3);
+			} else {
+				sleep_sec = (resettime - now);
+			}
+		} else {
+			// ?
+			sleep_sec = 120;
 		}
 	}
 }
@@ -1480,9 +1508,11 @@ API(const std::string& method, const std::string& apiRoot,
 
 // API に接続し、結果の JSON を返す。
 // 接続が失敗、あるいは JSON が正しく受け取れなかった場合は {} を返す。
+// recvp が指定されていれば受信ヘッダを返す。
 static Json
 API2Json(const std::string& method, const std::string& apiRoot,
-	const std::string& api, const StringDictionary& options)
+	const std::string& api, const StringDictionary& options,
+	std::vector<std::string> *recvp)
 {
 	InputStream *stream = NULL;
 	std::string line;
@@ -1501,6 +1531,11 @@ API2Json(const std::string& method, const std::string& apiRoot,
 		Debug(diag, "%s: API %s failed", api.c_str(), method.c_str());
 		return json;
 	}
+
+	if (recvp) {
+		*recvp = client->RecvHeaders;
+	}
+
 	auto r = stream->ReadLine(&line);
 	if (__predict_false(r < 0)) {
 		Debug(diag, "%s: ReadLine failed: %s", api.c_str(), strerrno());
