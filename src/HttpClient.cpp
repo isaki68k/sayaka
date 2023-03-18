@@ -221,9 +221,9 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 
 // 指定のヘッダ配列から指定のヘッダを検索してボディを返す。
 // 指定されたヘッダが存在しない場合は "" を返す。
-std::string
+/*static*/ std::string
 HttpClient::GetHeader(const std::vector<std::string>& header,
-	const std::string& key_) const
+	const std::string& key_)
 {
 	auto key = StringToLower(key_);
 	for (const auto& h : header) {

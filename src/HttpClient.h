@@ -84,8 +84,8 @@ class HttpClient
 
 	// ヘッダ配列から指定のヘッダを検索してボディを返す。
 	// 指定されたヘッダが存在しない場合は "" を返す。
-	std::string GetHeader(const std::vector<std::string>& header,
-		const std::string& key) const;
+	static std::string GetHeader(const std::vector<std::string>& header,
+		const std::string& key);
 
 	// Ciphers を設定する
 	void SetCiphers(const std::string& ciphers_) {
