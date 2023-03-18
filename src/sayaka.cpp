@@ -167,7 +167,6 @@ bool opt_pseudo_home;			// 疑似ホームタイムライン
 std::string myid;				// 自身の user id
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
-int  opt_reconnect;				// 再接続までの秒数 (0 なら再接続しない)
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 std::string basedir;
 std::string cachedir;
