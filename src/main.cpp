@@ -482,6 +482,12 @@ main(int ac, char *av[])
 		usage();
 	}
 
+	// 暫定
+	if (opt_pseudo_home == false) {
+		warnx("--home is mandatory for now...");
+		usage();
+	}
+
 	if (opt_pseudo_home) {
 		if (!opt_filter.empty()) {
 			warnx("filter keyword and --home must be exclusive.");
