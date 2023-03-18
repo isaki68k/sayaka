@@ -240,11 +240,14 @@ cmd_stream()
 		auto json = API2Json("GET", APIROOT, "statuses/home_timeline",
 			options);
 		if (json.is_array()) {
-			for (const Json& j : json) {
+			// json は新→旧の順に並んでいるので、逆順に取り出す。
+			for (int i = json.size() -1; i >= 0; i--) {
+				const Json& j = json[i];
 				showobject(j);
 
-				if (j["id_str"] > last_id) {
-					last_id = j["id_str"];
+				auto id_str = j.value("id_str", "");
+				if (id_str > last_id) {
+					last_id = id_str;
 				}
 			}
 		} else {
