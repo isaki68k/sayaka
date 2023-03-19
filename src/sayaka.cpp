@@ -271,7 +271,7 @@ cmd_stream()
 		time_t now = time(NULL);
 		if (resettime > now) {
 			if (remaining > 3) {
-				sleep_sec = (resettime - now) / (remaining - 3);
+				sleep_sec = (resettime - now) / (remaining - 2);
 			} else {
 				sleep_sec = (resettime - now);
 			}
