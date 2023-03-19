@@ -235,7 +235,6 @@ cmd_stream()
 			options["count"] = "1";
 		} else {
 			// 次からは前回以降を取得。
-			//printf("sleep %d\n", sleep_sec);
 			sleep(sleep_sec);
 			options["since_id"] = last_id;
 		}
@@ -270,7 +269,6 @@ cmd_stream()
 		uint64 resettime = strtoull(resettime_str.c_str(), NULL, 10);
 		uint32 remaining = strtoul(remaining_str.c_str(), NULL, 10);
 		time_t now = time(NULL);
-		//printf("remain=%d until reset=%ld\n", remaining, (resettime - now));
 		if (resettime > now) {
 			if (remaining > 3) {
 				sleep_sec = (resettime - now) / (remaining - 3);
@@ -281,6 +279,8 @@ cmd_stream()
 			// ?
 			sleep_sec = 120;
 		}
+		Debug(diag, "remain=%d until=%ld, sleep=%d",
+			remaining, (resettime - now), sleep_sec);
 	}
 }
 
@@ -1540,7 +1540,7 @@ API2Json(const std::string& method, const std::string& apiRoot,
 		Debug(diag, "%s: ReadLine failed: %s", api.c_str(), strerrno());
 		return json;
 	}
-	Debug(diag, "ReadLine |%s|", line.c_str());
+	Trace(diag, "ReadLine |%s|", line.c_str());
 
 	if (line.empty()) {
 		return json;
