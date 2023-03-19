@@ -272,7 +272,7 @@ cmd_stream()
 		time_t now = time(NULL);
 		//printf("remain=%d until reset=%ld\n", remaining, (resettime - now));
 		if (resettime > now) {
-			if (remaining >= 3) {
+			if (remaining > 3) {
 				sleep_sec = (resettime - now) / (remaining - 3);
 			} else {
 				sleep_sec = (resettime - now);
