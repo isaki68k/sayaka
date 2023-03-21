@@ -562,6 +562,17 @@ print_(const UString& src)
 			continue;
 		}
 
+		// --no-keycap なら Combining Enclosing Keycap (U+20E3) を除く。
+		// 前の文字(たいていただの ASCII 数字)が読めなくなるのを防ぐため。
+		if (__predict_false(uni == 0x20e3) && opt_nokeycap) {
+			// ついでに1つ前が絵文字(異字体)セレクタなら一緒に除く。
+			auto b = utext.back();
+			if (0xfe00 <= b && b <= 0xfe0f) {
+				utext.pop_back();
+			}
+			continue;
+		}
+
 		if (__predict_false(!output_codeset.empty())) {
 			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
 			// 本当は変換先がこれらの時だけのほうがいいだろうけど。
@@ -1066,17 +1077,6 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		}
 		// '\r' は無視
 		if (__predict_false(c.code == '\r')) {
-			continue;
-		}
-
-		// --no-keycap なら Combining Enclosing Keycap (U+20E3) を除く。
-		// 前の文字(たいていただの ASCII 数字)が読めなくなるのを防ぐため。
-		if (__predict_false(c.code == 0x20e3) && opt_nokeycap) {
-			// ついでに1つ前が絵文字(異字体)セレクタなら一緒に除く。
-			auto b = new_text.back();
-			if (0xfe00 <= b && b <= 0xfe0f) {
-				new_text.pop_back();
-			}
 			continue;
 		}
 
