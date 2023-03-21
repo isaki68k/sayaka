@@ -483,8 +483,8 @@ main(int ac, char *av[])
 	}
 
 	// 暫定
-	if (opt_pseudo_home == false) {
-		warnx("--home is mandatory for now...");
+	if (opt_filter.empty() == false) {
+		warnx("filter keyword not supported for now...");
 		usage();
 	}
 
