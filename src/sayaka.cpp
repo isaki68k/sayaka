@@ -259,8 +259,8 @@ cmd_stream()
 
 		// x-rate-limit-reset: <UNIXTIME> と
 		// x-rate-limit-remaining: <num> から次の接続までの待ち時間を決定。
-		// 15分間で 15回しかないが、リセット時間までに 3回くらいは残して
-		// おいてみる。つまり 15分で最大 12回分。
+		// 15分間で 15回しかないが、リセット時間までに 2回くらいは残して
+		// おいてみる。つまり 15分で最大 13回分。
 		auto resettime_str = HttpClient::GetHeader(recvhdrs,
 			"x-rate-limit-reset");
 		auto remaining_str = HttpClient::GetHeader(recvhdrs,
@@ -270,8 +270,8 @@ cmd_stream()
 		uint32 remaining = strtoul(remaining_str.c_str(), NULL, 10);
 		time_t now = time(NULL);
 		if (resettime > now) {
-			if (remaining > 3) {
-				sleep_sec = (resettime - now) / (remaining - 2);
+			if (remaining > 2) {
+				sleep_sec = (resettime - now) / (remaining - 1);
 			} else {
 				sleep_sec = (resettime - now);
 			}
