@@ -1072,6 +1072,11 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		// --no-keycap なら Combining Enclosing Keycap (U+20E3) を除く。
 		// 前の文字(たいていただの ASCII 数字)が読めなくなるのを防ぐため。
 		if (__predict_false(c.code == 0x20e3) && opt_nokeycap) {
+			// ついでに1つ前が絵文字(異字体)セレクタなら一緒に除く。
+			auto b = new_text.back();
+			if (0xfe00 <= b && b <= 0xfe0f) {
+				new_text.pop_back();
+			}
 			continue;
 		}
 
