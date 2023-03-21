@@ -537,7 +537,7 @@ format_fav_cnt(const Json& s)
 	return str;
 }
 
-// RichString をインデントを付けて文字列を表示する
+// UString をインデントを付けて文字列を表示する
 static void
 print_(const UString& src)
 {
