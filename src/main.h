@@ -111,6 +111,7 @@ extern std::string myid;
 extern bool opt_nocolor;
 extern int  opt_record_mode;
 extern bool opt_mathalpha;
+extern bool opt_nokeycap;
 extern std::string basedir;
 extern std::string cachedir;
 extern std::string tokenfile;
