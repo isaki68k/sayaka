@@ -95,11 +95,10 @@ static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
-static StringDictionary get_paged_list(const std::string& api,
+static StringDictionary get_paged_list(const std::string& uri,
 	const char *funcname);
-static Json API2Json(const std::string& method, const std::string& apiRoot,
-	const std::string& api, const StringDictionary& options,
-	std::vector<std::string> *recvp = NULL);
+static Json APIJson(const std::string& method, const std::string& uri,
+	const StringDictionary& options, std::vector<std::string> *recvp = NULL);
 static void record(const Json& obj);
 static void invalidate_cache();
 static std::string errors2string(const Json& json);
@@ -200,10 +199,9 @@ cmd_tweet()
 	options.AddOrUpdate("trim_user", "1");
 
 	// 投稿
-	auto json = API2Json("POST", APIROOT, "statuses/update",
-		options);
+	auto json = APIJson("POST", APIv1_1("statuses/update"), options);
 	if (json.is_null()) {
-		errx(1, "statuses/update API2Json failed");
+		errx(1, "statuses/update APIJson failed");
 	}
 	if (json.contains("errors")) {
 		errx(1, "statuses/update failed%s", errors2string(json).c_str());
@@ -237,7 +235,7 @@ cmd_stream()
 			options["since_id"] = last_id;
 		}
 
-		auto json = API2Json("GET", APIROOT, "statuses/home_timeline",
+		auto json = APIJson("GET", APIv1_1("statuses/home_timeline"),
 			options, &recvhdrs);
 		if (json.is_array()) {
 			// json は新→旧の順に並んでいるので、逆順に取り出す。
@@ -1392,7 +1390,7 @@ show_image(const std::string& img_file, const std::string& img_url,
 // 読み込んだリストを Dictionary 形式で返す。エラーなら終了する。
 // funcname はエラー時の表示用。
 static StringDictionary
-get_paged_list(const std::string& api, const char *funcname)
+get_paged_list(const std::string& uri, const char *funcname)
 {
 	// ユーザ一覧は一度に全部送られてくるとは限らず、
 	// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
@@ -1406,9 +1404,9 @@ get_paged_list(const std::string& api, const char *funcname)
 		options["cursor"] = cursor;
 
 		// JSON を取得
-		auto json = API2Json("GET", APIROOT, api, options);
+		auto json = APIJson("GET", uri, options);
 		if (json.is_null()) {
-			errx(1, "%s API2Json failed", funcname);
+			errx(1, "%s APIJson failed", funcname);
 		}
 		Debug(diag, "json=|%s|", json.dump().c_str());
 		if (json.contains("errors")) {
@@ -1436,21 +1434,21 @@ get_paged_list(const std::string& api, const char *funcname)
 StringDictionary
 get_follow_list()
 {
-	return get_paged_list("friends/ids", __func__);
+	return get_paged_list(APIv1_1("friends/ids"), __func__);
 }
 
 // ブロックユーザ一覧の読み込み
 StringDictionary
 get_block_list()
 {
-	return get_paged_list("blocks/ids", __func__);
+	return get_paged_list(APIv1_1("blocks/ids"), __func__);
 }
 
 // ミュートユーザ一覧の読み込み
 StringDictionary
 get_mute_list()
 {
-	return get_paged_list("mutes/users/ids", __func__);
+	return get_paged_list(APIv1_1("mutes/users/ids"), __func__);
 }
 
 // RT非表示ユーザ一覧の読み込み
@@ -1465,10 +1463,9 @@ get_nort_list()
 	nortlist.clear();
 
 	// JSON を取得
-	auto json = API2Json("GET", APIROOT,
-		"friendships/no_retweets/ids", {});
+	auto json = APIJson("GET", APIv1_1("friendships/no_retweets/ids"), {});
 	if (json.is_null()) {
-		errx(1, "get_nort_list API2Json failed");
+		errx(1, "get_nort_list APIJson failed");
 	}
 	Debug(diag, "json=|%s|", json.dump().c_str());
 
@@ -1490,9 +1487,8 @@ get_nort_list()
 // 接続が失敗、あるいは JSON が正しく受け取れなかった場合は {} を返す。
 // recvp が指定されていれば受信ヘッダを返す。
 static Json
-API2Json(const std::string& method, const std::string& apiRoot,
-	const std::string& api, const StringDictionary& options,
-	std::vector<std::string> *recvp)
+APIJson(const std::string& method, const std::string& uri,
+	const StringDictionary& options, std::vector<std::string> *recvp)
 {
 	HttpClient client;
 	InputStream *stream = NULL;
@@ -1508,8 +1504,8 @@ API2Json(const std::string& method, const std::string& apiRoot,
 	}
 
 	Trace(diag, "InitHttp call");
-	if (oauth.InitHttp(client, method, apiRoot + api + ".json") == false) {
-		Debug(diag, "%s: API failed", api.c_str());
+	if (oauth.InitHttp(client, method, uri) == false) {
+		Debug(diag, "%s: API failed", uri.c_str());
 		return json;
 	}
 	Trace(diag, "InitHttp return");
@@ -1523,7 +1519,7 @@ API2Json(const std::string& method, const std::string& apiRoot,
 	stream = client.Act(method);
 	Trace(diag, "client.Act return");
 	if (stream == NULL) {
-		Debug(diag, "%s: API %s failed", api.c_str(), method.c_str());
+		Debug(diag, "%s: %s failed", uri.c_str(), method.c_str());
 		return json;
 	}
 
@@ -1533,7 +1529,7 @@ API2Json(const std::string& method, const std::string& apiRoot,
 
 	auto r = stream->ReadLine(&line);
 	if (__predict_false(r < 0)) {
-		Debug(diag, "%s: ReadLine failed: %s", api.c_str(), strerrno());
+		Debug(diag, "%s: ReadLine failed: %s", uri.c_str(), strerrno());
 		return json;
 	}
 	Trace(diag, "ReadLine |%s|", line.c_str());
@@ -1580,7 +1576,7 @@ invalidate_cache()
 	system(cmd);
 }
 
-// API2Json の応答がエラーだった時に表示用文字列に整形して返す。
+// APIJson の応答がエラーだった時に表示用文字列に整形して返す。
 // if (json.contains("errors")) {
 //   auto msg = errors2string(json);
 // のように呼び出す。

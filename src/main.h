@@ -36,10 +36,10 @@
 #define DEBUG_FORMAT 1
 
 #define AUTHORIZE_URL		"https://twitter.com/oauth/authorize"
-#define ACCESS_TOKEN_URL	"https://api.twitter.com/oauth/access_token"
-#define REQUEST_TOKEN_URL	"https://api.twitter.com/oauth/request_token"
-#define APIROOT				"https://api.twitter.com/1.1/"
-#define STREAM_APIROOT		"https://stream.twitter.com/1.1/"
+#define API_URL				"https://api.twitter.com"
+#define ACCESS_TOKEN_URL	API_URL "/oauth/access_token"
+#define REQUEST_TOKEN_URL	API_URL "/oauth/request_token"
+#define APIv1_1(path)		API_URL "/1.1/" path ".json"
 
 enum bgcolor {
 	BG_NONE = -1,
