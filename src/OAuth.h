@@ -30,7 +30,6 @@
 #include "Dictionary.h"
 #include "HttpClient.h"
 #include <string>
-#include <memory>
 
 class OAuth
 {
@@ -97,10 +96,10 @@ class OAuth
 	std::string AccessToken {};
 	std::string AccessSecret {};
 
-	// method と url から HttpClient を生成して返す。
+	// client を method と url で初期化する。
 	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意する。
 	// 接続はまだ行わない。
-	std::unique_ptr<HttpClient> CreateHttp(const std::string& method,
+	bool InitHttp(HttpClient& client, const std::string& method,
 		const std::string& uri);
 
  private:

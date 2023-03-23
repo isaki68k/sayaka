@@ -293,32 +293,35 @@ OAuth::MakeOAuthHeader()
 	return sb;
 }
 
-// method と url から HttpClient を生成して返す。
-// エラーならメッセージを表示して、空の unique_ptr を返す。
-std::unique_ptr<HttpClient>
-OAuth::CreateHttp(const std::string& method, const std::string& uri)
+// client を method と url で初期化する。
+// エラーならメッセージを表示して、false を返す。
+bool
+OAuth::InitHttp(HttpClient& client,
+	const std::string& method, const std::string& uri)
 {
 	auto conn_uri = CreateParams(method, uri);
 
-	std::unique_ptr<HttpClient> client(new HttpClient());
-	if (client->Init(diag, conn_uri) == false) {
-		client.reset();
-		return client;
+	if (client.Init(diag, conn_uri) == false) {
+		return false;
 	}
 	if (UseOAuthHeader) {
-		client->AddHeader(MakeOAuthHeader());
+		client.AddHeader(MakeOAuthHeader());
 	}
-	return client;
+	return true;
 }
 
 // uri_request_token に接続しトークンを取得する。
 void
 OAuth::RequestToken(const std::string& uri_request_token)
 {
-	auto client = CreateHttp("GET", uri_request_token);
+	HttpClient client;
+
+	if (InitHttp(client, "GET", uri_request_token) == false) {
+		return;
+	}
 
 	StringDictionary resultDict;
-	auto stream = client->GET();
+	auto stream = client.GET();
 	// TODO: Content-Encoding とかに応じた処理
 	for (;;) {
 		std::string buf;

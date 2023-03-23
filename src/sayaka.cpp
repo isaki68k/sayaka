@@ -100,9 +100,6 @@ static StringDictionary get_paged_list(const std::string& api,
 static Json API2Json(const std::string& method, const std::string& apiRoot,
 	const std::string& api, const StringDictionary& options,
 	std::vector<std::string> *recvp = NULL);
-static std::unique_ptr<HttpClient> API(const std::string& method,
-	const std::string& apiRoot, const std::string& api,
-	const StringDictionary& options);
 static void record(const Json& obj);
 static void invalidate_cache();
 static std::string errors2string(const Json& json);
@@ -1489,35 +1486,6 @@ get_nort_list()
 	return nortlist;
 }
 
-// API に接続し、その HttpClient を返す。
-// エラーが起きた場合は空の unique_ptr を返す。
-static std::unique_ptr<HttpClient>
-API(const std::string& method, const std::string& apiRoot,
-	const std::string& api, const StringDictionary& options)
-{
-	oauth.AdditionalParams.clear();
-
-	if (!options.empty()) {
-		for (const auto& [key, val] : options) {
-			oauth.AdditionalParams[key] = val;
-		}
-	}
-
-	Trace(diag, "CreateHttp call");
-	auto client = oauth.CreateHttp(method, apiRoot + api + ".json");
-	Trace(diag, "CreateHttp return");
-	if ((bool)client == false) {
-		return client;
-	}
-
-	// Ciphers 指定があれば指示
-	if (!opt_ciphers.empty()) {
-		client->SetCiphers(opt_ciphers);
-	}
-
-	return client;
-}
-
 // API に接続し、結果の JSON を返す。
 // 接続が失敗、あるいは JSON が正しく受け取れなかった場合は {} を返す。
 // recvp が指定されていれば受信ヘッダを返す。
@@ -1526,18 +1494,33 @@ API2Json(const std::string& method, const std::string& apiRoot,
 	const std::string& api, const StringDictionary& options,
 	std::vector<std::string> *recvp)
 {
+	HttpClient client;
 	InputStream *stream = NULL;
 	std::string line;
 	Json json;
 
-	std::unique_ptr<HttpClient> client = API(method, apiRoot, api, options);
-	if ((bool)client == false) {
+	oauth.AdditionalParams.clear();
+
+	if (!options.empty()) {
+		for (const auto& [key, val] : options) {
+			oauth.AdditionalParams[key] = val;
+		}
+	}
+
+	Trace(diag, "InitHttp call");
+	if (oauth.InitHttp(client, method, apiRoot + api + ".json") == false) {
 		Debug(diag, "%s: API failed", api.c_str());
 		return json;
 	}
+	Trace(diag, "InitHttp return");
+
+	// Ciphers 指定があれば指示
+	if (!opt_ciphers.empty()) {
+		client.SetCiphers(opt_ciphers);
+	}
 
 	Trace(diag, "client.Act call");
-	stream = client->Act(method);
+	stream = client.Act(method);
 	Trace(diag, "client.Act return");
 	if (stream == NULL) {
 		Debug(diag, "%s: API %s failed", api.c_str(), method.c_str());
@@ -1545,7 +1528,7 @@ API2Json(const std::string& method, const std::string& apiRoot,
 	}
 
 	if (recvp) {
-		*recvp = client->RecvHeaders;
+		*recvp = client.RecvHeaders;
 	}
 
 	auto r = stream->ReadLine(&line);
