@@ -107,10 +107,13 @@ class HttpClient
 	// 受け取ったヘッダ
 	std::vector<std::string> RecvHeaders {};
 
-	// 受け取った応答行
+	// 受け取った応答行 (例えば "HTTP/1.1 404 NotFound")
 	std::string ResultLine {};
 
-	// 受け取った応答コード
+	// 応答コードとメッセージ部分 (例えば "404 NotFound")
+	std::string ResultMsg {};
+
+	// 受け取った応答コード (例えば 404)
 	int ResultCode {};
 
 	// コネクションに使用するプロトコルファミリ

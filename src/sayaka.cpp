@@ -98,6 +98,7 @@ static bool show_image(const std::string& img_file, const std::string& img_url,
 static StringDictionary get_paged_list(const std::string& uri,
 	const char *funcname);
 static Json APIJson(const std::string& method, const std::string& uri,
+	const std::string& urimsg,
 	const StringDictionary& options, std::vector<std::string> *recvp = NULL);
 static void record(const Json& obj);
 static void invalidate_cache();
@@ -199,9 +200,12 @@ cmd_tweet()
 	options.AddOrUpdate("trim_user", "1");
 
 	// 投稿
-	auto json = APIJson("POST", APIv1_1("statuses/update"), options);
-	if (json.is_null()) {
-		errx(1, "statuses/update APIJson failed");
+	Json json;
+	try {
+		json = APIJson("POST", APIv1_1("statuses/update"),
+			"statuses/update", options);
+	} catch (const std::string errmsg) {
+		errx(1, "%s", errmsg.c_str());
 	}
 	if (json.contains("errors")) {
 		errx(1, "statuses/update failed%s", errors2string(json).c_str());
@@ -235,22 +239,28 @@ cmd_stream()
 			options["since_id"] = last_id;
 		}
 
-		auto json = APIJson("GET", APIv1_1("statuses/home_timeline"),
-			options, &recvhdrs);
-		if (json.is_array()) {
-			// json は新→旧の順に並んでいるので、逆順に取り出す。
-			for (int i = json.size() -1; i >= 0; i--) {
-				const Json& j = json[i];
-				showobject(j);
-
-				auto id_str = j.value("id_str", "");
-				if (id_str > last_id) {
-					last_id = id_str;
-				}
-			}
-		} else {
-			printf("Not array: %s\n", json.dump().c_str());
+		Json json;
+		try {
+			json = APIJson("GET", APIv1_1("statuses/home_timeline"),
+				"statuses/home_timeline", options, &recvhdrs);
+		} catch (const std::string errmsg) {
+			warnx("%s", errmsg.c_str());
 			return;
+		}
+		if (json.is_array() == false) {
+			warnx("statuses/home_timeline returns non-array: %s",
+				json.dump().c_str());
+			return;
+		}
+		// json は新→旧の順に並んでいるので、逆順に取り出す。
+		for (int i = json.size() -1; i >= 0; i--) {
+			const Json& j = json[i];
+			showobject(j);
+
+			auto id_str = j.value("id_str", "");
+			if (id_str > last_id) {
+				last_id = id_str;
+			}
 		}
 
 		// x-rate-limit-reset: <UNIXTIME> と
@@ -1404,11 +1414,17 @@ get_paged_list(const std::string& uri, const char *funcname)
 		options["cursor"] = cursor;
 
 		// JSON を取得
-		auto json = APIJson("GET", uri, options);
-		if (json.is_null()) {
-			errx(1, "%s APIJson failed", funcname);
+		Json json;
+		try {
+			json = APIJson("GET", uri, funcname, options);
+		} catch (const std::string errmsg) {
+			errx(1, "%s", errmsg.c_str());
 		}
 		Debug(diag, "json=|%s|", json.dump().c_str());
+		if (json.is_object() == false) {
+			errx(1, "%s returned non-object: %s", funcname,
+				json.dump().c_str());
+		}
 		if (json.contains("errors")) {
 			errx(1, "%s failed: %s", funcname, errors2string(json).c_str());
 		}
@@ -1463,15 +1479,16 @@ get_nort_list()
 	nortlist.clear();
 
 	// JSON を取得
-	auto json = APIJson("GET", APIv1_1("friendships/no_retweets/ids"), {});
-	if (json.is_null()) {
-		errx(1, "get_nort_list APIJson failed");
+	Json json;
+	try {
+		json = APIJson("GET", APIv1_1("friendships/no_retweets/ids"),
+			__func__, {});
+	} catch (const std::string& errmsg) {
+		errx(1, "%s", errmsg.c_str());
 	}
 	Debug(diag, "json=|%s|", json.dump().c_str());
-
-	if (!json.is_array()) {
-		// どうするかね
-		return nortlist;
+	if (json.is_array() == false) {
+		errx(1, "get_nort_list returned non-array: %s", json.dump().c_str());
 	}
 
 	for (const auto& u : json) {
@@ -1483,11 +1500,14 @@ get_nort_list()
 	return nortlist;
 }
 
-// API に接続し、結果の JSON を返す。
-// 接続が失敗、あるいは JSON が正しく受け取れなかった場合は {} を返す。
+// uri に method (GET/POST) で接続し、結果の JSON を返す。
+// urimsg はエラーメッセージ表示用 (API名など)。
+// 接続が失敗したらエラーメッセージ(std::string)をスローする。
+// 接続できれば受信した JSON を返す。
 // recvp が指定されていれば受信ヘッダを返す。
 static Json
 APIJson(const std::string& method, const std::string& uri,
+	const std::string& urimsg,
 	const StringDictionary& options, std::vector<std::string> *recvp)
 {
 	HttpClient client;
@@ -1505,8 +1525,8 @@ APIJson(const std::string& method, const std::string& uri,
 
 	Trace(diag, "InitHttp call");
 	if (oauth.InitHttp(client, method, uri) == false) {
-		Debug(diag, "%s: API failed", uri.c_str());
-		return json;
+		Debug(diag, "%s: InitHttp failed", uri.c_str());
+		throw urimsg + ": InitHttp failed";
 	}
 	Trace(diag, "InitHttp return");
 
@@ -1519,8 +1539,7 @@ APIJson(const std::string& method, const std::string& uri,
 	stream = client.Act(method);
 	Trace(diag, "client.Act return");
 	if (stream == NULL) {
-		Debug(diag, "%s: %s failed", uri.c_str(), method.c_str());
-		return json;
+		throw method + " " + urimsg + ": " + client.ResultMsg;
 	}
 
 	if (recvp) {
@@ -1529,8 +1548,7 @@ APIJson(const std::string& method, const std::string& uri,
 
 	auto r = stream->ReadLine(&line);
 	if (__predict_false(r < 0)) {
-		Debug(diag, "%s: ReadLine failed: %s", uri.c_str(), strerrno());
-		return json;
+		throw urimsg + ": ReadLine failed: " + std::string(strerrno());
 	}
 	Trace(diag, "ReadLine |%s|", line.c_str());
 

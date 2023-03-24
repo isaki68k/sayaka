@@ -101,8 +101,7 @@ HttpClient::Act(const std::string& method)
 				continue;
 			}
 		} else if (ResultCode >= 400) {
-			// XXX この場合でも本文にエラーのヒントがある場合があるので、
-			// 本文を読んでデバッグ表示だけでもしておきたいのだが。
+			// メッセージは ResultMsg に入っている
 			errno = ENOTCONN;
 			return NULL;
 		}
@@ -182,9 +181,9 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 
 	auto proto_arg = Split2(ResultLine, " ");
 	auto protocol = proto_arg.first;
-	auto arg = proto_arg.second;
+	ResultMsg = proto_arg.second;
 	if (protocol == "HTTP/1.1" || protocol == "HTTP/1.0") {
-		auto code_msg = Split2(arg, " ");
+		auto code_msg = Split2(ResultMsg, " ");
 		auto code = code_msg.first;
 		ResultCode = stou32def(code, -1);
 		Debug(diag, "ResultCode=%d", ResultCode);
