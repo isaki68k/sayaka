@@ -376,6 +376,9 @@ main(int ac, char *av[])
 		 case OPT_no_keycap:
 			opt_nokeycap = true;
 			break;
+		 case OPT_no_rest:
+			opt_norest = true;
+			break;
 		 case OPT_nortlist:
 			cmd = SayakaCmd::Nortlist;
 			break;
@@ -487,15 +490,15 @@ main(int ac, char *av[])
 		usage();
 	}
 
-	// 暫定
-	if (opt_filter.empty() == false) {
-		warnx("filter keyword not supported for now...");
-		usage();
-	}
-
 	if (opt_pseudo_home) {
 		if (!opt_filter.empty()) {
 			warnx("filter keyword and --home must be exclusive.");
+			usage();
+		}
+
+		// --home は REST のみなので --no-rest が指定されたらエラー。
+		if (opt_norest) {
+			warnx("--no-rest is not allowed with --home.");
 			usage();
 		}
 	}
@@ -845,7 +848,8 @@ static void
 cmd_followlist()
 {
 	InitOAuth();
-	cmd_users_list(get_follow_list());
+	get_follow_list();
+	cmd_users_list(followlist);
 }
 
 // ブロックユーザの一覧を取得して表示するコマンド
@@ -853,7 +857,8 @@ static void
 cmd_blocklist()
 {
 	InitOAuth();
-	cmd_users_list(get_block_list());
+	get_block_list();
+	cmd_users_list(blocklist);
 }
 
 // ミュートユーザの一覧を取得して表示するコマンド
@@ -861,7 +866,8 @@ static void
 cmd_mutelist()
 {
 	InitOAuth();
-	cmd_users_list(get_mute_list());
+	get_mute_list();
+	cmd_users_list(mutelist);
 }
 
 // RT 非表示ユーザの一覧を取得して表示するコマンド
@@ -869,7 +875,8 @@ static void
 cmd_nortlist()
 {
 	InitOAuth();
-	cmd_users_list(get_nort_list());
+	get_nort_list();
+	cmd_users_list(nortlist);
 }
 
 // NG ワードを追加するコマンド

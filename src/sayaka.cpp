@@ -23,6 +23,7 @@
  * SUCH DAMAGE.
  */
 
+#include "acl.h"
 #include "autofd.h"
 #include "eaw_code.h"
 #include "sayaka.h"
@@ -95,6 +96,7 @@ static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
+static void get_credentials() __unused;
 static StringDictionary get_paged_list(const std::string& uri,
 	const char *funcname);
 static Json APIJson(const std::string& method, const std::string& uri,
@@ -144,6 +146,11 @@ int  image_max_rows;			// この列で最大の画像の高さ(行数)
 enum bgcolor bgcolor;			// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 OAuth oauth;
+StringDictionary followlist;	// フォロー氏リスト
+StringDictionary blocklist;		// ブロック氏リスト
+StringDictionary mutelist;		// ミュート氏リスト
+StringDictionary nortlist;		// RT非表示氏リスト
+bool opt_norest;				// REST API を発行しない
 bool opt_show_ng;				// NG ツイートを隠さない
 std::string opt_ngword;			// NG ワード (追加削除コマンド用)
 std::string opt_ngword_user;	// NG 対象ユーザ (追加コマンド用)
@@ -358,6 +365,15 @@ showobject(const Json& obj)
 static bool
 showstatus(const Json *status, bool is_quoted)
 {
+#if 0
+	// このツイートを表示するかどうかの判定。
+	// これは、このツイートがリツイートを持っているかどうかも含めた判定を
+	// 行うのでリツイート分離前に行う。
+	if (acl(*status, is_quoted) == false) {
+		return false;
+	}
+#endif
+
 	// 表示範囲だけ録画ならここで保存。
 	// 実際にはここから NG ワードと鍵垢の非表示判定があるけど
 	// もういいだろう。
@@ -1395,6 +1411,33 @@ show_image(const std::string& img_file, const std::string& img_url,
 	return true;
 }
 
+// 自分の ID を取得
+static void
+get_credentials()
+{
+	InitOAuth();
+
+	StringDictionary options;
+	options["include_entities"] = "false";
+	options["include_email"] = "false";
+	Json json;
+	try {
+		json = APIJson("GET", APIv1_1("account/verify_credentials"),
+			"account/verify_credentials", options);
+	} catch (const std::string errmsg) {
+		errx(1, "%s", errmsg.c_str());
+	}
+	Debug(diag, "json=|%s|", json.dump().c_str());
+	if (json.is_object() == false) {
+		errx(1, "get_credentials returned non-object: %s", json.dump().c_str());
+	}
+	if (json.contains("errors")) {
+		errx(1, "get_credentials failed%s", errors2string(json).c_str());
+	}
+
+	myid = json.value("id_str", "");
+}
+
 // ユーザ一覧を読み込む(共通)。
 // フォロー(friends)、ブロックユーザ、ミュートユーザは同じ形式。
 // 読み込んだリストを Dictionary 形式で返す。エラーなら終了する。
@@ -1447,35 +1490,34 @@ get_paged_list(const std::string& uri, const char *funcname)
 }
 
 // フォローユーザ一覧の読み込み
-StringDictionary
+void
 get_follow_list()
 {
-	return get_paged_list(APIv1_1("friends/ids"), __func__);
+	followlist = get_paged_list(APIv1_1("friends/ids"), __func__);
 }
 
 // ブロックユーザ一覧の読み込み
-StringDictionary
+void
 get_block_list()
 {
-	return get_paged_list(APIv1_1("blocks/ids"), __func__);
+	blocklist = get_paged_list(APIv1_1("blocks/ids"), __func__);
 }
 
 // ミュートユーザ一覧の読み込み
-StringDictionary
+void
 get_mute_list()
 {
-	return get_paged_list(APIv1_1("mutes/users/ids"), __func__);
+	mutelist = get_paged_list(APIv1_1("mutes/users/ids"), __func__);
 }
 
 // RT非表示ユーザ一覧の読み込み
-StringDictionary
+void
 get_nort_list()
 {
 	// ミュートユーザ一覧等とは違って、リスト一発で送られてくるっぽい。
 	// ただの数値の配列 [1,2,3,4] の形式。
 	// なんであっちこっちで仕様が違うんだよ…。
 
-	StringDictionary nortlist;
 	nortlist.clear();
 
 	// JSON を取得
@@ -1496,8 +1538,6 @@ get_nort_list()
 		auto id_str = std::to_string(id);
 		nortlist[id_str] = id_str;
 	}
-
-	return nortlist;
 }
 
 // uri に method (GET/POST) で接続し、結果の JSON を返す。

@@ -106,5 +106,8 @@ main(int ac, char *av[])
 	} else {
 		printf(", %d faild!!\n", test_fail);
 	}
+
+	// acl はこの中で独自にカウントしている
+	test_acl();
 	return 0;
 }
