@@ -669,18 +669,17 @@ init_screen()
 void
 InitOAuth()
 {
-	// XXX まだこの再入チェックいるかな?
-	if (oauth.ConsumerKey.empty()) {
-		oauth.SetDiag(diagHttp);
-		oauth.ConsumerKey    = CONSUMER_KEY;
-		oauth.ConsumerSecret = CONSUMER_SECRET;
+	assert(oauth.ConsumerKey.empty());
 
-		// ファイルからトークンを取得
-		// なければトークンを取得してファイルに保存
-		bool r = oauth.LoadTokenFromFile(tokenfile);
-		if (r == false) {
-			get_access_token();
-		}
+	oauth.SetDiag(diagHttp);
+	oauth.ConsumerKey    = CONSUMER_KEY;
+	oauth.ConsumerSecret = CONSUMER_SECRET;
+
+	// ファイルからトークンを取得
+	// なければトークンを取得してファイルに保存
+	bool r = oauth.LoadTokenFromFile(tokenfile);
+	if (r == false) {
+		get_access_token();
 	}
 }
 
