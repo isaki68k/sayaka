@@ -237,6 +237,9 @@ cmd_stream()
 		StringDictionary options;
 		std::vector<std::string> recvhdrs;
 
+		options["include_entities"] = "1";
+		options["tweet_mode"] = "extended";
+
 		if (__predict_false(last_id.empty())) {
 			// 最初の1回は home から直近の1件を取得。
 			options["count"] = "1";
@@ -347,7 +350,7 @@ showobject(const Json& obj)
 		record(obj);
 	}
 
-	if (obj.contains("text")) {
+	if (obj.contains("full_text") || obj.contains("text")) {
 		// 通常のツイート
 		bool crlf = showstatus(&obj, false);
 		if (crlf) {
@@ -913,6 +916,17 @@ SetUrl_inline(RichString& richtext, int start, int end, const std::string& url,
 //     "media":[..]
 //   }
 // が追加されている。media の位置に注意。
+// 今取得出来るのはこうなっているようだ。どうして…。
+//   "full_text":本文,
+//   "entities":{
+//     "hashtags":[..]
+//     "media":[..] <-おそらく古い形式
+//     "urls":[..]
+//     "user_mentions":[..]
+//   }
+//   "extended_entities":{
+//     "media":[..] <-おそらく新しい形式
+//   }
 static UString
 formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 {
@@ -925,10 +939,10 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		if ((*extw).contains("full_text")) {
 			textj = &(*extw)["full_text"];
 		}
-	} else {
-		if (s.contains("text")) {
-			textj = &s["text"];
-		}
+	} else if (s.contains("full_text")) {
+		textj = &s["full_text"];
+	} else if (s.contains("text")) {
+		textj = &s["text"];
 	}
 	if (__predict_false(textj == NULL)) {
 		// ないことはないはず

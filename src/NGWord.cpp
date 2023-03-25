@@ -303,7 +303,8 @@ NGWord::MatchText(const Json& status) const
 {
 	const Json *textp = NULL;
 
-	// extended_tweet->full_text、なければ text、どちらもなければ false?
+	// extended_tweet->full_text、なければ full_text、text、
+	// どれもなければ false?
 	do {
 		if (status.contains("extended_tweet")) {
 			const Json& extended = status["extended_tweet"];
@@ -311,6 +312,10 @@ NGWord::MatchText(const Json& status) const
 				textp = &extended["full_text"];
 				break;
 			}
+		}
+		if (status.contains("full_text")) {
+			textp = &status["full_text"];
+			break;
 		}
 		if (status.contains("text")) {
 			textp = &status["text"];
