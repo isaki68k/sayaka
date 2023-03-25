@@ -64,7 +64,7 @@ static const int DEFAULT_FONT_HEIGHT = 14;
 
 static std::string GetHomeDir();
 static void init();
-static void init_stream();
+static void init_screen();
 static void get_access_token();
 static void signal_handler(int signo);
 static void sigwinch();
@@ -509,11 +509,11 @@ main(int ac, char *av[])
 	// コマンド別処理
 	switch (cmd) {
 	 case SayakaCmd::Stream:
-		init_stream();
+		init_screen();
 		cmd_stream();
 		break;
 	 case SayakaCmd::Play:
-		init_stream();
+		init_screen();
 		cmd_play();
 		break;
 	 case SayakaCmd::Followlist:
@@ -613,9 +613,9 @@ GetHomeDir()
 	}
 }
 
-// ストリームモードのための準備
+// 表示周りの初期化
 void
-init_stream()
+init_screen()
 {
 	bool r;
 
