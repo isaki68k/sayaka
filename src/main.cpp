@@ -23,6 +23,7 @@
  * SUCH DAMAGE.
  */
 
+#include "FileUtil.h"
 #include "StringUtil.h"
 #include "UString.h"
 #include "eaw_code.h"
@@ -43,6 +44,10 @@ static const char version[] = "3.6.1 (2023/03/21)";
 
 #define CONSUMER_KEY		"jPY9PU5lvwb6s9mqx3KjRA"
 #define CONSUMER_SECRET		"faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw"
+#define CLIENT_ID			"YlB2dkJNNTVqN1huWkF2NFVxcjA6MTpjaQ"
+// state はコールバック URL に渡されるくらいの適当な文字列らしい?。
+// とりあえず echo -n "sayaka_v2" | sha1 としておく。
+#define CLIENT_STATE		"b75b732375dc7c201dd003bde37ea9efab43d7e1"
 
 enum SayakaCmd {
 	Noop = 0,
@@ -65,7 +70,8 @@ static const int DEFAULT_FONT_HEIGHT = 14;
 static std::string GetHomeDir();
 static void init();
 static void init_screen();
-static void get_access_token();
+static void get_access_token_v1();
+static void get_access_token_v2();
 static void signal_handler(int signo);
 static void sigwinch();
 static void cmd_users_list(const StringDictionary& list);
@@ -192,8 +198,10 @@ main(int ac, char *av[])
 	SayakaCmd cmd = SayakaCmd::Noop;
 	basedir     = GetHomeDir() + "/.sayaka/";
 	cachedir    = basedir + "cache";
-	tokenfile   = basedir + "token.json";
 	colormapdir = basedir;
+	// トークンのデフォルトファイル名は API version によって変わる
+	// ので、デフォルト empty のままにしておく。
+
 	ngword_list.SetFileName(basedir + "ngword.json");
 
 	address_family = AF_UNSPEC;
@@ -667,26 +675,42 @@ init_screen()
 
 // OAuth オブジェクトを初期化
 void
-InitOAuth()
+InitOAuth(int ver)
 {
-	assert(oauth.ConsumerKey.empty());
+	if (ver == 1) {
+		assert(oauth.ConsumerKey.empty());
 
-	oauth.SetDiag(diagHttp);
-	oauth.ConsumerKey    = CONSUMER_KEY;
-	oauth.ConsumerSecret = CONSUMER_SECRET;
+		oauth.SetDiag(diagHttp);
+		oauth.ConsumerKey    = CONSUMER_KEY;
+		oauth.ConsumerSecret = CONSUMER_SECRET;
 
-	// ファイルからトークンを取得
-	// なければトークンを取得してファイルに保存
-	bool r = oauth.LoadTokenFromFile(tokenfile);
-	if (r == false) {
-		get_access_token();
+		// ファイルからトークンを取得
+		// なければトークンを取得してファイルに保存
+		if (tokenfile.empty()) {
+			tokenfile = basedir + "token.json";
+		}
+		bool r = oauth.LoadTokenFromFile(tokenfile);
+		if (r == false) {
+			get_access_token_v1();
+		}
+	} else {
+		if (tokenfile.empty()) {
+			tokenfile = basedir + "token2.json";
+		}
+
+		auto text = FileReadAllText(tokenfile);
+		auto json = Json::parse(text);
+		if (!json.is_object() || !json.contains("access_token")) {
+			get_access_token_v2();
+		}
+		// XXX 読み込んで置いておくところがまだない
 	}
 }
 
-// アクセストークンを取得する。
+// OAuth v1.0 のアクセストークンを取得する。
 // 取得できなければ errx(3) で終了する。
 static void
-get_access_token()
+get_access_token_v1()
 {
 	oauth.AdditionalParams.clear();
 
@@ -714,6 +738,99 @@ get_access_token()
 	bool r = oauth.SaveTokenToFile(tokenfile);
 	if (r == false) {
 		errx(1, "Token save failed");
+	}
+}
+
+// OAuth v2.0 のアクセストークンを取得する。
+// 取得できなければ errx(3) で終了する。
+static void
+get_access_token_v2()
+{
+	const auto redirect_uri =
+		"http://www.pastel-flower.jp/~isaki/sayaka_v2/callback.php";
+
+	// challenge は 43-128文字。
+	auto challenge = OAuth::GetNonce(64);
+
+	// 承認 URL を作成。
+	StringDictionary query;
+	query.AddOrUpdate("response_type", "code");	// 固定値
+	query.AddOrUpdate("client_id", CLIENT_ID);
+	query.AddOrUpdate("redirect_uri", redirect_uri);
+	query.AddOrUpdate("scope",
+		"tweet.read tweet.write users.read offline.access");
+	query.AddOrUpdate("state", CLIENT_STATE);
+	query.AddOrUpdate("code_challenge_method", "plain");
+	query.AddOrUpdate("code_challenge", challenge);
+
+	// URL を表示。ブラウザで「許可」を押してもらうと、
+	// コールバック URL (redirect_url) が呼ばれて、
+	// authentication code が表示されるので、それを入力してもらう。
+	printf("Please go to:\n");
+	printf("https://twitter.com/i/oauth2/authorize?%s\n",
+		OAuth::MakeQuery(query).c_str());
+	printf("And input authentication code: ");
+	fflush(stdout);
+
+	char code_buf[1024];
+	fgets(code_buf, sizeof(code_buf), stdin);
+	std::string code_str(code_buf);
+	string_rtrim(code_str);
+
+	// Access Token の取得。
+	HttpClient client;
+	query.Clear();
+	query.AddOrUpdate("grant_type", "authorization_code");
+	query.AddOrUpdate("redirect_uri", redirect_uri);
+	query.AddOrUpdate("code_verifier", challenge);
+	query.AddOrUpdate("client_id", CLIENT_ID);
+	query.AddOrUpdate("code", code_str);
+	std::string token_uri = "https://api.twitter.com/2/oauth2/token?" +
+		OAuth::MakeQuery(query);
+	if (client.Init(diagHttp, token_uri) == false) {
+		errx(1, "client Init for token_uri failed");
+	}
+
+	std::string buf;
+	auto stream = client.POST();
+	if (stream->ReadLine(&buf) <= 0) {
+		errx(1, "ReadLine for token_uri failed");
+	}
+	Json json = Json::parse(buf);
+
+	// 成功すると
+	// {
+	//   "access_token":"U1hXXX...",	//トークン
+	//   "expires_in":7200,				// 期限切れまでの秒数
+	//   "refresh_token:"aTRXXX...",
+	//   "scope":"...",
+	//   "token_type":"bearer"
+	// }
+	// が返ってくる。失敗なら
+	// {
+	//   "error":"errmsg",
+	//   "error_description":"errdesc",
+	// }
+	// らしい。
+
+	if (json.contains("access_token")) {
+		if (tokenfile.empty()) {
+			tokenfile = basedir + "token2.json";
+		}
+		// 全部保存していいだろう。
+		if (FileWriteAllText(tokenfile, json.dump()) == false) {
+			err(1, "Getting access token: %s", tokenfile.c_str());
+		}
+	} else if (json.contains("error")) {
+		printf("Getting access token failed: %s\n",
+			json.value("error", "").c_str());
+		if (json.contains("error_description")) {
+			printf("%s\n", json.value("error_description", "").c_str());
+		}
+		exit(1);
+	} else {
+		printf("Getting access token failed: %s\n", json.dump().c_str());
+		exit(1);
 	}
 }
 
@@ -846,7 +963,7 @@ cmd_users_list(const StringDictionary& list)
 static void
 cmd_followlist()
 {
-	InitOAuth();
+	InitOAuth(1);
 	get_follow_list();
 	cmd_users_list(followlist);
 }
@@ -855,7 +972,7 @@ cmd_followlist()
 static void
 cmd_blocklist()
 {
-	InitOAuth();
+	InitOAuth(1);
 	get_block_list();
 	cmd_users_list(blocklist);
 }
@@ -864,7 +981,7 @@ cmd_blocklist()
 static void
 cmd_mutelist()
 {
-	InitOAuth();
+	InitOAuth(1);
 	get_mute_list();
 	cmd_users_list(mutelist);
 }
@@ -873,7 +990,7 @@ cmd_mutelist()
 static void
 cmd_nortlist()
 {
-	InitOAuth();
+	InitOAuth(1);
 	get_nort_list();
 	cmd_users_list(nortlist);
 }

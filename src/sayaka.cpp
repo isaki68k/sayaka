@@ -199,7 +199,7 @@ cmd_tweet()
 	text = Chomp(text);
 
 	// アクセストークンを取得
-	InitOAuth();
+	InitOAuth(1);
 
 	// 投稿するパラメータを用意
 	StringDictionary options;
@@ -230,7 +230,7 @@ cmd_stream()
 	progress("done\n");
 
 	// アクセストークンを取得
-	InitOAuth();
+	InitOAuth(1);
 
 	int sleep_sec = 120;
 	for (;;) {
@@ -1415,7 +1415,7 @@ show_image(const std::string& img_file, const std::string& img_url,
 static void
 get_credentials()
 {
-	InitOAuth();
+	InitOAuth(1);
 
 	StringDictionary options;
 	options["include_entities"] = "false";

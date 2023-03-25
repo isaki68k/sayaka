@@ -123,7 +123,7 @@ extern StringDictionary blocklist;
 extern StringDictionary mutelist;
 extern StringDictionary nortlist;
 
-extern void InitOAuth();
+extern void InitOAuth(int ver);
 
 // 起動経過を表示 (遅マシン用)
 static inline void
