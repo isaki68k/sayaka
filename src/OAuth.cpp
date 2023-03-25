@@ -79,9 +79,9 @@ OAuth::SaveTokenToFile(const std::string& filename) const
 	return FileWriteAllText(filename, json.dump());
 }
 
-// Nonce のための文字列を返す。
+// Nonce のための len 文字のランダム文字列を返す。
 /*static*/ std::string
-OAuth::GetNonce()
+OAuth::GetNonce(int len)
 {
 	// twitter のドキュメントには alphanumeric と書いてあるので
 	// 0x30-39, 41-5a, 61-7a、個数 = 10+26+26 = 62
@@ -93,7 +93,7 @@ OAuth::GetNonce()
 	std::uniform_int_distribution<> rand(0, 61);
 
 	std::string str;
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < len; i++) {
 		char c = rand(mt);
 		if (c < 10) {
 			c += '0';

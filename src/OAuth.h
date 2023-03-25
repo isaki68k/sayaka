@@ -46,7 +46,7 @@ class OAuth
 	// Nonce のための文字列を返す。
 	// (呼び出すたびに異なる文字列を生成する)
 	// テスト側で差し替えるため weak 指定。
-	static std::string GetNonce() __attribute__((__weak__));
+	static std::string GetNonce(int len = 16) __attribute__((__weak__));
 
 	// Base64 した文字列を返す
 	static std::string Base64Encode(const std::vector<uint8>& src);

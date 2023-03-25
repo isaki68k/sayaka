@@ -78,7 +78,7 @@ static inline std::string operator"" _hex2str(const char *str, std::size_t len)
 
 // テスト用に固定値を返す GetNonce()
 /*static*/ std::string
-OAuth::GetNonce()
+OAuth::GetNonce(int len)
 {
 	return "testnonce";
 }
