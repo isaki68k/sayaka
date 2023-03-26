@@ -117,8 +117,8 @@ enum {
 	OPT_ngword_list,
 	OPT_ngword_user,
 	OPT_no_color,
+	OPT_no_combine,
 	OPT_no_image,
-	OPT_no_keycap,
 	OPT_no_rest,
 	OPT_nortlist,
 	OPT_ormode,
@@ -166,9 +166,9 @@ static const struct option longopts[] = {
 	{ "ngword-list",	no_argument,		NULL,	OPT_ngword_list },
 	{ "ngword-user",	required_argument,	NULL,	OPT_ngword_user },
 	{ "no-color",		no_argument,		NULL,	OPT_no_color },
+	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "no-rest",		no_argument,		NULL,	OPT_no_rest },
-	{ "no-keycap",		no_argument,		NULL,	OPT_no_keycap },
 	{ "nortlist",		no_argument,		NULL,	OPT_nortlist },
 	{ "ormode",			required_argument,	NULL,	OPT_ormode },
 	{ "palette",		required_argument,	NULL,	OPT_palette },
@@ -378,11 +378,11 @@ main(int ac, char *av[])
 		 case OPT_no_color:
 			opt_nocolor = true;
 			break;
+		 case OPT_no_combine:
+			opt_nocombine = true;
+			break;
 		 case OPT_no_image:
 			use_sixel = UseSixel::No;
-			break;
-		 case OPT_no_keycap:
-			opt_nokeycap = true;
 			break;
 		 case OPT_no_rest:
 			opt_norest = true;

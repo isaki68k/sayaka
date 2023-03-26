@@ -194,7 +194,7 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	このオプションを指定しなくても、ターミナルが SIXEL 非対応であることが
 	判別できれば自動的に画像出力はオフになります。
 
-* `--no-keycap` … `U+20E3 Combining Enclosing Keycap`
+* `--no-combine` … `U+20E3 Combining Enclosing Keycap`
 	文字を表示しません。この絵文字(前の文字をキーキャップで囲む)が
 	正しく表示できない環境では読みやすくなるかも知れません。
 	例えば U+0031 U+20E3 `&#x0031;&#x20e3;` を `1` にします。

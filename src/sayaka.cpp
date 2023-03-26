@@ -172,7 +172,7 @@ std::string myid;				// 自身の user id
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
-bool opt_nokeycap;				// Combining Enclosing Keycap を表示しない
+bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
 std::string basedir;
 std::string cachedir;
 std::string tokenfile;
@@ -586,9 +586,9 @@ print_(const UString& src)
 			continue;
 		}
 
-		// --no-keycap なら Combining Enclosing Keycap (U+20E3) を除く。
+		// --no-combine なら Combining Enclosing Keycap (U+20E3) を除く。
 		// 前の文字(たいていただの ASCII 数字)が読めなくなるのを防ぐため。
-		if (__predict_false(uni == 0x20e3) && opt_nokeycap) {
+		if (__predict_false(uni == 0x20e3) && opt_nocombine) {
 			// ついでに1つ前が絵文字(異字体)セレクタなら一緒に除く。
 			auto b = utext.back();
 			if (0xfe00 <= b && b <= 0xfe0f) {
