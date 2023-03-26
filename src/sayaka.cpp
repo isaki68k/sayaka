@@ -296,7 +296,7 @@ cmd_stream()
 			sleep_sec = 120;
 		}
 		Debug(diag, "remain=%d until=%ld, sleep=%d",
-			remaining, (resettime - now), sleep_sec);
+			remaining, (long)(resettime - now), sleep_sec);
 	}
 }
 
