@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2022 Tetsuya Isaki
+ * Copyright (C) 2014-2023 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -301,30 +301,13 @@ NGWord::MatchUser(const Json& status) const
 bool
 NGWord::MatchText(const Json& status) const
 {
-	const Json *textp = NULL;
-
-	// extended_tweet->full_text、なければ full_text、text、
-	// どれもなければ false?
-	do {
-		if (status.contains("extended_tweet")) {
-			const Json& extended = status["extended_tweet"];
-			if (extended.contains("full_text")) {
-				textp = &extended["full_text"];
-				break;
-			}
-		}
-		if (status.contains("full_text")) {
-			textp = &status["full_text"];
-			break;
-		}
-		if (status.contains("text")) {
-			textp = &status["text"];
-			break;
-		}
+	// 本文を取得。
+	const Json *textj = GetFullText(status);
+	if (__predict_false(textj == NULL)) {
 		return false;
-	} while (0);
+	}
 
-	const auto& text = (*textp).get<std::string>();
+	const auto& text = (*textj).get<std::string>();
 	if (regex.Search(text) == false) {
 		return false;
 	}
@@ -884,4 +867,31 @@ NGWordList::CmdList()
 	}
 
 	return true;
+}
+
+
+// status から本文(の入っている Json *)を取り出す。
+// 本文フィールドは full_text が extended_tweet 以下にある場合と
+// (status の) 直下にある場合がなぜかあるようで、違いはよく分からない。
+// またどちらもなければ仕方ないので (status 直下の) text を使う。
+// text は長いと末尾が "…" に置き換えられたテキスト。
+// いずれもなければ NULL を返す。
+// (ヘッダの都合でここに置いてあるが sayaka からも使う)
+const Json *
+GetFullText(const Json& status)
+{
+	if (status.contains("extended_tweet")) {
+		const Json& exttweet = status["extended_tweet"];
+		if (exttweet.contains("full_text")) {
+			return &exttweet["full_text"];
+		}
+	}
+	if (status.contains("full_text")) {
+		return &status["full_text"];
+	}
+	if (status.contains("text")) {
+		return &status["text"];
+	}
+
+	return NULL;
 }

@@ -930,20 +930,8 @@ SetUrl_inline(RichString& richtext, int start, int end, const std::string& url,
 static UString
 formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 {
-	const Json *extw = NULL;
-	const Json *textj = NULL;
-
 	// 本文
-	if (s.contains("extended_tweet")) {
-		extw = &s["extended_tweet"];
-		if ((*extw).contains("full_text")) {
-			textj = &(*extw)["full_text"];
-		}
-	} else if (s.contains("full_text")) {
-		textj = &s["full_text"];
-	} else if (s.contains("text")) {
-		textj = &s["text"];
-	}
+	const Json *textj = GetFullText(s);
 	if (__predict_false(textj == NULL)) {
 		// ないことはないはず
 		return UString("(no text field?)");
@@ -957,7 +945,8 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	// エンティティの位置が新旧で微妙に違うのを吸収
 	const Json *entities = NULL;
 	const Json *media_entities = NULL;
-	if (extw) {
+	if (s.contains("extended_tweet")) {
+		const Json *extw = &s["extended_tweet"];
 		if ((*extw).contains("entities")) {
 			entities = &(*extw)["entities"];
 		}

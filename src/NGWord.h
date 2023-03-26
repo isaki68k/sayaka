@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2021 Tetsuya Isaki
+ * Copyright (C) 2014-2023 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -237,3 +237,6 @@ class NGWordRegular : public NGWord
 	const Json *MatchStatus(const Json& status, const Json *status2) const;
 	bool MatchName(const Json& status) const;
 };
+
+// status から本文フィールドを取得。
+extern const Json *GetFullText(const Json& status);
