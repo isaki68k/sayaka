@@ -586,15 +586,14 @@ print_(const UString& src)
 			continue;
 		}
 
-		// --no-combine なら Combining Enclosing Keycap (U+20E3) を除く。
-		// 前の文字(たいていただの ASCII 数字)が読めなくなるのを防ぐため。
-		if (__predict_false(uni == 0x20e3) && opt_nocombine) {
-			// ついでに1つ前が絵文字(異字体)セレクタなら一緒に除く。
-			auto b = utext.back();
-			if (0xfe00 <= b && b <= 0xfe0f) {
-				utext.pop_back();
-			}
-			continue;
+		// --no-combine なら Combining Enclosing * (U+20DD-U+20E4) の前に
+		// スペースを入れて、囲まれるはずだった文字とは独立させる。
+		// 前の文字(たいていただの ASCII 数字)が潰されて読めなくなるのを
+		// 防ぐため。
+		// U+20E1 は「上に左右矢印を前の文字につける」で囲みではないが
+		// 面倒なので混ぜておく。なぜ間に入れたのか…。
+		if (__predict_false(0x20dd <= uni && uni <= 0x20e4) && opt_nocombine) {
+			utext.Append(0x20);
 		}
 
 		if (__predict_false(!output_codeset.empty())) {
@@ -638,6 +637,12 @@ print_(const UString& src)
 		}
 
 		utext.Append(uni);
+	}
+
+	if (0) {
+		for (int i = 0; i < utext.size(); i++) {
+			printf("print_[%d] %02x\n", i, utext[i]);
+		}
 	}
 
 	// Stage2: インデントつけていく。
