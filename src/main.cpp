@@ -1027,50 +1027,37 @@ usage()
 {
 	printf(
 R"(usage: sayaka [<options>...] --home
-       sayaka [<options>...] <keyword>
+       sayaka [<options>...] [--filter] <keyword>
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
-	--font <width>x<height> : (default: 7x14)
-	--filter <keyword>
+	--font <width>x<height> : font size. default 7x14
 	--full-url : display full URL even if the URL is abbreviated.
 	--white / --black : darken/lighten the text color. (default: autodetect)
 	--no-color : disable all text color sequences
 	--no-image : force disable (SIXEL) images.
 	--force-sixel : force enable SIXEL images.
-	--jis
-	--eucjp
+	--jis / --eucjp : Set output encoding.
 	--play : read JSON from stdin.
 	--post : post tweet from stdin (utf-8 is expected).
 	--progress: show startup progress (for very slow machines).
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
-	--show-ng
 	--timeout-image <msec>
 	--token <file> : token file (default: ~/.sayaka/token.json)
 	--version
 	--x68k : preset options for x68k (with SIXEL kernel).
 
-	-4
-	-6
-	--blocklist
-	--ciphers <ciphers>
-	--debug       <0-2>
-	--debug-http  <0-2>
-	--debug-show  <0-2>
-	--debug-image <0-1>
-	--debug-sixel <0-2>
-	--debug-format
-	--followlist
-	--max-cont <n>
-	--max-image-cols <n>
-	--mutelist
-	--ngword-add
-	--ngword-del
-	--ngword-list
-	--ngword-user
-	--no-rest
-	--nortlist
-	--ormode <on|off> (default off)
-	--palette <on|off> (default on)
+	-4 / -6                         --ciphers <ciphers>
+	--debug       <0-2>             --debug-format
+	--debug-http  <0-2>             --debug-image <0-1>
+	--debug-sixel <0-2>             --debug-show  <0-2>
+	--blocklist                     --followlist
+	--mutelist                      --nortlist
+	--mathalpha                     --no-combine
+	--max-cont <n>                  --max-image-cols <n>
+	--ngword-add                    --ngword-del
+	--ngword-list                   --ngword-user
+	--no-rest                       --ormode <on|off> (default off)
+	--show-ng                       --palette <on|off> (default on)
 )"
 	);
 	exit(0);
