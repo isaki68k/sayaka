@@ -267,7 +267,7 @@ cmd_stream()
 			const Json& j = json[i];
 			showobject(j);
 
-			auto id_str = j.value("id_str", "");
+			const auto& id_str = j.value("id_str", "");
 			if (id_str > last_id) {
 				last_id = id_str;
 			}
@@ -414,7 +414,7 @@ showstatus(const Json *status, bool is_quoted)
 	// 簡略表示の判定。QT 側では行わない
 	if (is_quoted == false) {
 		if (has_retweet) {
-			auto rt_id = (*s).value("id_str", "");
+			const auto& rt_id = (*s).value("id_str", "");
 
 			// 直前のツイートが (フォロー氏による) 元ツイートで
 			// 続けてこれがそれを RT したツイートなら簡略表示だが、
@@ -936,7 +936,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		// ないことはないはず
 		return UString("(no text field?)");
 	}
-	const std::string& text = (*textj).get<std::string>();
+	const auto& text = (*textj).get<std::string>();
 	RichString richtext(text);
 
 	// richtext は終端文字も含んだ長さなので、最後の文字は一つ手前。
@@ -1244,7 +1244,7 @@ show_icon(const Json& user)
 	for (const auto& url : urls) {
 		if (user.contains(url)) {
 			const Json& image_url_json = user[url];
-			const std::string& image_url = image_url_json.get<std::string>();
+			const auto& image_url = image_url_json.get<std::string>();
 
 			// URL のファイル名部分をキャッシュのキーにする
 			auto p = image_url.rfind('/');
@@ -1649,7 +1649,7 @@ errors2string(const Json& json)
 		// エラーが複数返ってきたらどうするかね
 		const Json& error = errors[0];
 		auto code = error.value("code", 0);
-		auto message = error.value("message", "");
+		const auto& message = error.value("message", "");
 		return string_format(": %s(%d)", message.c_str(), code);
 	}
 	return "";
