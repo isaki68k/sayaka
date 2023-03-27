@@ -96,7 +96,7 @@ static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 static bool show_image(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
-static void get_credentials() __unused;
+[[maybe_unused]] static void get_credentials();
 static StringDictionary get_paged_list(const std::string& uri,
 	const char *funcname);
 static Json APIJson(const std::string& method, const std::string& uri,
