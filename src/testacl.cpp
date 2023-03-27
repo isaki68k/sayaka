@@ -29,6 +29,7 @@
 #include "StringUtil.h"
 #include "acl.h"
 #include "main.h"
+#include <optional>
 
 std::string myid;
 Diag diagShow;
