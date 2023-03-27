@@ -205,8 +205,21 @@ for p in ${PKGS}; do
 	fi
 done
 
-AC_CHECK_LIB(gif, DGifOpen,
-	LIBS="${LIBS} -lgif"
+AC_MSG_CHECKING([for libgif])
+old_LIBS=${LIBS}
+LIBS="${LIBS} -lgif"
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	[
+		#include <gif_lib.h>
+	], [
+		DGifOpen(NULL, NULL, NULL);
+	])], [
+		AC_MSG_RESULT([yes])
+	], [
+		AC_MSG_RESULT([no])
+		LIBS=${old_LIBS}
+		AC_MSG_ERROR([*** libgif not found.])
+	]
 )
 
 # Find mbedtls

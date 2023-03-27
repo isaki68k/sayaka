@@ -3717,46 +3717,45 @@ printf "%s\n" "no" >&6; }
 	fi
 done
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for DGifOpen in -lgif" >&5
-printf %s "checking for DGifOpen in -lgif... " >&6; }
-if test ${ac_cv_lib_gif_DGifOpen+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgif  $LIBS"
+#AC_CHECK_LIB(gif, DGifOpen,
+#	LIBS="${LIBS} -lgif"
+#)
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libgif" >&5
+printf %s "checking for libgif... " >&6; }
+old_LIBS=${LIBS}
+LIBS="${LIBS} -lgif"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-namespace conftest {
-  extern "C" int DGifOpen ();
-}
+		#include <gif_lib.h>
+
 int
 main (void)
 {
-return conftest::DGifOpen ();
+
+		DGifOpen(NULL, NULL, NULL);
+
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"
 then :
-  ac_cv_lib_gif_DGifOpen=yes
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
 else $as_nop
-  ac_cv_lib_gif_DGifOpen=no
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		LIBS=${old_LIBS}
+		as_fn_error $? "*** libgif not found." "$LINENO" 5
+
+
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gif_DGifOpen" >&5
-printf "%s\n" "$ac_cv_lib_gif_DGifOpen" >&6; }
-if test "x$ac_cv_lib_gif_DGifOpen" = xyes
-then :
-  LIBS="${LIBS} -lgif"
-
-fi
-
 
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
