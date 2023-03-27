@@ -36,13 +36,16 @@ string_format(const char *fmt, ...)
 {
 	va_list ap;
 	char *buf;
+	int r;
 
 	va_start(ap, fmt);
-	vasprintf(&buf, fmt, ap);
+	r = vasprintf(&buf, fmt, ap);
 	va_end(ap);
+	if (__predict_false(r < 0)) {
+		return "";
+	}
 	std::string rv(buf);
 	free(buf);
-
 	return rv;
 }
 

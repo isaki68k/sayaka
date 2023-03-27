@@ -724,7 +724,9 @@ get_access_token_v1()
 	fflush(stdout);
 
 	char pin_str[1024];
-	fgets(pin_str, sizeof(pin_str), stdin);
+	if (fgets(pin_str, sizeof(pin_str), stdin) == NULL) {
+		err(1, "fgets");
+	}
 
 	Debug(diag, "----- Access Token -----");
 
@@ -773,7 +775,9 @@ get_access_token_v2()
 	fflush(stdout);
 
 	char code_buf[1024];
-	fgets(code_buf, sizeof(code_buf), stdin);
+	if (fgets(code_buf, sizeof(code_buf), stdin) == NULL) {
+		err(1, "fgets");
+	}
 	std::string code_str(code_buf);
 	string_rtrim(code_str);
 

@@ -1633,13 +1633,17 @@ invalidate_cache()
 	snprintf(cmd, sizeof(cmd),
 		"find %s -name icon-\\* -type f -atime +30 -exec rm {} +",
 		cachedir.c_str());
-	system(cmd);
+	if (system(cmd) < 0) {
+		warn("system(find icon)");
+	}
 
 	// 写真は2日分くらいか
 	snprintf(cmd, sizeof(cmd),
 		"find %s -name http\\* -type f -atime +2 -exec rm {} +",
 		cachedir.c_str());
-	system(cmd);
+	if (system(cmd) < 0) {
+		warn("system(find photo)");
+	}
 }
 
 // APIJson の応答がエラーだった時に表示用文字列に整形して返す。
