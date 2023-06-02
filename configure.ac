@@ -188,6 +188,18 @@ if test $? \!= 0 ; then
 	AC_MSG_ERROR([*** pkg-config (or \$PKG_CONFIG) not found])
 fi
 
+AC_MSG_CHECKING([for stb_image])
+AC_ARG_ENABLE(stb,
+[  --enable-stb            Use libstb for image loader], [
+	AC_DEFINE([USE_STB_IMAGE])
+	AC_SUBST([MAKE_STB_IMAGE], [yes])
+	AC_MSG_RESULT([yes])
+], [
+	AC_MSG_RESULT([no])
+])
+
+if test "${enable_stb}x" \!= "yesx"; then
+
 PKGS="libjpeg libpng"
 for p in ${PKGS}; do
 	AC_MSG_CHECKING([for ${p}])
@@ -221,6 +233,8 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		AC_MSG_ERROR([*** libgif not found.])
 	]
 )
+
+fi
 
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"

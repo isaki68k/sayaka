@@ -17,3 +17,4 @@
 #undef HAVE___BUILTIN_EXPECT
 #undef HAVE_ICONV
 #undef HAVE_ICONV_CONST
+#undef USE_STB_IMAGE

@@ -10,9 +10,6 @@ SRCS_common=	\
 	FileUtil.cpp \
 	HttpClient.cpp \
 	Image.cpp \
-	ImageLoaderGIF.cpp \
-	ImageLoaderJPEG.cpp \
-	ImageLoaderPNG.cpp \
 	ImageReductor.cpp \
 	MathAlphaSymbols.cpp \
 	MemoryStream.cpp \
@@ -33,6 +30,17 @@ SRCS_common=	\
 	mtls.cpp \
 	term.cpp \
 	subr.cpp \
+
+.if "${MAKE_STB_IMAGE}" == "yes"
+SRCS_common += \
+	ImageLoaderSTB.cpp
+.else
+SRCS_common += \
+	ImageLoaderGIF.cpp \
+	ImageLoaderJPEG.cpp \
+	ImageLoaderPNG.cpp \
+
+.endif
 
 SRCS_sayaka=	\
 	main.cpp \

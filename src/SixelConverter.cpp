@@ -26,9 +26,13 @@
 
 #include "FileStream.h"
 #include "Image.h"
+#if defined(USE_STB_IMAGE)
+#include "ImageLoaderSTB.h"
+#else
 #include "ImageLoaderGIF.h"
 #include "ImageLoaderJPEG.h"
 #include "ImageLoaderPNG.h"
+#endif
 #include "SixelConverter.h"
 #include "StringUtil.h"
 #include "sayaka.h"
@@ -59,6 +63,14 @@ SixelConverter::LoadFromStream(InputStream *stream)
 {
 	Debug(diag, "ResizeMode=%s", SRM2str(ResizeMode));
 
+#if defined(USE_STB_IMAGE)
+	ImageLoaderSTB loader(stream, diag);
+	Trace(diag, "%s filetype is STB", __func__);
+	if (loader.Load(img)) {
+		LoadAfter();
+		return true;
+	}
+#else
 	{
 		ImageLoaderJPEG loader(stream, diag);
 		if (loader.Check()) {
@@ -92,6 +104,7 @@ SixelConverter::LoadFromStream(InputStream *stream)
 			return false;
 		}
 	}
+#endif
 
 	warnx("Unknown picture format");
 	return false;

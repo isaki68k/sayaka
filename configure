@@ -647,6 +647,7 @@ ac_includes_default="\
 ac_header_cxx_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+MAKE_STB_IMAGE
 WARNFLAGS
 host_os
 host_vendor
@@ -705,6 +706,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_stb
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1332,6 +1334,12 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of sayaka 3.5:";;
    esac
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-stb            Use libstb for image loader
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -3697,6 +3705,29 @@ if test $? \!= 0 ; then
 	as_fn_error $? "*** pkg-config (or \$PKG_CONFIG) not found" "$LINENO" 5
 fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for stb_image" >&5
+printf %s "checking for stb_image... " >&6; }
+# Check whether --enable-stb was given.
+if test ${enable_stb+y}
+then :
+  enableval=$enable_stb;
+	printf "%s\n" "#define USE_STB_IMAGE 1" >>confdefs.h
+
+	MAKE_STB_IMAGE=yes
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+else $as_nop
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+fi
+
+
+if test "${enable_stb}x" \!= "yesx"; then
+
 PKGS="libjpeg libpng"
 for p in ${PKGS}; do
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ${p}" >&5
@@ -3717,9 +3748,6 @@ printf "%s\n" "no" >&6; }
 	fi
 done
 
-#AC_CHECK_LIB(gif, DGifOpen,
-#	LIBS="${LIBS} -lgif"
-#)
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libgif" >&5
 printf %s "checking for libgif... " >&6; }
 old_LIBS=${LIBS}
@@ -3756,6 +3784,8 @@ printf "%s\n" "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
+
+fi
 
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
