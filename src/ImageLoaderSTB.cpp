@@ -27,6 +27,9 @@
 
 // stb is too dirty against strict warnings...
 #if defined(__clang__)
+_Pragma("clang diagnostic push")
+_Pragma("clang diagnostic ignored \"-Wcast-qual\"")
+_Pragma("clang diagnostic ignored \"-Wdisabled-macro-expansion\"")
 #else
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wcast-qual\"")
@@ -39,6 +42,7 @@ _Pragma("GCC diagnostic ignored \"-Wunused-but-set-variable\"")
 #include "stb/stb_image.h"
 
 #if defined(__clang__)
+_Pragma("clang diagnostic pop")
 #else
 _Pragma("GCC diagnostic pop")
 #endif
