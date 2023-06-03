@@ -81,19 +81,21 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 		return false;
 	}
 
-	ctx = SSL_CTX_new(SSLv23_client_method());
-	ssl = SSL_new(ctx);
+	if (usessl) {
+		ctx = SSL_CTX_new(SSLv23_client_method());
+		ssl = SSL_new(ctx);
 
-	r = SSL_set_fd(ssl, fd);
-	if (r == 0) {
-		ERR_print_errors_fp(stderr);
-		return false;
-	}
+		r = SSL_set_fd(ssl, fd);
+		if (r == 0) {
+			ERR_print_errors_fp(stderr);
+			return false;
+		}
 
-	r = SSL_connect(ssl);
-	if (r != 1) {
-		ERR_print_errors_fp(stderr);
-		return false;
+		r = SSL_connect(ssl);
+		if (r != 1) {
+			ERR_print_errors_fp(stderr);
+			return false;
+		}
 	}
 
 	return true;
@@ -190,9 +192,11 @@ TLSHandle_openssl::ConnectSocket(const char *hostname, const char *servname)
 void
 TLSHandle_openssl::Close()
 {
-	SSL_shutdown(ssl);
-	SSL_free(ssl);
-	SSL_CTX_free(ctx);
+	if (usessl) {
+		SSL_shutdown(ssl);
+		SSL_free(ssl);
+		SSL_CTX_free(ctx);
+	}
 	close(fd);
 	fd = -1;
 }
@@ -201,17 +205,29 @@ int
 TLSHandle_openssl::Shutdown(int how)
 {
 	// XXX
+	if (usessl) {
+	} else {
+		return shutdown(fd, how);
+	}
 	return 0;
 }
 
 size_t
 TLSHandle_openssl::Read(void *buf, size_t len)
 {
-	return SSL_read(ssl, buf, len);
+	if (usessl) {
+		return SSL_read(ssl, buf, len);
+	} else {
+		return read(fd, buf, len);
+	}
 }
 
 size_t
 TLSHandle_openssl::Write(const void *buf, size_t len)
 {
-	return SSL_write(ssl, buf, len);
+	if (usessl) {
+		return SSL_write(ssl, buf, len);
+	} else {
+		return write(fd, buf, len);
+	}
 }
