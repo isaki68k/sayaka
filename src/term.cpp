@@ -267,6 +267,9 @@ query_terminal(const std::string& query, char *dst, size_t dstsize)
 #if defined(TEST)
 #include <err.h>
 
+int test_sixel();
+int test_bg();
+
 Diag diag;
 
 int
