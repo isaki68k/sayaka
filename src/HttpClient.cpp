@@ -25,6 +25,9 @@
  */
 
 #include "HttpClient.h"
+#if 1
+#include "TLSHandle_mtls.h"
+#endif
 #include "StringUtil.h"
 #include <err.h>
 #include <errno.h>
@@ -42,9 +45,10 @@ HttpClient::~HttpClient()
 {
 	Close();
 
-	// mtls より前に解放する
+	// 解放順序あり。
 	chunk_stream.reset();
 	mstream.reset();
+	mtls.reset();
 }
 
 // uri をターゲットにして初期化する
@@ -53,8 +57,10 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 {
 	diag = diag_;
 
-	if (mtls.Init() == false) {
-		warnx("HttpClient.Init: mTLSHandle.Init failed");
+	mtls.reset(new mTLSHandle());
+
+	if (mtls->Init() == false) {
+		warnx("HttpClient.Init: TLSHandle.Init failed");
 		return false;
 	}
 
@@ -78,7 +84,7 @@ HttpClient::Act(const std::string& method)
 
 		SendRequest(method);
 
-		mstream.reset(new mTLSInputStream(&mtls, diag));
+		mstream.reset(new mTLSInputStream(mtls.get(), diag));
 
 		ReceiveHeader(mstream.get());
 
@@ -153,8 +159,8 @@ HttpClient::SendRequest(const std::string& method)
 
 	Debug(diag, "Request %s\n%s", method.c_str(), sb.c_str());
 
-	mtls.Write(sb.c_str(), sb.length());
-	mtls.Shutdown(SHUT_WR);
+	mtls->Write(sb.c_str(), sb.length());
+	mtls->Shutdown(SHUT_WR);
 
 	Trace(diag, "%s() request sent", __func__);
 }
@@ -252,15 +258,15 @@ HttpClient::Connect()
 
 	// 接続
 	if (Uri.Scheme == "https") {
-		mtls.UseSSL(true);
+		mtls->UseSSL(true);
 	}
 	if (Ciphers == "RSA") {
 		// XXX RSA 専用
-		mtls.UseRSA();
+		mtls->UseRSA();
 	}
 	Trace(diag, "%s: %s", __func__, Uri.to_string().c_str());
-	if (mtls.Connect(Uri.Host, Uri.Port) == false) {
-		Debug(diag, "mTLSHandle.Connect failed");
+	if (mtls->Connect(Uri.Host, Uri.Port) == false) {
+		Debug(diag, "TLSHandle.Connect failed");
 		return false;
 	}
 
@@ -272,7 +278,7 @@ void
 HttpClient::Close()
 {
 	Trace(diag, "%s()", __func__);
-	mtls.Close();
+	mtls->Close();
 }
 
 
@@ -281,7 +287,7 @@ HttpClient::Close()
 //
 
 // コンストラクタ
-mTLSInputStream::mTLSInputStream(mTLSHandle *mtls_, const Diag& diag_)
+mTLSInputStream::mTLSInputStream(TLSHandleBase *mtls_, const Diag& diag_)
 	: diag(diag_)
 {
 	mtls = mtls_;

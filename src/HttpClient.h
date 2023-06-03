@@ -28,9 +28,9 @@
 
 #include "ChunkedInputStream.h"
 #include "Diag.h"
-#include "mtls.h"
 #include "ParsedUri.h"
 #include "StreamBase.h"
+#include "TLSHandle.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -39,13 +39,13 @@
 class mTLSInputStream : public InputStream
 {
  public:
-	mTLSInputStream(mTLSHandle *mtls, const Diag& diag);
+	mTLSInputStream(TLSHandleBase *mtls, const Diag& diag);
 	virtual ~mTLSInputStream() override;
 
 	ssize_t NativeRead(void *buf, size_t buflen) override;
 
  private:
-	mTLSHandle *mtls {};
+	TLSHandleBase *mtls {};
 
 	Diag diag {};
 };
@@ -94,7 +94,7 @@ class HttpClient
 
 	// タイムアウトを設定する
 	void SetTimeout(int timeout) {
-		mtls.SetTimeout(timeout);
+		mtls->SetTimeout(timeout);
 	}
 
 	// パース後の URI
@@ -138,7 +138,7 @@ class HttpClient
 	bool Connect();
 
 	// mTLS ハンドル
-	mTLSHandle mtls {};
+	std::unique_ptr<TLSHandleBase> mtls {};
 
 	// mTLS ストリーム
 	std::unique_ptr<mTLSInputStream> mstream {};

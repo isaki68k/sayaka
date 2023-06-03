@@ -24,7 +24,7 @@
  */
 
 #include "sayaka.h"
-#include "mtls.h"
+#include "TLSHandle_mtls.h"
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
@@ -148,8 +148,6 @@ mTLSHandle::mTLSHandle()
 	}
 
 	// メンバを初期化
-	family = AF_UNSPEC;
-	timeout = -1;
 	mbedtls_net_init(&net);
 	mbedtls_ssl_init(&ssl);
 	mbedtls_ssl_config_init(&conf);

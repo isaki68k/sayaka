@@ -22,12 +22,13 @@ SRCS_common=	\
 	SixelConverterOR.cpp \
 	StreamBase.cpp \
 	StringUtil.cpp \
+	TLSHandle.cpp \
+	TLSHandle_mtls.cpp \
 	UString.cpp \
 	acl.cpp \
 	eaw_code.cpp \
 	eaw_data.cpp \
 	fetch_image.cpp \
-	mtls.cpp \
 	term.cpp \
 	subr.cpp \
 

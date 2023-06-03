@@ -25,68 +25,50 @@
 
 #pragma once
 
-#include <string>
+#include "TLSHandle.h"
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
 
-class mTLSHandle
+class mTLSHandle : public TLSHandleBase
 {
  public:
 	mTLSHandle();
-	~mTLSHandle();
+	virtual ~mTLSHandle() override;
 
 	// ディスクリプタを持っているのでコピーコンストラクタを禁止する。
 	mTLSHandle(const mTLSHandle&) = delete;
 	mTLSHandle& operator=(const mTLSHandle&) = delete;
 
 	// 初期化
-	bool Init();
-
-	// HTTPS を使うかどうかを設定する。
-	// Connect() より先に設定しておくこと。
-	void UseSSL(bool value) { usessl = value; }
+	bool Init() override;
 
 	// 接続に使用する CipherSuites を RSA_WITH_AES_128_CBC_SHA に限定する。
 	// Connect() より先に設定しておくこと。
 	// XXX どういう API にすべきか
-	void UseRSA();
-
-	// アドレスファミリを指定する。デフォルトは AF_UNSPEC。
-	// Connect() より先に設定しておくこと。
-	void SetFamily(int family_) { family = family_; }
+	void UseRSA() override;
 
 	// タイムアウトを設定する。デフォルトは 0 (タイムアウトしない)
-	void SetTimeout(int timeout_);
+	void SetTimeout(int timeout_) override;
 
 	// 接続する
-	bool Connect(const std::string& hostname, const std::string& servname) {
-		return Connect(hostname.c_str(), servname.c_str());
-	}
-	bool Connect(const char *hostname, const char *servname);
+	bool Connect(const char *hostname, const char *servname) override;
 
 	// クローズする
-	void Close();
+	void Close() override;
 
 	// shutdown する
-	int Shutdown(int how);
+	int Shutdown(int how) override;
 
 	// 読み書き
-	size_t Read(void *buf, size_t len);
-	size_t Write(const void *buf, size_t len);
+	size_t Read(void *buf, size_t len) override;
+	size_t Write(const void *buf, size_t len) override;
 
- public:
-	bool initialized {};
-	bool usessl {};
-	int family {};
-	int timeout {};		// [msec]
-	int ssl_timeout {};
-
+ private:
 	// 内部コンテキスト
 	mbedtls_net_context net {};
 	mbedtls_ssl_context ssl {};
 	mbedtls_ssl_config conf {};
 
- private:
 	// mbedTLS のエラーコードを文字列にして返す
 	// (static バッファを使っていることに注意)
 	char errbuf[128] {};
