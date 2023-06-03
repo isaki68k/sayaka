@@ -39,9 +39,3 @@ TLSHandleBase::~TLSHandleBase()
 {
 }
 
-// 接続に使用する CipherSuites を RSA_WITH_AES_128_CBC_SHA に限定する。
-// この機能が使えない人では何もしない。
-void
-TLSHandleBase::UseRSA()
-{
-}

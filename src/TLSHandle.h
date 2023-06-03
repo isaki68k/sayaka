@@ -47,7 +47,7 @@ class TLSHandleBase
 	// 接続に使用する CipherSuites を RSA_WITH_AES_128_CBC_SHA に限定する。
 	// Connect() より先に設定しておくこと。
 	// XXX どういう API にすべきか
-	virtual void UseRSA();
+	virtual bool UseRSA() = 0;
 
 	// アドレスファミリを指定する。デフォルトは AF_UNSPEC。
 	// Connect() より先に設定しておくこと。

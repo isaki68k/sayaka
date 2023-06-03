@@ -221,10 +221,11 @@ TLSHandle_mtls::SetTimeout(int timeout_)
 	mbedtls_ssl_conf_read_timeout(&conf, ssl_timeout);
 }
 
-void
+bool
 TLSHandle_mtls::UseRSA()
 {
 	mbedtls_ssl_conf_ciphersuites(&conf, ciphersuites_RSA);
+	return true;
 }
 
 // 接続
