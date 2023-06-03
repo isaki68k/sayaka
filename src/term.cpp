@@ -167,6 +167,7 @@ parse_bgcolor(char *result)
 	// <ESC> "]11;rgb:RRRR/GGGG/BBBB" <ESC> "\" で、
 	// RRRR,GGGG,BBBB は各 0000-ffff の 65535 階調らしい。
 	// ただし RR/GG/BB の2桁を返す実装があるらしい。
+	// OpenBSD は末尾の <ESC> "\" の代わりに BEL('\7') を返すらしい。
 
 	// "]11;rgb:…" のところを "]0;rgb:…" を返す実装もあるらしいので
 	// "rgb:" だけで調べる。
@@ -193,7 +194,7 @@ parse_bgcolor(char *result)
 	// B
 	p = e + 1;
 	bi = stox32def(p, -1, &e);
-	if (bi < 0 || *e != ESCchar) {
+	if (bi < 0) {
 		return BG_NONE;
 	}
 	bn = e - p;
