@@ -590,7 +590,7 @@ init()
 	// シグナルハンドラを設定
 	signal(SIGINT,    signal_handler);
 	signal(SIGHUP,    signal_handler);
-	signal(SIGPIPE,   signal_handler);
+	signal(SIGPIPE,   SIG_IGN);
 	signal(SIGALRM,   signal_handler);
 	signal(SIGXCPU,   signal_handler);
 	signal(SIGXFSZ,   signal_handler);

@@ -444,9 +444,6 @@ mbedtls_net_connect_nonblock(mbedtls_net_context *ctx,
 	int ret;
 	int val;
 
-	// net_prepare()
-	signal(SIGPIPE, SIG_IGN);
-
     /* Do name resolution with both IPv6 and IPv4 */
 	memset(&hints, 0, sizeof(hints));
 	// アドレスファミリを指定できるようにする
