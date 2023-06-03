@@ -210,8 +210,7 @@ TLSHandle_mtls::Init()
 void
 TLSHandle_mtls::SetTimeout(int timeout_)
 {
-	// timeout は将来の拡張性を考慮して、
-	// -1 なら無期限、0  ならポーリングモードとしておきたい。
+	// 親クラスの timeout は、0 ならポーリング、-1 ならタイムアウトしない。
 	// mbedtls_net_poll() の timeout はこの仕様。
 	timeout = timeout_;
 

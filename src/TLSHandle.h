@@ -53,7 +53,10 @@ class TLSHandleBase
 	// Connect() より先に設定しておくこと。
 	void SetFamily(int family_) { family = family_; }
 
-	// タイムアウトを設定する。デフォルトは 0 (タイムアウトしない)
+	// タイムアウトを設定する。
+	// 0 ならポーリングモード。
+	// -1 ならタイムアウトしない。
+	// デフォルトは -1。
 	virtual void SetTimeout(int timeout_) = 0;
 
 	// 接続する

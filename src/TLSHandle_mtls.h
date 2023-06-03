@@ -47,7 +47,7 @@ class TLSHandle_mtls : public TLSHandleBase
 	// XXX どういう API にすべきか
 	void UseRSA() override;
 
-	// タイムアウトを設定する。デフォルトは 0 (タイムアウトしない)
+	// タイムアウトを設定する。デフォルトは -1 (タイムアウトしない)。
 	void SetTimeout(int timeout_) override;
 
 	// 接続する
