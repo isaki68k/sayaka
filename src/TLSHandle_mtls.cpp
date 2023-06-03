@@ -197,7 +197,6 @@ TLSHandle_mtls::Init()
 		NULL, // recv (without timeout)
 		mbedtls_net_recv_timeout);
 
-	initialized = true;
 	TRACE("done\n");
 	return true;
 

@@ -76,7 +76,6 @@ class TLSHandleBase
 	virtual size_t Write(const void *buf, size_t len) = 0;
 
  public:
-	bool initialized {};
 	bool usessl {};
 	int family {};
 	int timeout {};		// [msec]
