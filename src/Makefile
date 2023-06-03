@@ -23,7 +23,6 @@ SRCS_common=	\
 	StreamBase.cpp \
 	StringUtil.cpp \
 	TLSHandle.cpp \
-	TLSHandle_mtls.cpp \
 	UString.cpp \
 	acl.cpp \
 	eaw_code.cpp \
@@ -41,6 +40,12 @@ SRCS_common += \
 	ImageLoaderJPEG.cpp \
 	ImageLoaderPNG.cpp \
 
+.endif
+
+.if "${MAKE_MBEDTLS}" == "yes"
+SRCS_common += TLSHandle_mtls.cpp
+.else
+SRCS_common += TLSHandle_openssl.cpp
 .endif
 
 SRCS_sayaka=	\

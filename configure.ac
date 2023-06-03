@@ -236,6 +236,14 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 
 fi
 
+AC_ARG_ENABLE(mbedtls,
+[  --enable-mbedtls        Use mbedTLS instead of OpenSSL], [
+	AC_DEFINE([USE_MBEDTLS])
+	AC_SUBST([MAKE_MBEDTLS], [yes])
+], [])
+
+if test "${enable_mbedtls}x" = "yesx"; then
+
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
 
@@ -303,6 +311,11 @@ AC_CHECK_LIB(mbedtls, mbedtls_net_poll,
 if test "x${has_mbedtls_net_poll}" = "xno"; then
 	AC_MSG_ERROR([*** mbedtls doesn't have mbedtls_net_poll().
 	Please update your mbedtls to >= 2.9.0(?).])
+fi
+
+else
+	# Use openssl
+	LIBS="${LIBS} -lcrypto -lssl"
 fi
 
 AC_CONFIG_HEADERS([config.h])

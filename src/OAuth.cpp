@@ -31,7 +31,12 @@
 #include "subr.h"
 #include <array>
 #include <random>
+#if defined(USE_MBEDTLS)
 #include <mbedtls/md.h>
+#else
+#include <openssl/sha.h>
+#include <openssl/hmac.h>
+#endif
 
 // コンストラクタ
 OAuth::OAuth()
@@ -159,6 +164,7 @@ OAuth::Base64Encode(const std::vector<uint8>& src)
 /*static*/ std::vector<uint8>
 OAuth::HMAC_SHA1(const std::string& key, const std::string& msg)
 {
+#if defined(USE_MBEDTLS)
 	mbedtls_md_context_t ctx;
 	std::vector<uint8> result(20);	// SHA-1 は 20バイト (決め打ち…)
 
@@ -170,6 +176,21 @@ OAuth::HMAC_SHA1(const std::string& key, const std::string& msg)
 	mbedtls_md_free(&ctx);
 
 	return result;
+#else
+	std::array<unsigned char, EVP_MAX_MD_SIZE> hash;
+	unsigned int hashlen;
+
+	HMAC(EVP_sha1(),
+		key.data(),
+		static_cast<int>(key.size()),
+		(const unsigned char *)msg.data(),
+		static_cast<int>(msg.size()),
+		hash.data(),
+		&hashlen
+	);
+
+	return std::vector<uint8>(hash.begin(), hash.begin() + hashlen);
+#endif
 }
 
 // HMAC-SHA1 してバイナリを Base64 した文字列を返す。

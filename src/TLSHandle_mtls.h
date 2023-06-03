@@ -31,6 +31,7 @@
 
 class TLSHandle_mtls : public TLSHandleBase
 {
+	using inherited = TLSHandleBase;
  public:
 	TLSHandle_mtls();
 	virtual ~TLSHandle_mtls() override;

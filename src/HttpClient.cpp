@@ -25,8 +25,10 @@
  */
 
 #include "HttpClient.h"
-#if 1
+#if defined(USE_MBEDTLS)
 #include "TLSHandle_mtls.h"
+#else
+#include "TLSHandle_openssl.h"
 #endif
 #include "StringUtil.h"
 #include <err.h>
@@ -57,7 +59,11 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 {
 	diag = diag_;
 
+#if defined(USE_MBEDTLS)
 	mtls.reset(new TLSHandle_mtls());
+#else
+	mtls.reset(new TLSHandle_openssl());
+#endif
 
 	if (mtls->Init() == false) {
 		warnx("HttpClient.Init: TLSHandle.Init failed");

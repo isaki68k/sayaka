@@ -647,6 +647,7 @@ ac_includes_default="\
 ac_header_cxx_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+MAKE_MBEDTLS
 MAKE_STB_IMAGE
 WARNFLAGS
 host_os
@@ -707,6 +708,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_stb
+enable_mbedtls
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1340,6 +1342,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-stb            Use libstb for image loader
+  --enable-mbedtls        Use mbedTLS instead of OpenSSL
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -3787,6 +3790,20 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 
 fi
 
+# Check whether --enable-mbedtls was given.
+if test ${enable_mbedtls+y}
+then :
+  enableval=$enable_mbedtls;
+	printf "%s\n" "#define USE_MBEDTLS 1" >>confdefs.h
+
+	MAKE_MBEDTLS=yes
+
+
+fi
+
+
+if test "${enable_mbedtls}x" = "yesx"; then
+
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
 
@@ -3930,6 +3947,11 @@ fi
 if test "x${has_mbedtls_net_poll}" = "xno"; then
 	as_fn_error $? "*** mbedtls doesn't have mbedtls_net_poll().
 	Please update your mbedtls to >= 2.9.0(?)." "$LINENO" 5
+fi
+
+else
+	# Use openssl
+	LIBS="${LIBS} -lcrypto -lssl"
 fi
 
 ac_config_headers="$ac_config_headers config.h"

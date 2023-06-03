@@ -179,6 +179,10 @@ TLSHandle_mtls::Init()
 {
 	int r;
 
+	if (inherited::Init() == false) {
+		return false;
+	}
+
 	// TLS config
 	r = mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_CLIENT,
 		MBEDTLS_SSL_TRANSPORT_STREAM,
@@ -211,7 +215,7 @@ TLSHandle_mtls::SetTimeout(int timeout_)
 {
 	// 親クラスの timeout は、0 ならポーリング、-1 ならタイムアウトしない。
 	// mbedtls_net_poll() の timeout はこの仕様。
-	timeout = timeout_;
+	inherited::SetTimeout(timeout_);
 
 	// 一方、mbedtls_ssl_conf_read_timeout() と mbedtls_net_recv_timeout() は
 	// timeout 0 が無期限となっている。どうしてこうなった…

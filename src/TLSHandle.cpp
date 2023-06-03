@@ -39,3 +39,16 @@ TLSHandleBase::~TLSHandleBase()
 {
 }
 
+// 初期化。
+bool
+TLSHandleBase::Init()
+{
+	return true;
+}
+
+// タイムアウトを設定する。
+void
+TLSHandleBase::SetTimeout(int timeout_)
+{
+	timeout = timeout_;
+}
