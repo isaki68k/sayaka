@@ -31,7 +31,9 @@
 class TestUString : public UString
 {
  public:
+#if defined(HAVE_ICONV)
 	static iconv_t *GetHandle() { return &cd; }
+#endif
 };
 
 // 実運用系では cd を解放しないので、テストでは手動で解放しておく
