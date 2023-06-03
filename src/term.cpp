@@ -62,8 +62,10 @@ termdump(const char *src)
 	for (int i = 0; src[i]; i++) {
 		if (src[i] == ESCchar) {
 			r += "<ESC>";
-		} else {
+		} else if (0x20 <= src[i] && src[i] < 0x7f) {
 			r.push_back(src[i]);
+		} else {
+			r += string_format("\\x%02x", src[i]);
 		}
 	}
 	return r;
