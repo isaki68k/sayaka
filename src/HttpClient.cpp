@@ -57,7 +57,7 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 {
 	diag = diag_;
 
-	mtls.reset(new mTLSHandle());
+	mtls.reset(new TLSHandle_mtls());
 
 	if (mtls->Init() == false) {
 		warnx("HttpClient.Init: TLSHandle.Init failed");

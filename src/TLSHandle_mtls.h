@@ -29,15 +29,15 @@
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
 
-class mTLSHandle : public TLSHandleBase
+class TLSHandle_mtls : public TLSHandleBase
 {
  public:
-	mTLSHandle();
-	virtual ~mTLSHandle() override;
+	TLSHandle_mtls();
+	virtual ~TLSHandle_mtls() override;
 
 	// ディスクリプタを持っているのでコピーコンストラクタを禁止する。
-	mTLSHandle(const mTLSHandle&) = delete;
-	mTLSHandle& operator=(const mTLSHandle&) = delete;
+	TLSHandle_mtls(const TLSHandle_mtls&) = delete;
+	TLSHandle_mtls& operator=(const TLSHandle_mtls&) = delete;
 
 	// 初期化
 	bool Init() override;

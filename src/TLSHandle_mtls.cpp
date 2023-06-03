@@ -128,7 +128,7 @@ debug_callback(void *aux, int level, const char *file, int line,
 }
 
 // コンストラクタ
-mTLSHandle::mTLSHandle()
+TLSHandle_mtls::TLSHandle_mtls()
 {
 	// 最初の1回だけグローバルコンテキストを初期化 (後始末はしない)
 	if (__predict_false(gctx.initialized == false)) {
@@ -154,7 +154,7 @@ mTLSHandle::mTLSHandle()
 }
 
 // デストラクタ
-mTLSHandle::~mTLSHandle()
+TLSHandle_mtls::~TLSHandle_mtls()
 {
 	TRACE("called\n");
 
@@ -166,7 +166,7 @@ mTLSHandle::~mTLSHandle()
 // mbedTLS のエラーコードを文字列にして返す
 // (static バッファを使っていることに注意)
 const char *
-mTLSHandle::errmsg(int code)
+TLSHandle_mtls::errmsg(int code)
 {
 	mbedtls_strerror(code, errbuf, sizeof(errbuf));
 	return errbuf;
@@ -175,7 +175,7 @@ mTLSHandle::errmsg(int code)
 
 // 初期化
 bool
-mTLSHandle::Init()
+TLSHandle_mtls::Init()
 {
 	int r;
 
@@ -208,7 +208,7 @@ mTLSHandle::Init()
 }
 
 void
-mTLSHandle::SetTimeout(int timeout_)
+TLSHandle_mtls::SetTimeout(int timeout_)
 {
 	// timeout は将来の拡張性を考慮して、
 	// -1 なら無期限、0  ならポーリングモードとしておきたい。
@@ -224,14 +224,14 @@ mTLSHandle::SetTimeout(int timeout_)
 }
 
 void
-mTLSHandle::UseRSA()
+TLSHandle_mtls::UseRSA()
 {
 	mbedtls_ssl_conf_ciphersuites(&conf, ciphersuites_RSA);
 }
 
 // 接続
 bool
-mTLSHandle::Connect(const char *hostname, const char *servname)
+TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 {
 #if defined(DEBUG)
 	struct timeval start, end, result;
@@ -241,9 +241,9 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
 
 	// ssl_setup() は複数回呼んではいけないし、呼んだ後で conf を変更するな
-	// と書いてあるように読める。mTLSHandle は Init() 後、必要に応じていろいろ
-	// Set してから Connect() を呼ぶということにしているので、ここで呼ぶのが
-	// いいか。
+	// と書いてあるように読める。TLSHandle_mtls は Init() 後、必要に応じて
+	// いろいろ Set してから Connect() を呼ぶということにしているので、
+	// ここで呼ぶのがいいか。
 	r = mbedtls_ssl_setup(&ssl, &conf);
 	if (r != 0) {
 		ERROR("mbedtls_ssl_setup failed: %s\n", errmsg(r));
@@ -316,7 +316,7 @@ mTLSHandle::Connect(const char *hostname, const char *servname)
 // クローズ。
 // 未初期化時や接続前に呼び出しても副作用はない。
 void
-mTLSHandle::Close()
+TLSHandle_mtls::Close()
 {
 	// これを知る方法はないのか…
 	if (net.fd >= 0) {
@@ -332,7 +332,7 @@ mTLSHandle::Close()
 
 // shutdown する
 int
-mTLSHandle::Shutdown(int how)
+TLSHandle_mtls::Shutdown(int how)
 {
 	int rv = 0;
 
@@ -345,7 +345,7 @@ mTLSHandle::Shutdown(int how)
 
 // 読み込み
 size_t
-mTLSHandle::Read(void *buf, size_t len)
+TLSHandle_mtls::Read(void *buf, size_t len)
 {
 	ssize_t rv;
 
@@ -388,7 +388,7 @@ mTLSHandle::Read(void *buf, size_t len)
 
 // 書き出し
 size_t
-mTLSHandle::Write(const void *buf, size_t len)
+TLSHandle_mtls::Write(const void *buf, size_t len)
 {
 	ssize_t rv;
 
@@ -529,7 +529,7 @@ usage()
 int
 main(int ac, char *av[])
 {
-	mTLSHandle mtls;
+	TLSHandle_mtls mtls;
 	const char *hostname = "www.google.com";
 	const char *servname = "443";
 	const char *pathname = "/";
