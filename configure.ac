@@ -236,14 +236,13 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 
 fi
 
-AC_ARG_ENABLE(mbedtls,
-[  --enable-mbedtls        Use mbedTLS instead of OpenSSL], [
-	AC_DEFINE([USE_MBEDTLS])
-	AC_SUBST([MAKE_MBEDTLS], [yes])
-], [])
+AC_ARG_WITH(mbedtls,
+[  --without-mbedtls       Use OpenSSL instead of mbedTLS],
+	[],
+	[with_mbedtls=yes]
+)
 
-if test "${enable_mbedtls}x" = "yesx"; then
-
+if test "x${with_mbedtls}" = "xyes"; then
 # Find mbedtls
 PATHS="/usr/pkg /usr/local"
 
@@ -298,9 +297,12 @@ else
 		fi
 	done
 fi
-if test "x${has_mbedtls}" = "xno"; then
+if test "x${has_mbedtls}" = "xyes"; then
+	AC_DEFINE([USE_MBEDTLS])
+	AC_SUBST([MAKE_MBEDTLS], [yes])
+else
 	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([*** mbedtls not found.
+	AC_MSG_ERROR([*** --with-mbedtls was given, but mbedtls not found.
 	On Ubuntu, sudo apt install libmbedtls-dev])
 fi
 
