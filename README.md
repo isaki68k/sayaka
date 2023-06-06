@@ -88,11 +88,15 @@ twitter クライアント sayaka ちゃん version 3.6.3 (2023/03/26)
 必要なもの
 ---
 * C++17 compiler
-* giflib (maybe >= 5.0)
-* jpeg (libjpeg)
-* libpng
-* mbedtls 2.x (2.9.0 or later?)
 * BSD make (not GNU make)
+
+以下は configure のオプションによって変わります。
+* mbedtls 2.x (2.9.0 or later?) (`--without-mbedtls` を指定しない場合)
+* OpenSSL (`--without-mbedtls` を指定した場合)
+* giflib (maybe >= 5.0) (`--without-stb-image` を指定した場合)
+* jpeg (libjpeg) (`--without-stb-image` を指定した場合)
+* libpng (`--without-stb-image` を指定した場合)
+
 
 pkgsrc をお使いなら
 graphics/giflib, graphics/jpeg, graphics/png, security/mbedtls
@@ -104,9 +108,17 @@ graphics/giflib, graphics/jpeg, graphics/png, security/mbedtls
 ビルドは以下のようにします。
 
 ```
-% ./configure
+% ./configure [--without-stb-image] [--without-mbedtls]
 % make sayaka
 ```
+
+* `--without-stb-image` … デフォルトでは画像ローダには同梱の stb_image
+	ヘッダライブラリを使用しています。
+	何らかの理由でこれを使用せず外部ライブラリを使用したい場合に
+	指定します。その場合は giflib、libjpeg、libpng が必要です。
+* `--without-mbedtls` … デフォルトでは SSL ライブラリに mbedTLS を使用します。
+	何らかの理由でこれを使用せず OpenSSL
+	を使用したい場合はこのオプションを指定してください。
 
 make install はないので、出来上がった src/sayaka (実行ファイル) をパスの通ったところにインストールするとかしてください。
 ちなみに `make all` すると、画像ファイルを SIXEL に変換して表示する
@@ -153,6 +165,7 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	2桁MHz級の遅マシンでコネクションがタイムアウトするようなら指定してみてください。
 	このオプションは REST API に適用され、
 	画像のダウンロードなどには適用されません。
+	SSL ライブラリに mbedTLS を選択している場合のみ有効です。
 
 * `--color <n>` … 色数を指定します。デフォルトは 256色です。
 	他はたぶん 16 と 2 (と 8?) くらいを想定しています。
