@@ -188,17 +188,17 @@ if test $? \!= 0 ; then
 	AC_MSG_ERROR([*** pkg-config (or \$PKG_CONFIG) not found])
 fi
 
-AC_MSG_CHECKING([for stb_image])
-AC_ARG_ENABLE(stb,
-[  --enable-stb            Use libstb for image loader], [
+# stb-image はデフォルト採用で、without で外すことも可能。
+AC_ARG_WITH([stb-image],
+[  --without-stb-image     Use external JPG,PNG,GIF libs instead of stb_image],
+	[],
+	[with_stb_image=yes]
+)
+
+if test "x${with_stb_image}" = "xyes"; then
 	AC_DEFINE([USE_STB_IMAGE])
 	AC_SUBST([MAKE_STB_IMAGE], [yes])
-	AC_MSG_RESULT([yes])
-], [
-	AC_MSG_RESULT([no])
-])
-
-if test "${enable_stb}x" \!= "yesx"; then
+else
 
 PKGS="libjpeg libpng"
 for p in ${PKGS}; do
@@ -213,7 +213,7 @@ for p in ${PKGS}; do
 		LIBS="${LIBS} ${L}"
 	else
 		AC_MSG_RESULT([no])
-		AC_MSG_ERROR([*** pkg-config cannot find ${p}])
+		AC_MSG_ERROR([*** --without-stb-image was given, but pkg-config cannot find ${p}])
 	fi
 done
 

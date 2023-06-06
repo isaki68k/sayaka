@@ -707,7 +707,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_stb
+with_stb_image
 enable_mbedtls
 '
       ac_precious_vars='build_alias
@@ -1341,8 +1341,12 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-stb            Use libstb for image loader
   --enable-mbedtls        Use mbedTLS instead of OpenSSL
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --without-stb-image     Use external JPG,PNG,GIF libs instead of stb_image
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -3708,28 +3712,24 @@ if test $? \!= 0 ; then
 	as_fn_error $? "*** pkg-config (or \$PKG_CONFIG) not found" "$LINENO" 5
 fi
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for stb_image" >&5
-printf %s "checking for stb_image... " >&6; }
-# Check whether --enable-stb was given.
-if test ${enable_stb+y}
+# stb-image はデフォルト採用で、without で外すことも可能。
+
+# Check whether --with-stb-image was given.
+if test ${with_stb_image+y}
 then :
-  enableval=$enable_stb;
-	printf "%s\n" "#define USE_STB_IMAGE 1" >>confdefs.h
-
-	MAKE_STB_IMAGE=yes
-
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-
+  withval=$with_stb_image;
 else $as_nop
-
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
+  with_stb_image=yes
 
 fi
 
 
-if test "${enable_stb}x" \!= "yesx"; then
+if test "x${with_stb_image}" = "xyes"; then
+	printf "%s\n" "#define USE_STB_IMAGE 1" >>confdefs.h
+
+	MAKE_STB_IMAGE=yes
+
+else
 
 PKGS="libjpeg libpng"
 for p in ${PKGS}; do
@@ -3747,7 +3747,7 @@ printf "%s\n" "yes" >&6; }
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-		as_fn_error $? "*** pkg-config cannot find ${p}" "$LINENO" 5
+		as_fn_error $? "*** --without-stb-image was given, but pkg-config cannot find ${p}" "$LINENO" 5
 	fi
 done
 
