@@ -26,8 +26,9 @@
 #pragma once
 
 #include "TLSHandle.h"
-#include <mbedtls/net_sockets.h>
-#include <mbedtls/ssl.h>
+#include <memory>
+
+class TLSHandle_mtls_inner;
 
 class TLSHandle_mtls : public TLSHandleBase
 {
@@ -65,10 +66,7 @@ class TLSHandle_mtls : public TLSHandleBase
 	size_t Write(const void *buf, size_t len) override;
 
  private:
-	// 内部コンテキスト
-	mbedtls_net_context net {};
-	mbedtls_ssl_context ssl {};
-	mbedtls_ssl_config conf {};
+	std::unique_ptr<TLSHandle_mtls_inner> inner /*{}*/;
 
 	// mbedTLS のエラーコードを文字列にして返す
 	// (static バッファを使っていることに注意)

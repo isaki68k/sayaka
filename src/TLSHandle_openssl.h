@@ -26,7 +26,9 @@
 #pragma once
 
 #include "TLSHandle.h"
-#include <openssl/ssl.h>
+#include <memory>
+
+class TLSHandle_openssl_inner;
 
 class TLSHandle_openssl : public TLSHandleBase
 {
@@ -63,6 +65,5 @@ class TLSHandle_openssl : public TLSHandleBase
 	bool ConnectSocket(const char *hostname, const char *servname);
 
 	int fd {};
-	SSL_CTX *ctx {};
-	SSL *ssl {};
+	std::unique_ptr<TLSHandle_openssl_inner> inner /*{}*/;
 };

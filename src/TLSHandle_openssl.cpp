@@ -36,15 +36,28 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
+
+// 内部クラス
+class TLSHandle_openssl_inner
+{
+ public:
+	~TLSHandle_openssl_inner();
+
+	SSL_CTX *ctx {};
+	SSL *ssl {};
+};
 
 // コンストラクタ
 TLSHandle_openssl::TLSHandle_openssl()
 {
+	inner.reset(new TLSHandle_openssl_inner());
 }
 
 // デストラクタ
 TLSHandle_openssl::~TLSHandle_openssl()
 {
+	inner.reset();
 	ERR_free_strings();
 }
 
@@ -82,16 +95,16 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 	}
 
 	if (usessl) {
-		ctx = SSL_CTX_new(SSLv23_client_method());
-		ssl = SSL_new(ctx);
+		inner->ctx = SSL_CTX_new(SSLv23_client_method());
+		inner->ssl = SSL_new(inner->ctx);
 
-		r = SSL_set_fd(ssl, fd);
+		r = SSL_set_fd(inner->ssl, fd);
 		if (r == 0) {
 			ERR_print_errors_fp(stderr);
 			return false;
 		}
 
-		r = SSL_connect(ssl);
+		r = SSL_connect(inner->ssl);
 		if (r != 1) {
 			ERR_print_errors_fp(stderr);
 			return false;
@@ -193,9 +206,11 @@ void
 TLSHandle_openssl::Close()
 {
 	if (usessl) {
-		SSL_shutdown(ssl);
-		SSL_free(ssl);
-		SSL_CTX_free(ctx);
+		SSL_shutdown(inner->ssl);
+		SSL_free(inner->ssl);
+		inner->ssl = NULL;
+		SSL_CTX_free(inner->ctx);
+		inner->ctx = NULL;
 	}
 	close(fd);
 	fd = -1;
@@ -216,7 +231,7 @@ size_t
 TLSHandle_openssl::Read(void *buf, size_t len)
 {
 	if (usessl) {
-		return SSL_read(ssl, buf, len);
+		return SSL_read(inner->ssl, buf, len);
 	} else {
 		return read(fd, buf, len);
 	}
@@ -226,8 +241,21 @@ size_t
 TLSHandle_openssl::Write(const void *buf, size_t len)
 {
 	if (usessl) {
-		return SSL_write(ssl, buf, len);
+		return SSL_write(inner->ssl, buf, len);
 	} else {
 		return write(fd, buf, len);
+	}
+}
+
+// デストラクタ (内部クラス)
+TLSHandle_openssl_inner::~TLSHandle_openssl_inner()
+{
+	if (ssl) {
+		SSL_free(ssl);
+		ssl = NULL;
+	}
+	if (ctx) {
+		SSL_CTX_free(ctx);
+		ctx = NULL;
 	}
 }

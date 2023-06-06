@@ -44,6 +44,7 @@
 #include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
 #include <mbedtls/net_sockets.h>
+#include <mbedtls/ssl.h>
 
 // ローカルのデバッグモード (on / off のみ)
 //#define DEBUG 1
@@ -127,6 +128,18 @@ debug_callback(void *aux, int level, const char *file, int line,
 		level, file, line, msg);
 }
 
+// 内部クラス
+class TLSHandle_mtls_inner
+{
+ public:
+	TLSHandle_mtls_inner();
+	~TLSHandle_mtls_inner();
+
+	mbedtls_net_context net {};
+	mbedtls_ssl_context ssl {};
+	mbedtls_ssl_config conf {};
+};
+
 // コンストラクタ
 TLSHandle_mtls::TLSHandle_mtls()
 {
@@ -148,9 +161,7 @@ TLSHandle_mtls::TLSHandle_mtls()
 	}
 
 	// メンバを初期化
-	mbedtls_net_init(&net);
-	mbedtls_ssl_init(&ssl);
-	mbedtls_ssl_config_init(&conf);
+	inner.reset(new TLSHandle_mtls_inner());
 }
 
 // デストラクタ
@@ -159,8 +170,7 @@ TLSHandle_mtls::~TLSHandle_mtls()
 	TRACE("called\n");
 
 	Close();
-	mbedtls_ssl_free(&ssl);
-	mbedtls_ssl_config_free(&conf);
+	inner.reset();
 }
 
 // mbedTLS のエラーコードを文字列にして返す
@@ -184,7 +194,7 @@ TLSHandle_mtls::Init()
 	}
 
 	// TLS config
-	r = mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_CLIENT,
+	r = mbedtls_ssl_config_defaults(&inner->conf, MBEDTLS_SSL_IS_CLIENT,
 		MBEDTLS_SSL_TRANSPORT_STREAM,
 		MBEDTLS_SSL_PRESET_DEFAULT);
 	if (r != 0) {
@@ -192,11 +202,11 @@ TLSHandle_mtls::Init()
 		goto errexit;
 	}
 
-	mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_NONE);
-	mbedtls_ssl_conf_rng(&conf, mbedtls_ctr_drbg_random, &gctx.ctr_drbg);
-	mbedtls_ssl_conf_dbg(&conf, debug_callback, stderr);
+	mbedtls_ssl_conf_authmode(&inner->conf, MBEDTLS_SSL_VERIFY_NONE);
+	mbedtls_ssl_conf_rng(&inner->conf, mbedtls_ctr_drbg_random, &gctx.ctr_drbg);
+	mbedtls_ssl_conf_dbg(&inner->conf, debug_callback, stderr);
 
-	mbedtls_ssl_set_bio(&ssl, &net,
+	mbedtls_ssl_set_bio(&inner->ssl, &inner->net,
 		mbedtls_net_send,
 		NULL, // recv (without timeout)
 		mbedtls_net_recv_timeout);
@@ -222,13 +232,13 @@ TLSHandle_mtls::SetTimeout(int timeout_)
 	// 仕方ないのでここで変数を2つ用意して、使い分けることにする。
 	ssl_timeout = (timeout_ > 0) ? timeout_ : 0;
 
-	mbedtls_ssl_conf_read_timeout(&conf, ssl_timeout);
+	mbedtls_ssl_conf_read_timeout(&inner->conf, ssl_timeout);
 }
 
 bool
 TLSHandle_mtls::UseRSA()
 {
-	mbedtls_ssl_conf_ciphersuites(&conf, ciphersuites_RSA);
+	mbedtls_ssl_conf_ciphersuites(&inner->conf, ciphersuites_RSA);
 	return true;
 }
 
@@ -247,7 +257,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 	// と書いてあるように読める。TLSHandle_mtls は Init() 後、必要に応じて
 	// いろいろ Set してから Connect() を呼ぶということにしているので、
 	// ここで呼ぶのがいいか。
-	r = mbedtls_ssl_setup(&ssl, &conf);
+	r = mbedtls_ssl_setup(&inner->ssl, &inner->conf);
 	if (r != 0) {
 		ERROR("mbedtls_ssl_setup failed: %s\n", errmsg(r));
 		return false;
@@ -255,7 +265,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 
 	// 独自のノンブロッキングコネクト。(see net_socket2.cpp)
 	// 戻り値 -0x004b は EINPROGRESS 相当。
-	r = mbedtls_net_connect_nonblock(&net, hostname, servname,
+	r = mbedtls_net_connect_nonblock(&inner->net, hostname, servname,
 		MBEDTLS_NET_PROTO_TCP, family);
 	if (__predict_false(r != -0x004b)) {
 		if (__predict_false(r == 0)) {
@@ -273,7 +283,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 
 	// ブロッキングに戻す (ここからは net コンテキスト内のディスクリプタが
 	// オープンなので、用意されてる API が使える)
-	r = mbedtls_net_set_block(&net);
+	r = mbedtls_net_set_block(&inner->net);
 	if (__predict_false(r != 0)) {
 		// mbedtls_net_set_block() は他の mbedTLS API とか違って fcntl(2) の
 		// 戻り値をそのまま返してしまっており、成功なら 0、エラーなら -1 が
@@ -282,7 +292,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 		goto abort;
 	}
 
-	r = mbedtls_net_poll(&net, MBEDTLS_NET_POLL_WRITE, timeout);
+	r = mbedtls_net_poll(&inner->net, MBEDTLS_NET_POLL_WRITE, timeout);
 	if (__predict_false(r < 0)) {
 		ERROR("mbedtls_net_poll failed: %s\n", errmsg(r));
 		goto abort;
@@ -293,7 +303,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 	}
 
 	if (usessl) {
-		while ((r = mbedtls_ssl_handshake(&ssl)) != 0) {
+		while ((r = mbedtls_ssl_handshake(&inner->ssl)) != 0) {
 			if (r != MBEDTLS_ERR_SSL_WANT_READ
 			 && r != MBEDTLS_ERR_SSL_WANT_WRITE) {
 				ERROR("mbedtls_ssl_handshake failed: %s\n", errmsg(r));
@@ -312,7 +322,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 	return true;
 
  abort:
-	mbedtls_net_free(&net);
+	mbedtls_net_free(&inner->net);
 	return false;
 }
 
@@ -322,14 +332,14 @@ void
 TLSHandle_mtls::Close()
 {
 	// これを知る方法はないのか…
-	if (net.fd >= 0) {
+	if (inner->net.fd >= 0) {
 		TRACE("called\n");
 
 		if (usessl) {
-			mbedtls_ssl_close_notify(&ssl);
+			mbedtls_ssl_close_notify(&inner->ssl);
 		}
 		// free という名前だが実は close
-		mbedtls_net_free(&net);
+		mbedtls_net_free(&inner->net);
 	}
 }
 
@@ -340,7 +350,7 @@ TLSHandle_mtls::Shutdown(int how)
 	int rv = 0;
 
 	if (usessl == false) {
-		rv = shutdown(net.fd, how);
+		rv = shutdown(inner->net.fd, how);
 	}
 
 	return rv;
@@ -356,7 +366,7 @@ TLSHandle_mtls::Read(void *buf, size_t len)
 
 	if (usessl) {
 	 ssl_again:
-		rv = mbedtls_ssl_read(&ssl, (unsigned char *)buf, len);
+		rv = mbedtls_ssl_read(&inner->ssl, (unsigned char *)buf, len);
 		if (rv < 0) {
 			if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
 				// EOF
@@ -373,7 +383,7 @@ TLSHandle_mtls::Read(void *buf, size_t len)
 	} else {
 	 net_again:
 		// net_recv_timeout() は 0 が無期限のほう (SetTimeout() 参照)
-		rv = mbedtls_net_recv_timeout(&net, (unsigned char *)buf, len,
+		rv = mbedtls_net_recv_timeout(&inner->net, (unsigned char *)buf, len,
 			ssl_timeout);
 		if (rv < 0) {
 			// XXX ?
@@ -398,13 +408,13 @@ TLSHandle_mtls::Write(const void *buf, size_t len)
 	TRACE("called\n");
 
 	if (usessl) {
-		rv = mbedtls_ssl_write(&ssl, (const unsigned char *)buf, len);
+		rv = mbedtls_ssl_write(&inner->ssl, (const unsigned char *)buf, len);
 		if (rv < 0) {
 			ERROR("mbedtls_ssl_write failed: %s\n", errmsg(rv));
 			return rv;
 		}
 	} else {
-		rv = mbedtls_net_send(&net, (const unsigned char *)buf, len);
+		rv = mbedtls_net_send(&inner->net, (const unsigned char *)buf, len);
 		if (rv < 0) {
 			ERROR("mbedtls_net_send failed: %s\n", errmsg(rv));
 			return rv;
@@ -505,6 +515,20 @@ mbedtls_net_connect_nonblock(mbedtls_net_context *ctx,
 	return ret;
 }
 
+// コンストラクタ (内部クラス)
+TLSHandle_mtls_inner::TLSHandle_mtls_inner()
+{
+	mbedtls_net_init(&net);
+	mbedtls_ssl_init(&ssl);
+	mbedtls_ssl_config_init(&conf);
+}
+
+// デストラクタ (内部クラス)
+TLSHandle_mtls_inner::~TLSHandle_mtls_inner()
+{
+	mbedtls_ssl_free(&ssl);
+	mbedtls_ssl_config_free(&conf);
+}
 
 #if defined(TEST)
 
