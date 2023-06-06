@@ -320,8 +320,30 @@ if test "x${has_mbedtls_net_poll}" = "xno"; then
 fi
 
 else
-	# Use openssl
-	LIBS="${LIBS} -lcrypto -lssl"
+# Find OpenSSL
+AC_MSG_CHECKING([for OpenSSL])
+old_LIBS=${LIBS}
+LIBS="${LIBS} -lcrypto -lssl"
+AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	[
+		#include <openssl/sha.h>
+		#include <openssl/ssl.h>
+	], [
+		SSL_library_init();		// libssl
+		SHA1_Init(NULL);		// libcrypto
+	])], has_openssl=yes, has_openssl=no
+)
+if test "x${has_openssl}" = "xyes"; then
+	AC_MSG_RESULT([yes])
+else
+	LIBS=${old_LIBS}
+fi
+if test "x${has_openssl}" = "xyes"; then
+else
+	AC_MSG_RESULT([no])
+	AC_MSG_FAILURE([--without-mbedtls was given, but OpenSSL not found.])
+fi
+
 fi
 
 AC_CONFIG_HEADERS([config.h])

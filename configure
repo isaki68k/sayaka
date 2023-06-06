@@ -3973,8 +3973,53 @@ See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 else
-	# Use openssl
-	LIBS="${LIBS} -lcrypto -lssl"
+# Find OpenSSL
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for OpenSSL" >&5
+printf %s "checking for OpenSSL... " >&6; }
+old_LIBS=${LIBS}
+LIBS="${LIBS} -lcrypto -lssl"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <openssl/sha.h>
+		#include <openssl/ssl.h>
+
+int
+main (void)
+{
+
+		SSL_library_init();		// libssl
+		SHA1_Init(NULL);		// libcrypto
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  has_openssl=yes
+else $as_nop
+  has_openssl=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+if test "x${has_openssl}" = "xyes"; then
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else
+	LIBS=${old_LIBS}
+fi
+if test "x${has_openssl}" = "xyes"; then
+else
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--without-mbedtls was given, but OpenSSL not found.
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
 fi
 
 ac_config_headers="$ac_config_headers config.h"
