@@ -27,6 +27,7 @@
 
 #include "TLSHandle.h"
 #include <memory>
+#include <vector>
 
 class TLSHandle_openssl_inner;
 
@@ -60,6 +61,10 @@ class TLSHandle_openssl : public TLSHandleBase
 	// 読み書き
 	size_t Read(void *buf, size_t len) override;
 	size_t Write(const void *buf, size_t len) override;
+
+	// HMAC-SHA1 したバイナリを返す (OAuth 用)
+	static std::vector<uint8> HMAC_SHA1(const std::string& key,
+		const std::string& msg);
 
  private:
 	bool ConnectSocket(const char *hostname, const char *servname);

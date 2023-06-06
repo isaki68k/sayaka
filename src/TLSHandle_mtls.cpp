@@ -43,6 +43,7 @@
 #include <mbedtls/debug.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
+#include <mbedtls/md.h>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
 
@@ -425,6 +426,22 @@ TLSHandle_mtls::Write(const void *buf, size_t len)
 	return rv;
 }
 
+// HMAC-SHA1 したバイナリを返す。
+/*static*/ std::vector<uint8>
+TLSHandle_mtls::HMAC_SHA1(const std::string& key, const std::string& msg)
+{
+	mbedtls_md_context_t ctx;
+	std::vector<uint8> result(20);	// SHA-1 は 20バイト (決め打ち…)
+
+	mbedtls_md_init(&ctx);
+	mbedtls_md_setup(&ctx, mbedtls_md_info_from_type(MBEDTLS_MD_SHA1), 1);
+	mbedtls_md_hmac_starts(&ctx, (const uint8 *)key.c_str(), key.size());
+	mbedtls_md_hmac_update(&ctx, (const uint8 *)msg.c_str(), msg.size());
+	mbedtls_md_hmac_finish(&ctx, result.data());
+	mbedtls_md_free(&ctx);
+
+	return result;
+}
 
 //
 // mbedTLS 改良

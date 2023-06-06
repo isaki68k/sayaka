@@ -36,6 +36,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <openssl/err.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
 #include <openssl/ssl.h>
 
 // 内部クラス
@@ -245,6 +247,25 @@ TLSHandle_openssl::Write(const void *buf, size_t len)
 	} else {
 		return write(fd, buf, len);
 	}
+}
+
+// HMAC-SHA1 したバイナリを返す。
+/*static*/ std::vector<uint8>
+TLSHandle_openssl::HMAC_SHA1(const std::string& key, const std::string& msg)
+{
+	std::array<unsigned char, EVP_MAX_MD_SIZE> hash;
+	unsigned int hashlen;
+
+	HMAC(EVP_sha1(),
+		key.data(),
+		static_cast<int>(key.size()),
+		(const unsigned char *)msg.data(),
+		static_cast<int>(msg.size()),
+		hash.data(),
+		&hashlen
+	);
+
+	return std::vector<uint8>(hash.begin(), hash.begin() + hashlen);
 }
 
 // デストラクタ (内部クラス)
