@@ -334,12 +334,9 @@ else
 		AC_MSG_RESULT([yes])
 	else
 		LIBS=${old_LIBS}
-	fi
-
-	if test "x${has_openssl}" = "xyes"; then
-	else
 		AC_MSG_RESULT([no])
-		AC_MSG_FAILURE([--without-mbedtls was given, but OpenSSL not found.])
+		AC_MSG_FAILURE([--without-mbedtls was given, but OpenSSL not found.
+	On Ubuntu, sudo apt install libssl-dev])
 	fi
 fi
 

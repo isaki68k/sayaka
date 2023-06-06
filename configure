@@ -4005,15 +4005,12 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 printf "%s\n" "yes" >&6; }
 	else
 		LIBS=${old_LIBS}
-	fi
-
-	if test "x${has_openssl}" = "xyes"; then
-	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--without-mbedtls was given, but OpenSSL not found.
+	On Ubuntu, sudo apt install libssl-dev
 See \`config.log' for more details" "$LINENO" 5; }
 	fi
 fi
