@@ -17,5 +17,5 @@
 #undef HAVE___BUILTIN_EXPECT
 #undef HAVE_ICONV
 #undef HAVE_ICONV_CONST
-#undef USE_MBEDLTS
+#undef USE_MBEDTLS
 #undef USE_STB_IMAGE
