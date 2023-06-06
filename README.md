@@ -91,16 +91,15 @@ twitter クライアント sayaka ちゃん version 3.6.3 (2023/03/26)
 * BSD make (not GNU make)
 
 以下は configure のオプションによって変わります。
-* mbedtls 2.x (2.9.0 or later?) (`--without-mbedtls` を指定しない場合)
-* OpenSSL (`--without-mbedtls` を指定した場合)
-* giflib (maybe >= 5.0) (`--without-stb-image` を指定した場合)
-* jpeg (libjpeg) (`--without-stb-image` を指定した場合)
-* libpng (`--without-stb-image` を指定した場合)
-
-
-pkgsrc をお使いなら
-graphics/giflib, graphics/jpeg, graphics/png, security/mbedtls
-をインストールします。
+* mbedtls 2.x (2.9.0 or later?)
+	… `--without-mbedtls` を指定しない場合(デフォルト) に必要です。
+	pkgsrc なら security/mbedtls、OpenBSD なら security/polarssl です。
+* OpenSSL
+	… `--without-mbedtls` を指定した場合は必要です。
+	Ubuntu なら libssl-dev です。
+* giflib (maybe >= 5.0)、jpeg(libjpeg)、libpng
+	… `--without-stb-image` を指定した場合は必要です。
+	pkgsrc なら graphics/giflib, graphics/jpeg, graphics/png です。
 
 
 インストール方法
