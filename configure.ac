@@ -23,7 +23,7 @@ old_CXXFLAGS="${CXXFLAGS}"
 CXXFLAGS="${CXX_STD} ${CXXFLAGS}"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
 	AC_MSG_RESULT([yes]),
-	AC_MSG_ERROR("*** C++ compiler '${CXX}' doesn't support ${CXX_STD}."))
+	AC_MSG_FAILURE("C++ compiler '${CXX}' doesn't support ${CXX_STD}."))
 CXXFLAGS="${old_CXXFLAGS}"
 CXX="${CXX} ${CXX_STD}"
 AC_LANG_POP([C++])
@@ -156,7 +156,7 @@ CPPFLAGS="${old_CPPFLAGS}"
 # libbsd on Linux
 AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
 if test "x${has_getprogname}" = "xno"; then
-	AC_MSG_ERROR([*** getprogname is not found.
+	AC_MSG_FAILURE([getprogname is not found.
 	On Ubuntu, sudo apt install libbsd-dev])
 fi
 #AC_CHECK_LIB(c, getprogname, ,)
@@ -175,7 +175,7 @@ fi
 #		getprogname()
 #	])],
 #	# nothing to do on success
-#	, [AC_MSG_ERROR([*** getprogname is not found.
+#	, [AC_MSG_FAILURE([getprogname is not found.
 #	On Ubuntu, sudo apt install libbsd-dev])
 #	]
 #)
@@ -185,7 +185,7 @@ if test -z "${PKG_CONFIG}"; then
 fi
 ${PKG_CONFIG} --version 2>&1 > /dev/null
 if test $? \!= 0 ; then
-	AC_MSG_ERROR([*** pkg-config (or \$PKG_CONFIG) not found])
+	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found])
 fi
 
 # stb-image はデフォルト採用で、without で外すことも可能。
@@ -213,7 +213,7 @@ for p in ${PKGS}; do
 		LIBS="${LIBS} ${L}"
 	else
 		AC_MSG_RESULT([no])
-		AC_MSG_ERROR([*** --without-stb-image was given, but pkg-config cannot find ${p}])
+		AC_MSG_FAILURE([--without-stb-image was given, but pkg-config cannot find ${p}])
 	fi
 done
 
@@ -230,7 +230,9 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	], [
 		AC_MSG_RESULT([no])
 		LIBS=${old_LIBS}
-		AC_MSG_ERROR([*** libgif not found.])
+		AC_MSG_FAILURE([--without-stb-image was given, but libgif not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/giflib
+	On Ubuntu, sudo apt install libgif-dev])
 	]
 )
 
@@ -302,7 +304,9 @@ if test "x${has_mbedtls}" = "xyes"; then
 	AC_SUBST([MAKE_MBEDTLS], [yes])
 else
 	AC_MSG_RESULT([no])
-	AC_MSG_ERROR([*** --with-mbedtls was given, but mbedtls not found.
+	AC_MSG_FAILURE([--with-mbedtls was given, but mbedtls not found.
+	On NetBSD(pkgsrc), install pkgsrc/security/mbedtls
+	On OpenBSD(ports), install ports/security/polarssl
 	On Ubuntu, sudo apt install libmbedtls-dev])
 fi
 
@@ -311,7 +315,7 @@ AC_CHECK_LIB(mbedtls, mbedtls_net_poll,
 	has_mbedtls_net_poll=yes,
 	has_mbedtls_net_poll=no)
 if test "x${has_mbedtls_net_poll}" = "xno"; then
-	AC_MSG_ERROR([*** mbedtls doesn't have mbedtls_net_poll().
+	AC_MSG_FAILURE([--with-mbedtls was given, but mbedtls doesn't have mbedtls_net_poll().
 	Please update your mbedtls to >= 2.9.0(?).])
 fi
 

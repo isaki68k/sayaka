@@ -2981,7 +2981,10 @@ then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 else $as_nop
-  as_fn_error $? "\"*** C++ compiler '${CXX}' doesn't support ${CXX_STD}.\"" "$LINENO" 5
+  { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "\"C++ compiler '${CXX}' doesn't support ${CXX_STD}.\"
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 CXXFLAGS="${old_CXXFLAGS}"
@@ -3675,8 +3678,11 @@ else $as_nop
 fi
 
 if test "x${has_getprogname}" = "xno"; then
-	as_fn_error $? "*** getprogname is not found.
-	On Ubuntu, sudo apt install libbsd-dev" "$LINENO" 5
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "getprogname is not found.
+	On Ubuntu, sudo apt install libbsd-dev
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 #AC_CHECK_LIB(c, getprogname, ,)
 #AC_CHECK_LIB(bsd, getprogname,
@@ -3694,7 +3700,7 @@ fi
 #		getprogname()
 #	])],
 #	# nothing to do on success
-#	, [AC_MSG_ERROR([*** getprogname is not found.
+#	, [AC_MSG_FAILURE([getprogname is not found.
 #	On Ubuntu, sudo apt install libbsd-dev])
 #	]
 #)
@@ -3704,7 +3710,10 @@ if test -z "${PKG_CONFIG}"; then
 fi
 ${PKG_CONFIG} --version 2>&1 > /dev/null
 if test $? \!= 0 ; then
-	as_fn_error $? "*** pkg-config (or \$PKG_CONFIG) not found" "$LINENO" 5
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "pkg-config (or \$PKG_CONFIG) not found
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 # stb-image はデフォルト採用で、without で外すことも可能。
@@ -3742,7 +3751,10 @@ printf "%s\n" "yes" >&6; }
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-		as_fn_error $? "*** --without-stb-image was given, but pkg-config cannot find ${p}" "$LINENO" 5
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--without-stb-image was given, but pkg-config cannot find ${p}
+See \`config.log' for more details" "$LINENO" 5; }
 	fi
 done
 
@@ -3776,7 +3788,12 @@ else $as_nop
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 		LIBS=${old_LIBS}
-		as_fn_error $? "*** libgif not found." "$LINENO" 5
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--without-stb-image was given, but libgif not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/giflib
+	On Ubuntu, sudo apt install libgif-dev
+See \`config.log' for more details" "$LINENO" 5; }
 
 
 fi
@@ -3896,8 +3913,13 @@ if test "x${has_mbedtls}" = "xyes"; then
 else
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	as_fn_error $? "*** --with-mbedtls was given, but mbedtls not found.
-	On Ubuntu, sudo apt install libmbedtls-dev" "$LINENO" 5
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--with-mbedtls was given, but mbedtls not found.
+	On NetBSD(pkgsrc), install pkgsrc/security/mbedtls
+	On OpenBSD(ports), install ports/security/polarssl
+	On Ubuntu, sudo apt install libmbedtls-dev
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 # Check mbedtls version. need >= 2.9.0(?)
@@ -3943,8 +3965,11 @@ else $as_nop
 fi
 
 if test "x${has_mbedtls_net_poll}" = "xno"; then
-	as_fn_error $? "*** mbedtls doesn't have mbedtls_net_poll().
-	Please update your mbedtls to >= 2.9.0(?)." "$LINENO" 5
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--with-mbedtls was given, but mbedtls doesn't have mbedtls_net_poll().
+	Please update your mbedtls to >= 2.9.0(?).
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 else
