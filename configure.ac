@@ -199,28 +199,28 @@ if test "x${with_stb_image}" = "xyes"; then
 	AC_DEFINE([USE_STB_IMAGE])
 	AC_SUBST([MAKE_STB_IMAGE], [yes])
 else
+	PKGS="libjpeg libpng"
+	for p in ${PKGS}; do
+		AC_MSG_CHECKING([for ${p}])
 
-PKGS="libjpeg libpng"
-for p in ${PKGS}; do
-	AC_MSG_CHECKING([for ${p}])
+		if ${PKG_CONFIG} --exists ${p}; then
+			AC_MSG_RESULT([yes])
+			H=`${PKG_CONFIG} --cflags ${p}`
+			L=`${PKG_CONFIG} --libs ${p}`
 
-	if ${PKG_CONFIG} --exists ${p}; then
-		AC_MSG_RESULT([yes])
-		H=`${PKG_CONFIG} --cflags ${p}`
-		L=`${PKG_CONFIG} --libs ${p}`
+			CPPFLAGS="${CPPFLAGS} ${H}"
+			LIBS="${LIBS} ${L}"
+		else
+			AC_MSG_RESULT([no])
+			AC_MSG_FAILURE(
+			[--without-stb-image was given, but pkg-config cannot find ${p}])
+		fi
+	done
 
-		CPPFLAGS="${CPPFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		AC_MSG_RESULT([no])
-		AC_MSG_FAILURE([--without-stb-image was given, but pkg-config cannot find ${p}])
-	fi
-done
-
-AC_MSG_CHECKING([for libgif])
-old_LIBS=${LIBS}
-LIBS="${LIBS} -lgif"
-AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	AC_MSG_CHECKING([for libgif])
+	old_LIBS=${LIBS}
+	LIBS="${LIBS} -lgif"
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[
 		#include <gif_lib.h>
 	], [
@@ -233,9 +233,7 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		AC_MSG_FAILURE([--without-stb-image was given, but libgif not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/giflib
 	On Ubuntu, sudo apt install libgif-dev])
-	]
-)
-
+	])
 fi
 
 AC_ARG_WITH(mbedtls,
@@ -245,14 +243,14 @@ AC_ARG_WITH(mbedtls,
 )
 
 if test "x${with_mbedtls}" = "xyes"; then
-# Find mbedtls
-PATHS="/usr/pkg /usr/local"
+	# Find mbedtls
+	PATHS="/usr/pkg /usr/local"
 
-# libmbedtls と libmbedcrypto を同時に探す
-AC_MSG_CHECKING([for mbedtls])
-old_LIBS=${LIBS}
-LIBS="${LIBS} -lmbedtls -lmbedcrypto"
-AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	# libmbedtls と libmbedcrypto を同時に探す
+	AC_MSG_CHECKING([for mbedtls])
+	old_LIBS=${LIBS}
+	LIBS="${LIBS} -lmbedtls -lmbedcrypto"
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[
 		#include <mbedtls/net_sockets.h>
 		#include <mbedtls/entropy.h>
@@ -261,25 +259,25 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM(
 		mbedtls_entropy_context e;
 		mbedtls_net_init(&net);
 		mbedtls_entropy_init(&e);
-	])], has_mbedtls=yes, has_mbedtls=no
-)
-if test "x${has_mbedtls}" = "xyes"; then
-	AC_MSG_RESULT([yes])
-else
-	LIBS=${old_LIBS}
+	])], has_mbedtls=yes, has_mbedtls=no)
 
-	# Try PATHS
-	old_CPPFLAGS=${CPPFLAGS}
-	for p in ${PATHS}; do
-		CPPFLAGS="${CPPFLAGS} -I${p}/include"
-		case "${host_os}" in
-		 netbsd*)
-			LIBS="${LIBS} -Wl,-R,${p}/lib"
-			;;
-		esac
-		LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
+	if test "x${has_mbedtls}" = "xyes"; then
+		AC_MSG_RESULT([yes])
+	else
+		LIBS=${old_LIBS}
 
-		AC_LINK_IFELSE([AC_LANG_PROGRAM(
+		# Try PATHS
+		old_CPPFLAGS=${CPPFLAGS}
+		for p in ${PATHS}; do
+			CPPFLAGS="${CPPFLAGS} -I${p}/include"
+			case "${host_os}" in
+			 netbsd*)
+				LIBS="${LIBS} -Wl,-R,${p}/lib"
+				;;
+			esac
+			LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
+
+			AC_LINK_IFELSE([AC_LANG_PROGRAM(
 			[
 				#include <mbedtls/net_sockets.h>
 				#include <mbedtls/entropy.h>
@@ -288,62 +286,61 @@ else
 				mbedtls_entropy_context e;
 				mbedtls_net_init(&net);
 				mbedtls_entropy_init(&e);
-			])], has_mbedtls=yes, has_mbedtls=no
-		)
-		if test "x${has_mbedtls}" = "xyes"; then
-			AC_MSG_RESULT([${p}])
-			break
-		else
-			CPPFLAGS=${old_CPPFLAGS}
-			LIBS=${old_LIBS}
-		fi
-	done
-fi
-if test "x${has_mbedtls}" = "xyes"; then
-	AC_DEFINE([USE_MBEDTLS])
-	AC_SUBST([MAKE_MBEDTLS], [yes])
-else
-	AC_MSG_RESULT([no])
-	AC_MSG_FAILURE([--with-mbedtls was given, but mbedtls not found.
+			])], has_mbedtls=yes, has_mbedtls=no)
+			if test "x${has_mbedtls}" = "xyes"; then
+				AC_MSG_RESULT([${p}])
+				break
+			else
+				CPPFLAGS=${old_CPPFLAGS}
+				LIBS=${old_LIBS}
+			fi
+		done
+	fi
+
+	if test "x${has_mbedtls}" = "xyes"; then
+		AC_DEFINE([USE_MBEDTLS])
+		AC_SUBST([MAKE_MBEDTLS], [yes])
+	else
+		AC_MSG_RESULT([no])
+		AC_MSG_FAILURE([--with-mbedtls was given, but mbedtls not found.
 	On NetBSD(pkgsrc), install pkgsrc/security/mbedtls
 	On OpenBSD(ports), install ports/security/polarssl
 	On Ubuntu, sudo apt install libmbedtls-dev])
-fi
+	fi
 
-# Check mbedtls version. need >= 2.9.0(?)
-AC_CHECK_LIB(mbedtls, mbedtls_net_poll,
-	has_mbedtls_net_poll=yes,
-	has_mbedtls_net_poll=no)
-if test "x${has_mbedtls_net_poll}" = "xno"; then
-	AC_MSG_FAILURE([--with-mbedtls was given, but mbedtls doesn't have mbedtls_net_poll().
+	# Check mbedtls version. need >= 2.9.0(?)
+	AC_CHECK_LIB(mbedtls, mbedtls_net_poll,
+		has_mbedtls_net_poll=yes,
+		has_mbedtls_net_poll=no)
+	if test "x${has_mbedtls_net_poll}" = "xno"; then
+		AC_MSG_FAILURE([--with-mbedtls was given, but mbedtls doesn't have mbedtls_net_poll().
 	Please update your mbedtls to >= 2.9.0(?).])
-fi
-
+	fi
 else
-# Find OpenSSL
-AC_MSG_CHECKING([for OpenSSL])
-old_LIBS=${LIBS}
-LIBS="${LIBS} -lcrypto -lssl"
-AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	# Find OpenSSL
+	AC_MSG_CHECKING([for OpenSSL])
+	old_LIBS=${LIBS}
+	LIBS="${LIBS} -lcrypto -lssl"
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[
 		#include <openssl/sha.h>
 		#include <openssl/ssl.h>
 	], [
 		SSL_library_init();		// libssl
 		SHA1_Init(NULL);		// libcrypto
-	])], has_openssl=yes, has_openssl=no
-)
-if test "x${has_openssl}" = "xyes"; then
-	AC_MSG_RESULT([yes])
-else
-	LIBS=${old_LIBS}
-fi
-if test "x${has_openssl}" = "xyes"; then
-else
-	AC_MSG_RESULT([no])
-	AC_MSG_FAILURE([--without-mbedtls was given, but OpenSSL not found.])
-fi
+	])], has_openssl=yes, has_openssl=no)
 
+	if test "x${has_openssl}" = "xyes"; then
+		AC_MSG_RESULT([yes])
+	else
+		LIBS=${old_LIBS}
+	fi
+
+	if test "x${has_openssl}" = "xyes"; then
+	else
+		AC_MSG_RESULT([no])
+		AC_MSG_FAILURE([--without-mbedtls was given, but OpenSSL not found.])
+	fi
 fi
 
 AC_CONFIG_HEADERS([config.h])

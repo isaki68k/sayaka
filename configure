@@ -3734,35 +3734,34 @@ if test "x${with_stb_image}" = "xyes"; then
 	MAKE_STB_IMAGE=yes
 
 else
-
-PKGS="libjpeg libpng"
-for p in ${PKGS}; do
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ${p}" >&5
+	PKGS="libjpeg libpng"
+	for p in ${PKGS}; do
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ${p}" >&5
 printf %s "checking for ${p}... " >&6; }
 
-	if ${PKG_CONFIG} --exists ${p}; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+		if ${PKG_CONFIG} --exists ${p}; then
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		H=`${PKG_CONFIG} --cflags ${p}`
-		L=`${PKG_CONFIG} --libs ${p}`
+			H=`${PKG_CONFIG} --cflags ${p}`
+			L=`${PKG_CONFIG} --libs ${p}`
 
-		CPPFLAGS="${CPPFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+			CPPFLAGS="${CPPFLAGS} ${H}"
+			LIBS="${LIBS} ${L}"
+		else
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--without-stb-image was given, but pkg-config cannot find ${p}
 See \`config.log' for more details" "$LINENO" 5; }
-	fi
-done
+		fi
+	done
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libgif" >&5
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libgif" >&5
 printf %s "checking for libgif... " >&6; }
-old_LIBS=${LIBS}
-LIBS="${LIBS} -lgif"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_LIBS=${LIBS}
+	LIBS="${LIBS} -lgif"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 		#include <gif_lib.h>
@@ -3795,11 +3794,9 @@ as_fn_error $? "--without-stb-image was given, but libgif not found.
 	On Ubuntu, sudo apt install libgif-dev
 See \`config.log' for more details" "$LINENO" 5; }
 
-
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-
 fi
 
 
@@ -3814,15 +3811,15 @@ fi
 
 
 if test "x${with_mbedtls}" = "xyes"; then
-# Find mbedtls
-PATHS="/usr/pkg /usr/local"
+	# Find mbedtls
+	PATHS="/usr/pkg /usr/local"
 
-# libmbedtls と libmbedcrypto を同時に探す
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
+	# libmbedtls と libmbedcrypto を同時に探す
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
 printf %s "checking for mbedtls... " >&6; }
-old_LIBS=${LIBS}
-LIBS="${LIBS} -lmbedtls -lmbedcrypto"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_LIBS=${LIBS}
+	LIBS="${LIBS} -lmbedtls -lmbedcrypto"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 		#include <mbedtls/net_sockets.h>
@@ -3846,28 +3843,28 @@ then :
   has_mbedtls=yes
 else $as_nop
   has_mbedtls=no
-
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-if test "x${has_mbedtls}" = "xyes"; then
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+
+	if test "x${has_mbedtls}" = "xyes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-else
-	LIBS=${old_LIBS}
+	else
+		LIBS=${old_LIBS}
 
-	# Try PATHS
-	old_CPPFLAGS=${CPPFLAGS}
-	for p in ${PATHS}; do
-		CPPFLAGS="${CPPFLAGS} -I${p}/include"
-		case "${host_os}" in
-		 netbsd*)
-			LIBS="${LIBS} -Wl,-R,${p}/lib"
-			;;
-		esac
-		LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
+		# Try PATHS
+		old_CPPFLAGS=${CPPFLAGS}
+		for p in ${PATHS}; do
+			CPPFLAGS="${CPPFLAGS} -I${p}/include"
+			case "${host_os}" in
+			 netbsd*)
+				LIBS="${LIBS} -Wl,-R,${p}/lib"
+				;;
+			esac
+			LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
 
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+			cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 				#include <mbedtls/net_sockets.h>
@@ -3891,39 +3888,39 @@ then :
   has_mbedtls=yes
 else $as_nop
   has_mbedtls=no
-
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-		if test "x${has_mbedtls}" = "xyes"; then
-			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${p}" >&5
+			if test "x${has_mbedtls}" = "xyes"; then
+				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${p}" >&5
 printf "%s\n" "${p}" >&6; }
-			break
-		else
-			CPPFLAGS=${old_CPPFLAGS}
-			LIBS=${old_LIBS}
-		fi
-	done
-fi
-if test "x${has_mbedtls}" = "xyes"; then
-	printf "%s\n" "#define USE_MBEDTLS 1" >>confdefs.h
+				break
+			else
+				CPPFLAGS=${old_CPPFLAGS}
+				LIBS=${old_LIBS}
+			fi
+		done
+	fi
 
-	MAKE_MBEDTLS=yes
+	if test "x${has_mbedtls}" = "xyes"; then
+		printf "%s\n" "#define USE_MBEDTLS 1" >>confdefs.h
 
-else
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+		MAKE_MBEDTLS=yes
+
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--with-mbedtls was given, but mbedtls not found.
 	On NetBSD(pkgsrc), install pkgsrc/security/mbedtls
 	On OpenBSD(ports), install ports/security/polarssl
 	On Ubuntu, sudo apt install libmbedtls-dev
 See \`config.log' for more details" "$LINENO" 5; }
-fi
+	fi
 
-# Check mbedtls version. need >= 2.9.0(?)
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls_net_poll in -lmbedtls" >&5
+	# Check mbedtls version. need >= 2.9.0(?)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls_net_poll in -lmbedtls" >&5
 printf %s "checking for mbedtls_net_poll in -lmbedtls... " >&6; }
 if test ${ac_cv_lib_mbedtls_mbedtls_net_poll+y}
 then :
@@ -3964,21 +3961,20 @@ else $as_nop
   has_mbedtls_net_poll=no
 fi
 
-if test "x${has_mbedtls_net_poll}" = "xno"; then
-	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+	if test "x${has_mbedtls_net_poll}" = "xno"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--with-mbedtls was given, but mbedtls doesn't have mbedtls_net_poll().
 	Please update your mbedtls to >= 2.9.0(?).
 See \`config.log' for more details" "$LINENO" 5; }
-fi
-
+	fi
 else
-# Find OpenSSL
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for OpenSSL" >&5
+	# Find OpenSSL
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for OpenSSL" >&5
 printf %s "checking for OpenSSL... " >&6; }
-old_LIBS=${LIBS}
-LIBS="${LIBS} -lcrypto -lssl"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_LIBS=${LIBS}
+	LIBS="${LIBS} -lcrypto -lssl"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 		#include <openssl/sha.h>
@@ -4000,26 +3996,26 @@ then :
   has_openssl=yes
 else $as_nop
   has_openssl=no
-
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-if test "x${has_openssl}" = "xyes"; then
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+
+	if test "x${has_openssl}" = "xyes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-else
-	LIBS=${old_LIBS}
-fi
-if test "x${has_openssl}" = "xyes"; then
-else
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	else
+		LIBS=${old_LIBS}
+	fi
+
+	if test "x${has_openssl}" = "xyes"; then
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--without-mbedtls was given, but OpenSSL not found.
 See \`config.log' for more details" "$LINENO" 5; }
-fi
-
+	fi
 fi
 
 ac_config_headers="$ac_config_headers config.h"
