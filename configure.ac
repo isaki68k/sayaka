@@ -343,3 +343,18 @@ fi
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile.cfg])
 AC_OUTPUT
+
+echo
+echo "sayaka was configured as follows"
+echo -n " Image loader               : "
+if test "x${with_stb_image}" = "xyes"; then
+	echo "Bundled stb_image"
+else
+	echo "External JPG,PNG,GIF libraries"
+fi
+echo -n " SSL/TLS library            : "
+if test "x${with_mbedtls}" = "xyes"; then
+	echo "mbedTLS"
+else
+	echo "OpenSSL"
+fi
