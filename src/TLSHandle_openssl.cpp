@@ -25,6 +25,7 @@
 
 #include "sayaka.h"
 #include "TLSHandle_openssl.h"
+#include <array>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
