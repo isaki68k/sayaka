@@ -27,7 +27,7 @@
 #include "TLSHandle_mtls.h"
 #include <cstdarg>
 #include <cstdlib>
-#include <cstring>
+#include <string>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
