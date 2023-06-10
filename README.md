@@ -114,10 +114,10 @@ twitter クライアント sayaka ちゃん version 3.6.3 (2023/03/26)
 * `--without-stb-image` … デフォルトでは画像ローダには同梱の stb_image
 	ヘッダライブラリを使用しています。
 	何らかの理由でこれを使用せず外部ライブラリを使用したい場合に
-	指定します。その場合は giflib、libjpeg、libpng が必要です。
+	指定してください。
+	その場合は giflib、libjpeg、libpng が必要です。
 * `--without-mbedtls` … デフォルトでは SSL ライブラリに mbedTLS を使用します。
-	何らかの理由でこれを使用せず OpenSSL
-	を使用したい場合はこのオプションを指定してください。
+	何らかの理由でこれを使用せず OpenSSL を使用したい場合に指定してください。
 
 make install はないので、出来上がった src/sayaka (実行ファイル) をパスの通ったところにインストールするとかしてください。
 ちなみに `make all` すると、画像ファイルを SIXEL に変換して表示する
@@ -303,6 +303,13 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	SIXEL 画像内のパレット定義を参照しないため、off にすると少しだけ
 	高速になります。
 	それ以外の環境では on のまま使用してください。
+
+
+ライセンス
+---
+* sayaka 自体は 2-clause BSD ライセンスです。
+* 同梱のヘッダライブラリ nlohmann/json.hpp は MIT ライセンスです。
+* 同梱のヘッダライブラリ stb/stb_image.h は public domain として利用しています。
 
 
 .
