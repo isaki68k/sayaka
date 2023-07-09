@@ -1,4 +1,4 @@
-twitter クライアント sayaka ちゃん version 3.6.4 (2023/06/11)
+twitter クライアント sayaka ちゃん version 3.6.5 (2023/07/09)
 ======
 
 ターミナルに特化した twitter クライアントです。
@@ -9,9 +9,7 @@ twitter クライアント sayaka ちゃん version 3.6.4 (2023/06/11)
 
 変更点
 ---
-* 3.6.4 (2023/06/11) … 画像ローダをデフォルトで libjpeg, libpng, giflib
-	から stb_image に変更。SSL/TLS ライブラリに OpenSSL もサポート。
-	OpenBSD/amd64、Ubuntu 22.04 でのビルド修正。
+* 3.6.5 (2023/07/09) … --protect オプションを復活。
 
 
 必要なもの
@@ -246,6 +244,9 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 
 更新履歴
 ---
+* 3.6.4 (2023/06/11) … 画像ローダをデフォルトで libjpeg, libpng, giflib
+	から stb_image に変更。SSL/TLS ライブラリに OpenSSL もサポート。
+	OpenBSD/amd64、Ubuntu 22.04 でのビルド修正。
 * 3.6.3 (2023/03/26) … ビルドエラーを修正。
 * 3.6.2 (2023/03/26) … extended_tweet 対応を復旧。
 	--no-combine オプションを実装。
