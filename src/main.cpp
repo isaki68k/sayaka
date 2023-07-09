@@ -126,6 +126,7 @@ enum {
 	OPT_play,
 	OPT_post,
 	OPT_progress,
+	OPT_protect,
 	OPT_record,
 	OPT_record_all,
 	OPT_show_ng,
@@ -175,6 +176,7 @@ static const struct option longopts[] = {
 	{ "play",			no_argument,		NULL,	OPT_play },
 	{ "post",			no_argument,		NULL,	OPT_post },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
+	{ "protect",		no_argument,		NULL,	OPT_protect },
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
@@ -416,6 +418,9 @@ main(int ac, char *av[])
 			break;
 		 case OPT_progress:
 			opt_progress = true;
+			break;
+		 case OPT_protect:
+			opt_protect = true;
 			break;
 		 case OPT_record:
 			opt_record_mode = 1;
@@ -1043,6 +1048,7 @@ R"(usage: sayaka [<options>...] --home
 	--play : read JSON from stdin.
 	--post : post tweet from stdin (utf-8 is expected).
 	--progress: show startup progress (for very slow machines).
+	--protect : don't display protected user's tweet.
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--timeout-image <msec>

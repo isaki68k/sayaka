@@ -68,6 +68,7 @@ extern void init_color();
 extern int  address_family;
 extern UseSixel use_sixel;
 extern int  color_mode;
+extern bool opt_protect;
 extern Diag diag;
 extern Diag diagHttp;
 extern Diag diagImage;

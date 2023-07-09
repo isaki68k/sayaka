@@ -72,6 +72,7 @@ enum Color {
 	Url,
 	Tag,
 	Verified,
+	Protected,
 	NG,
 	Max,
 };
@@ -124,6 +125,7 @@ static const std::string YELLOW		= "93";
 int  address_family;			// AF_INET*
 UseSixel use_sixel;				// SIXEL 画像を表示するかどうか
 int  color_mode;				// 色数もしくはカラーモード
+bool opt_protect;
 Diag diag;						// デバッグ (無分類)
 Diag diagHttp;					// デバッグ (HTTP コネクション)
 Diag diagImage;					// デバッグ (画像周り)
@@ -411,6 +413,27 @@ showstatus(const Json *status, bool is_quoted)
 		has_retweet = true;
 	}
 
+	// --protect オプションなら鍵ユーザのツイートを表示しない。
+	if (opt_protect) {
+		match = false;
+		const Json& user = (*status)["user"];
+		if (user.contains("protected") && user.value("protected", false)) {
+			match = true;
+		} else if (has_retweet) {
+			// リツイート先も調べる
+			const Json& rusr = (*s)["user"];
+			if (rusr.contains("protected") && rusr.value("protected", false)) {
+				match = true;
+			}
+		}
+		// どちらかで一致すれば非表示
+		if (match) {
+			print_(coloring("鍵垢", Color::NG) + UString("\n")
+				+ coloring(formattime(*status), Color::Time) + UString("\n"));
+			return true;
+		}
+	}
+
 	// 簡略表示の判定。QT 側では行わない
 	if (is_quoted == false) {
 		if (has_retweet) {
@@ -472,12 +495,16 @@ showstatus(const Json *status, bool is_quoted)
 	if (s_user.value("verified", false)) {
 		verified = coloring(" ●", Color::Verified);
 	}
+	UString protected_mark;
+	if (s_user.value("protected", false)) {
+		protected_mark = coloring(" ■", Color::Protected);
+	}
 
 	std::vector<MediaInfo> mediainfo;
 	auto msg = formatmsg(*s, &mediainfo);
 
 	show_icon(s_user);
-	print_(name + ' ' + userid + verified);
+	print_(name + ' ' + userid + verified + protected_mark);
 	printf("\n");
 	print_(msg);
 	printf("\n");
@@ -811,6 +838,7 @@ init_color()
 	color2esc[Color::Url]		= UString(str_join(";", UNDERSCORE, blue));
 	color2esc[Color::Tag]		= UString(blue);
 	color2esc[Color::Verified]	= UString(verified);
+	color2esc[Color::Protected]	= UString(gray);
 	color2esc[Color::NG]		= UString(str_join(";", STRIKE, gray));
 }
 
