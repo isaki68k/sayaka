@@ -16,6 +16,7 @@ SRCS_common=	\
 	NGWord.cpp \
 	OAuth.cpp \
 	ParsedUri.cpp \
+	ProcTwitter.cpp \
 	Regex.cpp \
 	RichString.cpp \
 	SixelConverter.cpp \

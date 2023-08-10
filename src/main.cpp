@@ -72,6 +72,7 @@ static void init();
 static void init_screen();
 static void get_access_token_v1();
 static void get_access_token_v2();
+static void invalidate_cache();
 static void signal_handler(int signo);
 static void sigwinch();
 static void cmd_users_list(const StringDictionary& list);
@@ -523,6 +524,12 @@ main(int ac, char *av[])
 	switch (cmd) {
 	 case SayakaCmd::Stream:
 		init_screen();
+
+		// 古いキャッシュを削除
+		progress("Deleting expired cache files...");
+		invalidate_cache();
+		progress("done\n");
+
 		cmd_stream();
 		break;
 	 case SayakaCmd::Play:
@@ -840,6 +847,29 @@ get_access_token_v2()
 	} else {
 		printf("Getting access token failed: %s\n", json.dump().c_str());
 		exit(1);
+	}
+}
+
+// 古いキャッシュを破棄する
+static void
+invalidate_cache()
+{
+	char cmd[1024];
+
+	// アイコンは1か月分くらいか
+	snprintf(cmd, sizeof(cmd),
+		"find %s -name icon-\\* -type f -atime +30 -exec rm {} +",
+		cachedir.c_str());
+	if (system(cmd) < 0) {
+		warn("system(find icon)");
+	}
+
+	// 写真は2日分くらいか
+	snprintf(cmd, sizeof(cmd),
+		"find %s -name http\\* -type f -atime +2 -exec rm {} +",
+		cachedir.c_str());
+	if (system(cmd) < 0) {
+		warn("system(find photo)");
 	}
 }
 

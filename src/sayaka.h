@@ -26,7 +26,9 @@
 #pragma once
 
 #include "config.h"
+#include "Json.h"
 #include <cstdint>
+#include <string>
 #include <sys/types.h>
 
 using int8    = int8_t;
@@ -77,4 +79,30 @@ using unichar = uint32_t;
 	iconv((cd), const_cast<char **>(s), (slen), (d), (dlen))
 #endif
 
+enum Color {
+	Username,
+	UserId,
+	Time,
+	Source,
+
+	Retweet,
+	Favorite,
+	Url,
+	Tag,
+	Verified,
+	Protected,
+	NG,
+	Max,
+};
+
+class UString;
+
 static const int ColorFixedX68k = -1;
+
+extern void print_(const UString& utext);
+extern UString ColorBegin(Color col);
+extern UString ColorEnd(Color col);
+extern UString coloring(const std::string& text, Color col);
+extern bool show_image(const std::string& img_file, const std::string& img_url,
+	int resize_width, int index);
+extern void record(const Json& obj);
