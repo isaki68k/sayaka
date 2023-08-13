@@ -42,25 +42,14 @@
 
 static const char version[] = "3.6.5 (2023/07/09)";
 
-#define CONSUMER_KEY		"jPY9PU5lvwb6s9mqx3KjRA"
-#define CONSUMER_SECRET		"faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw"
-#define CLIENT_ID			"YlB2dkJNNTVqN1huWkF2NFVxcjA6MTpjaQ"
-// state はコールバック URL に渡されるくらいの適当な文字列らしい?。
-// とりあえず echo -n "sayaka_v2" | sha1 としておく。
-#define CLIENT_STATE		"b75b732375dc7c201dd003bde37ea9efab43d7e1"
-
 enum SayakaCmd {
 	Noop = 0,
 	Stream,
 	Play,
 	Tweet,
-	Followlist,
-	Mutelist,
 	NgwordAdd,
 	NgwordDel,
 	NgwordList,
-	Nortlist,
-	Blocklist,
 	Version,
 };
 
@@ -70,16 +59,9 @@ static const int DEFAULT_FONT_HEIGHT = 14;
 static std::string GetHomeDir();
 static void init();
 static void init_screen();
-static void get_access_token_v1();
-static void get_access_token_v2();
 static void invalidate_cache();
 static void signal_handler(int signo);
 static void sigwinch();
-static void cmd_users_list(const StringDictionary& list);
-static void cmd_followlist();
-static void cmd_blocklist();
-static void cmd_mutelist();
-static void cmd_nortlist();
 static void cmd_ngword_add();
 static void cmd_ngword_del();
 static void cmd_ngword_list();
@@ -90,7 +72,6 @@ static void cmd_version();
 // 適当に 0x80 から始めておく。
 enum {
 	OPT_black = 0x80,
-	OPT_blocklist,
 	OPT_ciphers,
 	OPT_color,
 	OPT_debug,
@@ -103,7 +84,6 @@ enum {
 	OPT_eaw_n,
 	OPT_euc_jp,
 	OPT_filter,
-	OPT_followlist,
 	OPT_font,
 	OPT_force_sixel,
 	OPT_full_url,
@@ -112,7 +92,6 @@ enum {
 	OPT_mathalpha,
 	OPT_max_cont,
 	OPT_max_image_cols,
-	OPT_mutelist,
 	OPT_ngword_add,
 	OPT_ngword_del,
 	OPT_ngword_list,
@@ -121,7 +100,6 @@ enum {
 	OPT_no_combine,
 	OPT_no_image,
 	OPT_no_rest,
-	OPT_nortlist,
 	OPT_ormode,
 	OPT_palette,
 	OPT_play,
@@ -140,7 +118,6 @@ enum {
 
 static const struct option longopts[] = {
 	{ "black",			no_argument,		NULL,	OPT_black },
-	{ "blocklist",		no_argument,		NULL,	OPT_blocklist },
 	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	OPT_color },
 	{ "debug",			required_argument,	NULL,	OPT_debug },
@@ -153,7 +130,6 @@ static const struct option longopts[] = {
 	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "filter",			required_argument,	NULL,	OPT_filter },
-	{ "followlist",		no_argument,		NULL,	OPT_followlist },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "force-sixel",	no_argument,		NULL,	OPT_force_sixel },
 	{ "full-url",		no_argument,		NULL,	OPT_full_url },
@@ -162,7 +138,6 @@ static const struct option longopts[] = {
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-cont",		required_argument,	NULL,	OPT_max_cont },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
-	{ "mutelist",		no_argument,		NULL,	OPT_mutelist },
 	{ "ngword-add",		required_argument,	NULL,	OPT_ngword_add },
 	{ "ngword-del",		required_argument,	NULL,	OPT_ngword_del },
 	{ "ngword-list",	no_argument,		NULL,	OPT_ngword_list },
@@ -171,7 +146,6 @@ static const struct option longopts[] = {
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "no-rest",		no_argument,		NULL,	OPT_no_rest },
-	{ "nortlist",		no_argument,		NULL,	OPT_nortlist },
 	{ "ormode",			required_argument,	NULL,	OPT_ormode },
 	{ "palette",		required_argument,	NULL,	OPT_palette },
 	{ "play",			no_argument,		NULL,	OPT_play },
@@ -233,9 +207,6 @@ main(int ac, char *av[])
 			break;
 		 case OPT_black:
 			bgcolor = BG_BLACK;
-			break;
-		 case OPT_blocklist:
-			cmd = SayakaCmd::Blocklist;
 			break;
 		 case OPT_ciphers:
 			opt_ciphers = optarg;
@@ -312,9 +283,6 @@ main(int ac, char *av[])
 			cmd = SayakaCmd::Stream;
 			opt_filter.emplace_back(optarg);
 			break;
-		 case OPT_followlist:
-			cmd = SayakaCmd::Followlist;
-			break;
 		 case OPT_font:
 		 {
 			// "7x14" のような形式
@@ -361,9 +329,6 @@ main(int ac, char *av[])
 				err(1, "--max-image-cols %s", optarg);
 			}
 			break;
-		 case OPT_mutelist:
-			cmd = SayakaCmd::Mutelist;
-			break;
 		 case OPT_ngword_add:
 			cmd = SayakaCmd::NgwordAdd;
 			opt_ngword = optarg;
@@ -389,9 +354,6 @@ main(int ac, char *av[])
 			break;
 		 case OPT_no_rest:
 			opt_norest = true;
-			break;
-		 case OPT_nortlist:
-			cmd = SayakaCmd::Nortlist;
 			break;
 		 case OPT_ormode:
 			if (strcmp(optarg, "on") == 0) {
@@ -536,12 +498,6 @@ main(int ac, char *av[])
 		init_screen();
 		cmd_play();
 		break;
-	 case SayakaCmd::Followlist:
-		cmd_followlist();
-		break;
-	 case SayakaCmd::Mutelist:
-		cmd_mutelist();
-		break;
 	 case SayakaCmd::NgwordAdd:
 		cmd_ngword_add();
 		break;
@@ -550,12 +506,6 @@ main(int ac, char *av[])
 		break;
 	 case SayakaCmd::NgwordList:
 		cmd_ngword_list();
-		break;
-	 case SayakaCmd::Nortlist:
-		cmd_nortlist();
-		break;
-	 case SayakaCmd::Blocklist:
-		cmd_blocklist();
 		break;
 	 case SayakaCmd::Tweet:
 		cmd_tweet();
@@ -683,171 +633,6 @@ init_screen()
 
 	// NG ワード取得
 	ngword_list.ReadFile();
-}
-
-// OAuth オブジェクトを初期化
-void
-InitOAuth(int ver)
-{
-	if (ver == 1) {
-		assert(oauth.ConsumerKey.empty());
-
-		oauth.SetDiag(diagHttp);
-		oauth.ConsumerKey    = CONSUMER_KEY;
-		oauth.ConsumerSecret = CONSUMER_SECRET;
-
-		// ファイルからトークンを取得
-		// なければトークンを取得してファイルに保存
-		if (tokenfile.empty()) {
-			tokenfile = basedir + "token.json";
-		}
-		bool r = oauth.LoadTokenFromFile(tokenfile);
-		if (r == false) {
-			get_access_token_v1();
-		}
-	} else {
-		if (tokenfile.empty()) {
-			tokenfile = basedir + "token2.json";
-		}
-
-		auto text = FileReadAllText(tokenfile);
-		auto json = Json::parse(text);
-		if (!json.is_object() || !json.contains("access_token")) {
-			get_access_token_v2();
-		}
-		// XXX 読み込んで置いておくところがまだない
-	}
-}
-
-// OAuth v1.0 のアクセストークンを取得する。
-// 取得できなければ errx(3) で終了する。
-static void
-get_access_token_v1()
-{
-	oauth.AdditionalParams.clear();
-
-	Debug(diag, "----- Request Token -----");
-	oauth.RequestToken(REQUEST_TOKEN_URL);
-
-	printf("Please go to:\n"
-		AUTHORIZE_URL "?oauth_token=%s\n", oauth.AccessToken.c_str());
-	printf("\n");
-	printf("And input PIN code: ");
-	fflush(stdout);
-
-	char pin_str[1024];
-	if (fgets(pin_str, sizeof(pin_str), stdin) == NULL) {
-		err(1, "fgets");
-	}
-
-	Debug(diag, "----- Access Token -----");
-
-	oauth.AdditionalParams["oauth_verifier"] = pin_str;
-	oauth.RequestToken(ACCESS_TOKEN_URL);
-
-	if (oauth.AccessToken.empty()) {
-		errx(1, "GIVE UP");
-	}
-
-	bool r = oauth.SaveTokenToFile(tokenfile);
-	if (r == false) {
-		errx(1, "Token save failed");
-	}
-}
-
-// OAuth v2.0 のアクセストークンを取得する。
-// 取得できなければ errx(3) で終了する。
-static void
-get_access_token_v2()
-{
-	const auto redirect_uri =
-		"http://www.pastel-flower.jp/~isaki/sayaka_v2/callback.php";
-
-	// challenge は 43-128文字。
-	auto challenge = OAuth::GetNonce(64);
-
-	// 承認 URL を作成。
-	StringDictionary query;
-	query.AddOrUpdate("response_type", "code");	// 固定値
-	query.AddOrUpdate("client_id", CLIENT_ID);
-	query.AddOrUpdate("redirect_uri", redirect_uri);
-	query.AddOrUpdate("scope",
-		"tweet.read tweet.write users.read offline.access");
-	query.AddOrUpdate("state", CLIENT_STATE);
-	query.AddOrUpdate("code_challenge_method", "plain");
-	query.AddOrUpdate("code_challenge", challenge);
-
-	// URL を表示。ブラウザで「許可」を押してもらうと、
-	// コールバック URL (redirect_url) が呼ばれて、
-	// authentication code が表示されるので、それを入力してもらう。
-	printf("Please go to:\n");
-	printf("https://twitter.com/i/oauth2/authorize?%s\n",
-		OAuth::MakeQuery(query).c_str());
-	printf("And input authentication code: ");
-	fflush(stdout);
-
-	char code_buf[1024];
-	if (fgets(code_buf, sizeof(code_buf), stdin) == NULL) {
-		err(1, "fgets");
-	}
-	std::string code_str(code_buf);
-	string_rtrim(code_str);
-
-	// Access Token の取得。
-	HttpClient client;
-	query.Clear();
-	query.AddOrUpdate("grant_type", "authorization_code");
-	query.AddOrUpdate("redirect_uri", redirect_uri);
-	query.AddOrUpdate("code_verifier", challenge);
-	query.AddOrUpdate("client_id", CLIENT_ID);
-	query.AddOrUpdate("code", code_str);
-	std::string token_uri = "https://api.twitter.com/2/oauth2/token?" +
-		OAuth::MakeQuery(query);
-	if (client.Init(diagHttp, token_uri) == false) {
-		errx(1, "client Init for token_uri failed");
-	}
-
-	std::string buf;
-	auto stream = client.POST();
-	if (stream->ReadLine(&buf) <= 0) {
-		errx(1, "ReadLine for token_uri failed");
-	}
-	Json json = Json::parse(buf);
-
-	// 成功すると
-	// {
-	//   "access_token":"U1hXXX...",	//トークン
-	//   "expires_in":7200,				// 期限切れまでの秒数
-	//   "refresh_token:"aTRXXX...",
-	//   "scope":"...",
-	//   "token_type":"bearer"
-	// }
-	// が返ってくる。失敗なら
-	// {
-	//   "error":"errmsg",
-	//   "error_description":"errdesc",
-	// }
-	// らしい。
-
-	if (json.contains("access_token")) {
-		if (tokenfile.empty()) {
-			tokenfile = basedir + "token2.json";
-		}
-		// 全部保存していいだろう。
-		if (FileWriteAllText(tokenfile, json.dump()) == false) {
-			err(1, "Getting access token: %s", tokenfile.c_str());
-		}
-	} else if (json.contains("error")) {
-		printf("Getting access token failed: %s\n",
-			json.value("error", "").c_str());
-		if (json.contains("error_description")) {
-			printf("%s\n", json.value("error_description", "").c_str());
-		}
-		exit(1);
-	} else {
-		printf("Getting access token failed: %s\n", json.dump().c_str());
-		exit(1);
-	}
 }
 
 // 古いキャッシュを破棄する
@@ -988,52 +773,6 @@ sigwinch()
 	Debug(diag, "imagesize=%d", imagesize);
 }
 
-// ユーザ一覧を表示するコマンド(共通部分)
-static void
-cmd_users_list(const StringDictionary& list)
-{
-	for (const auto& kv : list) {
-		const auto& key = kv.first;
-		printf("%s\n", key.c_str());
-	}
-}
-
-// フォローユーザの一覧を取得して表示するコマンド
-static void
-cmd_followlist()
-{
-	InitOAuth(1);
-	get_follow_list();
-	cmd_users_list(followlist);
-}
-
-// ブロックユーザの一覧を取得して表示するコマンド
-static void
-cmd_blocklist()
-{
-	InitOAuth(1);
-	get_block_list();
-	cmd_users_list(blocklist);
-}
-
-// ミュートユーザの一覧を取得して表示するコマンド
-static void
-cmd_mutelist()
-{
-	InitOAuth(1);
-	get_mute_list();
-	cmd_users_list(mutelist);
-}
-
-// RT 非表示ユーザの一覧を取得して表示するコマンド
-static void
-cmd_nortlist()
-{
-	InitOAuth(1);
-	get_nort_list();
-	cmd_users_list(nortlist);
-}
-
 // NG ワードを追加するコマンド
 static void
 cmd_ngword_add()
@@ -1090,8 +829,6 @@ R"(usage: sayaka [<options>...] --home
 	--debug       <0-2>             --debug-format
 	--debug-http  <0-2>             --debug-image <0-1>
 	--debug-sixel <0-2>             --debug-show  <0-2>
-	--blocklist                     --followlist
-	--mutelist                      --nortlist
 	--mathalpha                     --no-combine
 	--max-cont <n>                  --max-image-cols <n>
 	--ngword-add                    --ngword-del

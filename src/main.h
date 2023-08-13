@@ -35,12 +35,6 @@
 
 #define DEBUG_FORMAT 1
 
-#define AUTHORIZE_URL		"https://twitter.com/oauth/authorize"
-#define API_URL				"https://api.twitter.com"
-#define ACCESS_TOKEN_URL	API_URL "/oauth/access_token"
-#define REQUEST_TOKEN_URL	API_URL "/oauth/request_token"
-#define APIv1_1(path)		API_URL "/1.1/" path ".json"
-
 enum bgcolor {
 	BG_NONE = -1,
 	BG_BLACK = 0,
@@ -59,10 +53,6 @@ enum class UseSixel {
 extern void cmd_tweet();
 extern void cmd_stream();
 extern void cmd_play();
-extern void get_follow_list();
-extern void get_block_list();
-extern void get_mute_list();
-extern void get_nort_list();
 extern void init_color();
 
 extern int  address_family;
@@ -123,8 +113,6 @@ extern StringDictionary followlist;
 extern StringDictionary blocklist;
 extern StringDictionary mutelist;
 extern StringDictionary nortlist;
-
-extern void InitOAuth(int ver);
 
 // 起動経過を表示 (遅マシン用)
 static inline void

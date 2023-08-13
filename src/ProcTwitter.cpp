@@ -38,6 +38,15 @@
 #include <err.h>
 #include <unistd.h>
 
+#define AUTHORIZE_URL		"https://twitter.com/oauth/authorize"
+#define API_URL				"https://api.twitter.com"
+#define ACCESS_TOKEN_URL	API_URL "/oauth/access_token"
+#define REQUEST_TOKEN_URL	API_URL "/oauth/request_token"
+#define APIv1_1(path)		API_URL "/1.1/" path ".json"
+
+#define CONSUMER_KEY		"jPY9PU5lvwb6s9mqx3KjRA"
+#define CONSUMER_SECRET		"faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw"
+
 class MediaInfo
 {
  public:
@@ -66,12 +75,13 @@ static void SetUrl_main(RichString& text, int start, int end,
 static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 [[maybe_unused]] static void get_credentials();
-static StringDictionary get_paged_list(const std::string& uri,
-	const char *funcname);
 static Json APIJson(const std::string& method, const std::string& uri,
 	const std::string& urimsg,
 	const StringDictionary& options, std::vector<std::string> *recvp = NULL);
 static std::string errors2string(const Json& json);
+static void InitOAuth();
+static void get_access_token_v1();
+
 
 // 投稿する
 void
@@ -92,7 +102,7 @@ cmd_tweet()
 	text = Chomp(text);
 
 	// アクセストークンを取得
-	InitOAuth(1);
+	InitOAuth();
 
 	// 投稿するパラメータを用意
 	StringDictionary options;
@@ -118,7 +128,7 @@ void
 cmd_stream()
 {
 	// アクセストークンを取得
-	InitOAuth(1);
+	InitOAuth();
 
 	int sleep_sec = 120;
 	for (;;) {
@@ -857,7 +867,7 @@ show_photo(const std::string& img_url, int resize_width, int index)
 static void
 get_credentials()
 {
-	InitOAuth(1);
+	InitOAuth();
 
 	StringDictionary options;
 	options["include_entities"] = "false";
@@ -878,108 +888,6 @@ get_credentials()
 	}
 
 	myid = json.value("id_str", "");
-}
-
-// ユーザ一覧を読み込む(共通)。
-// フォロー(friends)、ブロックユーザ、ミュートユーザは同じ形式。
-// 読み込んだリストを Dictionary 形式で返す。エラーなら終了する。
-// funcname はエラー時の表示用。
-static StringDictionary
-get_paged_list(const std::string& uri, const char *funcname)
-{
-	// ユーザ一覧は一度に全部送られてくるとは限らず、
-	// next_cursor{,_str} が 0 なら最終ページ、そうでなければ
-	// これを cursor に指定してもう一度リクエストを送る。
-
-	std::string cursor = "-1";
-	StringDictionary list;
-
-	do {
-		StringDictionary options;
-		options["cursor"] = cursor;
-
-		// JSON を取得
-		Json json;
-		try {
-			json = APIJson("GET", uri, funcname, options);
-		} catch (const std::string errmsg) {
-			errx(1, "%s", errmsg.c_str());
-		}
-		Debug(diag, "json=|%s|", json.dump().c_str());
-		if (json.is_object() == false) {
-			errx(1, "%s returned non-object: %s", funcname,
-				json.dump().c_str());
-		}
-		if (json.contains("errors")) {
-			errx(1, "%s failed: %s", funcname, errors2string(json).c_str());
-		}
-
-		auto users = json["ids"];
-		for (auto u : users) {
-			auto id = u.get<Json::number_integer_t>();
-			auto id_str = std::to_string(id);
-			list[id_str] = id_str;
-		}
-
-		cursor = json.value("next_cursor_str", "");
-		Debug(diag, "cursor=|%s|", cursor.c_str());
-		if (__predict_false(cursor.empty())) {
-			cursor = "0";
-		}
-	} while (cursor != "0");
-
-	return list;
-}
-
-// フォローユーザ一覧の読み込み
-void
-get_follow_list()
-{
-	followlist = get_paged_list(APIv1_1("friends/ids"), __func__);
-}
-
-// ブロックユーザ一覧の読み込み
-void
-get_block_list()
-{
-	blocklist = get_paged_list(APIv1_1("blocks/ids"), __func__);
-}
-
-// ミュートユーザ一覧の読み込み
-void
-get_mute_list()
-{
-	mutelist = get_paged_list(APIv1_1("mutes/users/ids"), __func__);
-}
-
-// RT非表示ユーザ一覧の読み込み
-void
-get_nort_list()
-{
-	// ミュートユーザ一覧等とは違って、リスト一発で送られてくるっぽい。
-	// ただの数値の配列 [1,2,3,4] の形式。
-	// なんであっちこっちで仕様が違うんだよ…。
-
-	nortlist.clear();
-
-	// JSON を取得
-	Json json;
-	try {
-		json = APIJson("GET", APIv1_1("friendships/no_retweets/ids"),
-			__func__, {});
-	} catch (const std::string& errmsg) {
-		errx(1, "%s", errmsg.c_str());
-	}
-	Debug(diag, "json=|%s|", json.dump().c_str());
-	if (json.is_array() == false) {
-		errx(1, "get_nort_list returned non-array: %s", json.dump().c_str());
-	}
-
-	for (const auto& u : json) {
-		auto id = u.get<Json::number_integer_t>();
-		auto id_str = std::to_string(id);
-		nortlist[id_str] = id_str;
-	}
 }
 
 // uri に method (GET/POST) で接続し、結果の JSON を返す。
@@ -1057,4 +965,61 @@ errors2string(const Json& json)
 		return string_format(": %s(%d)", message.c_str(), code);
 	}
 	return "";
+}
+
+// OAuth オブジェクトを初期化
+static void
+InitOAuth()
+{
+	assert(oauth.ConsumerKey.empty());
+
+	oauth.SetDiag(diagHttp);
+	oauth.ConsumerKey    = CONSUMER_KEY;
+	oauth.ConsumerSecret = CONSUMER_SECRET;
+
+	// ファイルからトークンを取得
+	// なければトークンを取得してファイルに保存
+	if (tokenfile.empty()) {
+		tokenfile = basedir + "token.json";
+	}
+	bool r = oauth.LoadTokenFromFile(tokenfile);
+	if (r == false) {
+		get_access_token_v1();
+	}
+}
+
+// OAuth v1.0 のアクセストークンを取得する。
+// 取得できなければ errx(3) で終了する。
+static void
+get_access_token_v1()
+{
+	oauth.AdditionalParams.clear();
+
+	Debug(diag, "----- Request Token -----");
+	oauth.RequestToken(REQUEST_TOKEN_URL);
+
+	printf("Please go to:\n"
+		AUTHORIZE_URL "?oauth_token=%s\n", oauth.AccessToken.c_str());
+	printf("\n");
+	printf("And input PIN code: ");
+	fflush(stdout);
+
+	char pin_str[1024];
+	if (fgets(pin_str, sizeof(pin_str), stdin) == NULL) {
+		err(1, "fgets");
+	}
+
+	Debug(diag, "----- Access Token -----");
+
+	oauth.AdditionalParams["oauth_verifier"] = pin_str;
+	oauth.RequestToken(ACCESS_TOKEN_URL);
+
+	if (oauth.AccessToken.empty()) {
+		errx(1, "GIVE UP");
+	}
+
+	bool r = oauth.SaveTokenToFile(tokenfile);
+	if (r == false) {
+		errx(1, "Token save failed");
+	}
 }
