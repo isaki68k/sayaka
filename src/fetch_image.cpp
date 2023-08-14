@@ -23,12 +23,12 @@
  * SUCH DAMAGE.
  */
 
+#include "sayaka.h"
 #include "FileStream.h"
 #include "HttpClient.h"
 #include "SixelConverter.h"
 #include "StringUtil.h"
 #include "fetch_image.h"
-#include "main.h"
 
 // 画像をダウンロードして SIXEL に変換してキャッシュする。
 // 成功すれば、書き出したキャッシュファイルの FILE* (位置は先頭) を返す。

@@ -50,7 +50,6 @@ SRCS_common += TLSHandle_openssl.cpp
 .endif
 
 SRCS_sayaka=	\
-	main.cpp \
 	sayaka.cpp \
 
 SRCS_sixelv=	\

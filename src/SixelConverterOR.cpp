@@ -28,7 +28,6 @@
 // Sixel 変換 for X680x0
 //
 
-#include "sayaka.h"
 #include "SixelConverter.h"
 #include <cstdint>
 #include <cstdio>

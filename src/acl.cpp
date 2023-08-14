@@ -23,11 +23,11 @@
  * SUCH DAMAGE.
  */
 
+#include "sayaka.h"
 #include "acl.h"
 #include "Diag.h"
 #include "Dictionary.h"
 #include "StringUtil.h"
-#include "main.h"
 
 // ここの diagShow は Debug, Trace, Verbose という分類というより
 // 単に表示の詳しさを 1, 2, 3 としているだけなので、別名にする。

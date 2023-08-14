@@ -25,49 +25,53 @@
 
 #pragma once
 
-#include "header.h"
-#include "UString.h"
-#include <string>
-#include <vector>
+#include "config.h"
+#include <sys/types.h>
 
-// いろいろ込みの文字情報
-class RichChar
-{
- public:
-	// コードポイント (というか UTF-32)
-	unichar code {};
+using int8    = int8_t;
+using int16   = int16_t;
+using int32   = int32_t;
+using int64   = int64_t;
+using uint8   = uint8_t;
+using uint16  = uint16_t;
+using uint32  = uint32_t;
+using uint64  = uint64_t;
+using unichar = uint32_t;
 
-	// この文字の text 先頭からの文字数。
-	int charoffset {};
+#if defined(HAVE_ENDIAN_H)
+#include <endian.h>
+#elif defined(HAVE_SYS_ENDIAN_H)
+#include <sys/endian.h>
+#else
+#include "missing_endian.h"
+#endif
 
-	// このコードポイントの文字の text 先頭からのバイトオフセット
-	int byteoffset {};
+#if defined(HAVE_BSD_BSD_H)
+#include <bsd/bsd.h>
+#endif
 
-	// この文字の直前に挿入するエスケープシーケンス
-	UString altesc {};
+#if !defined(__printflike)
+#if defined(HAVE___ATTRIBUTE_FORMAT)
+# define __printflike(a,b)	__attribute__((__format__(__printf__, (a), (b))))
+#else
+# define __printflike(a,b)
+#endif
+#endif
 
-	// 代替 URL
-	// 元の URL 文字列範囲は code = -1 で消す。
-	std::string alturl {};
-};
+#if !defined(__predict_true)
+#if defined(HAVE___BUILTIN_EXPECT)
+# define __predict_true(exp)	__builtin_expect((exp) != 0, 1)
+# define __predict_false(exp)	__builtin_expect((exp) != 0, 0)
+#else
+# define __predict_true(exp)	(exp)
+# define __predict_false(exp)	(exp)
+#endif
+#endif
 
-// いろいろ込みのテキスト
-class RichString : public std::vector<RichChar>
-{
-	// 文字ごとの情報は親クラスの配列で持っている
-	using inherited = std::vector<RichChar>;
-
- public:
-	RichString();
-	RichString(const std::string& text_);
-
-	// ダンプ文字列を返す (デバッグ用)
-	std::string dump() const;
-
- private:
-	// 元の文字列 (変更しない)
-	std::string text {};
-
-	// src から info を作成する。
-	bool MakeInfo(std::vector<RichChar> *info, const std::string& src) const;
-};
+// iconv() の第2引数の型は OS によって違う…
+#if defined(HAVE_ICONV_CONST)
+#define ICONV(cd, s, slen, d, dlen)	iconv((cd), (s), (slen), (d), (dlen))
+#else
+#define ICONV(cd, s, slen, d, dlen)	\
+	iconv((cd), const_cast<char **>(s), (slen), (d), (dlen))
+#endif

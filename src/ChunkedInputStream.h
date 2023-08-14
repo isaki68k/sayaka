@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "header.h"
 #include "Diag.h"
 #include "StreamBase.h"
 #include "MemoryStream.h"

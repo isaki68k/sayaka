@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "sayaka.h"
+#include "header.h"
 #include <string>
 
 #define Debug(diag, fmt...)	do {	\

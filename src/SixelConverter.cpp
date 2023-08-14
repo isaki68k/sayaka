@@ -24,6 +24,7 @@
  * SUCH DAMAGE.
  */
 
+#include "SixelConverter.h"
 #include "FileStream.h"
 #include "Image.h"
 #if defined(USE_STB_IMAGE)
@@ -33,9 +34,7 @@
 #include "ImageLoaderJPEG.h"
 #include "ImageLoaderPNG.h"
 #endif
-#include "SixelConverter.h"
 #include "StringUtil.h"
-#include "sayaka.h"
 #include <algorithm>
 #include <cassert>
 #include <cstring>

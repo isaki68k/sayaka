@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
+#include "header.h"
 #include "Diag.h"
 #include "FdStream.h"
 #include "FileStream.h"

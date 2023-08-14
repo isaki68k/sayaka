@@ -25,6 +25,6 @@
 
 #pragma once
 
-#include "sayaka.h"
+#include "header.h"
 
 extern unichar ConvMathAlpha(unichar);

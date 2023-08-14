@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "sayaka.h"
+#include "header.h"
 
 extern int opt_eaw_a;
 extern int opt_eaw_n;

@@ -23,7 +23,6 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
 #include <string>
 
 // 正規表現クラス。

@@ -24,11 +24,10 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
+#include "term.h"
 #include "Diag.h"
 #include "StringUtil.h"
 #include "subr.h"
-#include "term.h"
 #include <cstdio>
 #include <string>
 #include <errno.h>

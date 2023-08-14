@@ -28,7 +28,7 @@
 #include "Dictionary.h"
 #include "StringUtil.h"
 #include "acl.h"
-#include "main.h"
+#include "sayaka.h"
 #include <optional>
 
 std::string myid;

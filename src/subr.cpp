@@ -23,9 +23,8 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
-#include "StringUtil.h"
 #include "subr.h"
+#include "StringUtil.h"
 
 //
 // 雑多なサブルーチン

@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include "sayaka.h"
 #include "Json.h"
 #include "Regex.h"
 

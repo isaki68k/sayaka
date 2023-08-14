@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "main.h"
+#include "sayaka.h"
 
 #define CAN "\x18"
 #define ESC "\x1b"

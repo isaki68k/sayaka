@@ -23,12 +23,11 @@
  * SUCH DAMAGE.
  */
 
+#include "sayaka.h"
 #include "Dictionary.h"
 #include "Json.h"
 #include "RichString.h"
 #include "StringUtil.h"
-#include "main.h"
-#include "sayaka.h"
 #include "subr.h"
 #include "term.h"
 #include <array>

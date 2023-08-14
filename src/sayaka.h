@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Tetsuya Isaki
+ * Copyright (C) 2014-2021 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,59 +25,18 @@
 
 #pragma once
 
-#include "config.h"
+#include "header.h"
+#include "Diag.h"
+#include "Dictionary.h"
 #include "Json.h"
+#include "NGWord.h"
+#include "OAuth.h"
+#include <array>
 #include <cstdint>
 #include <string>
-#include <sys/types.h>
+#include <vector>
 
-using int8    = int8_t;
-using int16   = int16_t;
-using int32   = int32_t;
-using int64   = int64_t;
-using uint8   = uint8_t;
-using uint16  = uint16_t;
-using uint32  = uint32_t;
-using uint64  = uint64_t;
-using unichar = uint32_t;
-
-#if defined(HAVE_ENDIAN_H)
-#include <endian.h>
-#elif defined(HAVE_SYS_ENDIAN_H)
-#include <sys/endian.h>
-#else
-#include "missing_endian.h"
-#endif
-
-#if defined(HAVE_BSD_BSD_H)
-#include <bsd/bsd.h>
-#endif
-
-#if !defined(__printflike)
-#if defined(HAVE___ATTRIBUTE_FORMAT)
-# define __printflike(a,b)	__attribute__((__format__(__printf__, (a), (b))))
-#else
-# define __printflike(a,b)
-#endif
-#endif
-
-#if !defined(__predict_true)
-#if defined(HAVE___BUILTIN_EXPECT)
-# define __predict_true(exp)	__builtin_expect((exp) != 0, 1)
-# define __predict_false(exp)	__builtin_expect((exp) != 0, 0)
-#else
-# define __predict_true(exp)	(exp)
-# define __predict_false(exp)	(exp)
-#endif
-#endif
-
-// iconv() の第2引数の型は OS によって違う…
-#if defined(HAVE_ICONV_CONST)
-#define ICONV(cd, s, slen, d, dlen)	iconv((cd), (s), (slen), (d), (dlen))
-#else
-#define ICONV(cd, s, slen, d, dlen)	\
-	iconv((cd), const_cast<char **>(s), (slen), (d), (dlen))
-#endif
+#define DEBUG_FORMAT 1
 
 enum Color {
 	Username,
@@ -95,10 +54,28 @@ enum Color {
 	Max,
 };
 
+enum bgcolor {
+	BG_NONE = -1,
+	BG_BLACK = 0,
+	BG_WHITE = 1,
+};
+
+// use_sixel
+enum class UseSixel {
+	AutoDetect = -1,
+	No = 0,
+	Yes = 1,
+};
+
 class UString;
 
 static const int ColorFixedX68k = -1;
 
+extern void cmd_tweet();
+extern void cmd_stream();
+extern void cmd_play();
+
+extern void init_color();
 extern void print_(const UString& utext);
 extern UString ColorBegin(Color col);
 extern UString ColorEnd(Color col);
@@ -106,3 +83,62 @@ extern UString coloring(const std::string& text, Color col);
 extern bool show_image(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
 extern void record(const Json& obj);
+
+extern int  address_family;
+extern UseSixel use_sixel;
+extern int  color_mode;
+extern bool opt_protect;
+extern Diag diag;
+extern Diag diagHttp;
+extern Diag diagImage;
+extern Diag diagShow;
+extern bool opt_debug_format;
+extern int  opt_debug_sixel;
+extern int  screen_cols;
+extern int  opt_fontwidth;
+extern int  opt_fontheight;
+extern int  fontwidth;
+extern int  fontheight;
+extern int  iconsize;
+extern int  imagesize;
+extern int  indent_cols;
+extern int  indent_depth;
+extern int  max_image_count;
+extern int  image_count;
+extern int  image_next_cols;
+extern int  image_max_rows;
+extern enum bgcolor bgcolor;
+extern std::string output_codeset;
+extern OAuth oauth;
+extern bool opt_norest;
+extern bool opt_show_ng;
+extern std::string opt_ngword;
+extern std::string opt_ngword_user;
+extern std::string record_file;
+extern std::vector<std::string> opt_filter;
+extern std::string last_id;
+extern int  last_id_count;
+extern int  last_id_max;
+extern bool in_sixel;
+extern std::string opt_ciphers;
+extern bool opt_full_url;
+extern bool opt_progress;
+extern NGWordList ngword_list;
+extern bool opt_ormode;
+extern bool opt_output_palette;
+extern int  opt_timeout_image;
+extern bool opt_pseudo_home;
+extern std::string myid;
+extern bool opt_nocolor;
+extern int  opt_record_mode;
+extern bool opt_mathalpha;
+extern bool opt_nocombine;
+extern std::string basedir;
+extern std::string cachedir;
+extern std::string tokenfile;
+extern std::string colormapdir;
+
+extern StringDictionary followlist;
+extern StringDictionary blocklist;
+extern StringDictionary mutelist;
+extern StringDictionary nortlist;

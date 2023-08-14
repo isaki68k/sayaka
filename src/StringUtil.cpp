@@ -24,7 +24,6 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
 #include "StringUtil.h"
 #include <cstdarg>
 #include <cstring>
