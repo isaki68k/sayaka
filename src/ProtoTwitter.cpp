@@ -667,7 +667,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 		// ついでに簡単なテキスト置換も同時にやってしまう。
 
 		// URL 展開元の文字は負数にしてあるのでその部分は無視する
-		if (__predict_false((int32_t)c.code < 0)) {
+		if (__predict_false((int32)c.code < 0)) {
 			continue;
 		}
 		// '\r' は無視

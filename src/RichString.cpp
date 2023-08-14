@@ -104,7 +104,7 @@ RichString::dump() const
 	// 通常の文字配列とは異なり、これは終端 '\0' も1要素を持つ配列
 	for (int i = 0, sz = size(); i < sz; i++) {
 		const auto& c = (*this)[i];
-		uint32_t abscode = abs((int32_t)c.code);
+		uint32 abscode = abs((int32)c.code);
 
 		rv += string_format("[%d] char=%d byte=%d U+%02x ",
 			i, c.charoffset, c.byteoffset, abscode);
@@ -123,7 +123,7 @@ RichString::dump() const
 				rv += text.substr(c.byteoffset, bytelen);
 			}
 			rv += '\'';
-			if ((int32_t)c.code < 0) {
+			if ((int32)c.code < 0) {
 				rv += " Del";
 			}
 			if (bytelen > 1) {

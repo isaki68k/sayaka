@@ -704,10 +704,10 @@ ConvertFromStream(InputStream *istream)
 			}
 		}
 
-		std::vector<uint8_t> buf;
+		std::vector<uint8> buf;
 		union {
-			uint16_t w;
-			uint8_t b[2];
+			uint16 w;
+			uint8 b[2];
 		} data;
 		// バージョン番号 0x0001 in BE
 		data.w = htobe16(0x0001);
@@ -722,13 +722,13 @@ ConvertFromStream(InputStream *istream)
 		// X68k パレットを作る
 		for (int i = 0; i < ir.GetPaletteCount(); i++) {
 			auto col = ir.GetPalette(i);
-			uint16_t r = col.r >> 3;
-			uint16_t g = col.g >> 3;
-			uint16_t b = col.b >> 3;
+			uint16 r = col.r >> 3;
+			uint16 g = col.g >> 3;
+			uint16 b = col.b >> 3;
 			uint I = (col.r & 0x7) + (col.g & 0x7) + (col.b & 0x7);
 
-			uint8_t h = g << 3 | r >> 2;
-			uint8_t l = (r << 6 | b << 1) | (I > (21 / 2) ? 1 : 0);
+			uint8 h = g << 3 | r >> 2;
+			uint8 l = (r << 6 | b << 1) | (I > (21 / 2) ? 1 : 0);
 			buf.emplace_back(h);
 			buf.emplace_back(l);
 		}

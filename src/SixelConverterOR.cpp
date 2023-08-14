@@ -40,7 +40,7 @@
 static std::vector<uint8> sixelbuf {};
 
 // 10進数(0-99) を BCD(0x00-0x99) に変換するテーブル
-static const uint8_t decimal_table[] = {
+static const uint8 decimal_table[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
 	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19,
 	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29,
@@ -54,7 +54,7 @@ static const uint8_t decimal_table[] = {
 };
 
 static inline int
-sixel_putc(uint8_t *dst, char c)
+sixel_putc(uint8 *dst, char c)
 {
 	*dst = c;
 	return 1;
@@ -62,7 +62,7 @@ sixel_putc(uint8_t *dst, char c)
 
 // 小さい正の整数をとにかく高速に出力したい
 static inline int
-sixel_putd(uint8_t *dst, int n)
+sixel_putd(uint8 *dst, int n)
 {
 	// 小さい数優先で、255 までを高速に出力できればそれでいい
 	int m;
@@ -91,7 +91,7 @@ sixel_putd(uint8_t *dst, int n)
 
 // ptn を rep 回出力する
 static inline int
-sixel_put_repunit(uint8_t *dst, int rep, uint8_t ptn)
+sixel_put_repunit(uint8 *dst, int rep, uint8 ptn)
 {
 	if (rep == 1) {
 		return sixel_putc(dst, ptn + 0x3f);
@@ -133,8 +133,8 @@ sixel_put_repunit(uint8_t *dst, int rep, uint8_t ptn)
 // m68k での速度を優先するため、範囲チェックなどは行わない。
 int
 sixel_image_to_sixel_h6_ormode(
-	uint8_t *dst,
-	const uint8_t *src,
+	uint8 *dst,
+	const uint8 *src,
 	int w,
 	int h,
 	int nplane)

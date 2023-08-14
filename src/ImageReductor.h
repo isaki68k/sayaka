@@ -94,27 +94,27 @@ struct ColorRGBint {
 };
 
 struct ColorRGBuint8 {
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
+	uint8 r;
+	uint8 g;
+	uint8 b;
 };
 
 struct ColorRGBint8 {
-	int8_t r;
-	int8_t g;
-	int8_t b;
+	int8 r;
+	int8 g;
+	int8 b;
 };
 
 struct ColorRGBint16 {
-	int16_t r;
-	int16_t g;
-	int16_t b;
+	int16 r;
+	int16 g;
+	int16 b;
 };
 
 struct ColorHSVuint8 {
-	uint8_t h;	// 0..239, 255=gray
-	uint8_t s;	// 0..255
-	uint8_t v;	// 0..255
+	uint8 h;	// 0..239, 255=gray
+	uint8 s;	// 0..255
+	uint8 v;	// 0..255
 };
 
 class ImageReductor
@@ -144,7 +144,7 @@ class ImageReductor
 
 	// 変換
 	void Convert(ReductorReduceMode mode, Image& img,
-		std::vector<uint8_t>& dst, int toWidth, int toHeight);
+		std::vector<uint8>& dst, int toWidth, int toHeight);
 
 	void ColorFactor(float factor);
 
@@ -204,23 +204,23 @@ class ImageReductor
 	// 変換関数
 	//
 
-	static uint8_t Saturate_uint8(int x);
+	static uint8 Saturate_uint8(int x);
 	static int RoundDownPow2(int x);
 	static int rnd(int level);
 
 	// 高速変換を行う
-	void ConvertFast(Image& img, std::vector<uint8_t>& dst,
+	void ConvertFast(Image& img, std::vector<uint8>& dst,
 		int toWidth, int toHeight);
 
 	// 単純変換を行う
-	void ConvertSimple(Image& img, std::vector<uint8_t>& dst,
+	void ConvertSimple(Image& img, std::vector<uint8>& dst,
 		int toWidth, int toHeight);
 
 	// 高品質変換を行う
-	void ConvertHighQuality(Image& img, std::vector<uint8_t>& dst,
+	void ConvertHighQuality(Image& img, std::vector<uint8>& dst,
 		int toWidth, int toHeight);
 
-	static int16_t Saturate_adderr(int16_t a, int b);
+	static int16 Saturate_adderr(int16 a, int b);
 	static void set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio);
 
 	Diag diag {};

@@ -111,7 +111,7 @@ ImageReductor::SetPalette_Gray(int count)
 	Palette = Palette_Custom;
 	PaletteCount = count;
 	for (int i = 0; i < count; i++) {
-		uint8_t c = i * 255 / (count - 1);
+		uint8 c = i * 255 / (count - 1);
 		Palette_Custom[i].r = c;
 		Palette_Custom[i].g = c;
 		Palette_Custom[i].b = c;
@@ -310,7 +310,7 @@ ImageReductor::SetPalette_Fixed256RGBI()
 	PaletteCount = 256;
 
 	for (int i = 0; i < 256; i++) {
-		uint8_t R, G, B, I;
+		uint8 R, G, B, I;
 		R = (i >> 6) & 3;
 		G = (i >> 4) & 3;
 		B = (i >> 2) & 3;
@@ -326,7 +326,7 @@ ImageReductor::SetPalette_Fixed256RGBI()
 int
 ImageReductor::FindColor_Fixed256RGBI(ColorRGBuint8 c)
 {
-	uint8_t R, G, B, I;
+	uint8 R, G, B, I;
 	R = c.r >> 6;
 	G = c.g >> 6;
 	B = c.b >> 6;
@@ -475,14 +475,14 @@ ImageReductor::SetColorMode(ReductorColorMode mode, ReductorFinderMode finder,
 
 // その他のサブルーチン
 
-/*static*/ uint8_t
+/*static*/ uint8
 ImageReductor::Saturate_uint8(int x)
 {
 	if (x < 0)
 		return 0;
 	if (x > 255)
 		return 255;
-	return (uint8_t)x;
+	return (uint8)x;
 }
 
 /*static*/ int
@@ -501,7 +501,7 @@ ImageReductor::RoundDownPow2(int x)
 /*static*/ int
 ImageReductor::rnd(int level)
 {
-	static uint32_t y = (uint32_t)24539283060L;
+	static uint32 y = (uint32)24539283060L;
 	y = y ^ (y << 13);
 	y = y ^ (y >> 17);
 	y = y ^ (y << 5);
@@ -515,7 +515,7 @@ ImageReductor::rnd(int level)
 
 void
 ImageReductor::Convert(ReductorReduceMode mode, Image& img,
-	std::vector<uint8_t>& dst, int toWidth, int toHeight)
+	std::vector<uint8>& dst, int toWidth, int toHeight)
 {
 	switch (mode) {
 	 case ReductorReduceMode::Fast:
@@ -545,11 +545,11 @@ ImageReductor::Convert(ReductorReduceMode mode, Image& img,
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertFast(Image& img, std::vector<uint8>& dst_,
 	int dstWidth, int dstHeight)
 {
-	uint8_t *dst = dst_.data();
-	uint8_t *src  = img.GetBuf();
+	uint8 *dst = dst_.data();
+	uint8 *src  = img.GetBuf();
 	int srcWidth  = img.GetWidth();
 	int srcHeight = img.GetHeight();
 	int srcStride = img.GetStride();
@@ -574,7 +574,7 @@ ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
 	StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
 
 	for (int y = 0; y < dstHeight; y++) {
-		uint8_t *srcRaster = &src[sr_y.I * srcStride];
+		uint8 *srcRaster = &src[sr_y.I * srcStride];
 		StepRationalAdd(&sr_y, &sr_ystep);
 
 		sr_x.I = 0;
@@ -586,7 +586,7 @@ ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
 			int sx0 = sr_x.I;
 			StepRationalAdd(&sr_x, &sr_xstep);
 
-			uint8_t *srcPix = &srcRaster[sx0 * srcNch];
+			uint8 *srcPix = &srcRaster[sx0 * srcNch];
 			col.r = srcPix[0];
 			col.g = srcPix[1];
 			col.b = srcPix[2];
@@ -631,11 +631,11 @@ ImageReductor::ConvertFast(Image& img, std::vector<uint8_t>& dst_,
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertSimple(Image& img, std::vector<uint8>& dst_,
 	int dstWidth, int dstHeight)
 {
-	uint8_t *dst = dst_.data();
-	uint8_t *src  = img.GetBuf();
+	uint8 *dst = dst_.data();
+	uint8 *src  = img.GetBuf();
 	int srcWidth  = img.GetWidth();
 	int srcHeight = img.GetHeight();
 	int srcStride = img.GetStride();
@@ -655,7 +655,7 @@ ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
 	StepRational sr_xstep = StepRationalCreate(0, srcWidth, dstWidth);
 
 	for (int y = 0; y < dstHeight; y++) {
-		uint8_t *srcRaster = &src[sr_y.I * srcStride];
+		uint8 *srcRaster = &src[sr_y.I * srcStride];
 		StepRationalAdd(&sr_y, &sr_ystep);
 
 		sr_x.I = 0;
@@ -665,7 +665,7 @@ ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
 			int sx0 = sr_x.I;
 			StepRationalAdd(&sr_x, &sr_xstep);
 
-			uint8_t *srcPix = &srcRaster[sx0 * srcNch];
+			uint8 *srcPix = &srcRaster[sx0 * srcNch];
 			col.r = srcPix[0];
 			col.g = srcPix[1];
 			col.b = srcPix[2];
@@ -677,10 +677,10 @@ ImageReductor::ConvertSimple(Image& img, std::vector<uint8_t>& dst_,
 	}
 }
 
-/*static*/ int16_t
-ImageReductor::Saturate_adderr(int16_t a, int b)
+/*static*/ int16
+ImageReductor::Saturate_adderr(int16 a, int b)
 {
-	int16_t x = a + b;
+	int16 x = a + b;
 	if (x < -512) {
 		return -512;
 	} else if (x > 511) {
@@ -711,11 +711,11 @@ ImageReductor::set_err(ColorRGBint16 eb[], int x, ColorRGBint col, int ratio)
 // srcNch : 入力のチャンネル数。3 か 4 を保証すること。
 // srcStride : 入力のストライドのバイト長さ。
 void
-ImageReductor::ConvertHighQuality(Image& img, std::vector<uint8_t>& dst_,
+ImageReductor::ConvertHighQuality(Image& img, std::vector<uint8>& dst_,
 	int dstWidth, int dstHeight)
 {
-	uint8_t *dst = dst_.data();
-	uint8_t *src  = img.GetBuf();
+	uint8 *dst = dst_.data();
+	uint8 *src  = img.GetBuf();
 	int srcWidth  = img.GetWidth();
 	int srcHeight = img.GetHeight();
 	int srcStride = img.GetStride();
@@ -778,8 +778,8 @@ ImageReductor::ConvertHighQuality(Image& img, std::vector<uint8_t>& dst_,
 
 			// 画素の平均を求める
 			for (int sy = sy0; sy < sy1; sy++) {
-				uint8_t *srcRaster = &src[sy * srcStride];
-				uint8_t *srcPix = &srcRaster[sx0 * srcNch];
+				uint8 *srcRaster = &src[sy * srcStride];
+				uint8 *srcPix = &srcRaster[sx0 * srcNch];
 				for (int sx = sx0; sx < sx1; sx++) {
 					col.r += srcPix[0];
 					col.g += srcPix[1];
