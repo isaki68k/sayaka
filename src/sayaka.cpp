@@ -26,6 +26,7 @@
 #include "sayaka.h"
 #include "FileStream.h"
 #include "MathAlphaSymbols.h"
+#include "ProtoTwitter.h"
 #include "RichString.h"
 #include "StringUtil.h"
 #include "UString.h"
@@ -54,9 +55,7 @@
 
 enum SayakaCmd {
 	Noop = 0,
-	Stream,
 	Play,
-	Tweet,
 	NgwordAdd,
 	NgwordDel,
 	NgwordList,
@@ -70,7 +69,9 @@ static std::string str_join(const std::string& sep,
 static std::string GetHomeDir();
 static void init();
 static void init_screen();
+#if 0
 static void invalidate_cache();
+#endif
 static void signal_handler(int signo);
 static void sigwinch();
 static void cmd_ngword_add();
@@ -124,17 +125,14 @@ int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
 enum bgcolor bgcolor;			// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
-OAuth oauth;
 StringDictionary followlist;	// フォロー氏リスト
 StringDictionary blocklist;		// ブロック氏リスト
 StringDictionary mutelist;		// ミュート氏リスト
 StringDictionary nortlist;		// RT非表示氏リスト
-bool opt_norest;				// REST API を発行しない
 bool opt_show_ng;				// NG ツイートを隠さない
 std::string opt_ngword;			// NG ワード (追加削除コマンド用)
 std::string opt_ngword_user;	// NG 対象ユーザ (追加コマンド用)
 std::string record_file;		// 記録用ファイルパス
-std::vector<std::string> opt_filter;	// フィルタキーワード
 std::string last_id;			// 直前に表示したツイート
 int  last_id_count;				// 連続回数
 int  last_id_max;				// 連続回数の上限
@@ -146,7 +144,6 @@ NGWordList ngword_list;			// NG ワードリスト
 bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
 int  opt_timeout_image;			// 画像取得の(接続)タイムアウト [msec]
-bool opt_pseudo_home;			// 疑似ホームタイムライン
 std::string myid;				// 自身の user id
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
@@ -154,7 +151,6 @@ bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
 std::string basedir;
 std::string cachedir;
-std::string tokenfile;
 std::string colormapdir;
 
 static std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
@@ -174,11 +170,9 @@ enum {
 	OPT_eaw_a,
 	OPT_eaw_n,
 	OPT_euc_jp,
-	OPT_filter,
 	OPT_font,
 	OPT_force_sixel,
 	OPT_full_url,
-	OPT_home,
 	OPT_jis,
 	OPT_mathalpha,
 	OPT_max_cont,
@@ -190,18 +184,15 @@ enum {
 	OPT_no_color,
 	OPT_no_combine,
 	OPT_no_image,
-	OPT_no_rest,
 	OPT_ormode,
 	OPT_palette,
 	OPT_play,
-	OPT_post,
 	OPT_progress,
 	OPT_protect,
 	OPT_record,
 	OPT_record_all,
 	OPT_show_ng,
 	OPT_timeout_image,
-	OPT_token,
 	OPT_version,
 	OPT_white,
 	OPT_x68k,
@@ -220,11 +211,9 @@ static const struct option longopts[] = {
 	{ "eaw-a",			required_argument,	NULL,	OPT_eaw_a },
 	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
-	{ "filter",			required_argument,	NULL,	OPT_filter },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "force-sixel",	no_argument,		NULL,	OPT_force_sixel },
 	{ "full-url",		no_argument,		NULL,	OPT_full_url },
-	{ "home",			no_argument,		NULL,	OPT_home },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-cont",		required_argument,	NULL,	OPT_max_cont },
@@ -236,18 +225,15 @@ static const struct option longopts[] = {
 	{ "no-color",		no_argument,		NULL,	OPT_no_color },
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
-	{ "no-rest",		no_argument,		NULL,	OPT_no_rest },
 	{ "ormode",			required_argument,	NULL,	OPT_ormode },
 	{ "palette",		required_argument,	NULL,	OPT_palette },
 	{ "play",			no_argument,		NULL,	OPT_play },
-	{ "post",			no_argument,		NULL,	OPT_post },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "protect",		no_argument,		NULL,	OPT_protect },
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
-	{ "token",			required_argument,	NULL,	OPT_token },
 	{ "version",		no_argument,		NULL,	OPT_version },
 	{ "white",			no_argument,		NULL,	OPT_white },
 	{ "x68k",			no_argument,		NULL,	OPT_x68k },
@@ -380,10 +366,6 @@ main(int ac, char *av[])
 		 case OPT_euc_jp:
 			output_codeset = "euc-jp";
 			break;
-		 case OPT_filter:
-			cmd = SayakaCmd::Stream;
-			opt_filter.emplace_back(optarg);
-			break;
 		 case OPT_font:
 		 {
 			// "7x14" のような形式
@@ -405,10 +387,6 @@ main(int ac, char *av[])
 			break;
 		 case OPT_full_url:
 			opt_full_url = true;
-			break;
-		 case OPT_home:
-			cmd = SayakaCmd::Stream;
-			opt_pseudo_home = true;
 			break;
 		 case OPT_jis:
 			output_codeset = "iso-2022-jp";
@@ -453,9 +431,6 @@ main(int ac, char *av[])
 		 case OPT_no_image:
 			use_sixel = UseSixel::No;
 			break;
-		 case OPT_no_rest:
-			opt_norest = true;
-			break;
 		 case OPT_ormode:
 			if (strcmp(optarg, "on") == 0) {
 				opt_ormode = true;
@@ -476,9 +451,6 @@ main(int ac, char *av[])
 			break;
 		 case OPT_play:
 			cmd = SayakaCmd::Play;
-			break;
-		 case OPT_post:
-			cmd = SayakaCmd::Tweet;
 			break;
 		 case OPT_progress:
 			opt_progress = true;
@@ -504,16 +476,6 @@ main(int ac, char *av[])
 				err(1, "--timeout-image %s", optarg);
 			}
 			break;
-		 case OPT_token:
-		 {
-			std::string path(optarg);
-			if (path.find('/') != std::string::npos) {
-				tokenfile = path;
-			} else {
-				tokenfile = basedir + path;
-			}
-			break;
-		 }
 		 case OPT_version:
 			cmd = SayakaCmd::Version;
 			break;
@@ -540,6 +502,7 @@ main(int ac, char *av[])
 		}
 	}
 
+#if 0
 	// どのコマンドでもなくキーワードだけならフィルタモード
 	if (optind < ac && cmd == SayakaCmd::Noop) {
 		cmd = SayakaCmd::Stream;
@@ -547,6 +510,7 @@ main(int ac, char *av[])
 			opt_filter.emplace_back(av[i]);
 		}
 	}
+#endif
 
 	// --progress ならそれを展開したコマンドラインを表示してみるか
 	if (opt_progress) {
@@ -567,24 +531,11 @@ main(int ac, char *av[])
 		usage();
 	}
 
-	if (opt_pseudo_home) {
-		if (!opt_filter.empty()) {
-			warnx("filter keyword and --home must be exclusive.");
-			usage();
-		}
-
-		// --home は REST のみなので --no-rest が指定されたらエラー。
-		if (opt_norest) {
-			warnx("--no-rest is not allowed with --home.");
-			usage();
-		}
-	}
-
-	Debug(diag, "tokenfile = %s", tokenfile.c_str());
 	init();
 
 	// コマンド別処理
 	switch (cmd) {
+#if 0
 	 case SayakaCmd::Stream:
 		init_screen();
 
@@ -595,6 +546,7 @@ main(int ac, char *av[])
 
 		cmd_stream();
 		break;
+#endif
 	 case SayakaCmd::Play:
 		init_screen();
 		cmd_play();
@@ -607,9 +559,6 @@ main(int ac, char *av[])
 		break;
 	 case SayakaCmd::NgwordList:
 		cmd_ngword_list();
-		break;
-	 case SayakaCmd::Tweet:
-		cmd_tweet();
 		break;
 	 case SayakaCmd::Version:
 		cmd_version();
@@ -736,6 +685,7 @@ init_screen()
 	ngword_list.ReadFile();
 }
 
+#if 0
 // 古いキャッシュを破棄する
 static void
 invalidate_cache()
@@ -758,6 +708,7 @@ invalidate_cache()
 		warn("system(find photo)");
 	}
 }
+#endif
 
 static void
 signal_handler(int signo)
@@ -905,8 +856,7 @@ static void
 usage()
 {
 	printf(
-R"(usage: sayaka [<options>...] --home
-       sayaka [<options>...] [--filter] <keyword>
+R"(usage: sayaka [<options>...]
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
 	--font <width>x<height> : font size. default 7x14
 	--full-url : display full URL even if the URL is abbreviated.
@@ -916,13 +866,11 @@ R"(usage: sayaka [<options>...] --home
 	--force-sixel : force enable SIXEL images.
 	--jis / --eucjp : Set output encoding.
 	--play : read JSON from stdin.
-	--post : post tweet from stdin (utf-8 is expected).
 	--progress: show startup progress (for very slow machines).
 	--protect : don't display protected user's tweet.
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--timeout-image <msec>
-	--token <file> : token file (default: ~/.sayaka/token.json)
 	--version
 	--x68k : preset options for x68k (with SIXEL kernel).
 
@@ -934,7 +882,7 @@ R"(usage: sayaka [<options>...] --home
 	--max-cont <n>                  --max-image-cols <n>
 	--ngword-add                    --ngword-del
 	--ngword-list                   --ngword-user
-	--no-rest                       --ormode <on|off> (default off)
+	                                --ormode <on|off> (default off)
 	--show-ng                       --palette <on|off> (default on)
 )"
 	);

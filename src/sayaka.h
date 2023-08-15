@@ -30,7 +30,6 @@
 #include "Dictionary.h"
 #include "Json.h"
 #include "NGWord.h"
-#include "OAuth.h"
 #include <array>
 #include <cstdint>
 #include <string>
@@ -71,8 +70,6 @@ class UString;
 
 static const int ColorFixedX68k = -1;
 
-extern void cmd_tweet();
-extern void cmd_stream();
 extern void cmd_play();
 
 extern void init_color();
@@ -109,13 +106,10 @@ extern int  image_next_cols;
 extern int  image_max_rows;
 extern enum bgcolor bgcolor;
 extern std::string output_codeset;
-extern OAuth oauth;
-extern bool opt_norest;
 extern bool opt_show_ng;
 extern std::string opt_ngword;
 extern std::string opt_ngword_user;
 extern std::string record_file;
-extern std::vector<std::string> opt_filter;
 extern std::string last_id;
 extern int  last_id_count;
 extern int  last_id_max;
@@ -127,7 +121,6 @@ extern NGWordList ngword_list;
 extern bool opt_ormode;
 extern bool opt_output_palette;
 extern int  opt_timeout_image;
-extern bool opt_pseudo_home;
 extern std::string myid;
 extern bool opt_nocolor;
 extern int  opt_record_mode;
@@ -135,7 +128,6 @@ extern bool opt_mathalpha;
 extern bool opt_nocombine;
 extern std::string basedir;
 extern std::string cachedir;
-extern std::string tokenfile;
 extern std::string colormapdir;
 
 extern StringDictionary followlist;

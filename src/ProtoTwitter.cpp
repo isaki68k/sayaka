@@ -24,8 +24,8 @@
  */
 
 #include "sayaka.h"
+#include "ProtoTwitter.h"
 #include "Dictionary.h"
-#include "Json.h"
 #include "RichString.h"
 #include "StringUtil.h"
 #include "subr.h"
@@ -35,16 +35,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <err.h>
-#include <unistd.h>
-
-#define AUTHORIZE_URL		"https://twitter.com/oauth/authorize"
-#define API_URL				"https://api.twitter.com"
-#define ACCESS_TOKEN_URL	API_URL "/oauth/access_token"
-#define REQUEST_TOKEN_URL	API_URL "/oauth/request_token"
-#define APIv1_1(path)		API_URL "/1.1/" path ".json"
-
-#define CONSUMER_KEY		"jPY9PU5lvwb6s9mqx3KjRA"
-#define CONSUMER_SECRET		"faGcW9MMmU0O6qTrsHgcUchAiqxDcU9UjDW2Zw"
 
 class MediaInfo
 {
@@ -62,7 +52,6 @@ class MediaInfo
 	std::string display_url {};
 };
 
-static bool showobject(const Json& obj);
 static bool showstatus(const Json *status, bool is_quoted);
 static UString format_rt_owner(const Json& s);
 static UString format_rt_cnt(const Json& s);
@@ -73,132 +62,9 @@ static void SetUrl_main(RichString& text, int start, int end,
 	const std::string& url);
 static void show_icon(const Json& user);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
-[[maybe_unused]] static void get_credentials();
-static Json APIJson(const std::string& method, const std::string& uri,
-	const std::string& urimsg,
-	const StringDictionary& options, std::vector<std::string> *recvp = NULL);
-static std::string errors2string(const Json& json);
-static void InitOAuth();
-static void get_access_token_v1();
-
-
-// 投稿する
-void
-cmd_tweet()
-{
-	// 標準入力から受け取る。UTF-8 前提。
-	// ツイートは半角240字、全角140字換算で、全角はたぶんだいたい3バイト
-	// なので、420 バイト程度が上限のはず?
-	std::array<char, 1024> buf;
-	int len = 0;
-	while (len < buf.size() - 1) {
-		if (fgets(buf.data() + len, buf.size() - len - 1, stdin) == NULL)
-			break;
-		len = strlen(buf.data());
-	}
-
-	std::string text(buf.data());
-	text = Chomp(text);
-
-	// アクセストークンを取得
-	InitOAuth();
-
-	// 投稿するパラメータを用意
-	StringDictionary options;
-	options.AddOrUpdate("status", text);
-	options.AddOrUpdate("trim_user", "1");
-
-	// 投稿
-	Json json;
-	try {
-		json = APIJson("POST", APIv1_1("statuses/update"),
-			"statuses/update", options);
-	} catch (const std::string errmsg) {
-		errx(1, "%s", errmsg.c_str());
-	}
-	if (json.contains("errors")) {
-		errx(1, "statuses/update failed%s", errors2string(json).c_str());
-	}
-	printf("Posted.\n");
-}
-
-// フィルタストリーム
-void
-cmd_stream()
-{
-	// アクセストークンを取得
-	InitOAuth();
-
-	int sleep_sec = 120;
-	for (;;) {
-		StringDictionary options;
-		std::vector<std::string> recvhdrs;
-
-		options["include_entities"] = "1";
-		options["tweet_mode"] = "extended";
-
-		if (__predict_false(last_id.empty())) {
-			// 最初の1回は home から直近の1件を取得。
-			options["count"] = "1";
-		} else {
-			// 次からは前回以降を取得。
-			sleep(sleep_sec);
-			options["since_id"] = last_id;
-		}
-
-		Json json;
-		try {
-			json = APIJson("GET", APIv1_1("statuses/home_timeline"),
-				"statuses/home_timeline", options, &recvhdrs);
-		} catch (const std::string errmsg) {
-			warnx("%s", errmsg.c_str());
-			return;
-		}
-		if (json.is_array() == false) {
-			warnx("statuses/home_timeline returns non-array: %s",
-				json.dump().c_str());
-			return;
-		}
-		// json は新→旧の順に並んでいるので、逆順に取り出す。
-		for (int i = json.size() -1; i >= 0; i--) {
-			const Json& j = json[i];
-			showobject(j);
-
-			const auto& id_str = j.value("id_str", "");
-			if (id_str > last_id) {
-				last_id = id_str;
-			}
-		}
-
-		// x-rate-limit-reset: <UNIXTIME> と
-		// x-rate-limit-remaining: <num> から次の接続までの待ち時間を決定。
-		// 15分間で 15回しかないが、リセット時間までに 2回くらいは残して
-		// おいてみる。つまり 15分で最大 13回分。
-		auto resettime_str = HttpClient::GetHeader(recvhdrs,
-			"x-rate-limit-reset");
-		auto remaining_str = HttpClient::GetHeader(recvhdrs,
-			"x-rate-limit-remaining");
-
-		uint64 resettime = strtoull(resettime_str.c_str(), NULL, 10);
-		uint32 remaining = strtoul(remaining_str.c_str(), NULL, 10);
-		time_t now = time(NULL);
-		if (resettime > now) {
-			if (remaining > 2) {
-				sleep_sec = (resettime - now) / (remaining - 1);
-			} else {
-				sleep_sec = (resettime - now);
-			}
-		} else {
-			// ?
-			sleep_sec = 120;
-		}
-		Debug(diag, "remain=%d until=%ld, sleep=%d",
-			remaining, (long)(resettime - now), sleep_sec);
-	}
-}
 
 // 1ツイート分の JSON を処理する。
-static bool
+bool
 showobject(const Json& obj)
 {
 	// 全ツイートを録画
@@ -860,165 +726,4 @@ show_photo(const std::string& img_url, int resize_width, int index)
 	}
 
 	return show_image(img_file, img_url, resize_width, index);
-}
-
-// 自分の ID を取得
-static void
-get_credentials()
-{
-	InitOAuth();
-
-	StringDictionary options;
-	options["include_entities"] = "false";
-	options["include_email"] = "false";
-	Json json;
-	try {
-		json = APIJson("GET", APIv1_1("account/verify_credentials"),
-			"account/verify_credentials", options);
-	} catch (const std::string errmsg) {
-		errx(1, "%s", errmsg.c_str());
-	}
-	Debug(diag, "json=|%s|", json.dump().c_str());
-	if (json.is_object() == false) {
-		errx(1, "get_credentials returned non-object: %s", json.dump().c_str());
-	}
-	if (json.contains("errors")) {
-		errx(1, "get_credentials failed%s", errors2string(json).c_str());
-	}
-
-	myid = json.value("id_str", "");
-}
-
-// uri に method (GET/POST) で接続し、結果の JSON を返す。
-// urimsg はエラーメッセージ表示用 (API名など)。
-// 接続が失敗したらエラーメッセージ(std::string)をスローする。
-// 接続できれば受信した JSON を返す。
-// recvp が指定されていれば受信ヘッダを返す。
-static Json
-APIJson(const std::string& method, const std::string& uri,
-	const std::string& urimsg,
-	const StringDictionary& options, std::vector<std::string> *recvp)
-{
-	HttpClient client;
-	InputStream *stream = NULL;
-	std::string line;
-	Json json;
-
-	oauth.AdditionalParams.clear();
-
-	if (!options.empty()) {
-		for (const auto& [key, val] : options) {
-			oauth.AdditionalParams[key] = val;
-		}
-	}
-
-	Trace(diag, "InitHttp call");
-	if (oauth.InitHttp(client, method, uri) == false) {
-		Debug(diag, "%s: InitHttp failed", uri.c_str());
-		throw urimsg + ": InitHttp failed";
-	}
-	Trace(diag, "InitHttp return");
-
-	// Ciphers 指定があれば指示
-	if (!opt_ciphers.empty()) {
-		client.SetCiphers(opt_ciphers);
-	}
-
-	Trace(diag, "client.Act call");
-	stream = client.Act(method);
-	Trace(diag, "client.Act return");
-	if (stream == NULL) {
-		throw method + " " + urimsg + ": " + client.ResultMsg;
-	}
-
-	if (recvp) {
-		*recvp = client.RecvHeaders;
-	}
-
-	auto r = stream->ReadLine(&line);
-	if (__predict_false(r < 0)) {
-		throw urimsg + ": ReadLine failed: " + std::string(strerrno());
-	}
-	Trace(diag, "ReadLine |%s|", line.c_str());
-
-	if (line.empty()) {
-		return json;
-	}
-
-	return Json::parse(line);
-}
-
-// APIJson の応答がエラーだった時に表示用文字列に整形して返す。
-// if (json.contains("errors")) {
-//   auto msg = errors2string(json);
-// のように呼び出す。
-static std::string
-errors2string(const Json& json)
-{
-	const Json& errors = json["errors"];
-	if (errors.is_array()) {
-		// エラーが複数返ってきたらどうするかね
-		const Json& error = errors[0];
-		auto code = error.value("code", 0);
-		const auto& message = error.value("message", "");
-		return string_format(": %s(%d)", message.c_str(), code);
-	}
-	return "";
-}
-
-// OAuth オブジェクトを初期化
-static void
-InitOAuth()
-{
-	assert(oauth.ConsumerKey.empty());
-
-	oauth.SetDiag(diagHttp);
-	oauth.ConsumerKey    = CONSUMER_KEY;
-	oauth.ConsumerSecret = CONSUMER_SECRET;
-
-	// ファイルからトークンを取得
-	// なければトークンを取得してファイルに保存
-	if (tokenfile.empty()) {
-		tokenfile = basedir + "token.json";
-	}
-	bool r = oauth.LoadTokenFromFile(tokenfile);
-	if (r == false) {
-		get_access_token_v1();
-	}
-}
-
-// OAuth v1.0 のアクセストークンを取得する。
-// 取得できなければ errx(3) で終了する。
-static void
-get_access_token_v1()
-{
-	oauth.AdditionalParams.clear();
-
-	Debug(diag, "----- Request Token -----");
-	oauth.RequestToken(REQUEST_TOKEN_URL);
-
-	printf("Please go to:\n"
-		AUTHORIZE_URL "?oauth_token=%s\n", oauth.AccessToken.c_str());
-	printf("\n");
-	printf("And input PIN code: ");
-	fflush(stdout);
-
-	char pin_str[1024];
-	if (fgets(pin_str, sizeof(pin_str), stdin) == NULL) {
-		err(1, "fgets");
-	}
-
-	Debug(diag, "----- Access Token -----");
-
-	oauth.AdditionalParams["oauth_verifier"] = pin_str;
-	oauth.RequestToken(ACCESS_TOKEN_URL);
-
-	if (oauth.AccessToken.empty()) {
-		errx(1, "GIVE UP");
-	}
-
-	bool r = oauth.SaveTokenToFile(tokenfile);
-	if (r == false) {
-		errx(1, "Token save failed");
-	}
 }

@@ -38,8 +38,10 @@
 
 static bool acl_me(const std::string& user_id, const std::string& user_name,
 	const StringDictionary& replies);
+#if 0
 static bool acl_home(const Json& status, const std::string& user_id,
 	const std::string& user_name);
+#endif
 static StringDictionary GetReplies(const Json& status,
 	const std::string& user_id, const std::string& user_name);
 
@@ -131,12 +133,14 @@ acl(const Json& status, bool is_quoted)
 		}
 	}
 
+#if 0
 	// ホーム TL 用の判定
 	if (is_quoted == false && opt_pseudo_home) {
 		if (acl_home(status, user_id, user_name) == false) {
 			return false;
 		}
 	}
+#endif
 
 	// ここからはホームでもフィルタでも
 	// ブロック氏かミュート氏がどこかに登場するツイートをひたすら弾く。
@@ -147,6 +151,7 @@ acl(const Json& status, bool is_quoted)
 		replies.Remove("");
 	}
 
+#if 0
 	// ブロック氏宛て、ミュート氏宛てを弾く。
 	auto reply_to_follow = false;
 	for (const auto& kv : replies) {
@@ -187,6 +192,7 @@ acl(const Json& status, bool is_quoted)
 			return false;
 		}
 	}
+#endif
 
 	// リツイートがあれば
 	if (status.contains("retweeted_status")) {
@@ -279,6 +285,7 @@ acl_me(const std::string& user_id, const std::string& user_name,
 	return false;
 }
 
+#if 0
 // ホーム TL のみで行う追加判定。
 static bool
 acl_home(const Json& status, const std::string& user_id,
@@ -306,6 +313,7 @@ acl_home(const Json& status, const std::string& user_id,
 	// だけになっているので、ホーム/フィルタ共通の判定に戻る。
 	return true;
 }
+#endif
 
 // リプライ + ユーザメンションの宛先リストを返す。
 //
