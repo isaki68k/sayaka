@@ -358,7 +358,7 @@ TLSHandle_mtls::Shutdown(int how)
 }
 
 // 読み込み
-size_t
+ssize_t
 TLSHandle_mtls::Read(void *buf, size_t len)
 {
 	ssize_t rv;
@@ -401,7 +401,7 @@ TLSHandle_mtls::Read(void *buf, size_t len)
 }
 
 // 書き出し
-size_t
+ssize_t
 TLSHandle_mtls::Write(const void *buf, size_t len)
 {
 	ssize_t rv;

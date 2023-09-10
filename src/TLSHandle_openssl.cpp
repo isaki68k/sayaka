@@ -230,7 +230,7 @@ TLSHandle_openssl::Shutdown(int how)
 	return 0;
 }
 
-size_t
+ssize_t
 TLSHandle_openssl::Read(void *buf, size_t len)
 {
 	if (usessl) {
@@ -240,7 +240,7 @@ TLSHandle_openssl::Read(void *buf, size_t len)
 	}
 }
 
-size_t
+ssize_t
 TLSHandle_openssl::Write(const void *buf, size_t len)
 {
 	if (usessl) {

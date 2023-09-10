@@ -72,8 +72,8 @@ class TLSHandleBase
 	virtual int Shutdown(int how) = 0;
 
 	// 読み書き
-	virtual size_t Read(void *buf, size_t len) = 0;
-	virtual size_t Write(const void *buf, size_t len) = 0;
+	virtual ssize_t Read(void *buf, size_t len) = 0;
+	virtual ssize_t Write(const void *buf, size_t len) = 0;
 
  public:
 	bool usessl {};

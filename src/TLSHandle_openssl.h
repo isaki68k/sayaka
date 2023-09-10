@@ -59,8 +59,8 @@ class TLSHandle_openssl : public TLSHandleBase
 	int Shutdown(int how) override;
 
 	// 読み書き
-	size_t Read(void *buf, size_t len) override;
-	size_t Write(const void *buf, size_t len) override;
+	ssize_t Read(void *buf, size_t len) override;
+	ssize_t Write(const void *buf, size_t len) override;
 
 	// HMAC-SHA1 したバイナリを返す (OAuth 用)
 	static std::vector<uint8> HMAC_SHA1(const std::string& key,
