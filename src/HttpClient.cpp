@@ -287,6 +287,17 @@ HttpClient::Close()
 	mtls->Close();
 }
 
+// 生ディスクリプタを取得
+int
+HttpClient::GetFd() const
+{
+	if ((bool)mtls) {
+		return mtls->GetFd();
+	} else {
+		return -1;
+	}
+}
+
 
 //
 // mTLS stream

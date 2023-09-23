@@ -97,6 +97,9 @@ class HttpClient
 		mtls->SetTimeout(timeout);
 	}
 
+	// 生ディスクリプタを取得
+	int GetFd() const;
+
 	// パース後の URI
 	ParsedUri Uri {};
 

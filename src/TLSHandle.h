@@ -75,6 +75,9 @@ class TLSHandleBase
 	virtual ssize_t Read(void *buf, size_t len) = 0;
 	virtual ssize_t Write(const void *buf, size_t len) = 0;
 
+	// 生ディスクリプタ取得。
+	virtual int GetFd() const = 0;
+
  public:
 	bool usessl {};
 	int family {};

@@ -426,6 +426,13 @@ TLSHandle_mtls::Write(const void *buf, size_t len)
 	return rv;
 }
 
+// 生ディスクリプタ取得
+int
+TLSHandle_mtls::GetFd() const
+{
+	return inner->net.fd;
+}
+
 // HMAC-SHA1 したバイナリを返す。
 /*static*/ std::vector<uint8>
 TLSHandle_mtls::HMAC_SHA1(const std::string& key, const std::string& msg)
