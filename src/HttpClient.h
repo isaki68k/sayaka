@@ -132,7 +132,7 @@ class HttpClient
 	void SendRequest(const std::string& method);
 
 	// ヘッダを受信する
-	bool ReceiveHeader(InputStream *stream);
+	bool ReceiveHeader();
 
 	// 接続する
 	bool Connect();

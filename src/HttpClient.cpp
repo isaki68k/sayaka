@@ -92,7 +92,7 @@ HttpClient::Act(const std::string& method)
 
 		mstream.reset(new mTLSInputStream(mtls.get(), diag));
 
-		ReceiveHeader(mstream.get());
+		ReceiveHeader();
 
 		if (300 <= ResultCode && ResultCode < 400) {
 			Close();
@@ -173,7 +173,7 @@ HttpClient::SendRequest(const std::string& method)
 
 // ヘッダを受信する
 bool
-HttpClient::ReceiveHeader(InputStream *dIn)
+HttpClient::ReceiveHeader()
 {
 	size_t r;
 
@@ -182,7 +182,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 	RecvHeaders.clear();
 
 	// 1行目は応答
-	r = dIn->ReadLine(&ResultLine);
+	r = mstream->ReadLine(&ResultLine);
 	if (r <= 0) {
 		return false;
 	}
@@ -205,7 +205,7 @@ HttpClient::ReceiveHeader(InputStream *dIn)
 	// XXX 1000行で諦める
 	for (int i = 0; i < 1000; i++) {
 		std::string s;
-		r = dIn->ReadLine(&s);
+		r = mstream->ReadLine(&s);
 		if (r <= 0) {
 			return false;
 		}
