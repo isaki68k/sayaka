@@ -264,6 +264,12 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 		return false;
 	}
 
+	r = mbedtls_ssl_set_hostname(&inner->ssl, hostname);
+	if (r != 0) {
+		ERROR("mbedtls_ssl_set_hostname failed: %s\n", errmsg(r));
+		return false;
+	}
+
 	// 独自のノンブロッキングコネクト。(see net_socket2.cpp)
 	// 戻り値 -0x004b は EINPROGRESS 相当。
 	r = mbedtls_net_connect_nonblock(&inner->net, hostname, servname,
