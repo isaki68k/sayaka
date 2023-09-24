@@ -582,13 +582,15 @@ Convert(const std::string& filename)
 		file.user_agent = "sixelv";
 		if (file.Init(diagHttp, filename) == false) {
 			warn("File error: %s", filename.c_str());
-			if (opt_ignore_error) {
-				return;
-			}
-			exit(1);
+			goto error;
 		}
 		file.family = opt_address_family;
 		InputStream *stream = file.GET();
+		if (stream == NULL) {
+			// mbedTLS だと errno に入っていない。OpenSSL は未確認。
+			warnx("Fetch error: %s", filename.c_str());
+			goto error;
+		}
 		ConvertFromStream(stream);
 
 	} else {
@@ -596,13 +598,16 @@ Convert(const std::string& filename)
 		int fd = open(filename.c_str(), O_RDONLY);
 		if (fd < 0) {
 			warn("File load error: %s", filename.c_str());
-			if (opt_ignore_error) {
-				return;
-			}
-			exit(1);
+			goto error;
 		}
 		FdInputStream stream(fd, true);
 		ConvertFromStream(&stream);
+	}
+	return;
+
+ error:
+	if (opt_ignore_error == false) {
+		exit(1);
 	}
 }
 
