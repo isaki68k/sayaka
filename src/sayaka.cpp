@@ -1396,6 +1396,20 @@ show_image(const std::string& img_file, const std::string& img_url,
 
 // ツイートを保存する
 void
+record(const char *str)
+{
+	FILE *fp;
+
+	fp = fopen(record_file.c_str(), "a+");
+	if (fp == NULL) {
+		return;
+	}
+	fputs(str, fp);
+	fputs("\n", fp);
+	fclose(fp);
+}
+
+void
 record(const Json& obj)
 {
 	FILE *fp;
@@ -1408,4 +1422,3 @@ record(const Json& obj)
 	fputs("\n", fp);
 	fclose(fp);
 }
-
