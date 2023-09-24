@@ -146,6 +146,8 @@ WSClient::Read(void *buf, size_t len)
 
 // 上位からの書き込み。
 // といっても送信キューに置くだけ。実際にはイベントループで送信される。
+// 成功すればキューに置いたバイト数を返す。
+// 失敗すれば errno をセットし -1 を返す。
 ssize_t
 WSClient::Write(const void *buf, size_t len)
 {
@@ -154,12 +156,22 @@ WSClient::Write(const void *buf, size_t len)
 	msg.msg = (const uint8 *)buf;
 	msg.msg_length = len;
 
-	auto r = wslay_event_queue_msg(GetContext(), &msg);
+	int r = wslay_event_queue_msg(GetContext(), &msg);
 	if (r != 0) {
-		printf("wslay_event_queue_msg failed\n");
+		Debug(diag, "wslay_event_queue_msg failed: %d\n", r);
+		// エラーメッセージを読み替える。
+		switch (r) {
+		 case WSLAY_ERR_NO_MORE_MSG:		errno = ESHUTDOWN;	break;
+		 case WSLAY_ERR_INVALID_ARGUMENT:	errno = EINVAL;	break;
+		 case WSLAY_ERR_NOMEM:				errno = ENOMEM;	break;
+		 default:
+			errno = EIO;
+			break;
+		}
+		return -1;
 	}
 
-	return (ssize_t)r;
+	return msg.msg_length;
 }
 
 // 受信可能なら (受信キューにデータがあれば) true を返す。
