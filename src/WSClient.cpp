@@ -25,6 +25,7 @@
 
 #include "WSClient.h"
 #include "OAuth.h"
+#include "StringUtil.h"
 #include <cstring>
 #include <random>
 
@@ -46,13 +47,21 @@ WSClient::WSClient()
 // デストラクタ
 WSClient::~WSClient()
 {
+	Close();
 }
 
 // 初期化
 bool
 WSClient::Init(const Diag& diag_, const std::string& uri_)
 {
-	if (inherited::Init(diag_, uri_) == false) {
+	diag = diag_;
+
+	http.reset(new HttpClient());
+	if ((bool)http == false) {
+		return false;
+	}
+
+	if (http->Init(diag, uri_) == false) {
 		return false;
 	}
 
@@ -64,8 +73,7 @@ WSClient::Init(const Diag& diag_, const std::string& uri_)
 		.on_msg_recv_callback	= wsclient_on_msg_recv_callback,
 	};
 	if (wslay_event_context_client_init(&wsctx, &callbacks, this) != 0) {
-		fprintf(stderr,
-			"WSClient.Init: wslay_event_context_client_init failed\n");
+		Debug(diag, "Init: wslay_event_context_client_init failed\n");
 		return false;
 	}
 
@@ -78,43 +86,45 @@ WSClient::Init(const Diag& diag_, const std::string& uri_)
 	return true;
 }
 
-// ハンドシェイクフェーズ。
+// 接続してハンドシェイクフェーズを通過するまで。
 // 成功すれば true を返す。
 bool
-WSClient::HandShake()
+WSClient::Connect()
 {
-	if (Connect() == false) {
+	if (http->Connect() == false) {
+		Debug(diag, "Connect: http->Connect failed\n");
 		return false;
 	}
 
 	// キーのための乱数を用意。
-	std::vector<uint8> nonce;
+	std::vector<uint8> nonce(16);
 	Random(nonce.data(), nonce.size());
 	std::string key = OAuth::Base64Encode(nonce);
 
 	// ヘッダ送信。
-	char headerbuf[1000];
-	snprintf(headerbuf, sizeof(headerbuf),
-		"Get /%s HTTP/1.1\r\n"
-		"Host: %s\r\n"
-		"Upgrade: websocket\r\n"
-		"Connection: Upgrade\r\n"
-		"Sec-WebSocket-Version: 13\r\n"
-		"Sec-WebSocket-Key: %s\r\n"
-		"\r\n",
-		Uri.PQF().c_str(),
-		Uri.Host.c_str(),
-		key.c_str());
-	if (Write(headerbuf, strlen(headerbuf)) <= 1) {
+	std::string header;
+	header = string_format("GET %s HTTP/1.1\r\n", http->Uri.PQF().c_str());
+	header += string_format("Host: %s\r\n", http->Uri.Host.c_str());
+	// User-Agent は SHOULD だが、ないとわりとけられる。
+	header += "User-Agent: " + http->user_agent + "\r\n";
+
+	header += "Upgrade: websocket\r\n"
+			  "Connection: Upgrade\r\n"
+			  "Sec-WebSocket-Version: 13\r\n";
+	header += string_format("Sec-WebSocket-Key: %s\r\n", key.c_str());
+	header += "\r\n";
+	Debug(diag, "Connect: header=|%s|\n", header.c_str());
+	if (http->Write(header.c_str(), header.size()) < 0) {
 		return false;
 	}
 
 	// ヘッダを受信。
-	mstream.reset(new mTLSInputStream(mtls.get(), diag));
-	ReceiveHeader();
-	mstream.reset();
+	// XXX どうしたもんか。
+	http->mstream.reset(new mTLSInputStream(http->mtls.get(), diag));
+	http->ReceiveHeader();
+	http->mstream.reset();
 
-	if (ResultCode != 101) {
+	if (http->ResultCode != 101) {
 		// メッセージは ResultMsg に入っている
 		errno = ENOTCONN;
 		return false;
@@ -123,6 +133,17 @@ WSClient::HandShake()
 	// XXX Sec-WebSocket-Accept のチェック。
 
 	return true;
+}
+
+void
+WSClient::Close()
+{
+	// 本当は CLOSE を送るとかだが。
+
+	if ((bool)http) {
+		http->Close();
+	}
+	http.reset();
 }
 
 // 上位からの読み出し。
@@ -181,6 +202,16 @@ WSClient::CanRead() const
 	return (recvq.empty() == false);
 }
 
+// 生ディスクリプタを取得。
+int
+WSClient::GetFd() const
+{
+	if ((bool)http == false) {
+		return -1;
+	}
+	return http->GetFd();
+}
+
 // 下位からの受信要求コールバック。
 ssize_t
 WSClient::RecvCallback(wslay_event_context_ptr ctx,
@@ -188,8 +219,8 @@ WSClient::RecvCallback(wslay_event_context_ptr ctx,
 {
 	ssize_t r;
 	for (;;) {
-		r = inherited::Read(buf, len);
-		if (r == -1) {
+		r = http->Read(buf, len);
+		if (r < 0) {
 			if (errno == EINTR) {
 				continue;
 			}
@@ -216,8 +247,8 @@ WSClient::SendCallback(wslay_event_context_ptr ctx,
 	ssize_t r;
 
 	for (;;) {
-		r = inherited::Write(buf, len);
-		if (r == -1) {
+		r = http->Write(buf, len);
+		if (r < 0) {
 			if (errno == EINTR) {
 				continue;
 			}

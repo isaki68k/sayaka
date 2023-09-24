@@ -29,21 +29,23 @@
 #include <queue>
 #include <wslay/wslay.h>
 
-class WSClient : public HttpClient
+class WSClient
 {
-	using inherited = HttpClient;
-
  public:
 	WSClient();
 	~WSClient();
 
-	bool Init(const Diag& diag, const std::string& uri) override;
-	bool HandShake();
+	bool Init(const Diag& diag, const std::string& uri);
+	bool Connect();
+	void Close();
 
-	ssize_t Read(void *buf, size_t len) override;
-	ssize_t Write(const void *buf, size_t len) override;
+	ssize_t Read(void *buf, size_t len);
+	ssize_t Write(const void *buf, size_t len);
 
 	bool CanRead() const;
+
+	// 生ディスクリプタを取得。
+	int GetFd() const;
 
 	wslay_event_context_ptr GetContext() const { return wsctx; }
 
@@ -60,9 +62,13 @@ class WSClient : public HttpClient
 	void Random(uint8 *buf, size_t len);
 	uint32 xorshift32();
 
+	std::unique_ptr<HttpClient> http {};
+
 	wslay_event_context_ptr wsctx {};
 
 	std::queue<std::string> recvq {};
 
 	uint32 maskseed {};
+
+	Diag diag {};
 };

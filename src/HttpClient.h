@@ -52,12 +52,14 @@ class mTLSInputStream : public InputStream
 
 class HttpClient
 {
+	friend class WSClient;
+
  public:
 	HttpClient();
-	virtual ~HttpClient();
+	~HttpClient();
 
 	// uri をターゲットにして初期化する
-	virtual bool Init(const Diag& diag, const std::string& uri);
+	bool Init(const Diag& diag, const std::string& uri);
 
 	// uri から GET して、ストリームを返す
 	InputStream *GET() {
@@ -97,13 +99,6 @@ class HttpClient
 		mtls->SetTimeout(timeout);
 	}
 
-	// 生ディスクリプタを取得
-	int GetFd() const;
-
-	// 読み書き
-	virtual ssize_t Read(void *buf, size_t len);
-	virtual ssize_t Write(const void *buf, size_t len);
-
 	// パース後の URI
 	ParsedUri Uri {};
 
@@ -134,7 +129,7 @@ class HttpClient
 	// User-Agent
 	std::string user_agent {};
 
- protected:
+ private:
 	// GET/POST リクエストを発行する
 	void SendRequest(const std::string& method);
 
@@ -143,6 +138,13 @@ class HttpClient
 
 	// 接続する
 	bool Connect();
+
+	// 生ディスクリプタを取得
+	int GetFd() const;
+
+	// 読み書き
+	ssize_t Read(void *buf, size_t len);
+	ssize_t Write(const void *buf, size_t len);
 
 	// mTLS ハンドル
 	std::unique_ptr<TLSHandleBase> mtls {};
