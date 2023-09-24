@@ -127,5 +127,8 @@ static void
 misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg)
 {
+	if (opt_record_mode == 2) {
+		record((const char *)msg->msg);
+	}
 	printf("onmsg(%d bytes): %s\n", (int)msg->msg_length, msg->msg);
 }
