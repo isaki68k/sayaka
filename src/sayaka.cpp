@@ -26,6 +26,7 @@
 #include "sayaka.h"
 #include "FileStream.h"
 #include "MathAlphaSymbols.h"
+#include "ProtoMisskey.h"
 #include "ProtoTwitter.h"
 #include "RichString.h"
 #include "StringUtil.h"
@@ -55,6 +56,7 @@
 
 enum SayakaCmd {
 	Noop = 0,
+	Stream,
 	Play,
 	NgwordAdd,
 	NgwordDel,
@@ -69,9 +71,7 @@ static std::string str_join(const std::string& sep,
 static std::string GetHomeDir();
 static void init();
 static void init_screen();
-#if 0
 static void invalidate_cache();
-#endif
 static void signal_handler(int signo);
 static void sigwinch();
 static void cmd_ngword_add();
@@ -149,6 +149,8 @@ bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
+Proto proto;					// プロトコル
+StreamMode opt_stream;			// ストリーム種別
 std::string basedir;
 std::string cachedir;
 std::string colormapdir;
@@ -173,10 +175,12 @@ enum {
 	OPT_font,
 	OPT_force_sixel,
 	OPT_full_url,
+	OPT_home,
 	OPT_jis,
 	OPT_mathalpha,
 	OPT_max_cont,
 	OPT_max_image_cols,
+	OPT_misskey,
 	OPT_ngword_add,
 	OPT_ngword_del,
 	OPT_ngword_list,
@@ -193,6 +197,7 @@ enum {
 	OPT_record_all,
 	OPT_show_ng,
 	OPT_timeout_image,
+	OPT_twitter,
 	OPT_version,
 	OPT_white,
 	OPT_x68k,
@@ -214,10 +219,12 @@ static const struct option longopts[] = {
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "force-sixel",	no_argument,		NULL,	OPT_force_sixel },
 	{ "full-url",		no_argument,		NULL,	OPT_full_url },
+	{ "home",			no_argument,		NULL,	OPT_home },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-cont",		required_argument,	NULL,	OPT_max_cont },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
+	{ "misskey",		no_argument,		NULL,	OPT_misskey, },
 	{ "ngword-add",		required_argument,	NULL,	OPT_ngword_add },
 	{ "ngword-del",		required_argument,	NULL,	OPT_ngword_del },
 	{ "ngword-list",	no_argument,		NULL,	OPT_ngword_list },
@@ -234,6 +241,7 @@ static const struct option longopts[] = {
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
+	{ "twitter",		no_argument,		NULL,	OPT_twitter },
 	{ "version",		no_argument,		NULL,	OPT_version },
 	{ "white",			no_argument,		NULL,	OPT_white },
 	{ "x68k",			no_argument,		NULL,	OPT_x68k },
@@ -283,6 +291,8 @@ main(int ac, char *av[])
 	opt_eaw_a = 2;
 	opt_eaw_n = 1;
 	use_sixel = UseSixel::AutoDetect;
+	opt_stream = StreamMode::Home;
+	proto = Proto::Misskey;
 
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
@@ -388,6 +398,10 @@ main(int ac, char *av[])
 		 case OPT_full_url:
 			opt_full_url = true;
 			break;
+		 case OPT_home:
+			cmd = SayakaCmd::Stream;
+			opt_stream = StreamMode::Home;
+			break;
 		 case OPT_jis:
 			output_codeset = "iso-2022-jp";
 			break;
@@ -407,6 +421,9 @@ main(int ac, char *av[])
 				errno = EINVAL;
 				err(1, "--max-image-cols %s", optarg);
 			}
+			break;
+		 case OPT_misskey:
+			proto = Proto::Misskey;
 			break;
 		 case OPT_ngword_add:
 			cmd = SayakaCmd::NgwordAdd;
@@ -476,6 +493,9 @@ main(int ac, char *av[])
 				err(1, "--timeout-image %s", optarg);
 			}
 			break;
+		 case OPT_twitter:
+			proto = Proto::Twitter;
+			break;
 		 case OPT_version:
 			cmd = SayakaCmd::Version;
 			break;
@@ -535,21 +555,27 @@ main(int ac, char *av[])
 
 	// コマンド別処理
 	switch (cmd) {
-#if 0
 	 case SayakaCmd::Stream:
-		init_screen();
+		if (proto == Proto::Misskey) {
+			init_screen();
 
-		// 古いキャッシュを削除
-		progress("Deleting expired cache files...");
-		invalidate_cache();
-		progress("done\n");
+			// 古いキャッシュを削除
+			progress("Deleting expired cache files...");
+			invalidate_cache();
+			progress("done\n");
 
-		cmd_stream();
+			cmd_misskey_stream();
+		} else {
+			errx(1, "stream mode can only be used with --misskey");
+		}
 		break;
-#endif
 	 case SayakaCmd::Play:
-		init_screen();
-		cmd_play();
+		if (proto == Proto::Twitter) {
+			init_screen();
+			cmd_play();
+		} else {
+			errx(1, "--play can only be used with --twitter");
+		}
 		break;
 	 case SayakaCmd::NgwordAdd:
 		cmd_ngword_add();
@@ -685,7 +711,6 @@ init_screen()
 	ngword_list.ReadFile();
 }
 
-#if 0
 // 古いキャッシュを破棄する
 static void
 invalidate_cache()
@@ -708,7 +733,6 @@ invalidate_cache()
 		warn("system(find photo)");
 	}
 }
-#endif
 
 static void
 signal_handler(int signo)

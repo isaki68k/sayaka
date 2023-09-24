@@ -16,6 +16,7 @@ SRCS_common=	\
 	NGWord.cpp \
 	OAuth.cpp \
 	ParsedUri.cpp \
+	ProtoMisskey.cpp \
 	ProtoTwitter.cpp \
 	Regex.cpp \
 	RichString.cpp \

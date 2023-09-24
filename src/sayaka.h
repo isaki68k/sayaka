@@ -66,6 +66,18 @@ enum class UseSixel {
 	Yes = 1,
 };
 
+enum class Proto {
+	None = 0,
+	Twitter,
+	Misskey,
+};
+
+enum class StreamMode {
+	Home,
+	Local,
+	Global,
+};
+
 class UString;
 
 static const int ColorFixedX68k = -1;
@@ -129,6 +141,7 @@ extern bool opt_nocombine;
 extern std::string basedir;
 extern std::string cachedir;
 extern std::string colormapdir;
+extern Proto proto;
 
 extern StringDictionary followlist;
 extern StringDictionary blocklist;
