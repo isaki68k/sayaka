@@ -25,6 +25,7 @@ SRCS_common=	\
 	StringUtil.cpp \
 	TLSHandle.cpp \
 	UString.cpp \
+	WSClient.cpp \
 	acl.cpp \
 	eaw_code.cpp \
 	eaw_data.cpp \

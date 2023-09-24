@@ -3616,6 +3616,65 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 CPPFLAGS="${old_CPPFLAGS}"
 
+# wslay
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for wslay" >&5
+printf %s "checking for wslay... " >&6; }
+PATHS="/usr/pkg /usr/local"
+old_CPPFLAGS=${CPPFLAGS}
+old_LIBS=${LIBS}
+for p in ${PATHS}; do
+	CPPFLAGS="${CPPFLAGS} -I${p}/include"
+	case "${host_os}" in
+	 netbsd*)
+		LIBS="${LIBS} -Wl,-R,${p}/lib"
+		;;
+	esac
+	LIBS="${LIBS} -L${p}/lib -lwslay"
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <wslay/wslay.h>
+
+int
+main (void)
+{
+
+		wslay_event_context_client_init(NULL, NULL, NULL)
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  has_wslay=yes
+else $as_nop
+  has_wslay=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+	if test "x${has_wslay}" = "xyes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${p}" >&5
+printf "%s\n" "${p}" >&6; }
+		break
+	else
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	fi
+done
+if test "x${has_wslay}" \!= "xyes"; then
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "wslay not found.
+	On NetBSD(pkgsrc), install pkgsrc/www/wslay
+	On Ubuntu, sudo apt install libwslay1 libwslay-dev
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
 # libbsd on Linux
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing getprogname" >&5
 printf %s "checking for library containing getprogname... " >&6; }

@@ -153,6 +153,42 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	])
 CPPFLAGS="${old_CPPFLAGS}"
 
+# wslay
+AC_MSG_CHECKING([for wslay])
+PATHS="/usr/pkg /usr/local"
+old_CPPFLAGS=${CPPFLAGS}
+old_LIBS=${LIBS}
+for p in ${PATHS}; do
+	CPPFLAGS="${CPPFLAGS} -I${p}/include"
+	case "${host_os}" in
+	 netbsd*)
+		LIBS="${LIBS} -Wl,-R,${p}/lib"
+		;;
+	esac
+	LIBS="${LIBS} -L${p}/lib -lwslay"
+
+	AC_LINK_IFELSE([AC_LANG_PROGRAM(
+	[
+		#include <wslay/wslay.h>
+	], [
+		wslay_event_context_client_init(NULL, NULL, NULL)
+	])], has_wslay=yes, has_wslay=no)
+
+	if test "x${has_wslay}" = "xyes"; then
+		AC_MSG_RESULT([${p}])
+		break
+	else
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	fi
+done
+if test "x${has_wslay}" \!= "xyes"; then
+	AC_MSG_RESULT([no])
+	AC_MSG_FAILURE([wslay not found.
+	On NetBSD(pkgsrc), install pkgsrc/www/wslay
+	On Ubuntu, sudo apt install libwslay1 libwslay-dev])
+fi
+
 # libbsd on Linux
 AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
 if test "x${has_getprogname}" = "xno"; then

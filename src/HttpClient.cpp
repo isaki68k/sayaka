@@ -255,7 +255,7 @@ HttpClient::Connect()
 	// デフォルトポートの処理
 	// ParsedUri はポート番号がない URL だと Port = "" になる。
 	if (Uri.Port == "") {
-		if (Uri.Scheme == "https") {
+		if (Uri.Scheme == "https" || Uri.Scheme == "wss") {
 			Uri.Port = "443";
 		} else {
 			Uri.Port = "80";
@@ -263,7 +263,7 @@ HttpClient::Connect()
 	}
 
 	// 接続
-	if (Uri.Scheme == "https") {
+	if (Uri.Scheme == "https" || Uri.Scheme == "wss") {
 		mtls->UseSSL(true);
 	}
 	if (Ciphers == "RSA") {
@@ -296,6 +296,20 @@ HttpClient::GetFd() const
 	} else {
 		return -1;
 	}
+}
+
+// 読み出し。
+ssize_t
+HttpClient::Read(void *buf, size_t len)
+{
+	return mtls->Read(buf, len);
+}
+
+// 書き込み。
+ssize_t
+HttpClient::Write(const void *buf, size_t len)
+{
+	return mtls->Write(buf, len);
 }
 
 

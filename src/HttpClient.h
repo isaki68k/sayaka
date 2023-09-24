@@ -54,10 +54,10 @@ class HttpClient
 {
  public:
 	HttpClient();
-	~HttpClient();
+	virtual ~HttpClient();
 
 	// uri をターゲットにして初期化する
-	bool Init(const Diag& diag, const std::string& uri);
+	virtual bool Init(const Diag& diag, const std::string& uri);
 
 	// uri から GET して、ストリームを返す
 	InputStream *GET() {
@@ -100,6 +100,10 @@ class HttpClient
 	// 生ディスクリプタを取得
 	int GetFd() const;
 
+	// 読み書き
+	virtual ssize_t Read(void *buf, size_t len);
+	virtual ssize_t Write(const void *buf, size_t len);
+
 	// パース後の URI
 	ParsedUri Uri {};
 
@@ -130,7 +134,7 @@ class HttpClient
 	// User-Agent
 	std::string user_agent {};
 
- private:
+ protected:
 	// GET/POST リクエストを発行する
 	void SendRequest(const std::string& method);
 
