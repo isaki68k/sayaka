@@ -35,7 +35,8 @@ class WSClient
 	WSClient();
 	~WSClient();
 
-	bool Init(const Diag& diag, const std::string& uri);
+	bool Init(const Diag& diag);
+	bool SetURI(const std::string& uri);
 	bool Connect();
 	void Close();
 

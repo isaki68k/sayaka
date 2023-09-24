@@ -52,18 +52,9 @@ WSClient::~WSClient()
 
 // 初期化
 bool
-WSClient::Init(const Diag& diag_, const std::string& uri_)
+WSClient::Init(const Diag& diag_)
 {
 	diag = diag_;
-
-	http.reset(new HttpClient());
-	if ((bool)http == false) {
-		return false;
-	}
-
-	if (http->Init(diag, uri_) == false) {
-		return false;
-	}
 
 	// コンテキストを用意。
 	wslay_event_callbacks callbacks = {
@@ -82,6 +73,25 @@ WSClient::Init(const Diag& diag_, const std::string& uri_)
 	std::mt19937 mt(rdev());
 	std::uniform_int_distribution<> rand(0);
 	maskseed = rand(mt);
+
+	// HTTP オブジェクト。
+	http.reset(new HttpClient());
+	if ((bool)http == false) {
+		return false;
+	}
+
+	return true;
+}
+
+// 接続先を指定。
+bool
+WSClient::SetURI(const std::string& uri_)
+{
+	// XXX Init 後、Connect 前でないといけない。
+
+	if (http->Init(diag, uri_) == false) {
+		return false;
+	}
 
 	return true;
 }

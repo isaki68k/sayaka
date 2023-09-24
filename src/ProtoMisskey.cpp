@@ -35,9 +35,14 @@ cmd_misskey_stream()
 {
 	WSClient client;
 
-	std::string uri = "wss://misskey.io/streaming";
-	if (client.Init(diagHttp, uri) == false) {
+	if (client.Init(diagHttp) == false) {
 		fprintf(stderr, "client Init\n");
+		return -1;
+	}
+
+	std::string uri = "wss://misskey.io/streaming";
+	if (client.SetURI(uri) == false) {
+		fprintf(stderr, "client SetURI failed\n");
 		return -1;
 	}
 
