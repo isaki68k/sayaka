@@ -52,9 +52,14 @@ WSClient::~WSClient()
 
 // 初期化
 bool
-WSClient::Init(const Diag& diag_)
+WSClient::Init(const Diag& diag_,
+	wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 {
 	diag = diag_;
+
+	// メッセージ受信コールバック。
+	onmsg_callback = onmsg_callback_;
+	onmsg_arg = onmsg_arg_;
 
 	// コンテキストを用意。
 	wslay_event_callbacks callbacks = {
@@ -156,25 +161,6 @@ WSClient::Close()
 	http.reset();
 }
 
-// 上位からの読み出し。
-// といっても受信キューから取り出すだけ。実際にはイベントループで受信してある。
-// 読み出し(というか取り出し)出来れば、書き出したデータ長を返す。
-// キューが空だったら 0 を返す (つまりノンブロッキングぽい動作)。
-// 下位の通信路が EOF になったかどうかはここでは分からない。
-ssize_t
-WSClient::Read(void *buf, size_t len)
-{
-	if (recvq.empty()) {
-		return 0;
-	}
-	std::string msg = recvq.front();
-	recvq.pop();
-
-	len = std::min(msg.size(), len);
-	memcpy(buf, msg.c_str(), len);
-	return len;
-}
-
 // 上位からの書き込み。
 // といっても送信キューに置くだけ。実際にはイベントループで送信される。
 // 成功すればキューに置いたバイト数を返す。
@@ -203,13 +189,6 @@ WSClient::Write(const void *buf, size_t len)
 	}
 
 	return msg.msg_length;
-}
-
-// 受信可能なら (受信キューにデータがあれば) true を返す。
-bool
-WSClient::CanRead() const
-{
-	return (recvq.empty() == false);
 }
 
 // 生ディスクリプタを取得。
@@ -270,16 +249,6 @@ WSClient::SendCallback(wslay_event_context_ptr ctx,
 		}
 		return r;
 	}
-}
-
-// 下位層でメッセージを受信出来た時のコールバック。
-// ここでは受信キューに入れるだけ。
-void
-WSClient::OnMsgRecvCallback(wslay_event_context_ptr ctx,
-	const wslay_event_on_msg_recv_arg *arg)
-{
-	std::string buf((const char *)arg->msg, arg->msg_length);
-	recvq.push(buf);
 }
 
 // 送信マスク作成要求コールバック。
@@ -355,8 +324,11 @@ wsclient_genmask_callback(wslay_event_context_ptr ctx,
 
 static void
 wsclient_on_msg_recv_callback(wslay_event_context_ptr ctx,
-	const wslay_event_on_msg_recv_arg *arg, void *aux)
+	const wslay_event_on_msg_recv_arg *msg, void *aux)
 {
+	// 呼び出し側が Init() にセットしたコールバックを呼ぶ。
 	WSClient *client = (WSClient *)aux;
-	return client->OnMsgRecvCallback(ctx, arg);
+	auto callback = client->onmsg_callback;
+
+	(*callback)(client->onmsg_arg, ctx, msg);
 }

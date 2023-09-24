@@ -26,8 +26,11 @@
 #pragma once
 
 #include "HttpClient.h"
-#include <queue>
 #include <wslay/wslay.h>
+
+using wsclient_onmsg_callback_t = void (*)(void *aux,
+	wslay_event_context_ptr ctx,
+	const wslay_event_on_msg_recv_arg *msg);
 
 class WSClient
 {
@@ -35,15 +38,12 @@ class WSClient
 	WSClient();
 	~WSClient();
 
-	bool Init(const Diag& diag);
+	bool Init(const Diag& diag, wsclient_onmsg_callback_t, void *);
 	bool SetURI(const std::string& uri);
 	bool Connect();
 	void Close();
 
-	ssize_t Read(void *buf, size_t len);
 	ssize_t Write(const void *buf, size_t len);
-
-	bool CanRead() const;
 
 	// 生ディスクリプタを取得。
 	int GetFd() const;
@@ -55,9 +55,10 @@ class WSClient
 		uint8 *buf, size_t len, int flags);
 	ssize_t SendCallback(wslay_event_context_ptr ctx,
 		const uint8 *buf, size_t len, int flags);
-	void OnMsgRecvCallback(wslay_event_context_ptr ctx,
-		const wslay_event_on_msg_recv_arg *arg);
 	int GenmaskCallback(wslay_event_context_ptr ctx, uint8 *buf, size_t len);
+
+	wsclient_onmsg_callback_t onmsg_callback {};
+	void *onmsg_arg {};
 
  private:
 	void Random(uint8 *buf, size_t len);
@@ -66,8 +67,6 @@ class WSClient
 	std::unique_ptr<HttpClient> http {};
 
 	wslay_event_context_ptr wsctx {};
-
-	std::queue<std::string> recvq {};
 
 	uint32 maskseed {};
 

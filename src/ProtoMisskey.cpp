@@ -30,12 +30,15 @@
 #include <cstdio>
 #include <poll.h>
 
+static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
+	const wslay_event_on_msg_recv_arg *msg);
+
 int
 cmd_misskey_stream()
 {
 	WSClient client;
 
-	if (client.Init(diagHttp) == false) {
+	if (client.Init(diagHttp, &misskey_onmsg, NULL) == false) {
 		fprintf(stderr, "client Init\n");
 		return -1;
 	}
@@ -113,15 +116,16 @@ printf("wslay_event_recv\n");
 				printf("wslay_event_recv failed: %d\n", r);
 				break;
 			}
-
-printf("CanRead=%d\n", client.CanRead());
-			if (client.CanRead()) {
-				char buf[4096];
-				r = client.Read(buf, sizeof(buf));
-				printf("buf=|%s| %d\n", buf, r);
-			}
 		}
 	}
 
 	return 0;
+}
+
+// メッセージ受信コールバック。
+static void
+misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
+	const wslay_event_on_msg_recv_arg *msg)
+{
+	printf("onmsg(%d bytes): %s\n", (int)msg->msg_length, msg->msg);
 }
