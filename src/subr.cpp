@@ -176,6 +176,93 @@ conv_twtime_to_unixtime(const std::string& instr)
 	return timegm(&tm);
 }
 
+// ISO 形式の時刻文字列を Unix time に変換する。
+time_t
+DecodeISOTime(const std::string& str)
+{
+	const char *s = &str[0];
+	char *end;
+	struct tm tm;
+	int zh;
+	int zm;
+
+	memset(&tm, 0, sizeof(tm));
+
+	int year = stou32def(s, -1, &end);
+	if (year < 0 || *end != '-') return 0;
+	tm.tm_year = year - 1900;
+	s = end + 1;
+
+	int mon = stou32def(s, -1, &end);
+	if (mon < 0 || mon > 99 || *end != '-') return 0;
+	tm.tm_mon = mon - 1;
+	s = end + 1;
+
+	tm.tm_mday = stou32def(s, -1, &end);
+	if (tm.tm_mday < 0 || tm.tm_mday > 99 || *end != 'T') return 0;
+	s = end + 1;
+
+	tm.tm_hour = stou32def(s, -1, &end);
+	if (tm.tm_hour < 0 || tm.tm_hour > 99 || *end != ':') return 0;
+	s = end + 1;
+
+	tm.tm_min = stou32def(s, -1, &end);
+	if (tm.tm_min < 0 || tm.tm_min > 99 || *end != ':') return 0;
+	s = end + 1;
+
+	tm.tm_sec = stou32def(s, -1, &end);
+	if (tm.tm_sec < 0 || tm.tm_sec > 99) return 0;
+
+	// 秒の後ろは [.\d+][<timezone>]
+	if (*end == '.') {
+		s = end + 1;
+		int frac = stou32def(s, -1, &end);
+		if (frac < 0) return 0;
+	}
+	// <timezone> は Z か (+|-)(\d\d:?\d\d)
+	if (*end == 'Z') {
+		end++;
+		zh = 0;
+		zm = 0;
+	} else if (*end == '+' || *end == '-') {
+		int sign = (*end == '+') ? 1 : -1;
+		s = end + 1;
+		int z = stou32def(s, -1, &end);
+		if (z < 0) return 0;
+		if (end == s + 2) {
+			zh = z;
+			if (*end != ':') {
+				return 0;
+			}
+			s = end + 1;
+			zm = stou32def(s, -1, &end);
+			if (zm < 0) return 0;
+			if (end != s + 2) return 0;
+		} else if (end == s + 4) {
+			zh = z / 100;
+			zm = z % 100;
+		} else {
+			return 0;
+		}
+		zh *= sign;
+		zm *= sign;
+	} else {
+		return 0;
+	}
+
+	if (*end != '\0') {
+		return 0;
+	}
+
+	// タイムゾーンを置いといて Unixtime に変換。
+	time_t time = timegm(&tm);
+
+	// タイムゾーン分を補正。
+	time -= zh * 60 * 60 + zm * 60;
+
+	return time;
+}
+
 // strptime() っぽい俺様版。
 // "%a" と "%R" だけ対応し、戻り値は int。
 int

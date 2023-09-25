@@ -76,6 +76,30 @@ test_get_datetime()
 }
 
 static void
+test_DecodeISOTime()
+{
+	printf("%s\n", __func__);
+
+	std::vector<std::pair<std::string, time_t>> table = {
+		{ "2009-11-18T09:54:12Z",		1258538052 },
+		{ "2009-11-18T18:54:12+0900",	1258538052 },
+		{ "2009-11-18T18:54:12+09:00",	1258538052 },	// コロンもあり
+		{ "2009-11-18T08:24:12-0130",	1258538052 },	// TZが負で、分あり
+		{ "2009-11-18T09:54:12.01234Z",	1258538052 },	// 小数部何桁でも可
+
+		{ "2009-11-18T00:00:00",		0 },	// timezone がない
+		{ "2009-11-18T00:00:00.Z",		0 },	// 小数部がない
+	};
+	for (const auto& a : table) {
+		auto& src = a.first;
+		time_t exp = a.second;
+
+		auto actual = DecodeISOTime(src);
+		xp_eq(exp, actual, src);
+	}
+}
+
+static void
 test_my_strptime()
 {
 	printf("%s\n", __func__);
@@ -117,5 +141,6 @@ test_subr()
 {
 	test_formattime();
 	test_get_datetime();
+	test_DecodeISOTime();
 	test_my_strptime();
 }
