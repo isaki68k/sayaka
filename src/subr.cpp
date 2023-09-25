@@ -134,7 +134,7 @@ get_datetime(const Json& status)
 		unixtime = (time_t)(stou64def(timestamp_ms, 0) / 1000);
 	} else {
 		const auto& created_at = status.value("created_at", "");
-		unixtime = conv_twtime_to_unixtime(created_at);
+		unixtime = DecodeTwitterTime(created_at);
 	}
 	return unixtime;
 }
@@ -142,7 +142,7 @@ get_datetime(const Json& status)
 // Twitter 書式の日付時刻から Unixtime を返す。
 // "Wed Nov 18 18:54:12 +0000 2009"
 time_t
-conv_twtime_to_unixtime(const std::string& instr)
+DecodeTwitterTime(const std::string& instr)
 {
 	if (__predict_false(instr.empty())) {
 		return 0;
