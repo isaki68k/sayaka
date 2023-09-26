@@ -88,20 +88,27 @@ GetUnixTime()
 	return time(NULL);
 }
 
+// Twitter の obj から表示用の時刻文字列を返す。[obsolete]
 std::string
 formattime(const Json& obj)
 {
+	time_t dt = get_datetime(obj);
+	return formattime(dt);
+}
+
+// UNIX 時刻から表示用の文字列を返す。[recommended]
+std::string
+formattime(time_t unixtime)
+{
 	char buf[64];
+	struct tm dtm;
+
+	localtime_r(&unixtime, &dtm);
 
 	// 現在時刻
 	time_t now = GetUnixTime();
 	struct tm ntm;
 	localtime_r(&now, &ntm);
-
-	// obj の日時を取得
-	time_t dt = get_datetime(obj);
-	struct tm dtm;
-	localtime_r(&dt, &dtm);
 
 	const char *fmt;
 	if (dtm.tm_year == ntm.tm_year && dtm.tm_yday == ntm.tm_yday) {
