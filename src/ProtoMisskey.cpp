@@ -26,12 +26,17 @@
 #include "sayaka.h"
 #include "ProtoMisskey.h"
 #include "StringUtil.h"
+#include "UString.h"
 #include "WSClient.h"
+#include "subr.h"
 #include <cstdio>
+#include <err.h>
 #include <poll.h>
 
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);
+static bool misskey_show_note(const Json *note, int depth);
+static std::string misskey_format_time(const std::string&);
 
 int
 cmd_misskey_stream()
@@ -127,8 +132,138 @@ static void
 misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg)
 {
+	std::string line((const char *)msg->msg, msg->msg_length);
 	if (opt_record_mode == 2) {
-		record((const char *)msg->msg);
+		record(line.c_str());
 	}
-	printf("onmsg(%d bytes): %s\n", (int)msg->msg_length, msg->msg);
+	misskey_show_object(line);
+}
+
+// 1ノート(文字列)を処理する。
+bool
+misskey_show_object(const std::string& line)
+{
+	Json obj0;
+	try {
+		obj0 = Json::parse(line);
+	} catch (const std::exception& e) {
+		warnx("%s: %s\ninput line is |%s|", __func__, e.what(), line.c_str());
+		return true;
+	}
+	if (obj0.is_null()) {
+		warnx("%s: Json empty.\n", __func__);
+		return true;
+	}
+	const Json *obj = &obj0;
+
+	// ストリームから来る JSON は以下のような構造。
+	// {
+	//   "type":"channel",
+	//   "body":{
+	//     "id":"ストリーム開始時に指定した ID",
+	//     "type":"note",
+	//     "body":{ ノート本体 }
+	//   }
+	// }
+
+	// "type":"channel" と "body":{} があれば "body" の中がチャンネル。
+	const Json *chan;
+	if (obj->contains("type") && obj->value("type", "") == "channel" &&
+	    obj->contains("body") && (*obj)["body"].is_object())
+	{
+		chan = &(*obj)["body"];
+	} else {
+		chan = obj;
+	}
+
+	// "type":"note" と "body":{} があれば "body" の中がノート。
+	const Json *note;
+	if (chan->contains("type") && chan->value("type", "") == "note" &&
+	    chan->contains("body") && (*chan)["body"].is_object())
+	{
+		note = &(*chan)["body"];
+	} else {
+		note = chan;
+	}
+
+	bool crlf = misskey_show_note(note, 0);
+	if (crlf) {
+		printf("\n");
+	}
+	return true;
+}
+
+// 1ノート(Json)を処理する。
+static bool
+misskey_show_note(const Json *note, int depth)
+{
+	// acl
+
+	// 録画?
+	// 階層変わるのはどうする?
+
+	// NG ワード
+
+	// 地文なら note == renote。
+	// リノートなら RN 元を note、RN 先を renote。
+	const Json *renote = note;
+	bool has_renote;
+	if (note->contains("renote")) {
+		// XXX text があったらどうするのかとか。
+		renote = &(*note)["renote"];
+		has_renote = true;
+	} else {
+		has_renote = false;
+	}
+
+	const Json *user;
+	UString name;
+	UString userid;
+	std::string avatarUrl;
+	if (renote->contains("user") && (*renote)["user"].is_object()) {
+		user = &(*renote)["user"];
+
+		name = coloring(user->value("name", ""), Color::Username);
+
+		std::string userid_str = "@" + user->value("username", "");
+		if (user->contains("instance")) {
+			userid_str += "@" + user->value("instance", "");
+		}
+		userid = coloring(userid_str, Color::UserId);
+		avatarUrl = user->value("avatarUrl", "");
+	}
+
+	// インタラクションがないので CW があれば CW、なければ text というだけ。
+	std::string text_str;
+	if (renote->contains("cw") && (*renote)["cw"].is_null() == false) {
+		text_str = renote->value("cw", "");
+		text_str += " [CW]";
+	} else if (renote->contains("text")) {
+		text_str = renote->value("text", "");
+	}
+	UString text = UString::FromUTF8(text_str);
+
+	UString time;
+	if (renote->contains("createdAt")) {
+		std::string createdAt = renote->value("createdAt", "");
+		time = coloring(misskey_format_time(createdAt), Color::Time);
+	}
+
+	print_(name + ' ' + userid);
+	printf("\n");
+	print_(text);
+	printf("\n");
+	print_(time);
+	printf("\n");
+
+	(void)has_renote;
+	return true;
+}
+
+// createdAt の時刻 (ISO 形式文字列) を表示用に整形する。
+std::string
+misskey_format_time(const std::string& createdAt)
+{
+	time_t unixtime = DecodeISOTime(createdAt);
+	return formattime(unixtime);
 }

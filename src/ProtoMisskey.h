@@ -25,4 +25,7 @@
 
 #pragma once
 
+#include <string>
+
 extern int cmd_misskey_stream();
+extern bool misskey_show_object(const std::string& line);

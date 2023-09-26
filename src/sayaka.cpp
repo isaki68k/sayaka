@@ -570,12 +570,11 @@ main(int ac, char *av[])
 		}
 		break;
 	 case SayakaCmd::Play:
-		if (proto == Proto::Twitter) {
-			init_screen();
-			cmd_play();
-		} else {
-			errx(1, "--play can only be used with --twitter");
+		if (proto == Proto::None) {
+			errx(1, "--play must be used with --twitter or --misskey");
 		}
+		init_screen();
+		cmd_play();
 		break;
 	 case SayakaCmd::NgwordAdd:
 		cmd_ngword_add();
@@ -925,7 +924,18 @@ cmd_play()
 		if (__predict_false(r <= 0)) {
 			break;
 		}
-		if (showobject(line) == false) {
+		switch (proto) {
+		 case Proto::Twitter:
+			if (showobject(line) == false) {
+				return;
+			}
+			break;
+		 case Proto::Misskey:
+			if (misskey_show_object(line) == false) {
+				return;
+			}
+			break;
+		 default:
 			break;
 		}
 	}
