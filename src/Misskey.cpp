@@ -25,7 +25,7 @@
 
 #include "sayaka.h"
 #include "JsonInc.h"
-#include "ProtoMisskey.h"
+#include "Misskey.h"
 #include "StringUtil.h"
 #include "UString.h"
 #include "WSClient.h"

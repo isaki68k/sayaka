@@ -13,11 +13,10 @@ SRCS_common=	\
 	ImageReductor.cpp \
 	MathAlphaSymbols.cpp \
 	MemoryStream.cpp \
+	Misskey.cpp \
 	NGWord.cpp \
 	OAuth.cpp \
 	ParsedUri.cpp \
-	ProtoMisskey.cpp \
-	ProtoTwitter.cpp \
 	Regex.cpp \
 	RichString.cpp \
 	SixelConverter.cpp \
@@ -25,6 +24,7 @@ SRCS_common=	\
 	StreamBase.cpp \
 	StringUtil.cpp \
 	TLSHandle.cpp \
+	Twitter.cpp \
 	UString.cpp \
 	WSClient.cpp \
 	acl.cpp \
