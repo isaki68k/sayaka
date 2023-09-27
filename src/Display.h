@@ -29,3 +29,4 @@
 
 extern void ShowIcon(bool (*callback)(const Json&, const std::string&),
 	const Json& user, const std::string& userid);
+extern std::string formattime(time_t);

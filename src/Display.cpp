@@ -25,7 +25,9 @@
 
 #include "sayaka.h"
 #include "JsonInc.h"
+#include "subr.h"
 #include "term.h"
+#include <ctime>
 
 // 現在行にアイコンを表示。
 // 呼び出し時点でカーソルは行頭にあるため、必要なインデントを行う。
@@ -70,4 +72,34 @@ ShowIcon(bool (*callback)(const Json&, const std::string&),
 		// これだけで復帰できるはず
 		printf("\r");
 	}
+}
+
+// UNIX 時刻から表示用の文字列を返す。
+std::string
+formattime(time_t unixtime)
+{
+	char buf[64];
+	struct tm dtm;
+
+	localtime_r(&unixtime, &dtm);
+
+	// 現在時刻
+	time_t now = GetUnixTime();
+	struct tm ntm;
+	localtime_r(&now, &ntm);
+
+	const char *fmt;
+	if (dtm.tm_year == ntm.tm_year && dtm.tm_yday == ntm.tm_yday) {
+		// 今日なら時刻のみ
+		fmt = "%T";
+	} else if (dtm.tm_year == ntm.tm_year) {
+		// 昨日以前で今年中なら年を省略 (mm/dd HH:MM:SS)
+		// XXX 半年以内ならくらいのほうがいいのか?
+		fmt = "%m/%d %T";
+	} else {
+		// 去年以前なら yyyy/mm/dd HH:MM (秒はもういいだろう…)
+		fmt = "%Y/%m/%d %R";
+	}
+	strftime(buf, sizeof(buf), fmt, &dtm);
+	return std::string(buf);
 }

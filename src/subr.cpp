@@ -97,36 +97,6 @@ formattime(const Json& obj)
 	return formattime(dt);
 }
 
-// UNIX 時刻から表示用の文字列を返す。[recommended]
-std::string
-formattime(time_t unixtime)
-{
-	char buf[64];
-	struct tm dtm;
-
-	localtime_r(&unixtime, &dtm);
-
-	// 現在時刻
-	time_t now = GetUnixTime();
-	struct tm ntm;
-	localtime_r(&now, &ntm);
-
-	const char *fmt;
-	if (dtm.tm_year == ntm.tm_year && dtm.tm_yday == ntm.tm_yday) {
-		// 今日なら時刻のみ
-		fmt = "%T";
-	} else if (dtm.tm_year == ntm.tm_year) {
-		// 昨日以前で今年中なら年を省略 (mm/dd HH:MM:SS)
-		// XXX 半年以内ならくらいのほうがいいのか?
-		fmt = "%m/%d %T";
-	} else {
-		// 去年以前なら yyyy/mm/dd HH:MM (秒はもういいだろう…)
-		fmt = "%Y/%m/%d %R";
-	}
-	strftime(buf, sizeof(buf), fmt, &dtm);
-	return std::string(buf);
-}
-
 // status の日付時刻を返す。
 // timestamp_ms があれば使い、なければ created_at を使う。
 // 今のところ、timestamp_ms はたぶん新しめのツイート/イベント通知には

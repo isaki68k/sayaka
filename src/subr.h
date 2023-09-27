@@ -36,7 +36,6 @@ extern std::string strip_tags(const std::string& text);
 
 extern time_t GetUnixTime() __attribute__((__weak__));
 extern std::string formattime(const Json& obj);
-extern std::string formattime(time_t);
 extern time_t get_datetime(const Json& status);
 extern time_t DecodeTwitterTime(const std::string& src);
 extern time_t DecodeISOTime(const std::string& src);
