@@ -302,19 +302,18 @@ misskey_show_icon(const Json& user, const std::string& userid)
 {
 	std::string avatarUrl = JsonAsString(user["avatarUrl"]);
 
-	if (avatarUrl.empty() == false && userid.empty() == false) {
-		// URL のファイル名部分をキャッシュのキーにする。
-		auto p = avatarUrl.rfind('/');
-		if (__predict_true(p >= 0)) {
-			auto img_file = string_format("icon-%dx%d-%s-%s",
-				iconsize, iconsize, userid.c_str(),
-				avatarUrl.c_str() + p + 1);
-			if (show_image(img_file, avatarUrl, iconsize, -1)) {
-				return true;
-			}
-		}
+	if (avatarUrl.empty() || userid.empty()) {
+		return false;
 	}
-	return false;
+
+	// URL の FNV1 ハッシュをキャッシュのキーにする。
+	// Misskey の画像 URL は長いのと URL がネストした構造をしているので
+	// 単純に一部を切り出して使う方法は無理。
+	uint32 fnv1 = FNV1(avatarUrl);
+
+	auto img_file = string_format("icon-%dx%d-%s-%08x.sixel",
+		iconsize, iconsize, userid.c_str(), fnv1);
+	return show_image(img_file, avatarUrl, iconsize, -1);
 }
 
 // リノート数を表示用に整形して返す。
