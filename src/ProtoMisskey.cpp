@@ -155,8 +155,7 @@ misskey_show_object(const std::string& line)
 		warnx("%s: %s\ninput line is |%s|", __func__, e.what(), line.c_str());
 		return true;
 	}
-	if (obj0.is_null()) {
-		warnx("%s: Json empty.\n", __func__);
+	if (obj0.is_object() == false) {
 		return true;
 	}
 	const Json *obj = &obj0;
@@ -202,6 +201,8 @@ misskey_show_object(const std::string& line)
 static bool
 misskey_show_note(const Json *note, int depth)
 {
+	assert(note->is_object());
+
 	// acl
 
 	// 録画?
