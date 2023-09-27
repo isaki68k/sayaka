@@ -5,6 +5,7 @@
 SRCS_common=	\
 	ChunkedInputStream.cpp \
 	Diag.cpp \
+	Display.cpp \
 	FdStream.cpp \
 	FileStream.cpp \
 	FileUtil.cpp \

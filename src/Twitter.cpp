@@ -26,6 +26,7 @@
 #include "sayaka.h"
 #include "JsonInc.h"
 #include "Dictionary.h"
+#include "Display.h"
 #include "RichString.h"
 #include "StringUtil.h"
 #include "Twitter.h"
@@ -61,7 +62,7 @@ static UString formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
 static void SetTag(RichString& t, const Json& list, Color color);
 static void SetUrl_main(RichString& text, int start, int end,
 	const std::string& url);
-static void show_icon(const Json& user);
+static bool twitter_show_icon(const Json& user, const std::string& screen_name);
 static bool show_photo(const std::string& img_url, int resize_width, int index);
 
 // 1ツイート分の JSON を処理する。
@@ -206,8 +207,8 @@ showstatus(const Json *status, bool is_quoted)
 	}
 
 	const Json& s_user = (*s)["user"];
-	auto userid = coloring(formatid(s_user.value("screen_name", "")),
-		Color::UserId);
+	std::string screen_name = s_user.value("screen_name", "");
+	auto userid = coloring(formatid(screen_name), Color::UserId);
 	auto name = coloring(formatname(s_user.value("name", "")), Color::Username);
 	auto src = coloring(unescape(strip_tags((*s).value("source", ""))) + "から",
 		Color::Source);
@@ -224,7 +225,7 @@ showstatus(const Json *status, bool is_quoted)
 	std::vector<MediaInfo> mediainfo;
 	auto msg = formatmsg(*s, &mediainfo);
 
-	show_icon(s_user);
+	ShowIcon(twitter_show_icon, s_user, screen_name);
 	print_(name + ' ' + userid + verified + protected_mark);
 	printf("\n");
 	print_(msg);
@@ -647,37 +648,15 @@ SetUrl_main(RichString& text, int start, int end, const std::string& url)
 	text[i].altesc = ColorEnd(Color::Url);
 }
 
-// 現在行に user のアイコンを表示。
-// 呼び出し時点でカーソルは行頭にあるため、必要なインデントを行う。
-// アイコン表示後にカーソル位置を表示前の位置に戻す。
-static void
-show_icon(const Json& user)
+// アイコン表示のサービス固有部コールバック。
+static bool
+twitter_show_icon(const Json& user, const std::string& screen_name)
 {
 	const std::array<std::string, 2> urls = {
 		"profile_image_url",
 		"profile_image_url_https",
 	};
-	std::string screen_name;
 
-	// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
-	// 発生させ、アイコン表示時にスクロールしないようにしてから
-	// カーソル位置を保存する
-	// (スクロールするとカーソル位置復元時に位置が合わない)
-	printf("\n\n\n" CSI "3A" ESC "7");
-
-	// インデント。
-	// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
-	if (indent_depth > 0) {
-		int left = indent_cols * indent_depth;
-		printf(CSI "%dC", left);
-	}
-
-	bool shown = false;
-	if (__predict_false(use_sixel == UseSixel::No)) {
-		goto done;
-	}
-
-	screen_name = user.value("screen_name", "");
 	// http, https の順で試す
 	for (const auto& url : urls) {
 		if (user.contains(url)) {
@@ -691,26 +670,12 @@ show_icon(const Json& user)
 					iconsize, iconsize, screen_name.c_str(),
 					image_url.c_str() + p + 1);
 				if (show_image(img_file, image_url, iconsize, -1)) {
-					shown = true;
-					goto done;
+					return true;
 				}
 			}
 		}
 	}
-
- done:
-	if (__predict_true(shown)) {
-		// アイコン表示後、カーソル位置を復帰
-		printf("\r");
-		// カーソル位置保存/復元に対応していない端末でも動作するように
-		// カーソル位置復元前にカーソル上移動x3を行う
-		printf(CSI "3A" ESC "8");
-	} else {
-		// アイコンを表示してない場合はここで代替アイコンを表示。
-		printf(" *");
-		// これだけで復帰できるはず
-		printf("\r");
-	}
+	return false;
 }
 
 // index は画像の番号 (位置決めに使用する)

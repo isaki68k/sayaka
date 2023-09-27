@@ -24,6 +24,7 @@
  */
 
 #include "sayaka.h"
+#include "Display.h"
 #include "JsonInc.h"
 #include "Misskey.h"
 #include "StringUtil.h"
@@ -38,6 +39,7 @@ static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);
 static bool misskey_show_note(const Json *note, int depth);
 static std::string misskey_format_time(const std::string&);
+static bool misskey_show_icon(const Json& user, const std::string& userid);
 
 int
 cmd_misskey_stream()
@@ -224,22 +226,22 @@ misskey_show_note(const Json *note, int depth)
 		has_renote = false;
 	}
 
+	const Json& nullobj = Json(nullptr);
+	const Json *user = &nullobj;
+	std::string userid_str;
 	UString name;
 	UString userid;
-	std::string avatarUrl;
 	if (renote->contains("user") && (*renote)["user"].is_object()) {
-		const Json& user = (*renote)["user"];
+		user = &(*renote)["user"];
 
-		name = coloring(JsonAsString(user["name"]), Color::Username);
+		name = coloring(JsonAsString((*user)["name"]), Color::Username);
 
-		std::string userid_str = "@" + JsonAsString(user["username"]);
-		std::string host = JsonAsString(user["host"]);
+		userid_str = "@" + JsonAsString((*user)["username"]);
+		std::string host = JsonAsString((*user)["host"]);
 		if (host.empty() == false) {
 			userid_str += "@" + host;
 		}
 		userid = coloring(userid_str, Color::UserId);
-
-		avatarUrl = JsonAsString(user["avatarUrl"]);
 	}
 
 	// インタラクションがないので CW があれば CW、なければ text というだけ。
@@ -255,6 +257,7 @@ misskey_show_note(const Json *note, int depth)
 	std::string createdAt = JsonAsString((*renote)["createdAt"]);
 	UString time = coloring(misskey_format_time(createdAt), Color::Time);
 
+	ShowIcon(misskey_show_icon, *user, userid_str);
 	print_(name + ' ' + userid);
 	printf("\n");
 	print_(text);
@@ -272,4 +275,25 @@ misskey_format_time(const std::string& createdAt)
 {
 	time_t unixtime = DecodeISOTime(createdAt);
 	return formattime(unixtime);
+}
+
+// アイコン表示のサービス固有部コールバック。
+static bool
+misskey_show_icon(const Json& user, const std::string& userid)
+{
+	std::string avatarUrl = JsonAsString(user["avatarUrl"]);
+
+	if (avatarUrl.empty() == false && userid.empty() == false) {
+		// URL のファイル名部分をキャッシュのキーにする。
+		auto p = avatarUrl.rfind('/');
+		if (__predict_true(p >= 0)) {
+			auto img_file = string_format("icon-%dx%d-%s-%s",
+				iconsize, iconsize, userid.c_str(),
+				avatarUrl.c_str() + p + 1);
+			if (show_image(img_file, avatarUrl, iconsize, -1)) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
