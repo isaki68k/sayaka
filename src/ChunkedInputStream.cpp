@@ -103,15 +103,22 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 			break;
 		}
 
+		// チャンク本体を一時バッファに読み込む
 		std::unique_ptr<char[]> bufp = std::make_unique<char[]>(intlen);
-		ssize_t readlen = src->Read(bufp.get(), intlen);
-		if (__predict_false(readlen < 0)) {
-			Debug(diag, "Read failed: %s", strerrno());
-			return -1;
+		int readlen = 0;
+		for (; readlen < intlen; readlen += r) {
+			r = src->Read(bufp.get() + readlen, intlen - readlen);
+			if (__predict_false(r < 0)) {
+				Debug(diag, "Read failed: %s", strerrno());
+				return -1;
+			}
+			if (__predict_false(r == 0)) {
+				break;
+			}
+			Trace(diag, "readlen=%d", readlen);
 		}
-		Trace(diag, "readlen=%zd", readlen);
 		if (__predict_false(readlen != intlen)) {
-			Debug(diag, "readlen=%zd intlen=%d", readlen, intlen);
+			Debug(diag, "readlen=%d intlen=%d", readlen, intlen);
 			errno = EIO;
 			return -1;
 		}
