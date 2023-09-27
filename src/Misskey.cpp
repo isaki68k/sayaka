@@ -67,7 +67,6 @@ cmd_misskey_stream()
 	std::string id = string_format("sayaka-%d", (int)time(NULL));
 	std::string cmd = "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"localTimeline\",\"id\":\"" + id + "\"}}";
-printf("cmd=|%s|\n", cmd.c_str());
 	client.Write(cmd.c_str(), cmd.size());
 
 	// あとは受信。
@@ -87,11 +86,6 @@ printf("cmd=|%s|\n", cmd.c_str());
 		if (pfd.events == 0) {
 			break;
 		}
-#if 1
-		printf("poll(%s%s)\n",
-			((pfd.events & POLLIN) ? "IN" : ""),
-			((pfd.events & POLLOUT) ? "OUT" : ""));
-#endif
 
 		while ((r = poll(&pfd, 1, -1)) < 0 && errno == EINTR)
 			;
@@ -99,14 +93,8 @@ printf("cmd=|%s|\n", cmd.c_str());
 			fprintf(stderr, "poll: %s", strerror(errno));
 			return -1;
 		}
-#if 1
-		printf("revents=%s%s\n",
-			((pfd.revents & POLLIN) ? "IN" : ""),
-			((pfd.revents & POLLOUT) ? "OUT" : ""));
-#endif
 
 		if ((pfd.revents & POLLOUT)) {
-printf("wslay_event_send\n");
 		    r = wslay_event_send(ctx);
 			if (r != 0) {
 				fprintf(stderr, "wslay_event_send failed: %d\n", r);
@@ -114,7 +102,6 @@ printf("wslay_event_send\n");
 			}
 		}
 		if ((pfd.revents & POLLIN)) {
-printf("wslay_event_recv\n");
 			r = wslay_event_recv(ctx);
 			if (r == WSLAY_ERR_CALLBACK_FAILURE) {
 				printf("EOF\n");
