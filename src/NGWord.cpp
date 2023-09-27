@@ -85,8 +85,8 @@ NGWordList::ReadFile()
 		return false;
 	}
 
-	const Json& ngword_list = file["ngword_list"];
-	for (const Json& ngword_json : ngword_list) {
+	const Json& list = file["ngword_list"];
+	for (const Json& ngword_json : list) {
 		NGWord *ng = Parse(ngword_json);
 		if (ng == NULL) {
 			return false;
