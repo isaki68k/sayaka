@@ -40,6 +40,8 @@ static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 static bool misskey_show_note(const Json *note, int depth);
 static std::string misskey_format_time(const std::string&);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
+static UString misskey_format_renote_count(const Json& note);
+static UString misskey_format_reaction_count(const Json& note);
 
 int
 cmd_misskey_stream()
@@ -249,7 +251,15 @@ misskey_show_note(const Json *note, int depth)
 	printf("\n");
 	print_(text);
 	printf("\n");
-	print_(time);
+
+	// picture
+
+	// 引用部分
+
+	// このノートの既 RN 数、リアクションは?
+	auto rnmsg = misskey_format_renote_count(*renote);
+	auto reactmsg = misskey_format_reaction_count(*renote);
+	print_(time + rnmsg + reactmsg);
 	printf("\n");
 
 	(void)has_renote;
@@ -283,4 +293,40 @@ misskey_show_icon(const Json& user, const std::string& userid)
 		}
 	}
 	return false;
+}
+
+// リノート数を表示用に整形して返す。
+static UString
+misskey_format_renote_count(const Json& note)
+{
+	UString str;
+
+	auto rncnt = note.contains("renoteCount") ?
+		note.value("renoteCount", 0) : 0;
+	if (rncnt > 0) {
+		str = coloring(string_format(" %dRN", rncnt), Color::Retweet);
+	}
+	return str;
+}
+
+// リアクション数を表示用に整形して返す。
+static UString
+misskey_format_reaction_count(const Json& note)
+{
+	UString str;
+	int cnt = 0;
+
+	if (note.contains("reactions") && note["reactions"].is_object()) {
+		const Json& reactions = note["reactions"];
+		for (auto& [key, val] : reactions.items()) {
+			if (val.is_number()) {
+				cnt += val.get<int>();
+			}
+		}
+	}
+
+	if (cnt > 0) {
+		str = coloring(string_format(" %dReact", cnt), Color::Favorite);
+	}
+	return str;
 }
