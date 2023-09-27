@@ -28,7 +28,7 @@
 #include "header.h"
 #include "Diag.h"
 #include "Dictionary.h"
-#include "Json.h"
+#include "JsonFwd.h"
 #include "NGWord.h"
 #include <array>
 #include <cstdint>

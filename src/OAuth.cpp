@@ -26,6 +26,7 @@
 
 #include "FileUtil.h"
 #include "HttpClient.h"
+#include "JsonInc.h"
 #include "OAuth.h"
 #include "StringUtil.h"
 #if defined(USE_MBEDTLS)

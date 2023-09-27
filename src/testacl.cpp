@@ -26,6 +26,7 @@
 #include "test.h"
 #include "Diag.h"
 #include "Dictionary.h"
+#include "JsonInc.h"
 #include "StringUtil.h"
 #include "acl.h"
 #include "sayaka.h"

@@ -27,6 +27,7 @@
 #include "acl.h"
 #include "Diag.h"
 #include "Dictionary.h"
+#include "JsonInc.h"
 #include "StringUtil.h"
 
 // ここの diagShow は Debug, Trace, Verbose という分類というより

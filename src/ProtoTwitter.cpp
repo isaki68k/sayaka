@@ -24,6 +24,7 @@
  */
 
 #include "sayaka.h"
+#include "JsonInc.h"
 #include "ProtoTwitter.h"
 #include "Dictionary.h"
 #include "RichString.h"

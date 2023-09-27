@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "Json.h"
+#include "JsonFwd.h"
 #include <ctime>
 #include <string>
 

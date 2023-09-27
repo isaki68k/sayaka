@@ -25,6 +25,7 @@
 
 #include "sayaka.h"
 #include "FileStream.h"
+#include "JsonInc.h"
 #include "MathAlphaSymbols.h"
 #include "ProtoMisskey.h"
 #include "ProtoTwitter.h"

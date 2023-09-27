@@ -24,6 +24,7 @@
  */
 
 #include "sayaka.h"
+#include "JsonInc.h"
 #include "ProtoMisskey.h"
 #include "StringUtil.h"
 #include "UString.h"

@@ -25,6 +25,7 @@
 
 #include "test.h"
 #include "subr.h"
+#include "JsonInc.h"
 
 // 現在時刻を返す、はずだがここではテスト用に固定時刻を返す
 time_t

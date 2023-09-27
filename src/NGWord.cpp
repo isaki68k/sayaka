@@ -25,6 +25,7 @@
 
 #include "Diag.h"
 #include "FileUtil.h"
+#include "JsonInc.h"
 #include "NGWord.h"
 #include "StringUtil.h"
 #include "subr.h"

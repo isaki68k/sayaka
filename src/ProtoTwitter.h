@@ -25,6 +25,6 @@
 
 #pragma once
 
-#include "Json.h"
+#include "JsonFwd.h"
 
 extern bool showobject(const Json& json);
