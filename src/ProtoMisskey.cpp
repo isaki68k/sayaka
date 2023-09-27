@@ -132,7 +132,12 @@ static void
 misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg)
 {
+	if (msg->msg_length == 0) {
+		return;
+	}
+
 	std::string line((const char *)msg->msg, msg->msg_length);
+
 	if (opt_record_mode == 2) {
 		record(line.c_str());
 	}
