@@ -38,10 +38,13 @@
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);
 static bool misskey_show_note(const Json *note, int depth);
-static std::string misskey_format_time(const std::string&);
+static std::string misskey_get_username(const Json& user);
+static std::string misskey_get_userid(const Json& user);
+static std::string misskey_get_time(const Json& note);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
 static UString misskey_format_renote_count(const Json& note);
 static UString misskey_format_reaction_count(const Json& note);
+static UString misskey_format_renote_owner(const Json& note);
 
 int
 cmd_misskey_stream()
@@ -223,13 +226,8 @@ misskey_show_note(const Json *note, int depth)
 	if (renote->contains("user") && (*renote)["user"].is_object()) {
 		user = &(*renote)["user"];
 
-		name = coloring(JsonAsString((*user)["name"]), Color::Username);
-
-		userid_str = "@" + JsonAsString((*user)["username"]);
-		std::string host = JsonAsString((*user)["host"]);
-		if (host.empty() == false) {
-			userid_str += "@" + host;
-		}
+		name = coloring(misskey_get_username(*user), Color::Username);
+		userid_str = misskey_get_userid(*user);
 		userid = coloring(userid_str, Color::UserId);
 	}
 
@@ -243,9 +241,6 @@ misskey_show_note(const Json *note, int depth)
 	}
 	UString text = UString::FromUTF8(text_str);
 
-	std::string createdAt = JsonAsString((*renote)["createdAt"]);
-	UString time = coloring(misskey_format_time(createdAt), Color::Time);
-
 	ShowIcon(misskey_show_icon, *user, userid_str);
 	print_(name + ' ' + userid);
 	printf("\n");
@@ -256,20 +251,47 @@ misskey_show_note(const Json *note, int depth)
 
 	// 引用部分
 
-	// このノートの既 RN 数、リアクションは?
+	// 時刻と、あればこのノートの既 RN 数、リアクション数。
+	auto time = coloring(misskey_get_time(*renote), Color::Time);
 	auto rnmsg = misskey_format_renote_count(*renote);
 	auto reactmsg = misskey_format_reaction_count(*renote);
 	print_(time + rnmsg + reactmsg);
 	printf("\n");
 
-	(void)has_renote;
+	// リノート元
+	if (has_renote) {
+		print_(misskey_format_renote_owner(*note));
+		printf("\n");
+	}
+
 	return true;
 }
 
-// createdAt の時刻 (ISO 形式文字列) を表示用に整形する。
-std::string
-misskey_format_time(const std::string& createdAt)
+// user からユーザ名(表示名)の文字列を取得。
+static std::string
+misskey_get_username(const Json& user)
 {
+	return JsonAsString(user["name"]);
+}
+
+// user からアカウント名(+外部ならホスト名) の文字列を取得。
+// @user[@host] 形式。
+static std::string
+misskey_get_userid(const Json& user)
+{
+	std::string userid = "@" + JsonAsString(user["username"]);
+	std::string host = JsonAsString(user["host"]);
+	if (host.empty() == false) {
+		userid += "@" + host;
+	}
+	return userid;
+}
+
+// note から時刻の文字列を取得。
+static std::string
+misskey_get_time(const Json& note)
+{
+	std::string createdAt = JsonAsString(note["createdAt"]);
 	time_t unixtime = DecodeISOTime(createdAt);
 	return formattime(unixtime);
 }
@@ -329,4 +351,24 @@ misskey_format_reaction_count(const Json& note)
 		str = coloring(string_format(" %dReact", cnt), Color::Favorite);
 	}
 	return str;
+}
+
+// リノート元通知を表示用に整形して返す。
+static UString
+misskey_format_renote_owner(const Json& note)
+{
+	std::string rn_time = misskey_get_time(note);
+	std::string rn_name;
+	std::string rn_userid;
+
+	if (note.contains("user") && note["user"].is_object()) {
+		const Json& user = note["user"];
+
+		rn_name = misskey_get_username(user);
+		rn_userid = misskey_get_userid(user);
+	}
+
+	auto str = string_format("%s %s %s renoted",
+		rn_time.c_str(), rn_name.c_str(), rn_userid.c_str());
+	return coloring(str, Color::Retweet);
 }
