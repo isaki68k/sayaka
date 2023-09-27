@@ -267,6 +267,21 @@ my_strptime(const std::string& buf, const std::string& fmt)
 	return -1;
 }
 
+// 文字列の FNV1 ハッシュ(32ビット) を返す。
+uint32
+FNV1(const std::string& s)
+{
+	const uint32 prime  = 16777619u;
+	const uint32 offset = 2166136261u;
+
+	uint32 hash = offset;
+	for (auto c : s) {
+		hash *= prime;
+		hash ^= c;
+	}
+	return hash;
+}
+
 // strerror(errno) は Debug() 等のマクロ内から呼ぶことが多いのに
 // clang だと errno が再帰展開になるとかで怒られるので、回避のため。
 const char *
