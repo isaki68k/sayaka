@@ -3858,6 +3858,29 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 fi
 
+# Webp
+p=libwebp
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ${p}" >&5
+printf %s "checking for ${p}... " >&6; }
+if ${PKG_CONFIG} --exists ${p}; then
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	H=`${PKG_CONFIG} --cflags ${p}`
+	L=`${PKG_CONFIG} --libs ${p}`
+
+	CPPFLAGS="${CPPFLAGS} ${H}"
+	LIBS="${LIBS} ${L}"
+else
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "libwebp not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
+
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
 
 # Check whether --with-mbedtls was given.
 if test ${with_mbedtls+y}

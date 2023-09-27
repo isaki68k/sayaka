@@ -11,6 +11,7 @@ SRCS_common=	\
 	FileUtil.cpp \
 	HttpClient.cpp \
 	Image.cpp \
+	ImageLoaderWebp.cpp \
 	ImageReductor.cpp \
 	MathAlphaSymbols.cpp \
 	MemoryStream.cpp \

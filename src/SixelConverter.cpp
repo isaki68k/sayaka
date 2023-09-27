@@ -34,6 +34,7 @@
 #include "ImageLoaderJPEG.h"
 #include "ImageLoaderPNG.h"
 #endif
+#include "ImageLoaderWebp.h"
 #include "StringUtil.h"
 #include <algorithm>
 #include <cassert>
@@ -61,6 +62,18 @@ bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
 	Debug(diag, "ResizeMode=%s", SRM2str(ResizeMode));
+
+	{
+		ImageLoaderWebp loader(stream, diag);
+		if (loader.Check()) {
+			Trace(diag, "%s filetype is Webp", __func__);
+			if (loader.Load(img)) {
+				LoadAfter();
+				return true;
+			}
+			return false;
+		}
+	}
 
 #if defined(USE_STB_IMAGE)
 	ImageLoaderSTB loader(stream, diag);

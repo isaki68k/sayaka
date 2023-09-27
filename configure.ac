@@ -272,6 +272,23 @@ else
 	])
 fi
 
+# Webp
+p=libwebp
+AC_MSG_CHECKING([for ${p}])
+if ${PKG_CONFIG} --exists ${p}; then
+	AC_MSG_RESULT([yes])
+	H=`${PKG_CONFIG} --cflags ${p}`
+	L=`${PKG_CONFIG} --libs ${p}`
+
+	CPPFLAGS="${CPPFLAGS} ${H}"
+	LIBS="${LIBS} ${L}"
+else
+	AC_MSG_RESULT([no])
+	AC_MSG_FAILURE([libwebp not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
+	])
+fi
+
 AC_ARG_WITH(mbedtls,
 [  --without-mbedtls       Use OpenSSL instead of mbedTLS],
 	[],
