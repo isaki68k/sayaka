@@ -677,7 +677,7 @@ show_icon(const Json& user)
 		goto done;
 	}
 
-	screen_name = unescape(user.value("screen_name", ""));
+	screen_name = user.value("screen_name", "");
 	// http, https の順で試す
 	for (const auto& url : urls) {
 		if (user.contains(url)) {
