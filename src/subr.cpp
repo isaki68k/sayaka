@@ -42,13 +42,6 @@ formatname(const std::string& text)
 	return rv;
 }
 
-// ID 表示用に整形
-std::string
-formatid(const std::string& text)
-{
-	return "@" + text;
-}
-
 // HTML のエスケープを元に戻す
 std::string
 unescape(const std::string& text)

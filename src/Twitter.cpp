@@ -55,6 +55,7 @@ class MediaInfo
 };
 
 static bool showstatus(const Json *status, bool is_quoted);
+static std::string formatid(const std::string& text);
 static UString format_rt_owner(const Json& s);
 static UString format_rt_cnt(const Json& s);
 static UString format_fav_cnt(const Json& s);
@@ -269,6 +270,13 @@ showstatus(const Json *status, bool is_quoted)
 	// ふぁぼはもう飛んでこない
 
 	return true;
+}
+
+// ID 表示用に整形
+static std::string
+formatid(const std::string& text)
+{
+	return "@" + text;
 }
 
 // リツイート元通知を整形して返す

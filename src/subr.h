@@ -30,7 +30,6 @@
 #include <string>
 
 extern std::string formatname(const std::string& text);
-extern std::string formatid(const std::string& text);
 extern std::string unescape(const std::string& text);
 extern std::string strip_tags(const std::string& text);
 
