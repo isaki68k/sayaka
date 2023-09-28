@@ -518,8 +518,9 @@ main(int ac, char *av[])
 			usage();
 			break;
 		 default:
-			// 知らない引数はエラー
-			usage();
+			// 知らない引数はエラー。
+			// getopt_long() がエラーを表示している。
+			exit(1);
 		}
 	}
 
@@ -549,6 +550,7 @@ main(int ac, char *av[])
 
 	// usage() は init() より前のほうがいいか。
 	if (cmd == SayakaCmd::Noop) {
+		warnx("No command option specified.");
 		usage();
 	}
 
@@ -590,7 +592,7 @@ main(int ac, char *av[])
 		cmd_version();
 		break;
 	 default:
-		usage();
+		errx(1, "Unknown command? cmd=%d", (int)cmd);
 	}
 
 	return 0;
