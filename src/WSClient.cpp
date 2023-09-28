@@ -93,6 +93,9 @@ bool
 WSClient::SetURI(const std::string& uri_)
 {
 	// XXX Init 後、Connect 前でないといけない。
+	if ((bool)http == false) {
+		return false;
+	}
 
 	if (http->Init(diag, uri_) == false) {
 		return false;
