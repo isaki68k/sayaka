@@ -214,14 +214,16 @@ TLSHandle_openssl::ConnectSocket(const char *hostname, const char *servname)
 void
 TLSHandle_openssl::Close()
 {
-	if (usessl) {
-		SSL_shutdown(inner->ssl);
-		SSL_free(inner->ssl);
-		inner->ssl = NULL;
-		SSL_CTX_free(inner->ctx);
-		inner->ctx = NULL;
+	if (fd >= 0) {
+		if (usessl) {
+			SSL_shutdown(inner->ssl);
+			SSL_free(inner->ssl);
+			inner->ssl = NULL;
+			SSL_CTX_free(inner->ctx);
+			inner->ctx = NULL;
+		}
+		close(fd);
 	}
-	close(fd);
 	fd = -1;
 }
 
