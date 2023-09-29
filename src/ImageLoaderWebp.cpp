@@ -232,8 +232,6 @@ ImageLoaderWebp::LoadInc(Image& img, WebPIDecoder *idec)
 {
 	std::vector<uint8> buf(BUFSIZE);
 	int status;
-	int width;
-	int height;
 	int stride;
 	const uint8 *s;
 	uint8 *d;
@@ -260,13 +258,15 @@ ImageLoaderWebp::LoadInc(Image& img, WebPIDecoder *idec)
 	}
 
 	// RGB バッファを取得。
-	s = WebPIDecGetRGB(idec, NULL, &width, &height, &stride);
+	s = WebPIDecGetRGB(idec, NULL, NULL, NULL, &stride);
 	if (s == NULL) {
 		Trace(diag, "%s: WebPIDecGetRGB() failed", __method__);
 		return false;
 	}
 
 	// そのままコピー出来る。
+	int height = img.GetHeight();
+	int width = img.GetWidth();
 	d = img.GetBuf();
 	for (int y = 0; y < height; y++) {
 		memcpy(d, s, width * 3);
