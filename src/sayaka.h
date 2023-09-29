@@ -89,8 +89,6 @@ extern void print_(const UString& utext);
 extern UString ColorBegin(Color col);
 extern UString ColorEnd(Color col);
 extern UString coloring(const std::string& text, Color col);
-extern bool show_image(const std::string& img_file, const std::string& img_url,
-	int resize_width, int index);
 extern void record(const char *str);
 extern void record(const Json& obj);
 

@@ -64,7 +64,6 @@ static void SetTag(RichString& t, const Json& list, Color color);
 static void SetUrl_main(RichString& text, int start, int end,
 	const std::string& url);
 static bool twitter_show_icon(const Json& user, const std::string& screen_name);
-static bool show_photo(const std::string& img_url, int resize_width, int index);
 
 // 1ツイート分の JSON を処理する。
 bool
@@ -241,7 +240,7 @@ showstatus(const Json *status, bool is_quoted)
 
 		auto indent = (indent_depth + 1) * indent_cols;
 		printf(CSI "%dC", indent);
-		show_photo(m.target_url, imagesize, i);
+		ShowPhoto(m.target_url, imagesize, i);
 		printf("\r");
 	}
 
@@ -677,27 +676,11 @@ twitter_show_icon(const Json& user, const std::string& screen_name)
 				auto img_file = string_format("icon-%dx%d-%s-%s",
 					iconsize, iconsize, screen_name.c_str(),
 					image_url.c_str() + p + 1);
-				if (show_image(img_file, image_url, iconsize, -1)) {
+				if (ShowImage(img_file, image_url, iconsize, -1)) {
 					return true;
 				}
 			}
 		}
 	}
 	return false;
-}
-
-// index は画像の番号 (位置決めに使用する)
-static bool
-show_photo(const std::string& img_url, int resize_width, int index)
-{
-	auto img_file = img_url;
-
-	for (auto p = 0;
-		(p = img_file.find_first_of(":/()? ", p)) != std::string::npos;
-		p++)
-	{
-		img_file[p] = '_';
-	}
-
-	return show_image(img_file, img_url, resize_width, index);
 }

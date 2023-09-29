@@ -24,10 +24,18 @@
  */
 
 #include "sayaka.h"
+#include "Display.h"
 #include "JsonInc.h"
+#include "StringUtil.h"
+#include "autofd.h"
+#include "fetch_image.h"
 #include "subr.h"
 #include "term.h"
 #include <ctime>
+
+#if !defined(PATH_SEPARATOR)
+#define PATH_SEPARATOR "/"
+#endif
 
 // 現在行にアイコンを表示。
 // 呼び出し時点でカーソルは行頭にあるため、必要なインデントを行う。
@@ -72,6 +80,147 @@ ShowIcon(bool (*callback)(const Json&, const std::string&),
 		// これだけで復帰できるはず
 		printf("\r");
 	}
+}
+
+// 添付画像を出力する。
+// index は画像の番号 (位置決めに使用する)
+bool
+ShowPhoto(const std::string& img_url, int resize_width, int index)
+{
+	auto img_file = img_url;
+
+	for (auto p = 0;
+		(p = img_file.find_first_of(":/()? ", p)) != std::string::npos;
+		p++)
+	{
+		img_file[p] = '_';
+	}
+
+	return ShowImage(img_file, img_url, resize_width, index);
+}
+
+// 画像をキャッシュして表示する。
+//  img_file はキャッシュディレクトリ内でのファイル名。
+//  img_url は画像の URL。
+//  resize_width はリサイズ後の画像の幅。ピクセルで指定。0 を指定すると
+//  リサイズせずオリジナルのサイズ。
+//  index は -1 ならアイコン、0 以上なら添付写真の何枚目かを表す。
+//  どちらも位置決めなどのために使用する。
+// 表示できれば true を返す。
+bool
+ShowImage(const std::string& img_file, const std::string& img_url,
+	int resize_width, int index)
+{
+	if (use_sixel == UseSixel::No)
+		return false;
+
+	std::string img_path = cachedir + PATH_SEPARATOR + img_file;
+
+	Debug(diagImage, "%s: img_url=%s", __func__, img_url.c_str());
+	Debug(diagImage, "%s: img_path=%s", __func__, img_path.c_str());
+	auto cache_filename = img_path + ".sixel";
+	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
+	if (!cache_file.Valid()) {
+		// キャッシュファイルがないので、画像を取得
+		Debug(diagImage, "sixel cache is not found; fetch the image.");
+		cache_file = fetch_image(cache_filename, img_url, resize_width);
+		if (!cache_file.Valid()) {
+			return false;
+		}
+	}
+
+	// SIXEL の先頭付近から幅と高さを取得
+	auto sx_width = 0;
+	auto sx_height = 0;
+	char buf[4096];
+	char *ep;
+	auto n = fread(buf, 1, sizeof(buf), cache_file);
+	if (n < 32) {
+		return false;
+	}
+	// " <Pan>; <Pad>; <Ph>; <Pv>
+	int i;
+	// Search "
+	for (i = 0; i < n && buf[i] != '\x22'; i++)
+		;
+	// Skip Pan;
+	for (i++; i < n && buf[i] != ';'; i++)
+		;
+	// Skip Pad
+	for (i++; i < n && buf[i] != ';'; i++)
+		;
+	// Ph
+	i++;
+	sx_width = stou32def(buf + i, -1, &ep);
+	if (sx_width < 0) {
+		return false;
+	}
+	// Pv
+	i = ep - buf;
+	i++;
+	sx_height = stou32def(buf + i, -1);
+	if (sx_height < 0) {
+		return false;
+	}
+
+	// この画像が占める文字数
+	auto image_rows = (sx_height + fontheight - 1) / fontheight;
+	auto image_cols = (sx_width + fontwidth - 1) / fontwidth;
+
+	if (index < 0) {
+		// アイコンの場合は呼び出し側で実施。
+	} else {
+		// 添付画像の場合、表示位置などを計算。
+		auto indent = (indent_depth + 1) * indent_cols;
+		if ((max_image_count > 0 && image_count >= max_image_count) ||
+		    (indent + image_next_cols + image_cols >= screen_cols))
+		{
+			// 指定された枚数を超えるか、画像が入らない場合は折り返す
+			printf("\r");
+			printf(CSI "%dC", indent);
+			image_count = 0;
+			image_max_rows = 0;
+			image_next_cols = 0;
+		} else {
+			// 前の画像の横に並べる
+			if (image_count > 0) {
+				if (image_max_rows > 0) {
+					printf(CSI "%dA", image_max_rows);
+				}
+				if (image_next_cols > 0) {
+					printf(CSI "%dC", image_next_cols);
+				}
+			}
+		}
+	}
+
+	// 最初の1回はすでに buf に入っているのでまず出力して、
+	// 次からは順次読みながら最後まで出力。
+	do {
+		in_sixel = true;
+		fwrite(buf, 1, n, stdout);
+		fflush(stdout);
+		in_sixel = false;
+
+		n = fread(buf, 1, sizeof(buf), cache_file);
+	} while (n > 0);
+
+	if (index < 0) {
+		// アイコンの場合は呼び出し側で実施。
+	} else {
+		// 添付画像の場合
+		image_count++;
+		image_next_cols += image_cols;
+
+		// カーソル位置は同じ列に表示した画像の中で最長のものの下端に揃える
+		if (image_max_rows > image_rows) {
+			printf(CSI "%dB", image_max_rows - image_rows);
+		} else {
+			image_max_rows = image_rows;
+		}
+	}
+
+	return true;
 }
 
 // UNIX 時刻から表示用の文字列を返す。

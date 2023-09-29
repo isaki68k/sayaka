@@ -346,7 +346,7 @@ misskey_show_icon(const Json& user, const std::string& userid)
 
 	auto img_file = string_format("icon-%dx%d-%s-%08x.sixel",
 		iconsize, iconsize, userid.c_str(), fnv1);
-	return show_image(img_file, avatarUrl, iconsize, -1);
+	return ShowImage(img_file, avatarUrl, iconsize, -1);
 }
 
 // 投票を表示用に整形して返す。

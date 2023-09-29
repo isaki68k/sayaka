@@ -29,4 +29,7 @@
 
 extern void ShowIcon(bool (*callback)(const Json&, const std::string&),
 	const Json& user, const std::string& userid);
+extern bool ShowPhoto(const std::string& img_url, int resize_width, int index);
+extern bool ShowImage(const std::string& img_file, const std::string& img_url,
+	int resize_width, int index);
 extern std::string formattime(time_t);
