@@ -34,7 +34,9 @@
 #include <cstdio>
 #include <err.h>
 #include <poll.h>
+#include <unistd.h>
 
+static int misskey_stream();
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);
 static bool misskey_show_note(const Json *note, int depth);
@@ -49,6 +51,26 @@ static UString misskey_format_renote_owner(const Json& note);
 
 int
 cmd_misskey_stream()
+{
+	for (;;) {
+		int r = misskey_stream();
+		if (r < 0) {
+			// エラーは表示済み。
+			return -1;
+		}
+		// 0 なら backoff ?
+
+		sleep(1);
+	}
+	return 0;
+}
+
+// Misskey Streaming を行う。定期的に切れるようだ。
+// 相手からの Connection Close なら 1 を返す。
+// 復旧可能そうなエラーなら 0 を返す。
+// 復旧不可能ならエラーなら -1 を返す。
+static int
+misskey_stream()
 {
 	WSClient client;
 
@@ -65,6 +87,7 @@ cmd_misskey_stream()
 
 	if (client.Connect() == false) {
 		// エラーは表示済み。
+		// XXX 復旧可能かどうか。
 		return -1;
 	}
 	auto ctx = client.GetContext();
@@ -97,7 +120,7 @@ cmd_misskey_stream()
 			;
 		if (r < 0) {
 			fprintf(stderr, "poll: %s", strerror(errno));
-			return -1;
+			break;
 		}
 
 		if ((pfd.revents & POLLOUT)) {
@@ -110,7 +133,7 @@ cmd_misskey_stream()
 		if ((pfd.revents & POLLIN)) {
 			r = wslay_event_recv(ctx);
 			if (r == WSLAY_ERR_CALLBACK_FAILURE) {
-				printf("EOF\n");
+				// EOF
 				break;
 			}
 			if (r != 0) {
