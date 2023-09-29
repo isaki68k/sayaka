@@ -279,6 +279,8 @@ if ${PKG_CONFIG} --exists ${p}; then
 	AC_MSG_RESULT([yes])
 	H=`${PKG_CONFIG} --cflags ${p}`
 	L=`${PKG_CONFIG} --libs ${p}`
+	# どうするんだこれ
+	L="${L} -lwebpdemux"
 
 	CPPFLAGS="${CPPFLAGS} ${H}"
 	LIBS="${LIBS} ${L}"

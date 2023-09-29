@@ -3867,6 +3867,8 @@ if ${PKG_CONFIG} --exists ${p}; then
 printf "%s\n" "yes" >&6; }
 	H=`${PKG_CONFIG} --cflags ${p}`
 	L=`${PKG_CONFIG} --libs ${p}`
+	# どうするんだこれ
+	L="${L} -lwebpdemux"
 
 	CPPFLAGS="${CPPFLAGS} ${H}"
 	LIBS="${LIBS} ${L}"

@@ -28,6 +28,21 @@
 #include <cstring>
 #include <webp/decode.h>
 
+// <webp/demux.h> has a cast warning...
+#if defined(__clang__)
+_Pragma("clang diagnostic push")
+_Pragma("clang diagnostic ignored \"-Wcast-qual\"")
+#else
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wcast-qual\"")
+#endif
+#include <webp/demux.h>
+#if defined(__clang__)
+_Pragma("clang diagnostic pop")
+#else
+_Pragma("GCC diagnostic pop")
+#endif
+
 #define MAGIC_LEN	(64)
 #define BUFSIZE		(4000)
 
@@ -138,8 +153,54 @@ ImageLoaderWebp::Load(Image& img)
 
 	if (config.input.has_animation)
 	{
-		// アニメーションは処理が全然別。
-		Debug(diag, "use frame");
+		// アニメーションは処理が全然別。要 -lwebpdemux。
+		Debug(diag, "%s: Use frame decoder", __method__);
+
+		WebPAnimDecoderOptions opt;
+		WebPData data;
+		WebPAnimDecoder *dec;
+		uint8 *outbuf;
+		int stride;
+		int timestamp;
+
+		// ファイル全体を読み込む。
+		std::vector<uint8> buf(filesize);
+		memcpy(buf.data(), magic.data(), magic.size());
+		n = stream->Read(buf.data() + magic.size(), filesize - magic.size());
+		if (n < 0) {
+			Trace(diag, "%s: Read() failed: %s", __method__, strerror(errno));
+			return false;
+		}
+
+		WebPAnimDecoderOptionsInit(&opt);
+		opt.color_mode = MODE_RGBA;
+		data.bytes = buf.data();
+		data.size = filesize;
+		dec = WebPAnimDecoderNew(&data, &opt);
+		if (dec == NULL) {
+			Trace(diag, "%s: WebpAnimDecoderNew() failed", __method__);
+			return false;
+		}
+
+		// 次のフレームがある間ループで回るやつだがここでは最初の1枚だけ。
+		if (WebPAnimDecoderHasMoreFrames(dec) == false) {
+			Trace(diag, "%s: No frames?", __method__);
+			goto abort_anime;
+		}
+
+		// このフレームをデコード。outbuf にセットされて返ってくるらしい。
+		if (WebPAnimDecoderGetNext(dec, &outbuf, &timestamp) == false) {
+			Trace(diag, "%s: WebpAnimDecoderGetNext() failed", __method__);
+			goto abort_anime;
+		}
+
+		// RGB に変換。
+		stride = width * 4;
+		RGBAtoRGB(img.GetBuf(), outbuf, width, height, stride, TRANSBG);
+		rv = true;
+
+ abort_anime:
+		WebPAnimDecoderDelete(dec);
 		return rv;
 	} else if (config.input.has_alpha) {
 		// アルファチャンネルがあるとインクリメンタル処理できないっぽい?
