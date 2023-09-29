@@ -42,6 +42,7 @@ static std::string misskey_get_username(const Json& user);
 static std::string misskey_get_userid(const Json& user);
 static std::string misskey_get_time(const Json& note);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
+static UString misskey_format_poll(const Json& poll);
 static UString misskey_format_renote_count(const Json& note);
 static UString misskey_format_reaction_count(const Json& note);
 static UString misskey_format_renote_owner(const Json& note);
@@ -247,6 +248,15 @@ misskey_show_note(const Json *note, int depth)
 	print_(text);
 	printf("\n");
 
+	// 投票(poll)
+	if (renote->contains("poll") && (*renote)["poll"].is_object()) {
+		UString pollstr = misskey_format_poll((*renote)["poll"]);
+		if (pollstr.empty() == false) {
+			print_(pollstr);
+			printf("\n");
+		}
+	}
+
 	// picture
 
 	// 引用部分
@@ -314,6 +324,48 @@ misskey_show_icon(const Json& user, const std::string& userid)
 	auto img_file = string_format("icon-%dx%d-%s-%08x.sixel",
 		iconsize, iconsize, userid.c_str(), fnv1);
 	return show_image(img_file, avatarUrl, iconsize, -1);
+}
+
+// 投票を表示用に整形して返す。
+static UString
+misskey_format_poll(const Json& poll)
+{
+	// "poll" : {
+	//   "choices" : [ { choice1, choice2 } ],
+	//   "expiresAt" : null (or string?),
+	//   "multiple" : bool,
+	// }
+
+	std::string str;
+	if (poll.contains("choices") && poll["choices"].is_array()) {
+		const Json& choices = poll["choices"];
+		// choice は {
+		//   "isVoted" : bool (自分が投票したかかな?)
+		//   "text" : string
+		//   "votes" : number
+		// }
+
+		// 本当は列整形したいところだが表示文字数のカウントが面倒。
+
+		// 整形。
+		for (const Json& choice : choices) {
+			bool voted = (choice["isVoted"].is_boolean() &&
+				choice["isVoted"].get<bool>());
+			std::string text = JsonAsString(choice["text"]);
+			int votes = (choice["votes"].is_number()
+				? choice["votes"].get<int>() : 0);
+
+			str += string_format(
+				" [%c] %s : %d\n",
+				(voted ? '*' : ' '),
+				text.c_str(),
+				votes);
+		}
+	}
+	// 最後の改行は除く。
+	string_rtrim(str);
+
+	return UString::FromUTF8(str);
 }
 
 // リノート数を表示用に整形して返す。
