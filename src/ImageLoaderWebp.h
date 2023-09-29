@@ -27,6 +27,8 @@
 
 #include "Image.h"
 
+struct WebPIDecoder;
+
 class ImageLoaderWebp : public ImageLoader
 {
 	using inherited = ImageLoader;
@@ -36,4 +38,9 @@ class ImageLoaderWebp : public ImageLoader
 
 	bool Check() const override;
 	bool Load(Image& img) override;
+
+ private:
+	void RGBAtoRGB(uint8 *dst, const uint8 *src,
+		int width, int height, int stride, int bgcolor);
+	bool LoadInc(Image& img, WebPIDecoder *idec);
 };
