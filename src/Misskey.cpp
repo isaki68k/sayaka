@@ -31,6 +31,7 @@
 #include "UString.h"
 #include "WSClient.h"
 #include "subr.h"
+#include "term.h"
 #include <cstdio>
 #include <err.h>
 #include <poll.h>
@@ -45,6 +46,7 @@ static std::string misskey_get_userid(const Json& user);
 static std::string misskey_get_time(const Json& note);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
 static UString misskey_format_poll(const Json& poll);
+static bool misskey_show_photo(const Json& f, int resize_width, int index);
 static UString misskey_format_renote_count(const Json& note);
 static UString misskey_format_reaction_count(const Json& note);
 static UString misskey_format_renote_owner(const Json& note);
@@ -281,6 +283,20 @@ misskey_show_note(const Json *note, int depth)
 	}
 
 	// picture
+	image_count = 0;
+	image_next_cols = 0;
+	image_max_rows = 0;
+	if (renote->contains("files") && (*renote)["files"].is_array()) {
+		const Json& files = (*renote)["files"];
+		for (int i = 0, end = files.size(); i < end; i++) {
+			const Json& f = files[i];
+
+			auto indent = (indent_depth + 1) * indent_cols;
+			printf(CSI "%dC", indent);
+			misskey_show_photo(f, imagesize, i);
+			printf("\r");
+		}
+	}
 
 	// 引用部分
 
@@ -389,6 +405,35 @@ misskey_format_poll(const Json& poll)
 	string_rtrim(str);
 
 	return UString::FromUTF8(str);
+}
+
+// "files" : [ file1, file2, ... ]
+// file は {
+//   "blurhash" : "...",
+//   "isSensitive" : bool,
+//   "name" : string,
+//   "properties" : {
+//     "width" : int,
+//     "height" : int,
+//   },
+//   "size" : int,
+//   "thumbnailUrl" : "...",
+//   "type" : "image/jpeg",
+//   "url" : "...",
+// }
+static bool
+misskey_show_photo(const Json& f, int resize_width, int index)
+{
+	// thumbnailUrl があればそっちを使う。
+	auto img_url = JsonAsString(f["thumbnailUrl"]);
+	if (img_url == "") {
+		img_url = JsonAsString(f["url"]);
+		if (img_url == "") {
+			return false;
+		}
+	}
+
+	return ShowPhoto(img_url, resize_width, index);
 }
 
 // リノート数を表示用に整形して返す。
