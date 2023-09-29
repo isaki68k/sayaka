@@ -42,9 +42,8 @@ ImageLoaderWebp::~ImageLoaderWebp()
 bool
 ImageLoaderWebp::Check() const
 {
-	// API で出来るのか分からんのでとりあえず自前で。
-
-	char magic[12];
+	char magic[64];
+	WebPBitstreamFeatures f;
 
 	auto n = stream->Peek(&magic, sizeof(magic));
 	if (n < sizeof(magic)) {
@@ -52,18 +51,23 @@ ImageLoaderWebp::Check() const
 		return false;
 	}
 
-	// マジックを確認。
-	// +0: 'R' 'I' 'F' 'F'
-	// +4: filesize
-	// +8: 'W' 'E' 'B' 'P'
-	if (strncmp(&magic[0], "RIFF", 4) != 0) {
-		Trace(diag, "%s: Bad magic(RIFF)", __method__);
+	// フォーマットは WebpGetFeatures() で判定できる。
+	// データが足りなければ VP8_STATUS_NOT_ENOUGH_DATA が返ってくるが、
+	// とりあえず長さは決め打ち。
+	auto r = WebPGetFeatures((uint8 *)magic, sizeof(magic), &f);
+	if (r == VP8_STATUS_BITSTREAM_ERROR) {
+		// Webp ではない。
 		return false;
 	}
-	if (strncmp(&magic[8], "WEBP", 4) != 0) {
-		Trace(diag, "%s: Bad magic(WEBP)", __method__);
+	if (r != 0) {
+		// それ以外のエラー。
+		Trace(diag, "%s: WebPGetFeatures() failed: %d", __method__, (int)r);
 		return false;
 	}
+	// Webp っぽい (デコード出来るとは言っていない?)
+	Debug(diag, "%s: width=%d height=%d alpha=%d anime=%d format=%d",
+		__method__, f.width, f.height, f.has_alpha, f.has_animation, f.format);
+
 	Trace(diag, "%s: OK", __method__);
 	return true;
 }
