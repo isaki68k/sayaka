@@ -61,11 +61,15 @@ SixelConverter::SixelConverter(int debuglv)
 bool
 SixelConverter::LoadFromStream(InputStream *stream)
 {
+	bool ok;
+
 	Debug(diag, "ResizeMode=%s", SRM2str(ResizeMode));
 
 	{
 		ImageLoaderWebp loader(stream, diag);
-		if (loader.Check()) {
+		ok = loader.Check();
+		stream->Seek(0, SEEK_SET);
+		if (ok) {
 			Trace(diag, "%s filetype is Webp", __func__);
 			if (loader.Load(img)) {
 				LoadAfter();
@@ -78,7 +82,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 #if defined(USE_STB_IMAGE)
 	{
 		ImageLoaderSTB loader(stream, diag);
-		if (loader.Check()) {
+		ok = loader.Check();
+		stream->Seek(0, SEEK_SET);
+		if (ok) {
 			Trace(diag, "%s filetype is STB", __func__);
 			if (loader.Load(img)) {
 				LoadAfter();
@@ -89,7 +95,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 #else
 	{
 		ImageLoaderJPEG loader(stream, diag);
-		if (loader.Check()) {
+		ok = loader.Check();
+		stream->Seek(0, SEEK_SET);
+		if (ok) {
 			Trace(diag, "%s filetype is JPEG", __func__);
 			if (loader.Load(img)) {
 				LoadAfter();
@@ -100,7 +108,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 	}
 	{
 		ImageLoaderPNG loader(stream, diag);
-		if (loader.Check()) {
+		ok = loader.Check();
+		stream->Seek(0, SEEK_SET);
+		if (ok) {
 			Trace(diag, "%s filetype is PNG", __func__);
 			if (loader.Load(img)) {
 				LoadAfter();
@@ -111,7 +121,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 	}
 	{
 		ImageLoaderGIF loader(stream, diag);
-		if (loader.Check()) {
+		ok = loader.Check();
+		stream->Seek(0, SEEK_SET);
+		if (ok) {
 			Trace(diag, "%s filetype is GIF", __func__);
 			if (loader.Load(img)) {
 				LoadAfter();

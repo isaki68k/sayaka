@@ -48,6 +48,9 @@ class InputStream
 	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
 	ssize_t Peek(void *dst, size_t dstsize);
 
+	// 読み込みポインタを移動する。
+	off_t Seek(off_t pos, int whence);
+
 	// 1行読み出す。
 	// 改行まで読み込み、その改行を取り除いた文字列を *retval に書き戻す。
 	// 改行が来ずにストリームが終端した場合はそこまでの文字列を書き戻す。
@@ -75,6 +78,8 @@ class InputStream
  private:
 	// ピーク用のバッファ
 	std::vector<uint8> peekbuf {};
+
+	size_t pos {};
 };
 
 //

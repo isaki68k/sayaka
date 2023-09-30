@@ -39,28 +39,26 @@ InputStream::~InputStream()
 ssize_t
 InputStream::Read(void *dst, size_t dstsize)
 {
-	ssize_t rv = 0;
+	ssize_t copylen = 0;
 
-	// すでに Peek() で読んだのがあれば使う
-	auto peeksize = peekbuf.size();
-	if (__predict_false(peeksize > 0)) {
-		auto len = std::min(peeksize, dstsize);
-		memcpy(dst, peekbuf.data(), len);
-		rv = len;
-		peekbuf.erase(peekbuf.begin(), peekbuf.begin() + len);
+	// pos が内部バッファ内にいればまずそっちを使う。
+	if (pos < peekbuf.size()) {
+		auto len = std::min(peekbuf.size() - pos, dstsize);
+		memcpy(dst, peekbuf.data() + pos, len);
+		pos += len;
+		copylen += len;
+	}
 
-		if (rv >= dstsize) {
-			return rv;
+	// 足りなければ読み込む。
+	if (copylen < dstsize) {
+		auto r = NativeRead((char *)dst + copylen, dstsize - copylen);
+		if (r < 0) {
+			return r;
 		}
+		pos += r;
+		copylen += r;
 	}
-
-	// 残りを読み込む
-	auto r = NativeRead((char *)dst + rv, dstsize - rv);
-	if (r < 0) {
-		return r;
-	}
-	rv += r;
-	return rv;
+	return copylen;
 }
 
 // 覗き見する。
@@ -69,8 +67,13 @@ InputStream::Peek(void *dst, size_t dstsize)
 {
 	ssize_t rv = 0;
 
+	// 内部バッファを超えていたらもうだめ。
+	if (pos > peekbuf.size()) {
+		return -1;
+	}
+
 	// (不足なら)内部バッファに追加する
-	auto peeksize = peekbuf.size();
+	auto peeksize = peekbuf.size() - pos;
 	if (peeksize < dstsize) {
 		std::vector<uint8> tmp(dstsize - peeksize);
 		auto r = NativeRead(tmp.data(), tmp.size());
@@ -85,9 +88,60 @@ InputStream::Peek(void *dst, size_t dstsize)
 	}
 
 	// その上で内部バッファから取り出す
-	rv = std::min(peekbuf.size(), dstsize);
-	memcpy(dst, peekbuf.data(), rv);
+	rv = std::min(peekbuf.size() - pos, dstsize);
+	memcpy(dst, peekbuf.data() + pos, rv);
+	pos += rv;
 	return rv;
+}
+
+off_t
+InputStream::Seek(off_t offset, int whence)
+{
+	size_t newpos;
+
+	switch (whence) {
+	 case SEEK_SET:
+		newpos = (size_t)offset;
+		break;
+	 case SEEK_CUR:
+		newpos = pos + (size_t)offset;
+		break;
+	 case SEEK_END:
+	 default:
+		return -1;	// Not supported
+	}
+
+	if (pos <= peekbuf.size()) {
+		// 現在内部バッファ内にいて
+		if (newpos <= peekbuf.size()) {
+			// 内部バッファ内に移動する場合。
+			pos = newpos;
+			goto done;
+		} else {
+			// 内部バッファから出る場合。読み捨てる。
+			pos = peekbuf.size();
+		}
+	} else {
+		// 現在内部バッファ内にいない場合。
+		if (newpos < pos) {
+			// 戻れない。
+			return -1;
+		} else {
+			// 進む場合は読み捨てる。
+		}
+	}
+
+	// pos から newpos まで読み捨てる。
+	if (newpos > pos) {
+		std::vector<uint8> tmp(newpos - pos);
+		auto r = NativeRead(tmp.data(), tmp.size());
+		if (r > 0) {
+			pos += r;
+		}
+	}
+
+ done:
+	return (off_t)pos;
 }
 
 // 1行読み出す。

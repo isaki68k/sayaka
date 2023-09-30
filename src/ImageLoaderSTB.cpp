@@ -192,10 +192,6 @@ stb_load_skip(void *user, int nbytes)
 int
 stb_load_eof(void *user)
 {
-	InputStream *stream = (InputStream *)user;
-
-	// Peek で1バイトも取り出せなければ EOF でいいか?
-	char buf[1];
-	auto r = stream->Peek(buf, 1);
-	return (r == 0);
+	// 今の所判定できないけど、呼ばれてなさげ?
+	return 0;
 }
