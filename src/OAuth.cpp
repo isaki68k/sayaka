@@ -292,31 +292,18 @@ OAuth::MakeOAuthHeader()
 	return sb;
 }
 
-// client を method と url で初期化する。
-// エラーならメッセージを表示して、false を返す。
-bool
-OAuth::InitHttp(HttpClient& http,
-	const std::string& method, const std::string& uri)
-{
-	auto conn_uri = CreateParams(method, uri);
-
-	if (http.Open(conn_uri) == false) {
-		return false;
-	}
-	if (UseOAuthHeader) {
-		http.AddHeader(MakeOAuthHeader());
-	}
-	return true;
-}
-
 // uri_request_token に接続しトークンを取得する。
 void
 OAuth::RequestToken(const std::string& uri_request_token)
 {
 	HttpClient http(diag);
 
-	if (InitHttp(http, "GET", uri_request_token) == false) {
+	auto uri = CreateParams("GET", uri_request_token);
+	if (http.Open(uri) == false) {
 		return;
+	}
+	if (UseOAuthHeader) {
+		http.AddHeader(MakeOAuthHeader());
 	}
 
 	StringDictionary resultDict;
