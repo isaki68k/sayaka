@@ -56,10 +56,16 @@ class HttpClient
 
  public:
 	HttpClient();
+	HttpClient(const Diag& diag);
 	~HttpClient();
 
-	// uri をターゲットにして初期化する
-	bool Init(const Diag& diag, const std::string& uri);
+	// Diag を設定。
+	void SetDiag(const Diag& diag);
+
+	// uri をターゲットにしてオープンする。
+	bool Open(const std::string& uri);
+	// 接続を閉じる
+	void Close();
 
 	// uri から GET して、ストリームを返す
 	InputStream *GET() {
@@ -74,9 +80,6 @@ class HttpClient
 	// uri へ GET/POST して、ストリームを返す
 	// GET と POST の共通部。
 	InputStream *Act(const std::string& method);
-
-	// 接続を閉じる
-	void Close();
 
 	// 送信ヘッダを追加する。
 	// s は改行を含まない HTTP ヘッダ1行の形式。

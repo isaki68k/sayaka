@@ -82,8 +82,8 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	}
 	sx.OutputPalette = opt_output_palette;
 
-	HttpClient fg;
-	if (fg.Init(diagHttp, img_url) == false) {
+	HttpClient fg(diag);
+	if (fg.Open(img_url) == false) {
 		return NULL;
 	}
 	fg.family = address_family;

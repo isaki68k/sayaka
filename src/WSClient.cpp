@@ -79,25 +79,19 @@ WSClient::Init(const Diag& diag_,
 	std::uniform_int_distribution<> rand(0);
 	maskseed = rand(mt);
 
-	// HTTP オブジェクト。
-	http.reset(new HttpClient());
-	if ((bool)http == false) {
-		return false;
-	}
-
 	return true;
 }
 
-// 接続先を指定。
+// 接続先を指定してオープン。まだ接続はしない。
 bool
-WSClient::SetURI(const std::string& uri_)
+WSClient::Open(const std::string& uri_)
 {
-	// XXX Init 後、Connect 前でないといけない。
+	http.reset(new HttpClient(diag));
 	if ((bool)http == false) {
 		return false;
 	}
 
-	if (http->Init(diag, uri_) == false) {
+	if (http->Open(uri_) == false) {
 		return false;
 	}
 

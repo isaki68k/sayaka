@@ -82,7 +82,7 @@ misskey_stream()
 	}
 
 	std::string uri = "wss://misskey.io/streaming";
-	if (client.SetURI(uri) == false) {
+	if (client.Open(uri) == false) {
 		fprintf(stderr, "client SetURI failed\n");
 		return -1;
 	}

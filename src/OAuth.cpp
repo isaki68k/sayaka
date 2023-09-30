@@ -300,7 +300,7 @@ OAuth::InitHttp(HttpClient& client,
 {
 	auto conn_uri = CreateParams(method, uri);
 
-	if (client.Init(diag, conn_uri) == false) {
+	if (client.Open(conn_uri) == false) {
 		return false;
 	}
 	if (UseOAuthHeader) {
@@ -313,7 +313,7 @@ OAuth::InitHttp(HttpClient& client,
 void
 OAuth::RequestToken(const std::string& uri_request_token)
 {
-	HttpClient client;
+	HttpClient client(diag);
 
 	if (InitHttp(client, "GET", uri_request_token) == false) {
 		return;

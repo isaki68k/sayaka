@@ -39,7 +39,7 @@ class WSClient
 	~WSClient();
 
 	bool Init(const Diag& diag, wsclient_onmsg_callback_t, void *);
-	bool SetURI(const std::string& uri);
+	bool Open(const std::string& uri);
 	bool Connect();
 	void Close();
 

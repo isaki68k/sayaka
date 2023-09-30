@@ -42,23 +42,31 @@ HttpClient::HttpClient()
 	user_agent = "sayaka";
 }
 
+// コンストラクタ (Diag)
+HttpClient::HttpClient(const Diag& diag_)
+	: HttpClient()
+{
+	SetDiag(diag_);
+}
+
 // デストラクタ
 HttpClient::~HttpClient()
 {
 	Close();
-
-	// 解放順序あり。
-	chunk_stream.reset();
-	mstream.reset();
-	mtls.reset();
 }
 
-// uri をターゲットにして初期化する
-bool
-HttpClient::Init(const Diag& diag_, const std::string& uri_)
+// diag を設定する。
+void
+HttpClient::SetDiag(const Diag& diag_)
 {
 	diag = diag_;
+}
 
+// uri をターゲットにしてオープンする。
+// オープンといってもまだ接続はしない。Close() の対比として。
+bool
+HttpClient::Open(const std::string& uri_)
+{
 #if defined(USE_MBEDTLS)
 	mtls.reset(new TLSHandle_mtls());
 #else
@@ -73,7 +81,33 @@ HttpClient::Init(const Diag& diag_, const std::string& uri_)
 	Uri = ParsedUri::Parse(uri_);
 	Debug(diag, "Uri=|%s|", Uri.to_string().c_str());
 
+	// メンバ変数を初期化。Location でもう一度来る可能性がある。
+	SendHeaders.clear();
+	RecvHeaders.clear();
+	ResultLine.clear();
+	ResultMsg.clear();
+	ResultCode = 0;
+	Ciphers.clear();
+
+	mstream.reset();
+	chunk_stream.reset();
+
 	return true;
+}
+
+// 接続を閉じる。
+void
+HttpClient::Close()
+{
+	Trace(diag, "%s()", __func__);
+
+	// 解放順序あり。
+	chunk_stream.reset();
+	mstream.reset();
+	if ((bool)mtls) {
+		mtls->Close();
+	}
+	mtls.reset();
 }
 
 // uri へ GET/POST して、ストリームを返す (GET と POST の共通部)。
@@ -82,6 +116,11 @@ InputStream *
 HttpClient::Act(const std::string& method)
 {
 	Trace(diag, "%s()", method.c_str());
+
+	if ((bool)mtls == false) {
+		Trace(diag, "%s: mtls not initialized", __method__);
+		return NULL;
+	}
 
 	for (;;) {
 		if (Connect() == false) {
@@ -109,7 +148,8 @@ HttpClient::Act(const std::string& method)
 					Uri.Query = newUri.Query;
 					Uri.Fragment = newUri.Fragment;
 				}
-				Debug(diag, "%s", Uri.to_string().c_str());
+				Debug(diag, "New URI=|%s|", Uri.to_string().c_str());
+				Open(Uri.to_string());
 				continue;
 			}
 		} else if (ResultCode >= 400) {
@@ -277,14 +317,6 @@ HttpClient::Connect()
 	}
 
 	return true;
-}
-
-// 接続を閉じる
-void
-HttpClient::Close()
-{
-	Trace(diag, "%s()", __func__);
-	mtls->Close();
 }
 
 // 生ディスクリプタを取得
