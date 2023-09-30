@@ -47,23 +47,19 @@ _Pragma("clang diagnostic pop")
 _Pragma("GCC diagnostic pop")
 #endif
 
-#if defined(USE_CHECK)
 static int stb_check_read(void *, char *, int);
 static void stb_check_skip(void *, int);
 static int stb_check_eof(void *);
-#endif
 static int stb_load_read(void *, char *, int);
 static void stb_load_skip(void *, int);
 static int stb_load_eof(void *);
 
 // コールバック (ヘッダに出さないため、ここに用意)
-#if defined(USE_CHECK)
 static stbi_io_callbacks check_callback = {
 	.read = stb_check_read,
 	.skip = stb_check_skip,
 	.eof  = stb_check_eof,
 };
-#endif
 static stbi_io_callbacks load_callback = {
 	.read = stb_load_read,
 	.skip = stb_load_skip,
@@ -86,8 +82,6 @@ ImageLoaderSTB::~ImageLoaderSTB()
 bool
 ImageLoaderSTB::Check() const
 {
-#if defined(USE_CHECK)
-	// まだ InputStream の Peek がいまいちで動かない
 	int r;
 	int x;
 	int y;
@@ -95,9 +89,6 @@ ImageLoaderSTB::Check() const
 
 	r = stbi_info_from_callbacks(&check_callback, stream, &x, &y, &comp);
 	return r;
-#else
-	return true;
-#endif
 }
 
 // stream から画像をロードする。
@@ -122,8 +113,6 @@ ImageLoaderSTB::Load(Image& img)
 
 	return true;
 }
-
-#if defined(USE_CHECK)
 
 // Check 用 read
 int
@@ -167,7 +156,6 @@ stb_check_eof(void *user)
 	auto r = stream->Peek(buf, 1);
 	return (r == 0);
 }
-#endif // USE_CHECK
 
 // Load 用 read
 int

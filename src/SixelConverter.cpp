@@ -78,10 +78,12 @@ SixelConverter::LoadFromStream(InputStream *stream)
 #if defined(USE_STB_IMAGE)
 	{
 		ImageLoaderSTB loader(stream, diag);
-		Trace(diag, "%s filetype is STB", __func__);
-		if (loader.Load(img)) {
-			LoadAfter();
-			return true;
+		if (loader.Check()) {
+			Trace(diag, "%s filetype is STB", __func__);
+			if (loader.Load(img)) {
+				LoadAfter();
+				return true;
+			}
 		}
 	}
 #else
