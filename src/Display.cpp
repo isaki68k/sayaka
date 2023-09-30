@@ -48,17 +48,19 @@ void
 ShowIcon(bool (*callback)(const Json&, const std::string&),
 	const Json& user, const std::string& userid)
 {
-	// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
-	// 発生させ、アイコン表示時にスクロールしないようにしてから
-	// カーソル位置を保存する
-	// (スクロールするとカーソル位置復元時に位置が合わない)
-	printf("\n\n\n" CSI "3A" ESC "7");
+	if ((int)diagImage == 0) {
+		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
+		// 発生させ、アイコン表示時にスクロールしないようにしてから
+		// カーソル位置を保存する
+		// (スクロールするとカーソル位置復元時に位置が合わない)
+		printf("\n\n\n" CSI "3A" ESC "7");
 
-	// インデント。
-	// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
-	if (indent_depth > 0) {
-		int left = indent_cols * indent_depth;
-		printf(CSI "%dC", left);
+		// インデント。
+		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
+		if (indent_depth > 0) {
+			int left = indent_cols * indent_depth;
+			printf(CSI "%dC", left);
+		}
 	}
 
 	bool shown = false;
@@ -69,11 +71,13 @@ ShowIcon(bool (*callback)(const Json&, const std::string&),
 	}
 
 	if (__predict_true(shown)) {
-		// アイコン表示後、カーソル位置を復帰
-		printf("\r");
-		// カーソル位置保存/復元に対応していない端末でも動作するように
-		// カーソル位置復元前にカーソル上移動x3を行う
-		printf(CSI "3A" ESC "8");
+		if ((int)diagImage == 0) {
+			// アイコン表示後、カーソル位置を復帰
+			printf("\r");
+			// カーソル位置保存/復元に対応していない端末でも動作するように
+			// カーソル位置復元前にカーソル上移動x3を行う
+			printf(CSI "3A" ESC "8");
+		}
 	} else {
 		// アイコンを表示してない場合はここで代替アイコンを表示。
 		printf(" *");
