@@ -96,10 +96,10 @@ class OAuth
 	std::string AccessToken {};
 	std::string AccessSecret {};
 
-	// client を method と url で初期化する。
+	// http を method と url で初期化する。
 	// UseOAuthHeader が true なら OAuth 認証ヘッダも用意する。
 	// 接続はまだ行わない。
-	bool InitHttp(HttpClient& client, const std::string& method,
+	bool InitHttp(HttpClient& http, const std::string& method,
 		const std::string& uri);
 
  private:

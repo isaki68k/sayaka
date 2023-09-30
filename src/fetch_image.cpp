@@ -82,13 +82,13 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	}
 	sx.OutputPalette = opt_output_palette;
 
-	HttpClient fg(diag);
-	if (fg.Open(img_url) == false) {
+	HttpClient http(diag);
+	if (http.Open(img_url) == false) {
 		return NULL;
 	}
-	fg.family = address_family;
-	fg.SetTimeout(opt_timeout_image);
-	InputStream *stream = fg.GET();
+	http.family = address_family;
+	http.SetTimeout(opt_timeout_image);
+	InputStream *stream = http.GET();
 	if (stream == NULL) {
 		Debug(diag, "Warning: %s GET failed", __func__);
 		return NULL;
@@ -96,7 +96,7 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 
 	// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
 	// (= HTML とか) を返すやつは画像ではないので無視。
-	const auto& content_type = fg.GetHeader(fg.RecvHeaders, "Content-Type");
+	const auto& content_type = http.GetHeader(http.RecvHeaders, "Content-Type");
 	if (StartWith(content_type, "image/") == false) {
 		return NULL;
 	}

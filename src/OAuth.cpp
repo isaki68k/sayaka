@@ -295,16 +295,16 @@ OAuth::MakeOAuthHeader()
 // client を method と url で初期化する。
 // エラーならメッセージを表示して、false を返す。
 bool
-OAuth::InitHttp(HttpClient& client,
+OAuth::InitHttp(HttpClient& http,
 	const std::string& method, const std::string& uri)
 {
 	auto conn_uri = CreateParams(method, uri);
 
-	if (client.Open(conn_uri) == false) {
+	if (http.Open(conn_uri) == false) {
 		return false;
 	}
 	if (UseOAuthHeader) {
-		client.AddHeader(MakeOAuthHeader());
+		http.AddHeader(MakeOAuthHeader());
 	}
 	return true;
 }
@@ -313,14 +313,14 @@ OAuth::InitHttp(HttpClient& client,
 void
 OAuth::RequestToken(const std::string& uri_request_token)
 {
-	HttpClient client(diag);
+	HttpClient http(diag);
 
-	if (InitHttp(client, "GET", uri_request_token) == false) {
+	if (InitHttp(http, "GET", uri_request_token) == false) {
 		return;
 	}
 
 	StringDictionary resultDict;
-	auto stream = client.GET();
+	auto stream = http.GET();
 	// TODO: Content-Encoding とかに応じた処理
 	for (;;) {
 		std::string buf;

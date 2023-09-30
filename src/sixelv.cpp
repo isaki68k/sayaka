@@ -578,14 +578,14 @@ Convert(const std::string& filename)
 
 	} else if (filename.find("://") != std::string::npos) {
 		Debug(diag, "Downloading %s", filename.c_str());
-		HttpClient file(diagHttp);
-		file.user_agent = "sixelv";
-		if (file.Open(filename) == false) {
+		HttpClient http(diagHttp);
+		http.user_agent = "sixelv";
+		if (http.Open(filename) == false) {
 			warn("File error: %s", filename.c_str());
 			goto error;
 		}
-		file.family = opt_address_family;
-		InputStream *stream = file.GET();
+		http.family = opt_address_family;
+		InputStream *stream = http.GET();
 		if (stream == NULL) {
 			// mbedTLS だと errno に入っていない。OpenSSL は未確認。
 			warnx("Fetch error: %s", filename.c_str());
