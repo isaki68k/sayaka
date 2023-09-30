@@ -126,9 +126,11 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
 	if (!cache_file.Valid()) {
 		// キャッシュファイルがないので、画像を取得
-		Debug(diagImage, "sixel cache is not found; fetch the image.");
+		Debug(diagImage, "%s: sixel cache is not found; fetch the image.",
+			__func__);
 		cache_file = fetch_image(cache_filename, img_url, resize_width);
 		if (!cache_file.Valid()) {
+			Debug(diagImage, "%s: fetch_image failed\n", __func__);
 			return false;
 		}
 	}
