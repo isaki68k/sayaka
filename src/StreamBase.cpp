@@ -72,18 +72,20 @@ InputStream::Peek(void *dst, size_t dstsize)
 		return -1;
 	}
 
-	// (不足なら)内部バッファに追加する
+	// 不足なら内部バッファに追加する
 	auto peeksize = peekbuf.size() - pos;
 	if (peeksize < dstsize) {
 		std::vector<uint8> tmp(dstsize - peeksize);
 		auto r = NativeRead(tmp.data(), tmp.size());
-		if (__predict_false(r <= 0)) {
+		if (__predict_false(r < 0)) {
 			return r;
 		}
 
-		tmp.resize(r);
-		for (const auto c : tmp) {
-			peekbuf.emplace_back(c);
+		if (r > 0) {
+			tmp.resize(r);
+			for (const auto c : tmp) {
+				peekbuf.emplace_back(c);
+			}
 		}
 	}
 
