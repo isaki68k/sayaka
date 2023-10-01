@@ -146,6 +146,7 @@ bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
 Proto proto;					// プロトコル
 StreamMode opt_stream;			// ストリーム種別
+std::string opt_server;			// 接続先サーバ名
 std::string basedir;
 std::string cachedir;
 std::string colormapdir;
@@ -172,6 +173,7 @@ enum {
 	OPT_full_url,
 	OPT_home,
 	OPT_jis,
+	OPT_local,
 	OPT_mathalpha,
 	OPT_max_cont,
 	OPT_max_image_cols,
@@ -214,8 +216,9 @@ static const struct option longopts[] = {
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "force-sixel",	no_argument,		NULL,	OPT_force_sixel },
 	{ "full-url",		no_argument,		NULL,	OPT_full_url },
-	{ "home",			no_argument,		NULL,	OPT_home },
+//	{ "home",			no_argument,		NULL,	OPT_home },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
+	{ "local",			required_argument,	NULL,	OPT_local },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-cont",		required_argument,	NULL,	OPT_max_cont },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
@@ -399,6 +402,11 @@ main(int ac, char *av[])
 			break;
 		 case OPT_jis:
 			output_codeset = "iso-2022-jp";
+			break;
+		 case OPT_local:
+			cmd = SayakaCmd::Stream;
+			opt_stream = StreamMode::Local;
+			opt_server = optarg;
 			break;
 		 case OPT_mathalpha:
 			opt_mathalpha = true;
@@ -877,6 +885,10 @@ usage()
 {
 	printf(
 R"(usage: sayaka [<options>...]
+   command option:
+	--local <server> : show <server>'s local timeline.
+	--play : read JSON from stdin.
+   other options:
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
 	--font <width>x<height> : font size. default 7x14
 	--full-url : display full URL even if the URL is abbreviated.
@@ -885,7 +897,6 @@ R"(usage: sayaka [<options>...]
 	--no-image : force disable (SIXEL) images.
 	--force-sixel : force enable SIXEL images.
 	--jis / --eucjp : Set output encoding.
-	--play : read JSON from stdin.
 	--progress: show startup progress (for very slow machines).
 	--protect : don't display protected user's tweet.
 	--record <file> : record JSON to file.

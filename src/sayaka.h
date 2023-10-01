@@ -141,6 +141,7 @@ extern std::string basedir;
 extern std::string cachedir;
 extern std::string colormapdir;
 extern Proto proto;
+extern std::string opt_server;
 
 extern StringDictionary followlist;
 extern StringDictionary blocklist;
