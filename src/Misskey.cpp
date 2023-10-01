@@ -287,28 +287,31 @@ misskey_show_note(const Json *note, int depth)
 	print_(text);
 	printf("\n");
 
-	// 投票(poll)
-	if (renote->contains("poll") && (*renote)["poll"].is_object()) {
-		UString pollstr = misskey_format_poll((*renote)["poll"]);
-		if (pollstr.empty() == false) {
-			print_(pollstr);
-			printf("\n");
+	// これらは本文付随なので CW がない時だけ表示する。
+	if (cw.empty()) {
+		// 投票(poll)
+		if (renote->contains("poll") && (*renote)["poll"].is_object()) {
+			UString pollstr = misskey_format_poll((*renote)["poll"]);
+			if (pollstr.empty() == false) {
+				print_(pollstr);
+				printf("\n");
+			}
 		}
-	}
 
-	// picture
-	image_count = 0;
-	image_next_cols = 0;
-	image_max_rows = 0;
-	if (renote->contains("files") && (*renote)["files"].is_array()) {
-		const Json& files = (*renote)["files"];
-		for (int i = 0, end = files.size(); i < end; i++) {
-			const Json& f = files[i];
+		// picture
+		image_count = 0;
+		image_next_cols = 0;
+		image_max_rows = 0;
+		if (renote->contains("files") && (*renote)["files"].is_array()) {
+			const Json& files = (*renote)["files"];
+			for (int i = 0, end = files.size(); i < end; i++) {
+				const Json& f = files[i];
 
-			auto indent = (indent_depth + 1) * indent_cols;
-			printf(CSI "%dC", indent);
-			misskey_show_photo(f, imagesize, i);
-			printf("\r");
+				auto indent = (indent_depth + 1) * indent_cols;
+				printf(CSI "%dC", indent);
+				misskey_show_photo(f, imagesize, i);
+				printf("\r");
+			}
 		}
 	}
 
