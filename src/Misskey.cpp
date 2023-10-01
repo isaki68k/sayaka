@@ -37,7 +37,7 @@
 #include <poll.h>
 #include <unistd.h>
 
-static int misskey_stream();
+static int misskey_stream(bool);
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);
 static bool misskey_show_note(const Json *note, int depth);
@@ -54,8 +54,13 @@ static UString misskey_format_renote_owner(const Json& note);
 int
 cmd_misskey_stream()
 {
+	bool is_first = true;
+
+	printf("Ready...");
+	fflush(stdout);
+
 	for (;;) {
-		int r = misskey_stream();
+		int r = misskey_stream(is_first);
 		if (r < 0) {
 			// エラーは表示済み。
 			return -1;
@@ -63,6 +68,8 @@ cmd_misskey_stream()
 		// 0 なら backoff ?
 
 		sleep(1);
+
+		is_first = false;
 	}
 	return 0;
 }
@@ -72,7 +79,7 @@ cmd_misskey_stream()
 // 復旧可能そうなエラーなら 0 を返す。
 // 復旧不可能ならエラーなら -1 を返す。
 static int
-misskey_stream()
+misskey_stream(bool is_first)
 {
 	WSClient client;
 
@@ -101,6 +108,10 @@ misskey_stream()
 	if (client.Write(cmd.c_str(), cmd.size()) < 0) {
 		warnx("Sending command: %s", strerror(errno));
 		return -1;
+	}
+
+	if (is_first) {
+		printf("Connected.\n");
 	}
 
 	// あとは受信。
