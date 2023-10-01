@@ -98,7 +98,10 @@ misskey_stream()
 	std::string id = string_format("sayaka-%d", (int)time(NULL));
 	std::string cmd = "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"localTimeline\",\"id\":\"" + id + "\"}}";
-	client.Write(cmd.c_str(), cmd.size());
+	if (client.Write(cmd.c_str(), cmd.size()) < 0) {
+		warnx("Sending command: %s", strerror(errno));
+		return -1;
+	}
 
 	// あとは受信。
 	struct pollfd pfd;
