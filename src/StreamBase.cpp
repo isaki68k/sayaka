@@ -69,6 +69,7 @@ InputStream::Peek(void *dst, size_t dstsize)
 
 	// 内部バッファを超えていたらもうだめ。
 	if (pos > peekbuf.size()) {
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -110,6 +111,7 @@ InputStream::Seek(off_t offset, int whence)
 		break;
 	 case SEEK_END:
 	 default:
+		errno = EINVAL;
 		return -1;	// Not supported
 	}
 
@@ -127,6 +129,7 @@ InputStream::Seek(off_t offset, int whence)
 		// 現在内部バッファ内にいない場合。
 		if (newpos < pos) {
 			// 戻れない。
+			errno = EINVAL;
 			return -1;
 		} else {
 			// 進む場合は読み捨てる。
