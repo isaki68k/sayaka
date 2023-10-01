@@ -27,6 +27,7 @@
 #include "SixelConverter.h"
 #include "FileStream.h"
 #include "Image.h"
+#include "ImageLoaderBlurhash.h"
 #if defined(USE_STB_IMAGE)
 #include "ImageLoaderSTB.h"
 #else
@@ -133,6 +134,29 @@ SixelConverter::LoadFromStream(InputStream *stream)
 		}
 	}
 #endif
+
+	// Blurhash は厳密なフォーマットチェックを持ってないので最後。
+	{
+		ImageLoaderBlurhash loader(stream, diag);
+		ok = loader.Check();
+		stream->Seek(0, SEEK_SET);
+		if (ok) {
+			Trace(diag, "%s filetype looks Blurhash", __func__);
+
+			// 画像データがサイズを持ってないので、
+			// サイズは外部から指定しないといけない。
+			if (ResizeWidth <= 0 || ResizeHeight <= 0) {
+				warnx("Both -w <width> and -h <height>"
+					" must be specified for Blurhash");
+				return false;
+			}
+			loader.SetSize(ResizeWidth, ResizeHeight);
+			if (loader.Load(img)) {
+				LoadAfter();
+				return true;
+			}
+		}
+	}
 
 	warnx("Unknown picture format");
 	return false;

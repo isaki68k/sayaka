@@ -3,6 +3,7 @@
 .include "../Makefile.cfg"
 
 SRCS_common=	\
+	Blurhash.cpp \
 	ChunkedInputStream.cpp \
 	Diag.cpp \
 	Display.cpp \
@@ -11,6 +12,7 @@ SRCS_common=	\
 	FileUtil.cpp \
 	HttpClient.cpp \
 	Image.cpp \
+	ImageLoaderBlurhash.cpp \
 	ImageLoaderWebp.cpp \
 	ImageReductor.cpp \
 	MathAlphaSymbols.cpp \
