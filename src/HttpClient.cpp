@@ -168,7 +168,9 @@ HttpClient::Act(const std::string& method)
 		chunk_stream.reset(new ChunkedInputStream(mstream.get(), diag));
 		stream = chunk_stream.get();
 	} else {
-		// そうでなければ元ストリームをそのまま返す
+		// そうでなければ元ストリームをポジションリセットして使う。
+		// ここがコンテンツの先頭になるので。
+		mstream.reset(new mTLSInputStream(mtls.get(), diag));
 		stream = mstream.get();
 	}
 
