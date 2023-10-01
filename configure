@@ -3656,20 +3656,20 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
 	if test "x${has_wslay}" = "xyes"; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${p}" >&5
-printf "%s\n" "${p}" >&6; }
 		break
-	else
-		CPPFLAGS=${old_CPPFLAGS}
-		LIBS=${old_LIBS}
 	fi
+	CPPFLAGS=${old_CPPFLAGS}
+	LIBS=${old_LIBS}
 done
-if test "x${has_wslay}" \!= "xyes"; then
+if test "x${has_wslay}" = "xyes"; then
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+else
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "wslay not found.
+as_fn_error $? "wslay not found in ${PATHS}.
 	On NetBSD(pkgsrc), install pkgsrc/www/wslay
 	On Ubuntu, sudo apt install libwslay1 libwslay-dev
 See \`config.log' for more details" "$LINENO" 5; }

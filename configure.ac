@@ -175,16 +175,16 @@ for p in ${PATHS}; do
 	])], has_wslay=yes, has_wslay=no)
 
 	if test "x${has_wslay}" = "xyes"; then
-		AC_MSG_RESULT([${p}])
 		break
-	else
-		CPPFLAGS=${old_CPPFLAGS}
-		LIBS=${old_LIBS}
 	fi
+	CPPFLAGS=${old_CPPFLAGS}
+	LIBS=${old_LIBS}
 done
-if test "x${has_wslay}" \!= "xyes"; then
+if test "x${has_wslay}" = "xyes"; then
+	AC_MSG_RESULT([yes])
+else
 	AC_MSG_RESULT([no])
-	AC_MSG_FAILURE([wslay not found.
+	AC_MSG_FAILURE([wslay not found in ${PATHS}.
 	On NetBSD(pkgsrc), install pkgsrc/www/wslay
 	On Ubuntu, sudo apt install libwslay1 libwslay-dev])
 fi
