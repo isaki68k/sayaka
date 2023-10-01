@@ -424,16 +424,23 @@ misskey_format_poll(const Json& poll)
 static bool
 misskey_show_photo(const Json& f, int resize_width, int index)
 {
-	// thumbnailUrl があればそっちを使う。
-	auto img_url = JsonAsString(f["thumbnailUrl"]);
-	if (img_url == "") {
-		img_url = JsonAsString(f["url"]);
+	bool isSensitive = JsonAsBool(f["isSensitive"]);
+	if (isSensitive) {
+		// XXX Blurhash の表示が難しいのでテキストだけ表示。
+		// XXX 表示位置の調整も難しいので無視。
+		printf("[NSFW]\n");
+		return true;
+	} else {
+		// thumbnailUrl があればそっちを使う。
+		auto img_url = JsonAsString(f["thumbnailUrl"]);
 		if (img_url == "") {
-			return false;
+			img_url = JsonAsString(f["url"]);
+			if (img_url == "") {
+				return false;
+			}
 		}
+		return ShowPhoto(img_url, resize_width, index);
 	}
-
-	return ShowPhoto(img_url, resize_width, index);
 }
 
 // リノート数を表示用に整形して返す。
