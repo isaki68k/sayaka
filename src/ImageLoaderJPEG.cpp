@@ -268,8 +268,7 @@ jpeg_output_message(j_common_ptr cinfo)
 
 	assert(cinfo->client_data);
 	ImageLoaderJPEG *loader = (ImageLoaderJPEG *)cinfo->client_data;
-	Diag& diag = loader->GetDiag();
-	Debug(diag, "%s", msg);
+	Debug(loader->GetDiag(), "%s", msg);
 }
 
 // 本来ここで src に必要な初期化するのだが、
