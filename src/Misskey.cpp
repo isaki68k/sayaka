@@ -193,7 +193,6 @@ misskey_show_object(const std::string& line)
 	if (obj0.is_object() == false) {
 		return true;
 	}
-	const Json *obj = &obj0;
 
 	// ストリームから来る JSON は以下のような構造。
 	// {
@@ -204,28 +203,35 @@ misskey_show_object(const std::string& line)
 	//     "body":{ ノート本体 }
 	//   }
 	// }
+	// {
+	//   "type":"emojiUpdated",
+	//   "body":{ }
+	// } とかいうのも来たりする。
+	//
+	// ストリームじゃないところで取得したノートを流し込んでも
+	// そのまま見えると嬉しいので、皮をむいたやつを次ステージに渡す。
 
-	// "type":"channel" と "body":{} があれば "body" の中がチャンネル。
-	const Json *chan;
-	if (JsonAsString((*obj)["type"]) == "channel" &&
-		(*obj)["body"].is_object())
-	{
-		chan = &(*obj)["body"];
-	} else {
-		chan = obj;
+	const Json *obj = &obj0;
+	for (;;) {
+		if (obj->contains("type") && (*obj)["type"].is_string() &&
+			obj->contains("body") && (*obj)["body"].is_object())
+		{
+			auto type = JsonAsString((*obj)["type"]);
+			if (type == "channel" || type == "note") {
+				// "type" が channel か note なら "body" の下へ。
+				obj = &(*obj)["body"];
+			} else {
+				// 知らないタイプは無視。
+				Debug(diag, "Unknown message type \"%s\"", type.c_str());
+				return true;
+			}
+		} else {
+			// ここが本文っぽい。
+			break;
+		}
 	}
 
-	// "type":"note" と "body":{} があれば "body" の中がノート。
-	const Json *note;
-	if (JsonAsString((*chan)["type"]) == "note" &&
-		(*chan)["body"].is_object())
-	{
-		note = &(*chan)["body"];
-	} else {
-		note = chan;
-	}
-
-	bool crlf = misskey_show_note(note, 0);
+	bool crlf = misskey_show_note(obj, 0);
 	if (crlf) {
 		printf("\n");
 	}
