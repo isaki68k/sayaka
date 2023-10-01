@@ -45,3 +45,6 @@ using Json = nlohmann::json;
 // Json::value(name, defval) は (1), (3) は動作するが (2) で例外を出すので
 // 使えない。
 #define JsonAsString(j) ((j).is_string() ? (j).get<std::string>() : "")
+
+#define JsonAsBool(j)	((j).is_boolean() ? (j).get<bool>() : false)
+#define JsonAsInt(j)	((j).is_number() ? (j).get<int>() : 0)
