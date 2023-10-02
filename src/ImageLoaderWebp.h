@@ -40,6 +40,7 @@ class ImageLoaderWebp : public ImageLoader
 	bool Load(Image& img) override;
 
  private:
+	ssize_t ReadAll(std::vector<uint8>& buf, const std::vector<uint8>& magic);
 	void RGBAtoRGB(uint8 *dst, const uint8 *src,
 		int width, int height, int stride, int bgcolor);
 	bool LoadInc(Image& img, WebPIDecoder *idec);

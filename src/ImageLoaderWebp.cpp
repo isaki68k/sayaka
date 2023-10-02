@@ -24,7 +24,6 @@
  */
 
 #include "ImageLoaderWebp.h"
-#include <array>
 #include <cstring>
 #include <webp/decode.h>
 
@@ -64,7 +63,7 @@ ImageLoaderWebp::~ImageLoaderWebp()
 bool
 ImageLoaderWebp::Check() const
 {
-	std::array<uint8, MAGIC_LEN> magic;
+	std::vector<uint8> magic(MAGIC_LEN);
 	WebPBitstreamFeatures f;
 
 	auto n = stream->Peek(magic.data(), magic.size());
@@ -99,7 +98,7 @@ ImageLoaderWebp::Check() const
 bool
 ImageLoaderWebp::Load(Image& img)
 {
-	std::array<uint8, MAGIC_LEN> magic;
+	std::vector<uint8> magic(MAGIC_LEN);
 	WebPDecoderConfig config;
 	ssize_t n;
 	bool rv = false;
@@ -165,10 +164,8 @@ ImageLoaderWebp::Load(Image& img)
 
 		// ファイル全体を読み込む。
 		std::vector<uint8> buf(filesize);
-		memcpy(buf.data(), magic.data(), magic.size());
-		n = stream->Read(buf.data() + magic.size(), filesize - magic.size());
+		n = ReadAll(buf, magic);
 		if (n < 0) {
-			Trace(diag, "%s: Read() failed: %s", __method__, strerror(errno));
 			return false;
 		}
 
@@ -208,10 +205,8 @@ ImageLoaderWebp::Load(Image& img)
 
 		// ファイル全体を読み込む。
 		std::vector<uint8> buf(filesize);
-		memcpy(buf.data(), magic.data(), magic.size());
-		n = stream->Read(buf.data() + magic.size(), filesize - magic.size());
+		n = ReadAll(buf, magic);
 		if (n < 0) {
-			Trace(diag, "%s: Read() failed: %s", __method__, strerror(errno));
 			return false;
 		}
 
@@ -265,6 +260,42 @@ ImageLoaderWebp::Load(Image& img)
 		WebPIDelete(idec);
 		return rv;
 	}
+}
+
+// buf (filesize だけ確保してある) に stream から読み込む。
+// magic はすでに読んである buf の先頭部分。
+// 成功すれば magic も含めて読み込めたというか buf に書き込んだバイト数を返す。
+// 失敗すれば errno をセットして -1 を返す。
+ssize_t
+ImageLoaderWebp::ReadAll(std::vector<uint8>& buf,
+	const std::vector<uint8>& magic)
+{
+	size_t filesize = buf.size();
+	size_t len;
+
+	// すでに読み込んでる部分。
+	memcpy(buf.data(), magic.data(), magic.size());
+	len = magic.size();
+
+	while (len < filesize) {
+		auto n = stream->Read(buf.data() + len, buf.size() - len);
+		if (__predict_false(n < 0)) {
+			Trace(diag, "%s: Read() failed: %s", __method__, strerror(errno));
+			return -1;
+		}
+		if (__predict_false(n == 0)) {
+			Trace(diag, "%s: Read(): Unexpected EOF", __method__);
+			break;
+		}
+
+		len += n;
+	}
+
+	if (len < filesize) {
+		Debug(diag, "%s: too short: %zd < %zd", __method__, len, filesize);
+	}
+
+	return len;
 }
 
 #define Grad(fg, bg, alpha)	\
