@@ -39,6 +39,8 @@ class ChunkedInputStream : public InputStream
 	ssize_t NativeRead(void *dst, size_t dstsize) override;
 
  private:
+	ssize_t ReadChunk();
+
 	// 入力ストリーム
 	InputStream *src {};
 

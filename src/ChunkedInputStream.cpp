@@ -53,88 +53,95 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 {
 	Trace(diag, "Read(%zd)", dstsize);
 
-	// 要求サイズに満たない間 src から1チャンクずつ読み込む
-	for (;;) {
-		std::string slen;
-		ssize_t r;
-
-		// chunksLength は内部バッファ長
-		size_t chunksLength = Chunks.GetSize();
-		Trace(diag, "dstsize=%zd chunksLength=%zd", dstsize, chunksLength);
-		if (chunksLength >= dstsize) {
-			Trace(diag, "Filled");
-			break;
-		} else {
-			Trace(diag, "Need to fill");
+	// バッファが空なら次のチャンクを読み込む。
+	if (Chunks.GetSize() == 0) {
+		Trace(diag, "Need to fill");
+		auto r = ReadChunk();
+		Trace(diag, "ReadChunk %zd", r);
+		if (__predict_false(r < 0)) {
+			return -1;
 		}
 
-		// 先頭行はチャンク長+CRLF
-		r = src->ReadLine(&slen);
+		if (__predict_false(r == 0)) {
+			return 0;
+		}
+	}
+
+	// バッファから dst に入るだけコピー。
+	auto copylen = Chunks.Read(dst, dstsize);
+	Trace(diag, "copylen=%zd\n", copylen);
+	return copylen;
+}
+
+// 1つのチャンクを読み込んで内部バッファ Chunks に追加する。
+// 成功すれば読み込んだバイト数を返す。
+// 失敗すれば errno をセットして -1 を返す。
+ssize_t
+ChunkedInputStream::ReadChunk()
+{
+	std::string slen;
+	ssize_t r;
+
+	// 先頭行はチャンク長+CRLF
+	r = src->ReadLine(&slen);
+	if (__predict_false(r < 0)) {
+		Debug(diag, "ReadLine failed: %s", strerrno());
+		return -1;
+	}
+	if (__predict_false(r == 0)) {
+		// EOF
+		Trace(diag, "Unexpected EOF while reading chunk length.");
+		return 0;
+	}
+
+	// チャンク長を取り出す
+	char *end;
+	int intlen = stox32def(slen.c_str(), -1, &end);
+	if (intlen < 0) {
+		Debug(diag, "Invalid chunk length: %s", slen.c_str());
+		errno = EIO;
+		return -1;
+	}
+	if (*end != '\0') {
+		Debug(diag, "Chunk length has a trailing garbage: %s", slen.c_str());
+		errno = EIO;
+		return -1;
+	}
+	Trace(diag, "intlen=%d", intlen);
+
+	if (intlen == 0) {
+		// データ終わり。CRLF を読み捨てる
+		src->ReadLine(&slen);
+		Trace(diag, "This was the last chunk.");
+		return 0;
+	}
+
+	// チャンク本体を一時バッファに読み込む
+	std::unique_ptr<char[]> bufp = std::make_unique<char[]>(intlen);
+	int readlen = 0;
+	for (; readlen < intlen; readlen += r) {
+		r = src->Read(bufp.get() + readlen, intlen - readlen);
 		if (__predict_false(r < 0)) {
-			Debug(diag, "ReadLine failed: %s", strerrno());
+			Debug(diag, "Read failed: %s", strerrno());
+			errno = EIO;
 			return -1;
 		}
 		if (__predict_false(r == 0)) {
-			// EOF
-			Trace(diag, "src is EOF");
 			break;
 		}
-
-		// チャンク長を取り出す
-		char *end;
-		int intlen = stox32def(slen.c_str(), -1, &end);
-		if (intlen < 0) {
-			Debug(diag, "Invalid chunk length: %s", slen.c_str());
-			errno = 0;
-			return -1;
-		}
-		if (*end != '\0') {
-			Debug(diag, "Chunk length has a trailing garbage: %s",
-				slen.c_str());
-			errno = EIO;
-			return -1;
-		}
-		Trace(diag, "intlen=%d", intlen);
-
-		if (intlen == 0) {
-			// データ終わり。CRLF を読み捨てる
-			src->ReadLine(&slen);
-			Trace(diag, "This was the last chunk");
-			break;
-		}
-
-		// チャンク本体を一時バッファに読み込む
-		std::unique_ptr<char[]> bufp = std::make_unique<char[]>(intlen);
-		int readlen = 0;
-		for (; readlen < intlen; readlen += r) {
-			r = src->Read(bufp.get() + readlen, intlen - readlen);
-			if (__predict_false(r < 0)) {
-				Debug(diag, "Read failed: %s", strerrno());
-				return -1;
-			}
-			if (__predict_false(r == 0)) {
-				break;
-			}
-			Trace(diag, "readlen=%d", readlen);
-		}
-		if (__predict_false(readlen != intlen)) {
-			Debug(diag, "readlen=%d intlen=%d", readlen, intlen);
-			errno = EIO;
-			return -1;
-		}
-
-		// 内部バッファに追加
-		Chunks.AddData(bufp.get(), intlen);
-
-		// 最後の CRLF を読み捨てる
-		src->ReadLine(&slen);
+		Trace(diag, "readlen=%d", readlen);
+	}
+	if (__predict_false(readlen != intlen)) {
+		Debug(diag, "readlen=%d intlen=%d", readlen, intlen);
+		errno = EIO;
+		return -1;
 	}
 
-	// dst に入るだけコピー
-	auto copylen = Chunks.Read(dst, dstsize);
-	Trace(diag, "copylen=%zd\n", copylen);
+	// 内部バッファに追加
+	Chunks.AddData(bufp.get(), intlen);
 
-	// Chunks の作り直しは C++ では不要なはず
+	// 最後の CRLF を読み捨てる
+	src->ReadLine(&slen);
 
-	return copylen;
+	return intlen;
 }
