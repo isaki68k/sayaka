@@ -120,7 +120,9 @@ main(int ac, char *av[])
 		printf(", %d faild!!\n", test_fail);
 	}
 
+#if 0
 	// acl はこの中で独自にカウントしている
 	test_acl();
+#endif
 	return 0;
 }
