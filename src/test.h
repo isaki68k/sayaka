@@ -77,6 +77,8 @@ extern void xp_eq_(const char *file, int line, const char *func,
 	int exp, int act, const std::string& msg = "");
 extern void xp_eq_u_(const char *file, int line, const char *func,
 	uint64 exp, uint64 act, const std::string& msg = "");
+extern void xp_eq_x32_(const char *file, int line, const char *func,
+	uint32 exp, uint32 act, const std::string& msg = "");
 extern void xp_eq_(const char *file, int line, const char *func,
 	const std::string& exp, const std::string& act, const std::string& msg="");
 

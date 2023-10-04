@@ -56,6 +56,19 @@ xp_eq_u_(const char *file, int line, const char *func,
 }
 
 void
+xp_eq_x32_(const char *file, int line, const char *func,
+	uint32 exp, uint32 act, const std::string& msg)
+{
+	test_count++;
+
+	if (exp != act) {
+		test_fail++;
+		printf("%s:%d: %s(%s) expects %08x but %08x\n",
+			file, line, func, msg.c_str(), exp, act);
+	}
+}
+
+void
 xp_eq_(const char *file, int line, const char *func,
 	const std::string& exp, const std::string& act, const std::string& msg)
 {
