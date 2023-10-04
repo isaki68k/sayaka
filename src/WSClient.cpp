@@ -40,8 +40,9 @@ static void wsclient_on_msg_recv_callback(wslay_event_context_ptr ctx,
 
 
 // コンストラクタ
-WSClient::WSClient()
+WSClient::WSClient(Random& rnd_)
 {
+	rnd = rnd_;
 }
 
 // デストラクタ
@@ -72,12 +73,6 @@ WSClient::Init(const Diag& diag_,
 		Debug(diag, "Init: wslay_event_context_client_init failed\n");
 		return false;
 	}
-
-	// 乱数のシードを用意。
-	std::random_device rdev;
-	std::mt19937 mt(rdev());
-	std::uniform_int_distribution<> rand(0);
-	maskseed = rand(mt);
 
 	return true;
 }
@@ -110,7 +105,7 @@ WSClient::Connect()
 
 	// キーのための乱数を用意。
 	std::vector<uint8> nonce(16);
-	Random(nonce.data(), nonce.size());
+	rnd.Fill(nonce.data(), nonce.size());
 	std::string key = OAuth::Base64Encode(nonce);
 
 	// ヘッダ送信。
@@ -252,44 +247,8 @@ WSClient::SendCallback(wslay_event_context_ptr ctx,
 int
 WSClient::GenmaskCallback(wslay_event_context_ptr ctx, uint8 *buf, size_t len)
 {
-	Random(buf, len);
+	rnd.Fill(buf, len);
 	return 0;
-}
-
-// buf から len バイトを乱数で埋める。
-void
-WSClient::Random(uint8 *buf, size_t len)
-{
-	uint8 *p = buf;
-	uint32 r = 0;	// shut up warning
-	uint i = 0;
-
-	if (__predict_true(((uintmax_t)p & 3) == 0)) {
-		uint len4 = (len / 4) * 4;
-		for (; i < len4; i += 4) {
-			*(uint32 *)p = xorshift32();
-			p += 4;
-		}
-	}
-
-	for (; i < len; i++) {
-		if (__predict_false((i % 4) == 0)) {
-			r = xorshift32();
-		}
-		*p++ = r;
-		r >>= 8;
-	}
-}
-
-uint32
-WSClient::xorshift32()
-{
-	uint32 y = maskseed;
-	y ^= y << 13;
-	y ^= y >> 17;
-	y ^= y << 15;
-	maskseed = y;
-	return y;
 }
 
 

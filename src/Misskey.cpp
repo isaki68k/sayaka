@@ -27,6 +27,7 @@
 #include "Display.h"
 #include "JsonInc.h"
 #include "Misskey.h"
+#include "Random.h"
 #include "StringUtil.h"
 #include "UString.h"
 #include "WSClient.h"
@@ -81,8 +82,9 @@ cmd_misskey_stream()
 static int
 misskey_stream(bool is_first)
 {
-	WSClient client;
+	Random rnd;
 
+	WSClient client(rnd);
 	if (client.Init(diagHttp, &misskey_onmsg, NULL) == false) {
 		fprintf(stderr, "client Init\n");
 		return -1;
@@ -102,7 +104,7 @@ misskey_stream(bool is_first)
 	auto ctx = client.GetContext();
 
 	// コマンド送信。
-	std::string id = string_format("sayaka-%d", (int)time(NULL));
+	std::string id = string_format("sayaka-%08x", rnd.Get());
 	std::string cmd = "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"localTimeline\",\"id\":\"" + id + "\"}}";
 	if (client.Write(cmd.c_str(), cmd.size()) < 0) {

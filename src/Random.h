@@ -25,48 +25,16 @@
 
 #pragma once
 
-#include "HttpClient.h"
-#include "Random.h"
-#include <wslay/wslay.h>
+#include "sayaka.h"
 
-using wsclient_onmsg_callback_t = void (*)(void *aux,
-	wslay_event_context_ptr ctx,
-	const wslay_event_on_msg_recv_arg *msg);
-
-class WSClient
+class Random
 {
  public:
-	WSClient(Random& rnd_);
-	~WSClient();
+	Random();
 
-	bool Init(const Diag& diag, wsclient_onmsg_callback_t, void *);
-	bool Open(const std::string& uri);
-	bool Connect();
-	void Close();
-
-	ssize_t Write(const void *buf, size_t len);
-
-	// 生ディスクリプタを取得。
-	int GetFd() const;
-
-	wslay_event_context_ptr GetContext() const { return wsctx; }
-
-	// コールバック
-	ssize_t RecvCallback(wslay_event_context_ptr ctx,
-		uint8 *buf, size_t len, int flags);
-	ssize_t SendCallback(wslay_event_context_ptr ctx,
-		const uint8 *buf, size_t len, int flags);
-	int GenmaskCallback(wslay_event_context_ptr ctx, uint8 *buf, size_t len);
-
-	wsclient_onmsg_callback_t onmsg_callback {};
-	void *onmsg_arg {};
+	uint32 Get();
+	void Fill(uint8 *dst, size_t len);
 
  private:
-	std::unique_ptr<HttpClient> http {};
-
-	wslay_event_context_ptr wsctx {};
-
-	Random rnd {};
-
-	Diag diag {};
+	uint32 seed {};
 };

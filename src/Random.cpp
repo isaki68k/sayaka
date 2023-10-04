@@ -23,50 +23,54 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
-
-#include "HttpClient.h"
 #include "Random.h"
-#include <wslay/wslay.h>
+#include <random>
 
-using wsclient_onmsg_callback_t = void (*)(void *aux,
-	wslay_event_context_ptr ctx,
-	const wslay_event_on_msg_recv_arg *msg);
-
-class WSClient
+// コンストラクタ
+Random::Random()
 {
- public:
-	WSClient(Random& rnd_);
-	~WSClient();
+	// 乱数のシードを用意。
+	std::random_device gen;
+	std::mt19937 engine(gen());
+	std::uniform_int_distribution<> rand(0);
+	seed = rand(engine);
+}
 
-	bool Init(const Diag& diag, wsclient_onmsg_callback_t, void *);
-	bool Open(const std::string& uri);
-	bool Connect();
-	void Close();
+// 32 ビットの乱数を返す。
+uint32
+Random::Get()
+{
+	// xorshift
 
-	ssize_t Write(const void *buf, size_t len);
+	uint32 y = seed;
 
-	// 生ディスクリプタを取得。
-	int GetFd() const;
+	y ^= y << 13;
+	y ^= y >> 17;
+	y ^= y << 15;
+	seed = y;
 
-	wslay_event_context_ptr GetContext() const { return wsctx; }
+	return y;
+}
+// dst から dstlen バイトを乱数で埋める。
+void
+Random::Fill(uint8 *dst, size_t dstlen)
+{
+	uint8 *d = dst;
+	uint i = 0;
 
-	// コールバック
-	ssize_t RecvCallback(wslay_event_context_ptr ctx,
-		uint8 *buf, size_t len, int flags);
-	ssize_t SendCallback(wslay_event_context_ptr ctx,
-		const uint8 *buf, size_t len, int flags);
-	int GenmaskCallback(wslay_event_context_ptr ctx, uint8 *buf, size_t len);
+	if (__predict_true(((uintmax_t)d & 3) == 0)) {
+		uint len4 = (dstlen / 4) * 4;
+		for (; i < len4; i += 4) {
+			*(uint32 *)d = Get();
+			d += 4;
+		}
+	}
 
-	wsclient_onmsg_callback_t onmsg_callback {};
-	void *onmsg_arg {};
-
- private:
-	std::unique_ptr<HttpClient> http {};
-
-	wslay_event_context_ptr wsctx {};
-
-	Random rnd {};
-
-	Diag diag {};
-};
+	for (uint32 r = 0; i < dstlen; i++) {
+		if (__predict_false((i % 4) == 0)) {
+			r = Get();
+		}
+		*d++ = r;
+		r >>= 8;
+	}
+}
