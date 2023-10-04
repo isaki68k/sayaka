@@ -27,4 +27,4 @@
 
 #include "JsonFwd.h"
 
-extern bool showobject(const Json& json);
+extern bool twitter_show_object(const Json& json);

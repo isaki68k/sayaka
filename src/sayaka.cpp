@@ -934,7 +934,7 @@ cmd_play()
 		}
 		switch (proto) {
 		 case Proto::Twitter:
-			if (showobject(line) == false) {
+			if (twitter_show_object(line) == false) {
 				return;
 			}
 			break;

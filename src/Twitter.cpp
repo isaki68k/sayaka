@@ -68,7 +68,7 @@ static bool twitter_show_icon(const Json& user, const std::string& screen_name);
 
 // 1ツイート分の JSON を処理する。
 bool
-showobject(const Json& obj)
+twitter_show_object(const Json& obj)
 {
 	// 全ツイートを録画
 	if (opt_record_mode == 2) {
