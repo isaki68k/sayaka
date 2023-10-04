@@ -36,29 +36,31 @@ GetUnixTime()
 }
 
 static void
-test_formattime()
+test_format_time()
 {
 	printf("%s\n", __func__);
 
 	// テスト中は Now() が固定時刻を返す
-	std::vector<std::array<std::string, 2>> table = {
-		// 入力時刻							期待値
-		{ "Wed Nov 18 11:54:12 +0000 2009",	"20:54:12" },			// 同日
-		{ "Tue Nov 17 09:54:12 +0000 2009", "11/17 18:54:12" },		// 年内
-		{ "Tue Nov 18 11:54:12 +0000 2008", "2008/11/18 20:54" },	// それ以前
+	std::vector<std::pair<time_t, std::string>> table = {
+		// 入力時刻						期待値
+		{ 1258538052,					"18:54:12" },		// 同時刻
+		{ 1258538052 - 1,				"18:54:11" },		// 同日過去
+		{ 1258538052 + 1,				"18:54:13" },		// 未来
+		{ 1258469999,					"11/17 23:59:59" },	// 前日
+		{ 1258538052 - 86400 * 190,		"05/12 18:54:12" },	// 半年以上前
+		{ 1258538052 - 86400 * 322,		"2008/12/31 18:54" },	// 去年
 	};
 	for (const auto& a : table) {
-		const auto& inp = a[0];
-		const auto& exp = a[1];
+		const auto& inp = std::get<0>(a);
+		const auto& exp = std::get<1>(a);
 
-		Json json = Json::parse("{\"created_at\":\"" + inp + "\"}");
-		auto actual = formattime(json);
-		xp_eq(exp, actual, inp);
+		auto actual = format_time(inp);
+		xp_eq(exp, actual, exp);
 	}
 }
 
 static void
-test_get_datetime()
+test_twitter_get_time()
 {
 	printf("%s\n", __func__);
 
@@ -71,7 +73,7 @@ test_get_datetime()
 		time_t exp = a.second;
 
 		Json json = Json::parse("{" + src + "}");
-		auto actual = get_datetime(json);
+		auto actual = twitter_get_time(json);
 		xp_eq(exp, actual, src);
 	}
 }
@@ -140,8 +142,8 @@ test_my_strptime()
 void
 test_subr()
 {
-	test_formattime();
-	test_get_datetime();
+	test_format_time();
+	test_twitter_get_time();
 	test_DecodeISOTime();
 	test_my_strptime();
 }

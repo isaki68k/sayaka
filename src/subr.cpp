@@ -71,20 +71,48 @@ GetUnixTime()
 	return time(NULL);
 }
 
-// Twitter の obj から表示用の時刻文字列を返す。[obsolete]
+// UNIX 時刻から表示用の文字列を返す。
+//
+// Display.cpp に移動したいところだがテストに Display.o を含めると
+// 芋づるが発生してしまうので、ここに置いている。
 std::string
-formattime(const Json& obj)
+format_time(time_t unixtime)
 {
-	time_t dt = get_datetime(obj);
-	return formattime(dt);
+	char buf[64];
+	struct tm dtm;
+
+	localtime_r(&unixtime, &dtm);
+
+	// 現在時刻
+	time_t now = GetUnixTime();
+	struct tm ntm;
+	localtime_r(&now, &ntm);
+
+	const char *fmt;
+	if (dtm.tm_year == ntm.tm_year && dtm.tm_yday == ntm.tm_yday) {
+		// 今日なら時刻のみ
+		fmt = "%T";
+	} else if (dtm.tm_year == ntm.tm_year) {
+		// 昨日以前で今年中なら年を省略 (mm/dd HH:MM:SS)
+		// XXX 半年以内ならくらいのほうがいいのか?
+		fmt = "%m/%d %T";
+	} else {
+		// 去年以前なら yyyy/mm/dd HH:MM (秒はもういいだろう…)
+		fmt = "%Y/%m/%d %R";
+	}
+	strftime(buf, sizeof(buf), fmt, &dtm);
+	return std::string(buf);
 }
 
 // status の日付時刻を返す。
 // timestamp_ms があれば使い、なければ created_at を使う。
 // 今のところ、timestamp_ms はたぶん新しめのツイート/イベント通知には
 // 付いてるはずだが、リツイートされた側は created_at しかない模様。
+//
+// Twitter.cpp に移動したいところだがテストに Twitter.o を含めると
+// 芋づるが発生してしまうので、ここに置いている。
 time_t
-get_datetime(const Json& status)
+twitter_get_time(const Json& status)
 {
 	time_t unixtime;
 

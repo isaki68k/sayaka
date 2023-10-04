@@ -365,7 +365,7 @@ misskey_format_time(const Json& note)
 {
 	std::string createdAt = JsonAsString(note["createdAt"]);
 	time_t unixtime = DecodeISOTime(createdAt);
-	return formattime(unixtime);
+	return format_time(unixtime);
 }
 
 // アイコン表示のサービス固有部コールバック。

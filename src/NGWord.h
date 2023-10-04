@@ -76,7 +76,7 @@ class NGStatus
 	bool match {};
 	std::string screen_name {};
 	std::string name {};
-	std::string time {};
+	time_t time {};
 	std::string ngword {};
 };
 

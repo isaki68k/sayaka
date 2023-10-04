@@ -241,7 +241,7 @@ NGWordList::Match(NGStatus *ngstatp, const Json& status) const
 			ngstat.match = true;
 			ngstat.screen_name = u.value("screen_name", "");
 			ngstat.name = u.value("name", "");
-			ngstat.time = formattime(status);
+			ngstat.time = twitter_get_time(status);
 			ngstat.ngword = ng.GetWord();
 			return true;
 		}
@@ -378,7 +378,7 @@ NGWordLive::Match(const Json& status, const Json **matched_user) const
 	// RT の有無に関わらず、元 status だけ見る。
 	if (HasUser() == false || MatchUser(status)) {
 		// 発言時刻
-		time_t dt = get_datetime(status);
+		time_t dt = twitter_get_time(status);
 		struct tm tm;
 		localtime_r(&dt, &tm);
 		auto tmmin = tm.tm_hour * 60 + tm.tm_min;
@@ -465,7 +465,7 @@ NGWordDelay::Match(const Json& status, const Json **matched_user) const
 
 	// 一致したら発言時刻と現在時刻を比較
 	// ここの発言時刻は RT の有無にかかわらず元 status の時刻。
-	time_t dt = get_datetime(status);
+	time_t dt = twitter_get_time(status);
 	// delay_sec [秒] 以内なら表示しない(=NG)ので、越えていれば不一致。
 	time_t now = time(NULL);
 	if (now > dt + delay_sec) {
@@ -540,7 +540,7 @@ NGWordDelay2::Match(const Json& status, const Json **matched_user) const
 	}
 
 	// 一致したら発言時刻と現在時刻を比較
-	time_t dt = get_datetime(status);
+	time_t dt = twitter_get_time(status);
 	// 日曜0時からの経過分にする
 	struct tm *tm = localtime(&dt);
 	int min = tm->tm_wday * 24 * 60 +

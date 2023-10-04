@@ -64,6 +64,7 @@ static UString display_msg(const Json& s, std::vector<MediaInfo> *mediainfo);
 static void SetTag(RichString& t, const Json& list, Color color);
 static void SetUrl_main(RichString& text, int start, int end,
 	const std::string& url);
+static std::string twitter_format_time(const Json& status);
 static bool twitter_show_icon(const Json& user, const std::string& screen_name);
 
 // 1ツイート分の JSON を処理する。
@@ -118,7 +119,7 @@ showstatus(const Json *status, bool is_quoted)
 		if (opt_show_ng) {
 			auto userid = coloring(format_id(ngstat.screen_name), Color::NG);
 			auto name = coloring(format_name(ngstat.name), Color::NG);
-			auto time = coloring(ngstat.time, Color::NG);
+			auto time = coloring(twitter_format_time(ngstat.time), Color::NG);
 			auto msg = coloring("NG:" + ngstat.ngword, Color::NG);
 
 			print_(name + ' ' + userid + '\n'
@@ -152,7 +153,8 @@ showstatus(const Json *status, bool is_quoted)
 		// どちらかで一致すれば非表示
 		if (match) {
 			print_(coloring("鍵垢", Color::NG) + UString("\n")
-				+ coloring(formattime(*status), Color::Time) + UString("\n"));
+				+ coloring(twitter_format_time(*status), Color::Time)
+				+ UString("\n"));
 			return true;
 		}
 	}
@@ -214,7 +216,7 @@ showstatus(const Json *status, bool is_quoted)
 		Color::Username);
 	auto src = coloring(unescape(strip_tags((*s).value("source", ""))) + "から",
 		Color::Source);
-	auto time = coloring(formattime(*s), Color::Time);
+	auto time = coloring(twitter_format_time(*s), Color::Time);
 	UString verified;
 	if (s_user.value("verified", false)) {
 		verified = coloring(" ●", Color::Verified);
@@ -296,7 +298,7 @@ static UString
 display_rt_owner(const Json& status)
 {
 	const Json& user = status["user"];
-	auto rt_time   = formattime(status);
+	auto rt_time   = twitter_format_time(status);
 	auto rt_userid = format_id(user.value("screen_name", ""));
 	auto rt_name   = format_name(user.value("name", ""));
 	auto str = coloring(string_format("%s %s %s がリツイート",
@@ -666,6 +668,14 @@ SetUrl_main(RichString& text, int start, int end, const std::string& url)
 	}
 	// (この手前で)終了
 	text[i].altesc = ColorEnd(Color::Url);
+}
+
+// Twitter の status から表示用の時刻文字列を返す。
+static std::string
+twitter_format_time(const Json& status)
+{
+	time_t unixtime = twitter_get_time(status);
+	return format_time(unixtime);
 }
 
 // アイコン表示のサービス固有部コールバック。
