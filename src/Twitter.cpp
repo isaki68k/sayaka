@@ -55,11 +55,12 @@ class MediaInfo
 };
 
 static bool showstatus(const Json *status, bool is_quoted);
-static std::string formatid(const std::string& text);
-static UString format_rt_owner(const Json& s);
-static UString format_rt_cnt(const Json& s);
-static UString format_fav_cnt(const Json& s);
-static UString formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo);
+static std::string format_name(const std::string& text);
+static std::string format_id(const std::string& text);
+static UString display_rt_owner(const Json& s);
+static UString display_rt_cnt(const Json& s);
+static UString display_fav_cnt(const Json& s);
+static UString display_msg(const Json& s, std::vector<MediaInfo> *mediainfo);
 static void SetTag(RichString& t, const Json& list, Color color);
 static void SetUrl_main(RichString& text, int start, int end,
 	const std::string& url);
@@ -115,8 +116,8 @@ showstatus(const Json *status, bool is_quoted)
 		// マッチしたらここで表示
 		Debug(diagShow, "showstatus: ng -> false");
 		if (opt_show_ng) {
-			auto userid = coloring(formatid(ngstat.screen_name), Color::NG);
-			auto name = coloring(formatname(ngstat.name), Color::NG);
+			auto userid = coloring(format_id(ngstat.screen_name), Color::NG);
+			auto name = coloring(format_name(ngstat.name), Color::NG);
 			auto time = coloring(ngstat.time, Color::NG);
 			auto msg = coloring("NG:" + ngstat.ngword, Color::NG);
 
@@ -166,9 +167,9 @@ showstatus(const Json *status, bool is_quoted)
 			// この二者は別なので1行空けたまま表示。
 			if (rt_id == last_id) {
 				if (last_id_count++ < last_id_max) {
-					auto rtmsg = format_rt_owner(*status);
-					auto rtcnt = format_rt_cnt(*s);
-					auto favcnt = format_fav_cnt(*s);
+					auto rtmsg = display_rt_owner(*status);
+					auto rtcnt = display_rt_cnt(*s);
+					auto favcnt = display_fav_cnt(*s);
 					print_(rtmsg + rtcnt + favcnt + '\n');
 					// これ以降のリツイートは連続とみなす
 					last_id += "_RT";
@@ -180,9 +181,9 @@ showstatus(const Json *status, bool is_quoted)
 			// これはどちらも他者をリツイートなので区別しなくていい。
 			if (rt_id + "_RT" == last_id) {
 				if (last_id_count++ < last_id_max) {
-					auto rtmsg = format_rt_owner(*status);
-					auto rtcnt = format_rt_cnt(*s);
-					auto favcnt = format_fav_cnt(*s);
+					auto rtmsg = display_rt_owner(*status);
+					auto rtcnt = display_rt_cnt(*s);
+					auto favcnt = display_fav_cnt(*s);
 					printf(CSI "1A");
 					print_(rtmsg + rtcnt + favcnt + '\n');
 					return true;
@@ -208,8 +209,9 @@ showstatus(const Json *status, bool is_quoted)
 
 	const Json& s_user = (*s)["user"];
 	std::string screen_name = s_user.value("screen_name", "");
-	auto userid = coloring(formatid(screen_name), Color::UserId);
-	auto name = coloring(formatname(s_user.value("name", "")), Color::Username);
+	auto userid = coloring(format_id(screen_name), Color::UserId);
+	auto name = coloring(format_name(s_user.value("name", "")),
+		Color::Username);
 	auto src = coloring(unescape(strip_tags((*s).value("source", ""))) + "から",
 		Color::Source);
 	auto time = coloring(formattime(*s), Color::Time);
@@ -223,7 +225,7 @@ showstatus(const Json *status, bool is_quoted)
 	}
 
 	std::vector<MediaInfo> mediainfo;
-	auto msg = formatmsg(*s, &mediainfo);
+	auto msg = display_msg(*s, &mediainfo);
 
 	ShowIcon(twitter_show_icon, s_user, screen_name);
 	print_(name + ' ' + userid + verified + protected_mark);
@@ -255,14 +257,14 @@ showstatus(const Json *status, bool is_quoted)
 	}
 
 	// このステータスの既 RT、既ふぁぼ数
-	auto rtmsg = format_rt_cnt(*s);
-	auto favmsg = format_fav_cnt(*s);
+	auto rtmsg = display_rt_cnt(*s);
+	auto favmsg = display_fav_cnt(*s);
 	print_(time + ' ' + src + rtmsg + favmsg);
 	printf("\n");
 
 	// リツイート元
 	if (has_retweet) {
-		print_(format_rt_owner(*status));
+		print_(display_rt_owner(*status));
 		printf("\n");
 	}
 
@@ -271,21 +273,32 @@ showstatus(const Json *status, bool is_quoted)
 	return true;
 }
 
+// 名前表示用に整形
+static std::string
+format_name(const std::string& text)
+{
+	std::string rv = unescape(text);
+	rv = string_replace(rv, "\r\n", " ");
+	rv = string_replace(rv, "\r", " ");
+	rv = string_replace(rv, "\n", " ");
+	return rv;
+}
+
 // ID 表示用に整形
 static std::string
-formatid(const std::string& text)
+format_id(const std::string& text)
 {
 	return "@" + text;
 }
 
 // リツイート元通知を整形して返す
 static UString
-format_rt_owner(const Json& status)
+display_rt_owner(const Json& status)
 {
 	const Json& user = status["user"];
 	auto rt_time   = formattime(status);
-	auto rt_userid = formatid(user.value("screen_name", ""));
-	auto rt_name   = formatname(user.value("name", ""));
+	auto rt_userid = format_id(user.value("screen_name", ""));
+	auto rt_name   = format_name(user.value("name", ""));
 	auto str = coloring(string_format("%s %s %s がリツイート",
 		rt_time.c_str(), rt_name.c_str(), rt_userid.c_str()), Color::Retweet);
 	return str;
@@ -293,7 +306,7 @@ format_rt_owner(const Json& status)
 
 // リツイート数を整形して返す
 static UString
-format_rt_cnt(const Json& s)
+display_rt_cnt(const Json& s)
 {
 	UString str;
 
@@ -306,7 +319,7 @@ format_rt_cnt(const Json& s)
 
 // ふぁぼ数を整形して返す
 static UString
-format_fav_cnt(const Json& s)
+display_fav_cnt(const Json& s)
 {
 	UString str;
 
@@ -374,7 +387,7 @@ SetUrl_inline(RichString& richtext, int start, int end, const std::string& url,
 //     "media":[..] <-おそらく新しい形式
 //   }
 static UString
-formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
+display_msg(const Json& s, std::vector<MediaInfo> *mediainfo)
 {
 	// 本文
 	const Json *textj = GetFullText(s);
@@ -594,7 +607,7 @@ formatmsg(const Json& s, std::vector<MediaInfo> *mediainfo)
 	return new_text;
 }
 
-// formatmsg() の下請け。
+// display_msg() の下請け。
 // list からタグ情報を取り出して tags にセットする。
 // ハッシュタグとユーザメンションがまったく同じ構造なので。
 //
@@ -631,7 +644,7 @@ SetTag(RichString& richtext, const Json& list, Color color)
 	}
 }
 
-// formatmsg() の下請け。
+// display_msg() の下請け。
 // text の [start, end) を url で差し替える(ための処理をする)。
 static void
 SetUrl_main(RichString& text, int start, int end, const std::string& url)

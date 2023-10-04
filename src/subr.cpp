@@ -31,17 +31,6 @@
 // 雑多なサブルーチン
 //
 
-// 名前表示用に整形
-std::string
-formatname(const std::string& text)
-{
-	std::string rv = unescape(text);
-	rv = string_replace(rv, "\r\n", " ");
-	rv = string_replace(rv, "\r", " ");
-	rv = string_replace(rv, "\n", " ");
-	return rv;
-}
-
 // HTML のエスケープを元に戻す
 std::string
 unescape(const std::string& text)
