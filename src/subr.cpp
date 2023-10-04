@@ -299,6 +299,25 @@ FNV1(const std::string& s)
 	return hash;
 }
 
+// CRC32 を計算。
+uint32
+CRC32(const std::string& s)
+{
+	uint32 crc = 0xffffffff;
+	for (int i = 0, end = s.size(); i < end; i++) {
+		crc = crc ^ ((uint32)s[i] << 24);
+		for (int j = 0; j < 8; j++) {
+			if ((crc & 0x80000000) != 0) {
+				crc = (crc << 1) ^ 0x04c11db7;
+			} else {
+				crc = (crc << 1);
+			}
+		}
+	}
+	// XXX LEで逆なのか毎回逆なのか
+	return be32toh(crc ^ 0xffffffff);
+}
+
 // strerror(errno) は Debug() 等のマクロ内から呼ぶことが多いのに
 // clang だと errno が再帰展開になるとかで怒られるので、回避のため。
 const char *
