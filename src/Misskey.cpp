@@ -86,13 +86,13 @@ misskey_stream(bool is_first)
 
 	WSClient client(rnd);
 	if (client.Init(diagHttp, &misskey_onmsg, NULL) == false) {
-		fprintf(stderr, "client Init\n");
+		warnx("%s: client Init failed", __func__);
 		return -1;
 	}
 
 	std::string uri = "wss://" + opt_server + "/streaming";
 	if (client.Open(uri) == false) {
-		fprintf(stderr, "client SetURI failed\n");
+		warnx("%s: client SetURI failed", __func__);
 		return -1;
 	}
 
@@ -108,7 +108,7 @@ misskey_stream(bool is_first)
 	std::string cmd = "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"localTimeline\",\"id\":\"" + id + "\"}}";
 	if (client.Write(cmd.c_str(), cmd.size()) < 0) {
-		warnx("Sending command: %s", strerror(errno));
+		warn("%s: Sending command failed", __func__);
 		return -1;
 	}
 
@@ -137,14 +137,14 @@ misskey_stream(bool is_first)
 		while ((r = poll(&pfd, 1, -1)) < 0 && errno == EINTR)
 			;
 		if (r < 0) {
-			fprintf(stderr, "poll: %s", strerror(errno));
+			warn("%s: poll", __func__);
 			break;
 		}
 
 		if ((pfd.revents & POLLOUT)) {
 		    r = wslay_event_send(ctx);
 			if (r != 0) {
-				fprintf(stderr, "wslay_event_send failed: %d\n", r);
+				warnx("%s: wslay_event_send failed: %d", __func__, r);
 				break;
 			}
 		}
@@ -155,7 +155,7 @@ misskey_stream(bool is_first)
 				break;
 			}
 			if (r != 0) {
-				printf("wslay_event_recv failed: %d\n", r);
+				warnx("%s: wslay_event_recv failed: %d", __func__, r);
 				break;
 			}
 		}
