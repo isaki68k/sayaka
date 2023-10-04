@@ -24,6 +24,7 @@
  */
 
 #include "ImageLoaderWebp.h"
+#include "subr.h"
 #include <cstring>
 #include <webp/decode.h>
 
@@ -68,7 +69,7 @@ ImageLoaderWebp::Check() const
 
 	auto n = stream->Peek(magic.data(), magic.size());
 	if (n < 0) {
-		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerror(errno));
+		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerrno());
 		return false;
 	}
 	if (n < magic.size()) {

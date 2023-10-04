@@ -25,6 +25,7 @@
 
 #include "ImageLoaderBlurhash.h"
 #include "Blurhash.h"
+#include "subr.h"
 #include <string.h>
 
 // コンストラクタ
@@ -51,7 +52,7 @@ ImageLoaderBlurhash::Check() const
 		std::vector<char> loadbuf(256);
 		auto n = stream->Peek(loadbuf.data(), loadbuf.size());
 		if (n < 0) {
-			Trace(diag, "%s: Peek failed: %s", __method__, strerror(errno));
+			Trace(diag, "%s: Peek failed: %s", __method__, strerrno());
 			return false;
 		}
 		if (n == 0) {
@@ -75,7 +76,7 @@ ImageLoaderBlurhash::Load(Image& img)
 		std::vector<char> loadbuf(256);
 		auto n = stream->Read(loadbuf.data(), loadbuf.size());
 		if (n < 0) {
-			Trace(diag, "%s: Peek failed: %s", __method__, strerror(errno));
+			Trace(diag, "%s: Peek failed: %s", __method__, strerrno());
 			return false;
 		}
 		if (n == 0) {
