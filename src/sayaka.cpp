@@ -118,7 +118,7 @@ int  max_image_count;			// この列に表示する画像の最大数
 int  image_count;				// この列に表示している画像の数
 int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
-enum bgcolor bgcolor;			// 背景用の色タイプ
+enum bgcolor opt_bgcolor;		// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 StringDictionary followlist;	// フォロー氏リスト
 StringDictionary blocklist;		// ブロック氏リスト
@@ -275,7 +275,7 @@ main(int ac, char *av[])
 	ngword_list.SetFileName(basedir + "ngword.json");
 
 	address_family = AF_UNSPEC;
-	bgcolor = BG_NONE;
+	opt_bgcolor = BG_NONE;
 	color_mode = 256;
 	opt_show_ng = false;
 	last_id = "";
@@ -301,7 +301,7 @@ main(int ac, char *av[])
 			address_family = AF_INET6;
 			break;
 		 case OPT_black:
-			bgcolor = BG_BLACK;
+			opt_bgcolor = BG_BLACK;
 			break;
 		 case OPT_ciphers:
 			opt_ciphers = optarg;
@@ -503,7 +503,7 @@ main(int ac, char *av[])
 			cmd = SayakaCmd::Version;
 			break;
 		 case OPT_white:
-			bgcolor = BG_WHITE;
+			opt_bgcolor = BG_WHITE;
 			break;
 		 case OPT_x68k:
 			// 以下を指定したのと同じ
@@ -511,7 +511,7 @@ main(int ac, char *av[])
 			opt_fontwidth = 8;
 			opt_fontheight = 16;
 			output_codeset = "iso-2022-jp";
-			bgcolor = BG_BLACK;
+			opt_bgcolor = BG_BLACK;
 			opt_progress = true;
 			opt_ormode = true;
 			opt_output_palette = false;
@@ -671,14 +671,14 @@ init_screen()
 
 	// 端末の背景色を調べる (オプションで指定されてなければ)。
 	// 判定できなければ背景色白をデフォルトにしておく。
-	if (bgcolor == BG_NONE) {
+	if (opt_bgcolor == BG_NONE) {
 		progress("Checking bgcolor of the terminal...");
-		bgcolor = terminal_bgcolor();
+		opt_bgcolor = terminal_bgcolor();
 		progress("done\n");
-		if (bgcolor == BG_NONE) {
+		if (opt_bgcolor == BG_NONE) {
 			printf("Terminal doesn't support control sequence, "
 			       "switch to --white\n");
-			bgcolor = BG_WHITE;
+			opt_bgcolor = BG_WHITE;
 		}
 	}
 
@@ -1170,14 +1170,14 @@ init_color()
 		// それ以外のケースは色ごとに個別調整。
 
 		// 青は黒背景か白背景かで色合いを変えたほうが読みやすい
-		if (BG_ISWHITE(bgcolor)) {
+		if (BG_ISWHITE(opt_bgcolor)) {
 			blue = BLUE;
 		} else {
 			blue = CYAN;
 		}
 
 		// ユーザ名。白地の場合は出来ればもう少し暗めにしたい
-		if (BG_ISWHITE(bgcolor) && color_mode > 16) {
+		if (BG_ISWHITE(opt_bgcolor) && color_mode > 16) {
 			username = "38;5;28";
 		} else {
 			username = BROWN;
@@ -1194,7 +1194,7 @@ init_color()
 
 		// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
 		// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
-		if (BG_ISWHITE(bgcolor) && color_mode > 16) {
+		if (BG_ISWHITE(opt_bgcolor) && color_mode > 16) {
 			fav = "38;5;184";
 		} else {
 			fav = BROWN;

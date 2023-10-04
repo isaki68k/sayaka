@@ -115,7 +115,7 @@ extern int  max_image_count;
 extern int  image_count;
 extern int  image_next_cols;
 extern int  image_max_rows;
-extern enum bgcolor bgcolor;
+extern enum bgcolor opt_bgcolor;
 extern std::string output_codeset;
 extern bool opt_show_ng;
 extern std::string opt_ngword;
