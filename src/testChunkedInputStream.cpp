@@ -25,6 +25,7 @@
 
 #include "test.h"
 #include "ChunkedInputStream.h"
+#include "MemoryStream.h"
 #include "StringUtil.h"
 
 void

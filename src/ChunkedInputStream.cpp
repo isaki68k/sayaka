@@ -32,6 +32,7 @@
 #include "subr.h"
 #include <cstring>
 #include <memory>
+#include <assert.h>
 #include <errno.h>
 
 // コンストラクタ
@@ -54,7 +55,7 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 	Trace(diag, "Read(%zd)", dstsize);
 
 	// バッファが空なら次のチャンクを読み込む。
-	if (Chunks.GetSize() == 0) {
+	if (chunk.empty()) {
 		Trace(diag, "Need to fill");
 		auto r = ReadChunk();
 		Trace(diag, "ReadChunk %zd", r);
@@ -68,12 +69,19 @@ ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
 	}
 
 	// バッファから dst に入るだけコピー。
-	auto copylen = Chunks.Read(dst, dstsize);
+	auto copylen = std::min(chunk.size() - chunkpos, dstsize);
 	Trace(diag, "copylen=%zd\n", copylen);
+	memcpy(dst, chunk.data() + chunkpos, copylen);
+	chunkpos += copylen;
+	// 末尾まで読んだら捨てる。
+	if (chunkpos == chunk.size()) {
+		chunk.clear();
+		chunkpos = 0;
+	}
 	return copylen;
 }
 
-// 1つのチャンクを読み込んで内部バッファ Chunks に追加する。
+// 1つのチャンクを読み込んで内部バッファ chunk に代入する。
 // 成功すれば読み込んだバイト数を返す。
 // 失敗すれば errno をセットして -1 を返す。
 ssize_t
@@ -81,6 +89,8 @@ ChunkedInputStream::ReadChunk()
 {
 	std::string slen;
 	ssize_t r;
+
+	assert(chunk.empty());
 
 	// 先頭行はチャンク長+CRLF
 	r = src->ReadLine(&slen);
@@ -116,11 +126,12 @@ ChunkedInputStream::ReadChunk()
 		return 0;
 	}
 
-	// チャンク本体を一時バッファに読み込む
-	std::unique_ptr<char[]> bufp = std::make_unique<char[]>(intlen);
+	// チャンク本体を読み込む
+	chunk.resize(intlen);
+	chunkpos = 0;
 	int readlen = 0;
 	for (; readlen < intlen; readlen += r) {
-		r = src->Read(bufp.get() + readlen, intlen - readlen);
+		r = src->Read(chunk.data() + readlen, intlen - readlen);
 		if (__predict_false(r < 0)) {
 			Debug(diag, "Read failed: %s", strerrno());
 			errno = EIO;
@@ -136,9 +147,6 @@ ChunkedInputStream::ReadChunk()
 		errno = EIO;
 		return -1;
 	}
-
-	// 内部バッファに追加
-	Chunks.AddData(bufp.get(), intlen);
 
 	// 最後の CRLF を読み捨てる
 	src->ReadLine(&slen);

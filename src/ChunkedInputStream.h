@@ -28,7 +28,6 @@
 #include "header.h"
 #include "Diag.h"
 #include "StreamBase.h"
-#include "MemoryStream.h"
 
 class ChunkedInputStream : public InputStream
 {
@@ -44,8 +43,10 @@ class ChunkedInputStream : public InputStream
 	// 入力ストリーム
 	InputStream *src {};
 
-	// 内部バッファ
-	MemoryInputStream Chunks {};
+	// 1つのチャンク
+	std::vector<uint8> chunk {};
+	// その中の現在位置
+	size_t chunkpos {};
 
 	Diag& diag;
 };
