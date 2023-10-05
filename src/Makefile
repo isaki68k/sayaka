@@ -16,7 +16,6 @@ SRCS_common=	\
 	ImageLoaderWebp.cpp \
 	ImageReductor.cpp \
 	MathAlphaSymbols.cpp \
-	MemoryStream.cpp \
 	Misskey.cpp \
 	NGWord.cpp \
 	OAuth.cpp \
@@ -63,6 +62,7 @@ SRCS_sixelv=	\
 	sixelv.cpp \
 
 SRCS_test=	\
+	MemoryStream.cpp \
 	testChunkedInputStream.cpp \
 	testDiag.cpp \
 	testDictionary.cpp \
