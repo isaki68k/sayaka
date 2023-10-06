@@ -40,9 +40,7 @@ class ImageLoaderJPEG : public ImageLoader
 
  public:	// コールバックから使う
 	// stream から localbuf に読み込む
-	int Read() {
-		return stream->Read(localbuf.data(), localbuf.size());
-	}
+	int Read();
 
 	Diag& GetDiag() { return diag; }
 

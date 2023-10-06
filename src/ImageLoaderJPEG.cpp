@@ -249,6 +249,12 @@ ImageLoaderJPEG::CalcResize(Size& req, int axis, Size& orig)
 	}
 }
 
+int
+ImageLoaderJPEG::Read()
+{
+	return stream->Read(localbuf.data(), localbuf.size());
+}
+
 
 //
 // ----- libjpeg から呼ばれるコールバック関数群
