@@ -27,6 +27,11 @@
 
 #include "JsonFwd.h"
 
+extern void init_color();
+extern void print_(const UString& utext);
+extern UString ColorBegin(Color col);
+extern UString ColorEnd(Color col);
+extern UString coloring(const std::string& text, Color col);
 extern void ShowIcon(bool (*callback)(const Json&, const std::string&),
 	const Json& user, const std::string& userid);
 extern bool ShowPhoto(const std::string& img_url, int resize_width, int index);

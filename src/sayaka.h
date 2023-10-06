@@ -86,11 +86,6 @@ static const int ColorFixedX68k = -1;
 
 extern void cmd_play();
 
-extern void init_color();
-extern void print_(const UString& utext);
-extern UString ColorBegin(Color col);
-extern UString ColorEnd(Color col);
-extern UString coloring(const std::string& text, Color col);
 extern void record(const char *str);
 extern void record(const Json& obj);
 
