@@ -54,10 +54,6 @@ class FileStream : public Stream
 		return (r == 0);
 	}
 
-	ssize_t GetPos() const {
-		return ftell(fp);
-	}
-
  private:
 	FILE *fp {};
 	bool own {};

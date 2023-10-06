@@ -54,11 +54,6 @@ class Stream
 	// 失敗すれば errno をセットして false を返す。
 	virtual bool Seek(ssize_t offset, int whence);
 
-	// ストリームの現在位置を取得する。
-	// 成功すれば現在位置を、
-	// 失敗すれば errno をセットして -1 を返す。
-	virtual ssize_t GetPos() const;
-
 	// 1行読み出す。
 	// 改行まで読み込み、その改行を取り除いた文字列を *retval に書き戻す。
 	// 改行が来ずにストリームが終端した場合はそこまでの文字列を書き戻す。

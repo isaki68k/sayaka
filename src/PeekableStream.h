@@ -38,7 +38,6 @@ class PeekableStream : public Stream
 	}
 	ssize_t Read(void *dst, size_t dstlen) override;
 	bool Seek(ssize_t offset, int whence) override;
-	ssize_t GetPos() const override { return pos; }
 
 	ssize_t Peek(void *dst, size_t dstlen);
 

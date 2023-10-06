@@ -71,14 +71,6 @@ Stream::Seek(ssize_t offset, int whence)
 	return -1;
 }
 
-// 現在位置を返す (ダミー)
-ssize_t
-Stream::GetPos() const
-{
-	errno = EBADF;
-	return -1;
-}
-
 // 1行読み出す。
 ssize_t
 Stream::ReadLine(std::string *retval)
