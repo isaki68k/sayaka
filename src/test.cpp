@@ -100,23 +100,24 @@ main(int ac, char *av[])
 	test_ChunkedInputStream();
 	test_Diag();
 	test_Dictionary();
-	test_FileUtil();
 	test_ImageReductor();
 	test_MemoryStream();
 #if 0
 	test_NGWord();
 #endif
-#if defined(USE_TWITTER)
-	test_OAuth();
-#endif
 	test_ParsedUri();
-	test_RichString();
 	test_SixelConverter();
 	test_StringUtil();
 	test_UString();
 	test_eaw_code();
 	test_subr();
 	test_term();
+
+#if defined(USE_TWITTER)
+	test_FileUtil();
+	test_OAuth();
+	test_RichString();
+#endif
 
 	printf("%d tests", test_count);
 	if (test_fail == 0) {
@@ -125,7 +126,7 @@ main(int ac, char *av[])
 		printf(", %d faild!!\n", test_fail);
 	}
 
-#if 0
+#if defined(USE_TWITTER)
 	// acl はこの中で独自にカウントしている
 	test_acl();
 #endif
