@@ -35,5 +35,5 @@
 
 extern std::string termdump(const char *src);
 extern bool terminal_support_sixel();
-extern enum bgcolor terminal_bgcolor();
-extern enum bgcolor parse_bgcolor(char *result);
+extern bgtheme terminal_bgtheme();
+extern bgtheme parse_bgcolor(char *result);

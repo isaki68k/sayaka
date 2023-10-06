@@ -121,10 +121,10 @@ terminal_support_sixel()
 }
 
 // 端末の背景色を調べる。
-// 黒に近ければ BG_BLACK、白に近ければ BG_WHITE、取得できなければ BG_NONE を
+// 黒に近ければ BG_DARK、白に近ければ BG_LIGHT、取得できなければ BG_NONE を
 // 返す。
-enum bgcolor
-terminal_bgcolor()
+bgtheme
+terminal_bgtheme()
 {
 	std::string query;
 	char result[128];
@@ -152,9 +152,9 @@ terminal_bgcolor()
 }
 
 // 端末からの背景色応答行から、背景色を調べる。
-// 黒に近ければ BG_BLACK、白に近ければ BG_WHITE、取得できなければ BG_NONE を
+// 黒に近ければ BG_DARK、白に近ければ BG_LIGHT、取得できなければ BG_NONE を
 // 返す。
-enum bgcolor
+bgtheme
 parse_bgcolor(char *result)
 {
 	int ri, gi, bi;
@@ -208,7 +208,7 @@ parse_bgcolor(char *result)
 	float I = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
 	// 四捨五入。
 	// 白が 1、黒が 0 だと知っている。
-	return (enum bgcolor)(int)(I + 0.5);
+	return (bgtheme)(int)(I + 0.5);
 }
 
 // ファイルディスクリプタ fd から dstbuf に読み込む。

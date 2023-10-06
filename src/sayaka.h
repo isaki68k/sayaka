@@ -53,10 +53,10 @@ enum Color {
 	Max,
 };
 
-enum bgcolor {
+enum bgtheme {
 	BG_NONE = -1,
-	BG_BLACK = 0,
-	BG_WHITE = 1,
+	BG_DARK = 0,
+	BG_LIGHT = 1,
 };
 
 // use_sixel
@@ -115,7 +115,7 @@ extern int  max_image_count;
 extern int  image_count;
 extern int  image_next_cols;
 extern int  image_max_rows;
-extern enum bgcolor opt_bgcolor;
+extern enum bgtheme opt_bgtheme;
 extern std::string output_codeset;
 extern bool opt_show_ng;
 extern std::string opt_ngword;

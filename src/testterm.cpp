@@ -33,16 +33,16 @@ test_parse_bgcolor()
 {
 	printf("%s\n", __func__);
 
-	std::vector<std::pair<std::string, enum bgcolor>> table = {
-		{ ESC "]11;rgb:0000/0000/0000" ESC "\\",	BG_BLACK },
-		{ ESC "]11;rgb:ffff/ffff/ffff" ESC "\\",	BG_WHITE },
+	std::vector<std::pair<std::string, bgtheme>> table = {
+		{ ESC "]11;rgb:0000/0000/0000" ESC "\\",	BG_DARK },
+		{ ESC "]11;rgb:ffff/ffff/ffff" ESC "\\",	BG_LIGHT },
 
 		// ヘッダ部分が誤り
-		{ ESC "]0;rgb:0100/0100/0100"  ESC "\\",	BG_BLACK },
+		{ ESC "]0;rgb:0100/0100/0100"  ESC "\\",	BG_DARK },
 		// RGB が各2桁
-		{ ESC "]11;rgb:f0/f0/f0"       ESC "\\",	BG_WHITE },
+		{ ESC "]11;rgb:f0/f0/f0"       ESC "\\",	BG_LIGHT },
 		// 実は RGB は何桁でも受け付けている
-		{ ESC "]11;rgb:f/fff/fffff"    ESC "\\",	BG_WHITE },
+		{ ESC "]11;rgb:f/fff/fffff"    ESC "\\",	BG_LIGHT },
 	};
 	for (const auto& a : table) {
 		const auto& src = a.first;

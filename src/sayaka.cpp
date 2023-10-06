@@ -120,7 +120,7 @@ int  max_image_count;			// この列に表示する画像の最大数
 int  image_count;				// この列に表示している画像の数
 int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
-enum bgcolor opt_bgcolor;		// 背景用の色タイプ
+enum bgtheme opt_bgtheme;		// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 StringDictionary followlist;	// フォロー氏リスト
 StringDictionary blocklist;		// ブロック氏リスト
@@ -158,9 +158,9 @@ static std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
 // enum は getopt() の1文字のオプションと衝突しなければいいので
 // 適当に 0x80 から始めておく。
 enum {
-	OPT_black = 0x80,
-	OPT_ciphers,
+	OPT_ciphers = 0x80,
 	OPT_color,
+	OPT_dark,
 	OPT_debug,
 	OPT_debug_format,
 	OPT_debug_http,
@@ -175,6 +175,7 @@ enum {
 	OPT_full_url,
 	OPT_home,
 	OPT_jis,
+	OPT_light,
 	OPT_local,
 	OPT_mathalpha,
 	OPT_max_cont,
@@ -198,14 +199,13 @@ enum {
 	OPT_timeout_image,
 	OPT_twitter,
 	OPT_version,
-	OPT_white,
 	OPT_x68k,
 };
 
 static const struct option longopts[] = {
-	{ "black",			no_argument,		NULL,	OPT_black },
 	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	OPT_color },
+	{ "dark",			no_argument,		NULL,	OPT_dark },
 	{ "debug",			required_argument,	NULL,	OPT_debug },
 	{ "debug-format",	no_argument,		NULL,	OPT_debug_format },
 	{ "debug-http",		required_argument,	NULL,	OPT_debug_http },
@@ -220,6 +220,7 @@ static const struct option longopts[] = {
 	{ "full-url",		no_argument,		NULL,	OPT_full_url },
 //	{ "home",			no_argument,		NULL,	OPT_home },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
+	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "local",			required_argument,	NULL,	OPT_local },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-cont",		required_argument,	NULL,	OPT_max_cont },
@@ -243,7 +244,6 @@ static const struct option longopts[] = {
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
 	{ "twitter",		no_argument,		NULL,	OPT_twitter },
 	{ "version",		no_argument,		NULL,	OPT_version },
-	{ "white",			no_argument,		NULL,	OPT_white },
 	{ "x68k",			no_argument,		NULL,	OPT_x68k },
 	{ "help",			no_argument,		NULL,	'h' },
 	{ NULL },
@@ -277,7 +277,7 @@ main(int ac, char *av[])
 	ngword_list.SetFileName(basedir + "ngword.json");
 
 	address_family = AF_UNSPEC;
-	opt_bgcolor = BG_NONE;
+	opt_bgtheme = BG_NONE;
 	color_mode = 256;
 	opt_show_ng = false;
 	last_id = "";
@@ -302,9 +302,6 @@ main(int ac, char *av[])
 		 case '6':
 			address_family = AF_INET6;
 			break;
-		 case OPT_black:
-			opt_bgcolor = BG_BLACK;
-			break;
 		 case OPT_ciphers:
 			opt_ciphers = optarg;
 			break;
@@ -318,6 +315,9 @@ main(int ac, char *av[])
 					err(1, "--color %s", optarg);
 				}
 			}
+			break;
+		 case OPT_dark:
+			opt_bgtheme = BG_DARK;
 			break;
 		 case OPT_debug:
 			val = stou32def(optarg, -1);
@@ -408,6 +408,9 @@ main(int ac, char *av[])
 			break;
 		 case OPT_jis:
 			output_codeset = "iso-2022-jp";
+			break;
+		 case OPT_light:
+			opt_bgtheme = BG_LIGHT;
 			break;
 		 case OPT_local:
 			cmd = SayakaCmd::Stream;
@@ -516,16 +519,13 @@ main(int ac, char *av[])
 		 case OPT_version:
 			cmd = SayakaCmd::Version;
 			break;
-		 case OPT_white:
-			opt_bgcolor = BG_WHITE;
-			break;
 		 case OPT_x68k:
 			// 以下を指定したのと同じ
 			color_mode = ColorFixedX68k;
 			opt_fontwidth = 8;
 			opt_fontheight = 16;
 			output_codeset = "iso-2022-jp";
-			opt_bgcolor = BG_BLACK;
+			opt_bgtheme = BG_DARK;
 			opt_progress = true;
 			opt_ormode = true;
 			opt_output_palette = false;
@@ -555,7 +555,7 @@ main(int ac, char *av[])
 		printf("%s", av[0]);
 		for (int i = 1; i < ac; i++) {
 			if (strcmp(av[i], "--x68k") == 0) {
-				printf(" --color x68k --font 8x16 --jis --black"
+				printf(" --color x68k --font 8x16 --jis --dark"
 				       " --progress --ormode on --palette on");
 			} else {
 				printf(" %s", av[i]);
@@ -685,14 +685,14 @@ init_screen()
 
 	// 端末の背景色を調べる (オプションで指定されてなければ)。
 	// 判定できなければ背景色白をデフォルトにしておく。
-	if (opt_bgcolor == BG_NONE) {
+	if (opt_bgtheme == BG_NONE) {
 		progress("Checking bgcolor of the terminal...");
-		opt_bgcolor = terminal_bgcolor();
+		opt_bgtheme = terminal_bgtheme();
 		progress("done\n");
-		if (opt_bgcolor == BG_NONE) {
+		if (opt_bgtheme == BG_NONE) {
 			printf("Terminal doesn't support control sequence, "
-			       "switch to --white\n");
-			opt_bgcolor = BG_WHITE;
+			       "switch to --light\n");
+			opt_bgtheme = BG_LIGHT;
 		}
 	}
 
@@ -906,7 +906,7 @@ R"(usage: sayaka [<options>...]
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
 	--font <width>x<height> : font size. default 7x14
 	--full-url : display full URL even if the URL is abbreviated. (twitter)
-	--white / --black : darken/lighten the text color. (default: autodetect)
+	--light / --dark : Use light/dark theme. (default: auto detect)
 	--no-color : disable all text color sequences
 	--no-image : force disable (SIXEL) images.
 	--force-sixel : force enable SIXEL images.
@@ -1167,8 +1167,8 @@ print_(const UString& src)
 	fputs(outstr.c_str(), stdout);
 }
 
-#define BG_ISBLACK(c)	((c) == BG_BLACK)
-#define BG_ISWHITE(c)	((c) != BG_BLACK) // 姑息な最適化
+#define BG_ISDARK()		(opt_bgtheme == BG_DARK)
+#define BG_ISLIGHT()	(opt_bgtheme != BG_DARK) // 姑息な最適化
 
 void
 init_color()
@@ -1188,14 +1188,14 @@ init_color()
 		// それ以外のケースは色ごとに個別調整。
 
 		// 青は黒背景か白背景かで色合いを変えたほうが読みやすい
-		if (BG_ISWHITE(opt_bgcolor)) {
+		if (BG_ISLIGHT()) {
 			blue = BLUE;
 		} else {
 			blue = CYAN;
 		}
 
 		// ユーザ名。白地の場合は出来ればもう少し暗めにしたい
-		if (BG_ISWHITE(opt_bgcolor) && color_mode > 16) {
+		if (BG_ISLIGHT() && color_mode > 16) {
 			username = "38;5;28";
 		} else {
 			username = BROWN;
@@ -1212,7 +1212,7 @@ init_color()
 
 		// ふぁぼは黄色。白地の場合は出来れば濃い目にしたいが
 		// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
-		if (BG_ISWHITE(opt_bgcolor) && color_mode > 16) {
+		if (BG_ISLIGHT() && color_mode > 16) {
 			fav = "38;5;184";
 		} else {
 			fav = BROWN;
