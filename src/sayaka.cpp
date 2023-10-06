@@ -396,7 +396,11 @@ main(int ac, char *av[])
 			use_sixel = UseSixel::Yes;
 			break;
 		 case OPT_full_url:
+#if defined(USE_TWITTER)
 			opt_full_url = true;
+#else
+			errx(1, "--full-url is only supported with --twitter");
+#endif
 			break;
 		 case OPT_home:
 			cmd = SayakaCmd::Stream;
@@ -478,7 +482,11 @@ main(int ac, char *av[])
 			opt_progress = true;
 			break;
 		 case OPT_protect:
+#if defined(USE_TWITTER)
 			opt_protect = true;
+#else
+			errx(1, "--protect is only supported with --twitter");
+#endif
 			break;
 		 case OPT_record:
 			opt_record_mode = 1;
@@ -897,14 +905,14 @@ R"(usage: sayaka [<options>...]
    other options:
 	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
 	--font <width>x<height> : font size. default 7x14
-	--full-url : display full URL even if the URL is abbreviated.
+	--full-url : display full URL even if the URL is abbreviated. (twitter)
 	--white / --black : darken/lighten the text color. (default: autodetect)
 	--no-color : disable all text color sequences
 	--no-image : force disable (SIXEL) images.
 	--force-sixel : force enable SIXEL images.
 	--jis / --eucjp : Set output encoding.
 	--progress: show startup progress (for very slow machines).
-	--protect : don't display protected user's tweet.
+	--protect : don't display protected user's tweet. (twitter)
 	--record <file> : record JSON to file.
 	--record-all <file> : record all received JSON to file.
 	--timeout-image <msec>
