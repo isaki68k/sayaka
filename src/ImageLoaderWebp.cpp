@@ -24,6 +24,7 @@
  */
 
 #include "ImageLoaderWebp.h"
+#include "PeekableStream.h"
 #include "subr.h"
 #include <cstring>
 #include <webp/decode.h>

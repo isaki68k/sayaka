@@ -26,7 +26,6 @@
 
 #pragma once
 
-#include "ChunkedInputStream.h"
 #include "Diag.h"
 #include "ParsedUri.h"
 #include "Stream.h"
@@ -35,6 +34,8 @@
 #include <string>
 #include <vector>
 #include <sys/socket.h>
+
+class ChunkedInputStream;
 
 class TLSStream : public Stream
 {
@@ -156,7 +157,7 @@ class HttpClient
 	std::unique_ptr<TLSStream> tstream {};
 
 	// チャンク用
-	std::unique_ptr<ChunkedInputStream> chunk_stream {};
+	std::unique_ptr<ChunkedInputStream> chunk_stream /*{}*/;
 
 	Diag diag {};
 };

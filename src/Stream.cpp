@@ -24,7 +24,6 @@
  */
 
 #include "Stream.h"
-#include <cstring>
 
 //
 // ストリーム (基本クラス)

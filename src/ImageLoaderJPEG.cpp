@@ -24,6 +24,7 @@
  */
 
 #include "ImageLoaderJPEG.h"
+#include "PeekableStream.h"
 #include "subr.h"
 #include <cassert>
 #include <cstring>

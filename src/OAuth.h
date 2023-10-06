@@ -28,7 +28,6 @@
 
 #include "Diag.h"
 #include "Dictionary.h"
-#include "HttpClient.h"
 #include <string>
 
 class OAuth

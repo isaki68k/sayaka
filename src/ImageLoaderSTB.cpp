@@ -24,6 +24,7 @@
  */
 
 #include "ImageLoaderSTB.h"
+#include "PeekableStream.h"
 
 // stb is too dirty against strict warnings...
 #if defined(__clang__)

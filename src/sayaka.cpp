@@ -36,7 +36,6 @@
 #include "eaw_code.h"
 #include "subr.h"
 #include "term.h"
-#include <memory>
 #include <cstdio>
 #include <cstring>
 #include <err.h>

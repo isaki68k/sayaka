@@ -25,6 +25,7 @@
  */
 
 #include "HttpClient.h"
+#include "ChunkedInputStream.h"
 #if defined(USE_MBEDTLS)
 #include "TLSHandle_mtls.h"
 #else

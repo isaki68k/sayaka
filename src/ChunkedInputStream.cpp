@@ -30,9 +30,8 @@
 #include "ChunkedInputStream.h"
 #include "StringUtil.h"
 #include "subr.h"
+#include <cassert>
 #include <cstring>
-#include <memory>
-#include <assert.h>
 #include <errno.h>
 
 // コンストラクタ

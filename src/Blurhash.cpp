@@ -23,9 +23,9 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
-#include <cmath>
+#include "header.h"
 #include "Blurhash.h"
+#include <cmath>
 
 struct Blurhash::ColorF
 {

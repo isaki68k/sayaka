@@ -33,12 +33,9 @@
 #include "StringUtil.h"
 #include "SixelConverter.h"
 #include "term.h"
-#include <array>
 #include <chrono>
 #include <cstring>
 #include <map>
-#include <memory>
-#include <tuple>
 #include <err.h>
 #include <fcntl.h>
 #include <getopt.h>

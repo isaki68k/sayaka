@@ -32,10 +32,7 @@
 #if 0
 #include "NGWord.h"
 #endif
-#include <array>
-#include <cstdint>
 #include <string>
-#include <vector>
 
 #define DEBUG_FORMAT 1
 

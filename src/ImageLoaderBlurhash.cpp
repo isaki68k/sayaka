@@ -25,8 +25,8 @@
 
 #include "ImageLoaderBlurhash.h"
 #include "Blurhash.h"
+#include "PeekableStream.h"
 #include "subr.h"
-#include <string.h>
 
 // コンストラクタ
 ImageLoaderBlurhash::ImageLoaderBlurhash(PeekableStream *stream_,

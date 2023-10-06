@@ -36,7 +36,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <err.h>
 
 class MediaInfo
 {

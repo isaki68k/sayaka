@@ -27,8 +27,9 @@
 
 #include "header.h"
 #include "Diag.h"
-#include "PeekableStream.h"
 #include <vector>
+
+class PeekableStream;
 
 enum ResizeAxisMode {
 	// 幅が ResizeWidth になり、

@@ -28,8 +28,9 @@
 
 #include "Diag.h"
 #include "ImageReductor.h"
-#include "Stream.h"
 #include <vector>
+
+class Stream;
 
 // SIXEL 出力モード。
 // SIXEL のカラーモード値と同じにする。

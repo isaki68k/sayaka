@@ -24,8 +24,8 @@
  */
 
 #include "PeekableStream.h"
+#include <cassert>
 #include <cstring>
-#include <assert.h>
 
 //#define DEBUG 1
 #if defined(DEBUG)

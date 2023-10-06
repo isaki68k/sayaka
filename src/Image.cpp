@@ -24,6 +24,7 @@
  */
 
 #include "Image.h"
+#include "PeekableStream.h"
 
 //
 // 画像

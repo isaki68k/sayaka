@@ -26,6 +26,7 @@
 #pragma once
 
 #include "Stream.h"
+#include <string>
 
 class PeekableStream : public Stream
 {

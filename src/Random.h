@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "sayaka.h"
+#include "header.h"
 
 class Random
 {

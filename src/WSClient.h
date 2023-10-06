@@ -25,9 +25,12 @@
 
 #pragma once
 
-#include "HttpClient.h"
+#include "Diag.h"
 #include "Random.h"
+#include <memory>
 #include <wslay/wslay.h>
+
+class HttpClient;
 
 using wsclient_onmsg_callback_t = void (*)(void *aux,
 	wslay_event_context_ptr ctx,
@@ -62,7 +65,7 @@ class WSClient
 	void *onmsg_arg {};
 
  private:
-	std::unique_ptr<HttpClient> http {};
+	std::unique_ptr<HttpClient> http /*{}*/;
 
 	wslay_event_context_ptr wsctx {};
 

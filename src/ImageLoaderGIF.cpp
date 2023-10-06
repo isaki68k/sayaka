@@ -24,7 +24,7 @@
  */
 
 #include "ImageLoaderGIF.h"
-#include "StringUtil.h"
+#include "PeekableStream.h"
 #include "subr.h"
 #include <cstring>
 #include <errno.h>
