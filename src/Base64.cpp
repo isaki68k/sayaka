@@ -24,10 +24,23 @@
  */
 
 #include "Base64.h"
+#if defined(USE_MBEDTLS)
+#include <mbedtls/base64.h>
+#endif
 
 std::string
 Base64Encode(const std::vector<uint8>& src)
 {
+#if defined(USE_MBEDTLS)
+	// mbedTLS にあるのでそれを使う。
+
+	size_t dlen = ((src.size() + 2) / 3) * 4 + 1;
+	std::vector<uint8> dst(dlen);
+	size_t olen;
+	mbedtls_base64_encode(dst.data(), dst.size(), &olen,
+		src.data(), src.size());
+	return std::string((const char *)dst.data());
+#else
 	static const char enc[] =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz"
@@ -71,4 +84,5 @@ Base64Encode(const std::vector<uint8>& src)
 		base64 += '=';
 	}
 	return base64;
+#endif
 }
