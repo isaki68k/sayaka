@@ -93,6 +93,8 @@ twitter_show_object(const Json& obj)
 static bool
 showstatus(const Json *status, bool is_quoted)
 {
+	bool match;
+
 #if 0
 	// このツイートを表示するかどうかの判定。
 	// これは、このツイートがリツイートを持っているかどうかも含めた判定を
@@ -109,9 +111,10 @@ showstatus(const Json *status, bool is_quoted)
 		record(*status);
 	}
 
+#if 0
 	// NGワード
 	NGStatus ngstat;
-	bool match = ngword_list.Match(&ngstat, *status);
+	match = ngword_list.Match(&ngstat, *status);
 	if (match) {
 		// マッチしたらここで表示
 		Debug(diagShow, "showstatus: ng -> false");
@@ -127,6 +130,7 @@ showstatus(const Json *status, bool is_quoted)
 		}
 		return false;
 	}
+#endif
 
 	// RT なら、RT 元を status に、RT先を s に。
 	const Json *s = status;
