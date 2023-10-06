@@ -33,7 +33,7 @@ class ImageLoaderWebp : public ImageLoader
 {
 	using inherited = ImageLoader;
  public:
-	ImageLoaderWebp(InputStream *stream, const Diag& diag);
+	ImageLoaderWebp(PeekableStream *stream, const Diag& diag);
 	virtual ~ImageLoaderWebp() override;
 
 	bool Check() const override;

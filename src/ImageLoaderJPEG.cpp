@@ -37,7 +37,7 @@ static void jpeg_skip_input_data(j_decompress_ptr, long num_bytes);
 static void jpeg_term_source(j_decompress_ptr);
 
 // コンストラクタ
-ImageLoaderJPEG::ImageLoaderJPEG(InputStream *stream_, const Diag& diag_)
+ImageLoaderJPEG::ImageLoaderJPEG(PeekableStream *stream_, const Diag& diag_)
 	: inherited(stream_, diag_)
 {
 }

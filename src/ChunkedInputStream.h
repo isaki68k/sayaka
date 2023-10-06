@@ -28,20 +28,21 @@
 #include "header.h"
 #include "Diag.h"
 #include "StreamBase.h"
+#include <vector>
 
-class ChunkedInputStream : public InputStream
+class ChunkedInputStream : public Stream
 {
  public:
-	ChunkedInputStream(InputStream *src_, Diag& diag_);
+	ChunkedInputStream(Stream *src_, Diag& diag_);
 	virtual ~ChunkedInputStream() override;
 
-	ssize_t NativeRead(void *dst, size_t dstsize) override;
+	ssize_t Read(void *dst, size_t dstsize) override;
 
  private:
 	ssize_t ReadChunk();
 
 	// 入力ストリーム
-	InputStream *src {};
+	Stream *src {};
 
 	// 1つのチャンク
 	std::vector<uint8> chunk {};

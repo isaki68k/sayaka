@@ -28,31 +28,35 @@
 #include "StreamBase.h"
 #include <cstdio>
 
-class FileInputStream : public InputStream
+// FILE* ストリーム
+class FileStream : public Stream
 {
-	using inherited = InputStream;
  public:
-	FileInputStream(FILE *fp, bool own);
-	virtual ~FileInputStream() override;
+	FileStream(FILE *fp_, bool own_);
+	virtual ~FileStream() override;
 
-	ssize_t NativeRead(void *dst, size_t dstsize) override;
 	void Close() override;
 
- private:
-	FILE *fp {};
-	bool own {};
-};
+	ssize_t Read(void *dst, size_t dstlen) override;
 
-class FileOutputStream : public OutputStream
-{
-	using inherited = OutputStream;
- public:
-	FileOutputStream(FILE *fp, bool own);
-	virtual ~FileOutputStream() override;
+	ssize_t Write(const void *src, size_t srclen) override {
+		return fwrite(src, 1, srclen, fp);
+	}
 
-	ssize_t Write(const void *buf, size_t len) override;
-	void Flush() override;
-	void Close() override;
+	void Flush() override {
+		fflush(fp);
+	}
+
+	// 成功すれば true を、
+	// 失敗すれば errno をセットして false を返す。
+	bool Seek(ssize_t offset, int whence) override {
+		auto r = fseek(fp, (long)offset, whence);
+		return (r == 0);
+	}
+
+	ssize_t GetPos() const {
+		return ftell(fp);
+	}
 
  private:
 	FILE *fp {};

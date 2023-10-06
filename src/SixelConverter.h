@@ -56,13 +56,13 @@ class SixelConverter
 	SixelConverter(int debuglv);
 
 	// stream から読み込む
-	bool LoadFromStream(InputStream *stream);
+	bool LoadFromStream(Stream *stream);
 
 	// インデックスカラーに変換する
 	void ConvertToIndexed();
 
 	// Sixel を stream に出力する
-	bool SixelToStream(OutputStream *stream);
+	bool SixelToStream(Stream *stream);
 
 	// 画像の幅・高さを取得する
 	int GetWidth() const { return Width; }
@@ -116,8 +116,8 @@ class SixelConverter
 	void CalcResize(int *width, int *height);
 
 	std::string SixelPreamble();
-	bool SixelToStreamCore_ORmode(OutputStream *stream);
-	bool SixelToStreamCore(OutputStream *stream);
+	bool SixelToStreamCore_ORmode(Stream *stream);
+	bool SixelToStreamCore(Stream *stream);
 	std::string SixelPostamble();
 	static std::string SixelRepunit(int n, uint8 ptn);
 

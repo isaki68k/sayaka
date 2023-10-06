@@ -127,9 +127,9 @@ WSClient::Connect()
 
 	// ヘッダを受信。
 	// XXX どうしたもんか。
-	http->mstream.reset(new mTLSInputStream(http->mtls.get(), diag));
+	http->tstream.reset(new TLSStream(http->mtls.get(), diag));
 	http->ReceiveHeader();
-	http->mstream.reset();
+	http->tstream.reset();
 
 	if (http->ResultCode != 101) {
 		// メッセージは ResultMsg に入っている

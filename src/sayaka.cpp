@@ -924,7 +924,7 @@ R"(usage: sayaka [<options>...]
 void
 cmd_play()
 {
-	FileInputStream stdinstream(stdin, false);
+	FileStream stdinstream(stdin, false);
 
 	for (;;) {
 		std::string line;

@@ -32,7 +32,7 @@ class ImageLoaderJPEG : public ImageLoader
 {
 	using inherited = ImageLoader;
  public:
-	ImageLoaderJPEG(InputStream *stream, const Diag& diag);
+	ImageLoaderJPEG(PeekableStream *stream, const Diag& diag);
 	virtual ~ImageLoaderJPEG() override;
 
 	bool Check() const override;

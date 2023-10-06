@@ -33,7 +33,7 @@
 static int gif_read(GifFileType *, GifByteType *, int);
 
 // コンストラクタ
-ImageLoaderGIF::ImageLoaderGIF(InputStream *stream_, const Diag& diag_)
+ImageLoaderGIF::ImageLoaderGIF(PeekableStream *stream_, const Diag& diag_)
 	: inherited(stream_, diag_)
 {
 }
@@ -118,7 +118,7 @@ ImageLoaderGIF::Load(Image& img)
 int
 gif_read(GifFileType *gf, GifByteType *dst, int length)
 {
-	InputStream *stream = (InputStream *)gf->UserData;
+	Stream *stream = (Stream *)gf->UserData;
 
 	size_t total = 0;
 	while (total < length) {

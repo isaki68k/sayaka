@@ -25,21 +25,22 @@
 
 #include "test.h"
 #include "MemoryStream.h"
+#include "PeekableStream.h"
 
 void
-test_MemoryInputStream()
+test_MemoryStream()
 {
 	printf("%s\n", __func__);
 
 	// 空コンストラクタ
 	{
-		MemoryInputStream ms;
+		MemoryStream ms;
 		xp_eq(0, ms.GetSize());
 	}
 	// chunk1つを小分けに取り出す
 	{
 		std::vector<uint8> src { 'a', 'b', 'c' };
-		MemoryInputStream ms(src);
+		MemoryStream ms(src);
 		xp_eq(3, ms.GetSize());
 
 		char buf[2];
@@ -63,9 +64,9 @@ test_MemoryInputStream()
 	// 複数chunk
 	{
 		std::vector<uint8> src { 'a', 'b' };
-		MemoryInputStream ms(src);
+		MemoryStream ms(src);
 
-		ms.AddData(src);
+		ms.Append(src);
 
 		char buf[4];
 		memset(buf, 0, sizeof(buf));
@@ -81,25 +82,27 @@ test_MemoryInputStream()
 	// Peek1
 	{
 		std::vector<uint8> src { 'a', 'b', 'c' };
-		MemoryInputStream ms(src);
+		MemoryStream ms(src);
+		PeekableStream ps(&ms);
 
 		// Peek してみる
 		std::vector<uint8> buf(2);
-		auto actual = ms.Peek(buf.data(), buf.size());
+		auto actual = ps.Peek(buf.data(), buf.size());
 		xp_eq(2, actual);
 		xp_eq('a', buf[0]);
 		xp_eq('b', buf[1]);
 
 		// Read すると同じものが読める
-		actual = ms.Read(buf.data(), 1);
+		ps.Seek(0, SEEK_SET);
+		actual = ps.Read(buf.data(), 1);
 		xp_eq(1, actual);
 		xp_eq('a', buf[0]);
-		actual = ms.Read(buf.data(), 1);
+		actual = ps.Read(buf.data(), 1);
 		xp_eq(1, actual);
 		xp_eq('b', buf[0]);
 
 		// 残りを Read
-		actual = ms.Read(buf.data(), buf.size());
+		actual = ps.Read(buf.data(), buf.size());
 		xp_eq(1, actual);
 		xp_eq('c', buf[0]);
 	}
@@ -107,53 +110,46 @@ test_MemoryInputStream()
 	// Peek2
 	{
 		std::vector<uint8> src { 'a', 'b', 'c' };
-		MemoryInputStream ms(src);
+		MemoryStream ms(src);
+		PeekableStream ps(&ms);
 
 		// Peek してみる
 		std::vector<uint8> buf(2);
-		auto actual = ms.Peek(buf.data(), buf.size());
+		auto actual = ps.Peek(buf.data(), buf.size());
 		xp_eq(2, actual);
 		xp_eq('a', buf[0]);
 		xp_eq('b', buf[1]);
 
-		// Peek した以上に Read する
-		buf.resize(3);
-		actual = ms.Read(buf.data(), buf.size());
-		xp_eq(3, actual);
+		// Peek した以上に Read すると一旦 Peek したところでとまる
+		ps.Seek(0, SEEK_SET);
+		buf.resize(2);
+		actual = ps.Read(buf.data(), buf.size());
+		xp_eq(2, actual);
 		xp_eq('a', buf[0]);
 		xp_eq('b', buf[1]);
-		xp_eq('c', buf[2]);
 	}
 
 	// Peek3
 	{
 		std::vector<uint8> src { 'a', 'b', 'c', 'd' };
-		MemoryInputStream ms(src);
+		MemoryStream ms(src);
+		PeekableStream ps(&ms);
 		std::vector<uint8> buf(4);
 
 		// 2バイト Peek
-		auto actual = ms.Peek(buf.data(), 2);
+		auto actual = ps.Peek(buf.data(), 2);
 		xp_eq(2, actual);
 		xp_eq('a', buf[0]);
 		xp_eq('b', buf[1]);
 
-		// 今度は 3バイト Peek してみる。まだポインタは先頭にある
-		actual = ms.Peek(buf.data(), 3);
-		xp_eq(3, actual);
-		xp_eq('a', buf[0]);
-		xp_eq('b', buf[1]);
-		xp_eq('c', buf[2]);
-
-		// 1バイト Read
-		actual = ms.Read(buf.data(), 1);
+		// 1バイト Read するとその続きから
+		actual = ps.Read(buf.data(), 1);
 		xp_eq(1, actual);
-		xp_eq('a', buf[0]);
+		xp_eq('c', buf[0]);
 
-		// ここから 3バイト Peek。1バイト目から3バイト覗き見れるはず
-		actual = ms.Peek(buf.data(), 3);
-		xp_eq(3, actual);
-		xp_eq('b', buf[0]);
-		xp_eq('c', buf[1]);
-		xp_eq('d', buf[2]);
+		// ここから 1バイト Peek。4バイト目からが見える。
+		actual = ps.Peek(buf.data(), 1);
+		xp_eq(1, actual);
+		xp_eq('d', buf[0]);
 	}
 }

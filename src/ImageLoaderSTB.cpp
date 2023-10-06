@@ -68,7 +68,7 @@ static stbi_io_callbacks load_callback = {
 
 
 // コンストラクタ
-ImageLoaderSTB::ImageLoaderSTB(InputStream *stream_, const Diag& diag_)
+ImageLoaderSTB::ImageLoaderSTB(PeekableStream *stream_, const Diag& diag_)
 	: inherited(stream_, diag_)
 {
 }
@@ -118,7 +118,7 @@ ImageLoaderSTB::Load(Image& img)
 int
 stb_check_read(void *user, char *data, int size)
 {
-	InputStream *stream = (InputStream *)user;
+	PeekableStream *stream = dynamic_cast<PeekableStream*>((Stream *)user);
 
 	int total = 0;
 	while (total < size) {
@@ -149,7 +149,7 @@ stb_check_skip(void *user, int nbytes)
 int
 stb_check_eof(void *user)
 {
-	InputStream *stream = (InputStream *)user;
+	PeekableStream *stream = dynamic_cast<PeekableStream*>((Stream *)user);
 
 	// Peek で1バイトも取り出せなければ EOF。
 	char buf[1];
@@ -161,7 +161,7 @@ stb_check_eof(void *user)
 int
 stb_load_read(void *user, char *data, int size)
 {
-	InputStream *stream = (InputStream *)user;
+	Stream *stream = (Stream *)user;
 
 	int total = 0;
 	while (total < size) {

@@ -92,7 +92,7 @@ extern void test_Diag();
 extern void test_Dictionary();
 extern void test_FileUtil();
 extern void test_ImageReductor();
-extern void test_MemoryInputStream();
+extern void test_MemoryStream();
 extern void test_NGWord();
 extern void test_OAuth();
 extern void test_ParsedUri();

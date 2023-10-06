@@ -33,7 +33,7 @@
 static void png_read(png_structp png, png_bytep data, png_size_t length);
 
 // コンストラクタ
-ImageLoaderPNG::ImageLoaderPNG(InputStream *stream_, const Diag& diag_)
+ImageLoaderPNG::ImageLoaderPNG(PeekableStream *stream_, const Diag& diag_)
 	: inherited(stream_, diag_)
 {
 }
@@ -165,7 +165,7 @@ ImageLoaderPNG::ColorType2str(int type)
 static void
 png_read(png_structp png, png_bytep data, png_size_t length)
 {
-	InputStream *stream = (InputStream *)png_get_io_ptr(png);
+	Stream *stream = (Stream *)png_get_io_ptr(png);
 
 	size_t total = 0;
 	while (total < length) {

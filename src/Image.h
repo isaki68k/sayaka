@@ -27,7 +27,7 @@
 
 #include "header.h"
 #include "Diag.h"
-#include "StreamBase.h"
+#include "PeekableStream.h"
 #include <vector>
 
 enum ResizeAxisMode {
@@ -135,10 +135,13 @@ class Image
 class ImageLoader
 {
  public:
-	ImageLoader(InputStream *stream, const Diag& diag);
+	ImageLoader(PeekableStream *stream, const Diag& diag);
 	virtual ~ImageLoader();
 
+	// サポートしている画像形式なら true を返す。
+	// ストリームは必要なら呼び出し側が巻き戻すこと。
 	virtual bool Check() const = 0;
+
 	virtual bool Load(Image& img) = 0;
 
 	// 共通パラメータ
@@ -147,7 +150,7 @@ class ImageLoader
 	ResizeAxisMode resize_axis {};
 
  protected:
-	InputStream *stream {};
+	PeekableStream *stream {};
 
 	Diag diag {};
 };

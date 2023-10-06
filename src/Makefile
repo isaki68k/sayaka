@@ -20,6 +20,7 @@ SRCS_common=	\
 	NGWord.cpp \
 	OAuth.cpp \
 	ParsedUri.cpp \
+	PeekableStream.cpp \
 	Random.cpp \
 	Regex.cpp \
 	RichString.cpp \

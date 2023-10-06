@@ -37,7 +37,7 @@ test_ChunkedInputStream()
 
 	// 空入力 (EOF)
 	{
-		MemoryInputStream src;
+		MemoryStream src;
 		ChunkedInputStream chunk(&src, diag);
 		std::string str;
 		auto r = chunk.ReadLine(&str);
@@ -49,7 +49,7 @@ test_ChunkedInputStream()
 
 	// 入力行あり
 	{
-		MemoryInputStream src;
+		MemoryStream src;
 		std::vector<uint8> data {
 			'a','\r','\n',	// このチャンクのバイト数
 			'0','1','2','3',	// 本文
@@ -58,7 +58,7 @@ test_ChunkedInputStream()
 			'\r','\n',		// 終端 CRLF
 			'0','\n'		// このチャンクで終了 (LF のみの改行も許容したい)
 		};
-		src.AddData(data);
+		src.Append(data);
 		ChunkedInputStream chunk(&src, diag);
 		std::string str;
 		// 戻り値は改行分を含んだバイト数
@@ -72,7 +72,7 @@ test_ChunkedInputStream()
 
 	// 複数チャンク
 	{
-		MemoryInputStream src;
+		MemoryStream src;
 		std::vector<uint8> data {
 			'2', '\r', '\n',	// このチャンクのバイト数
 			'a', '\r',			// 本文
@@ -88,7 +88,7 @@ test_ChunkedInputStream()
 
 			'0', '\r', '\n',	// このチャンクで終了
 		};
-		src.AddData(data);
+		src.Append(data);
 		ChunkedInputStream chunk(&src, diag);
 		// ReadLine() なので chunk 境界に関わらず行ずつ取り出している。
 		// ついでに ReadLine(std::string*) のほうをテストする。

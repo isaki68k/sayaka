@@ -31,7 +31,7 @@ class ImageLoaderSTB : public ImageLoader
 {
 	using inherited = ImageLoader;
  public:
-	ImageLoaderSTB(InputStream *stream_, const Diag& diag_);
+	ImageLoaderSTB(PeekableStream *stream_, const Diag& diag_);
 	virtual ~ImageLoaderSTB() override;
 
 	bool Check() const override;

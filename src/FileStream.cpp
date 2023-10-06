@@ -27,97 +27,51 @@
 #include <errno.h>
 
 //
-// FILE* 入力ストリーム
+// FILE* ストリーム。
 //
 
 // コンストラクタ
-FileInputStream::FileInputStream(FILE *fp_, bool own_)
+FileStream::FileStream(FILE *fp_, bool own_)
 {
 	fp = fp_;
 	own = own_;
 }
 
 // デストラクタ
-FileInputStream::~FileInputStream()
+FileStream::~FileStream()
 {
 	Close();
 }
 
-// dst に読み出す
-ssize_t
-FileInputStream::NativeRead(void *dst, size_t dstsize)
-{
-	ssize_t rv = 0;
-
-	while (rv < dstsize) {
-		size_t reqsize = dstsize - rv;
-		size_t n = fread((char *)dst + rv, 1, reqsize, fp);
-		if (__predict_false(n == 0)) {
-			if (feof(fp)) {
-				return 0;
-			} else {
-				errno = ferror(fp);
-				return -1;
-			}
-		}
-		rv += n;
-	}
-
-	return rv;
-}
-
+// クローズ。
 void
-FileInputStream::Close()
+FileStream::Close()
 {
-	// この fp を所有するモードならクローズ
 	if (own) {
+		// 所有権があれば解放。
 		if (fp) {
 			fclose(fp);
 		}
 		fp = NULL;
+	} else {
+		// 所有権がなければ何もしない。
+		// XXX クローズしたこと、くらいにはしてもいいかもしれないが。
 	}
 }
 
-
-//
-// FILE* 出力ストリーム
-//
-
-// コンストラクタ
-FileOutputStream::FileOutputStream(FILE *fp_, bool own_)
-{
-	fp = fp_;
-	own = own_;
-}
-
-// デストラクタ
-FileOutputStream::~FileOutputStream()
-{
-	Close();
-}
-
-// buf を書き出す
+// 読み込み。
 ssize_t
-FileOutputStream::Write(const void *buf, size_t len)
+FileStream::Read(void *dst, size_t dstlen)
 {
-	return fwrite(buf, 1, len, fp);
-}
-
-// フラッシュする
-void
-FileOutputStream::Flush()
-{
-	fflush(fp);
-}
-
-void
-FileOutputStream::Close()
-{
-	// この fp を所有するモードならクローズ
-	if (own) {
-		if (fp) {
-			fclose(fp);
+	size_t n = fread(dst, 1, dstlen, fp);
+	if (__predict_false(n == 0)) {
+		if (feof(fp)) {
+			return 0;
+		} else {
+			errno = ferror(fp);
+			return -1;
 		}
-		fp = NULL;
 	}
+
+	return n;
 }

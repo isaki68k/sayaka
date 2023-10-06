@@ -36,6 +36,7 @@
 #include "ImageLoaderPNG.h"
 #endif
 #include "ImageLoaderWebp.h"
+#include "PeekableStream.h"
 #include "StringUtil.h"
 #include <algorithm>
 #include <cassert>
@@ -57,19 +58,22 @@ SixelConverter::SixelConverter(int debuglv)
 	ir.Init(diag);
 }
 
-// stream から画像を img に読み込む。
+// basestream から画像を img に読み込む。
 // 成功すれば true、失敗すれば false を返す。
 bool
-SixelConverter::LoadFromStream(InputStream *stream)
+SixelConverter::LoadFromStream(Stream *basestream)
 {
 	bool ok;
 
 	Debug(diag, "ResizeMode=%s", SRM2str(ResizeMode));
 
+	// シークできるストリームを用意。
+	PeekableStream stream(basestream);
+
 	{
-		ImageLoaderWebp loader(stream, diag);
+		ImageLoaderWebp loader(&stream, diag);
 		ok = loader.Check();
-		stream->Seek(0, SEEK_SET);
+		stream.Seek(0, SEEK_SET);
 		if (ok) {
 			Trace(diag, "%s filetype is Webp", __func__);
 			if (loader.Load(img)) {
@@ -82,9 +86,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 
 #if defined(USE_STB_IMAGE)
 	{
-		ImageLoaderSTB loader(stream, diag);
+		ImageLoaderSTB loader(&stream, diag);
 		ok = loader.Check();
-		stream->Seek(0, SEEK_SET);
+		stream.Seek(0, SEEK_SET);
 		if (ok) {
 			Trace(diag, "%s filetype is STB", __func__);
 			if (loader.Load(img)) {
@@ -95,9 +99,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 	}
 #else
 	{
-		ImageLoaderJPEG loader(stream, diag);
+		ImageLoaderJPEG loader(&stream, diag);
 		ok = loader.Check();
-		stream->Seek(0, SEEK_SET);
+		stream.Seek(0, SEEK_SET);
 		if (ok) {
 			Trace(diag, "%s filetype is JPEG", __func__);
 			if (loader.Load(img)) {
@@ -108,9 +112,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 		}
 	}
 	{
-		ImageLoaderPNG loader(stream, diag);
+		ImageLoaderPNG loader(&stream, diag);
 		ok = loader.Check();
-		stream->Seek(0, SEEK_SET);
+		stream.Seek(0, SEEK_SET);
 		if (ok) {
 			Trace(diag, "%s filetype is PNG", __func__);
 			if (loader.Load(img)) {
@@ -121,9 +125,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 		}
 	}
 	{
-		ImageLoaderGIF loader(stream, diag);
+		ImageLoaderGIF loader(&stream, diag);
 		ok = loader.Check();
-		stream->Seek(0, SEEK_SET);
+		stream.Seek(0, SEEK_SET);
 		if (ok) {
 			Trace(diag, "%s filetype is GIF", __func__);
 			if (loader.Load(img)) {
@@ -137,9 +141,9 @@ SixelConverter::LoadFromStream(InputStream *stream)
 
 	// Blurhash は厳密なフォーマットチェックを持ってないので最後。
 	{
-		ImageLoaderBlurhash loader(stream, diag);
+		ImageLoaderBlurhash loader(&stream, diag);
 		ok = loader.Check();
-		stream->Seek(0, SEEK_SET);
+		stream.Seek(0, SEEK_SET);
 		if (ok) {
 			Trace(diag, "%s filetype looks Blurhash", __func__);
 
@@ -350,7 +354,7 @@ MyLog2(int n)
 // OR モードで Sixel コア部分を stream に出力する。
 // 成功すれば true、(書き込みに)失敗すれば false を返す。
 bool
-SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
+SixelConverter::SixelToStreamCore_ORmode(Stream *stream)
 {
 	uint8 *p0 = Indexed.data();
 	int w = Width;
@@ -386,7 +390,7 @@ SixelConverter::SixelToStreamCore_ORmode(OutputStream *stream)
 // Sixel コア部分を stream に出力する。
 // 成功すれば true、(書き込みに)失敗すれば false を返す。
 bool
-SixelConverter::SixelToStreamCore(OutputStream *stream)
+SixelConverter::SixelToStreamCore(Stream *stream)
 {
 	// 030 ターゲット
 
@@ -522,7 +526,7 @@ SixelConverter::SixelPostamble()
 // Sixel を stream に出力する。
 // 成功すれば true、失敗すれば false を返す。
 bool
-SixelConverter::SixelToStream(OutputStream *stream)
+SixelConverter::SixelToStream(Stream *stream)
 {
 	Trace(diag, "%s", __func__);
 	assert(ir.GetPaletteCount() != 0);

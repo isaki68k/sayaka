@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Tetsuya Isaki
+ * Copyright (C) 2023 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,18 +25,28 @@
 
 #pragma once
 
-#include "Image.h"
+#include "StreamBase.h"
 
-class ImageLoaderPNG : public ImageLoader
+class PeekableStream : public Stream
 {
-	using inherited = ImageLoader;
  public:
-	ImageLoaderPNG(PeekableStream *stream, const Diag& diag);
-	virtual ~ImageLoaderPNG() override;
+	PeekableStream(Stream *stream_);
+	virtual ~PeekableStream() override;
 
-	bool Check() const override;
-	bool Load(Image& img) override;
+	ssize_t Write(const void *src, size_t srclen) {
+		return stream->Write(src, srclen);
+	}
+	ssize_t Read(void *dst, size_t dstlen) override;
+	bool Seek(ssize_t offset, int whence) override;
+	ssize_t GetPos() const override { return pos; }
+
+	ssize_t Peek(void *dst, size_t dstlen);
 
  private:
-	static std::string ColorType2str(int type);
+	Stream *stream {};
+
+	size_t pos {};				// このストリームの現在位置
+
+	std::string peekbuf {};		// ピーク用内部バッファ
+	size_t peekstart {};		// peekbuf[0] のストリーム上の位置
 };

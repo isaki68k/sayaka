@@ -28,48 +28,44 @@
 #include <cstdio>
 #include <tuple>
 
-//
-// GLib の MemoryInputStream 互換っぽいもの
-//
-
 // コンストラクタ
-MemoryInputStream::MemoryInputStream()
+MemoryStream::MemoryStream()
 {
 }
 
 // コンストラクタ
-MemoryInputStream::MemoryInputStream(const std::vector<uint8>& src)
+MemoryStream::MemoryStream(const std::vector<uint8>& src)
 {
-	AddData(src);
+	Append(src);
 }
 
 // デストラクタ
-MemoryInputStream::~MemoryInputStream()
+MemoryStream::~MemoryStream()
 {
 }
 
 // データを末尾に追加
 void
-MemoryInputStream::AddData(const char *src, int srclen)
+MemoryStream::Append(const char *src, int srclen)
 {
 	std::vector<uint8> data;
 	data.resize(srclen);
 	for (auto& c : data) {
 		c = *src++;
 	}
-	AddData(data);
+	Append(data);
 }
 
 // データを末尾に追加
 void
-MemoryInputStream::AddData(const std::vector<uint8>& src)
+MemoryStream::Append(const std::vector<uint8>& src)
 {
 	chunks.emplace_back(src, 0);
 }
 
 // dst に読み出す
 ssize_t
-MemoryInputStream::NativeRead(void *dst, size_t dstsize)
+MemoryStream::Read(void *dst, size_t dstsize)
 {
 	ssize_t rv = 0;
 
@@ -93,7 +89,7 @@ MemoryInputStream::NativeRead(void *dst, size_t dstsize)
 
 // このストリームの残りバイト数を返す。
 size_t
-MemoryInputStream::GetSize() const
+MemoryStream::GetSize() const
 {
 	size_t size = 0;
 

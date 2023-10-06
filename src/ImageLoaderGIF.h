@@ -31,7 +31,7 @@ class ImageLoaderGIF : public ImageLoader
 {
 	using inherited = ImageLoader;
  public:
-	ImageLoaderGIF(InputStream *stream, const Diag& diag);
+	ImageLoaderGIF(PeekableStream *stream, const Diag& diag);
 	virtual ~ImageLoaderGIF() override;
 
 	bool Check() const override;

@@ -59,7 +59,7 @@ Image::Create(int width_, int height_)
 //
 
 // コンストラクタ
-ImageLoader::ImageLoader(InputStream *stream_, const Diag& diag_)
+ImageLoader::ImageLoader(PeekableStream *stream_, const Diag& diag_)
 {
 	stream = stream_;
 	diag = diag_;

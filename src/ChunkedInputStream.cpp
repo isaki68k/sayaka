@@ -36,7 +36,7 @@
 #include <errno.h>
 
 // コンストラクタ
-ChunkedInputStream::ChunkedInputStream(InputStream *src_, Diag& diag_)
+ChunkedInputStream::ChunkedInputStream(Stream *src_, Diag& diag_)
 	: diag(diag_)
 {
 	src = src_;
@@ -50,7 +50,7 @@ ChunkedInputStream::~ChunkedInputStream()
 }
 
 ssize_t
-ChunkedInputStream::NativeRead(void *dst, size_t dstsize)
+ChunkedInputStream::Read(void *dst, size_t dstsize)
 {
 	Trace(diag, "Read(%zd)", dstsize);
 

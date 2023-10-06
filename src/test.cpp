@@ -101,7 +101,7 @@ main(int ac, char *av[])
 	test_Dictionary();
 	test_FileUtil();
 	test_ImageReductor();
-	test_MemoryInputStream();
+	test_MemoryStream();
 	test_NGWord();
 	test_OAuth();
 	test_ParsedUri();

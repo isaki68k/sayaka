@@ -49,7 +49,7 @@ _Pragma("GCC diagnostic pop")
 #define TRANSBG		(0xe1)	// ?
 
 // コンストラクタ
-ImageLoaderWebp::ImageLoaderWebp(InputStream *stream_, const Diag& diag_)
+ImageLoaderWebp::ImageLoaderWebp(PeekableStream *stream_, const Diag& diag_)
 	: inherited(stream_, diag_)
 {
 	static_assert(MAGIC_LEN >= 12);

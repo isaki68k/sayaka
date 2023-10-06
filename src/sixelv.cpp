@@ -212,7 +212,7 @@ static std::map<const std::string, std::pair<RRM, RDM>> reduce_map = {
 [[noreturn]] static void usage(bool all = false);
 static bool optbool(const char *arg);
 static void Convert(const std::string& filename);
-static void ConvertFromStream(InputStream *stream);
+static void ConvertFromStream(Stream *stream);
 static void signal_handler(int signo);
 
 // map から key を検索する。
@@ -573,7 +573,7 @@ Convert(const std::string& filename)
 	// ソース別にストリームを作成
 	if (filename == "-") {
 		Debug(diag, "Loading stdin");
-		FdInputStream stream(STDIN_FILENO, false);
+		FdStream stream(STDIN_FILENO, false);
 		ConvertFromStream(&stream);
 
 	} else if (filename.find("://") != std::string::npos) {
@@ -585,7 +585,7 @@ Convert(const std::string& filename)
 			goto error;
 		}
 		http.family = opt_address_family;
-		InputStream *stream = http.GET();
+		Stream *stream = http.GET();
 		if (stream == NULL) {
 			// mbedTLS だと errno に入っていない。OpenSSL は未確認。
 			warnx("Fetch error: %s", filename.c_str());
@@ -600,7 +600,7 @@ Convert(const std::string& filename)
 			warn("File load error: %s", filename.c_str());
 			goto error;
 		}
-		FdInputStream stream(fd, true);
+		FdStream stream(fd, true);
 		ConvertFromStream(&stream);
 	}
 	return;
@@ -612,7 +612,7 @@ Convert(const std::string& filename)
 }
 
 static void
-ConvertFromStream(InputStream *istream)
+ConvertFromStream(Stream *istream)
 {
 	// プロファイル時間
 	time_point<system_clock> prof[Profile_Max];
@@ -683,7 +683,7 @@ ConvertFromStream(InputStream *istream)
 	 case OutputFormat::SIXEL:
 	 {
 		signal(SIGINT, signal_handler);
-		FileOutputStream stream(stdout, false);
+		FileStream stream(stdout, false);
 		sx.SixelToStream(&stream);
 		stream.Flush();
 		break;

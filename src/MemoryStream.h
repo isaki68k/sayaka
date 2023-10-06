@@ -29,19 +29,18 @@
 #include <list>
 #include <vector>
 
-class MemoryInputStream : public InputStream
+class MemoryStream : public Stream
 {
  public:
-	MemoryInputStream();
-	MemoryInputStream(const std::vector<uint8>& src);
-	virtual ~MemoryInputStream() override;
+	MemoryStream();
+	MemoryStream(const std::vector<uint8>& src);
+	virtual ~MemoryStream() override;
 
-	// エラーなら -1 を返す仕様だが現状ここではエラーは起きない。
-	ssize_t NativeRead(void *buf, size_t bufsize) override;
+	ssize_t Read(void *buf, size_t bufsize) override;
 
 	// データを末尾に追加
-	void AddData(const std::vector<uint8>& src);
-	void AddData(const char *src, int srclen);
+	void Append(const std::vector<uint8>& src);
+	void Append(const char *src, int srclen);
 
 	// このストリームの残りバイト数を返す。
 	size_t GetSize() const;

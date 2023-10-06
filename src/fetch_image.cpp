@@ -88,7 +88,7 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	}
 	http.family = address_family;
 	http.SetTimeout(opt_timeout_image);
-	InputStream *stream = http.GET();
+	Stream *stream = http.GET();
 	if (stream == NULL) {
 		Debug(diag, "Warning: %s GET failed", __func__);
 		return NULL;
@@ -109,13 +109,12 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	sx.ConvertToIndexed();
 
 	FILE *fp = fopen(cache_filename.c_str(), "w+");
-	FileOutputStream outstream(fp, false);
+	FileStream outstream(fp, false);
 	if (sx.SixelToStream(&outstream) == false) {
 		fclose(fp);
 		return NULL;
 	}
 	outstream.Flush();
-
-	fseek(fp, 0, SEEK_SET);
+	outstream.Seek(0, SEEK_SET);
 	return fp;
 }

@@ -36,13 +36,13 @@
 #include <vector>
 #include <sys/socket.h>
 
-class mTLSInputStream : public InputStream
+class TLSStream : public Stream
 {
  public:
-	mTLSInputStream(TLSHandleBase *mtls, const Diag& diag);
-	virtual ~mTLSInputStream() override;
+	TLSStream(TLSHandleBase *mtls_, const Diag& diag_);
+	virtual ~TLSStream() override;
 
-	ssize_t NativeRead(void *buf, size_t buflen) override;
+	ssize_t Read(void *dst, size_t dstlen) override;
 
  private:
 	TLSHandleBase *mtls {};
@@ -68,18 +68,18 @@ class HttpClient
 	void Close();
 
 	// uri から GET して、ストリームを返す
-	InputStream *GET() {
+	Stream *GET() {
 		return Act("GET");
 	}
 
 	// uri へ POST して、ストリームを返す
-	InputStream *POST() {
+	Stream *POST() {
 		return Act("POST");
 	}
 
 	// uri へ GET/POST して、ストリームを返す
 	// GET と POST の共通部。
-	InputStream *Act(const std::string& method);
+	Stream *Act(const std::string& method);
 
 	// 送信ヘッダを追加する。
 	// s は改行を含まない HTTP ヘッダ1行の形式。
@@ -153,7 +153,7 @@ class HttpClient
 	std::unique_ptr<TLSHandleBase> mtls {};
 
 	// mTLS ストリーム
-	std::unique_ptr<mTLSInputStream> mstream {};
+	std::unique_ptr<TLSStream> tstream {};
 
 	// チャンク用
 	std::unique_ptr<ChunkedInputStream> chunk_stream {};

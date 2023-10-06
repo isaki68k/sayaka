@@ -31,7 +31,7 @@ class ImageLoaderBlurhash : public ImageLoader
 {
 	using inherited = ImageLoader;
  public:
-	ImageLoaderBlurhash(InputStream *stream, const Diag& diag);
+	ImageLoaderBlurhash(PeekableStream *stream, const Diag& diag);
 	virtual ~ImageLoaderBlurhash() override;
 
 	bool Check() const override;

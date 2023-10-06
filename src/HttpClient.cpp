@@ -89,7 +89,7 @@ HttpClient::Open(const std::string& uri_)
 	ResultCode = 0;
 	Ciphers.clear();
 
-	mstream.reset();
+	tstream.reset();
 	chunk_stream.reset();
 
 	return true;
@@ -103,7 +103,7 @@ HttpClient::Close()
 
 	// 解放順序あり。
 	chunk_stream.reset();
-	mstream.reset();
+	tstream.reset();
 	if ((bool)mtls) {
 		mtls->Close();
 	}
@@ -112,7 +112,7 @@ HttpClient::Close()
 
 // uri へ GET/POST して、ストリームを返す (GET と POST の共通部)。
 // ストリームはこちらが所有するので、呼び出し側は解放しないこと。
-InputStream *
+Stream *
 HttpClient::Act(const std::string& method)
 {
 	Trace(diag, "%s()", method.c_str());
@@ -129,7 +129,7 @@ HttpClient::Act(const std::string& method)
 
 		SendRequest(method);
 
-		mstream.reset(new mTLSInputStream(mtls.get(), diag));
+		tstream.reset(new TLSStream(mtls.get(), diag));
 
 		ReceiveHeader();
 
@@ -160,18 +160,18 @@ HttpClient::Act(const std::string& method)
 		break;
 	}
 
-	InputStream *stream;
+	Stream *stream;
 	auto transfer_encoding = GetHeader(RecvHeaders, "Transfer-Encoding");
 	if (transfer_encoding == "chunked") {
 		// チャンク
 		Debug(diag, "use ChunkedInputStream");
-		chunk_stream.reset(new ChunkedInputStream(mstream.get(), diag));
+		chunk_stream.reset(new ChunkedInputStream(tstream.get(), diag));
 		stream = chunk_stream.get();
 	} else {
 		// そうでなければ元ストリームをポジションリセットして使う。
 		// ここがコンテンツの先頭になるので。
-		mstream.reset(new mTLSInputStream(mtls.get(), diag));
-		stream = mstream.get();
+		tstream.reset(new TLSStream(mtls.get(), diag));
+		stream = tstream.get();
 	}
 
 	return stream;
@@ -224,7 +224,7 @@ HttpClient::ReceiveHeader()
 	RecvHeaders.clear();
 
 	// 1行目は応答
-	r = mstream->ReadLine(&ResultLine);
+	r = tstream->ReadLine(&ResultLine);
 	if (r <= 0) {
 		return false;
 	}
@@ -247,7 +247,7 @@ HttpClient::ReceiveHeader()
 	// XXX 1000行で諦める
 	for (int i = 0; i < 1000; i++) {
 		std::string s;
-		r = mstream->ReadLine(&s);
+		r = tstream->ReadLine(&s);
 		if (r <= 0) {
 			return false;
 		}
@@ -348,24 +348,24 @@ HttpClient::Write(const void *buf, size_t len)
 
 
 //
-// mTLS stream
+// TLS Stream
 //
 
 // コンストラクタ
-mTLSInputStream::mTLSInputStream(TLSHandleBase *mtls_, const Diag& diag_)
+TLSStream::TLSStream(TLSHandleBase *mtls_, const Diag& diag_)
 	: diag(diag_)
 {
 	mtls = mtls_;
 }
 
 // デストラクタ
-mTLSInputStream::~mTLSInputStream()
+TLSStream::~TLSStream()
 {
 }
 
 // 読み出し
 ssize_t
-mTLSInputStream::NativeRead(void *buf, size_t buflen)
+TLSStream::Read(void *dst, size_t dstlen)
 {
-	return (ssize_t)mtls->Read(buf, buflen);
+	return (ssize_t)mtls->Read(dst, dstlen);
 }

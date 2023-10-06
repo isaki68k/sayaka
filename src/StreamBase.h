@@ -27,29 +27,37 @@
 
 #include "header.h"
 #include <string>
-#include <vector>
 
-//
-// 入力ストリームの基底クラス
-//
-class InputStream
+// ストリーム (基本クラス)
+class Stream
 {
  public:
-	virtual ~InputStream();
+	virtual ~Stream();
 
-	// このストリームから dst に読み出す。
-	// dstsize までもしくは内部ストリームが EOF になるまで。
-	// 読み出したバイト数を返す。
-	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
-	ssize_t Read(void *dst, size_t dstsize);
+	virtual void Close();
 
-	// 読み込みポインタを進めず、このストリームから dst に読み出す。
-	// 読み出したバイト数を返す。
-	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
-	ssize_t Peek(void *dst, size_t dstsize);
+	// ストリームから dst に最大 dstlen バイト読み込む。
+	// 成功すれば読み込んだバイト数を、
+	// 失敗すれば errno をセットして -1 を返す。
+	virtual ssize_t Read(void *dst, size_t dstlen);
 
-	// 読み込みポインタを移動する。
-	off_t Seek(off_t pos, int whence);
+	// ストリームに src から srclen バイトを書き込む。
+	// 成功すれば書き込んだバイト数を、
+	// 失敗すれば errno をセットして -1 を返す。
+	virtual ssize_t Write(const void *src, size_t srclen);
+
+	// ストリームをフラッシュする。
+	virtual void Flush();
+
+	// ストリームの現在位置を設定する。
+	// 成功すれば true を、
+	// 失敗すれば errno をセットして false を返す。
+	virtual bool Seek(ssize_t offset, int whence);
+
+	// ストリームの現在位置を取得する。
+	// 成功すれば現在位置を、
+	// 失敗すれば errno をセットして -1 を返す。
+	virtual ssize_t GetPos() const;
 
 	// 1行読み出す。
 	// 改行まで読み込み、その改行を取り除いた文字列を *retval に書き戻す。
@@ -66,49 +74,7 @@ class InputStream
 	// となる。
 	ssize_t ReadLine(std::string *retval);
 
-	virtual void Close();
-
- protected:
-	// このストリームから dst に読み出す。
-	// dstsize までもしくは内部ストリームが EOF になるまで。
-	// 読み出したバイト数を返す。
-	// エラーなら errno をセットし -1 を返す。この場合 dst の内容は不定。
-	virtual ssize_t NativeRead(void *dst, size_t dstsize) = 0;
-
- private:
-	// ピーク用のバッファ
-	std::vector<uint8> peekbuf {};
-
-	size_t pos {};
-};
-
-//
-// 出力ストリームの基底クラス
-//
-class OutputStream
-{
- public:
-	virtual ~OutputStream();
-
-	// buf から len バイトを書き出す。
-	// 書き出したバイト数を返す。
-	// エラーなら errno をセットし -1 を返す。この場合書き出し内容は不定。
-	virtual ssize_t Write(const void *buf, size_t len) = 0;
-
-	virtual void Flush() = 0;
-
-	virtual void Close();
-
-	// std::string を書き出す。
-	// 成功すれば true、失敗すれば false を返す。
-	// 下位の Write() が size 未満の値を返したのか -1 を返したのかは
-	// 判別できないので errno も参照不可。
-	bool Write(const std::string& str) {
-		auto len = str.size();
-		auto n = Write(str.c_str(), len);
-		if (n < len) {
-			return false;
-		}
-		return true;
+	ssize_t Write(const std::string& str) {
+		return Write(str.c_str(), str.length());
 	}
 };

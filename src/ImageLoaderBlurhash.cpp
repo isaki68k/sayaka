@@ -29,7 +29,7 @@
 #include <string.h>
 
 // コンストラクタ
-ImageLoaderBlurhash::ImageLoaderBlurhash(InputStream *stream_,
+ImageLoaderBlurhash::ImageLoaderBlurhash(PeekableStream *stream_,
 		const Diag& diag_)
 	: inherited(stream_, diag_)
 {
