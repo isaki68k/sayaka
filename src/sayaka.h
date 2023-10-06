@@ -29,7 +29,9 @@
 #include "Diag.h"
 #include "Dictionary.h"
 #include "JsonFwd.h"
+#if 0
 #include "NGWord.h"
+#endif
 #include <array>
 #include <cstdint>
 #include <string>
@@ -117,9 +119,12 @@ extern int  image_next_cols;
 extern int  image_max_rows;
 extern enum bgtheme opt_bgtheme;
 extern std::string output_codeset;
+#if 0
 extern bool opt_show_ng;
 extern std::string opt_ngword;
 extern std::string opt_ngword_user;
+extern NGWordList ngword_list;
+#endif
 extern std::string record_file;
 extern std::string last_id;
 extern int  last_id_count;
@@ -128,7 +133,6 @@ extern bool in_sixel;
 extern std::string opt_ciphers;
 extern bool opt_full_url;
 extern bool opt_progress;
-extern NGWordList ngword_list;
 extern bool opt_ormode;
 extern bool opt_output_palette;
 extern int  opt_timeout_image;

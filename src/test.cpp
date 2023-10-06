@@ -103,7 +103,9 @@ main(int ac, char *av[])
 	test_FileUtil();
 	test_ImageReductor();
 	test_MemoryStream();
+#if 0
 	test_NGWord();
+#endif
 #if defined(USE_TWITTER)
 	test_OAuth();
 #endif

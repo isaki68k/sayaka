@@ -55,9 +55,11 @@ enum SayakaCmd {
 	Noop = 0,
 	Stream,
 	Play,
+#if 0
 	NgwordAdd,
 	NgwordDel,
 	NgwordList,
+#endif
 	Version,
 };
 
@@ -71,9 +73,11 @@ static void init_screen();
 static void invalidate_cache();
 static void signal_handler(int signo);
 static void sigwinch();
+#if 0
 static void cmd_ngword_add();
 static void cmd_ngword_del();
 static void cmd_ngword_list();
+#endif
 static void cmd_version();
 [[noreturn]] static void usage();
 
@@ -126,9 +130,12 @@ StringDictionary followlist;	// フォロー氏リスト
 StringDictionary blocklist;		// ブロック氏リスト
 StringDictionary mutelist;		// ミュート氏リスト
 StringDictionary nortlist;		// RT非表示氏リスト
+#if 0
 bool opt_show_ng;				// NG ツイートを隠さない
 std::string opt_ngword;			// NG ワード (追加削除コマンド用)
 std::string opt_ngword_user;	// NG 対象ユーザ (追加コマンド用)
+NGWordList ngword_list;			// NG ワードリスト
+#endif
 std::string record_file;		// 記録用ファイルパス
 std::string last_id;			// 直前に表示したツイート
 int  last_id_count;				// 連続回数
@@ -137,7 +144,6 @@ bool in_sixel;					// SIXEL 出力中なら true
 std::string opt_ciphers;		// 暗号スイート
 bool opt_full_url;				// URL を省略表示しない
 bool opt_progress;				// 起動時の途中経過表示
-NGWordList ngword_list;			// NG ワードリスト
 bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
 int  opt_timeout_image;			// 画像取得の(接続)タイムアウト [msec]
@@ -181,10 +187,12 @@ enum {
 	OPT_max_cont,
 	OPT_max_image_cols,
 	OPT_misskey,
+#if 0
 	OPT_ngword_add,
 	OPT_ngword_del,
 	OPT_ngword_list,
 	OPT_ngword_user,
+#endif
 	OPT_no_color,
 	OPT_no_combine,
 	OPT_no_image,
@@ -195,7 +203,9 @@ enum {
 	OPT_protect,
 	OPT_record,
 	OPT_record_all,
+#if 0
 	OPT_show_ng,
+#endif
 	OPT_timeout_image,
 	OPT_twitter,
 	OPT_version,
@@ -226,10 +236,12 @@ static const struct option longopts[] = {
 	{ "max-cont",		required_argument,	NULL,	OPT_max_cont },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "misskey",		no_argument,		NULL,	OPT_misskey, },
+#if 0
 	{ "ngword-add",		required_argument,	NULL,	OPT_ngword_add },
 	{ "ngword-del",		required_argument,	NULL,	OPT_ngword_del },
 	{ "ngword-list",	no_argument,		NULL,	OPT_ngword_list },
 	{ "ngword-user",	required_argument,	NULL,	OPT_ngword_user },
+#endif
 	{ "no-color",		no_argument,		NULL,	OPT_no_color },
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
@@ -240,7 +252,9 @@ static const struct option longopts[] = {
 	{ "protect",		no_argument,		NULL,	OPT_protect },
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
+#if 0
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
+#endif
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
 	{ "twitter",		no_argument,		NULL,	OPT_twitter },
 	{ "version",		no_argument,		NULL,	OPT_version },
@@ -274,12 +288,16 @@ main(int ac, char *av[])
 	// トークンのデフォルトファイル名は API version によって変わる
 	// ので、デフォルト empty のままにしておく。
 
+#if 0
 	ngword_list.SetFileName(basedir + "ngword.json");
+#endif
 
 	address_family = AF_UNSPEC;
 	opt_bgtheme = BG_NONE;
 	color_mode = 256;
+#if 0
 	opt_show_ng = false;
+#endif
 	last_id = "";
 	last_id_count = 0;
 	last_id_max = 10;
@@ -437,6 +455,7 @@ main(int ac, char *av[])
 		 case OPT_misskey:
 			proto = Proto::Misskey;
 			break;
+#if 0
 		 case OPT_ngword_add:
 			cmd = SayakaCmd::NgwordAdd;
 			opt_ngword = optarg;
@@ -451,6 +470,7 @@ main(int ac, char *av[])
 		 case OPT_ngword_user:
 			opt_ngword_user = optarg;
 			break;
+#endif
 		 case OPT_no_color:
 			opt_nocolor = true;
 			break;
@@ -499,9 +519,11 @@ main(int ac, char *av[])
 			opt_record_mode = 2;
 			record_file = optarg;
 			break;
+#if 0
 		 case OPT_show_ng:
 			opt_show_ng = true;
 			break;
+#endif
 		 case OPT_timeout_image:
 			opt_timeout_image = stou32def(optarg, -1);
 			if (opt_timeout_image < 0) {
@@ -595,6 +617,7 @@ main(int ac, char *av[])
 		init_screen();
 		cmd_play();
 		break;
+#if 0
 	 case SayakaCmd::NgwordAdd:
 		cmd_ngword_add();
 		break;
@@ -604,6 +627,7 @@ main(int ac, char *av[])
 	 case SayakaCmd::NgwordList:
 		cmd_ngword_list();
 		break;
+#endif
 	 case SayakaCmd::Version:
 		cmd_version();
 		break;
@@ -725,8 +749,10 @@ init_screen()
 	// 一度手動で呼び出して桁数を取得
 	sigwinch();
 
+#if 0
 	// NG ワード取得
 	ngword_list.ReadFile();
+#endif
 }
 
 // 古いキャッシュを破棄する
@@ -867,6 +893,7 @@ sigwinch()
 	Debug(diag, "imagesize=%d", imagesize);
 }
 
+#if 0
 // NG ワードを追加するコマンド
 static void
 cmd_ngword_add()
@@ -887,6 +914,7 @@ cmd_ngword_list()
 {
 	ngword_list.CmdList();
 }
+#endif
 
 static void
 cmd_version()
@@ -925,10 +953,13 @@ R"(usage: sayaka [<options>...]
 	--debug-sixel <0-2>             --debug-show  <0-2>
 	--mathalpha                     --no-combine
 	--max-cont <n>                  --max-image-cols <n>
+)"
+#if 0
 	--ngword-add                    --ngword-del
 	--ngword-list                   --ngword-user
-	                                --ormode <on|off> (default off)
-	--show-ng                       --palette <on|off> (default on)
+	--show-ng
+#endif
+R"(	--ormode <on|off> (default off) --palette <on|off> (default on)
 )"
 	);
 	exit(0);
