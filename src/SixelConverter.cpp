@@ -73,7 +73,7 @@ SixelConverter::LoadFromStream(Stream *basestream)
 	{
 		ImageLoaderWebp loader(&stream, diag);
 		ok = loader.Check();
-		stream.Seek(0, SEEK_SET);
+		stream.Rewind();
 		if (ok) {
 			Trace(diag, "%s filetype is Webp", __func__);
 			if (loader.Load(img)) {
@@ -88,7 +88,7 @@ SixelConverter::LoadFromStream(Stream *basestream)
 	{
 		ImageLoaderSTB loader(&stream, diag);
 		ok = loader.Check();
-		stream.Seek(0, SEEK_SET);
+		stream.Rewind();
 		if (ok) {
 			Trace(diag, "%s filetype is STB", __func__);
 			if (loader.Load(img)) {
@@ -101,7 +101,7 @@ SixelConverter::LoadFromStream(Stream *basestream)
 	{
 		ImageLoaderJPEG loader(&stream, diag);
 		ok = loader.Check();
-		stream.Seek(0, SEEK_SET);
+		stream.Rewind();
 		if (ok) {
 			Trace(diag, "%s filetype is JPEG", __func__);
 			if (loader.Load(img)) {
@@ -114,7 +114,7 @@ SixelConverter::LoadFromStream(Stream *basestream)
 	{
 		ImageLoaderPNG loader(&stream, diag);
 		ok = loader.Check();
-		stream.Seek(0, SEEK_SET);
+		stream.Rewind();
 		if (ok) {
 			Trace(diag, "%s filetype is PNG", __func__);
 			if (loader.Load(img)) {
@@ -127,7 +127,7 @@ SixelConverter::LoadFromStream(Stream *basestream)
 	{
 		ImageLoaderGIF loader(&stream, diag);
 		ok = loader.Check();
-		stream.Seek(0, SEEK_SET);
+		stream.Rewind();
 		if (ok) {
 			Trace(diag, "%s filetype is GIF", __func__);
 			if (loader.Load(img)) {
@@ -143,7 +143,7 @@ SixelConverter::LoadFromStream(Stream *basestream)
 	{
 		ImageLoaderBlurhash loader(&stream, diag);
 		ok = loader.Check();
-		stream.Seek(0, SEEK_SET);
+		stream.Rewind();
 		if (ok) {
 			Trace(diag, "%s filetype looks Blurhash", __func__);
 

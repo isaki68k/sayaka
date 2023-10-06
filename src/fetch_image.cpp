@@ -115,6 +115,6 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 		return NULL;
 	}
 	outstream.Flush();
-	outstream.Seek(0, SEEK_SET);
+	outstream.Rewind();
 	return fp;
 }

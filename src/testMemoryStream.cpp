@@ -93,7 +93,7 @@ test_MemoryStream()
 		xp_eq('b', buf[1]);
 
 		// Read すると同じものが読める
-		ps.Seek(0, SEEK_SET);
+		ps.Rewind();
 		actual = ps.Read(buf.data(), 1);
 		xp_eq(1, actual);
 		xp_eq('a', buf[0]);
@@ -121,7 +121,7 @@ test_MemoryStream()
 		xp_eq('b', buf[1]);
 
 		// Peek した以上に Read すると一旦 Peek したところでとまる
-		ps.Seek(0, SEEK_SET);
+		ps.Rewind();
 		buf.resize(2);
 		actual = ps.Read(buf.data(), buf.size());
 		xp_eq(2, actual);
