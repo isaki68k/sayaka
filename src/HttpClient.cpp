@@ -31,7 +31,6 @@
 #include "TLSHandle_openssl.h"
 #endif
 #include "StringUtil.h"
-#include <err.h>
 #include <errno.h>
 #include <sys/socket.h>
 
@@ -74,7 +73,7 @@ HttpClient::Open(const std::string& uri_)
 #endif
 
 	if (mtls->Init() == false) {
-		warnx("HttpClient.Init: TLSHandle.Init failed");
+		Debug(diag, "%s: TLSHandle.Init failed", __method__);
 		return false;
 	}
 
