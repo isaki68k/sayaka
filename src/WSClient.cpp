@@ -24,6 +24,7 @@
  */
 
 #include "WSClient.h"
+#include "Base64.h"
 #include "OAuth.h"
 #include "StringUtil.h"
 #include <cstring>
@@ -106,7 +107,7 @@ WSClient::Connect()
 	// キーのための乱数を用意。
 	std::vector<uint8> nonce(16);
 	rnd.Fill(nonce.data(), nonce.size());
-	std::string key = OAuth::Base64Encode(nonce);
+	std::string key = Base64Encode(nonce);
 
 	// ヘッダ送信。
 	std::string header;

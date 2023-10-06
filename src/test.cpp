@@ -96,6 +96,7 @@ main(int ac, char *av[])
 	test_count = 0;
 	test_fail = 0;
 
+	test_Base64();
 	test_ChunkedInputStream();
 	test_Diag();
 	test_Dictionary();

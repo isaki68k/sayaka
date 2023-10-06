@@ -58,24 +58,6 @@ static inline std::vector<uint8> operator"" _str2vec(const char *str,
 	return v;
 }
 
-static inline std::string operator"" _hex2str(const char *str, std::size_t len)
-{
-	std::string v;
-
-	// XXX とりあえず
-	if (len % 2 != 0)
-		return v;
-
-	for (; *str; str += 2) {
-		char buf[3];
-		buf[0] = str[0];
-		buf[1] = str[1];
-		buf[2] = '\0';
-		v += stox32def(buf, 0);
-	}
-	return v;
-}
-
 // テスト用に固定値を返す GetNonce()
 /*static*/ std::string
 OAuth::GetNonce(int len)
@@ -102,28 +84,6 @@ test_AccessToken()
 	xp_eq(true, r);
 	xp_eq(o.AccessToken, o2.AccessToken);
 	xp_eq(o.AccessSecret, o2.AccessSecret);
-}
-
-static void
-test_Base64Encode()
-{
-	printf("%s\n", __func__);
-
-	std::vector<std::array<std::string, 2>> table = {
-		{ "ABCDEFG",				"QUJDREVGRw==" },
-		// From RFC3548
-		{ "14fb9c03d97e"_hex2str,	"FPucA9l+" },
-		{ "14fb9c03d9"_hex2str,		"FPucA9k=" },
-		{ "14fb9c03"_hex2str,		"FPucAw==" },
-	};
-	for (auto& a : table) {
-		const std::string& src = a[0];
-		const std::string& exp = a[1];
-
-		std::vector<uint8> input(src.begin(), src.end());
-		auto actual = OAuth::Base64Encode(input);
-		xp_eq(exp, actual, src);
-	}
 }
 
 static void
@@ -378,7 +338,6 @@ void
 test_OAuth()
 {
 	test_AccessToken();
-	test_Base64Encode();
 	test_HMAC_SHA1();
 	test_CreateParams();
 	test_MakeQuery();

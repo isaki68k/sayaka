@@ -87,6 +87,7 @@ extern void xp_fail_(const char *file, int line, const char *func,
 	const std::string& msg);
 
 
+extern void test_Base64();
 extern void test_ChunkedInputStream();
 extern void test_Diag();
 extern void test_Dictionary();

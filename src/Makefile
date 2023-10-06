@@ -3,6 +3,7 @@
 .include "../Makefile.cfg"
 
 SRCS_common=	\
+	Base64.cpp \
 	Blurhash.cpp \
 	ChunkedInputStream.cpp \
 	Diag.cpp \
@@ -64,6 +65,7 @@ SRCS_sixelv=	\
 
 SRCS_test=	\
 	MemoryStream.cpp \
+	testBase64.cpp \
 	testChunkedInputStream.cpp \
 	testDiag.cpp \
 	testDictionary.cpp \

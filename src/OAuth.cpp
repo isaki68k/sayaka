@@ -24,6 +24,7 @@
  * SUCH DAMAGE.
  */
 
+#include "Base64.h"
 #include "FileUtil.h"
 #include "HttpClient.h"
 #include "JsonInc.h"
@@ -110,54 +111,6 @@ OAuth::GetNonce(int len)
 		str += c;
 	}
 	return str;
-}
-
-/*static*/ std::string
-OAuth::Base64Encode(const std::vector<uint8>& src)
-{
-	static const char enc[] =
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		"abcdefghijklmnopqrstuvwxyz"
-		"0123456789+/";
-	std::vector<uint8> tmp;
-	std::string base64;
-	int i;
-
-	for (i = 0; src.size() - i >= 3; ) {
-		// 0000'0011  1111'2222  2233'3333
-		uint8 a0 = src[i++];
-		uint8 a1 = src[i++];
-		uint8 a2 = src[i++];
-
-		tmp.push_back(a0 >> 2);
-		tmp.push_back(((a0 & 0x03) << 4) | (a1 >> 4));
-		tmp.push_back(((a1 & 0x0f) << 2) | (a2 >> 6));
-		tmp.push_back(a2 & 0x3f);
-	}
-
-	// 残りは 0,1,2バイト
-	if (src.size() - i == 1) {
-		uint8 a0 = src[i++];
-
-		tmp.push_back(a0 >> 2);
-		tmp.push_back((a0 & 0x03) << 4);
-	} else if (src.size() - i == 2) {
-		uint8 a0 = src[i++];
-		uint8 a1 = src[i++];
-
-		tmp.push_back(a0 >> 2);
-		tmp.push_back(((a0 & 0x03) << 4) | (a1 >> 4));
-		tmp.push_back(((a1 & 0x0f) << 2));
-	}
-
-	for (const auto& c : tmp) {
-		base64 += enc[c];
-	}
-	// 4文字になるようパディング
-	while (base64.size() % 4 != 0) {
-		base64 += '=';
-	}
-	return base64;
 }
 
 // HMAC-SHA1 したバイナリを返す。

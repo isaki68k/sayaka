@@ -48,9 +48,6 @@ class OAuth
 	// テスト側で差し替えるため weak 指定。
 	static std::string GetNonce(int len = 16) __attribute__((__weak__));
 
-	// Base64 した文字列を返す
-	static std::string Base64Encode(const std::vector<uint8>& src);
-
 	// HMAC-SHA1 したバイナリを返す。
 	static std::vector<uint8> HMAC_SHA1(const std::string& key,
 		const std::string& msg);
