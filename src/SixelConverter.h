@@ -28,7 +28,7 @@
 
 #include "Diag.h"
 #include "ImageReductor.h"
-#include "StreamBase.h"
+#include "Stream.h"
 #include <vector>
 
 // SIXEL 出力モード。

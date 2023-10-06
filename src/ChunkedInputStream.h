@@ -27,7 +27,7 @@
 
 #include "header.h"
 #include "Diag.h"
-#include "StreamBase.h"
+#include "Stream.h"
 #include <vector>
 
 class ChunkedInputStream : public Stream

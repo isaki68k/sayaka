@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "StreamBase.h"
+#include "Stream.h"
 #include <list>
 #include <vector>
 

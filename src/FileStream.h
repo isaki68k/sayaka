@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "StreamBase.h"
+#include "Stream.h"
 #include <cstdio>
 
 // FILE* ストリーム

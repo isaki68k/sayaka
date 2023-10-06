@@ -26,7 +26,7 @@ SRCS_common=	\
 	RichString.cpp \
 	SixelConverter.cpp \
 	SixelConverterOR.cpp \
-	StreamBase.cpp \
+	Stream.cpp \
 	StringUtil.cpp \
 	TLSHandle.cpp \
 	Twitter.cpp \

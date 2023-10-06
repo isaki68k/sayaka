@@ -23,7 +23,7 @@
  * SUCH DAMAGE.
  */
 
-#include "StreamBase.h"
+#include "Stream.h"
 #include <cstring>
 
 //

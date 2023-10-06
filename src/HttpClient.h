@@ -29,7 +29,7 @@
 #include "ChunkedInputStream.h"
 #include "Diag.h"
 #include "ParsedUri.h"
-#include "StreamBase.h"
+#include "Stream.h"
 #include "TLSHandle.h"
 #include <memory>
 #include <string>
