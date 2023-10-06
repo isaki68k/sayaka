@@ -19,3 +19,4 @@
 #undef HAVE_ICONV_CONST
 #undef USE_MBEDTLS
 #undef USE_STB_IMAGE
+#undef USE_TWITTER

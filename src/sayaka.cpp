@@ -30,7 +30,9 @@
 #include "Misskey.h"
 #include "RichString.h"
 #include "StringUtil.h"
+#if defined(USE_TWITTER)
 #include "Twitter.h"
+#endif
 #include "UString.h"
 #include "eaw_code.h"
 #include "subr.h"
@@ -497,7 +499,11 @@ main(int ac, char *av[])
 			}
 			break;
 		 case OPT_twitter:
+#if defined(USE_TWITTER)
 			proto = Proto::Twitter;
+#else
+			errx(1, "Twitter support was not compiled.  See ./configure");
+#endif
 			break;
 		 case OPT_version:
 			cmd = SayakaCmd::Version;
@@ -934,9 +940,13 @@ cmd_play()
 		}
 		switch (proto) {
 		 case Proto::Twitter:
+#if defined(USE_TWITTER)
 			if (twitter_show_object(line) == false) {
 				return;
 			}
+#else
+			assert(false); // 来ないはず
+#endif
 			break;
 		 case Proto::Misskey:
 			if (misskey_show_object(line) == false) {

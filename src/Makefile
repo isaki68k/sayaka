@@ -30,7 +30,6 @@ SRCS_common=	\
 	Stream.cpp \
 	StringUtil.cpp \
 	TLSHandle.cpp \
-	Twitter.cpp \
 	UString.cpp \
 	WSClient.cpp \
 	acl.cpp \
@@ -73,7 +72,6 @@ SRCS_test=	\
 	testImageReductor.cpp \
 	testMemoryStream.cpp \
 	testNGWord.cpp \
-	testOAuth.cpp \
 	testParseUri.cpp \
 	testRichString.cpp \
 	testSixelConverter.cpp \
@@ -84,6 +82,16 @@ SRCS_test=	\
 	testsubr.cpp \
 	testterm.cpp \
 	test.cpp
+
+.if "${MAKE_TWITTER}" == "yes"
+SRCS_common+=	\
+	Twitter.cpp \
+
+SRCS_test+=	\
+	testOAuth.cpp \
+
+.endif
+
 
 SRCS_all=	\
 	${SRCS_common} \

@@ -647,6 +647,7 @@ ac_includes_default="\
 ac_header_cxx_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+MAKE_TWITTER
 MAKE_MBEDTLS
 MAKE_STB_IMAGE
 WARNFLAGS
@@ -709,6 +710,7 @@ ac_user_opts='
 enable_option_checking
 with_stb_image
 with_mbedtls
+enable_twitter
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1336,6 +1338,12 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of sayaka 3.5:";;
    esac
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-twitter        Enable twitter (playback only)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4099,6 +4107,26 @@ See \`config.log' for more details" "$LINENO" 5; }
 	fi
 fi
 
+# Check whether --enable-twitter was given.
+if test ${enable_twitter+y}
+then :
+  enableval=$enable_twitter;
+else $as_nop
+
+	case "${enableval}" in
+	 yes)	enable_twitter=yes	;;
+	 no)	enable_twitter=no	;;
+	esac
+fi
+
+
+if test x"${enable_twitter}" = x"yes"; then
+	printf "%s\n" "#define USE_TWITTER 1" >>confdefs.h
+
+	MAKE_TWITTER=yes
+
+fi
+
 ac_config_headers="$ac_config_headers config.h"
 
 ac_config_files="$ac_config_files Makefile.cfg"
@@ -5373,6 +5401,11 @@ fi
 
 echo
 echo "sayaka was configured as follows"
+echo -n " Supported Service          : Misskey"
+if test x"${enable_twitter}" = x"yes"; then
+	echo -n " Twitter"
+fi
+echo ""
 echo -n " Image loader               : "
 if test "x${with_stb_image}" = "xyes"; then
 	echo "Bundled stb_image"

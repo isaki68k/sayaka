@@ -395,12 +395,31 @@ else
 	fi
 fi
 
+AC_ARG_ENABLE(twitter,
+[  --enable-twitter        Enable twitter (playback only)],,
+	[
+	case "${enableval}" in
+	 yes)	enable_twitter=yes	;;
+	 no)	enable_twitter=no	;;
+	esac],
+	[enable_twitter=no])
+
+if test x"${enable_twitter}" = x"yes"; then
+	AC_DEFINE([USE_TWITTER])
+	AC_SUBST([MAKE_TWITTER], [yes])
+fi
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile.cfg])
 AC_OUTPUT
 
 echo
 echo "sayaka was configured as follows"
+echo -n " Supported Service          : Misskey"
+if test x"${enable_twitter}" = x"yes"; then
+	echo -n " Twitter"
+fi
+echo ""
 echo -n " Image loader               : "
 if test "x${with_stb_image}" = "xyes"; then
 	echo "Bundled stb_image"

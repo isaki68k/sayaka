@@ -104,7 +104,9 @@ main(int ac, char *av[])
 	test_ImageReductor();
 	test_MemoryStream();
 	test_NGWord();
+#if defined(USE_TWITTER)
 	test_OAuth();
+#endif
 	test_ParsedUri();
 	test_RichString();
 	test_SixelConverter();
