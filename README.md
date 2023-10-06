@@ -118,6 +118,7 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	指定してください。
 
 * `--full-url` … URL が省略形になる場合でも元の URL を表示します。
+	Twitter 専用です。
 
 * `--jis` … 文字コードを JIS に変換して出力します。
 	NetBSD/x68k コンソール等の JIS に対応したターミナルで使えます。
@@ -168,7 +169,7 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	あまり意味がないかも知れません。
 
 * `--protect` … 鍵付きアカウントのツイートを表示しません。
-	デモ展示などの際にどうぞ。
+	Twitter 専用です。
 
 * `--record <file>` / `--record-all <file>` …
 	ストリームで受信した JSON のうち `--record-all` ならすべてを、
