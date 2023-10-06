@@ -236,6 +236,3 @@ class NGWordRegular : public NGWord
 	const Json *MatchStatus(const Json& status, const Json *status2) const;
 	bool MatchName(const Json& status) const;
 };
-
-// status から本文フィールドを取得。
-extern const Json *GetFullText(const Json& status);

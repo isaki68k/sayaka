@@ -869,30 +869,3 @@ NGWordList::CmdList()
 
 	return true;
 }
-
-
-// status から本文(の入っている Json *)を取り出す。
-// 本文フィールドは full_text が extended_tweet 以下にある場合と
-// (status の) 直下にある場合がなぜかあるようで、違いはよく分からない。
-// またどちらもなければ仕方ないので (status 直下の) text を使う。
-// text は長いと末尾が "…" に置き換えられたテキスト。
-// いずれもなければ NULL を返す。
-// (ヘッダの都合でここに置いてあるが sayaka からも使う)
-const Json *
-GetFullText(const Json& status)
-{
-	if (status.contains("extended_tweet")) {
-		const Json& exttweet = status["extended_tweet"];
-		if (exttweet.contains("full_text")) {
-			return &exttweet["full_text"];
-		}
-	}
-	if (status.contains("full_text")) {
-		return &status["full_text"];
-	}
-	if (status.contains("text")) {
-		return &status["text"];
-	}
-
-	return NULL;
-}

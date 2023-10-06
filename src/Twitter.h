@@ -28,3 +28,6 @@
 #include "JsonFwd.h"
 
 extern bool twitter_show_object(const Json& json);
+
+// status から本文フィールドを取得。
+extern const Json *GetFullText(const Json& status);
