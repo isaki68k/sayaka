@@ -201,11 +201,8 @@ if test "x${has_getprogname}" = "xno"; then
 	On Ubuntu, sudo apt install libbsd-dev])
 fi
 
-if test -z "${PKG_CONFIG}"; then
-	PKG_CONFIG=pkg-config
-fi
-${PKG_CONFIG} --version 2>&1 > /dev/null
-if test $? \!= 0 ; then
+AC_CHECK_TOOL([PKG_CONFIG], [pkg-config], [:])
+if test x"${PKG_CONFIG}" = x":"; then
 	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found])
 fi
 
