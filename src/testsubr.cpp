@@ -139,23 +139,6 @@ test_my_strptime()
 	}
 }
 
-static void
-test_CRC32()
-{
-	printf("%s\n", __func__);
-
-	std::vector<std::tuple<std::string, uint32>> table = {
-		{ "hoge", 0x4b775151 },
-	};
-	for (const auto& a : table) {
-		const auto& input = std::get<0>(a);
-		uint32 exp = std::get<1>(a);
-
-		auto actual = CRC32(input);
-		xp_eq_x32_(__FILE__, __LINE__, __func__, exp, actual, input);
-	}
-}
-
 void
 test_subr()
 {
@@ -163,5 +146,4 @@ test_subr()
 	test_twitter_get_time();
 	test_DecodeISOTime();
 	test_my_strptime();
-	test_CRC32();
 }

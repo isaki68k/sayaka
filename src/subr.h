@@ -40,7 +40,6 @@ extern time_t DecodeTwitterTime(const std::string& src);
 extern time_t DecodeISOTime(const std::string& src);
 
 extern uint32 FNV1(const std::string& s);
-extern uint32 CRC32(const std::string& s);
 extern int my_strptime(const std::string& buf, const std::string& fmt);
 
 extern const char *strerrno();
