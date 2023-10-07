@@ -107,7 +107,7 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 			return false;
 		}
 
-		r = SSL_set_tlsext_host_name(inner->ssl, hostname);
+		r = SSL_set_tlsext_host_name(inner->ssl, const_cast<char*>(hostname));
 		if (r != 1) {
 			ERR_print_errors_fp(stderr);
 			return false;
