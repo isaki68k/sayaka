@@ -200,26 +200,6 @@ if test "x${has_getprogname}" = "xno"; then
 	AC_MSG_FAILURE([getprogname is not found.
 	On Ubuntu, sudo apt install libbsd-dev])
 fi
-#AC_CHECK_LIB(c, getprogname, ,)
-#AC_CHECK_LIB(bsd, getprogname,
-#	LIBS="${LIBS} -lbsd"
-#)
-# なければ停止する
-#AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
-#	[
-#		#include <stdlib.h>
-#		#include "confdefs.h"
-#		#if defined(HAVE_BSD_BSD_H)
-#		#include <bsd/bsd.h>
-#		#endif
-#	], [
-#		getprogname()
-#	])],
-#	# nothing to do on success
-#	, [AC_MSG_FAILURE([getprogname is not found.
-#	On Ubuntu, sudo apt install libbsd-dev])
-#	]
-#)
 
 if test -z "${PKG_CONFIG}"; then
 	PKG_CONFIG=pkg-config
