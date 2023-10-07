@@ -34,7 +34,7 @@ class PeekableStream : public Stream
 	PeekableStream(Stream *stream_);
 	virtual ~PeekableStream() override;
 
-	ssize_t Write(const void *src, size_t srclen) {
+	ssize_t Write(const void *src, size_t srclen) override {
 		return stream->Write(src, srclen);
 	}
 	ssize_t Read(void *dst, size_t dstlen) override;
