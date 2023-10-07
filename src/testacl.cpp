@@ -34,7 +34,7 @@
 
 std::string myid;
 Diag diagShow;
-bool opt_pseudo_home;
+static bool opt_pseudo_home;
 StringDictionary followlist;
 StringDictionary blocklist;
 StringDictionary mutelist;
