@@ -87,20 +87,28 @@ SRCS_all=	\
 	${SRCS_sixelv} \
 	${SRCS_test} \
 
-#CXX+=		-g
-#CXX+=		-fsanitize=undefined
-
+.if defined(RELEASE)
 CPPFLAGS+=	-O2
+.else
+CXX+=		-g
+#CXX+=		-fsanitize=undefined
+CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
 CPPFLAGS+=	-Wignored-qualifiers
 CPPFLAGS+=	-Wpointer-arith
 CPPFLAGS+=	-Wnon-virtual-dtor
+.endif
+
 INCLUDES+=	-I..
 
 # libpng が使ってるので無視
 CPPFLAGS.ImageLoaderPNG.cpp+=	-Wno-disabled-macro-expansion
 
+.if defined(RELEASE)
+all:	sayaka sixelv
+.else
 all:	sayaka test sixelv
+.endif
 
 sayaka:	${SRCS_sayaka:.cpp=.o} libsayaka.a
 	${CXX} ${LDFLAGS} -o $@ $> ${LIBS}
