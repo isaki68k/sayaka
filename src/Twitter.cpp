@@ -36,6 +36,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <err.h>
 
 class MediaInfo
 {
@@ -53,6 +54,7 @@ class MediaInfo
 	std::string display_url {};
 };
 
+static bool twitter_show_object(const Json& json);
 static bool showstatus(const Json *status, bool is_quoted);
 static std::string format_name(const std::string& text);
 static std::string format_id(const std::string& text);
@@ -66,8 +68,30 @@ static void SetUrl_main(RichString& text, int start, int end,
 static std::string twitter_format_time(const Json& status);
 static bool twitter_show_icon(const Json& user, const std::string& screen_name);
 
-// 1ツイート分の JSON を処理する。
+// ストリームから受け取った何かの1行 line を処理する共通部分。
+// line はイベントかメッセージの JSON 文字列1行分。
 bool
+twitter_show_line(const std::string& line)
+{
+	// 空行がちょくちょく送られてくるようだ
+	if (line.empty()) {
+		Debug(diag, "empty line");
+		return true;
+	}
+
+	// line (文字列) から obj (JSON) に。
+	Json obj = Json::parse(line);
+	if (obj.is_null()) {
+		warnx("%s: Json parser failed.\n"
+			"There may be something wrong with twitter.", __func__);
+		return false;
+	}
+
+	return twitter_show_object(obj);
+}
+
+// 1ツイート分の JSON を処理する。
+static bool
 twitter_show_object(const Json& obj)
 {
 	// 全ツイートを録画

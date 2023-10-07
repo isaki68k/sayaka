@@ -62,7 +62,6 @@ enum SayakaCmd {
 };
 
 static void progress(const char *msg);
-static bool showobject(const std::string& line);
 static std::string GetHomeDir();
 static void init();
 static void init_screen();
@@ -959,7 +958,7 @@ cmd_play()
 		switch (proto) {
 		 case Proto::Twitter:
 #if defined(USE_TWITTER)
-			if (twitter_show_object(line) == false) {
+			if (twitter_show_line(line) == false) {
 				return;
 			}
 #else
@@ -975,29 +974,6 @@ cmd_play()
 			break;
 		}
 	}
-}
-
-// ストリームから受け取った何かの1行 line を処理する共通部分。
-// line はイベントかメッセージの JSON 文字列1行分。
-// たぶんイベントは userstream 用なので、もう来ないはず。
-static bool
-showobject(const std::string& line)
-{
-	// 空行がちょくちょく送られてくるようだ
-	if (line.empty()) {
-		Debug(diag, "empty line");
-		return true;
-	}
-
-	// line (文字列) から obj (JSON) に。
-	Json obj = Json::parse(line);
-	if (obj.is_null()) {
-		warnx("%s: Json parser failed.\n"
-			"There may be something wrong with twitter.", __func__);
-		return false;
-	}
-
-	return showobject(obj);
 }
 
 // ツイートを保存する
