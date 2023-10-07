@@ -139,7 +139,7 @@ test_my_strptime()
 	}
 }
 
-void
+static void
 test_CRC32()
 {
 	printf("%s\n", __func__);
