@@ -162,10 +162,15 @@ for p in ${PATHS}; do
 	CPPFLAGS="${CPPFLAGS} -I${p}/include"
 	case "${host_os}" in
 	 netbsd*)
-		LIBS="${LIBS} -Wl,-R,${p}/lib"
+		LIBS="${LIBS} -L${p}/lib -Wl,-R,${p}/lib -lwslay"
+		;;
+	 freebsd*)
+		LIBS="${LIBS} -L${p}/lib -lwslay_shared"
+		;;
+	 *)
+		LIBS="${LIBS} -L${p}/lib -lwslay"
 		;;
 	esac
-	LIBS="${LIBS} -L${p}/lib -lwslay"
 
 	AC_LINK_IFELSE([AC_LANG_PROGRAM(
 	[
