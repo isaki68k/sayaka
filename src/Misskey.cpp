@@ -85,8 +85,12 @@ misskey_stream(bool is_first)
 	Random rnd;
 
 	WSClient client(rnd, diagHttp);
-	if (client.Init(&misskey_onmsg, NULL) == false) {
+	if (client.Init() == false) {
 		warnx("%s: client Init failed", __func__);
+		return -1;
+	}
+	if (client.SetOnmsgCallback(&misskey_onmsg, NULL) == false) {
+		warnx("%s: client SetOnMsgCallback failed", __func__);
 		return -1;
 	}
 

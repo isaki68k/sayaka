@@ -50,15 +50,17 @@ WSClient::WSClient(Random& rnd_, const Diag& diag_)
 WSClient::~WSClient()
 {
 	Close();
+
+	wslay_event_context_free(wsctx);
 }
 
 // 初期化
 bool
-WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
+WSClient::Init()
 {
-	// メッセージ受信コールバック。
-	onmsg_callback = onmsg_callback_;
-	onmsg_arg = onmsg_arg_;
+	if (wsctx) {
+		return true;
+	}
 
 	// コンテキストを用意。
 	wslay_event_callbacks callbacks = {
@@ -71,6 +73,16 @@ WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 		Debug(diag, "Init: wslay_event_context_client_init failed\n");
 		return false;
 	}
+	return true;
+}
+
+// メッセージ受信コールバックを設定。
+bool
+WSClient::SetOnmsgCallback(wsclient_onmsg_callback_t onmsg_callback_,
+	void *onmsg_arg_)
+{
+	onmsg_callback = onmsg_callback_;
+	onmsg_arg = onmsg_arg_;
 
 	return true;
 }

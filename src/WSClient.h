@@ -42,7 +42,10 @@ class WSClient
 	WSClient(Random& rnd_, const Diag& diag_);
 	~WSClient();
 
-	bool Init(wsclient_onmsg_callback_t, void *);
+	bool Init();
+	// コールバックを設定。
+	bool SetOnmsgCallback(wsclient_onmsg_callback_t, void *);
+
 	bool Open(const std::string& uri);
 	bool Connect();
 	void Close();
