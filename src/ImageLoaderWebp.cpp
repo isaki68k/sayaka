@@ -125,8 +125,10 @@ ImageLoaderWebp::Load(Image& img)
 				| (magic[7] << 24));
 	filesize += 8;
 
-	// Feature を取得。
 	WebPInitDecoderConfig(&config);
+	config.options.no_fancy_upsampling = 1;
+
+	// Feature を取得。
 	auto r = WebPGetFeatures(magic.data(), magic.size(), &config.input);
 	if (r != 0) {
 		// さっき成功してるのでエラーになるはずはない。
