@@ -91,7 +91,7 @@ SRCS_all=	\
 CPPFLAGS+=	-O2
 .else
 CXX+=		-g
-#CXX+=		-fsanitize=undefined
+#CXX+=		-fsanitize=undefined -fno-sanitize=vptr
 CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
 CPPFLAGS+=	-Wignored-qualifiers
