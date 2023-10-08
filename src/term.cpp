@@ -287,7 +287,7 @@ test_sixel()
 int
 test_bg()
 {
-	int r = terminal_bgcolor();
+	int r = terminal_bgtheme();
 	if (r >= 0) {
 		printf("terminal bgcolor = %d\n", r);
 	} else {
