@@ -132,7 +132,6 @@ StreamMode opt_stream;			// ストリーム種別
 std::string opt_server;			// 接続先サーバ名
 std::string basedir;
 std::string cachedir;
-std::string colormapdir;
 
 #if defined(USE_TWITTER)
 std::string myid;				// 自身の user id
@@ -265,7 +264,6 @@ main(int ac, char *av[])
 	SayakaCmd cmd = SayakaCmd::Noop;
 	basedir     = GetHomeDir() + "/.sayaka/";
 	cachedir    = basedir + "cache";
-	colormapdir = basedir;
 	// トークンのデフォルトファイル名は API version によって変わる
 	// ので、デフォルト empty のままにしておく。
 
