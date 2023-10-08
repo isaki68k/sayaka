@@ -26,6 +26,7 @@
 #pragma once
 
 #include "config.h"
+#include <inttypes.h>
 #include <sys/types.h>
 
 using int8    = int8_t;
