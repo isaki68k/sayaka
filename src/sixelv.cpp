@@ -109,8 +109,8 @@ static const struct option longopts[] = {
 	{ "256",			no_argument,		NULL,	OPT_256 },
 	{ "addnoise",		required_argument,	NULL,	OPT_addnoise },
 	{ "axis",			required_argument,	NULL,	OPT_axis },
-	{ "color",			required_argument,	NULL,	'p' },
-	{ "colors",			required_argument,	NULL,	'p' },
+	{ "color",			required_argument,	NULL,	'c' },
+	{ "colors",			required_argument,	NULL,	'c' },
 	{ "color-factor",	required_argument,	NULL,	OPT_color_factor },
 	{ "debug",			required_argument,	NULL,	OPT_debug },
 	{ "debug-http",		required_argument,	NULL,	OPT_debug_http },
@@ -245,7 +245,7 @@ int main(int ac, char *av[])
 		opt_outputpalette = false;
 	}
 
-	while ((c = getopt_long(ac, av, "d:eh:p:w:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:d:eh:w:", longopts, NULL)) != -1) {
 		switch (c) {
 		 case OPT_debug:
 			val = stou32def(optarg, -1);
@@ -287,7 +287,7 @@ int main(int ac, char *av[])
 			opt_profile = true;
 			break;
 
-		 case 'p':
+		 case 'c':
 			opt_colormode = select_opt(colormode_map, optarg, &res);
 			if (res == false) {
 				errx(1, "--color %s: invalid parameter", optarg);
@@ -466,10 +466,10 @@ optbool(const char *arg_)
 }
 
 static const char short_help[] = R"**(
-   -p <color>, --color[s]=<color> : Select color mode (default: 256)
+   -c <color>, --color[s]=<color> : Select color mode (default: 256)
     <color> := 8, 16, 256, 256rgbi, mono, gray, graymean, x68k
-   -8, -16, -256      : Shortcut for -p 8, -p 16, -p 256
-   -e, --monochrome   : Shortcut for -p mono
+   -8, -16, -256      : Shortcut for -c 8, -c 16, -c 256
+   -e, --monochrome   : Shortcut for -c mono
    --gray=<graylevel> : Specify grayscale tone from 2 to 256 (default: 256)
    -w <width>         : Resize width to <width> pixel.
    -h <height>        : Resize height to <height> pixel.
@@ -484,7 +484,7 @@ static const char short_help[] = R"**(
 
 static const char long_help[] = R"**( 
  color options
-   -p <color>, --color[s]=<color> : Select color mode (default: 256)
+   -c <color>, --color[s]=<color> : Select color mode (default: 256)
        8        : Fixed 8 colors
        16       : Fixed 16 colors
        256      : Fixed 256 colors (MSX SCREEN 8 compatible palette)
@@ -493,8 +493,8 @@ static const char long_help[] = R"**(
        gray     : grayscale with NTSC intensity
        graymean : grayscale with mean of RGB
        x68k     : Fixed x68k 16 color palette
-   -8, -16, -256   : Shortcut for -p 8, -p 16, -p 256
-   -e, --monochrome: Shortcut for -p mono
+   -8, -16, -256   : Shortcut for -c 8, -c 16, -c 256
+   -e, --monochrome: Shortcut for -c mono
    --gray=<graylevel> : Specify grayscale tone from 2 to 256 (default: 256)
 
  size options
@@ -515,7 +515,7 @@ static const char long_help[] = R"**(
                                     rgb      : for debug
 
  misc options
-   --x68k             : alias to "-p x68k --ormode=on --palette=off"
+   --x68k             : alias to "-c x68k --ormode=on --palette=off"
    --ormode={on|off}  : Output OR-mode SIXEL. (default: off)
    --palette={on|off} : Output palette definition (default: on)
    --output-format={sixel, gvram}: Select output format (default: sixel)
