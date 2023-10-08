@@ -205,7 +205,7 @@ WSClient::RecvCallback(wslay_event_context_ptr ctx,
 			if (errno == EINTR) {
 				continue;
 			}
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			if (errno == EWOULDBLOCK) {
 				wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
 			} else {
 				wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
@@ -233,7 +233,7 @@ WSClient::SendCallback(wslay_event_context_ptr ctx,
 			if (errno == EINTR) {
 				continue;
 			}
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			if (errno == EWOULDBLOCK) {
 				wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
 			} else {
 				wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
