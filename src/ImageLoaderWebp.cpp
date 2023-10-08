@@ -216,18 +216,12 @@ ImageLoaderWebp::Load(Image& img)
 		// RGBA 出力バッファを用意。
 		int stride = width * 4;
 		int outbufsize = stride * height;
-		uint8 *outbuf = (uint8 *)calloc(outbufsize, 1);
-		if (outbuf == NULL) {
-			Trace(diag, "%s: calloc(%d) failed: %s", __method__,
-				outbufsize, strerror(errno));
-			return false;
-		}
+		std::vector<uint8> outbuf(outbufsize);
 
 		// RGBA で出力。
 		config.output.colorspace = MODE_RGBA;
-		config.output.is_external_memory = 1;
-		config.output.u.RGBA.rgba = outbuf;
-		config.output.u.RGBA.size = outbufsize;
+		config.output.u.RGBA.rgba = outbuf.data();
+		config.output.u.RGBA.size = outbuf.size();
 		config.output.u.RGBA.stride = stride;
 		int status = WebPDecode(buf.data(), buf.size(), &config);
 		if (status != VP8_STATUS_OK) {
@@ -236,7 +230,7 @@ ImageLoaderWebp::Load(Image& img)
 		}
 
 		// RGB に変換。
-		RGBAtoRGB(img.GetBuf(), outbuf, width, height, stride, TRANSBG);
+		RGBAtoRGB(img.GetBuf(), outbuf.data(), width, height, stride, TRANSBG);
 		rv = true;
  abort_alpha:
 		WebPFreeDecBuffer(&config.output);
