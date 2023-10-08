@@ -3971,7 +3971,7 @@ printf "%s\n" "no" >&6; }
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "libwebp not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
-
+	On Unubtu, sudo apt install libwebp-dev
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 

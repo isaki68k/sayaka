@@ -270,7 +270,7 @@ else
 	AC_MSG_RESULT([no])
 	AC_MSG_FAILURE([libwebp not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
-	])
+	On Unubtu, sudo apt install libwebp-dev])
 fi
 
 AC_ARG_WITH(mbedtls,
