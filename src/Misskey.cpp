@@ -227,6 +227,8 @@ misskey_show_object(const std::string& line)
 			if (type == "channel" || type == "note") {
 				// "type" が channel か note なら "body" の下へ。
 				obj = &(*obj)["body"];
+			} else if (strncmp(type.c_str(), "emoji", 5) == 0) {
+				// emoji{Added,Deleted} とかは無視でいい。
 			} else {
 				// 知らないタイプは無視。
 				warnx("Unknown message type \"%s\": %s",
