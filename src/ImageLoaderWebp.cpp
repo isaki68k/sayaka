@@ -105,8 +105,7 @@ ImageLoaderWebp::Load(Image& img)
 	ssize_t n;
 	bool rv = false;
 
-	// まず Check() で読んだのと同じ分だけ Read() で読む。
-	// 今の所 Stream は同じ場所を二度 Peek() できない。
+	// Features を取得できる分だけ読み込む。
 	n = stream->Read(magic.data(), magic.size());
 	if (n < 0) {
 		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerror(errno));
