@@ -339,7 +339,7 @@ ColorBegin(Color col)
 {
 	UString esc;
 
-	if (opt_nocolor) {
+	if (__predict_false(opt_nocolor)) {
 		// --no-color なら一切属性を付けない
 	} else {
 		esc.AppendASCII(CSI);
@@ -355,7 +355,7 @@ ColorEnd(Color col)
 {
 	UString esc;
 
-	if (opt_nocolor) {
+	if (__predict_false(opt_nocolor)) {
 		// --no-color なら一切属性を付けない
 	} else {
 		esc.AppendASCII(CSI "0m");
