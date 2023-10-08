@@ -128,7 +128,6 @@ extern bool opt_progress;
 extern bool opt_ormode;
 extern bool opt_output_palette;
 extern int  opt_timeout_image;
-extern std::string myid;
 extern bool opt_nocolor;
 extern int  opt_record_mode;
 extern bool opt_mathalpha;
@@ -140,7 +139,10 @@ extern Proto proto;
 extern StreamMode opt_stream;
 extern std::string opt_server;
 
+#if defined(USE_TWITTER)
+extern std::string myid;
 extern StringDictionary followlist;
 extern StringDictionary blocklist;
 extern StringDictionary mutelist;
 extern StringDictionary nortlist;
+#endif

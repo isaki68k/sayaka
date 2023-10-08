@@ -106,10 +106,6 @@ int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
 enum bgtheme opt_bgtheme;		// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
-StringDictionary followlist;	// フォロー氏リスト
-StringDictionary blocklist;		// ブロック氏リスト
-StringDictionary mutelist;		// ミュート氏リスト
-StringDictionary nortlist;		// RT非表示氏リスト
 #if 0
 bool opt_show_ng;				// NG ツイートを隠さない
 std::string opt_ngword;			// NG ワード (追加削除コマンド用)
@@ -127,7 +123,6 @@ bool opt_progress;				// 起動時の途中経過表示
 bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
 int  opt_timeout_image;			// 画像取得の(接続)タイムアウト [msec]
-std::string myid;				// 自身の user id
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
@@ -138,6 +133,14 @@ std::string opt_server;			// 接続先サーバ名
 std::string basedir;
 std::string cachedir;
 std::string colormapdir;
+
+#if defined(USE_TWITTER)
+std::string myid;				// 自身の user id
+StringDictionary followlist;	// フォロー氏リスト
+StringDictionary blocklist;		// ブロック氏リスト
+StringDictionary mutelist;		// ミュート氏リスト
+StringDictionary nortlist;		// RT非表示氏リスト
+#endif
 
 // enum は getopt() の1文字のオプションと衝突しなければいいので
 // 適当に 0x80 から始めておく。
