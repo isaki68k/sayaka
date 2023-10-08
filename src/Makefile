@@ -92,6 +92,7 @@ CPPFLAGS+=	-O2
 .else
 CXX+=		-g
 #CXX+=		-fsanitize=undefined -fno-sanitize=vptr
+#CXX+=		-fsanitize=address -fno-omit-frame-pointer	# address (gcc)
 CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
 CPPFLAGS+=	-Wignored-qualifiers
