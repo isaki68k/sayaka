@@ -51,6 +51,7 @@ Random::Get()
 
 	return y;
 }
+
 // dst から dstlen バイトを乱数で埋める。
 void
 Random::Fill(uint8 *dst, size_t dstlen)
