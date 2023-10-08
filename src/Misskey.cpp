@@ -193,6 +193,7 @@ misskey_show_object(const std::string& line)
 		return true;
 	}
 	if (obj0.is_object() == false) {
+		warnx("%s: Unexpected line |%s|", __func__, obj0.dump().c_str());
 		return true;
 	}
 
@@ -224,7 +225,8 @@ misskey_show_object(const std::string& line)
 				obj = &(*obj)["body"];
 			} else {
 				// 知らないタイプは無視。
-				Debug(diag, "Unknown message type \"%s\"", type.c_str());
+				warnx("Unknown message type \"%s\": %s",
+					type.c_str(), obj0.dump().c_str());
 				return true;
 			}
 		} else {
