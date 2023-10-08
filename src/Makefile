@@ -135,7 +135,7 @@ eaw_gen:	eaw_gen.cpp
 	${CXX} ${CPPFLAGS} -I/usr/pkg/include $> -o $@ -L/usr/pkg/lib -Wl,-R,/usr/pkg/lib -licuuc
 
 # XXX
-test_mtls:	mtls.cpp
+test_mtls:	TLSHandle_mbedtls.cpp TLSHandle.cpp
 	${CXX} ${CPPFLAGS} ${INCLUDES} -DTEST $> -o $@ ${LIBS}
 
 test_term:	test_term.o libsayaka.a
