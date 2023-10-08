@@ -82,9 +82,14 @@ TLSHandle_openssl::Init()
 bool
 TLSHandle_openssl::UseRSA()
 {
-	// OpenSSL での指定方法が分からない。
-	warn("--cipher RSA: not supported in openssl mode");
-	return false;
+	int r;
+
+	r = SSL_CTX_set_cipher_list(inner->ctx, "TLS_RSA_WITH_AES_128_CBC_SHA");
+	if (r != 1) {
+		ERR_print_errors_fp(stderr);
+		return false;
+	}
+	return true;
 }
 
 // 接続
