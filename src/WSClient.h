@@ -39,10 +39,10 @@ using wsclient_onmsg_callback_t = void (*)(void *aux,
 class WSClient
 {
  public:
-	WSClient(Random& rnd_);
+	WSClient(Random& rnd_, const Diag& diag_);
 	~WSClient();
 
-	bool Init(const Diag& diag, wsclient_onmsg_callback_t, void *);
+	bool Init(wsclient_onmsg_callback_t, void *);
 	bool Open(const std::string& uri);
 	bool Connect();
 	void Close();

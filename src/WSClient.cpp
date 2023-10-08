@@ -40,9 +40,10 @@ static void wsclient_on_msg_recv_callback(wslay_event_context_ptr ctx,
 
 
 // コンストラクタ
-WSClient::WSClient(Random& rnd_)
+WSClient::WSClient(Random& rnd_, const Diag& diag_)
 {
 	rnd = rnd_;
+	diag = diag_;
 }
 
 // デストラクタ
@@ -53,11 +54,8 @@ WSClient::~WSClient()
 
 // 初期化
 bool
-WSClient::Init(const Diag& diag_,
-	wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
+WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 {
-	diag = diag_;
-
 	// メッセージ受信コールバック。
 	onmsg_callback = onmsg_callback_;
 	onmsg_arg = onmsg_arg_;
