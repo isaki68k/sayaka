@@ -42,7 +42,7 @@ SRCS_common+=	ImageLoaderPNG.cpp
 .endif
 
 .if "${MAKE_MBEDTLS}" == "yes"
-SRCS_common += TLSHandle_mtls.cpp
+SRCS_common += TLSHandle_mbedtls.cpp
 .else
 SRCS_common += TLSHandle_openssl.cpp
 .endif

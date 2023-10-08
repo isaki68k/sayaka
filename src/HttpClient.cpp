@@ -27,7 +27,7 @@
 #include "HttpClient.h"
 #include "ChunkedInputStream.h"
 #if defined(USE_MBEDTLS)
-#include "TLSHandle_mtls.h"
+#include "TLSHandle_mbedtls.h"
 #else
 #include "TLSHandle_openssl.h"
 #endif
@@ -68,7 +68,7 @@ bool
 HttpClient::Open(const std::string& uri_)
 {
 #if defined(USE_MBEDTLS)
-	mtls.reset(new TLSHandle_mtls());
+	mtls.reset(new TLSHandle_mbedtls());
 #else
 	mtls.reset(new TLSHandle_openssl());
 #endif

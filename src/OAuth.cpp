@@ -31,7 +31,7 @@
 #include "OAuth.h"
 #include "StringUtil.h"
 #if defined(USE_MBEDTLS)
-#include "TLSHandle_mtls.h"
+#include "TLSHandle_mbedtls.h"
 #else
 #include "TLSHandle_openssl.h"
 #endif
@@ -118,7 +118,7 @@ OAuth::GetNonce(int len)
 OAuth::HMAC_SHA1(const std::string& key, const std::string& msg)
 {
 #if defined(USE_MBEDTLS)
-	return TLSHandle_mtls::HMAC_SHA1(key, msg);
+	return TLSHandle_mbedtls::HMAC_SHA1(key, msg);
 #else
 	return TLSHandle_openssl::HMAC_SHA1(key, msg);
 #endif

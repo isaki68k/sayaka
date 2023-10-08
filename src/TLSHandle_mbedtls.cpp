@@ -24,7 +24,7 @@
  */
 
 #include "header.h"
-#include "TLSHandle_mtls.h"
+#include "TLSHandle_mbedtls.h"
 #include <cstdarg>
 #include <cstdlib>
 #include <string>
@@ -129,11 +129,11 @@ debug_callback(void *aux, int level, const char *file, int line,
 }
 
 // 内部クラス
-class TLSHandle_mtls_inner
+class TLSHandle_mbedtls_inner
 {
  public:
-	TLSHandle_mtls_inner();
-	~TLSHandle_mtls_inner();
+	TLSHandle_mbedtls_inner();
+	~TLSHandle_mbedtls_inner();
 
 	mbedtls_net_context net {};
 	mbedtls_ssl_context ssl {};
@@ -141,7 +141,7 @@ class TLSHandle_mtls_inner
 };
 
 // コンストラクタ
-TLSHandle_mtls::TLSHandle_mtls()
+TLSHandle_mbedtls::TLSHandle_mbedtls()
 {
 	// 最初の1回だけグローバルコンテキストを初期化 (後始末はしない)
 	if (__predict_false(gctx.initialized == false)) {
@@ -161,11 +161,11 @@ TLSHandle_mtls::TLSHandle_mtls()
 	}
 
 	// メンバを初期化
-	inner.reset(new TLSHandle_mtls_inner());
+	inner.reset(new TLSHandle_mbedtls_inner());
 }
 
 // デストラクタ
-TLSHandle_mtls::~TLSHandle_mtls()
+TLSHandle_mbedtls::~TLSHandle_mbedtls()
 {
 	TRACE("called\n");
 
@@ -176,7 +176,7 @@ TLSHandle_mtls::~TLSHandle_mtls()
 // mbedTLS のエラーコードを文字列にして返す
 // (static バッファを使っていることに注意)
 const char *
-TLSHandle_mtls::errmsg(int code)
+TLSHandle_mbedtls::errmsg(int code)
 {
 	mbedtls_strerror(code, errbuf, sizeof(errbuf));
 	return errbuf;
@@ -185,7 +185,7 @@ TLSHandle_mtls::errmsg(int code)
 
 // 初期化
 bool
-TLSHandle_mtls::Init()
+TLSHandle_mbedtls::Init()
 {
 	int r;
 
@@ -221,7 +221,7 @@ TLSHandle_mtls::Init()
 }
 
 void
-TLSHandle_mtls::SetTimeout(int timeout_)
+TLSHandle_mbedtls::SetTimeout(int timeout_)
 {
 	// 親クラスの timeout は、0 ならポーリング、-1 ならタイムアウトしない。
 	// mbedtls_net_poll() の timeout はこの仕様。
@@ -236,7 +236,7 @@ TLSHandle_mtls::SetTimeout(int timeout_)
 }
 
 bool
-TLSHandle_mtls::UseRSA()
+TLSHandle_mbedtls::UseRSA()
 {
 	mbedtls_ssl_conf_ciphersuites(&inner->conf, ciphersuites_RSA);
 	return true;
@@ -244,7 +244,7 @@ TLSHandle_mtls::UseRSA()
 
 // 接続
 bool
-TLSHandle_mtls::Connect(const char *hostname, const char *servname)
+TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 {
 #if defined(DEBUG)
 	struct timeval start, end, result;
@@ -254,7 +254,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
 
 	// ssl_setup() は複数回呼んではいけないし、呼んだ後で conf を変更するな
-	// と書いてあるように読める。TLSHandle_mtls は Init() 後、必要に応じて
+	// と書いてあるように読める。TLSHandle_mbedtls は Init() 後、必要に応じて
 	// いろいろ Set してから Connect() を呼ぶということにしているので、
 	// ここで呼ぶのがいいか。
 	r = mbedtls_ssl_setup(&inner->ssl, &inner->conf);
@@ -335,7 +335,7 @@ TLSHandle_mtls::Connect(const char *hostname, const char *servname)
 // クローズ。
 // 未初期化時や接続前に呼び出しても副作用はない。
 void
-TLSHandle_mtls::Close()
+TLSHandle_mbedtls::Close()
 {
 	// これを知る方法はないのか…
 	if (inner->net.fd >= 0) {
@@ -351,7 +351,7 @@ TLSHandle_mtls::Close()
 
 // shutdown する
 int
-TLSHandle_mtls::Shutdown(int how)
+TLSHandle_mbedtls::Shutdown(int how)
 {
 	int rv = 0;
 
@@ -364,7 +364,7 @@ TLSHandle_mtls::Shutdown(int how)
 
 // 読み込み
 ssize_t
-TLSHandle_mtls::Read(void *buf, size_t len)
+TLSHandle_mbedtls::Read(void *buf, size_t len)
 {
 	ssize_t rv;
 
@@ -407,7 +407,7 @@ TLSHandle_mtls::Read(void *buf, size_t len)
 
 // 書き出し
 ssize_t
-TLSHandle_mtls::Write(const void *buf, size_t len)
+TLSHandle_mbedtls::Write(const void *buf, size_t len)
 {
 	ssize_t rv;
 
@@ -433,14 +433,14 @@ TLSHandle_mtls::Write(const void *buf, size_t len)
 
 // 生ディスクリプタ取得
 int
-TLSHandle_mtls::GetFd() const
+TLSHandle_mbedtls::GetFd() const
 {
 	return inner->net.fd;
 }
 
 // HMAC-SHA1 したバイナリを返す。
 /*static*/ std::vector<uint8>
-TLSHandle_mtls::HMAC_SHA1(const std::string& key, const std::string& msg)
+TLSHandle_mbedtls::HMAC_SHA1(const std::string& key, const std::string& msg)
 {
 	mbedtls_md_context_t ctx;
 	std::vector<uint8> result(20);	// SHA-1 は 20バイト (決め打ち…)
@@ -545,7 +545,7 @@ mbedtls_net_connect_nonblock(mbedtls_net_context *ctx,
 }
 
 // コンストラクタ (内部クラス)
-TLSHandle_mtls_inner::TLSHandle_mtls_inner()
+TLSHandle_mbedtls_inner::TLSHandle_mbedtls_inner()
 {
 	mbedtls_net_init(&net);
 	mbedtls_ssl_init(&ssl);
@@ -553,7 +553,7 @@ TLSHandle_mtls_inner::TLSHandle_mtls_inner()
 }
 
 // デストラクタ (内部クラス)
-TLSHandle_mtls_inner::~TLSHandle_mtls_inner()
+TLSHandle_mbedtls_inner::~TLSHandle_mbedtls_inner()
 {
 	mbedtls_ssl_free(&ssl);
 	mbedtls_ssl_config_free(&conf);
@@ -582,7 +582,7 @@ usage()
 int
 main(int ac, char *av[])
 {
-	TLSHandle_mtls mtls;
+	TLSHandle_mbedtls mtls;
 	const char *hostname = "www.google.com";
 	const char *servname = "443";
 	const char *pathname = "/";

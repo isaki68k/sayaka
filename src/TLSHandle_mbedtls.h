@@ -29,18 +29,18 @@
 #include <memory>
 #include <vector>
 
-class TLSHandle_mtls_inner;
+class TLSHandle_mbedtls_inner;
 
-class TLSHandle_mtls : public TLSHandleBase
+class TLSHandle_mbedtls : public TLSHandleBase
 {
 	using inherited = TLSHandleBase;
  public:
-	TLSHandle_mtls();
-	virtual ~TLSHandle_mtls() override;
+	TLSHandle_mbedtls();
+	virtual ~TLSHandle_mbedtls() override;
 
 	// ディスクリプタを持っているのでコピーコンストラクタを禁止する。
-	TLSHandle_mtls(const TLSHandle_mtls&) = delete;
-	TLSHandle_mtls& operator=(const TLSHandle_mtls&) = delete;
+	TLSHandle_mbedtls(const TLSHandle_mbedtls&) = delete;
+	TLSHandle_mbedtls& operator=(const TLSHandle_mbedtls&) = delete;
 
 	// 初期化
 	bool Init() override;
@@ -74,7 +74,7 @@ class TLSHandle_mtls : public TLSHandleBase
 		const std::string& msg);
 
  private:
-	std::unique_ptr<TLSHandle_mtls_inner> inner /*{}*/;
+	std::unique_ptr<TLSHandle_mbedtls_inner> inner /*{}*/;
 
 	// mbedTLS のエラーコードを文字列にして返す
 	// (static バッファを使っていることに注意)
