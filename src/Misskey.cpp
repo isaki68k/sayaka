@@ -353,7 +353,9 @@ misskey_show_note(const Json *note, int depth)
 static std::string
 misskey_format_username(const Json& user)
 {
-	return JsonAsString(user["name"]);
+	// name が空なら username を使う仕様。
+	std::string name = JsonAsString(user["name"]);
+	return !name.empty() ? name : JsonAsString(user["username"]);
 }
 
 // user からアカウント名(+外部ならホスト名) の文字列を取得。
