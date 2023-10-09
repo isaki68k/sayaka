@@ -44,16 +44,23 @@ _Pragma("clang diagnostic pop")
 _Pragma("GCC diagnostic pop")
 #endif
 
-#define MAGIC_LEN	(64)
 #define BUFSIZE		(4000)
 
 #define TRANSBG		(0xe1)	// ?
+
+// vec の末尾に src から srccount 個の要素を追加する。
+template <typename T> inline static void
+vector_append(std::vector<T>& vec, const T *src, size_t srccount)
+{
+	size_t oldsize = vec.size();
+	vec.resize(vec.size() + srccount);
+	memcpy(&vec[oldsize], src, srccount * sizeof(T));
+}
 
 // コンストラクタ
 ImageLoaderWebp::ImageLoaderWebp(PeekableStream *stream_, const Diag& diag_)
 	: inherited(stream_, diag_)
 {
-	static_assert(MAGIC_LEN >= 12);
 }
 
 // デストラクタ
@@ -65,75 +72,93 @@ ImageLoaderWebp::~ImageLoaderWebp()
 bool
 ImageLoaderWebp::Check() const
 {
-	std::vector<uint8> magic(MAGIC_LEN);
+	std::vector<uint8> magic;
 	WebPBitstreamFeatures f;
 
-	auto n = stream->Peek(magic.data(), magic.size());
-	if (n < 0) {
-		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerrno());
-		return false;
-	}
-	if (n < magic.size()) {
-		Trace(diag, "%s: Read(magic) too short: %d", __method__, (int)n);
-		return false;
+	VP8StatusCode r = VP8_STATUS_BITSTREAM_ERROR;
+	for (;;) {
+		std::array<uint8, 64> buf;
+		auto n = stream->Peek(buf.data(), buf.size());
+		if (n < 0) {
+			Trace(diag, "%s: Peek(magic) failed: %s", __method__, strerrno());
+			return false;
+		}
+		if (n == 0) {
+			break;
+		}
+		vector_append(magic, buf.data(), n);
+
+		// フォーマットは WebpGetFeatures() で判定できる。
+		// データが足りなければ VP8_STATUS_NOT_ENOUGH_DATA が返ってくる。
+		r = WebPGetFeatures(magic.data(), magic.size(), &f);
+		if (r != VP8_STATUS_NOT_ENOUGH_DATA) {
+			break;
+		}
 	}
 
-	// フォーマットは WebpGetFeatures() で判定できる。
-	// データが足りなければ VP8_STATUS_NOT_ENOUGH_DATA が返ってくるが、
-	// とりあえず長さは決め打ち。
-	auto r = WebPGetFeatures(magic.data(), magic.size(), &f);
 	if (r == VP8_STATUS_BITSTREAM_ERROR) {
 		// Webp ではない。
 		return false;
-	}
-	if (r != 0) {
+	} else if (r == 0) {
+		// Webp っぽい。
+		Trace(diag, "%s: OK", __method__);
+		return true;
+	} else {
 		// それ以外のエラー。
 		Trace(diag, "%s: WebPGetFeatures() failed: %d", __method__, (int)r);
 		return false;
 	}
-	// Webp っぽい。
-	Trace(diag, "%s: OK", __method__);
-	return true;
 }
 
 // stream から画像をロードする。
 bool
 ImageLoaderWebp::Load(Image& img)
 {
-	std::vector<uint8> magic(MAGIC_LEN);
+	std::vector<uint8> filebuf;
 	WebPDecoderConfig config;
 	ssize_t n;
 	bool rv = false;
 
-	// Features を取得できる分だけ読み込む。
-	n = stream->Read(magic.data(), magic.size());
-	if (n < 0) {
-		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerrno());
-		return false;
+	WebPInitDecoderConfig(&config);
+	config.options.no_fancy_upsampling = 1;
+
+	// まず Features を取得できる分だけ読み込む。
+	VP8StatusCode r = VP8_STATUS_BITSTREAM_ERROR;
+	for (;;) {
+		std::array<uint8, 64> buf;
+		n = stream->Read(buf.data(), buf.size());
+		if (n < 0) {
+			Trace(diag, "%s: Read(magic) failed: %s", __method__, strerrno());
+			return false;
+		}
+		if (n == 0) {
+			break;
+		}
+		vector_append(filebuf, buf.data(), n);
+
+		// Feature を取得。
+		r = WebPGetFeatures(filebuf.data(), filebuf.size(), &config.input);
+		if (r != VP8_STATUS_NOT_ENOUGH_DATA) {
+			break;
+		}
 	}
-	if (n < magic.size()) {
-		Trace(diag, "%s: Read(magic) too short: %d", __method__, (int)n);
+
+	if (r == VP8_STATUS_BITSTREAM_ERROR) {
+		// Webp ではない。
+		return false;
+	} else if (r != 0) {
+		// それ以外のエラー。
+		Trace(diag, "%s: WebPGetFeatures failed: %d", __method__, (int)r);
 		return false;
 	}
 
 	// ファイルサイズを取得。
 	// +4バイト目から4バイトが 8バイト目以降のファイルサイズ(LE)。
-	int filesize = (int)(magic[4]
-				| (magic[5] << 8)
-				| (magic[6] << 16)
-				| (magic[7] << 24));
+	int filesize = (int)(filebuf[4]
+				| (filebuf[5] << 8)
+				| (filebuf[6] << 16)
+				| (filebuf[7] << 24));
 	filesize += 8;
-
-	WebPInitDecoderConfig(&config);
-	config.options.no_fancy_upsampling = 1;
-
-	// Feature を取得。
-	auto r = WebPGetFeatures(magic.data(), magic.size(), &config.input);
-	if (r != 0) {
-		// さっき成功してるのでエラーになるはずはない。
-		Trace(diag, "%s: WebPGetFeatures failed", __method__);
-		return false;
-	}
 
 	int width = config.input.width;
 	int height = config.input.height;
@@ -166,16 +191,15 @@ ImageLoaderWebp::Load(Image& img)
 		int timestamp;
 
 		// ファイル全体を読み込む。
-		std::vector<uint8> buf(filesize);
-		n = ReadAll(buf, magic);
+		n = ReadAll(filebuf, filesize);
 		if (n < 0) {
 			return false;
 		}
 
 		WebPAnimDecoderOptionsInit(&opt);
 		opt.color_mode = MODE_RGBA;
-		data.bytes = buf.data();
-		data.size = filesize;
+		data.bytes = filebuf.data();
+		data.size = filebuf.size();
 		dec = WebPAnimDecoderNew(&data, &opt);
 		if (dec == NULL) {
 			Trace(diag, "%s: WebpAnimDecoderNew() failed", __method__);
@@ -207,8 +231,7 @@ ImageLoaderWebp::Load(Image& img)
 		Debug(diag, "%s: use RGBA decoder", __method__);
 
 		// ファイル全体を読み込む。
-		std::vector<uint8> buf(filesize);
-		n = ReadAll(buf, magic);
+		n = ReadAll(filebuf, filesize);
 		if (n < 0) {
 			return false;
 		}
@@ -223,7 +246,7 @@ ImageLoaderWebp::Load(Image& img)
 		config.output.u.RGBA.rgba = outbuf.data();
 		config.output.u.RGBA.size = outbuf.size();
 		config.output.u.RGBA.stride = stride;
-		int status = WebPDecode(buf.data(), buf.size(), &config);
+		int status = WebPDecode(filebuf.data(), filebuf.size(), &config);
 		if (status != VP8_STATUS_OK) {
 			Trace(diag, "%s: WebpDecode() failed", __method__);
 			goto abort_alpha;
@@ -246,7 +269,7 @@ ImageLoaderWebp::Load(Image& img)
 		}
 
 		// 読み込み済みの部分だけ先に処理。必ず SUSPENDED になるはず。
-		int status = WebPIAppend(idec, magic.data(), magic.size());
+		int status = WebPIAppend(idec, filebuf.data(), filebuf.size());
 		if (status != VP8_STATUS_SUSPENDED) {
 			Trace(diag, "%s: WebPIAppend(first) failed", __method__);
 			goto abort_inc;
@@ -259,23 +282,17 @@ ImageLoaderWebp::Load(Image& img)
 	}
 }
 
-// buf (filesize だけ確保してある) に stream から読み込む。
-// magic はすでに読んである buf の先頭部分。
-// 成功すれば magic も含めて読み込めたというか buf に書き込んだバイト数を返す。
-// 失敗すれば errno をセットして -1 を返す。
+// filebuf (長さは 0 ではないかも知れない) を filesize にリサイズし、
+// そこに stream から読み込む(付け足す)。
 ssize_t
-ImageLoaderWebp::ReadAll(std::vector<uint8>& buf,
-	const std::vector<uint8>& magic)
+ImageLoaderWebp::ReadAll(std::vector<uint8>& filebuf, size_t filesize)
 {
-	size_t filesize = buf.size();
-	size_t len;
+	size_t len = filebuf.size();
 
-	// すでに読み込んでる部分。
-	memcpy(buf.data(), magic.data(), magic.size());
-	len = magic.size();
+	filebuf.resize(filesize);
 
 	while (len < filesize) {
-		auto n = stream->Read(buf.data() + len, buf.size() - len);
+		auto n = stream->Read(filebuf.data() + len, filebuf.size() - len);
 		if (__predict_false(n < 0)) {
 			Trace(diag, "%s: Read() failed: %s", __method__, strerrno());
 			return -1;
