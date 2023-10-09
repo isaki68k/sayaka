@@ -29,7 +29,6 @@ SRCS_common+=	UString.cpp
 SRCS_common+=	WSClient.cpp
 SRCS_common+=	eaw_code.cpp
 SRCS_common+=	eaw_data.cpp
-SRCS_common+=	fetch_image.cpp
 SRCS_common+=	term.cpp
 SRCS_common+=	subr.cpp
 

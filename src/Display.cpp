@@ -25,13 +25,15 @@
 
 #include "sayaka.h"
 #include "Display.h"
+#include "FileStream.h"
+#include "HttpClient.h"
 #include "JsonInc.h"
 #include "MathAlphaSymbols.h"
+#include "SixelConverter.h"
 #include "StringUtil.h"
 #include "UString.h"
 #include "autofd.h"
 #include "eaw_code.h"
-#include "fetch_image.h"
 #include "subr.h"
 #include "term.h"
 #include <ctime>
@@ -60,6 +62,8 @@ static const std::string YELLOW		= "93";
 
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
+static FILE *fetch_image(const std::string& cache_filename,
+	const std::string& img_url, int resize_width);
 
 static std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
 
@@ -567,4 +571,93 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 	}
 
 	return true;
+}
+
+// 画像をダウンロードして SIXEL に変換してキャッシュする。
+// 成功すれば、書き出したキャッシュファイルの FILE* (位置は先頭) を返す。
+// 失敗すれば NULL を返す。
+// cache_filename はキャッシュするファイルのファイル名。
+// img_url は画像 URL。
+// resize_width はリサイズすべき幅を指定、0 ならリサイズしない。
+FILE *
+fetch_image(const std::string& cache_filename, const std::string& img_url,
+	int resize_width)
+{
+	SixelConverter sx(opt_debug_sixel);
+
+	// 共通の設定
+	// 一番高速になる設定
+	sx.ResizeMode = SixelResizeMode::ByLoad;
+	// 縮小するので X68k でも画質 High でいける
+	sx.ReduceMode = ReductorReduceMode::HighQuality;
+	// 縮小のみの長辺指定変形。
+	// height にも resize_width を渡すことで長辺を resize_width に
+	// 制限できる。この関数の呼び出し意図がそれを想定している。
+	// もともと幅しか指定できなかった経緯があり、
+	// 本当は width/height をうまく分離すること。
+	sx.ResizeWidth = resize_width;
+	sx.ResizeHeight = resize_width;
+	sx.ResizeAxis = ResizeAxisMode::ScaleDownLong;
+
+	if (color_mode == ColorFixedX68k) {
+		// とりあえず固定 16 色
+		// システム取得する?
+		sx.ColorMode = ReductorColorMode::FixedX68k;
+	} else {
+		if (color_mode <= 2) {
+			sx.ColorMode = ReductorColorMode::Mono;
+		} else if (color_mode < 8) {
+			sx.ColorMode = ReductorColorMode::Gray;
+			// グレーの場合の色数として colormode を渡す
+			sx.GrayCount = color_mode;
+		} else if (color_mode < 16) {
+			sx.ColorMode = ReductorColorMode::Fixed8;
+		} else if (color_mode < 256) {
+			sx.ColorMode = ReductorColorMode::FixedANSI16;
+		} else {
+			sx.ColorMode = ReductorColorMode::Fixed256;
+		}
+	}
+	if (opt_ormode) {
+		sx.OutputMode = SixelOutputMode::Or;
+	} else {
+		sx.OutputMode = SixelOutputMode::Normal;
+	}
+	sx.OutputPalette = opt_output_palette;
+
+	HttpClient http(diag);
+	if (http.Open(img_url) == false) {
+		return NULL;
+	}
+	http.family = address_family;
+	http.SetTimeout(opt_timeout_image);
+	Stream *stream = http.GET();
+	if (stream == NULL) {
+		Debug(diag, "Warning: %s GET failed", __func__);
+		return NULL;
+	}
+
+	// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
+	// (= HTML とか) を返すやつは画像ではないので無視。
+	const auto& content_type = http.GetHeader(http.RecvHeaders, "Content-Type");
+	if (StartWith(content_type, "image/") == false) {
+		return NULL;
+	}
+	if (sx.LoadFromStream(stream) == false) {
+		Debug(diag, "Warning: %s LoadFromStream failed", __func__);
+		return NULL;
+	}
+
+	// インデックスカラー変換
+	sx.ConvertToIndexed();
+
+	FILE *fp = fopen(cache_filename.c_str(), "w+");
+	FileStream outstream(fp, false);
+	if (sx.SixelToStream(&outstream) == false) {
+		fclose(fp);
+		return NULL;
+	}
+	outstream.Flush();
+	outstream.Rewind();
+	return fp;
 }
