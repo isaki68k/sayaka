@@ -229,6 +229,7 @@ misskey_show_object(const std::string& line)
 				obj = &(*obj)["body"];
 			} else if (strncmp(type.c_str(), "emoji", 5) == 0) {
 				// emoji{Added,Deleted} とかは無視でいい。
+				return true;
 			} else {
 				// 知らないタイプは無視。
 				warnx("Unknown message type \"%s\": %s",
