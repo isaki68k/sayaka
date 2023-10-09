@@ -1,4 +1,4 @@
-Misskey クライアント sayaka ちゃん version 3.6.5 (2023/07/09)
+Misskey クライアント sayaka ちゃん version 3.7.0 (2023/10/09)
 ======
 
 ターミナルに特化した Misskey ストリームクライアントです。
@@ -9,7 +9,7 @@ Misskey クライアント sayaka ちゃん version 3.6.5 (2023/07/09)
 
 変更点
 ---
-* 3.7.0 (yyyy/mm/dd) … Misskey 対応開始。
+* 3.7.0 (2023/10/09) … Misskey 対応開始。
 	Twitter への接続機能は廃止。
 	これに伴い、オプション --filter, --home, --no-rest, --post, --token を廃止。
 	オプション --twitter, --misskey, --local を追加。
