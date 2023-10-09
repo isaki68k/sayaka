@@ -80,7 +80,7 @@ ImageLoaderWebp::Check() const
 		std::array<uint8, 64> buf;
 		auto n = stream->Peek(buf.data(), buf.size());
 		if (n < 0) {
-			Trace(diag, "%s: Peek(magic) failed: %s", __method__, strerrno());
+			Trace(diag, "%s: Peek() failed: %s", __method__, strerrno());
 			return false;
 		}
 		if (n == 0) {
@@ -148,7 +148,7 @@ ImageLoaderWebp::Load(Image& img)
 		return false;
 	} else if (r != 0) {
 		// それ以外のエラー。
-		Trace(diag, "%s: WebPGetFeatures failed: %d", __method__, (int)r);
+		Trace(diag, "%s: WebPGetFeatures() failed: %d", __method__, (int)r);
 		return false;
 	}
 

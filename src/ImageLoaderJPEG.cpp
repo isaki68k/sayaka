@@ -56,7 +56,7 @@ ImageLoaderJPEG::Check() const
 
 	auto n = stream->Peek(magic, sizeof(magic));
 	if (n < sizeof(magic)) {
-		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerrno());
+		Trace(diag, "%s: Peek() failed: %s", __method__, strerrno());
 		return false;
 	}
 	// マジックを確認
