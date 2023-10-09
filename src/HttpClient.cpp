@@ -296,7 +296,7 @@ HttpClient::Connect()
 {
 	// デフォルトポートの処理
 	// ParsedUri はポート番号がない URL だと Port = "" になる。
-	if (Uri.Port == "") {
+	if (Uri.Port.empty()) {
 		if (Uri.Scheme == "https" || Uri.Scheme == "wss") {
 			Uri.Port = "443";
 		} else {

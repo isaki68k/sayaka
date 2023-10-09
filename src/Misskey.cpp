@@ -469,9 +469,9 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 	} else {
 		// thumbnailUrl があればそっちを使う。
 		auto img_url = JsonAsString(f["thumbnailUrl"]);
-		if (img_url == "") {
+		if (img_url.empty()) {
 			img_url = JsonAsString(f["url"]);
-			if (img_url == "") {
+			if (img_url.empty()) {
 				return false;
 			}
 		}
