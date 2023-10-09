@@ -3625,70 +3625,6 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 CPPFLAGS="${old_CPPFLAGS}"
 
-# wslay
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for wslay" >&5
-printf %s "checking for wslay... " >&6; }
-PATHS="/usr/pkg /usr/local"
-old_CPPFLAGS=${CPPFLAGS}
-old_LIBS=${LIBS}
-for p in ${PATHS}; do
-	CPPFLAGS="${CPPFLAGS} -I${p}/include"
-	case "${host_os}" in
-	 netbsd*)
-		LIBS="${LIBS} -L${p}/lib -Wl,-R,${p}/lib -lwslay"
-		;;
-	 freebsd*)
-		LIBS="${LIBS} -L${p}/lib -lwslay_shared"
-		;;
-	 *)
-		LIBS="${LIBS} -L${p}/lib -lwslay"
-		;;
-	esac
-
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-		#include <wslay/wslay.h>
-
-int
-main (void)
-{
-
-		wslay_event_context_client_init(NULL, NULL, NULL)
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"
-then :
-  has_wslay=yes
-else $as_nop
-  has_wslay=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-
-	if test "x${has_wslay}" = "xyes"; then
-		break
-	fi
-	CPPFLAGS=${old_CPPFLAGS}
-	LIBS=${old_LIBS}
-done
-if test "x${has_wslay}" = "xyes"; then
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-else
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "wslay not found in ${PATHS}.
-	On NetBSD(pkgsrc), install pkgsrc/www/wslay
-	On Ubuntu, sudo apt install libwslay1 libwslay-dev
-See \`config.log' for more details" "$LINENO" 5; }
-fi
-
 # libbsd on Linux
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing getprogname" >&5
 printf %s "checking for library containing getprogname... " >&6; }
@@ -3867,6 +3803,48 @@ as_fn_error $? "pkg-config (or \$PKG_CONFIG) not found
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
+# CHECK_PKG($1=pkgname)
+
+
+# CHECK_LIB($1=name, $2=libs, $3=include, $4=src)
+
+
+PATHS="none /usr/pkg /usr/local"
+
+#
+# Webp
+#
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libwebp" >&5
+printf %s "checking for libwebp... " >&6; }
+	if ${PKG_CONFIG} --exists libwebp; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		has_libwebp=yes
+		H=`${PKG_CONFIG} --cflags libwebp`
+		L=`${PKG_CONFIG} --libs libwebp`
+
+		CPPFLAGS="${CPPFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		has_libwebp=no
+	fi
+
+if test x"${has_libwebp}" = x"yes"; then
+	# どうするんだこれ
+	LIBS="${LIBS} -lwebpdemux"
+else
+	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "libwebp not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
+	On Unubtu, sudo apt install libwebp-dev
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
+
 # stb-image はデフォルト採用で、without で外すことも可能。
 
 # Check whether --with-stb-image was given.
@@ -3878,41 +3856,87 @@ else $as_nop
 
 fi
 
-
 if test "x${with_stb_image}" = "xyes"; then
 	printf "%s\n" "#define USE_STB_IMAGE 1" >>confdefs.h
 
 	MAKE_STB_IMAGE=yes
 
 else
-	PKGS="libjpeg libpng"
-	for p in ${PKGS}; do
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ${p}" >&5
-printf %s "checking for ${p}... " >&6; }
+	#
+	# libjpeg
+	#
 
-		if ${PKG_CONFIG} --exists ${p}; then
-			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libjpeg" >&5
+printf %s "checking for libjpeg... " >&6; }
+	if ${PKG_CONFIG} --exists libjpeg; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-			H=`${PKG_CONFIG} --cflags ${p}`
-			L=`${PKG_CONFIG} --libs ${p}`
+		has_libjpeg=yes
+		H=`${PKG_CONFIG} --cflags libjpeg`
+		L=`${PKG_CONFIG} --libs libjpeg`
 
-			CPPFLAGS="${CPPFLAGS} ${H}"
-			LIBS="${LIBS} ${L}"
-		else
-			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+		CPPFLAGS="${CPPFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+		has_libjpeg=no
+	fi
+
+	if test x"${has_libjpeg}" \!= x"yes"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "--without-stb-image was given, but pkg-config cannot find ${p}
+as_fn_error $? "--without-stb-image was given, but pkg-config cannot find libjpeg
 See \`config.log' for more details" "$LINENO" 5; }
-		fi
-	done
+	fi
+
+	#
+	# libpng
+	#
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libpng" >&5
+printf %s "checking for libpng... " >&6; }
+	if ${PKG_CONFIG} --exists libpng; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		has_libpng=yes
+		H=`${PKG_CONFIG} --cflags libpng`
+		L=`${PKG_CONFIG} --libs libpng`
+
+		CPPFLAGS="${CPPFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		has_libpng=no
+	fi
+
+	if test x"${has_libpng}" \!= x"yes"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "--without-stb-image was given, but pkg-config cannot find libpng
+See \`config.log' for more details" "$LINENO" 5; }
+	fi
+
+	#
+	# libgif
+	#
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libgif" >&5
 printf %s "checking for libgif... " >&6; }
-	old_LIBS=${LIBS}
-	LIBS="${LIBS} -lgif"
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	for path in ${PATHS}; do
+		old_CPPFLAGS=${CPPFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} -lgif"
+			;;
+		 *)
+			CPPFLAGS="${CPPFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib -lgif"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 		#include <gif_lib.h>
@@ -3921,7 +3945,7 @@ int
 main (void)
 {
 
-		DGifOpen(NULL, NULL, NULL);
+		DGifOpen(NULL, NULL, NULL)
 
   ;
   return 0;
@@ -3930,48 +3954,104 @@ _ACEOF
 if ac_fn_cxx_try_link "$LINENO"
 then :
 
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
+			has_libgif=yes
+			break
 
 else $as_nop
 
+			has_libgif=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_libgif}" = x"yes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-		LIBS=${old_LIBS}
+	fi
+
+	if test x"${has_libgif}" \!= x"yes"; then
 		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--without-stb-image was given, but libgif not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/giflib
 	On Ubuntu, sudo apt install libgif-dev
 See \`config.log' for more details" "$LINENO" 5; }
+	fi
+fi
+
+#
+# wslay
+#
+case $host_os in
+ freebsd*)	wslay_libname="wslay_shared" ;;	# why?
+ *)			wslay_libname="wslay" ;;
+esac
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for wslay" >&5
+printf %s "checking for wslay... " >&6; }
+	for path in ${PATHS}; do
+		old_CPPFLAGS=${CPPFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} -l${wslay_libname}"
+			;;
+		 *)
+			CPPFLAGS="${CPPFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib -l${wslay_libname}"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+	#include <wslay/wslay.h>
+
+int
+main (void)
+{
+
+	wslay_event_context_client_init(NULL, NULL, NULL)
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+
+			has_wslay=yes
+			break
+
+else $as_nop
+
+			has_wslay=no
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-fi
-
-# Webp
-p=libwebp
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ${p}" >&5
-printf %s "checking for ${p}... " >&6; }
-if ${PKG_CONFIG} --exists ${p}; then
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_wslay}" = x"yes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-	H=`${PKG_CONFIG} --cflags ${p}`
-	L=`${PKG_CONFIG} --libs ${p}`
-	# どうするんだこれ
-	L="${L} -lwebpdemux"
-
-	CPPFLAGS="${CPPFLAGS} ${H}"
-	LIBS="${LIBS} ${L}"
-else
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
+	fi
+
+if test "x${has_wslay}" \!= "xyes"; then
 	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "libwebp not found.
-	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
-	On Unubtu, sudo apt install libwebp-dev
+as_fn_error $? "wslay not found.
+	On NetBSD(pkgsrc), install pkgsrc/www/wslay
+	On Ubuntu, sudo apt install libwslay1 libwslay-dev
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -3985,20 +4065,29 @@ else $as_nop
 
 fi
 
+if test x"${with_mbedtls}" = x"yes"; then
+	#
+	# mbedTLS
+	#
 
-if test "x${with_mbedtls}" = "xyes"; then
-	# Find mbedtls
-	PATHS="/usr/pkg /usr/local"
-
-	# libmbedtls と libmbedcrypto を同時に探す
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
 printf %s "checking for mbedtls... " >&6; }
-	old_LIBS=${LIBS}
-	LIBS="${LIBS} -lmbedtls -lmbedcrypto"
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	for path in ${PATHS}; do
+		old_CPPFLAGS=${CPPFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} -lmbedtls -lmbedcrypto"
+			;;
+		 *)
+			CPPFLAGS="${CPPFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib -lmbedtls -lmbedcrypto"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-		#include <mbedtls/net_sockets.h>
+	#include <mbedtls/net_sockets.h>
 		#include <mbedtls/entropy.h>
 
 int
@@ -4016,66 +4105,26 @@ main (void)
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"
 then :
-  has_mbedtls=yes
+
+			has_mbedtls=yes
+			break
+
 else $as_nop
-  has_mbedtls=no
+
+			has_mbedtls=no
+
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-
-	if test "x${has_mbedtls}" = "xyes"; then
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_mbedtls}" = x"yes"; then
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 	else
-		LIBS=${old_LIBS}
-
-		# Try PATHS
-		old_CPPFLAGS=${CPPFLAGS}
-		for p in ${PATHS}; do
-			CPPFLAGS="${CPPFLAGS} -I${p}/include"
-			case "${host_os}" in
-			 netbsd*)
-				LIBS="${LIBS} -Wl,-R,${p}/lib"
-				;;
-			esac
-			LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
-
-			cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-				#include <mbedtls/net_sockets.h>
-				#include <mbedtls/entropy.h>
-
-int
-main (void)
-{
-
-				mbedtls_net_context net;
-				mbedtls_entropy_context e;
-				mbedtls_net_init(&net);
-				mbedtls_entropy_init(&e);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"
-then :
-  has_mbedtls=yes
-else $as_nop
-  has_mbedtls=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-			if test "x${has_mbedtls}" = "xyes"; then
-				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${p}" >&5
-printf "%s\n" "${p}" >&6; }
-				break
-			else
-				CPPFLAGS=${old_CPPFLAGS}
-				LIBS=${old_LIBS}
-			fi
-		done
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
 	fi
 
 	if test "x${has_mbedtls}" = "xyes"; then
@@ -4145,12 +4194,25 @@ as_fn_error $? "--with-mbedtls was given, but mbedtls doesn't have mbedtls_net_p
 See \`config.log' for more details" "$LINENO" 5; }
 	fi
 else
-	# Find OpenSSL
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for OpenSSL" >&5
-printf %s "checking for OpenSSL... " >&6; }
-	old_LIBS=${LIBS}
-	LIBS="${LIBS} -lcrypto -lssl"
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	#
+	# OpenSSL
+	#
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for openssl" >&5
+printf %s "checking for openssl... " >&6; }
+	for path in ${PATHS}; do
+		old_CPPFLAGS=${CPPFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} -lssl -lcrypto"
+			;;
+		 *)
+			CPPFLAGS="${CPPFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib -lssl -lcrypto"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 		#include <openssl/sha.h>
@@ -4169,20 +4231,29 @@ main (void)
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"
 then :
-  has_openssl=yes
+
+			has_openssl=yes
+			break
+
 else $as_nop
-  has_openssl=no
+
+			has_openssl=no
+
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
-
-	if test "x${has_openssl}" = "xyes"; then
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_openssl}" = x"yes"; then
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 	else
-		LIBS=${old_LIBS}
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
+	fi
+
+	if test x"${has_openssl}" \!= x"yes"; then
 		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--without-mbedtls was given, but OpenSSL not found.
@@ -4199,7 +4270,7 @@ else $as_nop
 
 	case "${enableval}" in
 	 yes)	enable_twitter=yes	;;
-	 no)	enable_twitter=no	;;
+	 *)		enable_twitter=no	;;
 	esac
 fi
 
@@ -4210,6 +4281,11 @@ if test x"${enable_twitter}" = x"yes"; then
 	MAKE_TWITTER=yes
 
 fi
+
+# Uniq
+CPPFLAGS=`echo -n ${CPPFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
+LIBS=`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
+
 
 ac_config_headers="$ac_config_headers config.h"
 
@@ -5485,16 +5561,16 @@ fi
 
 echo
 echo "sayaka was configured as follows"
-echo -n " Supported Service          : Misskey"
+echo -n " Supported API              : Misskey"
 if test x"${enable_twitter}" = x"yes"; then
 	echo -n " Twitter"
 fi
 echo ""
 echo -n " Image loader               : "
 if test "x${with_stb_image}" = "xyes"; then
-	echo "Bundled stb_image"
+	echo "stb_image(bundled)"
 else
-	echo "External JPG,PNG,GIF libraries"
+	echo "External JPEG,PNG,GIF libraries"
 fi
 echo -n " SSL/TLS library            : "
 if test "x${with_mbedtls}" = "xyes"; then

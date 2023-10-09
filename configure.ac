@@ -153,47 +153,6 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	])
 CPPFLAGS="${old_CPPFLAGS}"
 
-# wslay
-AC_MSG_CHECKING([for wslay])
-PATHS="/usr/pkg /usr/local"
-old_CPPFLAGS=${CPPFLAGS}
-old_LIBS=${LIBS}
-for p in ${PATHS}; do
-	CPPFLAGS="${CPPFLAGS} -I${p}/include"
-	case "${host_os}" in
-	 netbsd*)
-		LIBS="${LIBS} -L${p}/lib -Wl,-R,${p}/lib -lwslay"
-		;;
-	 freebsd*)
-		LIBS="${LIBS} -L${p}/lib -lwslay_shared"
-		;;
-	 *)
-		LIBS="${LIBS} -L${p}/lib -lwslay"
-		;;
-	esac
-
-	AC_LINK_IFELSE([AC_LANG_PROGRAM(
-	[
-		#include <wslay/wslay.h>
-	], [
-		wslay_event_context_client_init(NULL, NULL, NULL)
-	])], has_wslay=yes, has_wslay=no)
-
-	if test "x${has_wslay}" = "xyes"; then
-		break
-	fi
-	CPPFLAGS=${old_CPPFLAGS}
-	LIBS=${old_LIBS}
-done
-if test "x${has_wslay}" = "xyes"; then
-	AC_MSG_RESULT([yes])
-else
-	AC_MSG_RESULT([no])
-	AC_MSG_FAILURE([wslay not found in ${PATHS}.
-	On NetBSD(pkgsrc), install pkgsrc/www/wslay
-	On Ubuntu, sudo apt install libwslay1 libwslay-dev])
-fi
-
 # libbsd on Linux
 AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
 if test "x${has_getprogname}" = "xno"; then
@@ -206,71 +165,129 @@ if test x"${PKG_CONFIG}" = x":"; then
 	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found])
 fi
 
+# CHECK_PKG($1=pkgname)
+AC_DEFUN([CHECK_PKG], [
+	AC_MSG_CHECKING([for $1])
+	if ${PKG_CONFIG} --exists $1; then
+		AC_MSG_RESULT([yes])
+		has_$1=yes
+		H=`${PKG_CONFIG} --cflags $1`
+		L=`${PKG_CONFIG} --libs $1`
+
+		CPPFLAGS="${CPPFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		AC_MSG_RESULT([no])
+		has_$1=no
+	fi
+])
+
+# CHECK_LIB($1=name, $2=libs, $3=include, $4=src)
+AC_DEFUN([CHECK_LIB], [
+	AC_MSG_CHECKING([for $1])
+	for path in ${PATHS}; do
+		old_CPPFLAGS=${CPPFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} $2"
+			;;
+		 *)
+			CPPFLAGS="${CPPFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib $2"
+			;;
+		esac
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([$3], [$4])], [
+			has_$1=yes
+			break
+		], [
+			has_$1=no
+		])
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_$1}" = x"yes"; then
+		AC_MSG_RESULT([yes])
+	else
+		AC_MSG_RESULT([no])
+	fi
+])
+
+PATHS="none /usr/pkg /usr/local"
+
+#
+# Webp
+#
+CHECK_PKG([libwebp])
+if test x"${has_libwebp}" = x"yes"; then
+	# どうするんだこれ
+	LIBS="${LIBS} -lwebpdemux"
+else
+	AC_MSG_FAILURE([libwebp not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
+	On Unubtu, sudo apt install libwebp-dev])
+fi
+
+
 # stb-image はデフォルト採用で、without で外すことも可能。
 AC_ARG_WITH([stb-image],
 [  --without-stb-image     Use external JPG,PNG,GIF libs instead of stb_image],
 	[],
 	[with_stb_image=yes]
 )
-
 if test "x${with_stb_image}" = "xyes"; then
 	AC_DEFINE([USE_STB_IMAGE])
 	AC_SUBST([MAKE_STB_IMAGE], [yes])
 else
-	PKGS="libjpeg libpng"
-	for p in ${PKGS}; do
-		AC_MSG_CHECKING([for ${p}])
+	#
+	# libjpeg
+	#
+	CHECK_PKG([libjpeg])
+	if test x"${has_libjpeg}" \!= x"yes"; then
+		AC_MSG_FAILURE(
+			[--without-stb-image was given, but pkg-config cannot find libjpeg])
+	fi
 
-		if ${PKG_CONFIG} --exists ${p}; then
-			AC_MSG_RESULT([yes])
-			H=`${PKG_CONFIG} --cflags ${p}`
-			L=`${PKG_CONFIG} --libs ${p}`
+	#
+	# libpng
+	#
+	CHECK_PKG([libpng])
+	if test x"${has_libpng}" \!= x"yes"; then
+		AC_MSG_FAILURE(
+			[--without-stb-image was given, but pkg-config cannot find libpng])
+	fi
 
-			CPPFLAGS="${CPPFLAGS} ${H}"
-			LIBS="${LIBS} ${L}"
-		else
-			AC_MSG_RESULT([no])
-			AC_MSG_FAILURE(
-			[--without-stb-image was given, but pkg-config cannot find ${p}])
-		fi
-	done
-
-	AC_MSG_CHECKING([for libgif])
-	old_LIBS=${LIBS}
-	LIBS="${LIBS} -lgif"
-	AC_LINK_IFELSE([AC_LANG_PROGRAM(
-	[
+	#
+	# libgif
+	#
+	CHECK_LIB([libgif], [-lgif], [
 		#include <gif_lib.h>
 	], [
-		DGifOpen(NULL, NULL, NULL);
-	])], [
-		AC_MSG_RESULT([yes])
-	], [
-		AC_MSG_RESULT([no])
-		LIBS=${old_LIBS}
+		DGifOpen(NULL, NULL, NULL)
+	])
+	if test x"${has_libgif}" \!= x"yes"; then
 		AC_MSG_FAILURE([--without-stb-image was given, but libgif not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/giflib
 	On Ubuntu, sudo apt install libgif-dev])
-	])
+	fi
 fi
 
-# Webp
-p=libwebp
-AC_MSG_CHECKING([for ${p}])
-if ${PKG_CONFIG} --exists ${p}; then
-	AC_MSG_RESULT([yes])
-	H=`${PKG_CONFIG} --cflags ${p}`
-	L=`${PKG_CONFIG} --libs ${p}`
-	# どうするんだこれ
-	L="${L} -lwebpdemux"
-
-	CPPFLAGS="${CPPFLAGS} ${H}"
-	LIBS="${LIBS} ${L}"
-else
-	AC_MSG_RESULT([no])
-	AC_MSG_FAILURE([libwebp not found.
-	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
-	On Unubtu, sudo apt install libwebp-dev])
+#
+# wslay
+#
+case $host_os in
+ freebsd*)	wslay_libname="wslay_shared" ;;	# why?
+ *)			wslay_libname="wslay" ;;
+esac
+CHECK_LIB([wslay], [-l${wslay_libname}], [
+	#include <wslay/wslay.h>
+], [
+	wslay_event_context_client_init(NULL, NULL, NULL)
+])
+if test "x${has_wslay}" \!= "xyes"; then
+	AC_MSG_FAILURE([wslay not found.
+	On NetBSD(pkgsrc), install pkgsrc/www/wslay
+	On Ubuntu, sudo apt install libwslay1 libwslay-dev])
 fi
 
 AC_ARG_WITH(mbedtls,
@@ -278,62 +295,19 @@ AC_ARG_WITH(mbedtls,
 	[],
 	[with_mbedtls=yes]
 )
-
-if test "x${with_mbedtls}" = "xyes"; then
-	# Find mbedtls
-	PATHS="/usr/pkg /usr/local"
-
-	# libmbedtls と libmbedcrypto を同時に探す
-	AC_MSG_CHECKING([for mbedtls])
-	old_LIBS=${LIBS}
-	LIBS="${LIBS} -lmbedtls -lmbedcrypto"
-	AC_LINK_IFELSE([AC_LANG_PROGRAM(
-	[
-		#include <mbedtls/net_sockets.h>
+if test x"${with_mbedtls}" = x"yes"; then
+	#
+	# mbedTLS
+	#
+	CHECK_LIB([mbedtls], [-lmbedtls -lmbedcrypto], [
+	#include <mbedtls/net_sockets.h>
 		#include <mbedtls/entropy.h>
 	], [
 		mbedtls_net_context net;
 		mbedtls_entropy_context e;
 		mbedtls_net_init(&net);
 		mbedtls_entropy_init(&e);
-	])], has_mbedtls=yes, has_mbedtls=no)
-
-	if test "x${has_mbedtls}" = "xyes"; then
-		AC_MSG_RESULT([yes])
-	else
-		LIBS=${old_LIBS}
-
-		# Try PATHS
-		old_CPPFLAGS=${CPPFLAGS}
-		for p in ${PATHS}; do
-			CPPFLAGS="${CPPFLAGS} -I${p}/include"
-			case "${host_os}" in
-			 netbsd*)
-				LIBS="${LIBS} -Wl,-R,${p}/lib"
-				;;
-			esac
-			LIBS="${LIBS} -L${p}/lib -lmbedtls -lmbedcrypto"
-
-			AC_LINK_IFELSE([AC_LANG_PROGRAM(
-			[
-				#include <mbedtls/net_sockets.h>
-				#include <mbedtls/entropy.h>
-			], [
-				mbedtls_net_context net;
-				mbedtls_entropy_context e;
-				mbedtls_net_init(&net);
-				mbedtls_entropy_init(&e);
-			])], has_mbedtls=yes, has_mbedtls=no)
-			if test "x${has_mbedtls}" = "xyes"; then
-				AC_MSG_RESULT([${p}])
-				break
-			else
-				CPPFLAGS=${old_CPPFLAGS}
-				LIBS=${old_LIBS}
-			fi
-		done
-	fi
-
+	])
 	if test "x${has_mbedtls}" = "xyes"; then
 		AC_DEFINE([USE_MBEDTLS])
 		AC_SUBST([MAKE_MBEDTLS], [yes])
@@ -354,24 +328,17 @@ if test "x${with_mbedtls}" = "xyes"; then
 	Please update your mbedtls to >= 2.9.0(?).])
 	fi
 else
-	# Find OpenSSL
-	AC_MSG_CHECKING([for OpenSSL])
-	old_LIBS=${LIBS}
-	LIBS="${LIBS} -lcrypto -lssl"
-	AC_LINK_IFELSE([AC_LANG_PROGRAM(
-	[
+	#
+	# OpenSSL
+	#
+	CHECK_LIB([openssl], [-lssl -lcrypto], [
 		#include <openssl/sha.h>
 		#include <openssl/ssl.h>
 	], [
 		SSL_library_init();		// libssl
 		SHA1_Init(NULL);		// libcrypto
-	])], has_openssl=yes, has_openssl=no)
-
-	if test "x${has_openssl}" = "xyes"; then
-		AC_MSG_RESULT([yes])
-	else
-		LIBS=${old_LIBS}
-		AC_MSG_RESULT([no])
+	])
+	if test x"${has_openssl}" \!= x"yes"; then
 		AC_MSG_FAILURE([--without-mbedtls was given, but OpenSSL not found.
 	On Ubuntu, sudo apt install libssl-dev])
 	fi
@@ -382,7 +349,7 @@ AC_ARG_ENABLE(twitter,
 	[
 	case "${enableval}" in
 	 yes)	enable_twitter=yes	;;
-	 no)	enable_twitter=no	;;
+	 *)		enable_twitter=no	;;
 	esac],
 	[enable_twitter=no])
 
@@ -391,22 +358,27 @@ if test x"${enable_twitter}" = x"yes"; then
 	AC_SUBST([MAKE_TWITTER], [yes])
 fi
 
+# Uniq
+CPPFLAGS=[`echo -n ${CPPFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
+LIBS=[`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
+
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile.cfg])
 AC_OUTPUT
 
 echo
 echo "sayaka was configured as follows"
-echo -n " Supported Service          : Misskey"
+echo -n " Supported API              : Misskey"
 if test x"${enable_twitter}" = x"yes"; then
 	echo -n " Twitter"
 fi
 echo ""
 echo -n " Image loader               : "
 if test "x${with_stb_image}" = "xyes"; then
-	echo "Bundled stb_image"
+	echo "stb_image(bundled)"
 else
-	echo "External JPG,PNG,GIF libraries"
+	echo "External JPEG,PNG,GIF libraries"
 fi
 echo -n " SSL/TLS library            : "
 if test "x${with_mbedtls}" = "xyes"; then
