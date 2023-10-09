@@ -395,7 +395,7 @@ misskey_show_icon(const Json& user, const std::string& userid)
 	// 単純に一部を切り出して使う方法は無理。
 	uint32 fnv1 = FNV1(avatarUrl);
 
-	auto img_file = string_format("icon-%dx%d-%s-%08x.sixel",
+	auto img_file = string_format("icon-%dx%d-%s-%08x",
 		iconsize, iconsize, userid.c_str(), fnv1);
 	return ShowImage(img_file, avatarUrl, iconsize, -1);
 }
