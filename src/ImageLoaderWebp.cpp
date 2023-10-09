@@ -108,7 +108,7 @@ ImageLoaderWebp::Load(Image& img)
 	// Features を取得できる分だけ読み込む。
 	n = stream->Read(magic.data(), magic.size());
 	if (n < 0) {
-		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerror(errno));
+		Trace(diag, "%s: Read(magic) failed: %s", __method__, strerrno());
 		return false;
 	}
 	if (n < magic.size()) {
@@ -277,7 +277,7 @@ ImageLoaderWebp::ReadAll(std::vector<uint8>& buf,
 	while (len < filesize) {
 		auto n = stream->Read(buf.data() + len, buf.size() - len);
 		if (__predict_false(n < 0)) {
-			Trace(diag, "%s: Read() failed: %s", __method__, strerror(errno));
+			Trace(diag, "%s: Read() failed: %s", __method__, strerrno());
 			return -1;
 		}
 		if (__predict_false(n == 0)) {
@@ -329,8 +329,7 @@ ImageLoaderWebp::LoadInc(Image& img, WebPIDecoder *idec)
 	for (;;) {
 		auto n = stream->Read(buf.data(), buf.size());
 		if (n < 0) {
-			Trace(diag, "%s: Read(inc) failed: %s", __method__,
-					strerror(errno));
+			Trace(diag, "%s: Read(inc) failed: %s", __method__, strerrno());
 			return false;
 		}
 		if (n == 0) {
