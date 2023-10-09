@@ -1,33 +1,41 @@
-twitter クライアント ~~sayaka~~ Oktavia von Seckendorff ちゃん version 3.6.5 (2023/07/09)
+Misskey クライアント sayaka ちゃん version 3.6.5 (2023/07/09)
 ======
 
-ターミナルに特化した twitter クライアントでした。
-2023/07/19 に使えなくなりました。
-ちなみに同梱の SIXEL ビューアは twitter 関係ないので使えます。
+ターミナルに特化した Misskey ストリームクライアントです。
 
-* REST API (v1.1) によるホームタイムラインの新着表示ができました。
-* mlterm などの SIXEL 対応ターミナル用でした。
-* X68030/25MHz、メモリ12MB でも快適(?)動作してました。
+* ローカルタイムラインの垂れ流しができます。
+* mlterm などの SIXEL 対応ターミナルなら画像も表示できます。
+* X68030/25MHz、メモリ12MB でも快適(?)動作。
 
 変更点
 ---
-* 3.6.5 (2023/07/09) … --protect オプションを復活。
+* 3.7.0 (yyyy/mm/dd) … Misskey 対応開始。
+	Twitter への接続機能は廃止。
+	これに伴い、オプション --filter, --home, --no-rest, --post, --token を廃止。
+	オプション --twitter, --misskey, --local を追加。
+	オプション --ngword-*, --show-ng は一旦廃止。
+	オプション --black/--white を --dark/--light に変更。
+
 
 
 必要なもの
 ---
 * C++17 compiler
 * BSD make (not GNU make)
+* wslay
+* libwebp
 
 以下は configure のオプションによって変わります。
 * mbedtls 2.x (2.9.0 or later?)
-	… `--without-mbedtls` を指定しない場合(デフォルト) に必要です。
+	… デフォルトでは必要です
+	(後述の `--without-mbedtls` を指定した場合は不要です)。
 	pkgsrc なら security/mbedtls、OpenBSD なら security/polarssl です。
 * OpenSSL
 	… `--without-mbedtls` を指定した場合は必要です。
 	Ubuntu なら libssl-dev です。
 * giflib (maybe >= 5.0)、jpeg(libjpeg)、libpng
-	… `--without-stb-image` を指定した場合は必要です。
+	… デフォルトでは不要ですが、
+	後述の `--without-stb-image` を指定した場合は必要です。
 	pkgsrc なら graphics/giflib, graphics/jpeg, graphics/png です。
 
 
@@ -36,8 +44,8 @@ twitter クライアント ~~sayaka~~ Oktavia von Seckendorff ちゃん version 
 ビルドは以下のようにします。
 
 ```
-% ./configure [--without-stb-image] [--without-mbedtls]
-% make sayaka
+% ./configure [<options...>]
+% make -DRELEASE sayaka
 ```
 
 * `--without-stb-image` … デフォルトでは画像ローダには同梱の stb_image
@@ -47,39 +55,40 @@ twitter クライアント ~~sayaka~~ Oktavia von Seckendorff ちゃん version 
 	その場合は giflib、libjpeg、libpng が必要です。
 * `--without-mbedtls` … デフォルトでは SSL ライブラリに mbedTLS を使用します。
 	何らかの理由でこれを使用せず OpenSSL を使用したい場合に指定してください。
+* `--enable-twitter` … ver 3.6.x 以前に `--record`
+	オプションで保存した Twitter のデータの再生が出来ます。
+	Twitter に接続できるわけではないので、通常有効にする必要はありません。
 
 make install はないので、出来上がった src/sayaka (実行ファイル) をパスの通ったところにインストールするとかしてください。
-ちなみに `make all` すると、画像ファイルを SIXEL に変換して表示する
+ちなみに `make -DRELEASE all` すると、画像ファイルを SIXEL に変換して表示する
 sixelv というビューアも出来ます (sayaka の実行には不要です)。
-
-
-とりあえず使ってみる
----
-sayaka を起動します。
-初回起動時に `~/.sayaka` と `~/.sayaka/cache` のディレクトリを作成します。
-また初回起動時というか `~/.sayaka/token.json` ファイルがない状態では
-まず認証を行います。URL が表示されるのでこれをブラウザで開き、
-アプリ連携を許可して、表示された PIN コードを入力してください。
-```
-% sayaka --home
-Please go to:
-https://twitter.com/...
-
-And input PIN code:
-```
-
-PIN を入力するとただちにストリームモードになります。
-2回目以降は認証なしで起動するようになります。
 
 
 使い方
 ---
-sayaka ver 3.6 以降は REST API による仮復旧版です。
-レート制限内で (通常約70秒程度に1回) home_timeline を取得し、表示します。
+sayaka ver 3.7 以降は Misskey にのみ対応しています。
+現在のところローカルタイムラインのみサポートしており、
+これはアカウントを持ってなくても閲覧することが出来ます
+(アカウントを持たずにサーバのトップページに行くと見えるあれです)。
+
 ```
-% sayaka --home
+% sayaka --local <servername>
 ```
-キーワード(ハッシュタグなど)検索は ver 3.6 では使えません。
+
+なお初回起動時に `~/.sayaka/cache` のディレクトリを作成します。
+
+
+実装状況
+---
+* ローカルタイムラインのみサポートしています。
+* 本文の整形(着色)はまだほぼ行っていません。
+* Misskey MFM はほぼ対応予定はありません。ソースをお楽しみください :-)
+* emoji は未対応です。対応できるかは不明。
+* リアクションは合計数のみ表示しています。
+* CW がある場合、本文は表示されません。
+* NSFW 指定の画像は未対応なのでレンダリングが崩れる場合があります。
+* 同じ投稿が連続した場合の圧縮表示は未対応です。
+* 投稿は出来ません。
 
 
 主なコマンドライン引数
@@ -87,24 +96,19 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 * `--ciphers <ciphers>` 通信に使用する暗号化スイートを指定します。
 	今のところ指定できるのは "RSA" (大文字) のみです。
 	2桁MHz級の遅マシンでコネクションがタイムアウトするようなら指定してみてください。
-	このオプションは REST API に適用され、
+	このオプションはメインストリームの接続にのみ適用され、
 	画像のダウンロードなどには適用されません。
-	SSL ライブラリに mbedTLS を選択している場合のみ有効です。
 
 * `--color <n>` … 色数を指定します。デフォルトは 256色です。
 	他はたぶん 16 と 2 (と 8?) くらいを想定しています。
 
 * `--dark` … ダークテーマ (背景色が暗い環境) 用に、
 	可能なら明るめの文字色セットを使用します。
-	デフォルトでは背景色を自動判別しますが、
+	デフォルトでは背景色を自動判別しようとしますが、
 	ターミナルが対応していなかったりすると `--light` が選択されます。
 
 * `--eucjp` … 文字コードを EUC-JP に変換して出力します。
 	VT382J 等の EUC-JP (DEC漢字) に対応したターミナルで使えます。
-
-* ~~`--filter <keyword>` … キーワードを明示的に指定します。
-	ハイフンから始まるキーワードがオプションと間違われないようにする場合に
-	使います。~~
 
 * `--font <W>x<H>` … フォントの幅と高さを `--font 7x14` のように指定します。
 	デフォルトではターミナルに問い合わせて取得しますが、
@@ -126,8 +130,12 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 
 * `--light` … ライトテーマ (背景色が明るい環境) 用に、
 	可能なら濃いめの文字色セットを使用します。
-	デフォルトでは背景色を自動判別しますが、
+	デフォルトでは背景色を自動判別しようとしますが、
 	ターミナルが対応していなかったりすると自動で選択されます。
+
+* `--local <servername>` … 指定のサーバの Misskey
+	ローカルタイムラインを表示します。
+	アカウントを持ってなくても表示できます。
 
 * `--mathalpha` … Unicode の [Mathematical Alphanumeric Symbols](https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols)
 	を全角英数字に変換します。
@@ -137,6 +145,9 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 * `--max-image-cols <n>` … 1行に表示する画像の最大数です。
 	デフォルトは 0 で、この場合ターミナル幅を超えない限り横に並べて表示します。
 	ターミナル幅、フォント幅が取得できないときは 1 として動作します。
+
+* `--misskey` … Misskey モードにします。
+	現状デフォルトなので、通常指定する必要はありません。
 
 * `--no-color` … テキストをすべて(色を含む)属性なしで出力します。
 	`--color` オプションの結果が致命的に残念だった場合の救済用です。
@@ -164,9 +175,6 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	(ブラウザでどう見えるかとご使用の端末でどう見えるかは別なので、
 	このファイルを `grep no-combine ./README.md` などで表示してみてください)
 
-* `--post` … 標準入力の内容をツイート(投稿)します。
-	文字コードは UTF-8 にしてください。
-
 * `--play` … ユーザストリームの代わりに標準入力の内容を再生します。
 
 * `--progress` … 接続完了までの処理を表示します。
@@ -187,14 +195,13 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	0 を指定すると connect(2) のタイムアウト時間になります。
 	デフォルトは 3000 (3秒)です。
 
-* `--token <file>` … 認証トークンファイルを指定します。
-	デフォルトは `token.json` です。
-	`<file>` は `/` を含まなければ `~/.sayaka/` 直下のファイル、
-	`/' を含むと現在のディレクトリからの相対パスか絶対パスになります。
+* `--twitter` … Twitter モードにします。
+	`--play` オプションで Twitter 時代のデータを再生する場合に指定します。
+	Twitter に接続できるわけではありません。
 
 * `--x68k` … NetBSD/x68k (SIXEL パッチ適用コンソール)
 	のためのプリセットオプションで、
-	実際には `--color x68k --font 8x16 --jis --black --progress --ormode on --palette off` と等価です。
+	実際には `--color x68k --font 8x16 --jis --dark --progress --ormode on --palette off` と等価です。
 
 その他のコマンドライン引数
 ---
@@ -209,9 +216,10 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	文字幅を 1 か 2 で指定します。デフォルトは 2 です。
 	ターミナルとフォントも幅が揃ってないとたぶん悲しい目にあいます。
 
-* `--max-cont <n>` … 同一ツイートに対するリツイートが連続した場合に
+* `--max-cont <n>` … ~~同一ツイートに対するリツイートが連続した場合に
 	表示を簡略化しますが、その上限数を指定します。デフォルトは 10 です。
-	0 以下を指定すると簡略化を行いません(従来どおり)。
+	0 以下を指定すると簡略化を行いません(従来どおり)。~~
+	未復旧です。
 
 * `--ormode <on|off>` … on なら SIXEL を独自実装の OR モードで出力します。
 	デフォルトは off です。
@@ -225,15 +233,33 @@ sayaka ver 3.6 以降は REST API による仮復旧版です。
 	それ以外の環境では on のまま使用してください。
 
 
+おまけ(sixelv)
+---
+`sixelv` という SIXEL ビューワを同梱しています。
+単に sayaka ちゃん開発中に SIXEL デコーダ部分だけを独立させたテストプログラムだったのですが、
+mlterm などの SIXEL 対応端末ではその場で画像が表示できて結構便利です。
+```
+% sixelv -w 256 foo.jpg
+```
+みたいに使います。詳細は `--help` オプションを見てください。
+サポートしている画像形式は次の通りです (sayaka ちゃんも同様です)。
+* JPEG、PNG、Blurhash
+* GIF、WebP (アニメーションはいずれも1枚目のみ)
+* BMP、PNM、TGA(?)、PSD、HDR、Softimage PIC(?) …
+	stb_image デコーダを使っている場合のみ対応します。
+
+
 ライセンス
 ---
 * sayaka 自体は 2-clause BSD ライセンスです。
-* 同梱のヘッダライブラリ nlohmann/json.hpp は MIT ライセンスです。
+* 同梱のヘッダライブラリ nlohmann/*.hpp は MIT ライセンスです。
 * 同梱のヘッダライブラリ stb/stb_image.h は public domain として利用しています。
 
 
 更新履歴
 ---
+* 2023/07/19 … Twitter に接続できなくなりました。
+* 3.6.5 (2023/07/09) … --protect オプションを復活。
 * 3.6.4 (2023/06/11) … 画像ローダをデフォルトで libjpeg, libpng, giflib
 	から stb_image に変更。SSL/TLS ライブラリに OpenSSL もサポート。
 	OpenBSD/amd64、Ubuntu 22.04 でのビルド修正。
