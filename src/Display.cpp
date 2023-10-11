@@ -448,7 +448,7 @@ ShowPhoto(const std::string& img_url, int resize_width, int index)
 }
 
 // 画像をキャッシュして表示する。
-//  img_file はキャッシュディレクトリ内でのファイル名。
+//  img_file はキャッシュディレクトリ内でのファイル名 (拡張子 .sixel なし)。
 //  img_url は画像の URL。
 //  resize_width はリサイズ後の画像の幅。ピクセルで指定。0 を指定すると
 //  リサイズせずオリジナルのサイズ。
@@ -462,11 +462,9 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 	if (use_sixel == UseSixel::No)
 		return false;
 
-	std::string img_path = cachedir + PATH_SEPARATOR + img_file;
-
+	auto cache_filename = cachedir + PATH_SEPARATOR + img_file + ".sixel";
 	Debug(diagImage, "%s: img_url=%s", __func__, img_url.c_str());
-	Debug(diagImage, "%s: img_path=%s", __func__, img_path.c_str());
-	auto cache_filename = img_path + ".sixel";
+	Debug(diagImage, "%s: cache_filename=%s", __func__, cache_filename.c_str());
 	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
 	if (!cache_file.Valid()) {
 		// キャッシュファイルがないので、画像を取得
