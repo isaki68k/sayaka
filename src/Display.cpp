@@ -650,6 +650,11 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	sx.ConvertToIndexed();
 
 	FILE *fp = fopen(cache_filename.c_str(), "w+");
+	if (fp == NULL) {
+		Debug(diagImage, "%s: fopen(\"%s\") failed: %s", __method__,
+			cache_filename.c_str(), strerrno());
+		return NULL;
+	}
 	FileStream outstream(fp, false);
 	if (sx.SixelToStream(&outstream) == false) {
 		fclose(fp);
