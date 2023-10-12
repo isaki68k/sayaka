@@ -642,7 +642,7 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 		return NULL;
 	}
 	if (sx.LoadFromStream(stream) == false) {
-		Debug(diag, "Warning: %s LoadFromStream failed", __func__);
+		Debug(diagImage, "%s LoadFromStream failed", __method__);
 		return NULL;
 	}
 
@@ -657,6 +657,7 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 	}
 	FileStream outstream(fp, false);
 	if (sx.SixelToStream(&outstream) == false) {
+		Debug(diagImage, "%s: SixelToStream failed", __method__);
 		fclose(fp);
 		return NULL;
 	}

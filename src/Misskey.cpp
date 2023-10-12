@@ -92,7 +92,7 @@ misskey_stream(bool is_first)
 
 	std::string uri = "wss://" + opt_server + "/streaming";
 	if (client.Open(uri) == false) {
-		warnx("%s: client SetURI failed", __func__);
+		warnx("%s: WebSocket open failed: %s", __func__, uri.c_str());
 		return -1;
 	}
 

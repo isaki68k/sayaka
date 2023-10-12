@@ -170,6 +170,7 @@ HttpClient::Act(const std::string& method)
 	} else {
 		// そうでなければ元ストリームをポジションリセットして使う。
 		// ここがコンテンツの先頭になるので。
+		Debug(diag, "use tstream as-is");
 		tstream.reset(new TLSStream(mtls.get(), diag));
 		stream = tstream.get();
 	}

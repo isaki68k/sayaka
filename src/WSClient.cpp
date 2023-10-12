@@ -96,15 +96,18 @@ WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 }
 
 // 接続先を指定してオープン。まだ接続はしない。
+// 成功すれば true、失敗すれば false を返す。
 bool
 WSClient::Open(const std::string& uri_)
 {
 	http.reset(new HttpClient(diag));
 	if ((bool)http == false) {
+		Debug(diag, "%s: HttpClient failed", __method__);
 		return false;
 	}
 
 	if (http->Open(uri_) == false) {
+		Debug(diag, "%s: HttpClient.Open failed", __method__);
 		return false;
 	}
 
