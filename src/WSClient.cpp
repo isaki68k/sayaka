@@ -56,7 +56,7 @@ WSClient::~WSClient()
 
 // 初期化
 bool
-WSClient::Init()
+WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 {
 	if (wsctx) {
 		return true;
@@ -73,14 +73,8 @@ WSClient::Init()
 		Debug(diag, "Init: wslay_event_context_client_init failed\n");
 		return false;
 	}
-	return true;
-}
 
-// メッセージ受信コールバックを設定。
-bool
-WSClient::SetOnmsgCallback(wsclient_onmsg_callback_t onmsg_callback_,
-	void *onmsg_arg_)
-{
+	// メッセージ受信コールバックを設定。
 	onmsg_callback = onmsg_callback_;
 	onmsg_arg = onmsg_arg_;
 
