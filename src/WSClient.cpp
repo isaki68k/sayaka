@@ -142,7 +142,6 @@ WSClient::Connect()
 	http->tstream.reset();
 
 	if (http->ResultCode != 101) {
-		// メッセージは ResultMsg に入っている
 		errno = ENOTCONN;
 		return false;
 	}
