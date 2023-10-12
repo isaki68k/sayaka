@@ -97,8 +97,7 @@ misskey_stream(bool is_first)
 	}
 
 	if (client.Connect() == false) {
-		// エラーは表示済み。
-		// XXX 復旧可能かどうか。
+		warnx("%s: WebSocket connection failed: %s", __func__, uri.c_str());
 		return -1;
 	}
 	auto ctx = client.GetContext();
