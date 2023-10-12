@@ -54,12 +54,15 @@ WSClient::~WSClient()
 	wslay_event_context_free(wsctx);
 }
 
-// 初期化
+// 初期化。
+// Init() はコンストラクト後は1回のみ呼び出し可能。
+// 成功すれば true を、失敗すれば errno をセットして false を返す。
 bool
 WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 {
 	if (wsctx) {
-		return true;
+		errno = EBUSY;
+		return false;
 	}
 
 	// コンテキストを用意。
@@ -69,8 +72,19 @@ WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 		.genmask_callback		= wsclient_genmask_callback,
 		.on_msg_recv_callback	= wsclient_on_msg_recv_callback,
 	};
-	if (wslay_event_context_client_init(&wsctx, &callbacks, this) != 0) {
-		Debug(diag, "Init: wslay_event_context_client_init failed\n");
+	int r = wslay_event_context_client_init(&wsctx, &callbacks, this);
+	if (r != 0) {
+		Debug(diag, "%s: wslay_event_context_client_init failed: %d\n",
+			__method__, r);
+		switch (r) {
+		 case WSLAY_ERR_NOMEM:
+			errno = ENOMEM;
+			break;
+		 default:
+			// XXX 他のエラーは来ないはず。
+			errno = EINVAL;
+			break;
+		}
 		return false;
 	}
 

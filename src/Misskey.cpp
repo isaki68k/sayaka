@@ -86,7 +86,7 @@ misskey_stream(bool is_first)
 
 	WSClient client(rnd, diagHttp);
 	if (client.Init(&misskey_onmsg, NULL) == false) {
-		warnx("%s: WebSocket initialization failed", __func__);
+		warn("%s: WebSocket initialization failed", __func__);
 		return -1;
 	}
 
