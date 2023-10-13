@@ -29,6 +29,7 @@
 #include "HttpClient.h"
 #include "JsonInc.h"
 #include "MathAlphaSymbols.h"
+#include "MemoryStream.h"
 #include "SixelConverter.h"
 #include "StringUtil.h"
 #include "UString.h"
@@ -580,6 +581,13 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 // 成功すれば true を、失敗すれば false を返す。
 // 成功した場合 out はファイル先頭を指している。
 // img_url は画像 URL。
+// ただし Blurhash なら独自の blurhash://<JSON> 形式の文字列を渡すこと。
+// <JSON> 部分は URL エンコードではなくただの文字列。内容は
+// {
+//   "hash":"...", (必須)
+//   "w":int, (必須)
+//   "h":int, (必須)
+// } で、入力画像のあるべきサイズを指定する。
 // resize_width はリサイズすべき幅を指定、0 ならリサイズしない。
 bool
 fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
@@ -626,23 +634,48 @@ fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 	}
 	sx.OutputPalette = opt_output_palette;
 
-	HttpClient http(diag);
-	if (http.Open(img_url) == false) {
-		return false;
-	}
-	http.family = address_family;
-	http.SetTimeout(opt_timeout_image);
-	Stream *stream = http.GET();
-	if (stream == NULL) {
-		Debug(diag, "Warning: %s GET failed", __func__);
-		return false;
-	}
+	// mem と http が stream を提供するので生存期間に注意。stream は解放不要。
+	MemoryStream mem;
+	HttpClient http;
+	Stream *stream = NULL;
+	if (StartWith(img_url, "blurhash://")) {
+		// Blurhash は自分で自分のサイズを(アスペクト比すら)持っておらず、
+		// 代わりに呼び出し側が独自形式で提供してくれているのでそれを
+		// 取り出して、サイズ固定モードで SIXEL にする。うーんこの…。
+		Json obj = Json::parse(&img_url[11]);
+		if (obj.is_object() == false) {
+			return NULL;
+		}
+		auto hash = JsonAsString(obj["hash"]);
+		mem.Append(hash.c_str(), hash.length());
+		mem.Rewind();
+		stream = &mem;
+		// サイズはここで sx にセットする。
+		sx.ResizeAxis = ResizeAxisMode::Both;
+		sx.ResizeWidth  = JsonAsInt(obj["w"]);
+		sx.ResizeHeight = JsonAsInt(obj["h"]);
+	} else {
+		http.SetDiag(diagHttp);
+		if (http.Open(img_url) == false) {
+			return NULL;
+		}
+		http.family = address_family;
+		http.SetTimeout(opt_timeout_image);
+		stream = http.GET();
+		if (stream == NULL) {
+			Debug(diagImage, "%s: GET failed", __method__);
+			return NULL;
+		}
 
-	// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
-	// (= HTML とか) を返すやつは画像ではないので無視。
-	const auto& content_type = http.GetHeader(http.RecvHeaders, "Content-Type");
-	if (StartWith(content_type, "image/") == false) {
-		return false;
+		// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
+		// (= HTML とか) を返すやつは画像ではないので無視。
+		const auto& content_type = http.GetHeader(http.RecvHeaders,
+			"Content-Type");
+		if (StartWith(content_type, "image/") == false) {
+			Debug(diagImage, "%s: Content-type is not an image: %s",
+				__method__, content_type.c_str());
+			return NULL;
+		}
 	}
 	if (sx.LoadFromStream(stream) == false) {
 		Debug(diagImage, "%s LoadFromStream failed", __func__);

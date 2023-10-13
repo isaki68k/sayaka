@@ -455,23 +455,55 @@ misskey_display_poll(const Json& poll)
 static bool
 misskey_show_photo(const Json& f, int resize_width, int index)
 {
+	std::string img_url;
+
 	bool isSensitive = JsonAsBool(f["isSensitive"]);
 	if (isSensitive) {
-		// XXX Blurhash の表示が難しいのでテキストだけ表示。
-		// XXX 表示位置の調整も難しいので無視。
-		printf("[NSFW]\n");
-		return true;
+		auto blurhash = JsonAsString(f["blurhash"]);
+		if (blurhash.empty()) {
+			// どうする?
+			printf("[NSFW]\n");
+			return false;
+		}
+		int width = 0;
+		int height = 0;
+		if (f.contains("properties") && f["properties"].is_object()) {
+			const Json& p = f["properties"];
+			width  = JsonAsInt(p["width"]);
+			height = JsonAsInt(p["height"]);
+
+			// 原寸のアスペクト比を維持したまま長編が resize_width になる
+			// ようにする。
+			// SixelConverter には入力画像サイズとしてこのサイズを、
+			// 出力画像サイズも同じサイズを指定することで等倍で動作させる。
+			if (width > height) {
+				height = height * resize_width / width;
+				width = resize_width;
+			} else {
+				width = width * resize_width / height;
+				height = resize_width;
+			}
+		}
+		if (width < 1) {
+			width = resize_width;
+		}
+		if (height < 1) {
+			height = resize_width;
+		}
+		// Json オブジェクトでエンコードも出来るけど、このくらいならええやろ。
+		img_url = string_format(R"(blurhash://{"hash":"%s","w":%d,"h":%d})",
+			blurhash.c_str(), width, height);
 	} else {
 		// thumbnailUrl があればそっちを使う。
-		auto img_url = JsonAsString(f["thumbnailUrl"]);
+		img_url = JsonAsString(f["thumbnailUrl"]);
 		if (img_url.empty()) {
 			img_url = JsonAsString(f["url"]);
 			if (img_url.empty()) {
 				return false;
 			}
 		}
-		return ShowPhoto(img_url, resize_width, index);
 	}
+	return ShowPhoto(img_url, resize_width, index);
 }
 
 // リノート数を表示用に整形して返す。

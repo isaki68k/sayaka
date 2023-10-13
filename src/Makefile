@@ -15,6 +15,7 @@ SRCS_common+=	ImageLoaderBlurhash.cpp
 SRCS_common+=	ImageLoaderWebp.cpp
 SRCS_common+=	ImageReductor.cpp
 SRCS_common+=	MathAlphaSymbols.cpp
+SRCS_common+=	MemoryStream.cpp
 SRCS_common+=	Misskey.cpp
 #SRCS_common+=	NGWord.cpp
 SRCS_common+=	ParsedUri.cpp
@@ -65,7 +66,6 @@ SRCS_test+=	testUString.cpp
 SRCS_test+=	testeaw_code.cpp
 SRCS_test+=	testsubr.cpp
 SRCS_test+=	testterm.cpp
-SRCS_test+=	MemoryStream.cpp
 
 .if "${MAKE_TWITTER}" == "yes"
 SRCS_common+=	FileUtil.cpp
