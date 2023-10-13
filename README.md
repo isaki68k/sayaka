@@ -192,6 +192,9 @@ sayaka ver 3.7 以降は Misskey にのみ対応しています。
 	`--record` なら概ね表示するもののみを `<file>` に記録します。
 	いずれも `--play` コマンドで再生できます。
 
+* `--show-cw` … Misskey の CW (Contents Warning、内容を隠す) 付き投稿であっても
+	本文を表示します。
+
 * `--timeout-image <msec>` … 画像取得のサーバへの接続タイムアウトを
 	ミリ秒単位で設定します。
 	0 を指定すると connect(2) のタイムアウト時間になります。

@@ -283,11 +283,20 @@ misskey_show_note(const Json *note, int depth)
 		userid = coloring(userid_str, Color::UserId);
 	}
 
-	// インタラクションがないので CW があれば CW、なければ text というだけ。
+	// cw	text	--show-cw	display
+	// ----	----	---------	-------
+	// -	y		n			text
+	// -	y		y			text
+	// y	*		n			cw [CW]
+	// y	*		y			cw [CW] text
 	std::string text_str;
 	std::string cw = JsonAsString((*renote)["cw"]);
 	if (cw.empty() == false) {
 		text_str = cw + " [CW]";
+		if (opt_show_cw) {
+			text_str += "\n";
+			text_str += JsonAsString((*renote)["text"]);
+		}
 	} else {
 		text_str = JsonAsString((*renote)["text"]);
 	}
@@ -299,8 +308,8 @@ misskey_show_note(const Json *note, int depth)
 	print_(text);
 	printf("\n");
 
-	// これらは本文付随なので CW がない時だけ表示する。
-	if (cw.empty()) {
+	// これらは本文付随なので CW 以降を表示する時だけ表示する。
+	if (cw.empty() || opt_show_cw) {
 		// picture
 		image_count = 0;
 		image_next_cols = 0;
