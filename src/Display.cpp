@@ -62,7 +62,7 @@ static const std::string YELLOW		= "93";
 
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
-static bool fetch_image(FILE *out,
+static bool fetch_image(FileStream& outstream,
 	const std::string& img_url, int resize_width);
 
 static std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
@@ -465,13 +465,13 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 	auto cache_filename = cachedir + PATH_SEPARATOR + img_file + ".sixel";
 	Debug(diagImage, "%s: img_url=%s", __func__, img_url.c_str());
 	Debug(diagImage, "%s: cache_filename=%s", __func__, cache_filename.c_str());
-	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
-	if (!cache_file.Valid()) {
+
+	FileStream cache_file;
+	if (cache_file.Open(cache_filename, "r") == false) {
 		// キャッシュファイルがないので、画像を取得してキャッシュに保存。
 		Debug(diagImage, "%s: sixel cache is not found; fetch the image.",
 			__func__);
-		cache_file = fopen(cache_filename.c_str(), "w+");
-		if (!cache_file.Valid()) {
+		if (cache_file.Open(cache_filename, "w+") == false) {
 			Debug(diagImage, "%s: cache file '%s': %s", __method__,
 				cache_filename.c_str(), strerrno());
 			return false;
@@ -487,7 +487,7 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 	auto sx_height = 0;
 	char buf[4096];
 	char *ep;
-	auto n = fread(buf, 1, sizeof(buf), cache_file);
+	auto n = cache_file.Read(buf, sizeof(buf));
 	if (n < 32) {
 		return false;
 	}
@@ -555,7 +555,7 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 		fflush(stdout);
 		in_sixel = false;
 
-		n = fread(buf, 1, sizeof(buf), cache_file);
+		n = cache_file.Read(buf, sizeof(buf));
 	} while (n > 0);
 
 	if (index < 0) {
@@ -582,7 +582,7 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 // img_url は画像 URL。
 // resize_width はリサイズすべき幅を指定、0 ならリサイズしない。
 bool
-fetch_image(FILE *out, const std::string& img_url, int resize_width)
+fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 {
 	SixelConverter sx(opt_debug_sixel);
 
@@ -652,7 +652,6 @@ fetch_image(FILE *out, const std::string& img_url, int resize_width)
 	// インデックスカラー変換
 	sx.ConvertToIndexed();
 
-	FileStream outstream(out, false);
 	if (sx.SixelToStream(&outstream) == false) {
 		Debug(diagImage, "%s: SixelToStream failed", __func__);
 		return false;
