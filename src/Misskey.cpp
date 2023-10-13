@@ -456,6 +456,7 @@ static bool
 misskey_show_photo(const Json& f, int resize_width, int index)
 {
 	std::string img_url;
+	std::string img_file;
 
 	bool isSensitive = JsonAsBool(f["isSensitive"]);
 	if (isSensitive) {
@@ -493,6 +494,8 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 		// Json オブジェクトでエンコードも出来るけど、このくらいならええやろ。
 		img_url = string_format(R"(blurhash://{"hash":"%s","w":%d,"h":%d})",
 			blurhash.c_str(), width, height);
+		img_file = string_format("blurhash-%s-%d-%d",
+			UrlEncode(blurhash).c_str(), width, height);
 	} else {
 		// thumbnailUrl があればそっちを使う。
 		img_url = JsonAsString(f["thumbnailUrl"]);
@@ -502,8 +505,8 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 				return false;
 			}
 		}
+		img_file = GetCacheFilename(img_url);
 	}
-	std::string img_file = GetCacheFilename(img_url);
 	return ShowImage(img_file, img_url, resize_width, index);
 }
 
