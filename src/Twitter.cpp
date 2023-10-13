@@ -271,7 +271,8 @@ showstatus(const Json *status, bool is_quoted)
 
 		auto indent = (indent_depth + 1) * indent_cols;
 		printf(CSI "%dC", indent);
-		ShowPhoto(m.target_url, imagesize, i);
+		auto img_file = GetCacheFilename(m.target_url);
+		ShowImage(img_file, m.target_url, imagesize, i);
 		printf("\r");
 	}
 

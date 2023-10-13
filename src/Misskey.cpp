@@ -503,7 +503,8 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 			}
 		}
 	}
-	return ShowPhoto(img_url, resize_width, index);
+	std::string img_file = GetCacheFilename(img_url);
+	return ShowImage(img_file, img_url, resize_width, index);
 }
 
 // リノート数を表示用に整形して返す。

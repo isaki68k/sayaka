@@ -34,6 +34,6 @@ extern UString ColorEnd(Color col);
 extern UString coloring(const std::string& text, Color col);
 extern void ShowIcon(bool (*callback)(const Json&, const std::string&),
 	const Json& user, const std::string& userid);
-extern bool ShowPhoto(const std::string& img_url, int resize_width, int index);
+extern std::string GetCacheFilename(const std::string& img_url);
 extern bool ShowImage(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);

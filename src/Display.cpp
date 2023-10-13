@@ -431,10 +431,9 @@ ShowIcon(bool (*callback)(const Json&, const std::string&),
 	}
 }
 
-// 添付画像を出力する。
-// index は画像の番号 (位置決めに使用する)
-bool
-ShowPhoto(const std::string& img_url, int resize_width, int index)
+// 画像 URL からキャッシュファイル名を作成して返す。
+std::string
+GetCacheFilename(const std::string& img_url)
 {
 	auto img_file = img_url;
 
@@ -445,7 +444,7 @@ ShowPhoto(const std::string& img_url, int resize_width, int index)
 		img_file[p] = '_';
 	}
 
-	return ShowImage(img_file, img_url, resize_width, index);
+	return img_file;
 }
 
 // 画像をキャッシュして表示する。
