@@ -244,7 +244,7 @@ test_UrlEncode()
 		{ "@ABCDEFGHIJKLMNO",	"%40ABCDEFGHIJKLMNO" },
 		{ "PQRSTUVWXYZ[\\]^_",	"PQRSTUVWXYZ%5B%5C%5D%5E_" },
 		{ "`abcdefghijklmno",	"%60abcdefghijklmno" },
-		{ "pqrstuvwxyz{|}~",	"pqrstuvwxyz%7B%7C%7D~"}, // XXX %7E" },
+		{ "pqrstuvwxyz{|}~",	"pqrstuvwxyz%7B%7C%7D%7E"},
 		{ "\x80\xff",			"%80%FF" },
 	};
 	for (const auto& a : table) {

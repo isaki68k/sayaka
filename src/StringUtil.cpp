@@ -234,14 +234,11 @@ std::string
 UrlEncode(const std::string& s)
 {
 	std::string sb;
+	static const char rawchar[] =
+		"-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 
-	// XXX '~' はエンコードしたほうがいいので後で取り除くこと
 	for (const auto& c : s) {
-		if (('0' <= c && c <= '9') ||
-		    ('A' <= c && c <= 'Z') ||
-		    ('a' <= c && c <= 'z') ||
-		    (c == '-' || c == '_' || c == '.' || c == '~'))
-		{
+		if (strchr(rawchar, c) != NULL) {
 			sb += c;
 		} else {
 			sb += string_format("%%%02X", (uint8)c);
