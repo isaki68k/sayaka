@@ -37,6 +37,12 @@ class FileStream : public Stream
 	FileStream(const std::string& filename, const char *mode);
 	virtual ~FileStream() override;
 
+	// リソースを持っているのでコピーコンストラクタを禁止する。
+	FileStream(const FileStream&) = delete;
+	FileStream& operator=(const FileStream&) = delete;
+	// ムーブコンストラクタ。
+	FileStream(FileStream&&);
+
 	void Close() override;
 
 	ssize_t Read(void *dst, size_t dstlen) override;

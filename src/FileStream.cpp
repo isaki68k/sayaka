@@ -48,6 +48,16 @@ FileStream::FileStream(const std::string& filename, const char *mode)
 	Open(filename, mode);
 }
 
+// ムーブコンストラクタ
+FileStream::FileStream(FileStream&& other)
+{
+	fp  = other.fp;
+	own = other.own;
+
+	other.fp = NULL;
+	other.own = false;
+}
+
 // デストラクタ
 FileStream::~FileStream()
 {
