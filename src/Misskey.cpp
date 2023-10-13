@@ -468,7 +468,7 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 	std::string img_file;
 
 	bool isSensitive = JsonAsBool(f["isSensitive"]);
-	if (isSensitive) {
+	if (isSensitive && opt_show_nsfw == false) {
 		auto blurhash = JsonAsString(f["blurhash"]);
 		if (blurhash.empty()) {
 			// どうする?

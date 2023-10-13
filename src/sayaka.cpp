@@ -128,6 +128,7 @@ int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
 bool opt_show_cw;				// CW を表示する
+bool opt_show_nsfw;				// NSFW 画像を表示する
 Proto proto;					// プロトコル
 StreamMode opt_stream;			// ストリーム種別
 std::string opt_server;			// 接続先サーバ名
@@ -185,6 +186,7 @@ enum {
 	OPT_record,
 	OPT_record_all,
 	OPT_show_cw,
+	OPT_show_nsfw,
 #if 0
 	OPT_show_ng,
 #endif
@@ -235,6 +237,7 @@ static const struct option longopts[] = {
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
+	{ "show-nsfw",		no_argument,		NULL,	OPT_show_nsfw },
 #if 0
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
 #endif
@@ -503,6 +506,9 @@ main(int ac, char *av[])
 			break;
 		 case OPT_show_cw:
 			opt_show_cw = true;
+			break;
+		 case OPT_show_nsfw:
+			opt_show_nsfw = true;
 			break;
 #if 0
 		 case OPT_show_ng:

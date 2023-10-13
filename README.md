@@ -195,6 +195,9 @@ sayaka ver 3.7 以降は Misskey にのみ対応しています。
 * `--show-cw` … Misskey の CW (Contents Warning、内容を隠す) 付き投稿であっても
 	本文を表示します。
 
+* `--show-nsfw` … Misskey の NSFW (Not Safe For Work、閲覧注意) 画像であっても
+	表示します。
+
 * `--timeout-image <msec>` … 画像取得のサーバへの接続タイムアウトを
 	ミリ秒単位で設定します。
 	0 を指定すると connect(2) のタイムアウト時間になります。

@@ -133,6 +133,7 @@ extern int  opt_record_mode;
 extern bool opt_mathalpha;
 extern bool opt_nocombine;
 extern bool opt_show_cw;
+extern bool opt_show_nsfw;
 extern std::string basedir;
 extern std::string cachedir;
 extern Proto proto;
