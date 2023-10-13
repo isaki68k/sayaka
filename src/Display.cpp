@@ -62,7 +62,7 @@ static const std::string YELLOW		= "93";
 
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);
-static FILE *fetch_image(const std::string& cache_filename,
+static bool fetch_image(FILE *out,
 	const std::string& img_url, int resize_width);
 
 static std::array<UString, Color::Max> color2esc;	// 色エスケープ文字列
@@ -467,11 +467,16 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 	Debug(diagImage, "%s: cache_filename=%s", __func__, cache_filename.c_str());
 	AutoFILE cache_file = fopen(cache_filename.c_str(), "r");
 	if (!cache_file.Valid()) {
-		// キャッシュファイルがないので、画像を取得
+		// キャッシュファイルがないので、画像を取得してキャッシュに保存。
 		Debug(diagImage, "%s: sixel cache is not found; fetch the image.",
 			__func__);
-		cache_file = fetch_image(cache_filename, img_url, resize_width);
+		cache_file = fopen(cache_filename.c_str(), "w+");
 		if (!cache_file.Valid()) {
+			Debug(diagImage, "%s: cache file '%s': %s", __method__,
+				cache_filename.c_str(), strerrno());
+			return false;
+		}
+		if (fetch_image(cache_file, img_url, resize_width) == false) {
 			Debug(diagImage, "%s: fetch_image failed\n", __func__);
 			return false;
 		}
@@ -571,15 +576,13 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 	return true;
 }
 
-// 画像をダウンロードして SIXEL に変換してキャッシュする。
-// 成功すれば、書き出したキャッシュファイルの FILE* (位置は先頭) を返す。
-// 失敗すれば NULL を返す。
-// cache_filename はキャッシュするファイルのファイル名。
+// 画像をダウンロードして SIXEL に変換して out に書き出す。
+// 成功すれば true を、失敗すれば false を返す。
+// 成功した場合 out はファイル先頭を指している。
 // img_url は画像 URL。
 // resize_width はリサイズすべき幅を指定、0 ならリサイズしない。
-FILE *
-fetch_image(const std::string& cache_filename, const std::string& img_url,
-	int resize_width)
+bool
+fetch_image(FILE *out, const std::string& img_url, int resize_width)
 {
 	SixelConverter sx(opt_debug_sixel);
 
@@ -625,43 +628,36 @@ fetch_image(const std::string& cache_filename, const std::string& img_url,
 
 	HttpClient http(diag);
 	if (http.Open(img_url) == false) {
-		return NULL;
+		return false;
 	}
 	http.family = address_family;
 	http.SetTimeout(opt_timeout_image);
 	Stream *stream = http.GET();
 	if (stream == NULL) {
 		Debug(diag, "Warning: %s GET failed", __func__);
-		return NULL;
+		return false;
 	}
 
 	// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
 	// (= HTML とか) を返すやつは画像ではないので無視。
 	const auto& content_type = http.GetHeader(http.RecvHeaders, "Content-Type");
 	if (StartWith(content_type, "image/") == false) {
-		return NULL;
+		return false;
 	}
 	if (sx.LoadFromStream(stream) == false) {
 		Debug(diagImage, "%s LoadFromStream failed", __func__);
-		return NULL;
+		return false;
 	}
 
 	// インデックスカラー変換
 	sx.ConvertToIndexed();
 
-	FILE *fp = fopen(cache_filename.c_str(), "w+");
-	if (fp == NULL) {
-		Debug(diagImage, "%s: fopen(\"%s\") failed: %s", __func__,
-			cache_filename.c_str(), strerrno());
-		return NULL;
-	}
-	FileStream outstream(fp, false);
+	FileStream outstream(out, false);
 	if (sx.SixelToStream(&outstream) == false) {
 		Debug(diagImage, "%s: SixelToStream failed", __func__);
-		fclose(fp);
-		return NULL;
+		return false;
 	}
 	outstream.Flush();
 	outstream.Rewind();
-	return fp;
+	return true;
 }
