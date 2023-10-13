@@ -30,6 +30,11 @@
 // FILE* ストリーム。
 //
 
+// 空のコンストラクタ
+FileStream::FileStream()
+{
+}
+
 // コンストラクタ
 FileStream::FileStream(FILE *fp_, bool own_)
 {
@@ -37,10 +42,27 @@ FileStream::FileStream(FILE *fp_, bool own_)
 	own = own_;
 }
 
+// コンストラクタ
+FileStream::FileStream(const std::string& filename, const char *mode)
+{
+	Open(filename, mode);
+}
+
 // デストラクタ
 FileStream::~FileStream()
 {
 	Close();
+}
+
+// オープン。
+bool
+FileStream::Open(const std::string& filename, const char *mode)
+{
+	Close();
+
+	own = true;
+	fp = fopen(filename.c_str(), mode);
+	return (fp != NULL);
 }
 
 // クローズ。

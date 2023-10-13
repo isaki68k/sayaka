@@ -32,7 +32,9 @@
 class FileStream : public Stream
 {
  public:
+	FileStream();
 	FileStream(FILE *fp_, bool own_);
+	FileStream(const std::string& filename, const char *mode);
 	virtual ~FileStream() override;
 
 	void Close() override;
@@ -53,6 +55,9 @@ class FileStream : public Stream
 		auto r = fseek(fp, (long)offset, whence);
 		return (r == 0);
 	}
+
+	// このクラス固有
+	bool Open(const std::string& filename, const char *mode);
 
  private:
 	FILE *fp {};
