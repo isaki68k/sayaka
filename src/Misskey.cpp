@@ -34,6 +34,7 @@
 #include "subr.h"
 #include "term.h"
 #include <cstdio>
+#include <stack>
 #include <err.h>
 #include <poll.h>
 #include <unistd.h>
@@ -44,6 +45,8 @@ static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 static bool misskey_show_note(const Json *note, int depth);
 static std::string misskey_format_username(const Json& user);
 static std::string misskey_format_userid(const Json& user);
+static bool IsAlnum_(unichar c);
+static UString misskey_display_text(const std::string& text);
 static std::string misskey_format_time(const Json& note);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
 static UString misskey_display_poll(const Json& poll);
@@ -315,18 +318,22 @@ misskey_show_note(const Json *note, int depth)
 	// -	y		y			text
 	// y	*		n			cw [CW]
 	// y	*		y			cw [CW] text
+	std::string cw_str = JsonAsString((*renote)["cw"]);
 	std::string text_str;
-	std::string cw = JsonAsString((*renote)["cw"]);
-	if (cw.empty() == false) {
-		text_str = cw + " [CW]";
-		if (opt_show_cw) {
-			text_str += "\n";
-			text_str += JsonAsString((*renote)["text"]);
-		}
-	} else {
+	if (cw_str.empty() || opt_show_cw) {
 		text_str = JsonAsString((*renote)["text"]);
 	}
-	UString text = UString::FromUTF8(text_str);
+	UString text;
+	if (cw_str.empty() == false) {
+		text += misskey_display_text(cw_str);
+		text.AppendASCII(" [CW]");
+		if (opt_show_cw) {
+			text += '\n';
+			text += misskey_display_text(text_str);
+		}
+	} else {
+		text = misskey_display_text(text_str);
+	}
 
 	ShowIcon(misskey_show_icon, *user, userid_str);
 	print_(name + ' ' + userid);
@@ -335,7 +342,7 @@ misskey_show_note(const Json *note, int depth)
 	printf("\n");
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
-	if (cw.empty() || opt_show_cw) {
+	if (cw_str.empty() || opt_show_cw) {
 		// picture
 		image_count = 0;
 		image_next_cols = 0;
@@ -400,6 +407,141 @@ misskey_format_userid(const Json& user)
 		userid += "@" + host;
 	}
 	return userid;
+}
+
+// unichar の c が英数字と '_' なら true を返す。
+static bool
+IsAlnum_(unichar c)
+{
+	if (c == '_' || (c < 0x80 && isalnum((int)c))) {
+		return true;
+	}
+	return false;
+}
+
+// 本文を表示用に整形。
+// CW かどうかは処理済み。
+static UString
+misskey_display_text(const std::string& text)
+{
+	enum State {
+		PlainText = 0,	// 平文
+		Mention,		// @foo
+		Hashtag,		// #foo
+		URL,			// http://, https://
+		MFMTag,			// $[foo ..]
+		PlainTag,		// <plain>〜</plain> タグ
+	};
+
+	UString src = UString::FromUTF8(text);
+	//printf("src=%s\n", src.dump().c_str());
+	UString dst;
+	std::stack<State> state;
+	state.push(PlainText);
+
+	for (int i = 0; i < src.size(); i++) {
+		auto c = src[i];
+		switch (state.top()) {
+		 case State::PlainText:
+			if (c == '@') {
+				// 次の文字が [\w\d_] ならメンション。
+				auto nc = src.At(i + 1);
+				if (IsAlnum_(nc)) {
+					dst += ColorBegin(Color::UserId);
+					state.push(State::Mention);
+				}
+			} else if (c == '#') {
+				dst += ColorBegin(Color::Tag);
+				state.push(State::Hashtag);
+			} else if (c == 'h') {
+				if (src.SubMatch(i, "https://") || src.SubMatch(i, "http://")) {
+					dst += ColorBegin(Color::Url);
+					state.push(State::URL);
+				}
+			}
+#if 0
+			 else if (c == '<') {
+				if (src.SubMatch(i + 1, "plain>")) {
+					state.push(State::PlainTag);
+					i += 6;
+					// c 自体も出力しない
+					continue;
+				}
+			}
+#endif
+			dst += c;
+			break;
+
+		 case State::Mention:
+			// メンションには @<ホスト名> が出てくる。
+			if (IsAlnum_(c) || c == '@' || c == '.' || c == '-')
+			{
+				dst += c;
+			} else {
+				dst += ColorEnd(Color::UserId);
+				state.pop();
+				i--;
+			}
+			break;
+
+		 case State::Hashtag:
+			// タグは "tags" に入ってるけどちょっと保留。
+			if (c == ' ' || c == '\t' || c == '\n') {
+				dst += ColorEnd(Color::Tag);
+				state.pop();
+				i--;
+			} else {
+				dst += c;
+			}
+			break;
+
+		 case State::URL:
+			// URL に使える文字集合がよく分からない。
+			static const char urlchar[] = "#&-./:;=?@^";
+			if (IsAlnum_(c) || (c < 0x80 && strchr(urlchar, c) != NULL)) {
+				dst += c;
+			} else {
+				dst += ColorEnd(Color::Url);
+				state.pop();
+				i--;
+			}
+			break;
+
+		 case State::PlainTag:
+			if (c == '<' && src.SubMatch(i + 1, "/plain>")) {
+				state.pop();
+				i += 7;
+			} else {
+				dst += c;
+			}
+			break;
+
+		 default:
+			break;
+		}
+	}
+
+	while (state.empty() == false) {
+		switch (state.top()) {
+		 case State::PlainText:
+			break;
+		 case State::Mention:
+			dst += ColorEnd(Color::UserId);
+			break;
+		 case State::Hashtag:
+			dst += ColorEnd(Color::Tag);
+			break;
+		 case State::URL:
+			dst += ColorEnd(Color::Url);
+			break;
+		 default:
+			break;
+		}
+		state.pop();
+	}
+
+	//printf("dst=%s\n", dst.dump().c_str());
+	return dst;
 }
 
 // note から時刻の文字列を取得。
