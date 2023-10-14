@@ -471,8 +471,10 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 	if (isSensitive && opt_show_nsfw == false) {
 		auto blurhash = JsonAsString(f["blurhash"]);
 		if (blurhash.empty()) {
-			// どうする?
-			printf("[NSFW]\n");
+			// 画像でない場合は null になる。
+			// XXX レンダリングが崩れるのだが
+			auto type = JsonAsString(f["type"]);
+			printf("[NSFW] (%s)\n", type.c_str());
 			return false;
 		}
 		int width = 0;
