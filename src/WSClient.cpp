@@ -212,6 +212,16 @@ WSClient::GetFd() const
 	return http->GetFd();
 }
 
+// HTTP 応答コードを取得。なければ 0。
+int
+WSClient::GetHTTPCode() const
+{
+	if ((bool)http == false) {
+		return 0;
+	}
+	return http->ResultCode;
+}
+
 // 下位からの受信要求コールバック。
 ssize_t
 WSClient::RecvCallback(wslay_event_context_ptr ctx,

@@ -55,6 +55,9 @@ class WSClient
 
 	wslay_event_context_ptr GetContext() const { return wsctx; }
 
+	// HTTP 応答コードを取得。なければ 0。
+	int GetHTTPCode() const;
+
 	// コールバック
 	ssize_t RecvCallback(wslay_event_context_ptr ctx,
 		uint8 *buf, size_t len, int flags);

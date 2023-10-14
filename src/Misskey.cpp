@@ -38,7 +38,7 @@
 #include <poll.h>
 #include <unistd.h>
 
-static int misskey_stream(bool);
+static bool misskey_stream(WSClient&, Random&);
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);
 static bool misskey_show_note(const Json *note, int depth);
@@ -55,70 +55,96 @@ static UString misskey_display_renote_owner(const Json& note);
 int
 cmd_misskey_stream()
 {
-	bool is_first = true;
+	Random rnd;
 
+	std::string uri = "wss://" + opt_server + "/streaming";
 	printf("Ready...");
 	fflush(stdout);
 
+	// -1 は初回。0 は EOF による(正常)リトライ。
+	int retry_count = -1;
 	for (;;) {
-		int r = misskey_stream(is_first);
-		if (r < 0) {
-			// エラーは表示済み。
+		if (__predict_false(retry_count > 0)) {
+			time_t now = GetUnixTime();
+			struct tm tm;
+			localtime_r(&now, &tm);
+			char timebuf[16];
+			strftime(timebuf, sizeof(timebuf), "%T", &tm);
+
+			printf("\n\n\n\n\n%s Retrying...", timebuf);
+			fflush(stdout);
+		}
+
+		WSClient client(rnd, diagHttp);
+		if (client.Init(&misskey_onmsg, NULL) == false) {
+			warn("WebSocket initialization failed");
+			goto abort1;
+		}
+
+		if (__predict_false(client.Open(uri) == false)) {
+			warnx("WebSocket open failed: %s", uri.c_str());
+			goto abort2;
+		}
+
+		if (__predict_false(client.Connect() == false)) {
+			int code = client.GetHTTPCode();
+			if (code > 0) {
+				warnx("Connection failed: %s responded with %d",
+					opt_server.c_str(), code);
+			} else {
+				warnx("WebSocket connection failed");
+			}
+			goto abort2;
+		}
+
+		// 接続成功。
+		// 初回とリトライ時に表示。EOF 後の再接続では表示しない。
+		if (retry_count != 0) {
+			printf("Connected\n");
+		}
+
+		// メイン処理。
+		if (misskey_stream(client, rnd) == false) {
+			// エラーなら終了。メッセージは表示済み。
 			return -1;
 		}
-		// 0 なら backoff ?
-
+		client.Close();
+		retry_count = 0;
 		sleep(1);
+		continue;
 
-		is_first = false;
+ abort2:
+		client.Close();
+ abort1:
+		// 初回で失敗か、リトライ回数を超えたら終了。
+		if (retry_count < 0 || ++retry_count >= 3) {
+			return -1;
+		}
+		sleep(1 << retry_count);
 	}
 	return 0;
 }
 
-// Misskey Streaming を行う。定期的に切れるようだ。
-// 相手からの Connection Close なら 1 を返す。
-// 復旧可能そうなエラーなら 0 を返す。
-// 復旧不可能ならエラーなら -1 を返す。
-static int
-misskey_stream(bool is_first)
+// Misskey Streaming の接続後メインループ。定期的に切れるようだ。
+// 相手からの Connection Close なら true を返す。
+// エラー (おそらく復旧不可能)なら false を返す。
+static bool
+misskey_stream(WSClient& client, Random& rnd)
 {
-	Random rnd;
-
-	WSClient client(rnd, diagHttp);
-	if (client.Init(&misskey_onmsg, NULL) == false) {
-		warn("%s: WebSocket initialization failed", __func__);
-		return -1;
-	}
-
-	std::string uri = "wss://" + opt_server + "/streaming";
-	if (client.Open(uri) == false) {
-		warnx("%s: WebSocket open failed: %s", __func__, uri.c_str());
-		return -1;
-	}
-
-	if (client.Connect() == false) {
-		warnx("%s: WebSocket connection failed: %s", __func__, uri.c_str());
-		return -1;
-	}
-	auto ctx = client.GetContext();
-
 	// コマンド送信。
 	std::string id = string_format("sayaka-%08x", rnd.Get());
 	std::string cmd = "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"localTimeline\",\"id\":\"" + id + "\"}}";
 	if (client.Write(cmd.c_str(), cmd.size()) < 0) {
 		warn("%s: Sending command failed", __func__);
-		return -1;
-	}
-
-	if (is_first) {
-		printf("Connected.\n");
+		return false;
 	}
 
 	// あとは受信。
 	struct pollfd pfd;
 	pfd.fd = client.GetFd();
 
+	auto ctx = client.GetContext();
 	for (;;) {
 		int r;
 
@@ -130,6 +156,7 @@ misskey_stream(bool is_first)
 			pfd.events |= POLLOUT;
 		}
 		if (pfd.events == 0) {
+			warnx("%s: Event request empty?", __func__);
 			break;
 		}
 
@@ -151,7 +178,7 @@ misskey_stream(bool is_first)
 			r = wslay_event_recv(ctx);
 			if (r == WSLAY_ERR_CALLBACK_FAILURE) {
 				// EOF
-				break;
+				return true;
 			}
 			if (r != 0) {
 				warnx("%s: wslay_event_recv failed: %d", __func__, r);
@@ -159,8 +186,7 @@ misskey_stream(bool is_first)
 			}
 		}
 	}
-
-	return 0;
+	return false;
 }
 
 // メッセージ受信コールバック。
