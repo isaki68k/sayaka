@@ -35,14 +35,9 @@ struct Blurhash::ColorF
 };
 
 // コンストラクタ
-Blurhash::Blurhash()
-{
-}
-
-// コンストラクタ
 Blurhash::Blurhash(const std::string& hash_)
+	: hash(hash_)
 {
-	hash = hash_;
 }
 
 // この hash が正しそうなら true を返す。

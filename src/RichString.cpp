@@ -29,9 +29,8 @@
 
 // コンストラクタ
 RichString::RichString(const std::string& text_)
+	: text(text_)
 {
-	text = text_;
-
 	// 先頭からの文字数とバイト数を数える
 	MakeInfo(this, text_);
 }

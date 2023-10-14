@@ -32,8 +32,6 @@ class Blurhash
 {
 	struct ColorF;
  public:
-	Blurhash();
-
 	// ハッシュを指定したコンストラクタ。
 	Blurhash(const std::string& hash_);
 
@@ -54,6 +52,6 @@ class Blurhash
 	static float SignPow(float val, float exp);
 	void BasesFor(std::vector<float>& bases, int pixels, int comp);
 
-	std::string hash {};
+	const std::string& hash;
 	float maxvalue {};
 };

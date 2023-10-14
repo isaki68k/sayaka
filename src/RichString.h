@@ -65,8 +65,8 @@ class RichString : public std::vector<RichChar>
 	std::string dump() const;
 
  private:
-	// 元の文字列 (変更しない)
-	std::string text {};
+	// 元の文字列
+	const std::string& text;
 
 	// src から info を作成する。
 	bool MakeInfo(std::vector<RichChar> *info, const std::string& src) const;
