@@ -90,6 +90,19 @@ class UString : public std::vector<unichar>
 		return *this;
 	}
 
+	// pos 文字目を返す。pos が終端以降を指していれば 0 を返す。
+	unichar At(size_type pos) const
+	{
+		if (__predict_true(pos < size())) {
+			return (*this)[pos];
+		} else {
+			return 0;
+		}
+	}
+
+	// pos 文字目から key.length() 文字が key と一致すれば true を返す。
+	bool SubMatch(size_type pos, const std::string& key) const;
+
 	// UTF-8 文字列 str を UString に変換する
 	static UString FromUTF8(const std::string& str);
 

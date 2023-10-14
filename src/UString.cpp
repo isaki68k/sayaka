@@ -63,6 +63,23 @@ UString::Init(const std::string& codeset)
 	}
 }
 
+// pos 文字目から key.size() 文字が key と一致すれば true を返す。
+bool
+UString::SubMatch(size_type pos, const std::string& key) const
+{
+	size_type len = key.size();
+
+	if (pos + len >= size()) {
+		return false;
+	}
+	for (size_type i = 0; i < len; i++) {
+		if ((*this)[pos + i] != key[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
 // UTF-8 文字列 str を UString に変換する。
 /*static*/ UString
 UString::FromUTF8(const std::string& str)
