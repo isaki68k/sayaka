@@ -70,7 +70,7 @@ class WSClient
 
 	wslay_event_context_ptr wsctx {};
 
-	Random rnd {};
+	Random& rnd;
 
 	Diag diag {};
 };

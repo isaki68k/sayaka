@@ -41,9 +41,8 @@ static void wsclient_on_msg_recv_callback(wslay_event_context_ptr ctx,
 
 // コンストラクタ
 WSClient::WSClient(Random& rnd_, const Diag& diag_)
+	: rnd(rnd_), diag(diag_)
 {
-	rnd = rnd_;
-	diag = diag_;
 }
 
 // デストラクタ
