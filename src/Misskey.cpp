@@ -76,7 +76,7 @@ cmd_misskey_stream()
 			char timebuf[16];
 			strftime(timebuf, sizeof(timebuf), "%T", &tm);
 
-			printf("\n\n\n\n\n%s Retrying...", timebuf);
+			printf("%s Retrying...", timebuf);
 			fflush(stdout);
 		}
 
