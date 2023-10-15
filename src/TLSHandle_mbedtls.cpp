@@ -349,19 +349,6 @@ TLSHandle_mbedtls::Close()
 	}
 }
 
-// shutdown する
-int
-TLSHandle_mbedtls::Shutdown(int how)
-{
-	int rv = 0;
-
-	if (usessl == false) {
-		rv = shutdown(inner->net.fd, how);
-	}
-
-	return rv;
-}
-
 // 読み込み
 ssize_t
 TLSHandle_mbedtls::Read(void *buf, size_t len)

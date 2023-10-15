@@ -232,17 +232,6 @@ TLSHandle_openssl::Close()
 	fd = -1;
 }
 
-int
-TLSHandle_openssl::Shutdown(int how)
-{
-	// XXX
-	if (usessl) {
-	} else {
-		return shutdown(fd, how);
-	}
-	return 0;
-}
-
 ssize_t
 TLSHandle_openssl::Read(void *buf, size_t len)
 {

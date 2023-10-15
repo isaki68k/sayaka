@@ -68,9 +68,6 @@ class TLSHandleBase
 	// クローズする
 	virtual void Close() = 0;
 
-	// shutdown する
-	virtual int Shutdown(int how) = 0;
-
 	// 読み書き
 	virtual ssize_t Read(void *buf, size_t len) = 0;
 	virtual ssize_t Write(const void *buf, size_t len) = 0;
