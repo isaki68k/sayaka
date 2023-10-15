@@ -304,12 +304,20 @@ misskey_show_note(const Json *note, int depth)
 	std::string userid_str;
 	UString name;
 	UString userid;
+	UString instance_name;
 	if (renote->contains("user") && (*renote)["user"].is_object()) {
 		user = &(*renote)["user"];
 
 		name = coloring(misskey_format_username(*user), Color::Username);
 		userid_str = misskey_format_userid(*user);
 		userid = coloring(userid_str, Color::UserId);
+
+		if (user->contains("instance") && (*user)["instance"].is_object()) {
+			const Json *instance = &(*user)["instance"];
+			std::string iname = JsonAsString((*instance)["name"]);
+			instance_name = UString(" ") +
+				coloring("[" + iname + "]", Color::Username);
+		}
 	}
 
 	// cw	text	--show-cw	display
@@ -336,7 +344,7 @@ misskey_show_note(const Json *note, int depth)
 	}
 
 	ShowIcon(misskey_show_icon, *user, userid_str);
-	print_(name + ' ' + userid);
+	print_(name + ' ' + userid + instance_name);
 	printf("\n");
 	print_(text);
 	printf("\n");
