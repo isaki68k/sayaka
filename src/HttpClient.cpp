@@ -367,5 +367,5 @@ TLSStream::~TLSStream()
 ssize_t
 TLSStream::Read(void *dst, size_t dstlen)
 {
-	return (ssize_t)mtls->Read(dst, dstlen);
+	return mtls->Read(dst, dstlen);
 }
