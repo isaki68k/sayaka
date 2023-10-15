@@ -46,7 +46,9 @@ static bool misskey_show_note(const Json *note, int depth);
 static std::string misskey_format_username(const Json& user);
 static std::string misskey_format_userid(const Json& user);
 static bool IsAlnum_(unichar c);
-static UString misskey_display_text(const std::string& text);
+static void UString_tolower(UString& str);
+static int UString_ncasecmp(const UString& src, int pos, const UString& key);
+static UString misskey_display_text(const std::string& text, const Json& note);
 static std::string misskey_format_time(const Json& note);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
 static UString misskey_display_poll(const Json& poll);
@@ -333,14 +335,14 @@ misskey_show_note(const Json *note, int depth)
 	}
 	UString text;
 	if (cw_str.empty() == false) {
-		text += misskey_display_text(cw_str);
+		text += misskey_display_text(cw_str, *renote);
 		text.AppendASCII(" [CW]");
 		if (opt_show_cw) {
 			text += '\n';
-			text += misskey_display_text(text_str);
+			text += misskey_display_text(text_str, *renote);
 		}
 	} else {
-		text = misskey_display_text(text_str);
+		text = misskey_display_text(text_str, *renote);
 	}
 
 	ShowIcon(misskey_show_icon, *user, userid_str);
@@ -427,15 +429,44 @@ IsAlnum_(unichar c)
 	return false;
 }
 
+// str の ASCII 大文字を小文字にインプレース変換します。
+static void
+UString_tolower(UString& str)
+{
+	for (int i = 0, end = str.size(); i < end; i++) {
+		unichar c = str[i];
+		if ('A' <= c && c <= 'Z') {
+			str[i] = c + 0x20;
+		}
+	}
+}
+
+// src の pos 文字目からが key と ASCII 大文字小文字を無視して一致するか。
+// key は英字をすべて小文字にしてあること。
+// 一致すれば 0 を、一致しなければ 0 以外を返す(大小は再現していない)。
+static int
+UString_ncasecmp(const UString& src, int pos, const UString& key)
+{
+	int len = key.size();
+	for (int i = 0; i < len; i++) {
+		unichar s = src[pos + i];
+
+		if ('A' <= s && s <= 'Z') s += 0x20;
+		if (s != key[i]) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 // 本文を表示用に整形。
-// CW かどうかは処理済み。
 static UString
-misskey_display_text(const std::string& text)
+misskey_display_text(const std::string& text, const Json& note)
 {
 	enum State {
 		PlainText = 0,	// 平文
 		Mention,		// @foo
-		Hashtag,		// #foo
+		//Hashtag,		// #foo (ステート不要)
 		URL,			// http://, https://
 		MFMTag,			// $[foo ..]
 		PlainTag,		// <plain>〜</plain> タグ
@@ -444,9 +475,22 @@ misskey_display_text(const std::string& text)
 	UString src = UString::FromUTF8(text);
 	//printf("src=%s\n", src.dump().c_str());
 	UString dst;
+
+	// タグを集めて小文字にしておく。
+	std::vector<UString> tags;
+	if (note.contains("tags") && note["tags"].is_array()) {
+		for (auto tagj : note["tags"]) {
+			if (tagj.is_string()) {
+				auto tag = tagj.get<std::string>();
+				auto utag = UString::FromUTF8(tag);
+				UString_tolower(utag);
+				tags.emplace_back(utag);
+			}
+		}
+	}
+
 	std::stack<State> state;
 	state.push(PlainText);
-
 	for (int i = 0; i < src.size(); i++) {
 		auto c = src[i];
 		switch (state.top()) {
@@ -459,8 +503,26 @@ misskey_display_text(const std::string& text)
 					state.push(State::Mention);
 				}
 			} else if (c == '#') {
-				dst += ColorBegin(Color::Tag);
-				state.push(State::Hashtag);
+				// タグはこの時点で範囲(長さ)が分かるのでステート分岐不要。
+				int j = 0;
+				int tagcount = tags.size();
+				for (; j < tagcount; j++) {
+					if (UString_ncasecmp(src, i + 1, tags[j]) == 0) {
+						// 複数回同じタグがあるかも知れないので念のため
+						// tags から削除はしないでおく。
+						break;
+					}
+				}
+				if (j != tagcount) {
+					// 一致したらタグ。'#' 文字自身も含めてコピーする。
+					dst += ColorBegin(Color::Tag);
+					for (int k = 0, end = tags[j].size() + 1; k < end; k++) {
+						dst += src[i++];
+					}
+					i--;
+					dst += ColorEnd(Color::Tag);
+					continue;
+				}
 			} else if (c == 'h') {
 				if (src.SubMatch(i, "https://") || src.SubMatch(i, "http://")) {
 					dst += ColorBegin(Color::Url);
@@ -489,17 +551,6 @@ misskey_display_text(const std::string& text)
 				dst += ColorEnd(Color::UserId);
 				state.pop();
 				i--;
-			}
-			break;
-
-		 case State::Hashtag:
-			// タグは "tags" に入ってるけどちょっと保留。
-			if (c == ' ' || c == '\t' || c == '\n') {
-				dst += ColorEnd(Color::Tag);
-				state.pop();
-				i--;
-			} else {
-				dst += c;
 			}
 			break;
 
@@ -535,9 +586,6 @@ misskey_display_text(const std::string& text)
 			break;
 		 case State::Mention:
 			dst += ColorEnd(Color::UserId);
-			break;
-		 case State::Hashtag:
-			dst += ColorEnd(Color::Tag);
 			break;
 		 case State::URL:
 			dst += ColorEnd(Color::Url);
