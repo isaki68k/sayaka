@@ -141,15 +141,12 @@ WSClient::Connect()
 			  "Sec-WebSocket-Version: 13\r\n";
 	header += string_format("Sec-WebSocket-Key: %s\r\n", key.c_str());
 	header += "\r\n";
-	Debug(diag, "Connect: header=|%s|\n", header.c_str());
-	if (tstream->Write(header.c_str(), header.size()) < 0) {
+	if (http->SendRequest(header) == false) {
 		return false;
 	}
 
 	// ヘッダを受信。
-	// XXX どうしたもんか。
 	http->ReceiveHeader();
-
 	if (http->ResultCode != 101) {
 		errno = ENOTCONN;
 		return false;

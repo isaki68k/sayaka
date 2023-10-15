@@ -32,6 +32,7 @@
 #include "TLSHandle_openssl.h"
 #endif
 #include "StringUtil.h"
+#include <cstring>
 #include <errno.h>
 #include <sys/socket.h>
 
@@ -128,7 +129,30 @@ HttpClient::Act(const std::string& method)
 			return NULL;
 		}
 
-		SendRequest(method);
+		// ヘッダを送信。
+		std::string sb;
+		std::string path = (method == "POST") ? Uri.Path : Uri.PQF();
+		sb += string_format("%s %s HTTP/1.1\r\n", method.c_str(), path.c_str());
+
+		for (const auto& h : SendHeaders) {
+			sb += h.c_str();
+			sb += "\r\n";
+		}
+		sb += "Connection: close\r\n";
+		sb += string_format("Host: %s\r\n", Uri.Host.c_str());
+		// User-Agent は SHOULD
+		sb += "User-Agent: " + user_agent + "\r\n";
+
+		if (method == "POST") {
+			sb += "Content-Type: application/x-www-form-urlencoded\r\n";
+			sb += string_format("Content-Length: %zd\r\n", Uri.Query.length());
+			sb += "\r\n";
+			sb += Uri.Query;
+		} else {
+			sb += "\r\n";
+		}
+
+		SendRequest(sb);
 		ReceiveHeader();
 
 		if (300 <= ResultCode && ResultCode < 400) {
@@ -176,41 +200,42 @@ HttpClient::Act(const std::string& method)
 	return stream;
 }
 
-// GET/POST リクエストを発行する
-void
-HttpClient::SendRequest(const std::string& method)
+// ヘッダ(とかの)文字列を送信する。
+bool
+HttpClient::SendRequest(const std::string& header)
 {
-	std::string sb;
-
-	std::string path = (method == "POST") ? Uri.Path : Uri.PQF();
-	sb += string_format("%s %s HTTP/1.1\r\n", method.c_str(), path.c_str());
-
-	for (const auto& h : SendHeaders) {
-		sb += h.c_str();
-		sb += "\r\n";
-	}
-	sb += "Connection: close\r\n";
-	sb += string_format("Host: %s\r\n", Uri.Host.c_str());
-
-	// User-Agent は SHOULD
-	sb += "User-Agent: " + user_agent + "\r\n";
-
-	if (method == "POST") {
-		sb += "Content-Type: application/x-www-form-urlencoded\r\n";
-		sb += string_format("Content-Length: %zd\r\n", Uri.Query.length());
-		sb += "\r\n";
-		sb += Uri.Query;
-	} else {
-		sb += "\r\n";
+	if ((int)diag) {
+		// デバッグ表示
+		std::string buf(header);
+		while (buf.empty() == false) {
+			char *e = strchr(buf.c_str(), '\n');
+			std::string line;
+			if (__predict_true(e != NULL)) {
+				size_t len = e - &buf[0] + 1;
+				line = buf.substr(0, len);
+				buf = buf.substr(len);
+			} else {
+				line = buf;
+				buf.clear();
+			}
+			line = string_replace(line, "\r\n", "\\r\\n");
+			line = string_replace(line, "\n", "\\n");
+			diag.Print("Send %s", line.c_str());
+		}
 	}
 
-	Debug(diag, "Request %s\n%s", method.c_str(), sb.c_str());
-
-	tstream->Write(sb.c_str(), sb.length());
+	auto r = tstream->Write(header.c_str(), header.length());
+	if (r < 0) {
+		return false;
+	}
+	if (r < header.length()) {
+		return false;
+	}
 	// 本当はいるのかも知れないが
 	//tstream->Flush();
 
-	Trace(diag, "%s() request sent", __func__);
+	Trace(diag, "%s() request sent %zd", __func__, r);
+	return true;
 }
 
 // ヘッダを受信する
@@ -231,7 +256,7 @@ HttpClient::ReceiveHeader()
 	if (ResultLine.empty()) {
 		return false;
 	}
-	Debug(diag, "HEADER |%s|", ResultLine.c_str());
+	Debug(diag, "Recv %s", ResultLine.c_str());
 
 	auto proto_arg = Split2(ResultLine, " ");
 	auto protocol = proto_arg.first;
@@ -254,7 +279,7 @@ HttpClient::ReceiveHeader()
 		if (s.empty()) {
 			return false;
 		}
-		Debug(diag, "HEADER |%s|", s.c_str());
+		Debug(diag, "Recv %s", s.c_str());
 
 		// まず行継続の処理
 		if (s[0] == ' ') {

@@ -135,8 +135,8 @@ class HttpClient
 	std::string user_agent {};
 
  private:
-	// GET/POST リクエストを発行する
-	void SendRequest(const std::string& method);
+	// ヘッダを送信する
+	bool SendRequest(const std::string& header);
 
 	// ヘッダを受信する
 	bool ReceiveHeader();
