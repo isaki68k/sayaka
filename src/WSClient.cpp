@@ -118,7 +118,8 @@ WSClient::Open(const std::string& uri_)
 bool
 WSClient::Connect()
 {
-	if (http->Connect() == false) {
+	tstream = http->Connect();
+	if (tstream == NULL) {
 		Debug(diag, "Connect: http->Connect failed\n");
 		return false;
 	}
@@ -141,15 +142,13 @@ WSClient::Connect()
 	header += string_format("Sec-WebSocket-Key: %s\r\n", key.c_str());
 	header += "\r\n";
 	Debug(diag, "Connect: header=|%s|\n", header.c_str());
-	if (http->Write(header.c_str(), header.size()) < 0) {
+	if (tstream->Write(header.c_str(), header.size()) < 0) {
 		return false;
 	}
 
 	// ヘッダを受信。
 	// XXX どうしたもんか。
-	http->tstream.reset(new TLSStream(http->mtls.get(), diag));
 	http->ReceiveHeader();
-	http->tstream.reset();
 
 	if (http->ResultCode != 101) {
 		errno = ENOTCONN;
@@ -229,7 +228,7 @@ WSClient::RecvCallback(wslay_event_context_ptr ctx,
 {
 	ssize_t r;
 	for (;;) {
-		r = http->Read(buf, len);
+		r = tstream->Read(buf, len);
 		if (r < 0) {
 			if (errno == EINTR) {
 				continue;
@@ -257,7 +256,7 @@ WSClient::SendCallback(wslay_event_context_ptr ctx,
 	ssize_t r;
 
 	for (;;) {
-		r = http->Write(buf, len);
+		r = tstream->Write(buf, len);
 		if (r < 0) {
 			if (errno == EINTR) {
 				continue;

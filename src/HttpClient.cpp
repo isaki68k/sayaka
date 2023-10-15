@@ -123,14 +123,12 @@ HttpClient::Act(const std::string& method)
 	}
 
 	for (;;) {
-		if (Connect() == false) {
+		// WSClient のためにストリームを返すが、ここでは tstream を使えばいい。
+		if (Connect() == NULL) {
 			return NULL;
 		}
 
 		SendRequest(method);
-
-		tstream.reset(new TLSStream(mtls.get(), diag));
-
 		ReceiveHeader();
 
 		if (300 <= ResultCode && ResultCode < 400) {
@@ -208,7 +206,9 @@ HttpClient::SendRequest(const std::string& method)
 
 	Debug(diag, "Request %s\n%s", method.c_str(), sb.c_str());
 
-	mtls->Write(sb.c_str(), sb.length());
+	tstream->Write(sb.c_str(), sb.length());
+	// 本当はいるのかも知れないが
+	//tstream->Flush();
 
 	Trace(diag, "%s() request sent", __func__);
 }
@@ -291,7 +291,7 @@ HttpClient::GetHeader(const std::vector<std::string>& header,
 }
 
 // uri へ接続する。
-bool
+Stream *
 HttpClient::Connect()
 {
 	// デフォルトポートの処理
@@ -315,10 +315,11 @@ HttpClient::Connect()
 	Trace(diag, "%s: %s", __func__, Uri.to_string().c_str());
 	if (mtls->Connect(Uri.Host, Uri.Port) == false) {
 		Debug(diag, "TLSHandle.Connect failed");
-		return false;
+		return NULL;
 	}
 
-	return true;
+	tstream.reset(new TLSStream(mtls.get(), diag));
+	return tstream.get();
 }
 
 // 生ディスクリプタを取得
@@ -330,20 +331,6 @@ HttpClient::GetFd() const
 	} else {
 		return -1;
 	}
-}
-
-// 読み出し。
-ssize_t
-HttpClient::Read(void *buf, size_t len)
-{
-	return mtls->Read(buf, len);
-}
-
-// 書き込み。
-ssize_t
-HttpClient::Write(const void *buf, size_t len)
-{
-	return mtls->Write(buf, len);
 }
 
 
@@ -368,4 +355,11 @@ ssize_t
 TLSStream::Read(void *dst, size_t dstlen)
 {
 	return mtls->Read(dst, dstlen);
+}
+
+// 書き込み
+ssize_t
+TLSStream::Write(const void *src, size_t srclen)
+{
+	return mtls->Write(src, srclen);
 }

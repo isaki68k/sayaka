@@ -44,6 +44,7 @@ class TLSStream : public Stream
 	virtual ~TLSStream() override;
 
 	ssize_t Read(void *dst, size_t dstlen) override;
+	ssize_t Write(const void *src, size_t srclen) override;
 
  private:
 	TLSHandleBase *mtls {};
@@ -140,15 +141,13 @@ class HttpClient
 	// ヘッダを受信する
 	bool ReceiveHeader();
 
-	// 接続する
-	bool Connect();
+	// 接続する。
+	// 成功すればストリーム (こちらが所有しているので解放不要) を返す。
+	// 失敗すれば NULL を返す。
+	Stream *Connect();
 
 	// 生ディスクリプタを取得
 	int GetFd() const;
-
-	// 読み書き
-	ssize_t Read(void *buf, size_t len);
-	ssize_t Write(const void *buf, size_t len);
 
 	// mTLS ハンドル
 	std::unique_ptr<TLSHandleBase> mtls {};

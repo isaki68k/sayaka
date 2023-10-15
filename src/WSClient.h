@@ -31,6 +31,7 @@
 #include <wslay/wslay.h>
 
 class HttpClient;
+class Stream;
 
 using wsclient_onmsg_callback_t = void (*)(void *aux,
 	wslay_event_context_ptr ctx,
@@ -70,6 +71,8 @@ class WSClient
 
  private:
 	std::unique_ptr<HttpClient> http /*{}*/;
+
+	Stream *tstream {};
 
 	wslay_event_context_ptr wsctx {};
 
