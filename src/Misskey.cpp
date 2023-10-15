@@ -556,7 +556,7 @@ misskey_display_text(const std::string& text, const Json& note)
 
 		 case State::URL:
 			// URL に使える文字集合がよく分からない。
-			static const char urlchar[] = "#&-./:;=?@^";
+			static const char urlchar[] = "#%&-./:;=?@^";
 			if (IsAlnum_(c) || (c < 0x80 && strchr(urlchar, c) != NULL)) {
 				dst += c;
 			} else {
