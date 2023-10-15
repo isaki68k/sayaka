@@ -209,7 +209,6 @@ HttpClient::SendRequest(const std::string& method)
 	Debug(diag, "Request %s\n%s", method.c_str(), sb.c_str());
 
 	mtls->Write(sb.c_str(), sb.length());
-	mtls->Shutdown(SHUT_WR);
 
 	Trace(diag, "%s() request sent", __func__);
 }
