@@ -208,7 +208,7 @@ HttpClient::SendRequest(const std::string& header)
 		// デバッグ表示
 		std::string buf(header);
 		while (buf.empty() == false) {
-			char *e = strchr(buf.c_str(), '\n');
+			const char *e = strchr(buf.c_str(), '\n');
 			std::string line;
 			if (__predict_true(e != NULL)) {
 				size_t len = e - &buf[0] + 1;
