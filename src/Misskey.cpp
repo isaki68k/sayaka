@@ -34,7 +34,6 @@
 #include "subr.h"
 #include "term.h"
 #include <cstdio>
-#include <stack>
 #include <err.h>
 #include <poll.h>
 #include <unistd.h>
@@ -452,15 +451,6 @@ UString_ncasecmp(const UString& src, int pos, const UString& key)
 static UString
 misskey_display_text(const std::string& text, const Json& note)
 {
-	enum State {
-		PlainText = 0,	// 平文
-		Mention,		// @foo
-		//Hashtag,		// #foo (ステート不要)
-		URL,			// http://, https://
-		MFMTag,			// $[foo ..]
-		PlainTag,		// <plain>〜</plain> タグ
-	};
-
 	UString src = UString::FromUTF8(text);
 	//printf("src=%s\n", src.dump().c_str());
 	UString dst;
@@ -489,122 +479,129 @@ misskey_display_text(const std::string& text, const Json& note)
 		}
 	}
 
-	std::stack<State> state;
-	state.push(PlainText);
-	int url_in_paren = 0;
-	for (int i = 0; i < src.size(); i++) {
-		auto c = src[i];
-		switch (state.top()) {
-		 case State::PlainText:
-			if (c == '@') {
-				// 次の文字が [\w\d_] ならメンション。
-				auto nc = src.At(i + 1);
-				if (nc < 0x80 && strchr(ment1chars, nc) != NULL) {
-					dst += ColorBegin(Color::UserId);
-					state.push(State::Mention);
-				}
-			} else if (c == '#') {
-				// タグはこの時点で範囲(長さ)が分かるのでステート分岐不要。
-				int j = 0;
-				int tagcount = tags.size();
-				for (; j < tagcount; j++) {
-					if (UString_ncasecmp(src, i + 1, tags[j]) == 0) {
-						// 複数回同じタグがあるかも知れないので念のため
-						// tags から削除はしないでおく。
+	int mfmtag = 0;
+	for (int pos = 0, posend = src.size(); pos < src.size(); ) {
+		auto c = src[pos];
+
+		if (c == '<') {
+			if (src.SubMatch(pos + 1, "plain>")) {
+				// <plain> なら閉じ </plain> を探す。
+				pos += 7;
+				int e;
+				// ループは本当は posend-7 くらいまでで十分だが、閉じタグが
+				// なければ最後まで plain 扱いにするために posend まで回す。
+				for (e = pos; e < posend; e++) {
+					if (src[e] == '<' && src.SubMatch(e + 1, "/plain>")) {
 						break;
 					}
 				}
-				if (j != tagcount) {
-					// 一致したらタグ。'#' 文字自身も含めてコピーする。
-					dst += ColorBegin(Color::Tag);
-					for (int k = 0, end = tags[j].size() + 1; k < end; k++) {
-						dst += src[i++];
+				// この間は無加工で出力。
+				for (; pos < e; pos++) {
+					dst += src[pos];
+				}
+				pos += 8;
+				continue;
+			}
+			// 他の HTML タグはとりあえず放置。
+
+		} else if (c == '$' && src.At(pos + 1) == '[') {
+			// MFM タグ開始。
+			int e = pos + 2;
+			// タグは全部無視するのでタグ名をスキップ。
+			for (; e < posend && src[e] != ' '; e++)
+				;
+			// 空白の次から ']' の手前までが本文。
+			mfmtag++;
+			pos = e + 1;
+			continue;
+
+		} else if (c == ']' && mfmtag > 0) {
+			// MFM タグ終端。
+			mfmtag--;
+			pos++;
+			continue;
+
+		} else if (c == '@') {
+			// '@' の次が [\w\d_] ならメンション。
+			auto nc = src.At(pos + 1);
+			if (nc < 0x80 && strchr(ment1chars, nc) != NULL) {
+				dst += ColorBegin(Color::UserId);
+				dst += c;
+				dst += nc;
+				// 2文字目以降はホスト名も来る可能性がある。
+				for (pos += 2; pos < posend; pos++) {
+					c = src[pos];
+					if (c < 0x80 && strchr(ment2chars, c) != NULL) {
+						dst += c;
+					} else {
+						break;
 					}
-					i--;
-					dst += ColorEnd(Color::Tag);
-					continue;
 				}
-			} else if (c == 'h') {
-				if (src.SubMatch(i, "https://") || src.SubMatch(i, "http://")) {
-					dst += ColorBegin(Color::Url);
-					state.push(State::URL);
-					url_in_paren = 0;
-				}
-			}
-#if 0
-			 else if (c == '<') {
-				if (src.SubMatch(i + 1, "plain>")) {
-					state.push(State::PlainTag);
-					i += 6;
-					// c 自体も出力しない
-					continue;
-				}
-			}
-#endif
-			dst += c;
-			break;
-
-		 case State::Mention:
-			// メンションには @<ホスト名> が出てくる。
-			if (c < 0x80 && strchr(ment2chars, c) != NULL) {
-				dst += c;
-			} else {
 				dst += ColorEnd(Color::UserId);
-				state.pop();
-				i--;
+				continue;
 			}
-			break;
 
-		 case State::URL:
-			// URL に使える文字集合がよく分からない。
-			// 括弧 "(",")" は、開き括弧なしで閉じ括弧が来ると URL 終了。
-			// 一方開き括弧は URL 内に来てもよい。
-			// "(http://foo/a)b" は http://foo/a が URL。
-			// "http://foo/a(b)c" は http://foo/a(b)c が URL。
-			// 正気か?
-			if (c < 0x80 && strchr(urlchars, c) != NULL) {
-				dst += c;
-			} else if (c == '(') {
-				url_in_paren++;
-				dst += c;
-			} else if (c == ')' && url_in_paren > 0) {
-				url_in_paren--;
-				dst += c;
-			} else {
-				dst += ColorEnd(Color::Url);
-				state.pop();
-				i--;
+		} else if (c == '#') {
+			// タグはこの時点で範囲(長さ)が分かるのでステート分岐不要。
+			int i = 0;
+			int tagcount = tags.size();
+			for (; i < tagcount; i++) {
+				if (UString_ncasecmp(src, pos + 1, tags[i]) == 0) {
+					// 複数回同じタグがあるかも知れないので念のため
+					// tags から削除はしないでおく。
+					break;
+				}
 			}
-			break;
-
-		 case State::PlainTag:
-			if (c == '<' && src.SubMatch(i + 1, "/plain>")) {
-				state.pop();
-				i += 7;
-			} else {
+			if (i != tagcount) {
+				// 一致したらタグ。'#' 文字自身も含めてコピーする。
+				dst += ColorBegin(Color::Tag);
 				dst += c;
+				pos++;
+				int end = pos + tags[i].size();
+				// tags は正規化によって何が起きてるか分からないので、
+				// src.size() のほうを信じる。
+				end = std::min(end, (int)posend);
+				for (; pos < end; pos++) {
+					dst += src[pos];
+				}
+				dst += ColorEnd(Color::Tag);
+				continue;
 			}
-			break;
 
-		 default:
-			break;
-		}
-	}
-
-	while (state.empty() == false) {
-		switch (state.top()) {
-		 case State::PlainText:
-			break;
-		 case State::Mention:
-			dst += ColorEnd(Color::UserId);
-			break;
-		 case State::URL:
+		} else if (c == 'h' &&
+			(src.SubMatch(pos, "https://") ||
+			 src.SubMatch(pos, "http://")))
+		{
+			// URL
+			int url_in_paren = 0;
+			dst += ColorBegin(Color::Url);
+			for (; pos < posend; pos++) {
+				// URL に使える文字集合がよく分からない。
+				// 括弧 "(",")" は、開き括弧なしで閉じ括弧が来ると URL 終了。
+				// 一方開き括弧は URL 内に来てもよい。
+				// "(http://foo/a)b" は http://foo/a が URL。
+				// "http://foo/a(b)c" は http://foo/a(b)c が URL。
+				// 正気か?
+				c = src[pos];
+				if (c < 0x80 && strchr(urlchars, c) != NULL) {
+					dst += c;
+				} else if (c == '(') {
+					url_in_paren++;
+					dst += c;
+				} else if (c == ')' && url_in_paren > 0) {
+					url_in_paren--;
+					dst += c;
+				} else {
+					break;
+				}
+			}
 			dst += ColorEnd(Color::Url);
-			break;
-		 default:
-			break;
+			continue;
 		}
-		state.pop();
+
+		// どれでもなければここに落ちてくる。
+		dst += c;
+		pos++;
 	}
 
 	//printf("dst=%s\n", dst.dump().c_str());
