@@ -69,7 +69,7 @@ UString::SubMatch(size_type pos, const std::string& key) const
 {
 	size_type len = key.size();
 
-	if (pos + len >= size()) {
+	if (pos + len > size()) {
 		return false;
 	}
 	for (size_type i = 0; i < len; i++) {
