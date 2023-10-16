@@ -45,7 +45,6 @@ static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 static bool misskey_show_note(const Json *note, int depth);
 static std::string misskey_format_username(const Json& user);
 static std::string misskey_format_userid(const Json& user);
-static bool IsAlnum_(unichar c);
 static void UString_tolower(UString& str);
 static int UString_ncasecmp(const UString& src, int pos, const UString& key);
 static UString misskey_display_text(const std::string& text, const Json& note);
@@ -419,16 +418,6 @@ misskey_format_userid(const Json& user)
 	return userid;
 }
 
-// unichar の c が英数字と '_' なら true を返す。
-static bool
-IsAlnum_(unichar c)
-{
-	if (c == '_' || (c < 0x80 && isalnum((int)c))) {
-		return true;
-	}
-	return false;
-}
-
 // str の ASCII 大文字を小文字にインプレース変換します。
 static void
 UString_tolower(UString& str)
@@ -476,6 +465,17 @@ misskey_display_text(const std::string& text, const Json& note)
 	//printf("src=%s\n", src.dump().c_str());
 	UString dst;
 
+	// 記号をどれだけ含むかだけが違う。
+	// Mention 1文字目は   "_" + Alnum
+	// Mention 2文字目以降 "_" + Alnum + "@.-"
+	// URL は              "_" + Alnum + "@.-" + "#%&/:;=?^~"
+	static const char urlchars[] =
+		"#%&/:;=?^~"
+		"@.-"
+		"_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	#define ment2chars (urlchars + 9)
+	#define ment1chars (urlchars + 9 + 3)
+
 	// タグを集めて小文字にしておく。
 	std::vector<UString> tags;
 	if (note.contains("tags") && note["tags"].is_array()) {
@@ -499,7 +499,7 @@ misskey_display_text(const std::string& text, const Json& note)
 			if (c == '@') {
 				// 次の文字が [\w\d_] ならメンション。
 				auto nc = src.At(i + 1);
-				if (IsAlnum_(nc)) {
+				if (nc < 0x80 && strchr(ment1chars, nc) != NULL) {
 					dst += ColorBegin(Color::UserId);
 					state.push(State::Mention);
 				}
@@ -546,8 +546,7 @@ misskey_display_text(const std::string& text, const Json& note)
 
 		 case State::Mention:
 			// メンションには @<ホスト名> が出てくる。
-			if (IsAlnum_(c) || c == '@' || c == '.' || c == '-')
-			{
+			if (c < 0x80 && strchr(ment2chars, c) != NULL) {
 				dst += c;
 			} else {
 				dst += ColorEnd(Color::UserId);
@@ -563,8 +562,7 @@ misskey_display_text(const std::string& text, const Json& note)
 			// "(http://foo/a)b" は http://foo/a が URL。
 			// "http://foo/a(b)c" は http://foo/a(b)c が URL。
 			// 正気か?
-			static const char urlchar[] = "#%&-./:;=?@^";
-			if (IsAlnum_(c) || (c < 0x80 && strchr(urlchar, c) != NULL)) {
+			if (c < 0x80 && strchr(urlchars, c) != NULL) {
 				dst += c;
 			} else if (c == '(') {
 				url_in_paren++;
