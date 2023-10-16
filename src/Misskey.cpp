@@ -491,6 +491,7 @@ misskey_display_text(const std::string& text, const Json& note)
 
 	std::stack<State> state;
 	state.push(PlainText);
+	int url_in_paren = 0;
 	for (int i = 0; i < src.size(); i++) {
 		auto c = src[i];
 		switch (state.top()) {
@@ -527,6 +528,7 @@ misskey_display_text(const std::string& text, const Json& note)
 				if (src.SubMatch(i, "https://") || src.SubMatch(i, "http://")) {
 					dst += ColorBegin(Color::Url);
 					state.push(State::URL);
+					url_in_paren = 0;
 				}
 			}
 #if 0
@@ -556,8 +558,19 @@ misskey_display_text(const std::string& text, const Json& note)
 
 		 case State::URL:
 			// URL に使える文字集合がよく分からない。
+			// 括弧 "(",")" は、開き括弧なしで閉じ括弧が来ると URL 終了。
+			// 一方開き括弧は URL 内に来てもよい。
+			// "(http://foo/a)b" は http://foo/a が URL。
+			// "http://foo/a(b)c" は http://foo/a(b)c が URL。
+			// 正気か?
 			static const char urlchar[] = "#%&-./:;=?@^";
 			if (IsAlnum_(c) || (c < 0x80 && strchr(urlchar, c) != NULL)) {
+				dst += c;
+			} else if (c == '(') {
+				url_in_paren++;
+				dst += c;
+			} else if (c == ')' && url_in_paren > 0) {
+				url_in_paren--;
 				dst += c;
 			} else {
 				dst += ColorEnd(Color::Url);
