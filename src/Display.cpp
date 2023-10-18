@@ -643,7 +643,7 @@ fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 		// 取り出して、サイズ固定モードで SIXEL にする。うーんこの…。
 		Json obj = Json::parse(&img_url[11]);
 		if (obj.is_object() == false) {
-			return NULL;
+			return false;
 		}
 		auto hash = JsonAsString(obj["hash"]);
 		mem.Append(hash.c_str(), hash.length());
@@ -656,14 +656,14 @@ fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 	} else {
 		http.SetDiag(diagHttp);
 		if (http.Open(img_url) == false) {
-			return NULL;
+			return false;
 		}
 		http.family = address_family;
 		http.SetTimeout(opt_timeout_image);
 		stream = http.GET();
 		if (stream == NULL) {
 			Debug(diagImage, "%s: GET failed", __method__);
-			return NULL;
+			return false;
 		}
 
 		// URL の末尾が .jpg とか .png なのに Content-Type が image/* でない
@@ -673,7 +673,7 @@ fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 		if (StartWith(content_type, "image/") == false) {
 			Debug(diagImage, "%s: Content-type is not an image: %s",
 				__method__, content_type.c_str());
-			return NULL;
+			return false;
 		}
 	}
 	if (sx.LoadFromStream(stream) == false) {
