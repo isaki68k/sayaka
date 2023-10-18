@@ -4133,8 +4133,6 @@ printf "%s\n" "no" >&6; }
 		MAKE_MBEDTLS=yes
 
 	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
 		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "--with-mbedtls was given, but mbedtls not found.
@@ -5578,4 +5576,3 @@ if test "x${with_mbedtls}" = "xyes"; then
 else
 	echo "OpenSSL"
 fi
-

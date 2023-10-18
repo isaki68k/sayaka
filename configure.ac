@@ -312,7 +312,6 @@ if test x"${with_mbedtls}" = x"yes"; then
 		AC_DEFINE([USE_MBEDTLS])
 		AC_SUBST([MAKE_MBEDTLS], [yes])
 	else
-		AC_MSG_RESULT([no])
 		AC_MSG_FAILURE([--with-mbedtls was given, but mbedtls not found.
 	On NetBSD(pkgsrc), install pkgsrc/security/mbedtls
 	On OpenBSD(ports), install ports/security/polarssl
