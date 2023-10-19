@@ -51,6 +51,7 @@ static std::string misskey_format_time(const Json& note);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
 static UString misskey_display_poll(const Json& poll);
 static bool misskey_show_photo(const Json& f, int resize_width, int index);
+static void misskey_print_filetype(const Json& f, const char *nsfw);
 static UString misskey_display_renote_count(const Json& note);
 static UString misskey_display_reaction_count(const Json& note);
 static UString misskey_display_renote_owner(const Json& note);
@@ -703,10 +704,9 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 	if (isSensitive && opt_show_nsfw == false) {
 		auto blurhash = JsonAsString(f["blurhash"]);
 		if (blurhash.empty()) {
-			// 画像でない場合は null になる。
-			// XXX レンダリングが崩れるのだが
-			auto type = JsonAsString(f["type"]);
-			printf("[NSFW] (%s)\n", type.c_str());
+			// 画像でないなど Blurhash がなければ
+			// ファイルタイプだけでも表示しておくか。
+			misskey_print_filetype(f, " [NSFW]");
 			return false;
 		}
 		int width = 0;
@@ -743,14 +743,26 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 		// thumbnailUrl があればそっちを使う。
 		img_url = JsonAsString(f["thumbnailUrl"]);
 		if (img_url.empty()) {
-			img_url = JsonAsString(f["url"]);
-			if (img_url.empty()) {
-				return false;
-			}
+			// なければ、ファイルタイプだけでも表示しとく?
+			misskey_print_filetype(f, "");
+			return false;
 		}
 		img_file = GetCacheFilename(img_url);
 	}
 	return ShowImage(img_file, img_url, resize_width, index);
+}
+
+// 改行してファイルタイプだけを出力する。
+static void
+misskey_print_filetype(const Json& f, const char *nsfw)
+{
+	image_count = 0;
+	image_max_rows = 0;
+	image_next_cols = 0;
+
+	auto type = JsonAsString(f["type"]);
+	printf("\r" CSI "%dC(%s)%s\n",
+		(indent_depth + 1) * indent_cols, type.c_str(), nsfw);
 }
 
 // リノート数を表示用に整形して返す。
