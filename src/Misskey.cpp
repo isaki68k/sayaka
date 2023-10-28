@@ -42,6 +42,7 @@ static bool misskey_stream(WSClient&, Random&);
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);
 static bool misskey_show_note(const Json *note, int depth);
+static bool misskey_show_announcement(const Json& note);
 static std::string misskey_format_username(const Json& user);
 static std::string misskey_format_userid(const Json& user);
 static void UString_tolower(UString& str);
@@ -49,6 +50,7 @@ static int UString_ncasecmp(const UString& src, int pos, const UString& key);
 static UString misskey_display_text(const std::string& text, const Json& note);
 static std::string misskey_format_time(const Json& note);
 static bool misskey_show_icon(const Json& user, const std::string& userid);
+static bool misskey_show_noicon(const Json& user, const std::string& userid);
 static UString misskey_display_poll(const Json& poll);
 static bool misskey_show_photo(const Json& f, int resize_width, int index);
 static void misskey_print_filetype(const Json& f, const char *nsfw);
@@ -242,6 +244,12 @@ misskey_show_object(const std::string& line)
 	// {
 	//   "type":"emojiUpdated",
 	//   "body":{ }
+	// }
+	// {
+	//   "type":"announcementCreated",
+	//   "body":{
+	//     "announcement": { }
+	//   }
 	// } とかいうのも来たりする。
 	//
 	// ストリームじゃないところで取得したノートを流し込んでも
@@ -253,7 +261,8 @@ misskey_show_object(const std::string& line)
 			obj->contains("body") && (*obj)["body"].is_object())
 		{
 			auto type = JsonAsString((*obj)["type"]);
-			if (type == "channel" || type == "note") {
+			if (type == "channel" || type == "note" ||
+			    type == "announcementCreated") {
 				// "type" が channel か note なら "body" の下へ。
 				obj = &(*obj)["body"];
 			} else if (strncmp(type.c_str(), "emoji", 5) == 0) {
@@ -290,6 +299,11 @@ misskey_show_note(const Json *note, int depth)
 	// 階層変わるのはどうする?
 
 	// NG ワード
+
+	// アナウンスなら別処理。
+	if (note->contains("announcement") && (*note)["announcement"].is_object()) {
+		return misskey_show_announcement((*note)["announcement"]);
+	}
 
 	// 地文なら note == renote。
 	// リノートなら RN 元を note、RN 先を renote。
@@ -397,6 +411,56 @@ misskey_show_note(const Json *note, int depth)
 		printf("\n");
 	}
 
+	return true;
+}
+
+// アナウンス文を処理する。構造が全然違う。
+static bool
+misskey_show_announcement(const Json& ann)
+{
+	// "icon":"info" はどうしたらいいんだ…。
+	ShowIcon(misskey_show_noicon, ann, "");
+
+	UString name = coloring("announcement", Username);
+	print_(name);
+	printf("\n");
+
+	std::string title_str = JsonAsString(ann["title"]);
+	if (title_str.empty() == false) {
+		auto title = misskey_display_text(title_str, ann);
+		print_(title);
+		printf("\n\n");
+	}
+	std::string text_str = JsonAsString(ann["text"]);
+	if (text_str.empty() == false) {
+		auto text = misskey_display_text(text_str, ann);
+		print_(text);
+		printf("\n");
+	}
+
+	std::string imageUrl = JsonAsString(ann["imageUrl"]);
+	if (imageUrl.empty() == false) {
+		// picture
+		image_count = 0;
+		image_next_cols = 0;
+		image_max_rows = 0;
+		printf(CSI "%dC", indent_cols);
+		std::string img_file = GetCacheFilename(imageUrl);
+		ShowImage(img_file, imageUrl, imagesize, 0);
+		printf("\r");
+	}
+
+	// 時間は updatedAt と createdAt があるので順に探す。
+	std::string at_str = JsonAsString(ann["updatedAt"]);
+	if (at_str.empty()) {
+		at_str = JsonAsString(ann["createdAt"]);
+	}
+	if (at_str.empty() == false) {
+		time_t unixtime = DecodeISOTime(at_str);
+		auto time = coloring(format_time(unixtime), Color::Time);
+		print_(time);
+		printf("\n");
+	}
 	return true;
 }
 
@@ -640,6 +704,13 @@ misskey_show_icon(const Json& user, const std::string& userid)
 	auto img_file = string_format("icon-%dx%d-%s-%08x",
 		iconsize, iconsize, userid.c_str(), fnv1);
 	return ShowImage(img_file, avatarUrl, iconsize, -1);
+}
+
+// アイコン表示のコールバックだけど、何も表示しない版。アナウンスで使う。
+static bool
+misskey_show_noicon(const Json& user, const std::string& userid)
+{
+	return false;
 }
 
 // 投票を表示用に整形して返す。
