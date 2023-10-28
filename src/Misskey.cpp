@@ -121,7 +121,11 @@ cmd_misskey_stream()
 		client.Close();
  abort1:
 		// 初回で失敗か、リトライ回数を超えたら終了。
-		if (retry_count < 0 || ++retry_count >= 3) {
+		if (retry_count < 0) {
+			return -1;
+		}
+		if (++retry_count >= 5) {
+			warnx("Gave up reconnecting.");
 			return -1;
 		}
 		sleep(1 << retry_count);
