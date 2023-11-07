@@ -36,6 +36,8 @@
 #include <errno.h>
 #include <sys/socket.h>
 
+// ログ自体が HttpClient まで表示するのでクラス名は出力しなくていい。
+
 // コンストラクタ
 HttpClient::HttpClient()
 {
@@ -75,7 +77,7 @@ HttpClient::Open(const std::string& uri_)
 #endif
 
 	if (mtls->Init() == false) {
-		Debug(diag, "%s: TLSHandle.Init failed", __method__);
+		Debug(diag, "TLSHandle.Init failed");
 		return false;
 	}
 
@@ -119,7 +121,7 @@ HttpClient::Act(const std::string& method)
 	Trace(diag, "%s()", method.c_str());
 
 	if ((bool)mtls == false) {
-		Trace(diag, "%s: mtls not initialized", __method__);
+		Trace(diag, "%s: mtls not initialized", __func__);
 		return NULL;
 	}
 
@@ -226,9 +228,12 @@ HttpClient::SendRequest(const std::string& header)
 
 	auto r = tstream->Write(header.c_str(), header.length());
 	if (r < 0) {
+		Trace(diag, "%s: Write() failed: %zd", __func__, r);
 		return false;
 	}
 	if (r < header.length()) {
+		Trace(diag, "%s: Write() too short: %zd < %zd",
+			__func__, r, header.length());
 		return false;
 	}
 	// 本当はいるのかも知れないが
@@ -251,9 +256,11 @@ HttpClient::ReceiveHeader()
 	// 1行目は応答
 	r = tstream->ReadLine(&ResultLine);
 	if (r <= 0) {
+		Trace(diag, "%s: ReadLine failed: %zd", __func__, r);
 		return false;
 	}
 	if (ResultLine.empty()) {
+		Trace(diag, "%s: Readline empty", __func__);
 		return false;
 	}
 	Debug(diag, "Recv %s", ResultLine.c_str());
