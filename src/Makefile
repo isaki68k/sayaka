@@ -86,13 +86,11 @@ SRCS_all=	\
 	${SRCS_sixelv} \
 	${SRCS_test} \
 
-.if defined(RELEASE)
 CPPFLAGS+=	-O2
-.else
+.if !defined(RELEASE)
 CXX+=		-g
 #CXX+=		-fsanitize=undefined -fno-sanitize=vptr
 #CXX+=		-fsanitize=address -fno-omit-frame-pointer	# address (gcc)
-CPPFLAGS+=	-O0
 CPPFLAGS+=	-Wall -Werror -Wshadow -Wno-sign-compare
 CPPFLAGS+=	-Wignored-qualifiers
 CPPFLAGS+=	-Wpointer-arith
