@@ -129,7 +129,7 @@ bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
 bool opt_show_cw;				// CW を表示する
 bool opt_show_nsfw;				// NSFW 画像を表示する
-Proto proto;					// プロトコル
+Proto opt_proto;				// プロトコル
 StreamMode opt_stream;			// ストリーム種別
 std::string opt_server;			// 接続先サーバ名
 std::string basedir;
@@ -295,7 +295,7 @@ main(int ac, char *av[])
 	opt_eaw_n = 1;
 	use_sixel = UseSixel::AutoDetect;
 	opt_stream = StreamMode::Home;
-	proto = Proto::Misskey;
+	opt_proto = Proto::Misskey;
 
 	while ((c = getopt_long(ac, av, "46h", longopts, NULL)) != -1) {
 		switch (c) {
@@ -438,7 +438,7 @@ main(int ac, char *av[])
 			}
 			break;
 		 case OPT_misskey:
-			proto = Proto::Misskey;
+			opt_proto = Proto::Misskey;
 			break;
 #if 0
 		 case OPT_ngword_add:
@@ -524,7 +524,7 @@ main(int ac, char *av[])
 			break;
 		 case OPT_twitter:
 #if defined(USE_TWITTER)
-			proto = Proto::Twitter;
+			opt_proto = Proto::Twitter;
 #else
 			errx(1, "Twitter support was not compiled.  See ./configure");
 #endif
@@ -588,7 +588,7 @@ main(int ac, char *av[])
 	// コマンド別処理
 	switch (cmd) {
 	 case SayakaCmd::Stream:
-		if (proto == Proto::Misskey) {
+		if (opt_proto == Proto::Misskey) {
 			init_screen();
 
 			// 古いキャッシュを削除
@@ -602,7 +602,7 @@ main(int ac, char *av[])
 		}
 		break;
 	 case SayakaCmd::Play:
-		if (proto == Proto::None) {
+		if (opt_proto == Proto::None) {
 			errx(1, "--play must be used with --twitter or --misskey");
 		}
 		init_screen();
@@ -968,7 +968,7 @@ cmd_play()
 		if (__predict_false(r <= 0)) {
 			break;
 		}
-		switch (proto) {
+		switch (opt_proto) {
 		 case Proto::Twitter:
 #if defined(USE_TWITTER)
 			if (twitter_show_line(line) == false) {

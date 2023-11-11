@@ -136,7 +136,7 @@ extern bool opt_show_cw;
 extern bool opt_show_nsfw;
 extern std::string basedir;
 extern std::string cachedir;
-extern Proto proto;
+extern Proto opt_proto;
 extern StreamMode opt_stream;
 extern std::string opt_server;
 
