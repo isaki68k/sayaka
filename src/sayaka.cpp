@@ -91,6 +91,7 @@ Diag diagImage;					// デバッグ (画像周り)
 Diag diagShow;					// デバッグ (メッセージ表示判定)
 bool opt_debug_format;			// デバッグフラグ (formatmsg 周り)
 int  opt_debug_sixel;			// デバッグレベル (SIXEL変換周り)
+int  opt_debug_mbedtls;			// デバッグレベル (mbedTLS 用)
 int  screen_cols;				// 画面の桁数
 int  opt_fontwidth;				// オプション指定のフォント幅
 int  opt_fontheight;			// オプション指定のフォント高さ
@@ -153,6 +154,7 @@ enum {
 	OPT_debug_format,
 	OPT_debug_http,
 	OPT_debug_image,
+	OPT_debug_mbedtls,
 	OPT_debug_show,
 	OPT_debug_sixel,
 	OPT_eaw_a,
@@ -204,6 +206,7 @@ static const struct option longopts[] = {
 	{ "debug-format",	no_argument,		NULL,	OPT_debug_format },
 	{ "debug-http",		required_argument,	NULL,	OPT_debug_http },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
+	{ "debug-mbedtls",	required_argument,	NULL,	OPT_debug_mbedtls },
 	{ "debug-show",		required_argument,	NULL,	OPT_debug_show },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
 	{ "eaw-a",			required_argument,	NULL,	OPT_eaw_a },
@@ -348,6 +351,13 @@ main(int ac, char *av[])
 				errx(1, "--debug-image %s: debug level must be 0..1", optarg);
 			}
 			diagImage.SetLevel(val);
+			break;
+		 case OPT_debug_mbedtls:
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 4) {
+				errx(1, "--debug-mbedtls %s: debug level must be 0..4", optarg);
+			}
+			opt_debug_mbedtls = val;
 			break;
 		 case OPT_debug_show:
 			val = stou32def(optarg, -1);
@@ -941,6 +951,7 @@ R"(usage: sayaka [<options>...]
 	-4 / -6                         --ciphers <ciphers>
 	--debug       <0-2>             --debug-format
 	--debug-http  <0-2>             --debug-image <0-1>
+	--debug-mbedtls <0-4>
 	--debug-sixel <0-2>             --debug-show  <0-2>
 	--mathalpha                     --no-combine
 	--max-cont <n>                  --max-image-cols <n>

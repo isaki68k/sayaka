@@ -23,7 +23,7 @@
  * SUCH DAMAGE.
  */
 
-#include "header.h"
+#include "sayaka.h"
 #include "TLSHandle_mbedtls.h"
 #include <cstdarg>
 #include <cstdlib>
@@ -49,13 +49,13 @@
 // ローカルのデバッグモード (on / off のみ)
 //#define DEBUG 1
 
-// mbedTLS のデバッグレベル (1でも結構多いし、2 でほぼ読めないくらい)
+// mbedTLS のデバッグレベルは --debug-mbedtls で指定する。
+// (1でも結構多いし、2 でほぼ読めないくらい)
 // 0 .. No debug
 // 1 .. Error
 // 2 .. State Change
 // 3 .. Informational
 // 4 .. Verbose
-#define MTLS_DEBUG_LEVEL (0)
 
 #if defined(DEBUG)
 #define TRACE(fmt, ...) do { \
@@ -157,7 +157,7 @@ TLSHandle_mbedtls::TLSHandle_mbedtls()
 		gctx.initialized = true;
 
 		// mbedTLS のデバッグレベルはグローバルなのでここでセットする。
-		mbedtls_debug_set_threshold(MTLS_DEBUG_LEVEL);
+		mbedtls_debug_set_threshold(opt_debug_mbedtls);
 	}
 
 	// メンバを初期化

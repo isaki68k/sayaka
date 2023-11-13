@@ -54,6 +54,7 @@ enum OutputFormat {
 Diag diag;
 Diag diagHttp;
 int opt_debug_sixel = 0;
+int opt_debug_mbedtls;
 static ReductorColorMode opt_colormode = ReductorColorMode::Fixed256;
 static int opt_graylevel = 256;
 static int opt_width = 0;
@@ -84,6 +85,7 @@ enum {
 	OPT_color_factor,
 	OPT_debug,
 	OPT_debug_http,
+	OPT_debug_mbedtls,
 	OPT_debug_sixel,
 	OPT_finder,
 	OPT_gray,
@@ -114,6 +116,7 @@ static const struct option longopts[] = {
 	{ "color-factor",	required_argument,	NULL,	OPT_color_factor },
 	{ "debug",			required_argument,	NULL,	OPT_debug },
 	{ "debug-http",		required_argument,	NULL,	OPT_debug_http },
+	{ "debug-mbedtls",	required_argument,	NULL,	OPT_debug_mbedtls },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
 	{ "diffusion",		required_argument,	NULL,	'd' },
 	{ "finder",			required_argument,	NULL,	OPT_finder },
@@ -261,6 +264,14 @@ int main(int ac, char *av[])
 				errx(1, "--debug-http %s: debug level must be 0..2", optarg);
 			}
 			diagHttp.SetLevel(val);
+			break;
+
+		 case OPT_debug_mbedtls:
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-mbedtls %s: debug level must be 0..4", optarg);
+			}
+			opt_debug_mbedtls = val;
 			break;
 
 		 case OPT_debug_sixel:
