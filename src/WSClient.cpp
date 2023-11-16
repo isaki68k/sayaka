@@ -73,7 +73,7 @@ WSClient::Init(wsclient_onmsg_callback_t onmsg_callback_, void *onmsg_arg_)
 	};
 	int r = wslay_event_context_client_init(&wsctx, &callbacks, this);
 	if (r != 0) {
-		Debug(diag, "%s: wslay_event_context_client_init failed: %d\n",
+		Debug(diag, "%s: wslay_event_context_client_init failed: %d",
 			__method__, r);
 		switch (r) {
 		 case WSLAY_ERR_NOMEM:
@@ -120,7 +120,7 @@ WSClient::Connect()
 {
 	tstream = http->Connect();
 	if (tstream == NULL) {
-		Debug(diag, "Connect: http->Connect failed\n");
+		Debug(diag, "Connect: http->Connect failed");
 		return false;
 	}
 
@@ -182,7 +182,7 @@ WSClient::Write(const void *buf, size_t len)
 
 	int r = wslay_event_queue_msg(GetContext(), &msg);
 	if (r != 0) {
-		Debug(diag, "wslay_event_queue_msg failed: %d\n", r);
+		Debug(diag, "wslay_event_queue_msg failed: %d", r);
 		// エラーメッセージを読み替える。
 		switch (r) {
 		 case WSLAY_ERR_NO_MORE_MSG:		errno = ESHUTDOWN;	break;
