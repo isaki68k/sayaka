@@ -29,6 +29,7 @@
 #include "JsonInc.h"
 #include "Misskey.h"
 #include "StringUtil.h"
+#include "TLSHandle.h"
 #if defined(USE_TWITTER)
 #include "Twitter.h"
 #endif
@@ -157,6 +158,7 @@ enum {
 	OPT_debug_mbedtls,
 	OPT_debug_show,
 	OPT_debug_sixel,
+	OPT_debug_tls,
 	OPT_eaw_a,
 	OPT_eaw_n,
 	OPT_euc_jp,
@@ -209,6 +211,7 @@ static const struct option longopts[] = {
 	{ "debug-mbedtls",	required_argument,	NULL,	OPT_debug_mbedtls },
 	{ "debug-show",		required_argument,	NULL,	OPT_debug_show },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
+	{ "debug-tls",		required_argument,	NULL,	OPT_debug_tls },
 	{ "eaw-a",			required_argument,	NULL,	OPT_eaw_a },
 	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
@@ -373,6 +376,13 @@ main(int ac, char *av[])
 			}
 			opt_debug_sixel = val;
 			max_image_count = 1;
+			break;
+		 case OPT_debug_tls:
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-tls %s: debug level must be 0..2", optarg);
+			}
+			TLSHandleBase::SetLevel(val);
 			break;
 		 case OPT_eaw_a:
 			opt_eaw_a = stou32def(optarg, -1);

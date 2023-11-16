@@ -25,7 +25,26 @@
 
 #pragma once
 
+#include "Diag.h"
+#include "StringUtil.h"
+#include <cstdarg>
 #include <string>
+
+// ここではトレースにタイムスタンプを付けたい。
+#define TRACE(fmt...)	do {	\
+	if (diag >= 2) {	\
+		PrintTime(NULL);	\
+		auto msg = string_format(fmt);	\
+		diag.Print("%s %s", __func__, msg.c_str());	\
+	}	\
+} while (0)
+
+// ここではエラーメッセージにもタイムスタンプを付けたい。
+#define ERROR(fmt...)	do {	\
+	PrintTime(NULL);	\
+	fprintf(stderr, fmt);	\
+	fprintf(stderr, "\n");	\
+} while (0)
 
 class TLSHandleBase
 {
@@ -75,9 +94,18 @@ class TLSHandleBase
 	// 生ディスクリプタ取得。
 	virtual int GetFd() const = 0;
 
+	// ログレベルを設定。
+	static void SetLevel(int val);
+
+ protected:
+	static void PrintTime(const struct timeval *);
+
  public:
 	bool usessl {};
 	int family {};
 	int timeout {};		// [msec]
 	int ssl_timeout {};
+
+ protected:
+	static Diag diag;
 };

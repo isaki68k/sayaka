@@ -25,6 +25,7 @@
 
 #include "header.h"
 #include "TLSHandle.h"
+#include <string.h>
 #include <sys/socket.h>
 
 // コンストラクタ
@@ -52,3 +53,26 @@ TLSHandleBase::SetTimeout(int timeout_)
 {
 	timeout = timeout_;
 }
+
+/*static*/ void
+TLSHandleBase::PrintTime(const struct timeval *tvp)
+{
+	struct timeval tv;
+
+	if (tvp == NULL) {
+		gettimeofday(&tv, NULL);
+		tvp = &tv;
+	}
+	fprintf(stderr, "[%02d:%02d.%06d] ",
+		(int)((tvp->tv_sec / 60) % 60),
+		(int)((tvp->tv_sec     ) % 60),
+		(int)(tvp->tv_usec));
+}
+
+/*static*/ void
+TLSHandleBase::SetLevel(int val)
+{
+	diag.SetLevel(val);
+}
+
+/*static*/ Diag TLSHandleBase::diag("TLSHandle");

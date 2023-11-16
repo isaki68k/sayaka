@@ -55,6 +55,7 @@ Diag diag;
 Diag diagHttp;
 int opt_debug_sixel = 0;
 int opt_debug_mbedtls;
+int opt_debug_tls;
 static ReductorColorMode opt_colormode = ReductorColorMode::Fixed256;
 static int opt_graylevel = 256;
 static int opt_width = 0;
@@ -87,6 +88,7 @@ enum {
 	OPT_debug_http,
 	OPT_debug_mbedtls,
 	OPT_debug_sixel,
+	OPT_debug_tls,
 	OPT_finder,
 	OPT_gray,
 	OPT_height,
@@ -280,6 +282,14 @@ int main(int ac, char *av[])
 				errx(1, "--debug-sixel %s: debug level must be 0..2", optarg);
 			}
 			opt_debug_sixel = val;
+			break;
+
+		 case OPT_debug_tls:
+			val = stou32def(optarg, -1);
+			if (val < 0 || val > 2) {
+				errx(1, "--debug-tls %s: debug level must be 0..2", optarg);
+			}
+			TLSHandleBase::SetLevel(val);
 			break;
 
 		 case 'e':

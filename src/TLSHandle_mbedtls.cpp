@@ -46,9 +46,6 @@
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
 
-// ローカルのデバッグモード (on / off のみ)
-//#define DEBUG 1
-
 // mbedTLS のデバッグレベルは --debug-mbedtls で指定する。
 // (1でも結構多いし、2 でほぼ読めないくらい)
 // 0 .. No debug
@@ -57,42 +54,7 @@
 // 3 .. Informational
 // 4 .. Verbose
 
-#if defined(DEBUG)
-#define TRACE(fmt, ...) do { \
-	struct timeval tv; \
-	TRACE_tv(&tv, fmt, ## __VA_ARGS__); \
-} while (0)
-#define TRACE_tv(tvp, fmt, ...) do { \
-	gettimeofday(tvp, NULL); \
-	trace(tvp, __func__, fmt, ## __VA_ARGS__); \
-} while (0)
-#define ERROR(fmt, ...)	TRACE(fmt, ## __VA_ARGS__)
-#else
-#define TRACE(...)		(void)0
-#define TRACE_tv(...)	(void)0
-#define ERROR(...)		fprintf(stderr, __VA_ARGS__)
-#endif
-
-#if defined(DEBUG)
-// デバッグ表示
-static void trace(struct timeval *tv, const char *func, const char *fmt, ...)
-	__printflike(3, 4);
-static void
-trace(struct timeval *tv, const char *funcname, const char *fmt, ...)
-{
-	va_list ap;
-
-	fprintf(stderr, "[%02d:%02d.%06d] %s() ",
-		(int)((tv->tv_sec / 60) % 60),
-		(int)((tv->tv_sec     ) % 60),
-		(int)(tv->tv_usec),
-		funcname);
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-}
-#endif
+// このクラスのデバッグレベルは --debug-tls=2 (実質 0 か 2) で指定する。
 
 // グローバルコンテキスト
 struct mtls_global_ctx
@@ -151,7 +113,7 @@ TLSHandle_mbedtls::TLSHandle_mbedtls()
 		int r = mbedtls_ctr_drbg_seed(&gctx.ctr_drbg, mbedtls_entropy_func,
 			&gctx.entropy, (const unsigned char *)"a", 1);
 		if (r != 0) {
-			ERROR("mbedtls_ctr_drbg_seed failed: %s\n", errmsg(r));
+			ERROR("mbedtls_ctr_drbg_seed failed: %s", errmsg(r));
 			throw "initializing gctx failed";
 		}
 		gctx.initialized = true;
@@ -167,7 +129,7 @@ TLSHandle_mbedtls::TLSHandle_mbedtls()
 // デストラクタ
 TLSHandle_mbedtls::~TLSHandle_mbedtls()
 {
-	TRACE("called\n");
+	TRACE("called");
 
 	Close();
 	inner.reset();
@@ -198,7 +160,7 @@ TLSHandle_mbedtls::Init()
 		MBEDTLS_SSL_TRANSPORT_STREAM,
 		MBEDTLS_SSL_PRESET_DEFAULT);
 	if (r != 0) {
-		ERROR("mbedtls_ssl_config_defaults failed: %s\n", errmsg(r));
+		ERROR("mbedtls_ssl_config_defaults failed: %s", errmsg(r));
 		goto errexit;
 	}
 
@@ -211,12 +173,12 @@ TLSHandle_mbedtls::Init()
 		NULL, // recv (without timeout)
 		mbedtls_net_recv_timeout);
 
-	TRACE("done\n");
+	TRACE("done");
 	return true;
 
  errexit:
 	// cleanup
-	TRACE("failed\n");
+	TRACE("failed");
 	return false;
 }
 
@@ -246,12 +208,15 @@ TLSHandle_mbedtls::UseRSA()
 bool
 TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 {
-#if defined(DEBUG)
 	struct timeval start, end, result;
-#endif
 	int r;
 
-	TRACE_tv(&start, "called: %s:%s\n", hostname, servname);
+	if (diag >= 2) {
+		// TRACE と同様だが start を保存したい。
+		gettimeofday(&start, NULL);
+		PrintTime(&start);
+		diag.Print("%s called: %s:%s", __func__, hostname, servname);
+	}
 
 	// ssl_setup() は複数回呼んではいけないし、呼んだ後で conf を変更するな
 	// と書いてあるように読める。TLSHandle_mbedtls は Init() 後、必要に応じて
@@ -259,13 +224,13 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 	// ここで呼ぶのがいいか。
 	r = mbedtls_ssl_setup(&inner->ssl, &inner->conf);
 	if (r != 0) {
-		ERROR("mbedtls_ssl_setup failed: %s\n", errmsg(r));
+		ERROR("mbedtls_ssl_setup failed: %s", errmsg(r));
 		return false;
 	}
 
 	r = mbedtls_ssl_set_hostname(&inner->ssl, hostname);
 	if (r != 0) {
-		ERROR("mbedtls_ssl_set_hostname failed: %s\n", errmsg(r));
+		ERROR("mbedtls_ssl_set_hostname failed: %s", errmsg(r));
 		return false;
 	}
 
@@ -277,11 +242,11 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 		if (__predict_false(r == 0)) {
 			// 起きることはないはずだが
 			// エラーメッセージが混乱しそうなので分けておく。
-			ERROR("mbedtls_net_connect_nonblock %s:%s - %s\n",
+			ERROR("mbedtls_net_connect_nonblock %s:%s - %s",
 				hostname, servname, "Success with blocking mode?");
 			goto abort;
 		} else {
-			ERROR("mbedtls_net_connect_nonblock %s:%s - %s\n",
+			ERROR("mbedtls_net_connect_nonblock %s:%s - %s",
 				hostname, servname, errmsg(r));
 		}
 		return false;
@@ -294,17 +259,17 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 		// mbedtls_net_set_block() は他の mbedTLS API とか違って fcntl(2) の
 		// 戻り値をそのまま返してしまっており、成功なら 0、エラーなら -1 が
 		// 返ってくる。そのため errmsg() ではエラーメッセージが表示できない。
-		ERROR("mbedtls_net_set_block failed\n");
+		ERROR("mbedtls_net_set_block failed");
 		goto abort;
 	}
 
 	r = mbedtls_net_poll(&inner->net, MBEDTLS_NET_POLL_WRITE, timeout);
 	if (__predict_false(r < 0)) {
-		ERROR("mbedtls_net_poll failed: %s\n", errmsg(r));
+		ERROR("mbedtls_net_poll failed: %s", errmsg(r));
 		goto abort;
 	}
 	if (__predict_false(r == 0)) {
-		ERROR("mbedtls_net_poll: timed out\n");
+		ERROR("mbedtls_net_poll: timed out");
 		goto abort;
 	}
 
@@ -312,19 +277,21 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 		while ((r = mbedtls_ssl_handshake(&inner->ssl)) != 0) {
 			if (r != MBEDTLS_ERR_SSL_WANT_READ
 			 && r != MBEDTLS_ERR_SSL_WANT_WRITE) {
-				ERROR("mbedtls_ssl_handshake failed: %s\n", errmsg(r));
+				ERROR("mbedtls_ssl_handshake failed: %s", errmsg(r));
 				goto abort;
 			}
 		}
 	}
 
-#if defined(DEBUG)
-	gettimeofday(&end, NULL);
-	timersub(&end, &start, &result);
-	trace(&end, __func__, "connected, %d.%03d msec\n",
-		(int)result.tv_sec * 1000 + result.tv_usec / 1000,
-		(int)result.tv_usec % 1000);
-#endif
+	if (diag >= 2) {
+		gettimeofday(&end, NULL);
+		timersub(&end, &start, &result);
+
+		PrintTime(&end);
+		diag.Print("%s connected, %d.%03d msec\n", __func__,
+			(int)result.tv_sec * 1000 + result.tv_usec / 1000,
+			(int)result.tv_usec % 1000);
+	}
 	return true;
 
  abort:
@@ -339,7 +306,7 @@ TLSHandle_mbedtls::Close()
 {
 	// これを知る方法はないのか…
 	if (inner->net.fd >= 0) {
-		TRACE("called\n");
+		TRACE("called");
 
 		if (usessl) {
 			mbedtls_ssl_close_notify(&inner->ssl);
@@ -355,7 +322,7 @@ TLSHandle_mbedtls::Read(void *buf, size_t len)
 {
 	ssize_t rv;
 
-	TRACE("called\n");
+	TRACE("called");
 
 	if (usessl) {
 	 ssl_again:
@@ -363,14 +330,14 @@ TLSHandle_mbedtls::Read(void *buf, size_t len)
 		if (rv < 0) {
 			if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
 				// EOF
-				TRACE("EOF\n");
+				TRACE("EOF");
 				return 0;
 			}
 			if (rv == MBEDTLS_ERR_SSL_WANT_READ) {
 				// EINTR ?
 				goto ssl_again;
 			}
-			ERROR("mbedtls_ssl_read failed: %s\n", errmsg(rv));
+			ERROR("mbedtls_ssl_read failed: %s", errmsg(rv));
 			return rv;
 		}
 	} else {
@@ -383,12 +350,12 @@ TLSHandle_mbedtls::Read(void *buf, size_t len)
 			if (errno == EINTR) {
 				goto net_again;
 			}
-			ERROR("mbedtls_net_recv_timeout failed: %s\n", errmsg(rv));
+			ERROR("mbedtls_net_recv_timeout failed: %s", errmsg(rv));
 			return rv;
 		}
 	}
 
-	TRACE("%zd bytes\n", rv);
+	TRACE("%zd bytes", rv);
 	return rv;
 }
 
@@ -398,23 +365,23 @@ TLSHandle_mbedtls::Write(const void *buf, size_t len)
 {
 	ssize_t rv;
 
-	TRACE("called\n");
+	TRACE("called");
 
 	if (usessl) {
 		rv = mbedtls_ssl_write(&inner->ssl, (const unsigned char *)buf, len);
 		if (rv < 0) {
-			ERROR("mbedtls_ssl_write failed: %s\n", errmsg(rv));
+			ERROR("mbedtls_ssl_write failed: %s", errmsg(rv));
 			return rv;
 		}
 	} else {
 		rv = mbedtls_net_send(&inner->net, (const unsigned char *)buf, len);
 		if (rv < 0) {
-			ERROR("mbedtls_net_send failed: %s\n", errmsg(rv));
+			ERROR("mbedtls_net_send failed: %s", errmsg(rv));
 			return rv;
 		}
 	}
 
-	TRACE("%zd bytes\n", rv);
+	TRACE("%zd bytes", rv);
 	return rv;
 }
 
