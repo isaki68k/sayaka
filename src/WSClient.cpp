@@ -27,7 +27,10 @@
 #include "Base64.h"
 #include "HttpClient.h"
 #include "StringUtil.h"
+#include "subr.h"
 #include <cstring>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 
 static ssize_t wsclient_recv_callback(wslay_event_context_ptr ctx,
 	uint8 *buf, size_t len, int flags, void *aux);
@@ -153,6 +156,21 @@ WSClient::Connect()
 	}
 
 	// XXX Sec-WebSocket-Accept のチェック。
+
+	// ストリームをノンブロッキングモードに変更。
+	if (tstream->SetNonBlock() == false) {
+		Debug(diag, "%s: SetNonBlock failed", __method__);
+		return false;
+	}
+
+	// 結局生ソケットに対する操作も必要。抽象化とは一体。
+	int sock = GetFd();
+	int val = 1;
+	if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &val,
+			(socklen_t)sizeof(val)) < 0) {
+		Debug(diag, "setsockopt(TCP_NODELAY) failed: %s", strerrno());
+		return false;
+	}
 
 	return true;
 }
