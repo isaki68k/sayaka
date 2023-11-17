@@ -276,6 +276,33 @@ WSClient::GenmaskCallback(wslay_event_context_ptr ctx, uint8 *buf, size_t len)
 	return 0;
 }
 
+// 下位層からのメッセージ受信完了コールバック。
+void
+WSClient::OnMsgRecvCallback(wslay_event_context_ptr ctx,
+	const wslay_event_on_msg_recv_arg *msg)
+{
+	if (__predict_false(diag >= 1)) {
+		std::string opstr;
+		switch (msg->opcode) {
+		 case WSLAY_TEXT_FRAME:			opstr = "TEXT";		break;
+		 case WSLAY_BINARY_FRAME:		opstr = "BINARY";	break;
+		 case WSLAY_CONNECTION_CLOSE:	opstr = "CLOSE";	break;
+		 case WSLAY_PING:				opstr = "PING";		break;
+		 case WSLAY_PONG:				opstr = "PONG";		break;
+		 default:
+			opstr = string_format("0x%x", msg->opcode);
+			break;
+		}
+		diag.Print("OnMsgRecv opcode=%s len=%d",
+			opstr.c_str(), (int)msg->msg_length);
+	}
+
+	if (!wslay_is_ctrl_frame(msg->opcode)) {
+		// クライアント指定のコールバックを呼ぶ。
+		(*this->onmsg_callback)(onmsg_arg, ctx, msg);
+	}
+}
+
 
 // C のコールバック関数
 
@@ -307,9 +334,6 @@ static void
 wsclient_on_msg_recv_callback(wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg, void *aux)
 {
-	// 呼び出し側が Init() にセットしたコールバックを呼ぶ。
 	WSClient *client = (WSClient *)aux;
-	auto callback = client->onmsg_callback;
-
-	(*callback)(client->onmsg_arg, ctx, msg);
+	client->OnMsgRecvCallback(ctx, msg);
 }

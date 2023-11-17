@@ -64,6 +64,8 @@ class WSClient
 		uint8 *buf, size_t len, int flags);
 	ssize_t SendCallback(wslay_event_context_ptr ctx,
 		const uint8 *buf, size_t len, int flags);
+	void OnMsgRecvCallback(wslay_event_context_ptr ctx,
+		const wslay_event_on_msg_recv_arg *msg);
 	int GenmaskCallback(wslay_event_context_ptr ctx, uint8 *buf, size_t len);
 
 	wsclient_onmsg_callback_t onmsg_callback {};
