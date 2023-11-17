@@ -395,3 +395,15 @@ TLSStream::Write(const void *src, size_t srclen)
 {
 	return mtls->Write(src, srclen);
 }
+
+bool
+TLSStream::SetBlock()
+{
+	return mtls->SetBlock();
+}
+
+bool
+TLSStream::SetNonBlock()
+{
+	return mtls->SetNonBlock();
+}

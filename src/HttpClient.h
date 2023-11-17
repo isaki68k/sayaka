@@ -46,6 +46,9 @@ class TLSStream : public Stream
 	ssize_t Read(void *dst, size_t dstlen) override;
 	ssize_t Write(const void *src, size_t srclen) override;
 
+	bool SetBlock() override;
+	bool SetNonBlock() override;
+
  private:
 	TLSHandleBase *mtls {};
 

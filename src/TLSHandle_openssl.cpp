@@ -252,6 +252,42 @@ TLSHandle_openssl::Write(const void *buf, size_t len)
 	}
 }
 
+bool
+TLSHandle_openssl::SetBlock()
+{
+	return SetBlocking(true);
+}
+
+bool
+TLSHandle_openssl::SetNonBlock()
+{
+	return SetBlocking(false);
+}
+
+// ブロッキングモード(true)かノンブロッキングモード(false)に設定する。
+bool
+TLSHandle_openssl::SetBlocking(bool block)
+{
+	int val;
+
+	val = fcntl(fd, F_GETFL);
+	if (val < 0) {
+		return false;
+	}
+
+	if (block) {
+		val &= ~O_NONBLOCK;
+	} else {
+		val |= O_NONBLOCK;
+	}
+
+	if (fcntl(fd, F_SETFL, val) < 0) {
+		return false;
+	}
+
+	return true;
+}
+
 // HMAC-SHA1 したバイナリを返す。
 /*static*/ std::vector<uint8>
 TLSHandle_openssl::HMAC_SHA1(const std::string& key, const std::string& msg)

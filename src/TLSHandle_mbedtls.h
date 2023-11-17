@@ -63,6 +63,10 @@ class TLSHandle_mbedtls : public TLSHandleBase
 	ssize_t Read(void *buf, size_t len) override;
 	ssize_t Write(const void *buf, size_t len) override;
 
+	// ブロッキングモード/ノンブロッキングモードに設定する。
+	bool SetBlock() override;
+	bool SetNonBlock() override;
+
 	// 生ディスクリプタ取得
 	int GetFd() const override;
 

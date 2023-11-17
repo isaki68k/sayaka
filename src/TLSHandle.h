@@ -91,6 +91,10 @@ class TLSHandleBase
 	virtual ssize_t Read(void *buf, size_t len) = 0;
 	virtual ssize_t Write(const void *buf, size_t len) = 0;
 
+	// ブロッキングモード/ノンブロッキングモードに設定する。
+	virtual bool SetBlock() = 0;
+	virtual bool SetNonBlock() = 0;
+
 	// 生ディスクリプタ取得。
 	virtual int GetFd() const = 0;
 

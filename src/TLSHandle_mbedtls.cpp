@@ -100,6 +100,7 @@ class TLSHandle_mbedtls_inner
 	mbedtls_net_context net {};
 	mbedtls_ssl_context ssl {};
 	mbedtls_ssl_config conf {};
+	bool blocking {};
 };
 
 // コンストラクタ
@@ -168,10 +169,7 @@ TLSHandle_mbedtls::Init()
 	mbedtls_ssl_conf_rng(&inner->conf, mbedtls_ctr_drbg_random, &gctx.ctr_drbg);
 	mbedtls_ssl_conf_dbg(&inner->conf, debug_callback, stderr);
 
-	mbedtls_ssl_set_bio(&inner->ssl, &inner->net,
-		mbedtls_net_send,
-		NULL, // recv (without timeout)
-		mbedtls_net_recv_timeout);
+	SetBlock();
 
 	TRACE("done");
 	return true;
@@ -252,14 +250,8 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 		return false;
 	}
 
-	// ブロッキングに戻す (ここからは net コンテキスト内のディスクリプタが
-	// オープンなので、用意されてる API が使える)
-	r = mbedtls_net_set_block(&inner->net);
-	if (__predict_false(r != 0)) {
-		// mbedtls_net_set_block() は他の mbedTLS API とか違って fcntl(2) の
-		// 戻り値をそのまま返してしまっており、成功なら 0、エラーなら -1 が
-		// 返ってくる。そのため errmsg() ではエラーメッセージが表示できない。
-		ERROR("mbedtls_net_set_block failed");
+	// ブロッキングに戻す
+	if (SetBlock() == false) {
 		goto abort;
 	}
 
@@ -383,6 +375,56 @@ TLSHandle_mbedtls::Write(const void *buf, size_t len)
 
 	TRACE("%zd bytes", rv);
 	return rv;
+}
+
+// ブロッキングモードに設定。
+bool
+TLSHandle_mbedtls::SetBlock()
+{
+	if (inner->net.fd >= 0) {
+		int r = mbedtls_net_set_block(&inner->net);
+		if (__predict_false(r != 0)) {
+			// mbedtls_net_set_block() は他の mbedTLS API とか違って
+			// fcntl(2) の戻り値をそのまま返してしまっており、
+			// 成功なら 0、エラーなら -1 が返ってくる。
+			// そのため errmsg() ではエラーメッセージが表示できない。
+			ERROR("mbedtls_net_set_block failed");
+			return false;
+		}
+	}
+
+	mbedtls_ssl_set_bio(&inner->ssl, &inner->net,
+		mbedtls_net_send,
+		NULL, // recv (without timeout)
+		mbedtls_net_recv_timeout);
+	inner->blocking = true;
+
+	return true;
+}
+
+// ノンブロッキングモードに設定。
+bool
+TLSHandle_mbedtls::SetNonBlock()
+{
+	if (inner->net.fd >= 0) {
+		int r = mbedtls_net_set_nonblock(&inner->net);
+		if (__predict_false(r != 0)) {
+			// mbedtls_net_set_block() は他の mbedTLS API とか違って
+			// fcntl(2) の戻り値をそのまま返してしまっており、
+			// 成功なら 0、エラーなら -1 が返ってくる。
+			// そのため errmsg() ではエラーメッセージが表示できない。
+			ERROR("mbedtls_net_set_nonblock failed");
+			return false;
+		}
+	}
+
+	mbedtls_ssl_set_bio(&inner->ssl, &inner->net,
+		mbedtls_net_send,
+		mbedtls_net_recv,
+		NULL); // recv_timeout
+	inner->blocking = false;
+
+	return true;
 }
 
 // 生ディスクリプタ取得

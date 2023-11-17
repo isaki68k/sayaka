@@ -70,6 +70,22 @@ Stream::Seek(ssize_t offset, int whence)
 	return -1;
 }
 
+// ブロッキングモードに設定する (ダミー)
+bool
+Stream::SetBlock()
+{
+	errno = EBADF;
+	return false;
+}
+
+// ノンブロッキングモードに設定する (ダミー)
+bool
+Stream::SetNonBlock()
+{
+	errno = EBADF;
+	return false;
+}
+
 // 1行読み出す。
 ssize_t
 Stream::ReadLine(std::string *retval)

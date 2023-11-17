@@ -54,6 +54,9 @@ class Stream
 	// 失敗すれば errno をセットして false を返す。
 	virtual bool Seek(ssize_t offset, int whence);
 
+	virtual bool SetBlock();
+	virtual bool SetNonBlock();
+
 	bool Rewind() { return Seek(0, SEEK_SET); }
 
 	// 1行読み出す。
