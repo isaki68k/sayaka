@@ -326,8 +326,14 @@ TLSHandle_mbedtls::Read(void *buf, size_t len)
 				return 0;
 			}
 			if (rv == MBEDTLS_ERR_SSL_WANT_READ) {
-				// EINTR ?
-				goto ssl_again;
+				if (inner->blocking) {
+					// ブロッキングモードなら EINTR の時これが返る。
+					goto ssl_again;
+				} else {
+					// ノンブロッキングモードならエラーではない。
+					errno = EWOULDBLOCK;
+					return rv;
+				}
 			}
 			ERROR("mbedtls_ssl_read failed: %s", errmsg(rv));
 			return rv;
