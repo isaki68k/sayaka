@@ -234,7 +234,7 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 		return false;
 	}
 
-	// 独自のノンブロッキングコネクト。(see net_socket2.cpp)
+	// 独自のノンブロッキングコネクト。
 	// 戻り値 -0x004b は EINPROGRESS 相当。
 	r = mbedtls_net_connect_nonblock(&inner->net, hostname, servname,
 		MBEDTLS_NET_PROTO_TCP, family);
