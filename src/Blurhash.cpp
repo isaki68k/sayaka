@@ -25,6 +25,7 @@
 
 #include "header.h"
 #include "Blurhash.h"
+#include <array>
 #include <cmath>
 
 struct Blurhash::ColorF
@@ -193,12 +194,25 @@ Blurhash::LinearToSRGB(float val)
 		return 255;
 	}
 
+	const int N = 256;
+	static std::array<uint8, N> cache {};
+	static std::array<bool, N> valid {};
+	int t = (int)(val * N);
+	if (valid[t]) {
+		return cache[t];
+	}
+
 	if (val < 0.0031308) {
 		val = val * 12.92;
 	} else {
 		val = std::pow(val, (float)1 / 2.4) * 1.055 - 0.055;
 	}
-	return (int)(val * 255 + 0.5);
+	int rv = (int)(val * 255 + 0.5);
+
+	cache[t] = rv;
+	valid[t] = true;
+
+	return rv;
 }
 
 /*static*/ float
