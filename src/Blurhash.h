@@ -59,4 +59,5 @@ class Blurhash
 	float maxvalue {};
 
 	static std::array<uint8, L2SRGBSize> table_L2SRGB;
+	static std::array<uint8, 0x60> table_base83;
 };

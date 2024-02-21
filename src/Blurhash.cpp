@@ -126,14 +126,14 @@ Blurhash::Decode(uint8 *dst, int width, int height)
 int
 Blurhash::Decode83(int pos, int len) const
 {
-	static const std::string chars =
-		"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		"abcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~";
-
 	int val = 0;
 	for (int i = 0; i < len; i++) {
-		auto d = chars.find(hash[pos + i]);
-		if (d == std::string::npos) {
+		uint32 c = hash[pos + i] - 0x20;
+		if (__predict_false((uint8)c >= 0x60)) {
+			return -1;
+		}
+		uint32 d = table_base83[c];
+		if (__predict_false((int8)d < 0)) {
 			return -1;
 		}
 		val = val * 83 + (int)d;
@@ -247,6 +247,22 @@ Blurhash::BasesFor(std::vector<float>& bases, int pixels, int comp)
 	240, 242, 244, 246, 248, 250, 251, 253,
 };
 
+// Base83(?) のデコード表。'\x20'-'\x7f'
+/*static*/ std::array<uint8, 0x60> Blurhash::table_base83 = {
+	0xff, 0xff, 0xff, 0x3e, 0x3f, 0x40, 0xff, 0xff,
+	0xff, 0xff, 0x41, 0x42, 0x43, 0x44, 0x45, 0xff,
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x08, 0x09, 0x46, 0x47, 0xff, 0x48, 0xff, 0x49,
+	0x4a, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+	0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+	0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
+	0x21, 0x22, 0x23, 0x4b, 0xff, 0x4c, 0x4d, 0x4e,
+	0xff, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a,
+	0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32,
+	0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a,
+	0x3b, 0x3c, 0x3d, 0x4f, 0x50, 0x51, 0x52, 0xff,
+};
+
 #if defined(GEN_L2SRGB)
 // % c++ -I.. -DGEN_L2SRGB Blurhash.cpp
 // % ./a.out 512
@@ -274,6 +290,37 @@ main(int ac, char *av[])
 
 		printf("%c%3u,", ((i % 8) ? ' ' : '\t'), d);
 		if ((i % 8) == 7) {
+			printf("\n");
+		}
+	}
+	return 0;
+}
+#endif
+
+#if defined(GEN_BASE83)
+// % c++ -I.. -DGEN_BASE83 Blurhash.cpp
+// % ./a.out
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+int
+main(int ac, char *av[])
+{
+	static const std::string chars =
+		"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz#$%*+,-.:;=?@[]^_{|}~";
+
+	for (int c = 0x20; c < 0x80; c++) {
+		int n;
+		auto d = chars.find(c);
+		if (d == std::string::npos) {
+			n = -1;
+		} else {
+			n = (int)d;
+		}
+
+		printf("%c0x%02x,", ((c % 8) ? ' ' : '\t'), (uint8)n);
+		if ((c % 8) == 7) {
 			printf("\n");
 		}
 	}
