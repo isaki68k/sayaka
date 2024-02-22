@@ -228,9 +228,35 @@ Blurhash::BasesFor(std::vector<float>& bases, int pixels, int comp)
 	bases.resize(pixels * comp);
 
 	float scale = M_PI / pixels;
+#if 0
 	for (int x = 0; x < pixels; x++) {
 		for (int c = 0; c < comp; c++) {
 			bases[x * comp + c] = std::cos(scale * c * x);
 		}
 	}
+#else
+	// cos() を c == 1 のときだけ計算する。
+	// c >= 2 のときは間引きに相当するので再計算する必要はない。
+
+	if (comp < 1) return;
+	for (int x = 0; x < pixels; x++) {
+		bases[x * comp + 0] = 1;
+	}
+	if (comp < 2) return;
+	for (int x = 0; x < pixels; x++) {
+		bases[x * comp + 1] = std::cos(scale * x);
+	}
+	for (int x = 0; x < pixels; x++) {
+		for (int c = 2; c < comp; c++) {
+			int t;
+			t = (c * x) % (2 * pixels);
+			if (t < pixels) {
+				bases[x * comp + c] = bases[t * comp + 1];
+			} else {
+				t -= pixels;
+				bases[x * comp + c] = -bases[t * comp + 1];
+			}
+		}
+	}
+#endif
 }
