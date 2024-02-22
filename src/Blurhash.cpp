@@ -218,6 +218,13 @@ Blurhash::LinearToSRGB(float val)
 /*static*/ float
 Blurhash::SignPow(float val, float exp)
 {
+	if (exp == 2) {
+		if (val < 0) {
+			return -(val * val);
+		} else {
+			return val * val;
+		}
+	}
 	float r = std::pow(std::abs(val), exp);
 	return std::copysign(r, val);
 }
