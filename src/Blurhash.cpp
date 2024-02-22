@@ -25,7 +25,6 @@
 
 #include "header.h"
 #include "Blurhash.h"
-#include <array>
 #include <cmath>
 
 struct Blurhash::ColorF
@@ -39,6 +38,10 @@ struct Blurhash::ColorF
 Blurhash::Blurhash(const std::string& hash_)
 	: hash(hash_)
 {
+	// TODO: 事前計算しておく
+	for (int i = 0; i < table_L2SRGB.size(); i++) {
+		table_L2SRGB[i] = LinearToSRGB((float)i / table_L2SRGB.size());
+	}
 }
 
 // この hash が正しそうなら true を返す。
@@ -107,9 +110,9 @@ Blurhash::Decode(uint8 *dst, int width, int height)
 					c.b += v.b * base;
 				}
 			}
-			*dst++ = LinearToSRGB(c.r);
-			*dst++ = LinearToSRGB(c.g);
-			*dst++ = LinearToSRGB(c.b);
+			*dst++ = LinearToSRGBbyTable(c.r);
+			*dst++ = LinearToSRGBbyTable(c.g);
+			*dst++ = LinearToSRGBbyTable(c.b);
 		}
 	}
 
@@ -215,6 +218,19 @@ Blurhash::LinearToSRGB(float val)
 	return rv;
 }
 
+/*static*/ int
+Blurhash::LinearToSRGBbyTable(float val)
+{
+	if (val <= 0) {
+		return 0;
+	}
+	if (val >= 1) {
+		return 255;
+	}
+	// 0 以下と 1 以上を if で処理しているから範囲外にならない
+	return table_L2SRGB[(int)(val * table_L2SRGB.size())];
+}
+
 /*static*/ float
 Blurhash::SignPow(float val, float exp)
 {
@@ -267,3 +283,5 @@ Blurhash::BasesFor(std::vector<float>& bases, int pixels, int comp)
 	}
 #endif
 }
+
+/*static*/ std::array<uint8, 512> Blurhash::table_L2SRGB;

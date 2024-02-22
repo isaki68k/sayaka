@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -49,9 +50,13 @@ class Blurhash
 	static float DecodeMaxAC(int val);
 	static float SRGBToLinear(int val);
 	static int LinearToSRGB(float val);
+	static int LinearToSRGBbyTable(float val);
 	static float SignPow(float val, float exp);
 	void BasesFor(std::vector<float>& bases, int pixels, int comp);
 
 	const std::string& hash;
 	float maxvalue {};
+
+	// LinearToSRGB で 1/512 単位での変換テーブル。(0..1) なので 512 個で OK。
+	static std::array<uint8, 512> table_L2SRGB;
 };
