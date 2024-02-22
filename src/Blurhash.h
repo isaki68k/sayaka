@@ -45,11 +45,10 @@ class Blurhash
  private:
 	int Decode83(int pos, int len) const;
 	void DecodeDC(ColorF *col, int val) const;
-	void DecodeAC(ColorF *col, int val) const;
+	static float DecodeACq(int ival);
 	static float DecodeMaxAC(int val);
 	static float SRGBToLinear(int val);
 	static int LinearToSRGB(float val);
-	static float SignPow(float val, float exp);
 	void BasesFor(std::vector<float>& bases, int pixels, int comp);
 
 	const std::string& hash;

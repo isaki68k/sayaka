@@ -81,8 +81,14 @@ Blurhash::Decode(uint8 *dst, int width, int height)
 	values.emplace_back(col);
 
 	// 残り
-	for (int pos = 6; pos < hash.size(); pos += 2) {
-		DecodeAC(&col, Decode83(pos, 2));
+	for (int pos = 6, end = hash.size(); pos < end; pos += 2) {
+		int val = Decode83(pos, 2);
+		int qr =  val / (19 * 19);
+		int qg = (val / 19) % 19;
+		int qb =  val % 19;
+		col.r = DecodeACq(qr) * maxvalue;
+		col.g = DecodeACq(qg) * maxvalue;
+		col.b = DecodeACq(qb) * maxvalue;
 		values.emplace_back(col);
 	}
 
@@ -147,16 +153,12 @@ Blurhash::DecodeDC(ColorF *col, int val) const
 	col->b = SRGBToLinear(b);
 }
 
-void
-Blurhash::DecodeAC(ColorF *col, int val) const
+/*static*/ float
+Blurhash::DecodeACq(int ival)
 {
-	int qr =  val / (19 * 19);
-	int qg = (val / 19) % 19;
-	int qb =  val % 19;
-
-	col->r = SignPow((float)(qr - 9) / 9, 2) * maxvalue;
-	col->g = SignPow((float)(qg - 9) / 9, 2) * maxvalue;
-	col->b = SignPow((float)(qb - 9) / 9, 2) * maxvalue;
+	ival -= 9;
+	int signsq = ival * std::abs(ival);
+	return (float)signsq / 81;
 }
 
 /*static*/ float
@@ -199,13 +201,6 @@ Blurhash::LinearToSRGB(float val)
 		val = std::pow(val, (float)1 / 2.4) * 1.055 - 0.055;
 	}
 	return (int)(val * 255 + 0.5);
-}
-
-/*static*/ float
-Blurhash::SignPow(float val, float exp)
-{
-	float r = std::pow(std::abs(val), exp);
-	return std::copysign(r, val);
 }
 
 void
