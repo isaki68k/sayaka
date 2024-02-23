@@ -25,12 +25,16 @@
 
 #pragma once
 
+#include <array>
 #include <string>
 #include <vector>
 
 class Blurhash
 {
 	struct ColorF;
+ public:
+	static const int L2SRGBSize = 512;
+
  public:
 	// ハッシュを指定したコンストラクタ。
 	Blurhash(const std::string& hash_);
@@ -53,4 +57,6 @@ class Blurhash
 
 	const std::string& hash;
 	float maxvalue {};
+
+	static std::array<uint8, L2SRGBSize> table_L2SRGB;
 };
