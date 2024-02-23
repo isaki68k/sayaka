@@ -33,7 +33,7 @@ class Blurhash
 {
 	struct ColorF;
  public:
-	static const int L2SRGBSize = 512;
+	static const int L2SRGBSize = 64;
 
  public:
 	// ハッシュを指定したコンストラクタ。
