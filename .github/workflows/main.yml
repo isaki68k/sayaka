@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [ ci-netbsd ]
+  pull_request:
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Check container sha tags
+        run: |
+          docker pull "ubuntu:jammy"
+          docker inspect "ubuntu:jammy" --format=${{ '{{.RepoDigests}}{{.Created}}' }}
+
+
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    container:
+      image: ubuntu:jammy
+
+    steps:
+      - name: Install distro packages
+        env:
+         UBUNTU_PACKAGES_MAKE: >
+            build-essential
+            pkg-config
+            bmake
+            libbsd-dev
+            libwslay-dev
+            libwebp-dev
+            libmbedtls-dev
+
+        run: |
+          cat /etc/lsb-release
+          echo "apt-get update -qq -y"
+          apt-get update -qq -y
+          echo "apt-get install -q -y git"
+          apt-get install -q -y git
+          PACKAGES=$(echo "$PACKAGES $UBUNTU_PACKAGES_MAKE" | tr -d '\n')
+          echo "apt-get install -y $PACKAGES"
+          apt-get install -y $PACKAGES
+
+      - uses: actions/checkout@v4
+        with:
+          #repository: isaki68k/sayaka
+          fetch-depth: 200
+
+      - name: Fetch git tags
+        run: |
+          pwd
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git branch
+          git fetch --prune --unshallow --tags
+          echo $PATH
+
+      - name: Run make
+        run: |
+          sh configure
+          bmake -DRELEASE sayaka
+
+  build-netbsd:
+    name: "build (NetBSD/amd64 9.3 with pkgsrc)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install packages and run configure and make (on the NetBSD VM)
+        uses: vmactions/netbsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          # Check https://github.com/NetBSD/pkgsrc/blob/trunk/net/sayaka/Makefile to check dependencies
+          prepare: |
+            export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R7/bin:/usr/pkg/bin:/usr/pkg/sbin:/usr/games:/usr/local/bin:/usr/local/sbin
+            pkg_add pkgconf git-base
+            pkg_add gcc10
+            pkg_add libwebp mbedtls wslay
+
+          run: |
+            export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R7/bin:/usr/pkg/bin:/usr/pkg/sbin:/usr/games:/usr/local/bin:/usr/local/sbin
+            export PATH=/usr/pkg/gcc10/bin:${PATH}
+            CC=/usr/pkg/gcc10/bin/gcc CXX=/usr/pkg/gcc10/bin/g++ sh configure
+            make -DRELEASE sayaka
