@@ -281,8 +281,8 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 
 		PrintTime(&end);
 		diag.Print("%s connected, %d.%03d msec\n", __func__,
-			(int)result.tv_sec * 1000 + result.tv_usec / 1000,
-			(int)result.tv_usec % 1000);
+			(int)((uint64)result.tv_sec * 1000 + result.tv_usec / 1000),
+			(int)(result.tv_usec % 1000));
 	}
 	return true;
 
