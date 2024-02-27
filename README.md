@@ -30,24 +30,30 @@ Misskey クライアント sayaka ちゃん version 3.7.3 (2024/02/23)
 
 必要なもの
 ---
+以下は configure のオプションに関わらず必要です。
 * C++17 compiler
 * BSD make (not GNU make)
 * pkg-config
 	… pkgsrc なら devel/pkgconf、Ubuntu なら pkg-config です。
 * wslay
+	… pkgsrc なら www/wslay、
+	Ubuntu なら libwslay1 libwslay-dev です。
 * libwebp
+	… pkgsrc なら graphics/libwebp、
+	Ubuntu なら libwebp-dev です。
 
 以下は configure のオプションによって変わります。
 * mbedtls 2.x (2.9.0 or later?)
-	… デフォルトでは必要です
-	(後述の `--without-mbedtls` を指定した場合は不要です)。
+	… デフォルトでは必要です。
 	pkgsrc なら security/mbedtls、OpenBSD なら security/polarssl です。
+	後述の `--without-mbedtls` を指定した場合は不要です。
 * OpenSSL
-	… `--without-mbedtls` を指定した場合は必要です。
+	… デフォルトでは不要ですが、
+	後述の `--without-mbedtls` を指定した場合は必要になります。
 	Ubuntu なら libssl-dev です。
 * giflib (maybe >= 5.0)、jpeg(libjpeg)、libpng
 	… デフォルトでは不要ですが、
-	後述の `--without-stb-image` を指定した場合は必要です。
+	後述の `--without-stb-image` を指定した場合は3つとも必要になります。
 	pkgsrc なら graphics/giflib, graphics/jpeg, graphics/png です。
 
 
