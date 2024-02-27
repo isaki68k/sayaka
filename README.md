@@ -32,6 +32,8 @@ Misskey クライアント sayaka ちゃん version 3.7.3 (2024/02/23)
 ---
 * C++17 compiler
 * BSD make (not GNU make)
+* pkg-config
+	… pkgsrc なら devel/pkgconf、Ubuntu なら pkg-config です。
 * wslay
 * libwebp
 
