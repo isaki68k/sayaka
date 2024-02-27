@@ -55,7 +55,6 @@ Diag diag;
 Diag diagHttp;
 int opt_debug_sixel = 0;
 int opt_debug_mbedtls;
-int opt_debug_tls;
 static ReductorColorMode opt_colormode = ReductorColorMode::Fixed256;
 static int opt_graylevel = 256;
 static int opt_width = 0;
