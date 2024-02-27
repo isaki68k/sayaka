@@ -162,7 +162,9 @@ fi
 
 AC_CHECK_TOOL([PKG_CONFIG], [pkg-config], [:])
 if test x"${PKG_CONFIG}" = x":"; then
-	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found])
+	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found.
+	On NetBSD(pkgsrc), install pkgsrc/devel/pkgconf
+	On Ubuntu, sudo apt install pkg-config])
 fi
 
 # CHECK_PKG($1=pkgname)

@@ -3799,7 +3799,9 @@ fi
 if test x"${PKG_CONFIG}" = x":"; then
 	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "pkg-config (or \$PKG_CONFIG) not found
+as_fn_error $? "pkg-config (or \$PKG_CONFIG) not found.
+	On NetBSD(pkgsrc), install pkgsrc/devel/pkgconf
+	On Ubuntu, sudo apt install pkg-config
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -5576,3 +5578,4 @@ if test "x${with_mbedtls}" = "xyes"; then
 else
 	echo "OpenSSL"
 fi
+
