@@ -209,8 +209,8 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 	struct timeval start, end, result;
 	int r;
 
-	if (diag >= 2) {
-		// TRACE と同様だが start を保存したい。
+	if (diag >= 1) {
+		// DEBUG と同様だが start を保存したい。
 		gettimeofday(&start, NULL);
 		PrintTime(&start);
 		diag.Print("%s called: %s:%s", __func__, hostname, servname);
@@ -275,7 +275,7 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 		}
 	}
 
-	if (diag >= 2) {
+	if (diag >= 1) {
 		gettimeofday(&end, NULL);
 		timersub(&end, &start, &result);
 
@@ -314,7 +314,7 @@ TLSHandle_mbedtls::Read(void *buf, size_t len)
 {
 	ssize_t rv;
 
-	TRACE("called");
+	VERBOSE("called");
 
 	if (usessl) {
 	 ssl_again:
@@ -353,7 +353,7 @@ TLSHandle_mbedtls::Read(void *buf, size_t len)
 		}
 	}
 
-	TRACE("%zd bytes", rv);
+	VERBOSE("%zd bytes", rv);
 	return rv;
 }
 
@@ -363,7 +363,7 @@ TLSHandle_mbedtls::Write(const void *buf, size_t len)
 {
 	ssize_t rv;
 
-	TRACE("called");
+	VERBOSE("called");
 
 	if (usessl) {
 		rv = mbedtls_ssl_write(&inner->ssl, (const unsigned char *)buf, len);
@@ -379,7 +379,7 @@ TLSHandle_mbedtls::Write(const void *buf, size_t len)
 		}
 	}
 
-	TRACE("%zd bytes", rv);
+	VERBOSE("%zd bytes", rv);
 	return rv;
 }
 

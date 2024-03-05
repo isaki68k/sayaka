@@ -30,9 +30,16 @@
 #include <cstdarg>
 #include <string>
 
-// ここではトレースにタイムスタンプを付けたい。
+// ここではログにタイムスタンプを付けたい。
 #define TRACE(fmt...)	do {	\
 	if (diag >= 2) {	\
+		PrintTime(NULL);	\
+		auto msg = string_format(fmt);	\
+		diag.Print("%s %s", __func__, msg.c_str());	\
+	}	\
+} while (0)
+#define VERBOSE(fmt...)	do {	\
+	if (diag >= 3) {	\
 		PrintTime(NULL);	\
 		auto msg = string_format(fmt);	\
 		diag.Print("%s %s", __func__, msg.c_str());	\
