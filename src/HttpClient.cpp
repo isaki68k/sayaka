@@ -90,7 +90,6 @@ HttpClient::Open(const std::string& uri_)
 	ResultLine.clear();
 	ResultMsg.clear();
 	ResultCode = 0;
-	Ciphers.clear();
 
 	tstream.reset();
 	chunk_stream.reset();
