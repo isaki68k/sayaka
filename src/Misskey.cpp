@@ -92,6 +92,11 @@ cmd_misskey_stream()
 			goto abort2;
 		}
 
+		// Ciphers 指定があれば指示
+		if (!opt_ciphers.empty()) {
+			client.SetCiphers(opt_ciphers);
+		}
+
 		if (__predict_false(client.Connect() == false)) {
 			int code = client.GetHTTPCode();
 			if (code > 0) {

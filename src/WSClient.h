@@ -46,6 +46,7 @@ class WSClient
 	bool Init(wsclient_onmsg_callback_t, void *);
 
 	bool Open(const std::string& uri);
+	void SetCiphers(const std::string& ciphers_);
 	bool Connect();
 	void Close();
 

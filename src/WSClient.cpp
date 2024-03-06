@@ -116,6 +116,13 @@ WSClient::Open(const std::string& uri_)
 	return true;
 }
 
+// Ciphers を設定する。
+void
+WSClient::SetCiphers(const std::string& ciphers_)
+{
+	http->SetCiphers(ciphers_);
+}
+
 // 接続してハンドシェイクフェーズを通過するまで。
 // 成功すれば true を返す。
 bool
