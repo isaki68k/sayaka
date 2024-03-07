@@ -660,6 +660,9 @@ fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 		}
 		http.family = address_family;
 		http.SetTimeout(opt_timeout_image);
+		if (!opt_ciphers.empty()) {
+			http.SetCiphers(opt_ciphers);
+		}
 		stream = http.GET();
 		if (stream == NULL) {
 			Debug(diagImage, "%s: GET failed", __method__);
