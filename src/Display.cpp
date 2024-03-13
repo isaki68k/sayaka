@@ -588,7 +588,7 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 //   "h":int, (必須)
 // } で、入力画像のあるべきサイズを指定する。
 // resize_width はリサイズすべき幅を指定、0 ならリサイズしない。
-bool
+static bool
 fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 {
 	SixelConverter sx(opt_debug_sixel);
