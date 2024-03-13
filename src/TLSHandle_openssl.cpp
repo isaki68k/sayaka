@@ -35,6 +35,7 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <netdb.h>
 #include <openssl/err.h>
 #include <openssl/hmac.h>
