@@ -28,6 +28,7 @@
 #include "FileStream.h"
 #include "JsonInc.h"
 #include "Misskey.h"
+#include "Print.h"
 #include "StringUtil.h"
 #include "TLSHandle.h"
 #if defined(USE_TWITTER)

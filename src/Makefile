@@ -8,7 +8,6 @@ SRCS_common+=	Base64.cpp
 SRCS_common+=	Blurhash.cpp
 SRCS_common+=	ChunkedInputStream.cpp
 SRCS_common+=	Diag.cpp
-SRCS_common+=	Display.cpp
 SRCS_common+=	FdStream.cpp
 SRCS_common+=	FileStream.cpp
 SRCS_common+=	HttpClient.cpp
@@ -50,6 +49,8 @@ SRCS_common += TLSHandle_openssl.cpp
 .endif
 
 SRCS_sayaka=	sayaka.cpp
+SRCS_sayaka+=	Display.cpp
+SRCS_sayaka+=	Print.cpp
 
 SRCS_sixelv=	sixelv.cpp
 

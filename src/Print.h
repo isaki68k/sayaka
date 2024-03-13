@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Tetsuya Isaki
+ * Copyright (C) 2024 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -25,10 +25,10 @@
 
 #pragma once
 
-#include "JsonFwd.h"
+#include "UString.h"
 
-extern void ShowIcon(bool (*callback)(const Json&, const std::string&),
-	const Json& user, const std::string& userid);
-extern std::string GetCacheFilename(const std::string& img_url);
-extern bool ShowImage(const std::string& img_file, const std::string& img_url,
-	int resize_width, int index);
+extern void init_color();
+extern void print_(const UString& utext);
+extern UString ColorBegin(Color col);
+extern UString ColorEnd(Color col);
+extern UString coloring(const std::string& text, Color col);

@@ -27,6 +27,7 @@
 #include "Display.h"
 #include "JsonInc.h"
 #include "Misskey.h"
+#include "Print.h"
 #include "Random.h"
 #include "StringUtil.h"
 #include "UString.h"
