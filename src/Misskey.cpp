@@ -815,9 +815,8 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 		if (height < 1) {
 			height = resize_width;
 		}
-		// Json オブジェクトでエンコードも出来るけど、このくらいならええやろ。
-		img_url = string_format(R"(blurhash://{"hash":"%s","w":%d,"h":%d})",
-			blurhash.c_str(), width, height);
+		img_url = string_format("blurhash://%d&%d&%s",
+			width, height, blurhash.c_str());
 		img_file = string_format("blurhash-%s-%d-%d",
 			UrlEncode(blurhash).c_str(), width, height);
 	} else {

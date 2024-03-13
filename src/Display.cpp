@@ -27,7 +27,7 @@
 #include "Display.h"
 #include "FileStream.h"
 #include "HttpClient.h"
-#include "JsonInc.h"
+#include "JsonFwd.h"
 #include "MemoryStream.h"
 #include "SixelConverter.h"
 #include "subr.h"
@@ -239,13 +239,11 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 // 成功すれば true を、失敗すれば false を返す。
 // 成功した場合 out はファイル先頭を指している。
 // img_url は画像 URL。
-// ただし Blurhash なら独自の blurhash://<JSON> 形式の文字列を渡すこと。
-// <JSON> 部分は URL エンコードではなくただの文字列。内容は
-// {
-//   "hash":"...", (必須)
-//   "w":int, (必須)
-//   "h":int, (必須)
-// } で、入力画像のあるべきサイズを指定する。
+// ただし Blurhash なら独自の blurhash://<encoded> 形式の文字列を渡すこと。
+// <encoded> 部分は URL エンコードではなく独自文字列。内容は
+// <encoded> := <width> "&" <height> "&" <生blurhash>
+// <width> と <height> で入力画像のあるべきサイズを指定する。
+//
 // resize_width はリサイズすべき幅を指定、0 ならリサイズしない。
 static bool
 fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
@@ -300,18 +298,26 @@ fetch_image(FileStream& outstream, const std::string& img_url, int resize_width)
 		// Blurhash は自分で自分のサイズを(アスペクト比すら)持っておらず、
 		// 代わりに呼び出し側が独自形式で提供してくれているのでそれを
 		// 取り出して、サイズ固定モードで SIXEL にする。うーんこの…。
-		Json obj = Json::parse(&img_url[11]);
-		if (obj.is_object() == false) {
+		char *end;
+		const char *p = &img_url[11];
+		errno = 0;
+		int w = strtol(p, &end, 10);
+		if (__predict_false(end == p || *end != '&' || errno != 0)) {
 			return false;
 		}
-		auto hash = JsonAsString(obj["hash"]);
-		mem.Append(hash.c_str(), hash.length());
+		p = end + 1;
+		int h = strtol(p, &end, 10);
+		if (__predict_false(end == p || *end != '&' || errno != 0)) {
+			return false;
+		}
+		p = end + 1;
+		mem.Append(p, img_url.size() - (p - &img_url[0]));
 		mem.Rewind();
 		stream = &mem;
 		// サイズはここで sx にセットする。
 		sx.ResizeAxis = ResizeAxisMode::Both;
-		sx.ResizeWidth  = JsonAsInt(obj["w"]);
-		sx.ResizeHeight = JsonAsInt(obj["h"]);
+		sx.ResizeWidth  = w;
+		sx.ResizeHeight = h;
 	} else {
 		http.SetDiag(diagHttp);
 		if (http.Open(img_url) == false) {
