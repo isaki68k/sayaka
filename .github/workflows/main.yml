@@ -18,6 +18,7 @@ jobs:
           sudo apt update
           sudo apt upgrade -y
           sudo apt install -y build-essential pkg-config bmake libbsd-dev libwslay-dev libwebp-dev libmbedtls-dev
+          sudo apt install -y libgif-dev libjpeg-dev libpng-dev
 
       - uses: actions/checkout@v4
         with:
@@ -26,8 +27,22 @@ jobs:
 
       - name: configure and make
         run: |
+          echo build with \"configure\"
+          bmake distclean
           sh configure
-          bmake -DRELEASE sayaka
+          bmake -DRELEASE
+          echo build with \"configure --without-stb-image\"
+          bmake distclean
+          sh configure --without-stb-image
+          bmake -DRELEASE
+          echo build with \"configure --without-mbedtls\"
+          bmake distclean
+          sh configure --without-mbedtls
+          bmake -DRELEASE
+          echo build with \"configure --enable-twitter\"
+          bmake distclean
+          sh configure --enable-twitter
+          bmake -DRELEASE
 
   build-netbsd:
     name: "build-netbsd (NetBSD/amd64 9.3 with pkgsrc)"
@@ -47,12 +62,28 @@ jobs:
             pkg_add pkgconf
             pkg_add gcc10
             pkg_add libwebp mbedtls wslay
+            pkg_add giflib jpeg png
 
           run: |
             PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R7/bin:/usr/pkg/bin:/usr/pkg/sbin:/usr/games:/usr/local/bin:/usr/local/sbin
             export PATH=/usr/pkg/gcc10/bin:${PATH}
-            CC=/usr/pkg/gcc10/bin/gcc CXX=/usr/pkg/gcc10/bin/g++ sh configure
-            make -DRELEASE sayaka
+            export CC=/usr/pkg/gcc10/bin/gcc CXX=/usr/pkg/gcc10/bin/g++
+            echo build with \"configure\"
+            make distclean
+            sh configure
+            make -DRELEASE
+            echo build with \"configure --without-stb-image\"
+            make distclean
+            sh configure --without-stb-image
+            make -DRELEASE
+            echo build with \"configure --without-mbedtls\"
+            make distclean
+            sh configure --without-mbedtls
+            make -DRELEASE
+            echo build with \"configure --enable-twitter\"
+            make distclean
+            sh configure --enable-twitter
+            make -DRELEASE
 
   build-openbsd:
     name: "build-openbsd (OpenBSD/amd64 7.4 with ports)"
@@ -70,7 +101,22 @@ jobs:
             export PATH
             pkg_add pkgconf
             pkg_add libwebp mbedtls wslay
+            pkg_add giflib jpeg png
 
           run: |
+            echo build with \"configure\"
+            make distclean
             sh configure
-            make -DRELEASE sayaka
+            make -DRELEASE
+            echo build with \"configure --without-stb-image\"
+            make distclean
+            sh configure --without-stb-image
+            make -DRELEASE
+            echo build with \"configure --without-mbedtls\"
+            make distclean
+            sh configure --without-mbedtls
+            make -DRELEASE
+            echo build with \"configure --enable-twitter\"
+            make distclean
+            sh configure --enable-twitter
+            make -DRELEASE
