@@ -1,6 +1,8 @@
 # vi:set ts=8:
 
+.if exists(../Makefile.cfg)
 .include "../Makefile.cfg"
+.endif
 
 SRCS_common+=	Base64.cpp
 SRCS_common+=	Blurhash.cpp
