@@ -115,7 +115,6 @@ std::string last_id;			// 直前に表示したツイート
 int  last_id_count;				// 連続回数
 int  last_id_max;				// 連続回数の上限
 std::string opt_ciphers;		// 暗号スイート
-bool opt_full_url;				// URL を省略表示しない
 bool opt_progress;				// 起動時の途中経過表示
 bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
@@ -287,7 +286,6 @@ main(int ac, char *av[])
 	last_id = "";
 	last_id_count = 0;
 	last_id_max = 10;
-	opt_full_url = false;
 	opt_progress = false;
 	opt_ormode = false;
 	opt_output_palette = true;

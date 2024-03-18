@@ -31,3 +31,5 @@ extern bool twitter_show_line(const std::string& line);
 
 // status から本文フィールドを取得。
 extern const Json *GetFullText(const Json& status);
+
+extern bool opt_full_url;

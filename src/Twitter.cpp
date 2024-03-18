@@ -55,6 +55,8 @@ class MediaInfo
 	std::string display_url {};
 };
 
+bool opt_full_url;				// URL を省略表示しない
+
 static bool twitter_show_object(const Json& json);
 static bool showstatus(const Json *status, bool is_quoted);
 static std::string format_name(const std::string& text);

@@ -105,7 +105,6 @@ extern std::string last_id;
 extern int  last_id_count;
 extern int  last_id_max;
 extern std::string opt_ciphers;
-extern bool opt_full_url;
 extern bool opt_progress;
 extern bool opt_ormode;
 extern bool opt_output_palette;
