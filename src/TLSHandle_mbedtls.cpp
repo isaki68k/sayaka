@@ -118,9 +118,6 @@ TLSHandle_mbedtls::TLSHandle_mbedtls()
 			throw "initializing gctx failed";
 		}
 		gctx.initialized = true;
-
-		// mbedTLS のデバッグレベルはグローバルなのでここでセットする。
-		mbedtls_debug_set_threshold(opt_debug_mbedtls);
 	}
 
 	// メンバを初期化
@@ -134,6 +131,13 @@ TLSHandle_mbedtls::~TLSHandle_mbedtls()
 
 	Close();
 	inner.reset();
+}
+
+// mbedTLS のデバッグレベルはグローバル。
+/*static*/ void
+TLSHandle_mbedtls::SetLevel(int lv)
+{
+	mbedtls_debug_set_threshold(lv);
 }
 
 // mbedTLS のエラーコードを文字列にして返す

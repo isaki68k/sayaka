@@ -74,6 +74,9 @@ class TLSHandle_mbedtls : public TLSHandleBase
 	static std::vector<uint8> HMAC_SHA1(const std::string& key,
 		const std::string& msg);
 
+	// mbedTLS のデバッグレベルを設定する。
+	static void SetLevel(int lv);
+
  private:
 	std::unique_ptr<TLSHandle_mbedtls_inner> inner /*{}*/;
 

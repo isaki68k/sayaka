@@ -32,6 +32,9 @@
 #include "ImageReductor.h"
 #include "StringUtil.h"
 #include "SixelConverter.h"
+#if defined(USE_MBEDTLS)
+#include "TLSHandle_mbedtls.h"
+#endif
 #include "term.h"
 #include <chrono>
 #include <cstring>
@@ -54,7 +57,6 @@ enum OutputFormat {
 Diag diag;
 Diag diagHttp;
 int opt_debug_sixel = 0;
-int opt_debug_mbedtls;
 static ReductorColorMode opt_colormode = ReductorColorMode::Fixed256;
 static int opt_graylevel = 256;
 static int opt_width = 0;
@@ -268,11 +270,13 @@ int main(int ac, char *av[])
 			break;
 
 		 case OPT_debug_mbedtls:
+#if defined(USE_MBEDTLS)
 			val = stou32def(optarg, -1);
 			if (val < 0 || val > 2) {
 				errx(1, "--debug-mbedtls %s: debug level must be 0..4", optarg);
 			}
-			opt_debug_mbedtls = val;
+			TLSHandle_mbedtls::SetLevel(val);
+#endif
 			break;
 
 		 case OPT_debug_sixel:
