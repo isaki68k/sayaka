@@ -110,7 +110,7 @@ std::string opt_ngword;			// NG ワード (追加削除コマンド用)
 std::string opt_ngword_user;	// NG 対象ユーザ (追加コマンド用)
 NGWordList ngword_list;			// NG ワードリスト
 #endif
-std::string record_file;		// 記録用ファイルパス
+static std::string record_file;	// 記録用ファイルパス
 std::string last_id;			// 直前に表示したツイート
 int  last_id_count;				// 連続回数
 int  last_id_max;				// 連続回数の上限

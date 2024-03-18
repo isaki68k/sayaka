@@ -101,7 +101,6 @@ extern std::string opt_ngword;
 extern std::string opt_ngword_user;
 extern NGWordList ngword_list;
 #endif
-extern std::string record_file;
 extern std::string last_id;
 extern int  last_id_count;
 extern int  last_id_max;
