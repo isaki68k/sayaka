@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "UString.h"
+#include "sayaka.h"
 
 extern void init_color();
 extern void print_(const UString& utext);

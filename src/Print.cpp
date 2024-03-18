@@ -23,13 +23,14 @@
  * SUCH DAMAGE.
  */
 
-#include "sayaka.h"
+#include "Print.h"
 #include "MathAlphaSymbols.h"
 #include "StringUtil.h"
 #include "UString.h"
 #include "eaw_code.h"
 #include "term.h"
 #include <assert.h>
+#include <array>
 
 // 色定数
 static const std::string BOLD		= "1";
