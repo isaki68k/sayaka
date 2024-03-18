@@ -28,6 +28,7 @@
 #include "Dictionary.h"
 #include "Display.h"
 #include "RichString.h"
+#include "Print.h"
 #include "StringUtil.h"
 #include "Twitter.h"
 #include "subr.h"
