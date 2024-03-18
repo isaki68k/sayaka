@@ -45,3 +45,4 @@ extern int  image_next_cols;
 extern int  image_max_rows;
 extern int  max_image_count;
 extern bool in_sixel;
+extern int  opt_timeout_image;

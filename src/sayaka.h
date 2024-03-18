@@ -108,7 +108,6 @@ extern std::string opt_ciphers;
 extern bool opt_progress;
 extern bool opt_ormode;
 extern bool opt_output_palette;
-extern int  opt_timeout_image;
 extern bool opt_nocolor;
 extern int  opt_record_mode;
 extern bool opt_mathalpha;

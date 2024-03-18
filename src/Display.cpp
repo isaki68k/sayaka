@@ -44,6 +44,7 @@ int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
 int  image_max_rows;			// この列で最大の画像の高さ(行数)
 int  max_image_count;			// この列に表示する画像の最大数
 bool in_sixel;					// SIXEL 出力中なら true
+int  opt_timeout_image;			// 画像取得の(接続)タイムアウト [msec]
 
 static bool fetch_image(FileStream& outstream,
 	const std::string& img_url, int resize_width);
