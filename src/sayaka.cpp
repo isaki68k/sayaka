@@ -114,7 +114,6 @@ static std::string record_file;	// 記録用ファイルパス
 std::string last_id;			// 直前に表示したツイート
 int  last_id_count;				// 連続回数
 int  last_id_max;				// 連続回数の上限
-bool in_sixel;					// SIXEL 出力中なら true
 std::string opt_ciphers;		// 暗号スイート
 bool opt_full_url;				// URL を省略表示しない
 bool opt_progress;				// 起動時の途中経過表示

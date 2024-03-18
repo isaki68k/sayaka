@@ -104,7 +104,6 @@ extern NGWordList ngword_list;
 extern std::string last_id;
 extern int  last_id_count;
 extern int  last_id_max;
-extern bool in_sixel;
 extern std::string opt_ciphers;
 extern bool opt_full_url;
 extern bool opt_progress;
