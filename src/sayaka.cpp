@@ -54,6 +54,12 @@
 #include <sys/ttycom.h>
 #endif
 
+enum class Proto {
+	None = 0,
+	Twitter,
+	Misskey,
+};
+
 enum SayakaCmd {
 	Noop = 0,
 	Stream,
@@ -119,7 +125,7 @@ bool opt_progress;				// 起動時の途中経過表示
 bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
-Proto opt_proto;				// プロトコル
+static Proto opt_proto;			// プロトコル
 StreamMode opt_stream;			// ストリーム種別
 std::string opt_server;			// 接続先サーバ名
 std::string basedir;

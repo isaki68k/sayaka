@@ -58,12 +58,6 @@ enum bgtheme {
 	BG_LIGHT = 1,
 };
 
-enum class Proto {
-	None = 0,
-	Twitter,
-	Misskey,
-};
-
 enum class StreamMode {
 	Home,
 	Local,
@@ -111,7 +105,6 @@ extern bool opt_output_palette;
 extern int  opt_record_mode;
 extern std::string basedir;
 extern std::string cachedir;
-extern Proto opt_proto;
 extern StreamMode opt_stream;
 extern std::string opt_server;
 
