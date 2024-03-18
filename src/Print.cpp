@@ -50,6 +50,7 @@ static const std::string YELLOW		= "93";
 #define BG_ISDARK()		(opt_bgtheme == BG_DARK)
 #define BG_ISLIGHT()	(opt_bgtheme != BG_DARK) // 姑息な最適化
 enum bgtheme opt_bgtheme;		// 背景用の色タイプ
+std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);

@@ -95,7 +95,6 @@ extern int  iconsize;
 extern int  imagesize;
 extern int  indent_cols;
 extern int  indent_depth;
-extern std::string output_codeset;
 #if 0
 extern bool opt_show_ng;
 extern std::string opt_ngword;
