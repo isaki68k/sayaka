@@ -95,10 +95,6 @@ extern int  iconsize;
 extern int  imagesize;
 extern int  indent_cols;
 extern int  indent_depth;
-extern int  max_image_count;
-extern int  image_count;
-extern int  image_next_cols;
-extern int  image_max_rows;
 extern enum bgtheme opt_bgtheme;
 extern std::string output_codeset;
 #if 0

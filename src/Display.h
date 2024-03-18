@@ -40,3 +40,7 @@ extern bool ShowImage(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
 
 extern UseSixel use_sixel;
+extern int  image_count;
+extern int  image_next_cols;
+extern int  image_max_rows;
+extern int  max_image_count;

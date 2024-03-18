@@ -104,10 +104,6 @@ int  iconsize;					// アイコンの大きさ(正方形、ドット数)
 int  imagesize;					// 画像の大きさ(どこ?)
 int  indent_cols;				// インデント1階層分の桁数
 int  indent_depth;				// インデント深さ
-int  max_image_count;			// この列に表示する画像の最大数
-int  image_count;				// この列に表示している画像の数
-int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
-int  image_max_rows;			// この列で最大の画像の高さ(行数)
 enum bgtheme opt_bgtheme;		// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 #if 0

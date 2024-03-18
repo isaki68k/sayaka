@@ -39,6 +39,10 @@
 #endif
 
 UseSixel use_sixel;				// SIXEL 画像を表示するかどうか
+int  image_count;				// この列に表示している画像の数
+int  image_next_cols;			// この列で次に表示する画像の位置(桁数)
+int  image_max_rows;			// この列で最大の画像の高さ(行数)
+int  max_image_count;			// この列に表示する画像の最大数
 
 static bool fetch_image(FileStream& outstream,
 	const std::string& img_url, int resize_width);
