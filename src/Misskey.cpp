@@ -39,6 +39,9 @@
 #include <poll.h>
 #include <unistd.h>
 
+bool opt_show_cw;				// CW を表示する
+bool opt_show_nsfw;				// NSFW 画像を表示する
+
 static bool misskey_stream(WSClient&, Random&);
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
 	const wslay_event_on_msg_recv_arg *msg);

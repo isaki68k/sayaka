@@ -120,8 +120,6 @@ bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
 bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
-bool opt_show_cw;				// CW を表示する
-bool opt_show_nsfw;				// NSFW 画像を表示する
 Proto opt_proto;				// プロトコル
 StreamMode opt_stream;			// ストリーム種別
 std::string opt_server;			// 接続先サーバ名

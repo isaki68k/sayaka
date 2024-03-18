@@ -29,3 +29,6 @@
 
 extern int cmd_misskey_stream();
 extern bool misskey_show_object(const std::string& line);
+
+extern bool opt_show_cw;
+extern bool opt_show_nsfw;
