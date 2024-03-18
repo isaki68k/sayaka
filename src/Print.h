@@ -35,3 +35,4 @@ extern UString coloring(const std::string& text, Color col);
 
 extern enum bgtheme opt_bgtheme;
 extern std::string output_codeset;
+extern bool opt_nocolor;

@@ -118,7 +118,6 @@ std::string opt_ciphers;		// 暗号スイート
 bool opt_progress;				// 起動時の途中経過表示
 bool opt_ormode;				// SIXEL ORmode で出力するなら true
 bool opt_output_palette;		// SIXEL にパレット情報を出力するなら true
-bool opt_nocolor;				// テキストに(色)属性を一切付けない
 int  opt_record_mode;			// 0:保存しない 1:表示のみ 2:全部保存
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
