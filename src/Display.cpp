@@ -38,6 +38,8 @@
 #define PATH_SEPARATOR "/"
 #endif
 
+UseSixel use_sixel;				// SIXEL 画像を表示するかどうか
+
 static bool fetch_image(FileStream& outstream,
 	const std::string& img_url, int resize_width);
 

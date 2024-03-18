@@ -58,13 +58,6 @@ enum bgtheme {
 	BG_LIGHT = 1,
 };
 
-// use_sixel
-enum class UseSixel {
-	AutoDetect = -1,
-	No = 0,
-	Yes = 1,
-};
-
 enum class Proto {
 	None = 0,
 	Twitter,
@@ -87,7 +80,6 @@ extern void record(const char *str);
 extern void record(const Json& obj);
 
 extern int  address_family;
-extern UseSixel use_sixel;
 extern int  color_mode;
 extern bool opt_protect;
 extern Diag diag;

@@ -27,8 +27,16 @@
 
 #include "JsonFwd.h"
 
+enum class UseSixel {
+	AutoDetect = -1,
+	No = 0,
+	Yes = 1,
+};
+
 extern void ShowIcon(bool (*callback)(const Json&, const std::string&),
 	const Json& user, const std::string& userid);
 extern std::string GetCacheFilename(const std::string& img_url);
 extern bool ShowImage(const std::string& img_file, const std::string& img_url,
 	int resize_width, int index);
+
+extern UseSixel use_sixel;

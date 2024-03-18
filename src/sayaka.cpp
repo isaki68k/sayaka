@@ -87,7 +87,6 @@ static const int DEFAULT_FONT_WIDTH = 7;
 static const int DEFAULT_FONT_HEIGHT = 14;
 
 int  address_family;			// AF_INET*
-UseSixel use_sixel;				// SIXEL 画像を表示するかどうか
 int  color_mode;				// 色数もしくはカラーモード
 bool opt_protect;
 Diag diag;						// デバッグ (無分類)
