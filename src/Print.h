@@ -32,3 +32,5 @@ extern void print_(const UString& utext);
 extern UString ColorBegin(Color col);
 extern UString ColorEnd(Color col);
 extern UString coloring(const std::string& text, Color col);
+
+extern enum bgtheme opt_bgtheme;

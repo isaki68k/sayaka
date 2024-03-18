@@ -104,7 +104,6 @@ int  iconsize;					// アイコンの大きさ(正方形、ドット数)
 int  imagesize;					// 画像の大きさ(どこ?)
 int  indent_cols;				// インデント1階層分の桁数
 int  indent_depth;				// インデント深さ
-enum bgtheme opt_bgtheme;		// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 #if 0
 bool opt_show_ng;				// NG ツイートを隠さない
