@@ -53,6 +53,7 @@ enum bgtheme opt_bgtheme;		// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
+bool opt_nocombine;				// Combining Enclosing Keycap を表示しない
 
 static std::string str_join(const std::string& sep,
 	const std::string& s1, const std::string& s2);

@@ -37,3 +37,4 @@ extern enum bgtheme opt_bgtheme;
 extern std::string output_codeset;
 extern bool opt_mathalpha;
 extern bool opt_nocolor;
+extern bool opt_nocombine;
