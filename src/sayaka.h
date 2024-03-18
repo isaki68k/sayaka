@@ -89,8 +89,6 @@ extern Diag diagShow;
 extern bool opt_debug_format;
 extern int  opt_debug_sixel;
 extern int  screen_cols;
-extern int  opt_fontwidth;
-extern int  opt_fontheight;
 extern int  fontwidth;
 extern int  fontheight;
 extern int  iconsize;
