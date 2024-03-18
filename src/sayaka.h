@@ -109,7 +109,6 @@ extern bool opt_progress;
 extern bool opt_ormode;
 extern bool opt_output_palette;
 extern int  opt_record_mode;
-extern bool opt_mathalpha;
 extern bool opt_nocombine;
 extern bool opt_show_cw;
 extern bool opt_show_nsfw;

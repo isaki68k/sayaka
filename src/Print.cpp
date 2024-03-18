@@ -51,6 +51,7 @@ static const std::string YELLOW		= "93";
 #define BG_ISLIGHT()	(opt_bgtheme != BG_DARK) // 姑息な最適化
 enum bgtheme opt_bgtheme;		// 背景用の色タイプ
 std::string output_codeset;		// 出力文字コード ("" なら UTF-8)
+bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocolor;				// テキストに(色)属性を一切付けない
 
 static std::string str_join(const std::string& sep,
