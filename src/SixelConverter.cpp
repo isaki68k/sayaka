@@ -42,7 +42,6 @@
 #include <cassert>
 #include <cstring>
 #include <err.h>
-#include <errno.h>
 
 // コンストラクタ
 SixelConverter::SixelConverter()

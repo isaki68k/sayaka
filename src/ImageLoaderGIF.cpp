@@ -27,7 +27,6 @@
 #include "PeekableStream.h"
 #include "subr.h"
 #include <cstring>
-#include <errno.h>
 #include <gif_lib.h>
 
 static int gif_read(GifFileType *, GifByteType *, int);

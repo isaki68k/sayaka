@@ -30,7 +30,6 @@
 #include "subr.h"
 #include <cstdio>
 #include <string>
-#include <errno.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>

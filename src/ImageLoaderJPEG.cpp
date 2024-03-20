@@ -28,7 +28,6 @@
 #include "subr.h"
 #include <cassert>
 #include <cstring>
-#include <errno.h>
 #include <jpeglib.h>
 
 static void jpeg_output_message(j_common_ptr);
