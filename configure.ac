@@ -133,6 +133,28 @@ CPPFLAGS="${old_CPPFLAGS}"
 
 # Checks for library functions.
 
+#
+# iconv
+#
+case $host_os in
+ freebsd*)
+	# FreeBSD では、OS が iconv を持っているが、pkg も /usr/local に
+	# iconv を入れる可能性がある。
+	# ライブラリは、OS のほうが -lc、pkg のほうが -L/usr/local/lib -liconv
+	# なので区別は付けられる。一方ヘッダは
+	# OS のほうが /usr/include/iconv.h (<iconv.h>)、
+	# pkg のほうが /usr/local/include/iconv.h (<iconv.h>) と同名なので、
+	# /usr/local にあればそっちが先に当たって見えてしまい、これでは
+	# OS 標準のほうが使えない。そこで /usr/local/include/iconv.h に
+	# -DLIBICONV_PLUG を与えると、自分ではなく /usr/include/iconv.h にパス
+	# スルーしてくれる機能があるようだ。正気か?
+	# 探索とか使い分けとか無理そうなので、FreeBSD なら決め打ちで指定する。
+	CPPFLAGS="${CPPFLAGS} -DLIBICONV_PLUG"
+	;;
+ *)
+	;;
+esac
+
 AC_SEARCH_LIBS(iconv, iconv,
 	AC_DEFINE([HAVE_ICONV]),
 )
