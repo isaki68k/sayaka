@@ -120,3 +120,41 @@ jobs:
             make distclean
             sh configure --enable-twitter
             make -DRELEASE
+
+  build-freesd:
+    name: "build-freebsd (FreeBSD/amd64 14.0 with ports)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install packages and run configure and make (on the FreeBSD VM)
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          prepare: |
+            PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+            export PATH
+            pkg install -y pkgconf
+            pkg install -y webp mbedtls wslay
+            pkg install -y giflib jpeg-turbo png
+
+          run: |
+            set -e
+            export CPPFLAGS=-DLIBICONV_PLUG
+            echo build with \"configure\"
+            make distclean
+            sh configure
+            make -DRELEASE
+            echo build with \"configure --without-stb-image\"
+            make distclean
+            sh configure --without-stb-image
+            make -DRELEASE
+            echo build with \"configure --without-mbedtls\"
+            make distclean
+            sh configure --without-mbedtls
+            make -DRELEASE
+            echo build with \"configure --enable-twitter\"
+            make distclean
+            sh configure --enable-twitter
+            make -DRELEASE
