@@ -26,6 +26,7 @@
 #include "subr.h"
 #include "JsonInc.h"
 #include "StringUtil.h"
+#include <errno.h>
 
 //
 // 雑多なサブルーチン

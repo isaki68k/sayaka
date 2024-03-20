@@ -44,6 +44,7 @@
 #include <cstdio>
 #include <cstring>
 #include <err.h>
+#include <errno.h>
 #include <getopt.h>
 #include <signal.h>
 #include <unistd.h>

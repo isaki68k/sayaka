@@ -26,6 +26,7 @@
 #include "PeekableStream.h"
 #include <cassert>
 #include <cstring>
+#include <errno.h>
 
 //#define DEBUG 1
 #if defined(DEBUG)

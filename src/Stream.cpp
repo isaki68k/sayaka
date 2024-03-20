@@ -24,6 +24,7 @@
  */
 
 #include "Stream.h"
+#include <errno.h>
 
 //
 // ストリーム (基本クラス)

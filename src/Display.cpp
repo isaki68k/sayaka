@@ -32,6 +32,7 @@
 #include "SixelConverter.h"
 #include "subr.h"
 #include "term.h"
+#include <errno.h>
 #include <ctime>
 
 #if !defined(PATH_SEPARATOR)

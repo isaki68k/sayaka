@@ -29,6 +29,7 @@
 #include "StringUtil.h"
 #include "subr.h"
 #include <cstring>
+#include <errno.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 

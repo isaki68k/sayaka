@@ -26,6 +26,7 @@
 #include "UString.h"
 #include <array>
 #include <cstring>
+#include <errno.h>
 
 // 出力文字コードが UTF-8 以外 (iconv による変換が必要) なら true。
 /*static*/ bool UString::use_iconv = false;

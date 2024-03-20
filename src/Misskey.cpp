@@ -36,6 +36,7 @@
 #include "term.h"
 #include <cstdio>
 #include <err.h>
+#include <errno.h>
 #include <poll.h>
 #include <unistd.h>
 
