@@ -143,8 +143,8 @@ CPPFLAGS="${CPPFLAGS} -Werror"
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 		#include <iconv.h>
 	]], [[
-		const char **a;
-		iconv(0, a, 0, 0, 0);
+		const char *a;
+		iconv(0, &a, 0, 0, 0);
 	]])],[
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_ICONV_CONST)
