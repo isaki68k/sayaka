@@ -141,7 +141,6 @@ jobs:
 
           run: |
             set -e
-            export CPPFLAGS=-DLIBICONV_PLUG
             echo build with \"configure\"
             make distclean
             sh configure
