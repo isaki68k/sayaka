@@ -199,6 +199,12 @@ sayaka ver 3.7 以降は Misskey にのみ対応しています。
 	(ブラウザでどう見えるかとご使用の端末でどう見えるかは別なので、
 	このファイルを `grep no-combine ./README.md` などで表示してみてください)
 
+* `--nsfw [ show | blur | no ]` … Misskey の NSFW (Not Safe For Work、閲覧注意)
+	画像の表示方法を指定します。
+	`show` なら元画像を表示、`blur` ならぼかし表示します。
+	`no` なら表示しません。
+	デフォルトは `blur` です。
+
 * `--play` … ユーザストリームの代わりに標準入力の内容を再生します。
 
 * `--progress` … 接続完了までの処理を表示します。
@@ -216,9 +222,6 @@ sayaka ver 3.7 以降は Misskey にのみ対応しています。
 
 * `--show-cw` … Misskey の CW (Contents Warning、内容を隠す) 付き投稿であっても
 	本文を表示します。
-
-* `--show-nsfw` … Misskey の NSFW (Not Safe For Work、閲覧注意) 画像であっても
-	表示します。
 
 * `--timeout-image <msec>` … 画像取得のサーバへの接続タイムアウトを
 	ミリ秒単位で設定します。

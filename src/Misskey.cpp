@@ -41,7 +41,7 @@
 #include <unistd.h>
 
 bool opt_show_cw;				// CW を表示する
-bool opt_show_nsfw;				// NSFW 画像を表示する
+NSFWMode opt_nsfw;				// NSFW 画像の表示方法
 
 static bool misskey_stream(WSClient&, Random&);
 static void misskey_onmsg(void *aux, wslay_event_context_ptr ctx,
@@ -786,10 +786,10 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 	std::string img_file;
 
 	bool isSensitive = JsonAsBool(f["isSensitive"]);
-	if (isSensitive && opt_show_nsfw == false) {
+	if (isSensitive && opt_nsfw != NSFWMode::Show) {
 		auto blurhash = JsonAsString(f["blurhash"]);
-		if (blurhash.empty()) {
-			// 画像でないなど Blurhash がなければ
+		if (blurhash.empty() || opt_nsfw == NSFWMode::No) {
+			// 画像でないなど Blurhash がない、あるいは --nsfw=no なら、
 			// ファイルタイプだけでも表示しておくか。
 			misskey_print_filetype(f, " [NSFW]");
 			return false;
@@ -824,6 +824,7 @@ misskey_show_photo(const Json& f, int resize_width, int index)
 		img_file = string_format("blurhash-%s-%d-%d",
 			UrlEncode(blurhash).c_str(), width, height);
 	} else {
+		// 元画像を表示。
 		// thumbnailUrl があればそっちを使う。
 		img_url = JsonAsString(f["thumbnailUrl"]);
 		if (img_url.empty()) {

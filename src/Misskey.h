@@ -27,8 +27,14 @@
 
 #include <string>
 
+enum NSFWMode {
+	No,		// 画像を表示しない(テキスト表示する)
+	Blur,	// Blurhash を表示する (なければテキスト表示する)
+	Show,	// 元画像を表示する
+};
+
 extern int cmd_misskey_stream();
 extern bool misskey_show_object(const std::string& line);
 
 extern bool opt_show_cw;
-extern bool opt_show_nsfw;
+extern NSFWMode opt_nsfw;

@@ -177,6 +177,7 @@ enum {
 	OPT_no_color,
 	OPT_no_combine,
 	OPT_no_image,
+	OPT_nsfw,
 	OPT_ormode,
 	OPT_palette,
 	OPT_play,
@@ -185,7 +186,6 @@ enum {
 	OPT_record,
 	OPT_record_all,
 	OPT_show_cw,
-	OPT_show_nsfw,
 #if 0
 	OPT_show_ng,
 #endif
@@ -230,6 +230,7 @@ static const struct option longopts[] = {
 	{ "no-color",		no_argument,		NULL,	OPT_no_color },
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
+	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
 	{ "ormode",			required_argument,	NULL,	OPT_ormode },
 	{ "palette",		required_argument,	NULL,	OPT_palette },
 	{ "play",			no_argument,		NULL,	OPT_play },
@@ -238,7 +239,6 @@ static const struct option longopts[] = {
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "record-all",		required_argument,	NULL,	OPT_record_all },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
-	{ "show-nsfw",		no_argument,		NULL,	OPT_show_nsfw },
 #if 0
 	{ "show-ng",		no_argument,		NULL,	OPT_show_ng },
 #endif
@@ -287,6 +287,7 @@ main(int ac, char *av[])
 	last_id = "";
 	last_id_count = 0;
 	last_id_max = 10;
+	opt_nsfw = NSFWMode::Blur;
 	opt_progress = false;
 	opt_ormode = false;
 	opt_output_palette = true;
@@ -481,6 +482,17 @@ main(int ac, char *av[])
 		 case OPT_no_image:
 			use_sixel = UseSixel::No;
 			break;
+		 case OPT_nsfw:
+			if (strcmp(optarg, "show") == 0) {
+				opt_nsfw = NSFWMode::Show;
+			} else if (strcmp(optarg, "blur") == 0) {
+				opt_nsfw = NSFWMode::Blur;
+			} else if (strcmp(optarg, "no") == 0) {
+				opt_nsfw = NSFWMode::No;
+			} else {
+				errx(1, "--nsfw %s: must be 'show', 'blur', or 'no'", optarg);
+			}
+			break;
 		 case OPT_ormode:
 			if (strcmp(optarg, "on") == 0) {
 				opt_ormode = true;
@@ -522,9 +534,6 @@ main(int ac, char *av[])
 			break;
 		 case OPT_show_cw:
 			opt_show_cw = true;
-			break;
-		 case OPT_show_nsfw:
-			opt_show_nsfw = true;
 			break;
 #if 0
 		 case OPT_show_ng:
@@ -944,6 +953,7 @@ R"(usage: sayaka [<options>...]
 	--light / --dark : Use light/dark theme. (default: auto detect)
 	--no-color : disable all text color sequences
 	--no-image : force disable (SIXEL) images.
+	--nsfw [show|blur|no] : How to display NSFW images. (default: blur)
 	--force-sixel : force enable SIXEL images.
 	--jis / --eucjp : Set output encoding.
 	--progress: show startup progress (for very slow machines).
