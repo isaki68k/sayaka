@@ -944,41 +944,44 @@ usage()
 	printf(
 R"(usage: sayaka [<options>...]
    command option:
-	--local <server> : show <server>'s local timeline.
-	--play : read JSON from stdin.
+	--local <server> : Show <server>'s local timeline.
+	--play : Read JSON from stdin.
    other options:
-	--color <n> : color mode { 2 .. 256 or x68k }. default 256.
-	--font <width>x<height> : font size. default 7x14
-	--full-url : display full URL even if the URL is abbreviated. (twitter)
+	--color <n> : Color mode { 2 .. 256 or x68k }. default 256.
+	--font <width>x<height> : Font size. default 7x14
 	--light / --dark : Use light/dark theme. (default: auto detect)
-	--no-color : disable all text color sequences
-	--no-image : force disable (SIXEL) images.
+	--no-color : Disable all text color sequences
+	--no-image : Force disable (SIXEL) images.
+	--force-sixel : Force enable SIXEL images.
 	--nsfw [show|blur|no] : How to display NSFW images. (default: blur)
-	--force-sixel : force enable SIXEL images.
 	--jis / --eucjp : Set output encoding.
-	--progress: show startup progress (for very slow machines).
-	--protect : don't display protected user's tweet. (twitter)
-	--record <file> : record JSON to file.
-	--record-all <file> : record all received JSON to file.
-	--timeout-image <msec>
-	--version
-	--x68k : preset options for x68k (with SIXEL kernel).
+	--progress: Show startup progress (for very slow machines).
+	--show-cw : Display CW.
+	--record <file> : Record JSON to file.
+	--record-all <file> : Record all received JSON to file.
+	--x68k : Preset options for x68k (for SIXEL kernel).
 
 	-4 / -6                         --ciphers <ciphers>
 	--debug       <0-2>             --debug-format
 	--debug-http  <0-2>             --debug-image <0-1>
-	--debug-mbedtls <0-4>
-	--debug-sixel <0-2>             --debug-show  <0-2>
+	--debug-mbedtls <0-4>           --debug-sixel <0-2>
+	--debug-show  <0-2>             --debug-tls   <0-2>
+	--eaw-a <1-2>                   --eaw-n <1-2>
 	--mathalpha                     --no-combine
 	--max-cont <n>                  --max-image-cols <n>
+	--ormode <on|off> (default off) --palette <on|off> (default on)
+	--timeout-image <msec>          --version
 )"
+#if defined(USE_TWITTER)
+R"(	--full-url : Display full URL even if the URL is abbreviated. (twitter)
+	--protect : Don't display protected user's tweet. (twitter)
+)"
+#endif
 #if 0
 	--ngword-add                    --ngword-del
 	--ngword-list                   --ngword-user
 	--show-ng
 #endif
-R"(	--ormode <on|off> (default off) --palette <on|off> (default on)
-)"
 	);
 	exit(0);
 }
