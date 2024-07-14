@@ -76,6 +76,7 @@ TLSHandle_openssl::Init()
 	SSL_load_error_strings();
 	SSL_library_init();
 
+	inner->ctx = SSL_CTX_new(TLS_client_method());
 	return true;
 }
 
@@ -85,7 +86,8 @@ TLSHandle_openssl::UseRSA()
 {
 	int r;
 
-	r = SSL_CTX_set_cipher_list(inner->ctx, "TLS_RSA_WITH_AES_128_CBC_SHA");
+	SSL_CTX_set_options(inner->ctx, SSL_OP_NO_TLSv1_3);
+	r = SSL_CTX_set_cipher_list(inner->ctx, "AES128-SHA256");
 	if (r != 1) {
 		ERR_print_errors_fp(stderr);
 		return false;
@@ -104,7 +106,6 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 	}
 
 	if (usessl) {
-		inner->ctx = SSL_CTX_new(SSLv23_client_method());
 		inner->ssl = SSL_new(inner->ctx);
 
 		r = SSL_set_fd(inner->ssl, fd);
