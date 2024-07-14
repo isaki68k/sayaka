@@ -151,6 +151,7 @@ class ImageLoader
 	ResizeAxisMode resize_axis {};
 
  protected:
+	// 所有していない。
 	PeekableStream *stream {};
 
 	Diag diag {};
