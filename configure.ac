@@ -137,7 +137,7 @@ CPPFLAGS="${old_CPPFLAGS}"
 # iconv
 #
 case $host_os in
- freebsd*)
+ freebsd*|netbsd*)
 	# FreeBSD では、OS が iconv を持っているが、pkg も /usr/local に
 	# iconv を入れる可能性がある。
 	# ライブラリは、OS のほうが -lc、pkg のほうが -L/usr/local/lib -liconv
@@ -149,6 +149,10 @@ case $host_os in
 	# -DLIBICONV_PLUG を与えると、自分ではなく /usr/include/iconv.h にパス
 	# スルーしてくれる機能があるようだ。正気か?
 	# 探索とか使い分けとか無理そうなので、FreeBSD なら決め打ちで指定する。
+	# NetBSD でも pkgsrc が /usr/pkg に iconv を入れる可能性があり、
+	# 野良ビルドの場合は同様の問題が発生する。
+	# なお pkgsrc でのビルドでは明示的に GNU iconv の依存を書かない限りは
+	# /usr/pkg/include のヘッダは参照されることがないため問題にならない。
 	CPPFLAGS="${CPPFLAGS} -DLIBICONV_PLUG"
 	;;
  *)
