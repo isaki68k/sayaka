@@ -133,48 +133,6 @@ CPPFLAGS="${old_CPPFLAGS}"
 
 # Checks for library functions.
 
-#
-# iconv
-#
-case $host_os in
- freebsd*)
-	# FreeBSD では、OS が iconv を持っているが、pkg も /usr/local に
-	# iconv を入れる可能性がある。
-	# ライブラリは、OS のほうが -lc、pkg のほうが -L/usr/local/lib -liconv
-	# なので区別は付けられる。一方ヘッダは
-	# OS のほうが /usr/include/iconv.h (<iconv.h>)、
-	# pkg のほうが /usr/local/include/iconv.h (<iconv.h>) と同名なので、
-	# /usr/local にあればそっちが先に当たって見えてしまい、これでは
-	# OS 標準のほうが使えない。そこで /usr/local/include/iconv.h に
-	# -DLIBICONV_PLUG を与えると、自分ではなく /usr/include/iconv.h にパス
-	# スルーしてくれる機能があるようだ。正気か?
-	# 探索とか使い分けとか無理そうなので、FreeBSD なら決め打ちで指定する。
-	CPPFLAGS="${CPPFLAGS} -DLIBICONV_PLUG"
-	;;
- *)
-	;;
-esac
-
-AC_SEARCH_LIBS(iconv, iconv,
-	AC_DEFINE([HAVE_ICONV]),
-)
-
-AC_MSG_CHECKING(whether iconv needs const)
-old_CPPFLAGS="${CPPFLAGS}"
-CPPFLAGS="${CPPFLAGS} -Werror"
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-		#include <iconv.h>
-	]], [[
-		const char *a;
-		iconv(0, &a, 0, 0, 0);
-	]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_ICONV_CONST)
-	],[
-		AC_MSG_RESULT(no)
-	])
-CPPFLAGS="${old_CPPFLAGS}"
-
 # libbsd on Linux
 AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
 if test "x${has_getprogname}" = "xno"; then
@@ -367,6 +325,83 @@ else
 	fi
 fi
 
+#
+# iconv
+#
+
+AC_ARG_WITH([iconv],
+[  --without-iconv         Build without iconv],
+	[],
+	[with_iconv=yes]
+)
+if test x"${with_iconv}" = x"yes"; then
+	# まずベースシステムの iconv が使えるか調べる。
+	# configure のここまでの処理によって各種ライブラリのためにインクルード
+	# パスが求められているはず (なのでこの iconv を最後に行う)。
+	# もし OS の iconv と外部ライブラリの iconv がどちらも存在する場合、
+	# ヘッダファイルはその検索順から外部ライブラリのものが使われるが -l で
+	# 外部ライブラリを指定しないので、リンクに失敗する。これを回避して
+	# OS 標準のものが使えるよう、外部ライブラリは -DLIBICONV_PLUG が
+	# 与えられると、自分ではなく OS の iconv を使うように名前を向けてくれる
+	# 機能があるようだ。正気か?
+	# なのでまずは (外部ライブラリがいてもいなくても) -DLIBICONV_PLUG を
+	# 指定して OS の iconv がリンク出来るか試す。
+	# リンクできれば OS が iconv を持っている (素の NetBSD/FreeBSD とか)。
+	# 出来なければ OS が iconv を持っていない (OpenBSD とか)。
+	AC_MSG_CHECKING([for iconv in base system])
+	has_iconv=no
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+			#define LIBICONV_PLUG
+			#include <iconv.h>
+		]], [[
+			iconv_t cd = iconv_open("", "");
+		]])], [
+			AC_MSG_RESULT([yes])
+			has_iconv=base
+			CPPFLAGS="${CPPFLAGS} -DLIBICONV_PLUG"
+		], [
+			AC_MSG_RESULT([no])
+		])
+
+	if test x"${has_iconv}" = x"no"; then
+		# ベースシステムが iconv を持っていないので、外部ライブラリを試す。
+		# インクルードパスはおそらくもう外部ライブラリを見ているので
+		# -DLIBICONV_PLUG なしで -liconv を指定してリンクできれば iconv あり。
+		# リンクできなければ iconv なし (素の OpenBSD とか)。
+		# 外部ライブラリを優先して使いたいケースは未考慮。
+		CHECK_LIB([iconv], [-liconv], [
+			#include <iconv.h>
+		], [
+			iconv_t cd = iconv_open("", "");
+		])
+		# has_iconv=yes/no がセットされる
+	fi
+
+	if test x"${has_iconv}" = x"no"; then
+		AC_MSG_FAILURE([iconv not found.
+	On OpenBSD, install ports/converter/libiconv
+	Or specify --without-iconv])
+	fi
+	AC_DEFINE([HAVE_ICONV])
+
+	# OS によって第2引数の型が違う。どうしてこうなった…
+	AC_MSG_CHECKING(whether iconv needs const)
+	old_CPPFLAGS="${CPPFLAGS}"
+	CPPFLAGS="${CPPFLAGS} -Werror"
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+			#include <iconv.h>
+		]], [[
+			const char *a;
+			iconv(0, &a, 0, 0, 0);
+		]])],[
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(HAVE_ICONV_CONST)
+		],[
+			AC_MSG_RESULT(no)
+		])
+	CPPFLAGS="${old_CPPFLAGS}"
+fi
+
 AC_ARG_ENABLE(twitter,
 [  --enable-twitter        Enable twitter (playback only)],,
 	[
@@ -408,4 +443,20 @@ if test "x${with_mbedtls}" = "xyes"; then
 	echo "mbedTLS"
 else
 	echo "OpenSSL"
+fi
+echo -n " iconv library              : "
+if test "x${with_iconv}" = x"yes"; then
+	case "${has_iconv}" in
+	 base)
+		echo "Base system library"
+		;;
+	 yes)
+		echo "External library"
+		;;
+	 *)
+		echo "${has_iconv}"
+		;;
+	esac
+else
+	echo "Don't use"
 fi

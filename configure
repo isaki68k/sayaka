@@ -704,6 +704,7 @@ ac_user_opts='
 enable_option_checking
 with_stb_image
 with_mbedtls
+with_iconv
 enable_twitter
 '
       ac_precious_vars='build_alias
@@ -1344,6 +1345,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --without-stb-image     Use external JPG,PNG,GIF libs instead of stb_image
   --without-mbedtls       Use OpenSSL instead of mbedTLS
+  --without-iconv         Build without iconv
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -3565,128 +3567,6 @@ CPPFLAGS="${old_CPPFLAGS}"
 
 # Checks for library functions.
 
-#
-# iconv
-#
-case $host_os in
- freebsd*)
-	# FreeBSD では、OS が iconv を持っているが、pkg も /usr/local に
-	# iconv を入れる可能性がある。
-	# ライブラリは、OS のほうが -lc、pkg のほうが -L/usr/local/lib -liconv
-	# なので区別は付けられる。一方ヘッダは
-	# OS のほうが /usr/include/iconv.h (<iconv.h>)、
-	# pkg のほうが /usr/local/include/iconv.h (<iconv.h>) と同名なので、
-	# /usr/local にあればそっちが先に当たって見えてしまい、これでは
-	# OS 標準のほうが使えない。そこで /usr/local/include/iconv.h に
-	# -DLIBICONV_PLUG を与えると、自分ではなく /usr/include/iconv.h にパス
-	# スルーしてくれる機能があるようだ。正気か?
-	# 探索とか使い分けとか無理そうなので、FreeBSD なら決め打ちで指定する。
-	CPPFLAGS="${CPPFLAGS} -DLIBICONV_PLUG"
-	;;
- *)
-	;;
-esac
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing iconv" >&5
-printf %s "checking for library containing iconv... " >&6; }
-if test ${ac_cv_search_iconv+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-namespace conftest {
-  extern "C" int iconv ();
-}
-int
-main (void)
-{
-return conftest::iconv ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' iconv
-do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"
-then :
-  ac_cv_search_iconv=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext
-  if test ${ac_cv_search_iconv+y}
-then :
-  break
-fi
-done
-if test ${ac_cv_search_iconv+y}
-then :
-
-else case e in #(
-  e) ac_cv_search_iconv=no ;;
-esac
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_iconv" >&5
-printf "%s\n" "$ac_cv_search_iconv" >&6; }
-ac_res=$ac_cv_search_iconv
-if test "$ac_res" != no
-then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  printf "%s\n" "#define HAVE_ICONV 1" >>confdefs.h
-
-fi
-
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether iconv needs const" >&5
-printf %s "checking whether iconv needs const... " >&6; }
-old_CPPFLAGS="${CPPFLAGS}"
-CPPFLAGS="${CPPFLAGS} -Werror"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-		#include <iconv.h>
-
-int
-main (void)
-{
-
-		const char *a;
-		iconv(0, &a, 0, 0, 0);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"
-then :
-
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-		printf "%s\n" "#define HAVE_ICONV_CONST 1" >>confdefs.h
-
-
-else case e in #(
-  e)
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-	 ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-CPPFLAGS="${old_CPPFLAGS}"
-
 # libbsd on Linux
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing getprogname" >&5
 printf %s "checking for library containing getprogname... " >&6; }
@@ -4336,6 +4216,187 @@ as_fn_error $? "--without-mbedtls was given, but OpenSSL not found.
 	On Ubuntu, sudo apt install libssl-dev
 See 'config.log' for more details" "$LINENO" 5; }
 	fi
+fi
+
+#
+# iconv
+#
+
+
+# Check whether --with-iconv was given.
+if test ${with_iconv+y}
+then :
+  withval=$with_iconv;
+else case e in #(
+  e) with_iconv=yes
+ ;;
+esac
+fi
+
+if test x"${with_iconv}" = x"yes"; then
+	# まずベースシステムの iconv が使えるか調べる。
+	# configure のここまでの処理によって各種ライブラリのためにインクルード
+	# パスが求められているはず (なのでこの iconv を最後に行う)。
+	# もし OS の iconv と外部ライブラリの iconv がどちらも存在する場合、
+	# ヘッダファイルはその検索順から外部ライブラリのものが使われるが -l で
+	# 外部ライブラリを指定しないので、リンクに失敗する。これを回避して
+	# OS 標準のものが使えるよう、外部ライブラリは -DLIBICONV_PLUG が
+	# 与えられると、自分ではなく OS の iconv を使うように名前を向けてくれる
+	# 機能があるようだ。正気か?
+	# なのでまずは (外部ライブラリがいてもいなくても) -DLIBICONV_PLUG を
+	# 指定して OS の iconv がリンク出来るか試す。
+	# リンクできれば OS が iconv を持っている (素の NetBSD/FreeBSD とか)。
+	# 出来なければ OS が iconv を持っていない (OpenBSD とか)。
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for iconv in base system" >&5
+printf %s "checking for iconv in base system... " >&6; }
+	has_iconv=no
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#define LIBICONV_PLUG
+			#include <iconv.h>
+
+int
+main (void)
+{
+
+			iconv_t cd = iconv_open("", "");
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+			has_iconv=base
+			CPPFLAGS="${CPPFLAGS} -DLIBICONV_PLUG"
+
+else case e in #(
+  e)
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+	if test x"${has_iconv}" = x"no"; then
+		# ベースシステムが iconv を持っていないので、外部ライブラリを試す。
+		# インクルードパスはおそらくもう外部ライブラリを見ているので
+		# -DLIBICONV_PLUG なしで -liconv を指定してリンクできれば iconv あり。
+		# リンクできなければ iconv なし (素の OpenBSD とか)。
+		# 外部ライブラリを優先して使いたいケースは未考慮。
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for iconv" >&5
+printf %s "checking for iconv... " >&6; }
+	for path in ${PATHS}; do
+		old_CPPFLAGS=${CPPFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} -liconv"
+			;;
+		 *)
+			CPPFLAGS="${CPPFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib -liconv"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#include <iconv.h>
+
+int
+main (void)
+{
+
+			iconv_t cd = iconv_open("", "");
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+
+			has_iconv=yes
+			break
+
+else case e in #(
+  e)
+			has_iconv=no
+		 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+		CPPFLAGS=${old_CPPFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_iconv}" = x"yes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	fi
+
+		# has_iconv=yes/no がセットされる
+	fi
+
+	if test x"${has_iconv}" = x"no"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "iconv not found.
+	On OpenBSD, install ports/converter/libiconv
+	Or specify --without-iconv
+See 'config.log' for more details" "$LINENO" 5; }
+	fi
+	printf "%s\n" "#define HAVE_ICONV 1" >>confdefs.h
+
+
+	# OS によって第2引数の型が違う。どうしてこうなった…
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether iconv needs const" >&5
+printf %s "checking whether iconv needs const... " >&6; }
+	old_CPPFLAGS="${CPPFLAGS}"
+	CPPFLAGS="${CPPFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#include <iconv.h>
+
+int
+main (void)
+{
+
+			const char *a;
+			iconv(0, &a, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+			printf "%s\n" "#define HAVE_ICONV_CONST 1" >>confdefs.h
+
+
+else case e in #(
+  e)
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CPPFLAGS="${old_CPPFLAGS}"
 fi
 
 # Check whether --enable-twitter was given.
@@ -5657,5 +5718,21 @@ if test "x${with_mbedtls}" = "xyes"; then
 	echo "mbedTLS"
 else
 	echo "OpenSSL"
+fi
+echo -n " iconv library              : "
+if test "x${with_iconv}" = x"yes"; then
+	case "${has_iconv}" in
+	 base)
+		echo "Base system library"
+		;;
+	 yes)
+		echo "External library"
+		;;
+	 *)
+		echo "${has_iconv}"
+		;;
+	esac
+else
+	echo "Don't use"
 fi
 
