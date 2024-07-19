@@ -4,7 +4,7 @@
 #
 
 AC_PREREQ([2.71])
-AC_INIT([sayaka],[3.5],[])
+AC_INIT([sayaka],[ ],[])
 AC_CONFIG_SRCDIR([src/sayaka.cpp])
 AC_CONFIG_AUX_DIR([scripts])
 
