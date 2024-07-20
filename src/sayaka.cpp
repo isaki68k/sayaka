@@ -757,7 +757,13 @@ init_screen()
 	}
 
 	// 文字コードの初期化
-	UString::Init(output_codeset);
+	if (UString::Init(output_codeset) == false) {
+		if (errno == 0) {
+			errx(1, "output charset is specified but iconv is not builtin.");
+		} else {
+			err(1, "UString::Init failed");
+		}
+	}
 
 	// 色の初期化
 	init_color();
