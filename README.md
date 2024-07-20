@@ -62,6 +62,9 @@ Misskey クライアント sayaka ちゃん version 3.7.6 (2024/07/14)
 	… デフォルトでは不要ですが、
 	後述の `--without-stb-image` を指定した場合は3つとも必要になります。
 	pkgsrc なら graphics/giflib, graphics/jpeg, graphics/png です。
+* iconv
+	… `--euc-jp`、`--jis` オプションを使用する場合のみ必要になります。
+	後述の `--without-iconv` を参照してください。
 
 
 インストール方法
@@ -78,6 +81,9 @@ Misskey クライアント sayaka ちゃん version 3.7.6 (2024/07/14)
 	何らかの理由でこれを使用せず外部ライブラリを使用したい場合に
 	指定してください。
 	その場合は giflib、libjpeg、libpng が必要です。
+* `--without-iconv` … デフォルトでは iconv ライブラリを探して使用します。
+	何らかの理由で iconv なしでビルドしたい場合に指定してください。
+	その場合 `--euc-jp`、`--jis` オプションは使用できません。
 * `--without-mbedtls` … デフォルトでは SSL ライブラリに mbedTLS を使用します。
 	何らかの理由でこれを使用せず OpenSSL を使用したい場合に指定してください。
 * `--enable-twitter` … ver 3.6.x 以前に `--record`
@@ -137,6 +143,8 @@ sayaka ver 3.7 以降は Misskey にのみ対応しています。
 
 * `--euc-jp` … 文字コードを EUC-JP に変換して出力します。
 	VT382J 等の EUC-JP (DEC漢字) に対応したターミナルで使えます。
+	`configure` 時に `--without-iconv` を指定した場合はこのオプションは
+	動作しません。
 
 * `--font <W>x<H>` … フォントの幅と高さを `--font 7x14` のように指定します。
 	デフォルトではターミナルに問い合わせて取得しますが、
@@ -155,6 +163,8 @@ sayaka ver 3.7 以降は Misskey にのみ対応しています。
 
 * `--jis` … 文字コードを JIS に変換して出力します。
 	NetBSD/x68k コンソール等の JIS に対応したターミナルで使えます。
+	`configure` 時に `--without-iconv` を指定した場合はこのオプションは
+	動作しません。
 
 * `--light` … ライトテーマ (背景色が明るい環境) 用に、
 	可能なら濃いめの文字色セットを使用します。
