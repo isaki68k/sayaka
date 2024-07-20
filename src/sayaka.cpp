@@ -960,7 +960,7 @@ R"(usage: sayaka [<options>...]
 	--no-image : Force disable (SIXEL) images.
 	--force-sixel : Force enable SIXEL images.
 	--nsfw [show|blur|no] : How to display NSFW images. (default: blur)
-	--jis / --eucjp : Set output encoding.
+	--jis / --euc-jp : Set output encoding.
 	--progress: Show startup progress (for very slow machines).
 	--show-cw : Display CW.
 	--record <file> : Record JSON to file.
