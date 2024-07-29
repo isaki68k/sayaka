@@ -202,6 +202,10 @@ TLSHandle_mbedtls::SetTimeout(int timeout_)
 bool
 TLSHandle_mbedtls::UseRSA()
 {
+	if (usessl == false) {
+		return false;
+	}
+
 	mbedtls_ssl_conf_ciphersuites(&inner->conf, ciphersuites_RSA);
 	return true;
 }
@@ -633,14 +637,14 @@ main(int ac, char *av[])
 		errx(1, "mtls.Init failed");
 	}
 
-	if (use_rsa_only) {
-		fprintf(stderr, "UseRSA\n");
-		mtls.UseRSA();
-	}
-
 	if (strcmp(servname, "443") == 0 || strcmp(servname, "https") == 0) {
 		fprintf(stderr, "UseSSL\n");
 		mtls.UseSSL(true);
+
+		if (use_rsa_only) {
+			fprintf(stderr, "UseRSA\n");
+			mtls.UseRSA();
+		}
 	}
 
 	if (timeout != -1) {

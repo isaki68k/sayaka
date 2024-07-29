@@ -47,6 +47,13 @@ TLSHandleBase::Init()
 	return true;
 }
 
+// HTTPS を使うかどうかを設定する。
+void
+TLSHandleBase::UseSSL(bool value)
+{
+	usessl = value;
+}
+
 // タイムアウトを設定する。
 void
 TLSHandleBase::SetTimeout(int timeout_)

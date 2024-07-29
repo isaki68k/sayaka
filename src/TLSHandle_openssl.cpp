@@ -76,14 +76,29 @@ TLSHandle_openssl::Init()
 	SSL_load_error_strings();
 	SSL_library_init();
 
-	inner->ctx = SSL_CTX_new(TLS_client_method());
 	return true;
+}
+
+// HTTPS を使う。
+void
+TLSHandle_openssl::UseSSL(bool value)
+{
+	inherited::UseSSL(value);
+
+	if (usessl) {
+		inner->ctx = SSL_CTX_new(TLS_client_method());
+		inner->ssl = SSL_new(inner->ctx);
+	}
 }
 
 // 接続に使用する CipherSuites を RSA_WITH_AES_128_CBC_SHA に限定する。
 bool
 TLSHandle_openssl::UseRSA()
 {
+	if (usessl == false) {
+		return false;
+	}
+
 	int r;
 
 	r = SSL_CTX_set_cipher_list(inner->ctx, "AES128-SHA");
@@ -105,8 +120,6 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 	}
 
 	if (usessl) {
-		inner->ssl = SSL_new(inner->ctx);
-
 		r = SSL_set_fd(inner->ssl, fd);
 		if (r == 0) {
 			ERR_print_errors_fp(stderr);

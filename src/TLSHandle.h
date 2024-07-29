@@ -67,11 +67,12 @@ class TLSHandleBase
 	virtual bool Init();
 
 	// HTTPS を使うかどうかを設定する。
-	// Connect() より先に設定しておくこと。
-	void UseSSL(bool value) { usessl = value; }
+	// Init() 後、Connect() および UseRSA() より前に設定すること。
+	virtual void UseSSL(bool value);
 
 	// 接続に使用する CipherSuites を RSA_WITH_AES_128_CBC_SHA に限定する。
-	// Connect() より先に設定しておくこと。
+	// UseSSL(true) 後で Connect() より前に設定すること。
+	// UseSSL(false) 時に呼ぶと false を返す。
 	// XXX どういう API にすべきか
 	virtual bool UseRSA() = 0;
 

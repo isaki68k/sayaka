@@ -42,10 +42,8 @@ class TLSHandle_openssl : public TLSHandleBase
 	TLSHandle_openssl(const TLSHandle_openssl&) = delete;
 	TLSHandle_openssl& operator=(const TLSHandle_openssl&) = delete;
 
-	// 初期化
 	bool Init() override;
-
-	// 接続に使用する CipherSuites を RSA_WITH_AES_128_CBC_SHA に限定する。
+	void UseSSL(bool value) override;
 	bool UseRSA() override;
 
 	// 接続する

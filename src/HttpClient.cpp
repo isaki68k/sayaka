@@ -338,10 +338,11 @@ HttpClient::Connect()
 	// 接続
 	if (Uri.Scheme == "https" || Uri.Scheme == "wss") {
 		mtls->UseSSL(true);
-	}
-	if (Ciphers == "RSA") {
+
 		// XXX RSA 専用
-		mtls->UseRSA();
+		if (Ciphers == "RSA") {
+			mtls->UseRSA();
+		}
 	}
 	Trace(diag, "%s: %s", __func__, Uri.to_string().c_str());
 	if (mtls->Connect(Uri.Host, Uri.Port) == false) {

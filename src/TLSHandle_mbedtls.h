@@ -42,12 +42,7 @@ class TLSHandle_mbedtls : public TLSHandleBase
 	TLSHandle_mbedtls(const TLSHandle_mbedtls&) = delete;
 	TLSHandle_mbedtls& operator=(const TLSHandle_mbedtls&) = delete;
 
-	// 初期化
 	bool Init() override;
-
-	// 接続に使用する CipherSuites を RSA_WITH_AES_128_CBC_SHA に限定する。
-	// Connect() より先に設定しておくこと。
-	// XXX どういう API にすべきか
 	bool UseRSA() override;
 
 	// タイムアウトを設定する。デフォルトは -1 (タイムアウトしない)。
