@@ -78,6 +78,7 @@ static ReductorDiffuseMethod opt_highqualitydiffusemethod =
 static ReductorFinderMode opt_findermode = ReductorFinderMode::RFM_Default;
 static int opt_addnoise = 0;
 static int opt_address_family = AF_UNSPEC;
+std::string opt_ciphers;
 
 enum {
 	OPT_8 = 0x80,
@@ -85,6 +86,7 @@ enum {
 	OPT_256,
 	OPT_addnoise,
 	OPT_axis,
+	OPT_ciphers,
 	OPT_color_factor,
 	OPT_debug,
 	OPT_debug_http,
@@ -115,6 +117,7 @@ static const struct option longopts[] = {
 	{ "256",			no_argument,		NULL,	OPT_256 },
 	{ "addnoise",		required_argument,	NULL,	OPT_addnoise },
 	{ "axis",			required_argument,	NULL,	OPT_axis },
+	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	'c' },
 	{ "colors",			required_argument,	NULL,	'c' },
 	{ "color-factor",	required_argument,	NULL,	OPT_color_factor },
@@ -254,6 +257,9 @@ int main(int ac, char *av[])
 
 	while ((c = getopt_long(ac, av, "c:d:eh:w:", longopts, NULL)) != -1) {
 		switch (c) {
+		 case OPT_ciphers:
+			opt_ciphers = optarg;
+			break;
 		 case OPT_debug:
 			val = stou32def(optarg, -1);
 			if (val < 0 || val > 2) {
@@ -547,6 +553,7 @@ static const char long_help[] = R"**(
    --output-x=<xoffset>, --output-y=<yoffset>
                       : Specify X, Y offset for gvram format file.
    --ipv4, --ipv6
+   --ciphers <ciphers>
    --ignore-error
    --axis={both, w, width, h, height, long, short}
    --color-factor=<factor>
@@ -602,6 +609,9 @@ Convert(const std::string& filename)
 		Debug(diag, "Downloading %s", filename.c_str());
 		HttpClient http(diagHttp);
 		http.user_agent = "sixelv";
+		if (!opt_ciphers.empty()) {
+			http.SetCiphers(opt_ciphers);
+		}
 		if (http.Open(filename) == false) {
 			warn("File error: %s", filename.c_str());
 			goto error;
