@@ -363,7 +363,7 @@ SixelConverter::SixelToStreamCore_ORmode(Stream *stream)
 
 	// パレットのビット数
 	int bcnt = MyLog2(ir.GetPaletteCount());
-	Debug(diag, "%s bcnt=%d\n", __func__, bcnt);
+	Debug(diag, "%s bcnt=%d", __func__, bcnt);
 	std::vector<uint8> sixelbuf((w + 5) * bcnt);
 
 	uint8 *p = p0;

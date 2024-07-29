@@ -145,7 +145,7 @@ ShowImage(const std::string& img_file, const std::string& img_url,
 			return false;
 		}
 		if (fetch_image(cache_file, img_url, resize_width) == false) {
-			Debug(diagImage, "%s: fetch_image failed\n", __func__);
+			Debug(diagImage, "%s: fetch_image failed", __func__);
 			return false;
 		}
 	}

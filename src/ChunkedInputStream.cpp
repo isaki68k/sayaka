@@ -69,7 +69,7 @@ ChunkedInputStream::Read(void *dst, size_t dstsize)
 
 	// バッファから dst に入るだけコピー。
 	auto copylen = std::min(chunk.size() - chunkpos, dstsize);
-	Trace(diag, "copylen=%zd\n", copylen);
+	Trace(diag, "copylen=%zd", copylen);
 	memcpy(dst, chunk.data() + chunkpos, copylen);
 	chunkpos += copylen;
 	// 末尾まで読んだら捨てる。
