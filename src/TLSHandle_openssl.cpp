@@ -76,6 +76,7 @@ TLSHandle_openssl::Init()
 	SSL_load_error_strings();
 	SSL_library_init();
 
+	inner->ctx = SSL_CTX_new(TLS_client_method());
 	return true;
 }
 
@@ -104,7 +105,6 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 	}
 
 	if (usessl) {
-		inner->ctx = SSL_CTX_new(TLS_client_method());
 		inner->ssl = SSL_new(inner->ctx);
 
 		r = SSL_set_fd(inner->ssl, fd);
