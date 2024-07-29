@@ -86,7 +86,7 @@ TLSHandle_openssl::UseRSA()
 {
 	int r;
 
-	r = SSL_CTX_set_cipher_list(inner->ctx, "TLS_RSA_WITH_AES_128_CBC_SHA");
+	r = SSL_CTX_set_cipher_list(inner->ctx, "AES128-SHA");
 	if (r != 1) {
 		ERR_print_errors_fp(stderr);
 		return false;
