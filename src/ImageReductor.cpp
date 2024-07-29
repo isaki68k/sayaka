@@ -528,7 +528,7 @@ ImageReductor::Convert(ReductorReduceMode mode, Image& img,
 		ConvertHighQuality(img, dst, toWidth, toHeight);
 		break;
 	 default:
-		Debug(diag, "Unknown ReduceMode=%s", RRM2str(mode));
+		Debug(diag, "Unknown ReduceMode=%u", (uint)mode);
 		break;
 	}
 }
