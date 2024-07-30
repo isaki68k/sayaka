@@ -137,6 +137,27 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 			ERR_print_errors_fp(stderr);
 			return false;
 		}
+
+		if (diag >= 1) {
+			SSL_SESSION *sess = SSL_get_session(inner->ssl);
+			int ssl_version = SSL_SESSION_get_protocol_version(sess);
+			std::string ver;
+			switch (ssl_version) {
+			 case SSL3_VERSION:		ver = "SSLv3";		break;
+			 case TLS1_VERSION:		ver = "TLSv1.0";	break;
+			 case TLS1_1_VERSION:	ver = "TLSv1.1";	break;
+			 case TLS1_2_VERSION:	ver = "TLSv1.2";	break;
+			 case TLS1_3_VERSION:	ver = "TLSv1.3";	break;
+			 default:
+				ver = string_format("0x%04x", ssl_version);
+				break;
+			}
+
+			const SSL_CIPHER *ssl_cipher = SSL_SESSION_get0_cipher(sess);
+			const char *cipher_name = SSL_CIPHER_get_name(ssl_cipher);
+
+			diag.Print("Connected %s %s", ver.c_str(), cipher_name);
+		}
 	}
 
 	return true;
