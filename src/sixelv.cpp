@@ -125,6 +125,7 @@ static const struct option longopts[] = {
 	{ "debug-http",		required_argument,	NULL,	OPT_debug_http },
 	{ "debug-mbedtls",	required_argument,	NULL,	OPT_debug_mbedtls },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
+	{ "debug-tls",		required_argument,	NULL,	OPT_debug_tls },
 	{ "diffusion",		required_argument,	NULL,	'd' },
 	{ "finder",			required_argument,	NULL,	OPT_finder },
 	{ "gray",			required_argument,	NULL,	OPT_gray },
