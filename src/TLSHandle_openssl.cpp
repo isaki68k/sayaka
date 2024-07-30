@@ -156,9 +156,9 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 			timersub(&end, &start, &result);
 
 			PrintTime(&end);
-			diag.Print("%s connected, %u.%03u msec", __func__,
-				(uint)((uint64)result.tv_sec * 1000 + result.tv_usec / 1000),
-				(uint)(result.tv_usec % 1000));
+			result.tv_usec += 500;
+			diag.Print("%s connected, %u msec", __func__,
+				(uint)((uint64)result.tv_sec * 1000 + result.tv_usec / 1000));
 
 			SSL_SESSION *sess = SSL_get_session(inner->ssl);
 			int ssl_version = SSL_SESSION_get_protocol_version(sess);

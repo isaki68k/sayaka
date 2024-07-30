@@ -288,9 +288,9 @@ TLSHandle_mbedtls::Connect(const char *hostname, const char *servname)
 		timersub(&end, &start, &result);
 
 		PrintTime(&end);
-		diag.Print("%s connected, %u.%03u msec", __func__,
-			(uint)((uint64)result.tv_sec * 1000 + result.tv_usec / 1000),
-			(uint)(result.tv_usec % 1000));
+		result.tv_usec += 500;
+		diag.Print("%s connected, %u msec", __func__,
+			(uint)((uint64)result.tv_sec * 1000 + result.tv_usec / 1000));
 
 		diag.Print("%s %s %s", __func__,
 			mbedtls_ssl_get_version(&inner->ssl),
