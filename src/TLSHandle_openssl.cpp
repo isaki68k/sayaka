@@ -87,7 +87,6 @@ TLSHandle_openssl::UseSSL(bool value)
 
 	if (usessl) {
 		inner->ctx = SSL_CTX_new(TLS_client_method());
-		inner->ssl = SSL_new(inner->ctx);
 	}
 }
 
@@ -128,6 +127,8 @@ TLSHandle_openssl::Connect(const char *hostname, const char *servname)
 	}
 
 	if (usessl) {
+		inner->ssl = SSL_new(inner->ctx);
+
 		r = SSL_set_fd(inner->ssl, fd);
 		if (r == 0) {
 			ERR_print_errors_fp(stderr);
@@ -272,11 +273,15 @@ TLSHandle_openssl::Close()
 {
 	if (fd >= 0) {
 		if (usessl) {
-			SSL_shutdown(inner->ssl);
-			SSL_free(inner->ssl);
-			inner->ssl = NULL;
-			SSL_CTX_free(inner->ctx);
-			inner->ctx = NULL;
+			if (inner->ssl) {
+				SSL_shutdown(inner->ssl);
+				SSL_free(inner->ssl);
+				inner->ssl = NULL;
+			}
+			if (inner->ctx) {
+				SSL_CTX_free(inner->ctx);
+				inner->ctx = NULL;
+			}
 		}
 		close(fd);
 	}
