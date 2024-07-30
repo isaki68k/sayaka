@@ -100,6 +100,10 @@ TLSHandle_openssl::UseRSA()
 
 	int r;
 
+	// RSA 指定は TLSv1.2 以下を強制する。
+	// (TLSv1.3 ではそもそも RSA128-SHA とかの指定自体が存在しない)
+	SSL_CTX_set_max_proto_version(inner->ctx, TLS1_2_VERSION);
+
 	r = SSL_CTX_set_cipher_list(inner->ctx, "AES128-SHA");
 	if (r != 1) {
 		ERR_print_errors_fp(stderr);
