@@ -88,7 +88,7 @@ static void cmd_ngword_list();
 static void cmd_version();
 [[noreturn]] static void usage();
 
-static const char version[] = "3.7.6 (2024/07/14)";
+static const char version[] = "3.7.7 (2024/08/05)";
 
 static const int DEFAULT_FONT_WIDTH = 7;
 static const int DEFAULT_FONT_HEIGHT = 14;

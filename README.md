@@ -1,4 +1,4 @@
-Misskey クライアント sayaka ちゃん version 3.7.6 (2024/07/14)
+Misskey クライアント sayaka ちゃん version 3.7.7 (2024/08/05)
 ======
 
 ターミナルに特化した Misskey ストリームクライアントです。
@@ -9,6 +9,9 @@ Misskey クライアント sayaka ちゃん version 3.7.6 (2024/07/14)
 
 変更点
 ---
+* 3.7.7 (2024/08/05) … OpenSSL 版を `--ciphers` オプションに対応。
+	Ubuntu でのビルドエラーを修正。
+	iconv についてのビルドエラーを修正。
 * 3.7.6 (2024/07/14) … `--nsfw` オプションを追加、
 	`--show-nsfw` オプションは廃止。
 	FreeBSD でのビルドエラーを修正。
@@ -54,10 +57,12 @@ Misskey クライアント sayaka ちゃん version 3.7.6 (2024/07/14)
 	… デフォルトでは必要です。
 	pkgsrc なら security/mbedtls、OpenBSD なら security/polarssl です。
 	後述の `--without-mbedtls` を指定した場合は不要です。
+	mbedTLS を使用する場合 TLSv1.3 での接続には対応していません。
 * OpenSSL
 	… デフォルトでは不要ですが、
 	後述の `--without-mbedtls` を指定した場合は必要になります。
 	Ubuntu なら libssl-dev です。
+	OpenSSL が TLSv1.3 に対応したものであれば TLSv1.3 で接続できます。
 * giflib (maybe >= 5.0)、jpeg(libjpeg)、libpng
 	… デフォルトでは不要ですが、
 	後述の `--without-stb-image` を指定した場合は3つとも必要になります。
@@ -131,6 +136,7 @@ sayaka ver 3.7 以降は Misskey にのみ対応しています。
 * `--ciphers <ciphers>` 通信に使用する暗号化スイートを指定します。
 	今のところ指定できるのは "RSA" (大文字) のみです。
 	2桁MHz級の遅マシンでコネクションがタイムアウトするようなら指定してみてください。
+	ただしサーバがこのような古い方式を許可していないことは十分考えられます。
 	このオプションはメインストリームと画像のダウンロード両方に適用されます。
 
 * `--color <n>` … 色数を指定します。デフォルトは 256色です。
