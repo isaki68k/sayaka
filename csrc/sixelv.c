@@ -240,8 +240,12 @@ do_file(const char *infilename)
 		reductorcolor_tostr(opt_color));
 
 	// 減色 & リサイズ
+	struct image_reduct_param param;
+	memset(&param, 0, sizeof(param));
+	param.method = ReductorMethod_Simple;
+	param.color = opt_color;
 	struct image *resimg = image_reduct(srcimg, dst_width, dst_height,
-		ReductorMethod_Simple, opt_color, diag_image);
+		&param, diag_image);
 	if (resimg == NULL) {
 		warnx("reductor failed");
 		goto abort2;

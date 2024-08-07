@@ -126,6 +126,10 @@ struct image
 };
 
 // image.c
+struct image_reduct_param {
+	ReductorMethod method;
+	ReductorColor color;
+};
 extern struct image *image_create(uint width_, uint height_, uint channels_);
 extern struct image *image_create_fp(FILE *, const struct diag *);
 extern void image_free(struct image *);
@@ -135,8 +139,8 @@ extern void image_get_preferred_size(uint current_width, uint current_height,
 	uint *preferred_width, uint *preferred_height);
 extern struct image *image_coloring(const struct image *);
 extern struct image *image_reduct(const struct image *src,
-	uint dst_width, uint dst_height,
-	ReductorMethod method, ReductorColor colormode, struct diag *);
+	uint dst_width, uint dst_height, const struct image_reduct_param *,
+	const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductormethod_tostr(ReductorMethod);

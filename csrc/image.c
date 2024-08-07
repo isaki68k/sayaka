@@ -340,9 +340,8 @@ image_reduct(
 	const struct image *src,	// 元画像
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
-	ReductorMethod method,		// 減色方法
-	ReductorColor colormode,	// 減色後の色情報
-	struct diag *diag)
+	const struct image_reduct_param *param,	// パラメータ
+	const struct diag *diag)
 {
 	struct image *dst;
 	struct image_reductor_handle opbuf, *op;
@@ -356,7 +355,7 @@ image_reduct(
 	}
 
 	// 減色モードからパレットオペレーションを用意。
-	switch (colormode & ReductorColor_MASK) {
+	switch (param->color & ReductorColor_MASK) {
 	 case ReductorColor_Mono:
 		op->finder  = finder_mono;
 		op->palette = palette_mono;
@@ -365,7 +364,7 @@ image_reduct(
 
 	 case ReductorColor_Gray:
 	 {
-		uint graycount = ((uint)colormode >> 8) + 1;
+		uint graycount = ((uint)param->color >> 8) + 1;
 		op->palette_buf = image_alloc_gray_palette(graycount);
 		if (op->palette_buf == NULL) {
 			goto abort;
@@ -415,11 +414,11 @@ image_reduct(
 
 	 default:
 		Debug(diag, "%s: Unsupported color %s", __func__,
-			reductorcolor_tostr(colormode));
+			reductorcolor_tostr(param->color));
 		goto abort;
 	}
 
-	switch (method) {
+	switch (param->method) {
 	 case ReductorMethod_Simple:
 		image_reduct_simple(op, dst, src, diag);
 		break;
@@ -434,7 +433,8 @@ image_reduct(
 #endif
 
 	 default:
-		Debug(diag, "%s: Unsupported method %u", __func__, (uint)method);
+		Debug(diag, "%s: Unsupported method %s", __func__,
+			reductormethod_tostr(param->method));
 		goto abort;
 	}
 
