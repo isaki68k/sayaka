@@ -1,0 +1,808 @@
+/* vi:set ts=4: */
+/*
+ * Copyright (C) 2021-2024 Tetsuya Isaki
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+//
+// 画像処理
+//
+
+#include "common.h"
+#include "image.h"
+#include "image_proto.h"
+#include <string.h>
+
+#if 0//defined(HAVE_LIBWEBP)
+#define USE_LIBWEBP
+#endif
+#if 0//defined(HAVE_LIBJPEG)
+#define USE_LIBJPEG
+#endif
+#if 1//defined(HAVE_LIBPNG)
+#define USE_LIBPNG
+#endif
+
+struct image_reductor_handle;
+
+typedef uint (*finder_t)(struct image_reductor_handle *, ColorRGB);
+
+struct image_reductor_handle
+{
+	// 色からパレット番号を検索する関数。
+	finder_t finder;
+
+	// パレット (palette_buf か固定パレットを指す)
+	const ColorRGB *palette;
+	uint palette_count;
+
+	// 動的に作成する場合はここがメモリを所有している。
+	ColorRGB *palette_buf;
+};
+
+static uint finder_mono(struct image_reductor_handle *, ColorRGB);
+static uint finder_gray(struct image_reductor_handle *, ColorRGB);
+static uint finder_fixed8(struct image_reductor_handle *, ColorRGB);
+static uint finder_ansi16(struct image_reductor_handle *, ColorRGB);
+static uint finder_fixed256(struct image_reductor_handle *, ColorRGB);
+static ColorRGB *image_alloc_gray_palette(uint);
+static ColorRGB *image_alloc_fixed256_palette();
+
+static void image_reduct_simple(struct image_reductor_handle *,
+	struct image *, const struct image *, const struct diag *diag);
+#if 0
+static bool image_reduct_high(struct image *, const struct image *,
+	struct palette_ops *);
+static bool image_reduct_fast(struct image *, const struct image *,
+	struct palette_ops *);
+#endif
+
+static const ColorRGB palette_mono[];
+static const ColorRGB palette_fixed8[];
+static const ColorRGB palette_ansi16[];
+
+// width_ x height_ x channels_ の image を作成する。
+// (バッファは未初期化)
+struct image *
+image_create(uint width_, uint height_, uint channels_)
+{
+	struct image *img = calloc(sizeof(struct image), 1);
+	if (img == NULL) {
+		return NULL;
+	}
+
+	img->width = width_;
+	img->height = height_;
+	img->channels = channels_;
+	img->buf = malloc(image_get_stride(img) * img->height);
+	if (img->buf == NULL) {
+		free(img);
+		return NULL;
+	}
+
+	return img;
+}
+
+// image を解放する。NULL なら何もしない。
+void
+image_free(struct image *img)
+{
+	if (img != NULL) {
+		if (img->buf != NULL) {
+			free(img->buf);
+		}
+		if (img->palette_owned && img->palette != NULL) {
+			free((ColorRGB *)img->palette);
+		}
+		free(img);
+	}
+}
+
+// ストライドを返す。
+uint
+image_get_stride(const struct image *img)
+{
+	return img->width * img->channels;
+}
+
+// いい感じにリサイズした時の幅と高さを求める。
+void
+image_get_preferred_size(
+	uint current_width,			// 現在の幅
+	uint current_height,		// 現在の高さ
+	ResizeAxis axis,			// リサイズの基準
+	uint request_width,			// 要求するリサイズ後の幅 (optional)
+	uint request_height,		// 要求するリサイズ後の高さ (optional)
+	uint *preferred_width,		// 求めた幅を格納する先
+	uint *preferred_height)		// 求めた高さを格納する先
+{
+	// 条件を丸めていく
+	switch (axis) {
+	 case ResizeAxis_Both:
+	 case ResizeAxis_ScaleDownBoth:
+		if (request_width == 0) {
+			axis = ResizeAxis_Height;
+		} else if (request_height == 0) {
+			axis = ResizeAxis_Width;
+		} else {
+			axis = ResizeAxis_Both;
+		}
+		break;
+
+	 case ResizeAxis_Long:
+	 case ResizeAxis_ScaleDownLong:
+		if (current_width >= current_height) {
+			axis = ResizeAxis_Width;
+		} else {
+			axis = ResizeAxis_Height;
+		}
+		break;
+
+	 case ResizeAxis_Short:
+	 case ResizeAxis_ScaleDownShort:
+		if (current_width <= current_height) {
+			axis = ResizeAxis_Width;
+		} else {
+			axis = ResizeAxis_Height;
+		}
+		break;
+
+	 case ResizeAxis_ScaleDownWidth:
+		axis = ResizeAxis_Width;
+		break;
+
+	 case ResizeAxis_ScaleDownHeight:
+		axis = ResizeAxis_Height;
+		break;
+
+	 default:
+		__builtin_unreachable();
+	}
+
+	if (request_width <= 0) {
+		request_width = current_width;
+	}
+	if (request_height <= 0) {
+		request_height = current_height;
+	}
+
+	// 縮小のみ指示。
+	if ((axis & ResizeAxis_ScaleDownBit)) {
+		if (request_width > current_width) {
+			request_width = current_width;
+		}
+		if (request_height > current_height) {
+			request_height = current_height;
+		}
+	}
+
+	// 確定したので計算。
+	uint width;
+	uint height;
+	switch (axis) {
+	 case ResizeAxis_Both:
+		width  = request_width;
+		height = request_height;
+		break;
+
+	 case ResizeAxis_Width:
+		width  = request_width;
+		height = current_height * width / current_width;
+		break;
+
+	 case ResizeAxis_Height:
+		height = request_height;
+		width  = current_width * height / current_height;
+		break;
+
+	 default:
+		__builtin_unreachable();
+	}
+
+	// 代入。
+	if (preferred_width) {
+		*preferred_width  = width;
+	}
+	if (preferred_height) {
+		*preferred_height = height;
+	}
+}
+
+#if 0
+// サポートしているデコーダを文字列で返す。
+// 書き戻せなければ false を返す。
+bool
+image_get_decoderinfo(char *dst, size_t dstsize)
+{
+	char *buf = malloc(dstsize + 2);
+	if (buf == NULL) {
+		return false;
+	}
+
+	buf[0] = '\0';
+#if defined(USE_LIBWEBP)
+	strlcat(buf, ", libwebp", sizeof(buf));
+#endif
+#if defined(USE_LIBJPEG)
+	strlcat(buf, ", libjpeg", sizeof(buf));
+#endif
+
+	if (dstsize < strlen(buf) - 2 + 1) {
+		return false;
+	}
+	strlcpy(dst, &buf[2], dstsize);
+
+	free(buf);
+	return true;
+}
+#endif
+
+// fp から画像を読み込んで image を作成して返す。
+// 読み込めなければ NULL を返す。
+// fp はシーク可能であること。
+struct image *
+image_create_fp(FILE *fp, const struct diag *diag)
+{
+	int ok = -1;
+
+#if defined(USE_LIBWEBP)
+	ok = image_webp_match(fp, diag);
+	Trace(diag, "%s: webp %u", __func__, ok);
+	fseek(fp, 0, SEEK_SET);
+	if (ok) {
+		return image_webp_read(fp, diag);
+	}
+#endif
+
+#if defined(USE_LIBJPEG)
+	ok = image_jpeg_match(fp, diag)
+	Trace(diag, "%s: jpeg %u", __func__, ok);
+	fseek(fp, 0, SEEK_SET);
+	if (ok) {
+		return image_jpeg_read(fp, diag);
+	}
+#endif
+
+#if defined(USE_LIBPNG)
+	ok = image_png_match(fp, diag);
+	Trace(diag, "%s: png %u", __func__, ok);
+	fseek(fp, 0, SEEK_SET);
+	if (ok) {
+		return image_png_read(fp, diag);
+	}
+#endif
+
+	if (ok == -1) {
+		Debug(diag, "%s: no decoders available", __func__);
+	}
+
+	return NULL;
+}
+
+// インデックスカラーの srcimg をパレットで着色した画像を返す。
+struct image *
+image_coloring(const struct image *srcimg)
+{
+	struct image *dstimg;
+
+	assert(srcimg->channels == 1);
+	assert(srcimg->palette != NULL);
+
+	dstimg = image_create(srcimg->width, srcimg->height, 3);
+	if (dstimg == NULL) {
+		return NULL;
+	}
+
+	const uint8 *s = srcimg->buf;
+	uint8 *d = dstimg->buf;
+	for (uint y = 0, yend = srcimg->height; y < yend; y++) {
+		for (uint x = 0, xend = srcimg->width; x < xend; x++) {
+			uint32 colorcode = *s++;
+			ColorRGB c;
+			if (colorcode < srcimg->palette_count) {
+				c = srcimg->palette[colorcode];
+			} else {
+				c.u32 = 0;
+			}
+			*d++ = c.r;
+			*d++ = c.g;
+			*d++ = c.b;
+		}
+	}
+
+	return dstimg;
+}
+
+// src 画像を (dst_width, dst_height) にリサイズしながら同時に
+// colormode (& graycount) に減色した新しい image を作成して返す。
+struct image *
+image_reduct(
+	const struct image *src,	// 元画像
+	uint dst_width,				// リサイズ後の幅
+	uint dst_height,			// リサイズ後の高さ
+	ReductorMethod method,		// 減色方法
+	ReductorColor colormode,	// 減色後の色情報
+	struct diag *diag)
+{
+	struct image *dst;
+	struct image_reductor_handle opbuf, *op;
+
+	op = &opbuf;
+	memset(op, 0, sizeof(*op));
+
+	dst = image_create(dst_width, dst_height, 1);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	// 減色モードからパレットオペレーションを用意。
+	switch (colormode & ReductorColor_MASK) {
+	 case ReductorColor_Mono:
+		op->finder  = finder_mono;
+		op->palette = palette_mono;
+		op->palette_count = 2;
+		break;
+
+	 case ReductorColor_Gray:
+	 {
+		uint graycount = ((uint)colormode >> 8) + 1;
+		op->palette_buf = image_alloc_gray_palette(graycount);
+		if (op->palette_buf == NULL) {
+			goto abort;
+		}
+		op->palette = op->palette_buf;
+		op->palette_count = graycount;
+		op->finder = finder_gray;
+		break;
+	 }
+
+#if defined(IMAGE_FULL)
+	 case ReductorColor_GrayMean:
+	 {
+		uint graycount = ((uint)color >> 8) + 1;
+		ops.finder  = finder_graymean;
+		ops.palette = image_set_gray_palette(graycount);
+		ops.palette_count = graycount;
+		break;
+	 }
+#endif
+
+	 case ReductorColor_Fixed8:
+		op->finder  = finder_fixed8;
+		op->palette = palette_fixed8;
+		op->palette_count = 8;
+		break;
+
+	 case ReductorColor_ANSI16:
+		op->finder  = finder_ansi16;
+		op->palette = palette_ansi16;
+		op->palette_count = 16;
+		break;
+
+	 case ReductorColor_Fixed256:
+		op->palette_buf = image_alloc_fixed256_palette();
+		if (op->palette_buf == NULL) {
+			goto abort;
+		}
+		op->palette = op->palette_buf;
+		op->palette_count = 256;
+		op->finder = finder_fixed256;
+		break;
+
+#if defined(IMAGE_FULL)
+	 case ReductorColor_Fixed256I?
+#endif
+
+	 default:
+		Debug(diag, "%s: Unsupported color %s", __func__,
+			reductorcolor_tostr(colormode));
+		goto abort;
+	}
+
+	switch (method) {
+	 case ReductorMethod_Simple:
+		image_reduct_simple(op, dst, src, diag);
+		break;
+#if 0
+	 case ReductorMethod_Fast:
+		r = image_reduct_fast(dst, src, &ops);
+		break;
+
+	 case ReductorMethod_HighQuality:
+		r = image_reduct_high(dst, src, &ops);
+		break;
+#endif
+
+	 default:
+		Debug(diag, "%s: Unsupported method %u", __func__, (uint)method);
+		goto abort;
+	}
+
+	// 成功したので、使ったパレットを image にコピー。
+	// 動的に確保したやつはそのまま所有権を移す感じ。
+	dst->palette = op->palette;
+	dst->palette_count = op->palette_count;
+	if (op->palette_buf) {
+		dst->palette_owned = true;
+	}
+	return dst;
+
+ abort:
+	if (op->palette_buf) {
+		free(op->palette_buf);
+	}
+
+	image_free(dst);
+	return NULL;
+}
+
+
+//
+// 分数計算機
+//
+
+typedef struct {
+	int I;	// 整数項
+	int N;	// 分子
+	int D;	// 分母
+} Rational;
+
+static void
+rational_init(Rational *sr, int i, int n, int d)
+{
+	sr->I = i;
+	if (n < d) {
+		sr->N = n;
+	} else {
+		sr->I += n / d;
+		sr->N = n % d;
+	}
+	sr->D = d;
+}
+
+// sr += x
+static void
+rational_add(Rational *sr, const Rational *x)
+{
+	sr->I += x->I;
+	sr->N += x->N;
+	if (sr->N < 0) {
+		sr->I--;
+		sr->N += sr->D;
+	} else if (sr->N >= sr->D) {
+		sr->I++;
+		sr->N -= sr->D;
+	}
+}
+
+
+//
+// 減色 & リサイズ
+//
+
+// 単純間引き
+static void
+image_reduct_simple(struct image_reductor_handle *op,
+	struct image *dstimg, const struct image *srcimg,
+	const struct diag *diag)
+{
+	uint8 *d = dstimg->buf;
+	const uint8 *src = srcimg->buf;
+	uint dstwidth  = dstimg->width;
+	uint dstheight = dstimg->height;
+	uint srcstride = image_get_stride(srcimg);
+	Rational ry;
+	Rational rx;
+	Rational ystep;
+	Rational xstep;
+
+	// 水平、垂直方向ともスキップサンプリング。
+
+	rational_init(&ry, 0, 0, dstheight);
+	rational_init(&ystep, 0, srcimg->height, dstheight);
+	rational_init(&rx, 0, 0, dstwidth);
+	rational_init(&xstep, 0, srcimg->width, dstwidth);
+
+	for (uint y = 0; y < dstheight; y++) {
+		rational_add(&ry, &ystep);
+
+		rx.I = 0;
+		rx.N = 0;
+		const uint8 *s0 = &src[ry.I * srcstride];
+		for (uint x = 0; x < dstwidth; x++) {
+			const uint8 *s = s0 + rx.I * 3;
+			rational_add(&rx, &xstep);
+
+			ColorRGB c = { 0 };
+			c.r = *s++;
+			c.g = *s++;
+			c.b = *s++;
+			uint colorcode = op->finder(op, c);
+			*d++ = colorcode;
+		}
+	}
+}
+
+
+//
+// パレット
+//
+
+// モノクロ2色パレット
+static const ColorRGB palette_mono[] = {
+	{ RGBToU32(  0,   0,   0) },
+	{ RGBToU32(255, 255, 255) },
+};
+
+// 色 c をモノクロパレットに変換する。
+// XXX gray 2 とマージすべき?
+static uint
+finder_mono(struct image_reductor_handle *op, ColorRGB c)
+{
+	return (c.r + c.g + c.b <= 128 * 3) ? 0 : 1;
+}
+
+// グレースケール用のパレットを作成して返す。
+static ColorRGB *
+image_alloc_gray_palette(uint count)
+{
+	ColorRGB *pal = malloc(sizeof(ColorRGB) * count);
+	if (pal == NULL) {
+		return NULL;
+	}
+	for (uint i = 0; i < count; i++) {
+		uint8 gray = i * 255 / (count - 1);
+		ColorRGB c;
+		c.u32 = RGBToU32(gray, gray, gray);
+		pal[i] = c;
+	}
+
+	return pal;
+}
+
+// palette_count 階調グレースケールパレットで
+// NTSC 輝度が最も近いパレット番号を返す。
+static uint
+finder_gray(struct image_reductor_handle *op, ColorRGB c)
+{
+	uint count = op->palette_count;
+
+	int I = (((uint)c.r * 76 + (uint)c.g * 153 + (uint)c.b * 26) *
+	          (count - 1) + (255 / count)) / 255 / 255;
+	if (I >= count) {
+		return count - 1;
+	}
+	return I;
+}
+
+// RGB 固定8色
+static const ColorRGB palette_fixed8[] = {
+	{ RGBToU32(  0,   0,   0) },
+	{ RGBToU32(255,   0,   0) },
+	{ RGBToU32(  0, 255,   0) },
+	{ RGBToU32(255, 255,   0) },
+	{ RGBToU32(  0,   0, 255) },
+	{ RGBToU32(255,   0, 255) },
+	{ RGBToU32(  0, 255, 255) },
+	{ RGBToU32(255, 255, 255) },
+};
+
+static uint
+finder_fixed8(struct image_reductor_handle *op, ColorRGB c)
+{
+	uint R = ((uint8)c.r >= 128);
+	uint G = ((uint8)c.g >= 128);
+	uint B = ((uint8)c.b >= 128);
+	return R | (G << 1) | (B << 2);
+}
+
+// ANSI 固定 16 色。
+// Standard VGA colors を基準とし、
+// ただしパレット4 を Brown ではなく Yellow になるようにしてある。
+static const ColorRGB palette_ansi16[] = {
+	{ RGBToU32(  0,   0,   0) },
+	{ RGBToU32(170,   0,   0) },
+	{ RGBToU32(  0, 170,   0) },
+	{ RGBToU32(170, 170,   0) },
+	{ RGBToU32(  0,   0, 170) },
+	{ RGBToU32(170,   0, 170) },
+	{ RGBToU32(  0, 170, 170) },
+	{ RGBToU32(170, 170, 170) },
+	{ RGBToU32( 85,  85,  85) },
+	{ RGBToU32(255,  85,  85) },
+	{ RGBToU32( 85, 255,  85) },
+	{ RGBToU32(255, 255,  85) },
+	{ RGBToU32( 85,  85, 255) },
+	{ RGBToU32(255,  85, 255) },
+	{ RGBToU32( 85, 255, 255) },
+	{ RGBToU32(255, 255, 255) },
+};
+
+// 色 c を ANSI 固定 16 色パレットへ変換する。
+static uint
+finder_ansi16(struct image_reductor_handle *op, ColorRGB c)
+{
+	uint R;
+	uint G;
+	uint B;
+	uint I = (uint)c.r + (uint)c.g + (uint)c.b;
+
+	if (c.r >= 213 || c.g >= 213 || c.b >= 213) {
+		R = (c.r >= 213);
+		G = (c.g >= 213);
+		B = (c.b >= 213);
+		if (R == G && G == B) {
+			if (I >= 224 * 3) {
+				return 15;
+			} else {
+				return 7;
+			}
+		}
+		return (R + (G << 1) + (B << 2)) | 8;
+	} else {
+		R = (c.r >= 85);
+		G = (c.g >= 85);
+		B = (c.b >= 85);
+		if (R == G && G == B) {
+			if (I >= 128 * 3) {
+				return 7;
+			} else if (I >= 42 * 3) {
+				return 8;
+			} else {
+				return 0;
+			}
+		}
+		return R | (G << 1) | (B << 2);
+	}
+}
+
+// R3,G3,B2 の固定 256 色パレットを作成して返す。
+static ColorRGB *
+image_alloc_fixed256_palette()
+{
+	ColorRGB *pal = malloc(sizeof(ColorRGB) * 256);
+	if (pal == NULL) {
+		return NULL;
+	}
+	for (uint i = 0; i < 256; i++) {
+		ColorRGB c;
+		c.r = (((i >> 5) & 0x07) * 255) / 7;
+		c.g = (((i >> 2) & 0x07) * 255) / 7;
+		c.b = (( i       & 0x03) * 255) / 3;
+		pal[i] = c;
+	}
+
+	return pal;
+}
+
+// 固定 256 色で c に最も近いパレット番号を返す。
+static uint
+finder_fixed256(struct image_reductor_handle *op, ColorRGB c)
+{
+	uint R = c.r >> 5;
+	uint G = c.g >> 5;
+	uint B = c.b >> 6;
+	return (R << 5) | (G << 2) | B;
+}
+
+#undef RGB
+
+
+//
+// enum のデバッグ表示用
+//
+
+// ResizeAxis を文字列にする。
+// (内部バッファを使う可能性があるため同時に2回呼ばないこと)
+const char *
+resizeaxis_tostr(ResizeAxis axis)
+{
+	static const struct {
+		ResizeAxis value;
+		const char *name;
+	} table[] = {
+		{ ResizeAxis_Both,				"Both" },
+		{ ResizeAxis_Width,				"Width" },
+		{ ResizeAxis_Height,			"Height" },
+		{ ResizeAxis_Long,				"Long" },
+		{ ResizeAxis_Short,				"Short" },
+		{ ResizeAxis_ScaleDownBoth,		"ScaleDownBoth" },
+		{ ResizeAxis_ScaleDownWidth,	"ScaleDownWidth" },
+		{ ResizeAxis_ScaleDownHeight,	"ScaleDownHeight" },
+		{ ResizeAxis_ScaleDownLong,		"ScaleDownLong" },
+		{ ResizeAxis_ScaleDownShort,	"ScaleDownShort" },
+	};
+
+	for (int i = 0; i < countof(table); i++) {
+		if (axis == table[i].value) {
+			return table[i].name;
+		}
+	}
+
+	static char buf[16];
+	snprintf(buf, sizeof(buf), "%u", (uint)axis);
+	return buf;
+}
+
+// ReductorMethod を文字列にする。
+// (内部バッファを使う可能性があるため同時に2回呼ばないこと)
+const char *
+reductormethod_tostr(ReductorMethod method)
+{
+	static const struct {
+		ReductorMethod value;
+		const char *name;
+	} table[] = {
+		{ ReductorMethod_Fast,			"Fast" },
+		{ ReductorMethod_Simple,		"Simple" },
+		{ ReductorMethod_HighQuality,	"High" },
+	};
+
+	for (int i = 0; i < countof(table); i++) {
+		if (method == table[i].value) {
+			return table[i].name;
+		}
+	}
+
+	static char buf[16];
+	snprintf(buf, sizeof(buf), "%u", (uint)method);
+	return buf;
+}
+
+// ReductorColor を文字列にする。
+// (内部バッファを使う可能性があるため同時に2回呼ばないこと)
+const char *
+reductorcolor_tostr(ReductorColor color)
+{
+	static const struct {
+		ReductorColor value;
+		const char *name;
+	} table[] = {
+		{ ReductorColor_Mono,		"Mono" },
+		{ ReductorColor_Gray,		"Gray" },
+		{ ReductorColor_GrayMean,	"GrayMean" },
+		{ ReductorColor_Fixed8,		"Fixed8" },
+		{ ReductorColor_X68k,		"X68k" },
+		{ ReductorColor_ANSI16,		"ANSI16" },
+		{ ReductorColor_Fixed256,	"Fixed256" },
+		{ ReductorColor_Fixed256I,	"Fixed256I" },
+	};
+	static char buf[16];
+	uint type = (uint)color & ReductorColor_MASK;
+	uint num = (uint)color >> 8;
+
+	for (int i = 0; i < countof(table); i++) {
+		if (type == table[i].value) {
+			// 今のところ Gray は必ず num > 0 なのでこれだけで区別できる
+			if (num == 0) {
+				return table[i].name;
+			} else {
+				snprintf(buf, sizeof(buf), "%s%u", table[i].name, num);
+				return buf;
+			}
+		}
+	}
+
+	snprintf(buf, sizeof(buf), "0x%x", (uint)color);
+	return buf;
+}
