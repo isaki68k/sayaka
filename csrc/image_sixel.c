@@ -39,7 +39,7 @@ static bool sixel_preamble(FILE *, const struct image *,
 	const struct sixel_opt *);
 static bool sixel_postamble(FILE *);
 static bool sixel_core(FILE *, const struct image *, const struct diag *);
-static uint sixel_repunit(char *, uint, uint, uint8);
+static void sixel_repunit(string *, uint, uint8);
 
 // img を SIXEL に変換して fp に出力する。
 // (呼び出し後にフラッシュすること)
@@ -105,16 +105,9 @@ sixel_postamble(FILE *fp)
 	return true;
 }
 
-#define ADDCHAR(buf, pos, ch)	do {	\
-	if (__predict_true(pos < sizeof(buf))) {	\
-		buf[pos++] = ch;	\
-		buf[pos] = '\0';	\
-	}	\
-} while (0)
+#define ADDCHAR(s, ch)	string_append_char(s, ch)
 
-#define REPUNIT(linebuf, pos, n, ptn)	do {	\
-	pos += sixel_repunit(linebuf + pos, sizeof(linebuf) - pos, n, ptn);	\
-} while (0)
+#define REPUNIT(s, n, ptn)	sixel_repunit(s, n, ptn)
 
 static bool
 sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
@@ -124,7 +117,8 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 	uint palcnt = img->palette_count;
 	int16 *min_x = NULL;
 	int16 *max_x = NULL;
-	char linebuf[1024];	// XXX どうする
+	string *linebuf = NULL;
+	char cbuf[16];
 	bool rv = false;
 
 	// カラー番号ごとの、X 座標の min, max を計算する。
@@ -136,9 +130,13 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 		goto abort;
 	}
 
+	linebuf = string_alloc(256);
+	if (linebuf == NULL) {
+		goto abort;
+	}
+
 	for (uint y = 0; y < h; y += 6) {
-		uint pos = 0;
-		linebuf[pos] = '\0';
+		string_clear(linebuf);
 
 		const uint8 *src = &img->buf[y * w];
 
@@ -187,13 +185,13 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 				}
 
 				// SIXEL に色コードを出力。
-				pos += snprintf(linebuf + pos, sizeof(linebuf) - pos,
-					"#%u", min_color);
+				snprintf(cbuf, sizeof(cbuf), "#%u", min_color);
+				string_append_cstr(linebuf, cbuf);
 
 				// 相対 X シーク処理。
 				int space = min_x[min_color] - (mx + 1);
 				if (space > 0) {
-					REPUNIT(linebuf, pos, space, 0);
+					REPUNIT(linebuf, space, 0);
 				}
 
 				// パターンが変わったら、それまでのパターンを出していく
@@ -211,7 +209,7 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 
 					if (prev_t != t) {
 						if (n > 0) {
-							REPUNIT(linebuf, pos, n, prev_t);
+							REPUNIT(linebuf, n, prev_t);
 						}
 						prev_t = t;
 						n = 1;
@@ -221,7 +219,7 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 				}
 				// 最後のパターン。
 				if (prev_t != 0 && n > 0) {
-					REPUNIT(linebuf, pos, n, prev_t);
+					REPUNIT(linebuf, n, prev_t);
 				}
 
 				// X 位置を更新
@@ -230,7 +228,7 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 				min_x[min_color] = -1;
 			}
 
-			ADDCHAR(linebuf, pos, '$');
+			ADDCHAR(linebuf, '$');
 
 			// 最後までやったら抜ける。
 			if (mx == -1) {
@@ -238,35 +236,33 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 			}
 		}
 
-		ADDCHAR(linebuf, pos, '-');
+		ADDCHAR(linebuf, '-');
 
-		if (fwrite(linebuf, 1, strlen(linebuf), fp) < 0) {
+		if (fwrite(string_get(linebuf), 1, string_len(linebuf), fp) < 0) {
 			goto abort;
 		}
 	}
 
 	rv = true;
  abort:
+	string_free(linebuf);
 	free(min_x);
 	free(max_x);
 	return rv;
 }
 
-static uint
-sixel_repunit(char *buf, uint bufsize, uint n, uint8 ptn)
+static void
+sixel_repunit(string *s, uint n, uint8 ptn)
 {
-	uint r = 0;
-
 	ptn += 0x3f;
+
 	if (n >= 4) {
-		r = snprintf(buf, bufsize, "!%u%c", n, ptn);
+		char buf[16];
+		snprintf(buf, sizeof(buf), "!%u%c", n, ptn);
+		string_append_cstr(s, buf);
 	} else {
-		if (bufsize > n) {
-			for (r = 0; r < n; r++) {
-				buf[r] = ptn;
-			}
-			buf[r] = '\0';
+		for (uint i = 0; i < n; i++) {
+			string_append_char(s, ptn);
 		}
 	}
-	return r;
 }
