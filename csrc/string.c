@@ -39,7 +39,7 @@ typedef struct string_ {
 
 // 空の文字列を確保して返す。
 string *
-string_init()
+string_init(void)
 {
 	string *s = calloc(1, sizeof(string));
 	if (s == NULL) {

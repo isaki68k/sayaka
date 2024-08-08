@@ -35,7 +35,7 @@
 // strerror(errno) は Debug() 等のマクロ内から呼ぶことが多いのに
 // clang だと errno が再帰展開になるとかで怒られるので、回避のため。
 const char *
-strerrno()
+strerrno(void)
 {
 	return strerror(errno);
 }

@@ -66,7 +66,6 @@ image_bmp_write(FILE *fp, const struct image *img, const struct diag *diag)
 	uint32 ostride;	// 出力ストライド (4バイトの倍数でなければならない)
 	uint32 padding;
 	uint32 datasize;
-	size_t n;
 
 	assert(img->channels == 3);
 	istride = image_get_stride(img);
@@ -92,14 +91,12 @@ image_bmp_write(FILE *fp, const struct image *img, const struct diag *diag)
 	info.biXPelsPerMeter= htole32(3780);	// 96dpi
 	info.biYPelsPerMeter= htole32(3780);	// 96dpi
 
-	n = fwrite(&hdr, 1, sizeof(hdr), fp);
-	if (n < 0) {
+	if (fwrite(&hdr, sizeof(hdr), 1, fp) < 1) {
 		Debug(diag, "%s: fwrite(hdr) failed: %s", __func__, strerrno());
 		return false;
 	}
 
-	n = fwrite(&info, 1, sizeof(info), fp);
-	if (n < 0) {
+	if (fwrite(&info, sizeof(info), 1, fp) < 1) {
 		Debug(diag, "%s: fwrite(info) failed: %s", __func__, strerrno());
 		return false;
 	}

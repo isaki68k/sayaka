@@ -36,7 +36,7 @@
 
 // 新しい diag を確保して返す。
 struct diag *
-diag_alloc()
+diag_alloc(void)
 {
 	struct diag *diag = calloc(1, sizeof(struct diag));
 	return diag;

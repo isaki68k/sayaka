@@ -61,7 +61,7 @@ static inline int diag_get_level(const struct diag *diag)
 {
 	return diag->level;
 }
-extern struct diag *diag_alloc();
+extern struct diag *diag_alloc(void);
 extern void diag_free(struct diag *);
 extern void diag_set_name(struct diag *, const char *name);
 extern void diag_set_level(struct diag *, int level);
@@ -73,7 +73,7 @@ extern FILE *fdstream_open(int fd);
 
 // string.c
 typedef struct string_ string;
-extern string *string_init();
+extern string *string_init(void);
 extern string *string_alloc(uint);
 extern bool string_realloc(string *, uint);
 extern void string_free(string *);
@@ -86,6 +86,6 @@ extern void string_append_char(string *, char);
 extern void string_append_cstr(string *, const char *);
 
 // util.c
-extern const char *strerrno();
+extern const char *strerrno(void);
 
 #endif // !sayaka_common_h

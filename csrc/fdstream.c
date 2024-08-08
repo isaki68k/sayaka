@@ -98,7 +98,7 @@ fdstream_read(void *arg, char *dst, int dstsize)
 			avail = cookie->bufsize - cookie->len;
 		}
 
-		size_t n = read(cookie->fd, cookie->buf + cookie->len, avail);
+		ssize_t n = read(cookie->fd, cookie->buf + cookie->len, avail);
 		if (n < 0) {
 			return -1;
 		}

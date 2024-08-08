@@ -73,7 +73,7 @@ sixel_preamble(FILE *fp, const struct image *img,
 		img->width,
 		img->height);
 
-	if (fwrite(buf, 1, strlen(buf), fp) < 0) {
+	if (fwrite(buf, strlen(buf), 1, fp) < 1) {
 		return false;
 	}
 
@@ -86,7 +86,7 @@ sixel_preamble(FILE *fp, const struct image *img,
 				col->r * 100 / 255,
 				col->g * 100 / 255,
 				col->b * 100 / 255);
-			if (fwrite(buf, 1, strlen(buf), fp) < 0) {
+			if (fwrite(buf, strlen(buf), 1, fp) < 1) {
 				return false;
 			}
 		}
@@ -99,7 +99,7 @@ bool
 sixel_postamble(FILE *fp)
 {
 #define Postamble ESC "\\"
-	if (fwrite(Postamble, 1, strlen(Postamble), fp) < 0) {
+	if (fwrite(Postamble, strlen(Postamble), 1, fp) < 1) {
 		return false;
 	}
 	return true;
@@ -238,7 +238,7 @@ sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
 
 		ADDCHAR(linebuf, '-');
 
-		if (fwrite(string_get(linebuf), 1, string_len(linebuf), fp) < 0) {
+		if (fwrite(string_get(linebuf), string_len(linebuf), 1, fp) < 1) {
 			goto abort;
 		}
 	}

@@ -81,7 +81,7 @@ static uint finder_fixed8(struct image_reductor_handle *, ColorRGB);
 static uint finder_ansi16(struct image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(struct image_reductor_handle *, ColorRGB);
 static ColorRGB *image_alloc_gray_palette(uint);
-static ColorRGB *image_alloc_fixed256_palette();
+static ColorRGB *image_alloc_fixed256_palette(void);
 
 static void image_reduct_simple(struct image_reductor_handle *,
 	struct image *, const struct image *, const struct diag *diag);
@@ -910,7 +910,7 @@ finder_ansi16(struct image_reductor_handle *op, ColorRGB c)
 
 // R3,G3,B2 の固定 256 色パレットを作成して返す。
 static ColorRGB *
-image_alloc_fixed256_palette()
+image_alloc_fixed256_palette(void)
 {
 	ColorRGB *pal = malloc(sizeof(ColorRGB) * 256);
 	if (pal == NULL) {

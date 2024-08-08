@@ -41,7 +41,7 @@ typedef enum {
 	OutputFormat_BMP,
 } OutputFormat;
 
-static void usage();
+static void usage(void);
 static bool do_file(const char *filename);
 
 static struct diag *diag_image;
@@ -206,7 +206,7 @@ main(int ac, char *av[])
 }
 
 static void
-usage()
+usage(void)
 {
 	fprintf(stderr,
 		"usage: %s [<options...>] [-|<files...>]\n", getprogname());
