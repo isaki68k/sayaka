@@ -41,8 +41,15 @@ typedef enum {
 	OutputFormat_BMP,
 } OutputFormat;
 
+// コマンドラインオプション文字列のデコード用
+struct optmap {
+	const char *name;
+	int value;
+};
+
 static void version(void);
 static void usage(void);
+static int parse_opt(const struct optmap *, const char *);
 static bool do_file(const char *filename);
 
 static struct diag *diag_image;
@@ -89,6 +96,50 @@ static const struct option longopts[] = {
 	{ NULL },
 };
 
+static const struct optmap map_output_format[] = {
+	{ "bmp",		OutputFormat_BMP },
+	{ "sixel",		OutputFormat_SIXEL },
+	{ NULL },
+};
+
+static const struct optmap map_diffuse[] = {
+	{ "fs",			RDM_FS },
+	{ "atkinson",	RDM_ATKINSON },
+	{ "jajuni",		RDM_JAJUNI },
+	{ "stucki",		RDM_STUCKI },
+	{ "burkes",		RDM_BURKES },
+	{ "2",			RDM_2 },
+	{ "3",			RDM_3 },
+	{ "RGB",		RDM_RGB },
+	{ NULL },
+};
+
+static const struct optmap map_reductor_method[] = {
+	{ "none",		ReductorMethod_Simple },
+	{ "simple",		ReductorMethod_Simple },
+	{ "high",		ReductorMethod_HighQuality },
+	{ NULL },
+};
+
+static const struct optmap map_resize_axis[] = {
+	{ "both",				ResizeAxis_Both },
+	{ "width",				ResizeAxis_Width },
+	{ "height",				ResizeAxis_Height },
+	{ "long",				ResizeAxis_Long },
+	{ "short",				ResizeAxis_Short },
+	{ "scaledown-both",		ResizeAxis_ScaleDownBoth },
+	{ "sdboth",				ResizeAxis_ScaleDownBoth },
+	{ "scaledown-width",	ResizeAxis_ScaleDownWidth },
+	{ "sdwidth",			ResizeAxis_ScaleDownWidth },
+	{ "scaledown-height",	ResizeAxis_ScaleDownHeight },
+	{ "sdheight",			ResizeAxis_ScaleDownHeight },
+	{ "scaledown-long",		ResizeAxis_ScaleDownLong },
+	{ "sdlong",				ResizeAxis_ScaleDownLong },
+	{ "scaledown-short",	ResizeAxis_ScaleDownShort },
+	{ "sdshort",			ResizeAxis_ScaleDownShort },
+	{ NULL },
+};
+
 int
 main(int ac, char *av[])
 {
@@ -124,12 +175,9 @@ main(int ac, char *av[])
 		 }
 
 		 case 'd':
-			if (strcmp(optarg, "none") == 0) {
-				opt_method = ReductorMethod_Simple;
-			} else if (strcmp(optarg, "high") == 0) {
-				opt_method = ReductorMethod_HighQuality;
-			} else {
-				errx(1, "invalid reductor method");
+			opt_method = parse_opt(map_reductor_method, optarg);
+			if ((int)opt_method < 0) {
+				errx(1, "invalid reductor method '%s'", optarg);
 			}
 			break;
 
@@ -139,6 +187,13 @@ main(int ac, char *av[])
 
 		 case OPT_debug_sixel:
 			diag_set_level(diag_sixel, atoi(optarg));
+			break;
+
+		 case OPT_diffusion:
+			opt_diffuse = parse_opt(map_diffuse, optarg);
+			if ((int)opt_diffuse < 0) {
+				errx(1, "Invalid diffusion '%s'", optarg);
+			}
 			break;
 
 		 case OPT_gray:
@@ -160,12 +215,9 @@ main(int ac, char *av[])
 			break;
 
 		 case 'O':
-			if (strcmp(optarg, "sixel") == 0) {
-				output_format = OutputFormat_SIXEL;
-			} else if (strcmp(optarg, "bmp") == 0) {
-				output_format = OutputFormat_BMP;
-			} else {
-				errx(1, "Invalid output format type");
+			output_format = parse_opt(map_output_format, optarg);
+			if ((int)output_format < 0) {
+				errx(1, "Invalid output format '%s'", optarg);
 			}
 			break;
 
@@ -178,7 +230,11 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_resize_axis:
-			//opt_resize_axis = ;
+			opt_resize_axis = parse_opt(map_resize_axis, optarg);
+			if ((int)opt_resize_axis < 0) {
+				errx(1, "Invalid resize axis '%s'", optarg);
+			}
+			break;
 
 		 case 'v':
 			version();
@@ -229,6 +285,20 @@ usage(void)
 {
 	fprintf(stderr,
 		"usage: %s [<options...>] [-|<files...>]\n", getprogname());
+	exit(0);
+}
+
+// map から arg に対応する値を返す。
+// 見付からなければ -1 を返す。
+static int
+parse_opt(const struct optmap *map, const char *arg)
+{
+	for (int i = 0; map[i].name; i++) {
+		if (strcmp(map[i].name, arg) == 0) {
+			return map[i].value;
+		}
+	}
+	return -1;
 }
 
 // ファイル1つを表示する。
@@ -278,7 +348,7 @@ do_file(const char *infilename)
 	struct image_reduct_param param;
 	memset(&param, 0, sizeof(param));
 	param.method = opt_method;
-	param.diffuse = RDM_FS;
+	param.diffuse = opt_diffuse;
 	param.color = opt_color;
 	struct image *resimg = image_reduct(srcimg, dst_width, dst_height,
 		&param, diag_image);
