@@ -123,12 +123,8 @@ void
 image_free(struct image *img)
 {
 	if (img != NULL) {
-		if (img->buf != NULL) {
-			free(img->buf);
-		}
-		if (img->palette_owned && img->palette != NULL) {
-			free((ColorRGB *)img->palette);
-		}
+		free(img->buf);
+		free(img->palette_buf);
 		free(img);
 	}
 }
@@ -461,18 +457,14 @@ image_reduct(
 
 	// 成功したので、使ったパレットを image にコピー。
 	// 動的に確保したやつはそのまま所有権を移す感じ。
-	dst->palette = op->palette;
+	dst->palette       = op->palette;
 	dst->palette_count = op->palette_count;
-	if (op->palette_buf) {
-		dst->palette_owned = true;
-	}
+	dst->palette_buf   = op->palette_buf;
+
 	return dst;
 
  abort:
-	if (op->palette_buf) {
-		free(op->palette_buf);
-	}
-
+	free(op->palette_buf);
 	image_free(dst);
 	return NULL;
 }

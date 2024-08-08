@@ -133,8 +133,8 @@ struct image
 	// パレット数。インデックスカラーでない場合は参照しないこと。
 	uint palette_count;
 
-	// palette を所有している場合は true (解放する必要がある)。
-	bool palette_owned;
+	// 動的に作成したパレットはここで所有する。
+	ColorRGB *palette_buf;
 };
 
 // image.c
