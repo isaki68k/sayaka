@@ -5,7 +5,5 @@
 
 CC=	@CC@
 CFLAGS+=	@CFLAGS@
-.if !defined(RELEASE)
-CFLAGS+=	@WARNFLAGS@
-.endif
+WARNFLAGS=	@WARNFLAGS@
 LIBS+=		@LIBS@

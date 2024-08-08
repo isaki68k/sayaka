@@ -7,7 +7,7 @@
 CFLAGS+=	-O2
 
 .if !defined(RELEASE)
-CFLAGS+=	-Wall -Werror
+CFLAGS+=	-Wall -Werror ${WARNFLAGS}
 .endif
 
 CFLAGS+=	-I..
