@@ -33,19 +33,6 @@
 #include "image_proto.h"
 #include <string.h>
 
-#if defined(HAVE_LIBWEBP)
-#define USE_LIBWEBP
-#endif
-#if defined(HAVE_LIBJPEG)
-#define USE_LIBJPEG
-#endif
-#if defined(HAVE_LIBPNG)
-#define USE_LIBPNG
-#endif
-#if defined(HAVE_STB_IMAGE)
-#define USE_STB_IMAGE
-#endif
-
 struct image_reductor_handle;
 
 typedef uint (*finder_t)(struct image_reductor_handle *, ColorRGB);

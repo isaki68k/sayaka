@@ -27,6 +27,19 @@
 #ifndef sayaka_image_proto_h
 #define sayaka_image_proto_h
 
+#if defined(HAVE_LIBJPEG)
+#define USE_LIBJPEG
+#endif
+#if defined(HAVE_LIBPNG)
+#define USE_LIBPNG
+#endif
+#if defined(HAVE_LIBWEBP)
+#define USE_LIBWEBP
+#endif
+#if defined(HAVE_STB_IMAGE)
+#define USE_STB_IMAGE
+#endif
+
 // image_*.c
 #define IMAGE_HANDLER(name)	\
 	extern bool image_##name##_match(FILE *, const struct diag *);	\

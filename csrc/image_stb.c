@@ -32,6 +32,17 @@
 #include "image.h"
 #include "image_proto.h"
 
+// 外部ライブラリでサポートしているフォーマットを除く。
+#if defined(USE_LIBGIF)
+#define STBI_NO_GIF
+#endif
+#if defined(USE_LIBJPEG)
+#define STBI_NO_JPEG
+#endif
+#if defined(USE_LIBPNG)
+#define STBI_NO_PNG
+#endif
+
 // stb is too dirty against strict warnings...
 #if defined(__clang__)
 _Pragma("clang diagnostic push")
