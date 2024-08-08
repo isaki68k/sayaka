@@ -71,6 +71,20 @@ extern void diag_print(const struct diag *, const char *fmt, ...)
 // fdstream.c
 extern FILE *fdstream_open(int fd);
 
+// string.c
+typedef struct string_ string;
+extern string *string_init();
+extern string *string_alloc(uint);
+extern bool string_realloc(string *, uint);
+extern void string_free(string *);
+extern const char *string_get(const string *);
+extern uint string_len(const string *);
+extern bool string_equal(const string *, const string *);
+extern bool string_equal_cstr(const string *, const char *);
+extern void string_clear(string *);
+extern void string_append_char(string *, char);
+extern void string_append_cstr(string *, const char *);
+
 // util.c
 extern const char *strerrno();
 

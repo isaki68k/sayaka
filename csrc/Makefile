@@ -14,6 +14,7 @@ SRCS_common+=	fdstream.c
 SRCS_common+=	image.c
 SRCS_common+=	image_png.c
 SRCS_common+=	image_sixel.c
+SRCS_common+=	string.c
 SRCS_common+=	util.c
 
 SRCS_sixelv+=	image_bmp.c
