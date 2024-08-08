@@ -27,7 +27,7 @@ SRCS_all=		${SRCS_common} ${SRCS_sixelv}
 
 all:	sixelv
 
-sixelv:	sixelv.o libcommon.a libsixelv.a
+sixelv:	sixelv.o libsixelv.a libcommon.a
 	${CC} ${LDFLAGS} -o $@ $> ${LIBS} ${LIBS_sixelv}
 
 libcommon.a:	${SRCS_common:.c=.o}
