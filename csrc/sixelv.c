@@ -279,6 +279,7 @@ do_file(const char *infilename)
 			goto abort4;
 		}
 	}
+	fflush(ofp);
 
 	rv = true;
  abort4:

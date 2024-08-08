@@ -42,6 +42,7 @@ static bool sixel_core(FILE *, const struct image *, const struct diag *);
 static uint sixel_repunit(char *, uint, uint, uint8);
 
 // img を SIXEL に変換して fp に出力する。
+// (呼び出し後にフラッシュすること)
 bool
 image_sixel_write(FILE *fp, const struct image *img,
 	const struct sixel_opt *opt, const struct diag *diag)
