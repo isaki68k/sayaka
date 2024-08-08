@@ -86,6 +86,7 @@ static const struct option longopts[] = {
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
 	{ "version",		no_argument,		NULL,	'v' },
 	{ "width",			required_argument,	NULL,	'w' },
+	{ NULL },
 };
 
 int
