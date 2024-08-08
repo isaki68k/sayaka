@@ -70,6 +70,18 @@ typedef enum {
 	ReductorMethod_HighQuality,
 } ReductorMethod;
 
+// 誤差拡散アルゴリズム
+typedef enum {
+	RDM_FS,			// Floyd Steinberg
+	RDM_ATKINSON,	// Atkinson
+	RDM_JAJUNI,		// Jarvis, Judice, Ninke
+	RDM_STUCKI,		// Stucki
+	RDM_BURKES,		// Burkes
+	RDM_2,			// (x+1,y), (x,y+1)
+	RDM_3,			// (x+1,y), (x,y+1), (x+1,y+1)
+	RDM_RGB,		// RGB color sepalated
+} ReductorDiffuse;
+
 // 色モードは下位8ビットが enum。
 // Gray、GrayMean では bit15-8 の 8ビットに「階調-1」(1-255) を格納する。
 typedef enum {
@@ -128,6 +140,7 @@ struct image
 // image.c
 struct image_reduct_param {
 	ReductorMethod method;
+	ReductorDiffuse diffuse;
 	ReductorColor color;
 };
 extern struct image *image_create(uint width_, uint height_, uint channels_);
@@ -144,6 +157,7 @@ extern struct image *image_reduct(const struct image *src,
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductormethod_tostr(ReductorMethod);
+extern const char *reductordiffuse_tostr(ReductorDiffuse);
 extern const char *reductorcolor_tostr(ReductorColor);
 
 // image_sixel.c

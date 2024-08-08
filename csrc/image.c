@@ -47,6 +47,18 @@ struct image_reductor_handle;
 
 typedef uint (*finder_t)(struct image_reductor_handle *, ColorRGB);
 
+typedef struct {
+	int16 r;
+	int16 g;
+	int16 b;
+} ColorRGBint16;
+
+typedef struct {
+	int32 r;
+	int32 g;
+	int32 b;
+} ColorRGBint32;
+
 struct image_reductor_handle
 {
 	// 色からパレット番号を検索する関数。
@@ -70,12 +82,12 @@ static ColorRGB *image_alloc_fixed256_palette();
 
 static void image_reduct_simple(struct image_reductor_handle *,
 	struct image *, const struct image *, const struct diag *diag);
-#if 0
-static bool image_reduct_high(struct image *, const struct image *,
-	struct palette_ops *);
-static bool image_reduct_fast(struct image *, const struct image *,
-	struct palette_ops *);
-#endif
+static bool image_reduct_highquality(struct image_reductor_handle *,
+	struct image *, const struct image *, const struct image_reduct_param *,
+	const struct diag *diag);
+static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
+static uint8 saturate_uint8(int);
+static int16 saturate_adderr(int16, int);
 
 static const ColorRGB palette_mono[];
 static const ColorRGB palette_fixed8[];
@@ -422,15 +434,12 @@ image_reduct(
 	 case ReductorMethod_Simple:
 		image_reduct_simple(op, dst, src, diag);
 		break;
-#if 0
-	 case ReductorMethod_Fast:
-		r = image_reduct_fast(dst, src, &ops);
-		break;
 
 	 case ReductorMethod_HighQuality:
-		r = image_reduct_high(dst, src, &ops);
+		if (image_reduct_highquality(op, dst, src, param, diag) == false) {
+			goto abort;
+		}
 		break;
-#endif
 
 	 default:
 		Debug(diag, "%s: Unsupported method %s", __func__,
@@ -540,6 +549,225 @@ image_reduct_simple(struct image_reductor_handle *op,
 			uint colorcode = op->finder(op, c);
 			*d++ = colorcode;
 		}
+	}
+}
+
+// 二次元誤差分散法を使用して、出来る限り高品質に変換する。
+static bool
+image_reduct_highquality(struct image_reductor_handle *op,
+	struct image *dstimg, const struct image *srcimg,
+	const struct image_reduct_param *param,
+	const struct diag *diag)
+{
+	uint8 *d = dstimg->buf;
+	const uint8 *src = srcimg->buf;
+	uint dstwidth  = dstimg->width;
+	uint dstheight = dstimg->height;
+	uint srcstride = image_get_stride(srcimg);
+	Rational ry;
+	Rational rx;
+	Rational ystep;
+	Rational xstep;
+
+	// 水平、垂直ともピクセルを平均。
+	// 真に高品質にするには補間法を適用するべきだがそこまではしない。
+
+	rational_init(&ry, 0, 0, dstheight);
+	rational_init(&ystep, 0, srcimg->height, dstheight);
+	rational_init(&rx, 0, 0, dstwidth);
+	rational_init(&xstep, 0, srcimg->width, dstwidth);
+
+	// 誤差バッファ
+	const int errbuf_count = 3;
+	const int errbuf_left  = 2;
+	const int errbuf_right = 2;
+	int errbuf_width = dstwidth + errbuf_left + errbuf_right;
+	int errbuf_len = errbuf_width * sizeof(ColorRGBint16);
+	ColorRGBint16 *errbuf[errbuf_count];
+	ColorRGBint16 *errbuf_mem = calloc(errbuf_count, errbuf_len);
+	if (errbuf_mem == NULL) {
+		return false;
+	}
+	for (int i = 0; i < errbuf_count; i++) {
+		errbuf[i] = errbuf_mem + errbuf_left + errbuf_width * i;
+	}
+
+	// alpha チャンネルは今はサポートしていない。
+
+	for (uint y = 0; y < dstheight; y++) {
+		uint sy0 = ry.I;
+		rational_add(&ry, &ystep);
+		uint sy1 = ry.I;
+		if (sy0 == sy1) {
+			sy1 += 1;
+		}
+
+		rx.I = 0;
+		rx.N = 0;
+		for (uint x = 0; x < dstwidth; x++) {
+			uint sx0 = rx.I;
+			rational_add(&rx, &xstep);
+			uint sx1 = rx.I;
+			if (sx0 == sx1) {
+				sx1 += 1;
+			}
+
+			// 画素の平均を求める。
+			ColorRGBint32 col = { };
+			for (uint sy = sy0; sy < sy1; sy++) {
+				const uint8 *s = &src[sy * srcstride + sx0 * 3];
+				for (uint sx = sx0; sx < sx1; sx++) {
+					col.r += *s++;
+					col.g += *s++;
+					col.b += *s++;
+				}
+			}
+			uint area = (sy1 - sy0) * (sx1 - sx0);
+			col.r /= area;
+			col.g /= area;
+			col.b /= area;
+
+			col.r += errbuf[0][x].r;
+			col.g += errbuf[0][x].g;
+			col.b += errbuf[0][x].b;
+
+			ColorRGB c8;
+			c8.r = saturate_uint8(col.r);
+			c8.g = saturate_uint8(col.g);
+			c8.b = saturate_uint8(col.b);
+
+			uint colorcode = op->finder(op, c8);
+			col.r -= op->palette[colorcode].r;
+			col.g -= op->palette[colorcode].g;
+			col.b -= op->palette[colorcode].b;
+
+			// ランダムノイズを加える
+			if (0) {
+			}
+
+			switch (param->diffuse) {
+			 case RDM_FS:
+				// Floyd Steinberg Method
+				set_err(errbuf[0], x + 1, &col, 112);
+				set_err(errbuf[1], x - 1, &col, 48);
+				set_err(errbuf[1], x    , &col, 80);
+				set_err(errbuf[1], x + 1, &col, 16);
+				break;
+			 case RDM_ATKINSON:
+				// Atkinson
+				set_err(errbuf[0], x + 1, &col, 32);
+				set_err(errbuf[0], x + 2, &col, 32);
+				set_err(errbuf[1], x - 1, &col, 32);
+				set_err(errbuf[1], x,     &col, 32);
+				set_err(errbuf[1], x + 1, &col, 32);
+				set_err(errbuf[2], x,     &col, 32);
+				break;
+			 case RDM_JAJUNI:
+				// Jarvis, Judice, Ninke
+				set_err(errbuf[0], x + 1, &col, 37);
+				set_err(errbuf[0], x + 2, &col, 27);
+				set_err(errbuf[1], x - 2, &col, 16);
+				set_err(errbuf[1], x - 1, &col, 27);
+				set_err(errbuf[1], x,     &col, 37);
+				set_err(errbuf[1], x + 1, &col, 27);
+				set_err(errbuf[1], x + 2, &col, 16);
+				set_err(errbuf[2], x - 2, &col,  5);
+				set_err(errbuf[2], x - 1, &col, 16);
+				set_err(errbuf[2], x,     &col, 27);
+				set_err(errbuf[2], x + 1, &col, 16);
+				set_err(errbuf[2], x + 2, &col,  5);
+				break;
+			 case RDM_STUCKI:
+				// Stucki
+				set_err(errbuf[0], x + 1, &col, 43);
+				set_err(errbuf[0], x + 2, &col, 21);
+				set_err(errbuf[1], x - 2, &col, 11);
+				set_err(errbuf[1], x - 1, &col, 21);
+				set_err(errbuf[1], x,     &col, 43);
+				set_err(errbuf[1], x + 1, &col, 21);
+				set_err(errbuf[1], x + 2, &col, 11);
+				set_err(errbuf[2], x - 2, &col,  5);
+				set_err(errbuf[2], x - 1, &col, 11);
+				set_err(errbuf[2], x,     &col, 21);
+				set_err(errbuf[2], x + 1, &col, 11);
+				set_err(errbuf[2], x + 2, &col,  5);
+				break;
+			 case RDM_BURKES:
+				// Burkes
+				set_err(errbuf[0], x + 1, &col, 64);
+				set_err(errbuf[0], x + 2, &col, 32);
+				set_err(errbuf[1], x - 2, &col, 16);
+				set_err(errbuf[1], x - 1, &col, 32);
+				set_err(errbuf[1], x,     &col, 64);
+				set_err(errbuf[1], x + 1, &col, 32);
+				set_err(errbuf[1], x + 2, &col, 16);
+				break;
+			 case RDM_2:
+				// (x+1,y), (x,y+1)
+				set_err(errbuf[0], x + 1, &col, 128);
+				set_err(errbuf[1], x,     &col, 128);
+				break;
+			 case RDM_3:
+				// (x+1,y), (x,y+1), (x+1,y+1)
+				set_err(errbuf[0], x + 1, &col, 102);
+				set_err(errbuf[1], x,     &col, 102);
+				set_err(errbuf[1], x + 1, &col,  51);
+				break;
+			 case RDM_RGB:
+				errbuf[0][x].r   = saturate_adderr(errbuf[0][x].r,   col.r);
+				errbuf[1][x].b   = saturate_adderr(errbuf[1][x].b,   col.b);
+				errbuf[1][x+1].g = saturate_adderr(errbuf[1][x+1].g, col.g);
+				break;
+			}
+
+			*d++ = colorcode;
+		}
+
+		// 誤差バッファをローテート。
+		ColorRGBint16 *tmp = errbuf[0];
+		for (int i = 0; i < errbuf_count - 1; i++) {
+			errbuf[i] = errbuf[i + 1];
+		}
+		errbuf[errbuf_count - 1] = tmp;
+		// errbuf[y] には左マージンがあるのを考慮する
+		memset(errbuf[errbuf_count - 1] - errbuf_left, 0, errbuf_len);
+	}
+
+	free(errbuf_mem);
+	return true;
+}
+
+// eb[x] += col * ratio / 256;
+static void
+set_err(ColorRGBint16 *eb, int x, const ColorRGBint32 *col, int ratio)
+{
+	eb[x].r = saturate_adderr(eb[x].r, col->r * ratio / 256);
+	eb[x].g = saturate_adderr(eb[x].g, col->g * ratio / 256);
+	eb[x].b = saturate_adderr(eb[x].b, col->b * ratio / 256);
+}
+
+static uint8
+saturate_uint8(int val)
+{
+	if (val < 0) {
+		return 0;
+	}
+	if (val > 255) {
+		return 255;
+	}
+	return (uint8)val;
+}
+
+static int16
+saturate_adderr(int16 a, int b)
+{
+	int16 val = a + b;
+	if (val < -512) {
+		return -512;
+	} else if (val > 511) {
+		return 511;
+	} else {
+		return val;
 	}
 }
 
@@ -766,6 +994,36 @@ reductormethod_tostr(ReductorMethod method)
 
 	static char buf[16];
 	snprintf(buf, sizeof(buf), "%u", (uint)method);
+	return buf;
+}
+
+// ReductorDiffuse を文字列にする。
+// (内部バッファを使う可能性があるため同時に2回呼ばないこと)
+const char *
+reductordiffuse_tostr(ReductorDiffuse diffuse)
+{
+	static const struct {
+		ReductorDiffuse value;
+		const char *name;
+	} table[] = {
+		{ RDM_FS,		"RDM_FS" },
+		{ RDM_ATKINSON,	"RDM_ATKINSON" },
+		{ RDM_JAJUNI,	"RDM_JAJUNI" },
+		{ RDM_STUCKI,	"RDM_STUCKI" },
+		{ RDM_BURKES,	"RDM_BURKES" },
+		{ RDM_2,		"RDM_2" },
+		{ RDM_3,		"RDM_3" },
+		{ RDM_RGB,		"RDM_RGB" },
+	};
+
+	for (int i = 0; i < countof(table); i++) {
+		if (diffuse == table[i].value) {
+			return table[i].name;
+		}
+	}
+
+	static char buf[16];
+	snprintf(buf, sizeof(buf), "%u", (uint)diffuse);
 	return buf;
 }
 

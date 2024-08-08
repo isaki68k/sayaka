@@ -47,6 +47,8 @@ static bool do_file(const char *filename);
 static struct diag *diag_image;
 static struct diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
+static ReductorMethod opt_method;
+static ReductorDiffuse opt_diffuse;
 static ReductorColor opt_color;
 static uint opt_height;
 static uint opt_width;
@@ -59,6 +61,7 @@ enum {
 	OPT_color,
 	OPT_debug_image,
 	OPT_debug_sixel,
+	OPT_diffusion,
 	OPT_gray,
 	OPT_height,
 	OPT_help,
@@ -71,6 +74,7 @@ static const struct option longopts[] = {
 	{ "color",			required_argument,	NULL,	'c' },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
+	{ "diffusion",		required_argument,	NULL,	OPT_diffusion },
 	{ "gray",			required_argument,	NULL,	OPT_gray },
 	{ "grey",			required_argument,	NULL,	OPT_gray },
 	{ "height",			required_argument,	NULL,	'h' },
@@ -90,6 +94,8 @@ main(int ac, char *av[])
 	diag_sixel = diag_alloc();
 
 	ignore_error = false;
+	opt_method = ReductorMethod_Simple;
+	opt_diffuse = RDM_FS;
 	opt_color = ReductorColor_Fixed256;
 	opt_resize_axis = ResizeAxis_ScaleDownLong;
 	opt_height = 0;
@@ -97,7 +103,7 @@ main(int ac, char *av[])
 	output_filename = NULL;
 	output_format = OutputFormat_SIXEL;
 
-	while ((c = getopt_long(ac, av, "c:h:iO:o:w:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:d:h:iO:o:w:", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
 		 {
@@ -112,6 +118,16 @@ main(int ac, char *av[])
 			}
 			break;
 		 }
+
+		 case 'd':
+			if (strcmp(optarg, "none") == 0) {
+				opt_method = ReductorMethod_Simple;
+			} else if (strcmp(optarg, "high") == 0) {
+				opt_method = ReductorMethod_HighQuality;
+			} else {
+				errx(1, "invalid reductor method");
+			}
+			break;
 
 		 case OPT_debug_image:
 			diag_set_level(diag_image, atoi(optarg));
@@ -242,7 +258,8 @@ do_file(const char *infilename)
 	// 減色 & リサイズ
 	struct image_reduct_param param;
 	memset(&param, 0, sizeof(param));
-	param.method = ReductorMethod_Simple;
+	param.method = opt_method;
+	param.diffuse = RDM_FS;
 	param.color = opt_color;
 	struct image *resimg = image_reduct(srcimg, dst_width, dst_height,
 		&param, diag_image);
