@@ -239,34 +239,34 @@ image_get_preferred_size(
 	}
 }
 
-#if 0
-// サポートしているデコーダを文字列で返す。
-// 書き戻せなければ false を返す。
-bool
-image_get_decoderinfo(char *dst, size_t dstsize)
+// サポートしているデコーダを string で返す。
+string *
+image_get_decoderinfo(void)
 {
-	char *buf = malloc(dstsize + 2);
-	if (buf == NULL) {
-		return false;
-	}
+	string *s = string_init();
 
-	buf[0] = '\0';
-#if defined(USE_LIBWEBP)
-	strlcat(buf, ", libwebp", sizeof(buf));
-#endif
+#define ADD(name)	do {	\
+	if (string_len(s) != 0)	\
+		string_append_cstr(s, ", ");	\
+	string_append_cstr(s, name);	\
+} while (0)
+
+	// ここはアルファベット順。
 #if defined(USE_LIBJPEG)
-	strlcat(buf, ", libjpeg", sizeof(buf));
+	ADD("libjpeg");
+#endif
+#if defined(USE_LIBPNG)
+	ADD("libpng");
+#endif
+#if defined(USE_LIBWEBP)
+	ADD("libwebp");
+#endif
+#if defined(USE_STB_IMAGE)
+	ADD("stb_image");
 #endif
 
-	if (dstsize < strlen(buf) - 2 + 1) {
-		return false;
-	}
-	strlcpy(dst, &buf[2], dstsize);
-
-	free(buf);
-	return true;
+	return s;
 }
-#endif
 
 // fp から画像を読み込んで image を作成して返す。
 // 読み込めなければ NULL を返す。
