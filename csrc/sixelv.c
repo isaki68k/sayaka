@@ -41,6 +41,7 @@ typedef enum {
 	OutputFormat_BMP,
 } OutputFormat;
 
+static void version(void);
 static void usage(void);
 static bool do_file(const char *filename);
 
@@ -67,6 +68,7 @@ enum {
 	OPT_help,
 	OPT_output_format,
 	OPT_resize_axis,
+	OPT_version,
 	OPT_width,
 };
 
@@ -82,6 +84,7 @@ static const struct option longopts[] = {
 	{ "ignore-error",	no_argument,		NULL,	'i' },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
+	{ "version",		no_argument,		NULL,	'v' },
 	{ "width",			required_argument,	NULL,	'w' },
 };
 
@@ -103,7 +106,7 @@ main(int ac, char *av[])
 	output_filename = NULL;
 	output_format = OutputFormat_SIXEL;
 
-	while ((c = getopt_long(ac, av, "c:d:h:iO:o:w:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:d:h:iO:o:vw:", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
 		 {
@@ -176,6 +179,9 @@ main(int ac, char *av[])
 		 case OPT_resize_axis:
 			//opt_resize_axis = ;
 
+		 case 'v':
+			version();
+
 		 case 'w':
 			opt_width = atoi(optarg);
 			break;
@@ -203,6 +209,18 @@ main(int ac, char *av[])
 	}
 
 	return 0;
+}
+
+static void
+version(void)
+{
+	string *info = image_get_decoderinfo();
+
+	printf("%s - SIXEL viewer\n", getprogname());
+	printf(" Supported loader: %s\n", string_get(info));
+
+	string_free(info);
+	exit(0);
 }
 
 static void
