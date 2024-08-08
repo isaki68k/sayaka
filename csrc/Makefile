@@ -1,13 +1,16 @@
 # vi:set ts=8:
 
+.if exists(./Makefile.cfg)
+.include "./Makefile.cfg"
+.endif
+
 CFLAGS+=	-O2
 
 .if !defined(RELEASE)
 CFLAGS+=	-Wall -Werror
 .endif
 
-INCLUDES+=	-I..
-INCLUDES+=	-I/usr/pkg/include
+CFLAGS+=	-I..
 
 SRCS_common+=	diag.c
 SRCS_common+=	fdstream.c
@@ -20,15 +23,12 @@ SRCS_common+=	util.c
 
 SRCS_sixelv+=	image_bmp.c
 
-#LIBS_common+=	-lbsd
-LIBS_common+=	`pkg-config --libs libpng`
-
 SRCS_all=		${SRCS_common} ${SRCS_sixelv}
 
 all:	sixelv
 
 sixelv:	sixelv.o libcommon.a libsixelv.a
-	${CC} ${LDFLAGS} -o $@ $> ${LIBS_common} ${LIBS_sixelv}
+	${CC} ${LDFLAGS} -o $@ $> ${LIBS} ${LIBS_sixelv}
 
 libcommon.a:	${SRCS_common:.c=.o}
 	rm -f $@
@@ -39,7 +39,7 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 	ar r $@ $>
 
 .c.o:
-	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} ${INCLUDES} -c ${.IMPSRC} -o $@
+	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
 
 .PHONY:	clean
 clean:
@@ -52,7 +52,7 @@ depend:	${SRCS_all:.c=.d}
 
 .for S in ${SRCS_all}
 ${S:.c=.d}:
-	${CC} ${CFLAGS} ${CFLAGS.${S}} ${INCLUDES} -E -MM ${S} > $@
+	${CC} ${CFLAGS} ${CFLAGS.${S}} -E -MM ${S} > $@
 .endfor
 
 .if exists(.depends)

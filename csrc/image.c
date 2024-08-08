@@ -33,14 +33,17 @@
 #include "image_proto.h"
 #include <string.h>
 
-#if 0//defined(HAVE_LIBWEBP)
+#if defined(HAVE_LIBWEBP)
 #define USE_LIBWEBP
 #endif
-#if 0//defined(HAVE_LIBJPEG)
+#if defined(HAVE_LIBJPEG)
 #define USE_LIBJPEG
 #endif
-#if 1//defined(HAVE_LIBPNG)
+#if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
+#endif
+#if defined(HAVE_STB_IMAGE)
+#define USE_STB_IMAGE
 #endif
 
 struct image_reductor_handle;
@@ -304,12 +307,14 @@ image_create_fp(FILE *fp, const struct diag *diag)
 	}
 #endif
 
+#if defined(USE_STB_IMAGE)
 	ok = image_stb_match(fp, diag);
 	Trace(diag, "%s: stb %u", __func__, ok);
 	fseek(fp, 0, SEEK_SET);
 	if (ok) {
 		return image_stb_read(fp, diag);
 	}
+#endif
 
 	if (ok == -1) {
 		Debug(diag, "%s: no decoders available", __func__);

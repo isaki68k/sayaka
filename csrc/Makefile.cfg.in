@@ -1,0 +1,11 @@
+#
+# sayaka
+# Copyright (C) 2021-2024 isaki@NetBSD.org
+#
+
+CC=	@CC@
+CFLAGS+=	@CFLAGS@
+.if !defined(RELEASE)
+CFLAGS+=	@WARNFLAGS@
+.endif
+LIBS+=		@LIBS@
