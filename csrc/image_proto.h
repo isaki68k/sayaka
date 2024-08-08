@@ -33,6 +33,7 @@
 	extern struct image *image_##name##_read(FILE *, const struct diag *)
 
 IMAGE_HANDLER(png);
+IMAGE_HANDLER(stb);
 
 #undef IMAGE_HANDLER
 

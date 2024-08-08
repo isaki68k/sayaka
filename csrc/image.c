@@ -304,6 +304,13 @@ image_create_fp(FILE *fp, const struct diag *diag)
 	}
 #endif
 
+	ok = image_stb_match(fp, diag);
+	Trace(diag, "%s: stb %u", __func__, ok);
+	fseek(fp, 0, SEEK_SET);
+	if (ok) {
+		return image_stb_read(fp, diag);
+	}
+
 	if (ok == -1) {
 		Debug(diag, "%s: no decoders available", __func__);
 	}
