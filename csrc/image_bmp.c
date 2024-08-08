@@ -70,7 +70,7 @@ image_bmp_write(FILE *fp, const struct image *img, const struct diag *diag)
 
 	assert(img->channels == 3);
 	istride = image_get_stride(img);
-	ostride = ((istride + 3) / 4) * 4;
+	ostride = roundup(istride, 4);
 	padding = ostride - istride;
 	datasize = ostride * img->height;
 

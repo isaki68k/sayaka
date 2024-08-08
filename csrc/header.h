@@ -69,6 +69,13 @@
 #define countof(x)	(sizeof(x) / sizeof(x[0]))
 #endif
 
+#ifndef roundup
+#define roundup(x, y)	((((x) + ((y) - 1)) / (y)) * (y))
+#endif
+#ifndef rounddown
+#define rounddown(x, y)	(((x) / (y)) * (y))
+#endif
+
 typedef unsigned int	uint;
 typedef uint8_t		uint8;
 typedef uint16_t	uint16;
