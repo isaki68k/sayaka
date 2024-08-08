@@ -94,10 +94,10 @@ main(int ac, char *av[])
 	diag_sixel = diag_alloc();
 
 	ignore_error = false;
-	opt_method = ReductorMethod_Simple;
+	opt_method = ReductorMethod_HighQuality;
 	opt_diffuse = RDM_FS;
 	opt_color = ReductorColor_Fixed256;
-	opt_resize_axis = ResizeAxis_ScaleDownLong;
+	opt_resize_axis = ResizeAxis_Both;
 	opt_height = 0;
 	opt_width = 0;
 	output_filename = NULL;
