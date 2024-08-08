@@ -15,9 +15,13 @@ CFLAGS+=	-I..
 SRCS_common+=	diag.c
 SRCS_common+=	fdstream.c
 SRCS_common+=	image.c
+.if defined(HAVE_LIBPNG)
 SRCS_common+=	image_png.c
+.endif
 SRCS_common+=	image_sixel.c
+.if defined(HAVE_STB_IMAGE)
 SRCS_common+=	image_stb.c
+.endif
 SRCS_common+=	string.c
 SRCS_common+=	util.c
 

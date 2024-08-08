@@ -640,7 +640,8 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-HAVE_STB_IMAGE
+DEFINE_LIBPNG
+DEFINE_STB_IMAGE
 PKG_CONFIG
 WARNFLAGS
 OBJEXT
@@ -4223,6 +4224,7 @@ case "${with_stb_image}" in
  *)
 	printf "%s\n" "#define HAVE_STB_IMAGE 1" >>confdefs.h
 
+	DEFINE_STB_IMAGE=HAVE_STB_IMAGE=
 
 	;;
 esac
@@ -4248,6 +4250,8 @@ printf %s "checking for libpng... " >&6; }
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 		printf "%s\n" "#define HAVE_LIBPNG 1" >>confdefs.h
+
+		DEFINE_LIBPNG=HAVE_LIBPNG=
 
 		has_libpng=yes
 

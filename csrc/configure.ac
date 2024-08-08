@@ -141,7 +141,8 @@ AC_DEFUN([CHECK_PKG], [
 	AC_MSG_CHECKING([for $1])
 	if ${PKG_CONFIG} --exists $1; then
 		AC_MSG_RESULT([yes])
-		AC_DEFINE(HAVE_$2)
+		AC_DEFINE([HAVE_$2])
+		AC_SUBST([DEFINE_$2], [HAVE_$2=])
 		has_$1=yes
 
 		H=`${PKG_CONFIG} --cflags $1`
@@ -199,7 +200,7 @@ case "${with_stb_image}" in
 	;;
  *)
 	AC_DEFINE([HAVE_STB_IMAGE])
-	AC_SUBST([HAVE_STB_IMAGE])
+	AC_SUBST([DEFINE_STB_IMAGE], [HAVE_STB_IMAGE=])
 	;;
 esac
 
