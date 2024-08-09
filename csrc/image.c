@@ -226,9 +226,9 @@ image_get_preferred_size(
 	}
 }
 
-// サポートしているデコーダを string で返す。
+// サポートしているローダを string で返す。表示用。
 string *
-image_get_decoderinfo(void)
+image_get_loaderinfo(void)
 {
 	string *s = string_init();
 

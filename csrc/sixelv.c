@@ -271,7 +271,7 @@ main(int ac, char *av[])
 static void
 version(void)
 {
-	string *info = image_get_decoderinfo();
+	string *info = image_get_loaderinfo();
 
 	printf("%s - SIXEL viewer\n", getprogname());
 	printf(" Supported loader: %s\n", string_get(info));
