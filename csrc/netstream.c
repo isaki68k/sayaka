@@ -29,6 +29,9 @@
 //
 
 #include "common.h"
+
+#if defined(HAVE_LIBCURL)
+
 #include <errno.h>
 #include <string.h>
 #include <curl/curl.h>
@@ -276,3 +279,13 @@ memstream_close(void *arg)
 
 	return 0;
 }
+
+#else /* HAVE_LIBCURL */
+
+// libcurl がない時でもクリーンアップだけは字面上必要。
+void
+netstream_global_cleanup(void)
+{
+}
+
+#endif /* HAVE_LIBCURL */

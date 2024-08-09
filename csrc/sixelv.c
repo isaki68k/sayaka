@@ -342,7 +342,7 @@ do_file(const char *infilename)
 			return false;
 		}
 #else
-		warn("Network support has not been compiled.");
+		warnx("%s: Network support has not been compiled", infilename);
 		return false;
 #endif
 	} else {
