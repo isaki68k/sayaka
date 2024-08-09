@@ -38,37 +38,77 @@ typedef struct string_ string;
 
 // リサイズの基準軸。
 typedef enum {
+	// 幅が ResizeWidth になり、
+	// 高さが ResizeHeight になるようにリサイズする。
+	// ResizeWidth == 0 のときは Height と同じ動作をする。
+	// ResizeHeight == 0 のときは Width と同じ動作をする。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
 	ResizeAxis_Both = 0,
 
+	// 幅が ResizeWidth になるように縦横比を保持してリサイズする。
+	// ResizeWidth == 0 のときは原寸大。
 	ResizeAxis_Width,
 
+	// 高さが ResizeHeight になるように縦横比を保持してリサイズする。
+	// ResizeHeight == 0 のときは原寸大。
 	ResizeAxis_Height,
 
+	// 長辺優先リサイズ。
+	// 原寸 Width >= Height のときは Width と同じ動作をする。
+	// 原寸 Width < Height のときは Height と同じ動作をする。
+	// 例:
+	// 長辺を特定のサイズにしたい場合は、ResizeWidth と ResizeHeight に
+	// 同じ値を設定する。
 	ResizeAxis_Long,
 
+	// 短辺優先リサイズ。
+	// 原寸 Width <= Height のときは Width と同じ動作をする。
+	// 原寸 Width > Height のときは Height と同じ動作をする。
 	ResizeAxis_Short,
 
+	// 縮小のみの Both。
+	// 幅が ResizeWidth より大きいときは ResizeWidth になり、
+	// 高さが ResizeHeight より大きいときは ResizeHeight になるように
+	// リサイズする。
+	// ResizeWidth == 0 のときは ScaleDownHeight と同じ動作をする。
+	// ResizeHeight == 0 のときは ScaleDownWidth と同じ動作をする。
+	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
 	ResizeAxis_ScaleDownBoth = 8,
 
+	// 縮小のみの Width。
+	// 幅が ResizeWidth より大きいときは ResizeWidth になるように
+	// 縦横比を保持してリサイズする。
+	// ResizeWidth == 0 のときは原寸大。
 	ResizeAxis_ScaleDownWidth,
 
+	// 縮小のみの Height。
+	// 幅が ResizeHeight より大きいときは ResizeHeight になるように
+	// 縦横比を保持してリサイズする。
+	// ResizeHeight == 0 のときは原寸大。
 	ResizeAxis_ScaleDownHeight,
 
+	// 縮小のみの長辺優先リサイズ。
+	// 原寸 Width >= Height のときは ScaleDownWidth と同じ動作をする。
+	// 原寸 Width < Height のときは ScaleDownHeight と同じ動作をする。
+	// 例:
+	// 長辺を特定のサイズ以下にしたい場合は、ResizeWidth と ResizeHeight に
+	// 同じ値を設定する。
 	ResizeAxis_ScaleDownLong,
 
+	// 縮小のみの短辺優先リサイズ。
+	// 原寸 Width <= Height のときは ScaleDownWidth と同じ動作をする。
+	// 原寸 Width > Height のときは ScaleDownHeight と同じ動作をする。
 	ResizeAxis_ScaleDownShort,
 
+	// ScaleDown* を判定するためのビットマスク。内部で使用。
 	ResizeAxis_ScaleDownBit = 0x08,
 } ResizeAxis;
 
 // 減色&リサイズ方法。
 typedef enum {
-	ReductorMethod_Fast,
-
-	// 単純間引き。
-	ReductorMethod_Simple,
-
-	ReductorMethod_HighQuality,
+	ReductorMethod_Fast,		// 速度優先法
+	ReductorMethod_Simple,		// 単純一致法
+	ReductorMethod_HighQuality,	// 二次元誤差分散法
 } ReductorMethod;
 
 // 誤差拡散アルゴリズム
@@ -78,8 +118,8 @@ typedef enum {
 	RDM_JAJUNI,		// Jarvis, Judice, Ninke
 	RDM_STUCKI,		// Stucki
 	RDM_BURKES,		// Burkes
-	RDM_2,			// (x+1,y), (x,y+1)
-	RDM_3,			// (x+1,y), (x,y+1), (x+1,y+1)
+	RDM_2,			// 2 pixels (right, down)
+	RDM_3,			// 3 pixels (right, down, rightdown)
 	RDM_RGB,		// RGB color sepalated
 } ReductorDiffuse;
 
