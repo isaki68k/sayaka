@@ -972,8 +972,8 @@ reductormethod_tostr(ReductorMethod method)
 		ReductorMethod value;
 		const char *name;
 	} table[] = {
-		{ ReductorMethod_Fast,			"Fast" },
 		{ ReductorMethod_Simple,		"Simple" },
+		{ ReductorMethod_Fast,			"Fast" },
 		{ ReductorMethod_HighQuality,	"High" },
 	};
 

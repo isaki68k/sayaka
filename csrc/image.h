@@ -106,8 +106,8 @@ typedef enum {
 
 // 減色&リサイズ方法。
 typedef enum {
-	ReductorMethod_Fast,		// 速度優先法
 	ReductorMethod_Simple,		// 単純一致法
+	ReductorMethod_Fast,		// 速度優先法
 	ReductorMethod_HighQuality,	// 二次元誤差分散法
 } ReductorMethod;
 
