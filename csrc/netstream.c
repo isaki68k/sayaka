@@ -96,7 +96,8 @@ netstream_open(const char *url, const struct diag *diag)
 	}
 	cookie->diag = diag;
 	// segs が NULL かも知れないと気をつけるのは嫌なので先に確保。
-	cookie->segs = malloc(sizeof(struct segment) * 16);
+	cookie->segcap = 16;
+	cookie->segs = malloc(sizeof(struct segment) * cookie->segcap);
 	if (cookie->segs == NULL) {
 		goto abort;
 	}
