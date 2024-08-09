@@ -49,6 +49,7 @@ struct optmap {
 
 static void version(void);
 static void usage(void);
+static void help_all(void);
 static int parse_opt(const struct optmap *, const char *);
 static bool do_file(const char *filename);
 
@@ -75,6 +76,7 @@ enum {
 	OPT_gray,
 	OPT_height,
 	OPT_help,
+	OPT_help_all,
 	OPT_output_format,
 	OPT_resize_axis,
 	OPT_version,
@@ -91,6 +93,7 @@ static const struct option longopts[] = {
 	{ "grey",			required_argument,	NULL,	OPT_gray },
 	{ "height",			required_argument,	NULL,	'h' },
 	{ "help",			no_argument,		NULL,	OPT_help, },
+	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ "ignore-error",	no_argument,		NULL,	'i' },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
@@ -219,6 +222,14 @@ main(int ac, char *av[])
 			opt_height = atoi(optarg);
 			break;
 
+		 case OPT_help:
+			usage();
+			exit(0);
+
+		 case OPT_help_all:
+			help_all();
+			exit(0);
+
 		 case 'i':
 			ignore_error = true;
 			break;
@@ -247,6 +258,7 @@ main(int ac, char *av[])
 
 		 case 'v':
 			version();
+			exit(0);
 
 		 case 'w':
 			opt_width = atoi(optarg);
@@ -254,6 +266,7 @@ main(int ac, char *av[])
 
 		 default:
 			usage();
+			exit(0);
 		}
 	}
 	ac -= optind;
@@ -261,6 +274,7 @@ main(int ac, char *av[])
 
 	if (ac == 0) {
 		usage();
+		exit(0);
 	}
 
 	if (output_filename != NULL && ac > 1) {
@@ -289,14 +303,61 @@ version(void)
 	printf(" Supported loader: %s\n", string_get(info));
 
 	string_free(info);
-	exit(0);
 }
 
 static void
 usage(void)
 {
 	fprintf(stderr,
-		"usage: %s [<options...>] [-|<files...>]\n", getprogname());
+		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
+	fprintf(stderr,
+"  -c <color>      : Color mode. 2, 8, 16, 256 (default:256)\n"
+"  --gray=<levvel> : Grayscale tone from 2 to 255 (default:255)\n"
+"  -w <width>      : Resize width to <width> pixel\n"
+"  -h <height>     : Resize height to <height> pixel\n"
+"  -d <method>     : Reduction method, none(simple) or high (default:high)\n"
+"  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
+"  --ignore-error\n"
+"  --debug-image=<0..2>\n"
+"  --debug-net  =<0..2>\n"
+"  --debug-sixel=<0..2>\n"
+	);
+}
+
+static void
+help_all(void)
+{
+	fprintf(stderr,
+		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
+	fprintf(stderr,
+"  -c <color> : Specify color mode (default: 256)\n"
+"     2   : monochrome (2-level grayscale)\n"
+"     8   : Fixed RGB 8 colors\n"
+"     16  : Fixed ANSI compatible 16 colors\n"
+"     256 : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
+"  --gray=<level> : Specify grayscale tone from 2 to 255 (default:255)\n"
+"  -w=<width>,  --width=<width>   : Resize width to <width> pixel.\n"
+"  -h=<height>, --height=<height> : Resize height to <height> pixel.\n"
+"  --resize-axis=<axis> : Specify an origin axis for resizing. (default:both)\n"
+"     both, width, height, long, short, and\n"
+"     scaledown-{both,width,height,long,short} or (sd*)\n"
+"  -d <method> : Specify reduction method (default: high)\n"
+"     none, simple : No diffusion\n"
+"     high         : Use 2D Diffusion (default: fs)\n"
+"  --diffusion=<diffusion> : Specify diffusion algorithm\n"
+"     fs       : Floyd Steinberg\n"
+"     atkinson : Atkinson\n"
+"     jajuni   : Jarvis, Judice, Ninke\n"
+"     stucki   : Stucki\n"
+"     burkes   : Burkes\n"
+"     2        : 2-pixels (right, down)\n"
+"     3        : 3-pixels (right, down, rightdown)\n"
+"  -O <fmt>, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
+"  --ignore-error\n"
+"  --debug-image=<0..2>\n"
+"  --debug-net  =<0..2>\n"
+"  --debug-sixel=<0..2>\n"
+	);
 	exit(0);
 }
 
