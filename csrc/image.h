@@ -142,17 +142,17 @@ typedef enum {
 typedef union {
 	uint32 u32;
 	struct {
-		uint8 x;
 		uint8 r;
 		uint8 g;
 		uint8 b;
+		uint8 a;
 	};
 } ColorRGB;
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-#define RGBToU32(r, g, b)	((uint32)(((r) << 8) | ((g) << 16) | ((b) << 24)))
+#define RGBToU32(r, g, b)	((uint32)(((r) <<  0) | ((g) << 8) | ((b) << 16)))
 #else
-#define RGBToU32(r, g, b)	((uint32)(((r) << 16) | ((g) << 8) | (b)))
+#define RGBToU32(r, g, b)	((uint32)(((r) << 24) | ((g) << 16) | ((b) << 8)))
 #endif
 
 struct image
@@ -161,6 +161,7 @@ struct image
 	// ストライドを足しやすいように uint8 のポインタにしておく。
 	// channels==1 ならインデックス。
 	// channels==3 なら R, G, B 順。
+	// channels==4 なら R, G, B, A 順。
 	uint8 *buf;
 
 	uint width;		// ピクセル幅
