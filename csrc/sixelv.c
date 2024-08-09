@@ -317,7 +317,7 @@ do_file(const char *infilename)
 
 		ifp = fdstream_open(STDIN_FILENO);
 		if (ifp == NULL) {
-			warn("fopen_fd(%s) failed", infilename);
+			warn("open(%s) failed", infilename);
 			return false;
 		}
 	} else {
