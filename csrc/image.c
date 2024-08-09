@@ -62,7 +62,6 @@ struct image_reductor_handle
 	ColorRGB *palette_buf;
 };
 
-static uint finder_mono(struct image_reductor_handle *, ColorRGB);
 static uint finder_gray(struct image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(struct image_reductor_handle *, ColorRGB);
 static uint finder_ansi16(struct image_reductor_handle *, ColorRGB);
@@ -79,7 +78,6 @@ static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
 static uint8 saturate_uint8(int);
 static int16 saturate_adderr(int16, int);
 
-static const ColorRGB palette_mono[];
 static const ColorRGB palette_fixed8[];
 static const ColorRGB palette_ansi16[];
 
@@ -363,12 +361,6 @@ image_reduct(
 
 	// 減色モードからパレットオペレーションを用意。
 	switch (param->color & ReductorColor_MASK) {
-	 case ReductorColor_Mono:
-		op->finder  = finder_mono;
-		op->palette = palette_mono;
-		op->palette_count = 2;
-		break;
-
 	 case ReductorColor_Gray:
 	 {
 		uint graycount = ((uint)param->color >> 8) + 1;
@@ -767,20 +759,6 @@ saturate_adderr(int16 a, int b)
 // パレット
 //
 
-// モノクロ2色パレット
-static const ColorRGB palette_mono[] = {
-	{ RGBToU32(  0,   0,   0) },
-	{ RGBToU32(255, 255, 255) },
-};
-
-// 色 c をモノクロパレットに変換する。
-// XXX gray 2 とマージすべき?
-static uint
-finder_mono(struct image_reductor_handle *op, ColorRGB c)
-{
-	return (c.r + c.g + c.b <= 128 * 3) ? 0 : 1;
-}
-
 // グレースケール用のパレットを作成して返す。
 static ColorRGB *
 image_alloc_gray_palette(uint count)
@@ -1027,7 +1005,6 @@ reductorcolor_tostr(ReductorColor color)
 		ReductorColor value;
 		const char *name;
 	} table[] = {
-		{ ReductorColor_Mono,		"Mono" },
 		{ ReductorColor_Gray,		"Gray" },
 		{ ReductorColor_GrayMean,	"GrayMean" },
 		{ ReductorColor_Fixed8,		"Fixed8" },

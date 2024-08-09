@@ -164,7 +164,7 @@ main(int ac, char *av[])
 		 {
 			int num = atoi(optarg);
 			switch (num) {
-			 case 2:	opt_color = ReductorColor_Mono;		break;
+			 case 2:	opt_color = ReductorColor_Gray | (1U << 8);	break;
 			 case 8:	opt_color = ReductorColor_Fixed8;	break;
 			 case 16:	opt_color = ReductorColor_ANSI16;	break;
 			 case 256:	opt_color = ReductorColor_Fixed256;	break;
