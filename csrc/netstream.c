@@ -122,6 +122,8 @@ netstream_open(const char *url, const struct diag *diag)
 	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 	CURLcode res = curl_easy_perform(curl);
 	if (res != CURLE_OK) {
 		Debug(diag, "%s: %s", __func__, curl_easy_strerror(res));
