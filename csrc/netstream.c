@@ -49,6 +49,7 @@ struct memstream_cookie {
 	uint seglen;	// 使用しているセグメント数
 	uint curseg;	// 現在ポインタがいるセグメント番号
 	uint pos;		// 先頭から数えた現在位置
+	const struct diag *diag;
 };
 
 static void netstream_global_init(void);
@@ -93,6 +94,7 @@ netstream_open(const char *url, const struct diag *diag)
 	if (cookie == NULL) {
 		goto abort;
 	}
+	cookie->diag = diag;
 	// segs が NULL かも知れないと気をつけるのは嫌なので先に確保。
 	cookie->segs = malloc(sizeof(struct segment) * 16);
 	if (cookie->segs == NULL) {
@@ -209,10 +211,8 @@ memstream_write(void *arg, const char *src, int srclen)
 	}
 	memcpy(seg->ptr, src, srclen);
 
-	if (1) {
-		printf("%s [%u/%u] offset=%u, len=%u\n", __func__,
-			cookie->seglen, cookie->segcap, seg->pos, seg->len);
-	}
+	Trace(cookie->diag, "%s: [%u/%u] offset=%u, len=%u", __func__,
+		cookie->seglen, cookie->segcap, seg->pos, seg->len);
 
 	cookie->pos += srclen;
 	cookie->seglen++;
