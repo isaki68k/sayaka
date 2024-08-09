@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <openssl/ssl.h>
 
 // メモリセグメント
 struct segment {
@@ -53,6 +54,7 @@ struct memstream_cookie {
 };
 
 static void netstream_global_init(void);
+static bool netstream_get_sessioninfo(CURL *, const struct diag *);
 static size_t curl_write_cb(void *, size_t, size_t, void *);
 static int memstream_read(void *, char *, int);
 static int memstream_write(void *, const char *, int);
@@ -86,7 +88,12 @@ netstream_open(const char *url, const struct diag *diag)
 {
 	struct memstream_cookie *cookie = NULL;
 	FILE *fp = NULL;
+	CURLM *mhandle = NULL;
 	CURL *curl = NULL;
+	CURLMcode mcode;
+	CURLcode res;
+	bool done;
+	bool info_shown;
 
 	netstream_global_init();
 
@@ -111,13 +118,18 @@ netstream_open(const char *url, const struct diag *diag)
 		goto abort;
 	}
 
+	mhandle = curl_multi_init();
+	if (mhandle == NULL) {
+		Debug(diag, "curl_multi_init() failed");
+		goto abort;
+	}
+
 	curl = curl_easy_init();
 	if (curl == NULL) {
 		Debug(diag, "curl_easy_init() failed");
 		goto abort;
 	}
 
-	// ダウンロード。
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
@@ -125,11 +137,44 @@ netstream_open(const char *url, const struct diag *diag)
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-	CURLcode res = curl_easy_perform(curl);
+
+	curl_multi_add_handle(mhandle, curl);
+
+	// curl/lib/easy.c の easy_transfer() あたり。
+	done = false;
+	mcode = CURLM_OK;
+	res = CURLE_OK;
+	info_shown = false;
+	while (done == false && mcode == 0) {
+		int still_running = 0;
+		mcode = curl_multi_poll(mhandle, NULL, 0, 1000, NULL);
+		if (mcode == 0) {
+			mcode = curl_multi_perform(mhandle, &still_running);
+		}
+
+		// セッション情報をデバッグ表示。
+		if (diag_get_level(diag) >= 1 && info_shown == false) {
+			info_shown = netstream_get_sessioninfo(curl, diag);
+		}
+
+		if (mcode == 0 && still_running == 0) {
+			int rc;
+			CURLMsg *msg = curl_multi_info_read(mhandle, &rc);
+			if (msg) {
+				res = msg->data.result;
+				done = true;
+			}
+		}
+	}
+
 	if (res != CURLE_OK) {
 		Debug(diag, "%s: %s", __func__, curl_easy_strerror(res));
 		goto abort;
 	}
+
+	curl_multi_remove_handle(mhandle, curl);
+	curl_easy_cleanup(curl);
+	curl_multi_cleanup(mhandle);
 
 	// 読み出し用にポインタを先頭に戻す。
 	fseek(fp, 0, SEEK_SET);
@@ -138,11 +183,57 @@ netstream_open(const char *url, const struct diag *diag)
 
  abort:
 	curl_easy_cleanup(curl);
+	curl_multi_cleanup(mhandle);
 	if (cookie) {
 		free(cookie->segs);
 		free(cookie);
 	}
 	return NULL;
+}
+
+// 接続中の TLS バージョン等をデバッグ表示する。
+// 処理できれば true を返す。
+static bool
+netstream_get_sessioninfo(CURL *curl, const struct diag *diag)
+{
+	struct curl_tlssessioninfo *csession;
+
+	// internals がいつからいつまで有効かは分からないっぽいので、
+	// 当たるまで調べる。うーん。
+	curl_easy_getinfo(curl, CURLINFO_TLS_SSL_PTR, &csession);
+	if (csession->internals == NULL) {
+		return false;
+	}
+
+	// バックエンドごとの処理。
+	if (csession->backend == CURLSSLBACKEND_OPENSSL) {
+		SSL_SESSION *sess = SSL_get_session(csession->internals);
+		int ssl_version = SSL_SESSION_get_protocol_version(sess);
+		char verbuf[16];
+		const char *ver;
+		switch (ssl_version) {
+		 case SSL3_VERSION:		ver = "SSLv3";		break;
+		 case TLS1_VERSION:		ver = "TLSv1.0";	break;
+		 case TLS1_1_VERSION:	ver = "TLSv1.1";	break;
+		 case TLS1_2_VERSION:	ver = "TLSv1.2";	break;
+		 case TLS1_3_VERSION:	ver = "TLSv1.3";	break;
+		 default:
+			snprintf(verbuf, sizeof(verbuf), "0x%04x", ssl_version);
+			ver = verbuf;
+			break;
+		}
+
+		const SSL_CIPHER *ssl_cipher = SSL_SESSION_get0_cipher(sess);
+		const char *cipher_name = SSL_CIPHER_get_name(ssl_cipher);
+
+		diag_print(diag, "Connected %s %s", ver, cipher_name);
+	} else
+	{
+		// 仕方ないので何か表示しておく。
+		diag_print(diag, "Connected");
+	}
+
+	return true;
 }
 
 // curl からのダウンロードコールバック関数
