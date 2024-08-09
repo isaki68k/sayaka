@@ -22,6 +22,9 @@ SRCS_common+=	image_sixel.c
 .if defined(HAVE_STB_IMAGE)
 SRCS_common+=	image_stb.c
 .endif
+.if defined(HAVE_LIBCURL)
+SRCS_common+=	netstream.c
+.endif
 SRCS_common+=	string.c
 SRCS_common+=	util.c
 

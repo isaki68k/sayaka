@@ -217,6 +217,17 @@ case "${with_libpng}" in
 	;;
 esac
 
+
+AC_ARG_WITH([libcurl],
+	AS_HELP_STRING([--with-libcurl], [Use libcurl for network (default:yes)]))
+case "${with_libcurl}" in
+ no)
+	;;
+ *)
+	CHECK_PKG([libcurl], [LIBCURL])
+	;;
+esac
+
 # Uniq
 CFLAGS=[`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 LIBS=[`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]

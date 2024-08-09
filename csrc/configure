@@ -640,6 +640,7 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+DEFINE_LIBCURL
 DEFINE_LIBPNG
 DEFINE_STB_IMAGE
 PKG_CONFIG
@@ -703,6 +704,7 @@ ac_user_opts='
 enable_option_checking
 with_stb_image
 with_libpng
+with_libcurl
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1335,6 +1337,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-stb-image        Use bundled stb-image (default:yes)
   --with-libpng           Use external libpng (default:auto)
+  --with-libcurl          Use libcurl for network (default:yes)
 
 Some influential environment variables:
   CC          C compiler command
@@ -4263,6 +4266,43 @@ printf "%s\n" "yes" >&6; }
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 		has_libpng=no
+	fi
+
+	;;
+esac
+
+
+
+# Check whether --with-libcurl was given.
+if test ${with_libcurl+y}
+then :
+  withval=$with_libcurl;
+fi
+
+case "${with_libcurl}" in
+ no)
+	;;
+ *)
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libcurl" >&5
+printf %s "checking for libcurl... " >&6; }
+	if ${PKG_CONFIG} --exists libcurl; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_LIBCURL 1" >>confdefs.h
+
+		DEFINE_LIBCURL=HAVE_LIBCURL=
+
+		has_libcurl=yes
+
+		H=`${PKG_CONFIG} --cflags libcurl`
+		L=`${PKG_CONFIG} --libs libcurl`
+		CFLAGS="${CFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		has_libcurl=no
 	fi
 
 	;;

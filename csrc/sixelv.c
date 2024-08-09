@@ -53,6 +53,7 @@ static int parse_opt(const struct optmap *, const char *);
 static bool do_file(const char *filename);
 
 static struct diag *diag_image;
+static struct diag *diag_net;
 static struct diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static ReductorMethod opt_method;
@@ -68,6 +69,7 @@ enum {
 	OPT__start = 0x7f,
 	OPT_color,
 	OPT_debug_image,
+	OPT_debug_net,
 	OPT_debug_sixel,
 	OPT_diffusion,
 	OPT_gray,
@@ -82,6 +84,7 @@ enum {
 static const struct option longopts[] = {
 	{ "color",			required_argument,	NULL,	'c' },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
+	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
 	{ "diffusion",		required_argument,	NULL,	OPT_diffusion },
 	{ "gray",			required_argument,	NULL,	OPT_gray },
@@ -144,8 +147,10 @@ int
 main(int ac, char *av[])
 {
 	int c;
+	int rv;
 
 	diag_image = diag_alloc();
+	diag_net   = diag_alloc();
 	diag_sixel = diag_alloc();
 
 	ignore_error = false;
@@ -183,6 +188,10 @@ main(int ac, char *av[])
 
 		 case OPT_debug_image:
 			diag_set_level(diag_image, atoi(optarg));
+			break;
+
+		 case OPT_debug_net:
+			diag_set_level(diag_net, atoi(optarg));
 			break;
 
 		 case OPT_debug_sixel:
@@ -259,13 +268,16 @@ main(int ac, char *av[])
 			"-o <output_filename> cannot be used with multiple input file.");
 	}
 
+	rv = 0;
 	for (int i = 0; i < ac; i++) {
 		if (do_file(av[i]) == false && ignore_error == false) {
-			return 1;
+			rv = 1;
+			break;
 		}
 	}
 
-	return 0;
+	netstream_global_cleanup();
+	return rv;
 }
 
 static void
@@ -320,6 +332,19 @@ do_file(const char *infilename)
 			warn("open(%s) failed", infilename);
 			return false;
 		}
+	} else if (strncmp(infilename, "http://",  7) == 0 ||
+	           strncmp(infilename, "https://", 8) == 0)
+	{
+#if defined(HAVE_LIBCURL)
+		ifp = netstream_open(infilename, diag_net);
+		if (ifp == NULL) {
+			warn("netstream_open(%s) failed", infilename);
+			return false;
+		}
+#else
+		warn("Network support has not been compiled.");
+		return false;
+#endif
 	} else {
 		ifp = fopen(infilename, "r");
 		if (ifp == NULL) {

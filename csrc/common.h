@@ -71,6 +71,10 @@ extern void diag_print(const struct diag *, const char *fmt, ...)
 // fdstream.c
 extern FILE *fdstream_open(int fd);
 
+// netstream.c
+extern FILE *netstream_open(const char *, const struct diag *);
+extern void netstream_global_cleanup(void);
+
 // string.c
 typedef struct string_ string;
 extern string *string_init(void);
