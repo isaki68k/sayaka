@@ -41,29 +41,6 @@ ADD_CC_WARN_IF(-Wstring-conversion)
 ADD_CC_WARN_IF(-Wtype-limits)
 AC_SUBST([WARNFLAGS])
 
-# Checks for header files.
-AC_CHECK_HEADERS([bsd/bsd.h])
-AC_CHECK_HEADERS([endian.h])
-AC_CHECK_HEADERS([sys/endian.h])
-AC_CHECK_HEADERS([sys/ttycom.h])
-
-# Ubuntu 20.04 の <sys/sysctl.h> は AC_CHECK_HEADERS() では yes になるけど
-# #warning が入ってて実際には使えない
-AC_MSG_CHECKING([for sys/sysctl.h])
-old_CFLAGS="${CFLAGS}"
-CFLAGS="${CFLAGS} -Wcpp -Werror"
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-		#include <sys/sysctl.h>
-	]], [[]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SYS_SYSCTL_H)
-	],[
-		AC_MSG_RESULT(no)
-	])
-CFLAGS="${old_CFLAGS}"
-
-
-# Checks for typedefs, structures, and compiler characteristics.
 
 AC_MSG_CHECKING(for __builtin_bswap16)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
@@ -120,21 +97,35 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 CFLAGS="${old_CFLAGS}"
 
 
-# Checks for library functions.
-
-# libbsd on Linux
-AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
-if test "x${has_getprogname}" = "xno"; then
-	AC_MSG_FAILURE([getprogname is not found.
-	On Ubuntu, sudo apt install libbsd-dev])
-fi
-
-AC_CHECK_TOOL([PKG_CONFIG], [pkg-config], [:])
-if test x"${PKG_CONFIG}" = x":"; then
-	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found.
-	On NetBSD(pkgsrc), install pkgsrc/devel/pkgconf
-	On Ubuntu, sudo apt install pkg-config])
-fi
+# CHECK_HEADER($1=header, $2=HEADER)
+AC_DEFUN([CHECK_HEADER], [
+	AC_MSG_CHECKING([for $1])
+	for path in ${PATHS}; do
+		old_CFLAGS=${CFLAGS}
+		case ${path} in
+		 none)
+			;;
+		 *)
+			CFLAGS="${CFLAGS} -I${path}/include"
+			;;
+		esac
+		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+			#include <$1>
+		], [])], [
+			has_$2=yes
+			break
+		], [
+			has_$2=no
+		])
+		CFLAGS=${old_CFLAGS}
+	done
+	if test x"${has_$2}" = x"yes"; then
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE_$2])
+	else
+		AC_MSG_RESULT([no])
+	fi
+])
 
 # CHECK_PKG($1=pkgname, $2=PKGNAME)
 AC_DEFUN([CHECK_PKG], [
@@ -187,6 +178,46 @@ AC_DEFUN([CHECK_LIB], [
 ])
 
 PATHS="none /usr/pkg /usr/local"
+
+
+# Checks for header files.
+AC_CHECK_HEADERS([bsd/bsd.h])
+AC_CHECK_HEADERS([endian.h])
+AC_CHECK_HEADERS([sys/endian.h])
+AC_CHECK_HEADERS([sys/ttycom.h])
+
+# Ubuntu 20.04 の <sys/sysctl.h> は AC_CHECK_HEADERS() では yes になるけど
+# #warning が入ってて実際には使えない
+AC_MSG_CHECKING([for sys/sysctl.h])
+old_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -Wcpp -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+		#include <sys/sysctl.h>
+	]], [[]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SYS_SYSCTL_H)
+	],[
+		AC_MSG_RESULT(no)
+	])
+CFLAGS="${old_CFLAGS}"
+
+# Checks for typedefs, structures, and compiler characteristics.
+
+# Checks for library functions.
+
+# libbsd on Linux
+AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
+if test "x${has_getprogname}" = "xno"; then
+	AC_MSG_FAILURE([getprogname is not found.
+	On Ubuntu, sudo apt install libbsd-dev])
+fi
+
+AC_CHECK_TOOL([PKG_CONFIG], [pkg-config], [:])
+if test x"${PKG_CONFIG}" = x":"; then
+	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found.
+	On NetBSD(pkgsrc), install pkgsrc/devel/pkgconf
+	On Ubuntu, sudo apt install pkg-config])
+fi
 
 # stb-image は同梱して持っていて、使うか使わないかの選択なので、
 # 実際には --with/without ではなく --enable/disable なのだが
