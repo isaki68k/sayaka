@@ -185,7 +185,7 @@ struct image_reduct_param {
 	ReductorColor color;
 };
 extern struct image *image_create(uint width_, uint height_, uint channels_);
-extern struct image *image_create_fp(FILE *, const struct diag *);
+extern struct image *image_read_fp(FILE *, const struct diag *);
 extern void image_free(struct image *);
 extern uint image_get_stride(const struct image *);
 extern void image_get_preferred_size(uint current_width, uint current_height,

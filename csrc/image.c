@@ -259,7 +259,7 @@ image_get_loaderinfo(void)
 // 読み込めなければ NULL を返す。
 // fp はシーク可能であること。
 struct image *
-image_create_fp(FILE *fp, const struct diag *diag)
+image_read_fp(FILE *fp, const struct diag *diag)
 {
 	int ok = -1;
 

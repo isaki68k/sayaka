@@ -329,9 +329,9 @@ do_file(const char *infilename)
 	}
 
 	// 読み込み。
-	struct image *srcimg = image_create_fp(ifp, diag_image);
+	struct image *srcimg = image_read_fp(ifp, diag_image);
 	if (srcimg == NULL) {
-		warn("image_create_fp(%s) failed", infilename);
+		warn("image_read_fp(%s) failed", infilename);
 		goto abort1;
 	}
 
