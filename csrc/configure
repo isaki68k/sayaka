@@ -1338,7 +1338,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-stb-image        Use bundled stb-image (default:yes)
-  --with-libpng           Use external libpng (default:auto)
+  --with-libpng           Use libpng for PNG instead of stb_image (default:no)
   --with-libwebp          Use libwebp (default:yes)
   --with-libcurl          Use libcurl for network (default:yes)
 
@@ -4283,8 +4283,8 @@ case "${with_stb_image}" in
 	;;
 esac
 
-# 他の画像ライブラリは、デフォルトでは探してあれば使う、
-# no なら使わない(探さない)。
+# libpng はデフォルト使用しない。
+# --with-libpng が指定されたら、なければエラー終了する。
 
 
 # Check whether --with-libpng was given.
@@ -4293,10 +4293,8 @@ then :
   withval=$with_libpng;
 fi
 
-case "${with_libpng}" in
- no)
-	;;
- *)
+case ${with_libpng} in
+ yes)
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libpng" >&5
 printf %s "checking for libpng... " >&6; }
@@ -4319,9 +4317,17 @@ printf "%s\n" "no" >&6; }
 		has_libpng=no
 	fi
 
+
+	if test x"${has_libpng}" \!= x"yes"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "--with-libpng is specified but libpng not found.
+See 'config.log' for more details" "$LINENO" 5; }
+	fi
+	;;
+ *)
 	;;
 esac
-
 
 # WebP は stb_image にフォールバック出来ない (し Misskey では事実上必須なので)
 # --without-libwebp が明示されない限り、なければエラー終了する。

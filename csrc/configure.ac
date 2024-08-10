@@ -235,19 +235,23 @@ case "${with_stb_image}" in
 	;;
 esac
 
-# 他の画像ライブラリは、デフォルトでは探してあれば使う、
-# no なら使わない(探さない)。
+# libpng はデフォルト使用しない。
+# --with-libpng が指定されたら、なければエラー終了する。
 
 AC_ARG_WITH([libpng],
-	AS_HELP_STRING([--with-libpng], [Use external libpng (default:auto)]))
-case "${with_libpng}" in
- no)
+	AS_HELP_STRING([--with-libpng],
+		[Use libpng for PNG instead of stb_image (default:no)]))
+case ${with_libpng} in
+ yes)
+	CHECK_PKG([libpng], [LIBPNG])
+
+	if test x"${has_libpng}" \!= x"yes"; then
+		AC_MSG_FAILURE([--with-libpng is specified but libpng not found.])
+	fi
 	;;
  *)
-	CHECK_PKG([libpng], [LIBPNG])
 	;;
 esac
-
 
 # WebP は stb_image にフォールバック出来ない (し Misskey では事実上必須なので)
 # --without-libwebp が明示されない限り、なければエラー終了する。
