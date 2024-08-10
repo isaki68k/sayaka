@@ -49,7 +49,6 @@ image_png_match(FILE *fp, const struct diag *diag)
 
 	// マジックを確認。
 	if (png_sig_cmp(magic, 0, sizeof(magic)) != 0) {
-		Debug(diag, "%s: Bad magic", __func__);
 		return false;
 	}
 
