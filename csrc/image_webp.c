@@ -36,6 +36,11 @@
 
 #define INCBUFSIZE	(4000)
 
+#define TRANSBG		(0xe1)	// ?
+
+static bool read_all(uint8 **, size_t *, FILE *, uint32,
+	const struct diag *diag);
+static void image_webp_rgba2rgb(uint8 *, const uint8 *, uint, uint, uint, uint);
 static bool image_webp_loadinc(struct image *, FILE *, WebPIDecoder *,
 	const struct diag *diag);
 
@@ -177,6 +182,32 @@ image_webp_read(FILE *fp, const struct diag *diag)
 		// アルファチャンネルがあるとインクリメンタル処理できないっぽい?
 		Debug(diag, "%s: use RGBA decoder", __func__);
 
+		// ファイル全体を読み込む。
+		if (read_all(&filebuf, &filelen, fp, filesize, diag) == false) {
+			goto abort;
+		}
+
+		// RGBA 出力バッファを用意。
+		uint outstride = width * 4;
+		uint outbufsize = outstride * height;
+
+		// RGBA で出力。
+		config.output.colorspace = MODE_RGBA;
+		config.output.u.RGBA.size = outbufsize;
+		config.output.u.RGBA.stride = outstride;
+		int status = WebPDecode(filebuf, filelen, &config);
+		if (status != VP8_STATUS_OK) {
+			Debug(diag, "%s: WebpDecode() failed", __func__);
+			goto abort_alpha;
+		}
+
+		// RGB に変換。
+		image_webp_rgba2rgb(img->buf, config.output.u.RGBA.rgba,
+			width, height, outstride, TRANSBG);
+		success = true;
+ abort_alpha:
+		WebPFreeDecBuffer(&config.output);
+
 	} else {
 		// インクリメンタル処理が出来る。
 		Debug(diag, "%s: use incremental RGB decoder", __func__);
@@ -208,6 +239,59 @@ image_webp_read(FILE *fp, const struct diag *diag)
 		img = NULL;
 	}
 	return img;
+}
+
+// *buf から始まる長さ *buflen (長さは 0 ではないかも知れない) のバッファを
+// newsize にリサイズし、そこに fp から読み込んで追加する。
+// 成功すれば、buf と buflen を更新し true を返す。
+static bool
+read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
+	const struct diag *diag)
+{
+	uint8 *buf = *bufp;
+	size_t len = *buflenp;
+	size_t pos = len;
+
+	uint8 *newbuf = realloc(buf, newsize);
+	if (newbuf == NULL) {
+		return false;
+	}
+	buf = newbuf;
+	len = newsize;
+	// 更新出来たこの時点でもう書き戻しておくほうがいい。
+	*bufp = buf;
+	*buflenp = len;
+
+	while (pos < newsize) {
+		size_t n = fread(buf + pos, 1, len - pos, fp);
+		if (n == 0) {
+			Debug(diag, "%s: fread: Unexpected EOF", __func__);
+			return false;
+		}
+		pos += n;
+	}
+
+	return true;
+}
+
+#define Grad(fg, bg, alpha)	\
+	(((fg) * (alpha) / 255) + ((bg) * (255 - (alpha)) / 255))
+
+// WebP の RGBA を RGB に変換する。
+static void
+image_webp_rgba2rgb(uint8 *d, const uint8 *src,
+	uint width, uint height, uint srcstride, uint bgcolor)
+{
+	for (uint y = 0; y < height; y++) {
+		const uint8 *s = src + y * srcstride;
+		for (uint x = 0; x < width; x++) {
+			uint alpha = s[3];
+			*d++ = Grad(s[0], bgcolor, alpha);	// R
+			*d++ = Grad(s[1], bgcolor, alpha);	// G
+			*d++ = Grad(s[2], bgcolor, alpha);	// B
+			s += 4;
+		}
+	}
 }
 
 // インクリメンタル処理が出来る場合。
