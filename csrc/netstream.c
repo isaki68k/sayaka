@@ -89,7 +89,8 @@ netstream_global_cleanup(void)
 
 // url をダウンロードしてファイルストリームにして返す。
 FILE *
-netstream_open(const char *url, const struct diag *diag)
+netstream_open(const char *url, const struct netstream_opt *opt,
+	const struct diag *diag)
 {
 	struct memstream_cookie *cookie = NULL;
 	FILE *fp = NULL;
@@ -142,10 +143,29 @@ netstream_open(const char *url, const struct diag *diag)
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, (long)0);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, (long)0);
+	if (opt->use_rsa_only) {
+		// 通称 RSA が使えるのは TLSv1.2 以下のみ。
+		curl_easy_setopt(curl, CURLOPT_SSLVERSION,
+			(long)CURL_SSLVERSION_MAX_TLSv1_2);
+
+		// cipher_list はバックエンドに垂れ流しているだけなので、
+		// バックエンドごとに指定方法が違う。うーんこの…。
+		// そして現在のバックエンドは文字列判定しか出来ないっぽい。
+		curl_version_info_data *info = curl_version_info(CURLVERSION_NOW);
+		const char *ciphers = NULL;
+		if (strncmp(info->ssl_version, "OpenSSL", 7) == 0) {
+			ciphers = "AES128-SHA";
+		} else {
+			Debug(diag, "Not supported backend ssl_version \"%s\"",
+				info->ssl_version);
+			goto abort;
+		}
+		curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, ciphers);
+	}
 
 	curl_multi_add_handle(mhandle, curl);
 
-	// curl/lib/easy.c の easy_transfer() あたり。
+	// curl_easy_perform() 相当。curl/lib/easy.c の easy_transfer() あたり。
 	done = false;
 	mcode = CURLM_OK;
 	res = CURLE_OK;

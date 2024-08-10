@@ -72,7 +72,12 @@ extern void diag_print(const struct diag *, const char *fmt, ...)
 extern FILE *fdstream_open(int fd);
 
 // netstream.c
-extern FILE *netstream_open(const char *, const struct diag *);
+struct netstream_opt {
+	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
+	bool use_rsa_only;
+};
+extern FILE *netstream_open(const char *, const struct netstream_opt *,
+	const struct diag *);
 extern void netstream_global_cleanup(void);
 
 // string.c

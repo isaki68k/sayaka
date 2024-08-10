@@ -65,9 +65,11 @@ static uint opt_width;
 static ResizeAxis opt_resize_axis;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
+static bool opt_use_rsa_only;
 
 enum {
 	OPT__start = 0x7f,
+	OPT_ciphers,
 	OPT_color,
 	OPT_debug_image,
 	OPT_debug_net,
@@ -84,6 +86,7 @@ enum {
 };
 
 static const struct option longopts[] = {
+	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	'c' },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
@@ -157,14 +160,15 @@ main(int ac, char *av[])
 	diag_sixel = diag_alloc();
 
 	ignore_error = false;
+	opt_color = ReductorColor_Fixed256;
 	opt_method = ReductorMethod_HighQuality;
 	opt_diffuse = RDM_FS;
-	opt_color = ReductorColor_Fixed256;
 	opt_resize_axis = ResizeAxis_Both;
 	opt_height = 0;
 	opt_width = 0;
 	output_filename = NULL;
 	output_format = OutputFormat_SIXEL;
+	opt_use_rsa_only = false;
 
 	while ((c = getopt_long(ac, av, "c:d:h:iO:o:vw:", longopts, NULL)) != -1) {
 		switch (c) {
@@ -181,6 +185,15 @@ main(int ac, char *av[])
 			}
 			break;
 		 }
+
+		 case OPT_ciphers:
+			// 今のところ "RSA" (大文字) しか指定できない。
+			if (strcmp(optarg, "RSA") == 0) {
+				opt_use_rsa_only = true;
+			} else {
+				errx(1, "Invalid ciphers: '%s'", optarg);
+			}
+			break;
 
 		 case 'd':
 			opt_method = parse_opt(map_reductor_method, optarg);
@@ -397,7 +410,9 @@ do_file(const char *infilename)
 	           strncmp(infilename, "https://", 8) == 0)
 	{
 #if defined(HAVE_LIBCURL)
-		ifp = netstream_open(infilename, diag_net);
+		struct netstream_opt opt;
+		opt.use_rsa_only = opt_use_rsa_only;
+		ifp = netstream_open(infilename, &opt, diag_net);
 		if (ifp == NULL) {
 			warn("netstream_open(%s) failed", infilename);
 			return false;
