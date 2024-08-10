@@ -34,6 +34,21 @@
 #include <string.h>
 #include <webp/decode.h>
 
+// <webp/demux.h> has cast warnings...
+#if defined(__clang__)
+_Pragma("clang diagnostic push")
+_Pragma("clang diagnostic ignored \"-Wcast-qual\"")
+#else
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wcast-qual\"")
+#endif
+#include <webp/demux.h>
+#if defined(__clang__)
+_Pragma("clang diagnostic pop")
+#else
+_Pragma("GCC diagnostic pop")
+#endif
+
 #define INCBUFSIZE	(4000)
 
 #define TRANSBG		(0xe1)	// ?
@@ -177,6 +192,50 @@ image_webp_read(FILE *fp, const struct diag *diag)
 	if (config.input.has_animation) {
 		// アニメーションは処理が全然別。要 -lwebpdemux。
 		Debug(diag, "%s: Use frame decoder", __func__);
+
+		WebPAnimDecoder *dec = NULL;
+		WebPAnimDecoderOptions opt;
+		WebPData data;
+		uint8 *outbuf;
+		int stride;
+		int timestamp;
+
+		// ファイル全体を読み込む。
+		if (read_all(&filebuf, &filelen, fp, filesize, diag) == false) {
+			goto abort_anime;
+		}
+
+		WebPAnimDecoderOptionsInit(&opt);
+		opt.color_mode = MODE_RGBA;
+		data.bytes = filebuf;
+		data.size = filelen;
+		dec = WebPAnimDecoderNew(&data, &opt);
+		if (dec == NULL) {
+			Debug(diag, "%s: WebpAnimDecoderNew() failed", __func__);
+			goto abort_anime;
+		}
+
+		// 次のフレームがある間ループで回るやつだがここでは最初の1枚だけ。
+		if (WebPAnimDecoderHasMoreFrames(dec) == false) {
+			Debug(diag, "%s: No frames?", __func__);
+			goto abort_anime;
+		}
+
+		// このフレームをデコード。outbuf にセットされて返ってくるらしい。
+		if (WebPAnimDecoderGetNext(dec, &outbuf, &timestamp) == false) {
+			Debug(diag, "%s: WebpAnimDecoderGetNext() failed", __func__);
+			goto abort_anime;
+		}
+
+		// RGB に変換。
+		stride = width * 4;
+		image_webp_rgba2rgb(img->buf, outbuf, width, height, stride, TRANSBG);
+		success = true;
+
+ abort_anime:
+		if (dec) {
+			WebPAnimDecoderDelete(dec);
+		}
 
 	} else if (config.input.has_alpha) {
 		// アルファチャンネルがあるとインクリメンタル処理できないっぽい?
