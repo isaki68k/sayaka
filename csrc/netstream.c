@@ -192,6 +192,71 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 		}
 	}
 
+	// 所要時間を表示。
+	if (diag_get_level(diag) >= 1) {
+		int r;
+		curl_off_t queue_time;
+		curl_off_t name_time;
+		curl_off_t connect_time;
+		curl_off_t appconn_time;
+		curl_off_t prexfer_time;
+		curl_off_t start_time;
+		curl_off_t total_time;
+
+		r = curl_easy_getinfo(curl, CURLINFO_QUEUE_TIME_T, &queue_time);
+		if (r != CURLE_OK) {
+			printf("err\n");
+		}
+		r = curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME_T, &name_time);
+		if (r != CURLE_OK) {
+			printf("err\n");
+		}
+		r = curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME_T, &connect_time);
+		if (r != CURLE_OK) {
+			printf("err\n");
+		}
+		r = curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME_T, &appconn_time);
+		if (r != CURLE_OK) {
+			printf("err\n");
+		}
+		r = curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &prexfer_time);
+		if (r != CURLE_OK) {
+			printf("err\n");
+		}
+		r = curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME_T, &start_time);
+		if (r != CURLE_OK) {
+			printf("err\n");
+		}
+		r = curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &total_time);
+		if (r != CURLE_OK) {
+			printf("err\n");
+		}
+
+		// いずれも開始時点(どこ?)からの積算[usec]なので、個別の時間に分ける。
+		// queue_time はほぼ固定費なので無視。amd64 で 130usec 程度。
+		// pretransfer も無視していい?。amd64 で 40usec 程度。
+		// APPCONNECT は HTTP 時は 0 が返ってくる。
+
+		uint32 name_ms = (uint32)(name_time - queue_time) / 1000;
+		uint32 conn_ms = (uint32)(connect_time - name_time) / 1000;
+		char appbuf[32];
+		appbuf[0] = '\0';
+		if (appconn_time != 0) {
+			uint32 app_ms = (uint32)(appconn_time - connect_time) / 1000;
+			snprintf(appbuf, sizeof(appbuf), " appconn=%u", app_ms);
+		}
+		uint32 start_ms = (uint32)(start_time - prexfer_time) / 1000;
+		uint32 total_ms = (uint32)total_time / 1000;
+
+		diag_print(diag,
+			"Profile: namelookup=%u connect=%u%s start=%u: total %u msec",
+			name_ms,
+			conn_ms,
+			appbuf,
+			start_ms,
+			total_ms);
+	}
+
 	if (res != CURLE_OK) {
 		Debug(diag, "%s: %s", __func__, curl_easy_strerror(res));
 		goto abort;
