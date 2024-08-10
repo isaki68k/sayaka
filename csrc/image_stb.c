@@ -65,16 +65,6 @@ _Pragma("clang diagnostic pop")
 _Pragma("GCC diagnostic pop")
 #endif
 
-static int stb_read_cb(void *, char *, int);
-static void stb_skip_cb(void *, int);
-static int stb_eof_cb(void *);
-
-static stbi_io_callbacks stb_callbacks = {
-	.read = stb_read_cb,
-	.skip = stb_skip_cb,
-	.eof  = stb_eof_cb,
-};
-
 bool
 image_stb_match(FILE *fp, const struct diag *diag)
 {
@@ -83,7 +73,7 @@ image_stb_match(FILE *fp, const struct diag *diag)
 	int h;
 	int ch;
 
-	ok = stbi_info_from_callbacks(&stb_callbacks, fp, &w, &h, &ch);
+	ok = stbi_info_from_file(fp, &w, &h, &ch);
 	if (ok) {
 		Debug(diag, "%s: OK", __func__);
 	}
@@ -99,8 +89,7 @@ image_stb_read(FILE *fp, const struct diag *diag)
 	int height;
 	int nch;
 
-	data = stbi_load_from_callbacks(&stb_callbacks, fp,
-		&width, &height, &nch, 3);
+	data = stbi_load_from_file(fp, &width, &height, &nch, 3);
 	if (data == NULL) {
 		return false;
 	}
@@ -112,45 +101,4 @@ image_stb_read(FILE *fp, const struct diag *diag)
 
 	stbi_image_free(data);
 	return img;
-}
-
-// コールバック (check と read は同じでいい)
-
-int
-stb_read_cb(void *user, char *data, int size)
-{
-	FILE *fp = (FILE *)user;
-
-	int total = 0;
-	while (total < size) {
-		size_t r = fread(data + total, 1, size - total, fp);
-		if (r <= 0) {
-			break;
-		}
-		total += r;
-	}
-	return total;
-}
-
-void
-stb_skip_cb(void *user, int nbytes)
-{
-	char buf[1024];
-
-	while (nbytes > 0) {
-		int n = MIN(nbytes, (int)sizeof(buf));
-		int r = stb_read_cb(user, buf, n);
-		if (r <= 0) {
-			break;
-		}
-		nbytes -= r;
-	}
-}
-
-int
-stb_eof_cb(void *user)
-{
-	FILE *fp = (FILE *)user;
-
-	return feof(fp);
 }
