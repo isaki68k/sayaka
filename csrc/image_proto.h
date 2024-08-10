@@ -27,9 +27,6 @@
 #ifndef sayaka_image_proto_h
 #define sayaka_image_proto_h
 
-#if defined(HAVE_LIBJPEG)
-#define USE_LIBJPEG
-#endif
 #if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
 #endif

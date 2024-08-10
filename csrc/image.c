@@ -246,9 +246,6 @@ image_get_loaderinfo(void)
 } while (0)
 
 	// ここはアルファベット順。
-#if defined(USE_LIBJPEG)
-	ADD("libjpeg");
-#endif
 #if defined(USE_LIBPNG)
 	ADD("libpng");
 #endif
@@ -276,15 +273,6 @@ image_read_fp(FILE *fp, const struct diag *diag)
 	fseek(fp, 0, SEEK_SET);
 	if (ok) {
 		return image_webp_read(fp, diag);
-	}
-#endif
-
-#if defined(USE_LIBJPEG)
-	ok = image_jpeg_match(fp, diag)
-	Trace(diag, "%s: jpeg %u", __func__, ok);
-	fseek(fp, 0, SEEK_SET);
-	if (ok) {
-		return image_jpeg_read(fp, diag);
 	}
 #endif
 
