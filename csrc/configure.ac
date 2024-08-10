@@ -256,6 +256,49 @@ case "${with_libcurl}" in
 	;;
  *)
 	CHECK_PKG([libcurl], [LIBCURL])
+
+	AC_MSG_CHECKING([whether the libcurl has mbedtls backend])
+	AC_RUN_IFELSE([AC_LANG_PROGRAM([
+			#include <curl/curl.h>
+		], [
+			const curl_ssl_backend **list;
+			int i;
+			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
+			for (i = 0; list@<:@i@:>@; i++) {
+				if (list@<:@i@:>@->id == CURLSSLBACKEND_MBEDTLS) {
+					return 0;
+				}
+			}
+			return 1;
+		])], [
+			AC_MSG_RESULT([yes])
+			AC_DEFINE([LIBCURL_HAS_MBEDTLS_BACKEND])
+		], [
+			AC_MSG_RESULT([no])
+		]
+	)
+
+	AC_MSG_CHECKING([whether the libcurl has openssl backend])
+	AC_RUN_IFELSE([AC_LANG_PROGRAM([
+			#include <curl/curl.h>
+		], [
+			const curl_ssl_backend **list;
+			int i;
+			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
+			for (i = 0; list@<:@i@:>@; i++) {
+				if (list@<:@i@:>@->id == CURLSSLBACKEND_OPENSSL) {
+					return 0;
+				}
+			}
+			return 1;
+		])], [
+			AC_MSG_RESULT([yes])
+			AC_DEFINE([LIBCURL_HAS_OPENSSL_BACKEND])
+		], [
+			AC_MSG_RESULT([no])
+		]
+	)
+
 	;;
 esac
 

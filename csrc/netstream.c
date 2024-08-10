@@ -35,7 +35,12 @@
 #include <errno.h>
 #include <string.h>
 #include <curl/curl.h>
+#if defined(LIBCURL_HAS_MBEDTLS_BACKEND)
+#include <mbedtls/ssl.h>
+#endif
+#if defined(LIBCURL_HAS_OPENSSL_BACKEND)
 #include <openssl/ssl.h>
+#endif
 
 // メモリセグメント
 struct segment {
@@ -206,6 +211,15 @@ netstream_get_sessioninfo(CURL *curl, const struct diag *diag)
 	}
 
 	// バックエンドごとの処理。
+#if defined(LIBCURL_HAS_MBEDTLS_BACKEND)
+	if (csession->backend == CURLSSLBACKEND_MBEDTLS) {
+		mbedtls_ssl_context *ssl = (mbedtls_ssl_context *)csession->internals;
+		diag_print(diag, "Connected %s %s",
+			mbedtls_ssl_get_version(ssl),
+			mbedtls_ssl_get_ciphersuite(ssl));
+	} else
+#endif
+#if defined(LIBCURL_HAS_OPENSSL_BACKEND)
 	if (csession->backend == CURLSSLBACKEND_OPENSSL) {
 		SSL_SESSION *sess = SSL_get_session(csession->internals);
 		int ssl_version = SSL_SESSION_get_protocol_version(sess);
@@ -228,6 +242,7 @@ netstream_get_sessioninfo(CURL *curl, const struct diag *diag)
 
 		diag_print(diag, "Connected %s %s", ver, cipher_name);
 	} else
+#endif
 	{
 		// 仕方ないので何か表示しておく。
 		diag_print(diag, "Connected");
