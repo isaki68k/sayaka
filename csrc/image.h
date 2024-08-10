@@ -34,6 +34,7 @@
 #include "header.h"
 
 struct diag;
+struct pstream;
 typedef struct string_ string;
 
 // リサイズの基準軸。
@@ -186,7 +187,7 @@ struct image_reduct_opt {
 };
 extern void image_reduct_opt_init(struct image_reduct_opt *);
 extern struct image *image_create(uint width_, uint height_, uint channels_);
-extern struct image *image_read_fp(FILE *, const struct diag *);
+extern struct image *image_read_pstream(struct pstream *, const struct diag *);
 extern void image_free(struct image *);
 extern uint image_get_stride(const struct image *);
 extern void image_get_preferred_size(uint current_width, uint current_height,

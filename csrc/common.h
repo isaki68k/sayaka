@@ -68,9 +68,6 @@ extern void diag_set_level(struct diag *, int level);
 extern void diag_print(const struct diag *, const char *fmt, ...)
 	__attribute__((format(printf, 2, 3)));
 
-// fdstream.c
-extern FILE *fdstream_open(int fd);
-
 // netstream.c
 struct netstream_opt {
 	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
@@ -80,6 +77,14 @@ extern void netstream_opt_init(struct netstream_opt *);
 extern FILE *netstream_open(const char *, const struct netstream_opt *,
 	const struct diag *);
 extern void netstream_global_cleanup(void);
+
+// pstream.c
+struct pstream;
+extern struct pstream *pstream_init_fp(FILE *);
+extern struct pstream *pstream_init_fd(int);
+extern void pstream_cleanup(struct pstream *);
+extern FILE *pstream_open_for_peek(struct pstream *);
+extern FILE *pstream_open_for_read(struct pstream *);
 
 // string.c
 typedef struct string_ string;

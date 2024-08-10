@@ -13,7 +13,6 @@ CFLAGS+=	-Wall -Werror ${WARNFLAGS}
 CFLAGS+=	-I..
 
 SRCS_common+=	diag.c
-SRCS_common+=	fdstream.c
 SRCS_common+=	image.c
 .if defined(HAVE_LIBPNG)
 SRCS_common+=	image_png.c
@@ -26,6 +25,7 @@ SRCS_common+=	image_stb.c
 SRCS_common+=	image_webp.c
 .endif
 SRCS_common+=	netstream.c
+SRCS_common+=	pstream.c
 SRCS_common+=	string.c
 SRCS_common+=	util.c
 

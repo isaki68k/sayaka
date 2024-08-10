@@ -33,6 +33,7 @@
 #include "sixelv.h"
 #include "image.h"
 #include <err.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <string.h>
 
@@ -393,21 +394,17 @@ static bool
 do_file(const char *infilename)
 {
 	bool rv = false;
+	struct pstream *pstream = NULL;
+	struct image *srcimg = NULL;
+	struct image *resimg = NULL;
+	int ifd = -1;
 	FILE *ifp = NULL;
 	FILE *ofp = NULL;
 	uint dst_width;
 	uint dst_height;
 
-	if (strcmp(infilename, "-") == 0) {
-		infilename = "stdin";
-
-		ifp = fdstream_open(STDIN_FILENO);
-		if (ifp == NULL) {
-			warn("open(%s) failed", infilename);
-			return false;
-		}
-	} else if (strncmp(infilename, "http://",  7) == 0 ||
-	           strncmp(infilename, "https://", 8) == 0)
+	if (strncmp(infilename, "http://",  7) == 0 ||
+        strncmp(infilename, "https://", 8) == 0)
 	{
 #if defined(HAVE_LIBCURL)
 		ifp = netstream_open(infilename, &netopt, diag_net);
@@ -415,23 +412,42 @@ do_file(const char *infilename)
 			warn("netstream_open(%s) failed", infilename);
 			return false;
 		}
+
+		// XXX とりあえず
+		pstream = pstream_init_fp(ifp);
+		if (pstream == NULL) {
+			warn("pstream_init_fp(%s) failed", infilename);
+			goto abort;
+		}
 #else
 		warnx("%s: Network support has not been compiled", infilename);
 		return false;
 #endif
 	} else {
-		ifp = fopen(infilename, "r");
-		if (ifp == NULL) {
-			warn("fopen(%s) failed", infilename);
-			return false;
+		// 標準入力かファイル名
+		if (strcmp(infilename, "-") == 0) {
+			infilename = "stdin";
+			ifd = STDIN_FILENO;
+		} else {
+			ifd = open(infilename, O_RDONLY);
+			if (ifd < 0) {
+				warn("open(%s) failed", infilename);
+				return false;
+			}
+		}
+
+		pstream = pstream_init_fd(ifd);
+		if (pstream == NULL) {
+			warn("pstream_init_fd(%s) failed", infilename);
+			goto abort;
 		}
 	}
 
 	// 読み込み。
-	struct image *srcimg = image_read_fp(ifp, diag_image);
+	srcimg = image_read_pstream(pstream, diag_image);
 	if (srcimg == NULL) {
 		warn("image_read_fp(%s) failed", infilename);
-		goto abort1;
+		goto abort;
 	}
 
 	// いい感じにサイズを決定。
@@ -444,11 +460,10 @@ do_file(const char *infilename)
 		reductorcolor_tostr(imageopt.color));
 
 	// 減色 & リサイズ
-	struct image *resimg = image_reduct(srcimg, dst_width, dst_height,
-		&imageopt, diag_image);
+	resimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
 	if (resimg == NULL) {
 		warnx("reductor failed");
-		goto abort2;
+		goto abort;
 	}
 
 	// 出力先をオープン。
@@ -458,7 +473,7 @@ do_file(const char *infilename)
 		ofp = fopen(output_filename, "w");
 		if (ofp == NULL) {
 			warn("fopen(%s) failed", output_filename);
-			goto abort3;
+			goto abort;
 		}
 	}
 
@@ -469,27 +484,32 @@ do_file(const char *infilename)
 		struct image *bmpimg = image_coloring(resimg);
 		if (bmpimg == NULL) {
 			warn("image_coloring(%s) failed", output_filename);
-			goto abort4;
+			goto abort;
 		}
 		bool r = image_bmp_write(ofp, bmpimg, diag_image);
 		image_free(bmpimg);
 		if (r == false) {
-			goto abort4;
+			goto abort;
 		}
 	}
 	fflush(ofp);
 
 	rv = true;
- abort4:
+ abort:
 	if (output_filename != NULL) {
-		fclose(ofp);
+		if (ofp) {
+			fclose(ofp);
+		}
 	}
- abort3:
+
 	image_free(resimg);
- abort2:
 	image_free(srcimg);
- abort1:
-	// stdin ならクローズしないの処理は fdstream_close() で行っている。
-	fclose(ifp);
+
+	if (ifp) {
+		fclose(ifp);
+	}
+	if (ifd >= 3) {
+		close(ifd);
+	}
 	return rv;
 }

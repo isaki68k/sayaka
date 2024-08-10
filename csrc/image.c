@@ -259,39 +259,47 @@ image_get_loaderinfo(void)
 	return s;
 }
 
-// fp から画像を読み込んで image を作成して返す。
+// pstream から画像を読み込んで image を作成して返す。
 // 読み込めなければ NULL を返す。
-// fp はシーク可能であること。
 struct image *
-image_read_fp(FILE *fp, const struct diag *diag)
+image_read_pstream(struct pstream *ps, const struct diag *diag)
 {
 	int ok = -1;
+	FILE *pfp;
+	FILE *fp;
+
+	pfp = pstream_open_for_peek(ps);
+	if (pfp == NULL) {
+		Debug(diag, "pstream_open_for_peek() failed");
+		return NULL;
+	}
+
+#define MATCH_THEN_READ(name)	do {	\
+	ok = image_##name##_match(pfp, diag);	\
+	fseek(pfp, 0, SEEK_SET);	\
+	if (ok) {	\
+		fclose(pfp);	\
+		fp = pstream_open_for_read(ps);	\
+		if (fp == NULL) {	\
+			if (diag_get_level(diag) >= 1) {	\
+				diag_print(diag, "pstream_open_for_read() failed");	\
+				return NULL;	\
+			}	\
+		}	\
+		struct image *img = image_##name##_read(fp, diag);	\
+		fclose(fp);	\
+		return img;	\
+	}	\
+} while (0)
 
 #if defined(USE_LIBWEBP)
-	ok = image_webp_match(fp, diag);
-	Trace(diag, "%s: webp %u", __func__, ok);
-	fseek(fp, 0, SEEK_SET);
-	if (ok) {
-		return image_webp_read(fp, diag);
-	}
+	MATCH_THEN_READ(webp);
 #endif
-
 #if defined(USE_LIBPNG)
-	ok = image_png_match(fp, diag);
-	Trace(diag, "%s: png %u", __func__, ok);
-	fseek(fp, 0, SEEK_SET);
-	if (ok) {
-		return image_png_read(fp, diag);
-	}
+	MATCH_THEN_READ(png);
 #endif
-
 #if defined(USE_STB_IMAGE)
-	ok = image_stb_match(fp, diag);
-	Trace(diag, "%s: stb %u", __func__, ok);
-	fseek(fp, 0, SEEK_SET);
-	if (ok) {
-		return image_stb_read(fp, diag);
-	}
+	MATCH_THEN_READ(stb);
 #endif
 
 	if (ok == -1) {
