@@ -4278,7 +4278,7 @@ case "${with_stb_image}" in
  *)
 	printf "%s\n" "#define HAVE_STB_IMAGE 1" >>confdefs.h
 
-	DEFINE_STB_IMAGE=HAVE_STB_IMAGE=
+	DEFINE_STB_IMAGE=HAVE_STB_IMAGE=yes
 
 	;;
 esac
@@ -4303,7 +4303,7 @@ printf %s "checking for libpng... " >&6; }
 printf "%s\n" "yes" >&6; }
 		printf "%s\n" "#define HAVE_LIBPNG 1" >>confdefs.h
 
-		DEFINE_LIBPNG=HAVE_LIBPNG=
+		DEFINE_LIBPNG=HAVE_LIBPNG=yes
 
 		has_libpng=yes
 
@@ -4350,7 +4350,7 @@ printf %s "checking for libwebp... " >&6; }
 printf "%s\n" "yes" >&6; }
 		printf "%s\n" "#define HAVE_LIBWEBP 1" >>confdefs.h
 
-		DEFINE_LIBWEBP=HAVE_LIBWEBP=
+		DEFINE_LIBWEBP=HAVE_LIBWEBP=yes
 
 		has_libwebp=yes
 
@@ -4398,7 +4398,7 @@ printf %s "checking for libcurl... " >&6; }
 printf "%s\n" "yes" >&6; }
 		printf "%s\n" "#define HAVE_LIBCURL 1" >>confdefs.h
 
-		DEFINE_LIBCURL=HAVE_LIBCURL=
+		DEFINE_LIBCURL=HAVE_LIBCURL=yes
 
 		has_libcurl=yes
 
