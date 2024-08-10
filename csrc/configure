@@ -703,7 +703,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-with_stb_image
+enable_stb_image
 with_libpng
 with_libwebp
 with_libcurl
@@ -1334,10 +1334,15 @@ if test -n "$ac_init_help"; then
    esac
   cat <<\_ACEOF
 
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-stb-image      Use bundled stb_image (default:enable)
+
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-stb-image        Use bundled stb-image (default:yes)
   --with-libpng           Use libpng for PNG instead of stb_image (default:no)
   --with-libwebp          Use libwebp (default:yes)
   --with-libcurl          Use libcurl for network (default:yes)
@@ -4260,16 +4265,11 @@ as_fn_error $? "pkg-config (or \$PKG_CONFIG) not found.
 See 'config.log' for more details" "$LINENO" 5; }
 fi
 
-# stb-image は同梱して持っていて、使うか使わないかの選択なので、
-# 実際には --with/without ではなく --enable/disable なのだが
-# 他の (png とか) が with なのにこれだけ enable なのは
-# 使う側からすれば面倒なので、with に統一しておく。
-# デフォルトは yes。
-
-# Check whether --with-stb-image was given.
-if test ${with_stb_image+y}
+# stb-image はデフォルト使用する。
+# Check whether --enable-stb-image was given.
+if test ${enable_stb_image+y}
 then :
-  withval=$with_stb_image;
+  enableval=$enable_stb_image;
 fi
 
 case "${with_stb_image}" in

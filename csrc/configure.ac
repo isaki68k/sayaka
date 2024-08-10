@@ -219,13 +219,10 @@ if test x"${PKG_CONFIG}" = x":"; then
 	On Ubuntu, sudo apt install pkg-config])
 fi
 
-# stb-image は同梱して持っていて、使うか使わないかの選択なので、
-# 実際には --with/without ではなく --enable/disable なのだが
-# 他の (png とか) が with なのにこれだけ enable なのは
-# 使う側からすれば面倒なので、with に統一しておく。
-# デフォルトは yes。
-AC_ARG_WITH([stb-image],
-	AS_HELP_STRING([--with-stb-image], [Use bundled stb-image (default:yes)]))
+# stb-image はデフォルト使用する。
+AC_ARG_ENABLE([stb-image],
+	AS_HELP_STRING([--enable-stb-image],
+		[Use bundled stb_image (default:enable)]))
 case "${with_stb_image}" in
  no)
 	;;
