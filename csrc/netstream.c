@@ -136,12 +136,12 @@ netstream_open(const char *url, const struct diag *diag)
 	}
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
-	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, (long)1);
+	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, (long)1);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, (long)0);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, (long)0);
 
 	curl_multi_add_handle(mhandle, curl);
 
