@@ -36,16 +36,24 @@
 #define ESC "\x1b"
 
 static bool sixel_preamble(FILE *, const struct image *,
-	const struct sixel_opt *);
+	const struct image_sixel_opt *);
 static bool sixel_postamble(FILE *);
 static bool sixel_core(FILE *, const struct image *, const struct diag *);
 static void sixel_repunit(string *, uint, uint8);
+
+// opt を初期化する。
+void
+image_sixel_opt_init(struct image_sixel_opt *opt)
+{
+	opt->output_ormode = false;
+	opt->suppress_palette = false;
+}
 
 // img を SIXEL に変換して fp に出力する。
 // (呼び出し後にフラッシュすること)
 bool
 image_sixel_write(FILE *fp, const struct image *img,
-	const struct sixel_opt *opt, const struct diag *diag)
+	const struct image_sixel_opt *opt, const struct diag *diag)
 {
 	if (sixel_preamble(fp, img, opt) == false) {
 		return false;
@@ -64,7 +72,7 @@ image_sixel_write(FILE *fp, const struct image *img,
 
 static bool
 sixel_preamble(FILE *fp, const struct image *img,
-	const struct sixel_opt *opt)
+	const struct image_sixel_opt *opt)
 {
 	char buf[40];
 
@@ -79,7 +87,7 @@ sixel_preamble(FILE *fp, const struct image *img,
 
 	// パレットを出力する。
 	// "#255;2;255;255;255"
-	if (opt->disable_palette == false) {
+	if (opt->suppress_palette == false) {
 		const ColorRGB *col = &img->palette[0];
 		for (uint i = 0, end = img->palette_count; i < end; i++, col++) {
 			snprintf(buf, sizeof(buf), "#%u;2;%u;%u;%u", i,

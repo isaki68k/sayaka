@@ -179,11 +179,12 @@ struct image
 };
 
 // image.c
-struct image_reduct_param {
+struct image_reduct_opt {
 	ReductorMethod method;
 	ReductorDiffuse diffuse;
 	ReductorColor color;
 };
+extern void image_reduct_opt_init(struct image_reduct_opt *);
 extern struct image *image_create(uint width_, uint height_, uint channels_);
 extern struct image *image_read_fp(FILE *, const struct diag *);
 extern void image_free(struct image *);
@@ -194,7 +195,7 @@ extern void image_get_preferred_size(uint current_width, uint current_height,
 extern string *image_get_loaderinfo(void);
 extern struct image *image_coloring(const struct image *);
 extern struct image *image_reduct(const struct image *src,
-	uint dst_width, uint dst_height, const struct image_reduct_param *,
+	uint dst_width, uint dst_height, const struct image_reduct_opt *,
 	const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
@@ -203,11 +204,12 @@ extern const char *reductordiffuse_tostr(ReductorDiffuse);
 extern const char *reductorcolor_tostr(ReductorColor);
 
 // image_sixel.c
-struct sixel_opt {
+struct image_sixel_opt {
 	bool output_ormode;
-	bool disable_palette;
+	bool suppress_palette;
 };
+extern void image_sixel_opt_init(struct image_sixel_opt *);
 extern bool image_sixel_write(FILE *, const struct image *,
-	const struct sixel_opt *, const struct diag *);
+	const struct image_sixel_opt *, const struct diag *);
 
 #endif // !sayaka_image_h

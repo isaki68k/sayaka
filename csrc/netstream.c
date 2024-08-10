@@ -418,3 +418,10 @@ netstream_global_cleanup(void)
 }
 
 #endif /* HAVE_LIBCURL */
+
+// opt を初期化する。
+void
+netstream_opt_init(struct netstream_opt *opt)
+{
+	opt->use_rsa_only = false;
+}

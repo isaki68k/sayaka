@@ -57,15 +57,14 @@ static struct diag *diag_image;
 static struct diag *diag_net;
 static struct diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
-static ReductorMethod opt_method;
-static ReductorDiffuse opt_diffuse;
-static ReductorColor opt_color;
 static uint opt_height;
 static uint opt_width;
 static ResizeAxis opt_resize_axis;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
-static bool opt_use_rsa_only;
+static struct image_reduct_opt imageopt;
+static struct image_sixel_opt sixelopt;
+static struct netstream_opt netopt;
 
 enum {
 	OPT__start = 0x7f,
@@ -159,45 +158,46 @@ main(int ac, char *av[])
 	diag_net   = diag_alloc();
 	diag_sixel = diag_alloc();
 
+	image_reduct_opt_init(&imageopt);
+	image_sixel_opt_init(&sixelopt);
+	netstream_opt_init(&netopt);
 	ignore_error = false;
-	opt_color = ReductorColor_Fixed256;
-	opt_method = ReductorMethod_HighQuality;
-	opt_diffuse = RDM_FS;
 	opt_resize_axis = ResizeAxis_Both;
 	opt_height = 0;
 	opt_width = 0;
 	output_filename = NULL;
 	output_format = OutputFormat_SIXEL;
-	opt_use_rsa_only = false;
 
 	while ((c = getopt_long(ac, av, "c:d:h:iO:o:vw:", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
 		 {
 			int num = atoi(optarg);
+			ReductorColor color;
 			switch (num) {
-			 case 2:	opt_color = ReductorColor_Gray | (1U << 8);	break;
-			 case 8:	opt_color = ReductorColor_Fixed8;	break;
-			 case 16:	opt_color = ReductorColor_ANSI16;	break;
-			 case 256:	opt_color = ReductorColor_Fixed256;	break;
+			 case 2:	color = ReductorColor_Gray | (1U << 8);	break;
+			 case 8:	color = ReductorColor_Fixed8;	break;
+			 case 16:	color = ReductorColor_ANSI16;	break;
+			 case 256:	color = ReductorColor_Fixed256;	break;
 			 default:
 				errx(1, "invalid color mode");
 			}
+			imageopt.color = color;
 			break;
 		 }
 
 		 case OPT_ciphers:
 			// 今のところ "RSA" (大文字) しか指定できない。
 			if (strcmp(optarg, "RSA") == 0) {
-				opt_use_rsa_only = true;
+				netopt.use_rsa_only = true;
 			} else {
 				errx(1, "Invalid ciphers: '%s'", optarg);
 			}
 			break;
 
 		 case 'd':
-			opt_method = parse_opt(map_reductor_method, optarg);
-			if ((int)opt_method < 0) {
+			imageopt.method = parse_opt(map_reductor_method, optarg);
+			if ((int)imageopt.method < 0) {
 				errx(1, "invalid reductor method '%s'", optarg);
 			}
 			break;
@@ -215,8 +215,8 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_diffusion:
-			opt_diffuse = parse_opt(map_diffuse, optarg);
-			if ((int)opt_diffuse < 0) {
+			imageopt.diffuse = parse_opt(map_diffuse, optarg);
+			if ((int)imageopt.diffuse < 0) {
 				errx(1, "Invalid diffusion '%s'", optarg);
 			}
 			break;
@@ -227,7 +227,7 @@ main(int ac, char *av[])
 			if (num < 2 || num > 256) {
 				errx(1, "invalid grayscale");
 			}
-			opt_color = ReductorColor_Gray | ((num - 1) << 8);
+			imageopt.color = ReductorColor_Gray | ((num - 1) << 8);
 			break;
 		 }
 
@@ -410,9 +410,7 @@ do_file(const char *infilename)
 	           strncmp(infilename, "https://", 8) == 0)
 	{
 #if defined(HAVE_LIBCURL)
-		struct netstream_opt opt;
-		opt.use_rsa_only = opt_use_rsa_only;
-		ifp = netstream_open(infilename, &opt, diag_net);
+		ifp = netstream_open(infilename, &netopt, diag_net);
 		if (ifp == NULL) {
 			warn("netstream_open(%s) failed", infilename);
 			return false;
@@ -443,16 +441,11 @@ do_file(const char *infilename)
 	Debug(diag_image, "%s: src size=(%u, %u) dst size=(%u, %u) dst color=%s",
 		__func__,
 		srcimg->width, srcimg->height, dst_width, dst_height,
-		reductorcolor_tostr(opt_color));
+		reductorcolor_tostr(imageopt.color));
 
 	// 減色 & リサイズ
-	struct image_reduct_param param;
-	memset(&param, 0, sizeof(param));
-	param.method = opt_method;
-	param.diffuse = opt_diffuse;
-	param.color = opt_color;
 	struct image *resimg = image_reduct(srcimg, dst_width, dst_height,
-		&param, diag_image);
+		&imageopt, diag_image);
 	if (resimg == NULL) {
 		warnx("reductor failed");
 		goto abort2;
@@ -471,9 +464,7 @@ do_file(const char *infilename)
 
 	// 書き出し。
 	if (output_format == OutputFormat_SIXEL) {
-		struct sixel_opt opt;
-		memset(&opt, 0, sizeof(opt));
-		image_sixel_write(ofp, resimg, &opt, diag_sixel);
+		image_sixel_write(ofp, resimg, &sixelopt, diag_sixel);
 	} else {
 		struct image *bmpimg = image_coloring(resimg);
 		if (bmpimg == NULL) {

@@ -72,7 +72,7 @@ static ColorRGB *image_alloc_fixed256_palette(void);
 static void image_reduct_simple(struct image_reductor_handle *,
 	struct image *, const struct image *, const struct diag *diag);
 static bool image_reduct_highquality(struct image_reductor_handle *,
-	struct image *, const struct image *, const struct image_reduct_param *,
+	struct image *, const struct image *, const struct image_reduct_opt *,
 	const struct diag *diag);
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
 static uint8 saturate_uint8(int);
@@ -80,6 +80,15 @@ static int16 saturate_adderr(int16, int);
 
 static const ColorRGB palette_fixed8[];
 static const ColorRGB palette_ansi16[];
+
+// opt を初期化する。
+void
+image_reduct_opt_init(struct image_reduct_opt *opt)
+{
+	opt->method  = ReductorMethod_HighQuality;
+	opt->diffuse = RDM_FS;
+	opt->color   = ReductorColor_Fixed256;
+}
 
 // width_ x height_ x channels_ の image を作成する。
 // (バッファは未初期化)
@@ -345,7 +354,7 @@ image_reduct(
 	const struct image *src,	// 元画像
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
-	const struct image_reduct_param *param,	// パラメータ
+	const struct image_reduct_opt *param,	// パラメータ
 	const struct diag *diag)
 {
 	struct image *dst;
@@ -539,7 +548,7 @@ image_reduct_simple(struct image_reductor_handle *op,
 static bool
 image_reduct_highquality(struct image_reductor_handle *op,
 	struct image *dstimg, const struct image *srcimg,
-	const struct image_reduct_param *param,
+	const struct image_reduct_opt *param,
 	const struct diag *diag)
 {
 	uint8 *d = dstimg->buf;

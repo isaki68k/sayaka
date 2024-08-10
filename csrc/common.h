@@ -76,6 +76,7 @@ struct netstream_opt {
 	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
 	bool use_rsa_only;
 };
+extern void netstream_opt_init(struct netstream_opt *);
 extern FILE *netstream_open(const char *, const struct netstream_opt *,
 	const struct diag *);
 extern void netstream_global_cleanup(void);
