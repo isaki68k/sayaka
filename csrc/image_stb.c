@@ -78,16 +78,16 @@ static stbi_io_callbacks stb_callbacks = {
 bool
 image_stb_match(FILE *fp, const struct diag *diag)
 {
-	int r;
-	int x;
-	int y;
-	int comp;
+	int ok;
+	int w;
+	int h;
+	int ch;
 
-	r = stbi_info_from_callbacks(&stb_callbacks, fp, &x, &y, &comp);
-	if (r != 0) {
+	ok = stbi_info_from_callbacks(&stb_callbacks, fp, &w, &h, &ch);
+	if (ok) {
 		Debug(diag, "%s: OK", __func__);
 	}
-	return r;
+	return ok;
 }
 
 struct image *
