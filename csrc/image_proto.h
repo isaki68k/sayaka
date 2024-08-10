@@ -47,6 +47,7 @@
 
 IMAGE_HANDLER(png);
 IMAGE_HANDLER(stb);
+IMAGE_HANDLER(webp);
 
 #undef IMAGE_HANDLER
 

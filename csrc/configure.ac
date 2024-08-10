@@ -249,6 +249,27 @@ case "${with_libpng}" in
 esac
 
 
+# WebP は stb_image にフォールバック出来ない (し Misskey では事実上必須なので)
+# --without-libwebp が明示されない限り、なければエラー終了する。
+AC_ARG_WITH([libwebp],
+	AS_HELP_STRING([--with-libwebp], [Use libwebp (default:yes)]))
+case "${with_libwebp}" in
+ no)
+	;;
+ *)
+	CHECK_PKG([libwebp], [LIBWEBP])
+
+	if test x"${has_libwebp}" = x"yes"; then
+		# どうするんだこれ
+		LIBS="${LIBS} -lwebpdemux"
+	else
+		AC_MSG_FAILURE([--with-libwebp is specified but libwebp not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
+	On Unubtu, sudo apt install libwebp-dev])
+	fi
+	;;
+esac
+
 AC_ARG_WITH([libcurl],
 	AS_HELP_STRING([--with-libcurl], [Use libcurl for network (default:yes)]))
 case "${with_libcurl}" in

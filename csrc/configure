@@ -641,6 +641,7 @@ ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 DEFINE_LIBCURL
+DEFINE_LIBWEBP
 DEFINE_LIBPNG
 DEFINE_STB_IMAGE
 PKG_CONFIG
@@ -704,6 +705,7 @@ ac_user_opts='
 enable_option_checking
 with_stb_image
 with_libpng
+with_libwebp
 with_libcurl
 '
       ac_precious_vars='build_alias
@@ -1337,6 +1339,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-stb-image        Use bundled stb-image (default:yes)
   --with-libpng           Use external libpng (default:auto)
+  --with-libwebp          Use libwebp (default:yes)
   --with-libcurl          Use libcurl for network (default:yes)
 
 Some influential environment variables:
@@ -4319,6 +4322,56 @@ printf "%s\n" "no" >&6; }
 	;;
 esac
 
+
+# WebP は stb_image にフォールバック出来ない (し Misskey では事実上必須なので)
+# --without-libwebp が明示されない限り、なければエラー終了する。
+
+# Check whether --with-libwebp was given.
+if test ${with_libwebp+y}
+then :
+  withval=$with_libwebp;
+fi
+
+case "${with_libwebp}" in
+ no)
+	;;
+ *)
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libwebp" >&5
+printf %s "checking for libwebp... " >&6; }
+	if ${PKG_CONFIG} --exists libwebp; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_LIBWEBP 1" >>confdefs.h
+
+		DEFINE_LIBWEBP=HAVE_LIBWEBP=
+
+		has_libwebp=yes
+
+		H=`${PKG_CONFIG} --cflags libwebp`
+		L=`${PKG_CONFIG} --libs libwebp`
+		CFLAGS="${CFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		has_libwebp=no
+	fi
+
+
+	if test x"${has_libwebp}" = x"yes"; then
+		# どうするんだこれ
+		LIBS="${LIBS} -lwebpdemux"
+	else
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "--with-libwebp is specified but libwebp not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
+	On Unubtu, sudo apt install libwebp-dev
+See 'config.log' for more details" "$LINENO" 5; }
+	fi
+	;;
+esac
 
 
 # Check whether --with-libcurl was given.
