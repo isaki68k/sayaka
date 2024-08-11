@@ -33,6 +33,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 // 新しい diag を確保して返す。
 struct diag *
@@ -70,6 +71,15 @@ diag_set_level(struct diag *diag, int level_)
 	diag->level = level_;
 }
 
+// タイムスタンプを有効にする。
+void
+diag_set_timestamp(struct diag *diag, bool enable)
+{
+	assert(diag);
+
+	diag->timestamp = enable;
+}
+
 // メッセージ出力 (改行はこちらで付加する)。
 void
 diag_print(const struct diag *diag, const char *fmt, ...)
@@ -77,6 +87,15 @@ diag_print(const struct diag *diag, const char *fmt, ...)
 	va_list ap;
 
 	assert(diag);
+
+	if (__predict_false(diag->timestamp)) {
+		struct timeval now;
+		gettimeofday(&now, NULL);
+		struct tm *tm = localtime(&now.tv_sec);
+		uint ms = now.tv_usec / 1000;
+		fprintf(stderr, "%02u:%02u:%02u.%03u ",
+			tm->tm_hour, tm->tm_min, tm->tm_sec, ms);
+	}
 
 	fputs(diag->name, stderr);
 

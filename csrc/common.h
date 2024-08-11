@@ -54,6 +54,7 @@
 struct diag
 {
 	int level;
+	bool timestamp;
 	char name[32];
 };
 
@@ -65,6 +66,7 @@ extern struct diag *diag_alloc(void);
 extern void diag_free(struct diag *);
 extern void diag_set_name(struct diag *, const char *name);
 extern void diag_set_level(struct diag *, int level);
+extern void diag_set_timestamp(struct diag *, bool enable);
 extern void diag_print(const struct diag *, const char *fmt, ...)
 	__attribute__((format(printf, 2, 3)));
 
