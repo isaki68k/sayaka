@@ -301,6 +301,10 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 #if defined(USE_STB_IMAGE)
 	MATCH_THEN_READ(stb);
 #endif
+	// Blurhash はマジックとかの構造を持たないので最後に調べる。
+#if defined(USE_BLURHASH)
+	MATCH_THEN_READ(blurhash);
+#endif
 
 	if (ok == -1) {
 		Debug(diag, "%s: no decoders available", __func__);

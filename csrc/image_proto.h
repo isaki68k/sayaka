@@ -27,6 +27,7 @@
 #ifndef sayaka_image_proto_h
 #define sayaka_image_proto_h
 
+#define USE_BLURHASH
 #if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
 #endif
@@ -42,6 +43,7 @@
 	extern bool image_##name##_match(FILE *, const struct diag *);	\
 	extern struct image *image_##name##_read(FILE *, const struct diag *)
 
+IMAGE_HANDLER(blurhash);
 IMAGE_HANDLER(png);
 IMAGE_HANDLER(stb);
 IMAGE_HANDLER(webp);

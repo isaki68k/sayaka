@@ -14,6 +14,7 @@ CFLAGS+=	-I..
 
 SRCS_common+=	diag.c
 SRCS_common+=	image.c
+SRCS_common+=	image_blurhash.c
 .if defined(HAVE_LIBPNG)
 SRCS_common+=	image_png.c
 .endif
