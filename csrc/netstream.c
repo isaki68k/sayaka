@@ -31,6 +31,7 @@
 #include "common.h"
 
 #if defined(HAVE_LIBCURL)
+// curl の下限は 7.61.0 (2018/07)。CURLINFO_PRETRANSFER_TIME_T のため。
 
 #include <errno.h>
 #include <string.h>
@@ -57,7 +58,7 @@ struct netstream {
 
 static void netstream_global_init(void);
 static bool netstream_get_sessioninfo(struct netstream *);
-static void netstream_timestamp(struct netstream *, curl_off_t);
+static void netstream_timestamp(struct netstream *);
 static int netstream_read_cb(void *, char *, int);
 static int netstream_close_cb(void *);
 static size_t curl_write_cb(void *, size_t, size_t, void *);
@@ -185,7 +186,7 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 		netstream_get_sessioninfo(ns);
 
 		// 所要時間を表示。
-		netstream_timestamp(ns, prexfer);
+		netstream_timestamp(ns);
 	}
 
 	fp = funopen(ns,
@@ -275,10 +276,9 @@ netstream_get_sessioninfo(struct netstream *ns)
 	return true;
 }
 
-// prexfer_time は呼び出し元で求めているはずなので、それを使いたい。
-// (curl_off_t)-1 をセットしておけばこちらで取得する。
+// 接続 (主に SSL) にかかった時間を表示したい。
 static void
-netstream_timestamp(struct netstream *ns, curl_off_t prexfer_time)
+netstream_timestamp(struct netstream *ns)
 {
 	CURL *curl;
 	const struct diag *diag;
@@ -287,8 +287,6 @@ netstream_timestamp(struct netstream *ns, curl_off_t prexfer_time)
 	curl_off_t name_time = -1;
 	curl_off_t connect_time = -1;
 	curl_off_t appconn_time = -1;
-	curl_off_t startxfer_time = -1;
-	curl_off_t total_time = -1;
 
 	assert(ns);
 	curl = ns->curl;
@@ -298,34 +296,25 @@ netstream_timestamp(struct netstream *ns, curl_off_t prexfer_time)
 	curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME_T, &name_time);
 	curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME_T, &connect_time);
 	curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME_T, &appconn_time);
-	if (prexfer_time != (curl_off_t)-1) {
-		curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &prexfer_time);
-	}
-	curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME_T, &startxfer_time);
-	curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &total_time);
 
-	if (0) {
-		diag_print(diag,
-			"q=%u name=%u conn=%u app=%u pre=%u start=%u total=%u",
-			(uint)queue_time,
-			(uint)name_time,
-			(uint)connect_time,
-			(uint)appconn_time,
-			(uint)prexfer_time,
-			(uint)start_time,
-			(uint)total_time);
-	}
-
-	// タイムスタンプはバージョンとともに増えているので、古いやつだと
-	// いないかも知れない。
+	// QUEUE_TIME だけ比較的新しい。
 	if (queue_time == (curl_off_t)-1) {
 		queue_time = start_time;
+	}
+
+	if (0) {
+		// 生の値
+		diag_print(diag,
+			"queue=%ju name=%ju conn=%ju app=%ju",
+			(uintmax_t)queue_time,
+			(uintmax_t)name_time,
+			(uintmax_t)connect_time,
+			(uintmax_t)appconn_time);
 	}
 
 	// いずれも curl_easy_perform() からの積算 [usec] らしいので、
 	// 個別の時間に分ける。
 	// queue_time はほぼ固定費なので無視。amd64 で 130usec 程度。
-	// pretransfer も無視していい?。amd64 で 40usec 程度。
 	// APPCONNECT は HTTP 時は 0 が返ってくる。
 
 	uint32 name_ms = (uint32)(name_time - queue_time) / 1000;
@@ -336,16 +325,12 @@ netstream_timestamp(struct netstream *ns, curl_off_t prexfer_time)
 		uint32 app_ms = (uint32)(appconn_time - connect_time) / 1000;
 		snprintf(appbuf, sizeof(appbuf), " appconn=%u", app_ms);
 	}
-	uint32 start_ms = (uint32)(start_time - prexfer_time) / 1000;
-	uint32 total_ms = (uint32)total_time / 1000;
 
 	diag_print(diag,
-		"Profile: namelookup=%u connect=%u%s start=%u: total %u msec",
+		"Connect profile: namelookup=%u connect=%u%s [msec]",
 		name_ms,
 		conn_ms,
-		appbuf,
-		start_ms,
-		total_ms);
+		appbuf);
 }
 
 static int
