@@ -25,7 +25,7 @@
  */
 
 //
-// URL のファイルをシーク可能な FILE * にみせる
+// URL のファイルを FILE * にみせる
 //
 
 #include "common.h"
@@ -42,29 +42,25 @@
 #include <openssl/ssl.h>
 #endif
 
-// メモリセグメント
-struct segment {
-	char *ptr;
-	uint pos;	// このセグメントの位置
-	uint len;	// このセグメントの長さ
-};
+struct netstream {
+	CURLM *mhandle;
+	CURL *curl;
 
-struct memstream_cookie {
-	struct segment *segs;
-	uint segcap;	// 確保してあるセグメント数
-	uint seglen;	// 使用しているセグメント数
-	uint curseg;	// 現在ポインタがいるセグメント番号
-	uint pos;		// 先頭から数えた現在位置
+	char *buf;		// realloc する
+	uint bufsize;	// 確保してあるバッファサイズ
+	uint bufpos;	// buf 中の次回読み出し開始位置
+	uint remain;	// buf の読み出し可能な残りバイト数
+	bool done;		// 今回のバッファで最後
+
 	const struct diag *diag;
 };
 
 static void netstream_global_init(void);
-static bool netstream_get_sessioninfo(CURL *, const struct diag *);
+static bool netstream_get_sessioninfo(struct netstream *);
+static void netstream_timestamp(struct netstream *, curl_off_t);
+static int netstream_read_cb(void *, char *, int);
+static int netstream_close_cb(void *);
 static size_t curl_write_cb(void *, size_t, size_t, void *);
-static int memstream_read(void *, char *, int);
-static int memstream_write(void *, const char *, int);
-static off_t memstream_seek(void *, off_t, int);
-static int memstream_close(void *);
 
 static bool curl_initialized;
 
@@ -92,37 +88,12 @@ FILE *
 netstream_open(const char *url, const struct netstream_opt *opt,
 	const struct diag *diag)
 {
-	struct memstream_cookie *cookie = NULL;
-	FILE *fp = NULL;
+	struct netstream *ns = NULL;
 	CURLM *mhandle = NULL;
 	CURL *curl = NULL;
-	CURLMcode mcode;
-	CURLcode res;
-	bool done;
-	bool info_shown;
+	FILE *fp;
 
 	netstream_global_init();
-
-	cookie = calloc(1, sizeof(*cookie));
-	if (cookie == NULL) {
-		goto abort;
-	}
-	cookie->diag = diag;
-	// segs が NULL かも知れないと気をつけるのは嫌なので先に確保。
-	cookie->segcap = 16;
-	cookie->segs = malloc(sizeof(struct segment) * cookie->segcap);
-	if (cookie->segs == NULL) {
-		goto abort;
-	}
-
-	fp = funopen(cookie,
-		memstream_read,
-		memstream_write,
-		memstream_seek,
-		memstream_close);
-	if (fp == NULL) {
-		goto abort;
-	}
 
 	mhandle = curl_multi_init();
 	if (mhandle == NULL) {
@@ -136,11 +107,20 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 		goto abort;
 	}
 
+	ns = calloc(1, sizeof(*ns));
+	if (ns == NULL) {
+		Debug(diag, "%s: calloc failed: %s", __func__, strerrno());
+		goto abort;
+	}
+	ns->diag = diag;
+	ns->mhandle = mhandle;
+	ns->curl = curl;
+
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, (long)1);
 	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, (long)1);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, ns);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, (long)0);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, (long)0);
 	if (opt->use_rsa_only) {
@@ -165,118 +145,71 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 
 	curl_multi_add_handle(mhandle, curl);
 
-	// curl_easy_perform() 相当。curl/lib/easy.c の easy_transfer() あたり。
-	done = false;
-	mcode = CURLM_OK;
-	res = CURLE_OK;
-	info_shown = false;
-	while (done == false && mcode == 0) {
+	// ここではデータ転送直前までを担当する。
+	curl_off_t prexfer = 0;
+	do {
+		CURLMcode mcode;
+		CURLcode r;
 		int still_running = 0;
+
 		mcode = curl_multi_poll(mhandle, NULL, 0, 1000, NULL);
-		if (mcode == 0) {
-			mcode = curl_multi_perform(mhandle, &still_running);
+		if (mcode != CURLM_OK) {
+			Debug(diag, "%s: curl_multi_poll() failed %d",
+				__func__, (int)mcode);
+			goto abort;
 		}
 
-		// セッション情報をデバッグ表示。
-		if (diag_get_level(diag) >= 1 && info_shown == false) {
-			info_shown = netstream_get_sessioninfo(curl, diag);
+		mcode = curl_multi_perform(mhandle, &still_running);
+		if (mcode != CURLM_OK) {
+			Debug(diag, "%s: curl_multi_perform() failed %d",
+				__func__, (int)mcode);
+			goto abort;
 		}
 
-		if (mcode == 0 && still_running == 0) {
-			int rc;
-			CURLMsg *msg = curl_multi_info_read(mhandle, &rc);
-			if (msg) {
-				res = msg->data.result;
-				done = true;
-			}
+		if (still_running == 0) {
+			Debug(diag, "%s: not running", __func__);
+			goto abort;
 		}
-	}
 
-	// 所要時間を表示。
+		// perform が何か終えて戻ってきたので転送直前まで来てるか調べる。
+		r = curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &prexfer);
+		if (r != CURLE_OK) {
+			Debug(diag, "%s: CURLINFO_PRETRANSFER_TIME_T failed %d",
+				__func__, (int)r);
+			goto abort;
+		}
+	} while (prexfer == 0);
+
 	if (diag_get_level(diag) >= 1) {
-		int r;
-		curl_off_t queue_time;
-		curl_off_t name_time;
-		curl_off_t connect_time;
-		curl_off_t appconn_time;
-		curl_off_t prexfer_time;
-		curl_off_t start_time;
-		curl_off_t total_time;
+		// セッション情報をデバッグ表示。
+		netstream_get_sessioninfo(ns);
 
-		r = curl_easy_getinfo(curl, CURLINFO_QUEUE_TIME_T, &queue_time);
-		if (r != CURLE_OK) {
-			printf("err\n");
-		}
-		r = curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME_T, &name_time);
-		if (r != CURLE_OK) {
-			printf("err\n");
-		}
-		r = curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME_T, &connect_time);
-		if (r != CURLE_OK) {
-			printf("err\n");
-		}
-		r = curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME_T, &appconn_time);
-		if (r != CURLE_OK) {
-			printf("err\n");
-		}
-		r = curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &prexfer_time);
-		if (r != CURLE_OK) {
-			printf("err\n");
-		}
-		r = curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME_T, &start_time);
-		if (r != CURLE_OK) {
-			printf("err\n");
-		}
-		r = curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &total_time);
-		if (r != CURLE_OK) {
-			printf("err\n");
-		}
-
-		// いずれも開始時点(どこ?)からの積算[usec]なので、個別の時間に分ける。
-		// queue_time はほぼ固定費なので無視。amd64 で 130usec 程度。
-		// pretransfer も無視していい?。amd64 で 40usec 程度。
-		// APPCONNECT は HTTP 時は 0 が返ってくる。
-
-		uint32 name_ms = (uint32)(name_time - queue_time) / 1000;
-		uint32 conn_ms = (uint32)(connect_time - name_time) / 1000;
-		char appbuf[32];
-		appbuf[0] = '\0';
-		if (appconn_time != 0) {
-			uint32 app_ms = (uint32)(appconn_time - connect_time) / 1000;
-			snprintf(appbuf, sizeof(appbuf), " appconn=%u", app_ms);
-		}
-		uint32 start_ms = (uint32)(start_time - prexfer_time) / 1000;
-		uint32 total_ms = (uint32)total_time / 1000;
-
-		diag_print(diag,
-			"Profile: namelookup=%u connect=%u%s start=%u: total %u msec",
-			name_ms,
-			conn_ms,
-			appbuf,
-			start_ms,
-			total_ms);
+		// 所要時間を表示。
+		netstream_timestamp(ns, prexfer);
 	}
 
-	if (res != CURLE_OK) {
-		Debug(diag, "%s: %s", __func__, curl_easy_strerror(res));
+	fp = funopen(ns,
+		netstream_read_cb,
+		NULL,	// write
+		NULL,	// seek
+		netstream_close_cb);
+	if (fp == NULL) {
+		Debug(diag, "%s: funopen failed: %s", __func__, strerrno());
 		goto abort;
 	}
-
-	curl_multi_remove_handle(mhandle, curl);
-	curl_easy_cleanup(curl);
-	curl_multi_cleanup(mhandle);
-
-	// 読み出し用にポインタを先頭に戻す。
-	fseek(fp, 0, SEEK_SET);
 
 	return fp;
 
  abort:
-	curl_easy_cleanup(curl);
-	curl_multi_cleanup(mhandle);
-	if (cookie) {
-		free(cookie->segs);
-		free(cookie);
+	free(ns);
+	if (mhandle && curl) {
+		curl_multi_remove_handle(mhandle, curl);
+	}
+	if (curl) {
+		curl_easy_cleanup(curl);
+	}
+	if (mhandle) {
+		curl_multi_cleanup(mhandle);
 	}
 	return NULL;
 }
@@ -284,9 +217,15 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 // 接続中の TLS バージョン等をデバッグ表示する。
 // 処理できれば true を返す。
 static bool
-netstream_get_sessioninfo(CURL *curl, const struct diag *diag)
+netstream_get_sessioninfo(struct netstream *ns)
 {
+	CURL *curl;
+	const struct diag *diag;
 	struct curl_tlssessioninfo *csession;
+
+	assert(ns);
+	curl = ns->curl;
+	diag = ns->diag;
 
 	// internals がいつからいつまで有効かは分からないっぽいので、
 	// 当たるまで調べる。うーん。
@@ -336,142 +275,190 @@ netstream_get_sessioninfo(CURL *curl, const struct diag *diag)
 	return true;
 }
 
-// curl からのダウンロードコールバック関数
-static size_t
-curl_write_cb(void *buf, size_t size, size_t nmemb, void *user)
+// prexfer_time は呼び出し元で求めているはずなので、それを使いたい。
+// (curl_off_t)-1 をセットしておけばこちらで取得する。
+static void
+netstream_timestamp(struct netstream *ns, curl_off_t prexfer_time)
 {
-	FILE *fp = (FILE *)user;
+	CURL *curl;
+	const struct diag *diag;
+	curl_off_t start_time = 0;
+	curl_off_t queue_time = -1;
+	curl_off_t name_time = -1;
+	curl_off_t connect_time = -1;
+	curl_off_t appconn_time = -1;
+	curl_off_t startxfer_time = -1;
+	curl_off_t total_time = -1;
 
-	return fwrite(buf, size, nmemb, fp);
+	assert(ns);
+	curl = ns->curl;
+	diag = ns->diag;
+
+	curl_easy_getinfo(curl, CURLINFO_QUEUE_TIME_T, &queue_time);
+	curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME_T, &name_time);
+	curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME_T, &connect_time);
+	curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME_T, &appconn_time);
+	if (prexfer_time != (curl_off_t)-1) {
+		curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &prexfer_time);
+	}
+	curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME_T, &startxfer_time);
+	curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME_T, &total_time);
+
+	if (0) {
+		diag_print(diag,
+			"q=%u name=%u conn=%u app=%u pre=%u start=%u total=%u",
+			(uint)queue_time,
+			(uint)name_time,
+			(uint)connect_time,
+			(uint)appconn_time,
+			(uint)prexfer_time,
+			(uint)start_time,
+			(uint)total_time);
+	}
+
+	// タイムスタンプはバージョンとともに増えているので、古いやつだと
+	// いないかも知れない。
+	if (queue_time == (curl_off_t)-1) {
+		queue_time = start_time;
+	}
+
+	// いずれも curl_easy_perform() からの積算 [usec] らしいので、
+	// 個別の時間に分ける。
+	// queue_time はほぼ固定費なので無視。amd64 で 130usec 程度。
+	// pretransfer も無視していい?。amd64 で 40usec 程度。
+	// APPCONNECT は HTTP 時は 0 が返ってくる。
+
+	uint32 name_ms = (uint32)(name_time - queue_time) / 1000;
+	uint32 conn_ms = (uint32)(connect_time - name_time) / 1000;
+	char appbuf[32];
+	appbuf[0] = '\0';
+	if (appconn_time != 0) {
+		uint32 app_ms = (uint32)(appconn_time - connect_time) / 1000;
+		snprintf(appbuf, sizeof(appbuf), " appconn=%u", app_ms);
+	}
+	uint32 start_ms = (uint32)(start_time - prexfer_time) / 1000;
+	uint32 total_ms = (uint32)total_time / 1000;
+
+	diag_print(diag,
+		"Profile: namelookup=%u connect=%u%s start=%u: total %u msec",
+		name_ms,
+		conn_ms,
+		appbuf,
+		start_ms,
+		total_ms);
 }
 
 static int
-memstream_read(void *arg, char *dst, int dstsize)
+netstream_read_cb(void *arg, char *dst, int dstsize)
 {
-	struct memstream_cookie *cookie = (struct memstream_cookie *)arg;
+	struct netstream *ns = (struct netstream *)arg;
+	int still_running;
+	CURLMcode mcode;
+	const struct diag *diag = ns->diag;
 
-	if (cookie->curseg >= cookie->seglen) {
-		return 0;
-	}
-	struct segment *seg = &cookie->segs[cookie->curseg];
-	uint segoff = cookie->pos - seg->pos;
-	uint remain = seg->len - segoff;
-	uint len = MIN(remain, dstsize);
-	memcpy(dst, &seg->ptr[segoff], len);
+	Trace(diag, "%s: dstsize=%d remain=%u", __func__, dstsize, ns->remain);
+	while (ns->remain == 0) {
+		// 内部バッファが空なら、次の読み込みを試行。
 
-	cookie->pos += len;
-	if (segoff + len >= seg->len) {
-		cookie->curseg++;
+		// 終了フラグが立っていれば EOF。
+		if (ns->done) {
+			Trace(diag, "%s: EOF", __func__);
+			return 0;
+		}
+
+		// 何か起きるかタイムアウトするまで待つ。
+		// 何か起きたかタイムアウトしたかは分からないっぽい。
+		mcode = curl_multi_poll(ns->mhandle, NULL, 0, 1000, NULL);
+		if (mcode != CURLM_OK) {
+			Debug(diag, "%s: curl_multi_poll() failed %d",
+				__func__, (int)mcode);
+			return -1;
+		}
+
+		// 何か起きたかも知れないので実行する。
+		// (ここでデータが届いていれば curl_write_cb() が呼ばれる)
+		still_running = 0;
+		mcode = curl_multi_perform(ns->mhandle, &still_running);
+		if (mcode != CURLM_OK) {
+			Debug(diag, "%s: curl_multi_perform() failed %d",
+				__func__, (int)mcode);
+			return -1;
+		}
+
+		// これで最後か。
+		if (still_running == 0) {
+			int rc;
+			CURLMsg *msg = curl_multi_info_read(ns->mhandle, &rc);
+			if (msg) {
+				if (msg->data.result != CURLE_OK) {
+					Debug(diag, "%s: curl_multi_info_read() returns %d",
+						__func__, (int)msg->data.result);
+					return -1;
+				}
+				ns->done = true;
+			}
+		}
 	}
+
+	// 内部バッファにあるのを吐き出すまで使う。
+	uint len = MIN(ns->remain, dstsize);
+	Trace(diag, "%s: len=%u", __func__, len);
+	memcpy(dst, ns->buf + ns->bufpos, len);
+	ns->bufpos += len;
+	ns->remain -= len;
 
 	return len;
 }
 
 static int
-memstream_write(void *arg, const char *src, int srclen)
+netstream_close_cb(void *arg)
 {
-	struct memstream_cookie *cookie = (struct memstream_cookie *)arg;
+	struct netstream *ns = (struct netstream *)arg;
 
-	// write はセグメントを末尾に追加。
-	// 途中の write には対応していない。
-
-	// 現在の最後のページから最終位置を取得。
-	uint offset = 0;
-	if (cookie->seglen > 0) {
-		struct segment *last = &cookie->segs[cookie->seglen - 1];
-		offset = last->pos + last->len;
-	}
-
-	// 目次が足りなければ伸ばす。
-	if (cookie->seglen >= cookie->segcap) {
-		uint newcap = cookie->segcap + 16;
-		struct segment *newbuf;
-		newbuf = realloc(cookie->segs, sizeof(struct segment) * newcap);
-		if (newbuf == NULL) {
-			errno = ENOMEM;
-			return 0;
+	if (ns) {
+		free(ns->buf);
+		if (ns->mhandle && ns->curl) {
+			curl_multi_remove_handle(ns->mhandle, ns->curl);
 		}
-		cookie->segs   = newbuf;
-		cookie->segcap = newcap;
-	}
-
-	// 新しいセグメント。
-	struct segment *seg = &cookie->segs[cookie->seglen];
-	seg->pos = offset;
-	seg->len = srclen;
-	seg->ptr = malloc(srclen);
-	if (seg->ptr == NULL) {
-		return 0;
-	}
-	memcpy(seg->ptr, src, srclen);
-
-	Trace(cookie->diag, "%s: [%u/%u] offset=%u, len=%u", __func__,
-		cookie->seglen, cookie->segcap, seg->pos, seg->len);
-
-	cookie->pos += srclen;
-	cookie->seglen++;
-	cookie->curseg = cookie->seglen;
-
-	return srclen;
-}
-
-static off_t
-memstream_seek(void *arg, off_t offset, int whence)
-{
-	struct memstream_cookie *cookie = (struct memstream_cookie *)arg;
-	off_t newpos;
-
-	switch (whence) {
-	 case SEEK_SET:
-		newpos = offset;
-		break;
-	 case SEEK_CUR:
-		newpos = cookie->pos + offset;
-		break;
-	 case SEEK_END:
-	 {
-		off_t end;
-		if (cookie->seglen == 0) {
-			end = 0;
-		} else {
-			struct segment *last = &cookie->segs[cookie->seglen - 1];
-			end = last->pos + last->len;
+		if (ns->curl) {
+			curl_easy_cleanup(ns->curl);
 		}
-		newpos = end + offset;
-		break;
-	 }
-	 default:
-		errno = EINVAL;
-		return (off_t)-1;
-	}
-
-	// pos を含むセグメントに移動。
-	uint curseg = 0;
-	for (; curseg < cookie->seglen; curseg++) {
-		struct segment *seg = &cookie->segs[curseg];
-		if (newpos < seg->pos + seg->len) {
-			break;
+		if (ns->mhandle) {
+			curl_multi_cleanup(ns->mhandle);
 		}
+
+		free(ns);
 	}
-	cookie->curseg = curseg;
-	cookie->pos = (int)newpos;
-
-	return newpos;
-}
-
-static int
-memstream_close(void *arg)
-{
-	struct memstream_cookie *cookie = (struct memstream_cookie *)arg;
-
-	for (int i = 0, end = cookie->seglen; i < end; i++) {
-		struct segment *seg = &cookie->segs[i];
-		free(seg->ptr);
-	}
-	free(cookie->segs);
-	free(cookie);
 
 	return 0;
+}
+
+// curl からのダウンロードコールバック関数
+static size_t
+curl_write_cb(void *src, size_t size, size_t nmemb, void *arg)
+{
+	struct netstream *ns = (struct netstream *)arg;
+
+	uint newsize = (uint)(size * nmemb);
+	if (newsize > ns->bufsize) {
+		char *newbuf = realloc(ns->buf, newsize);
+		if (newbuf == NULL) {
+			// と言われても何も出来ることはない気が…
+			Debug(ns->diag, "%s: realloc(%u) failed: %s",
+				__func__, newsize, strerrno());
+			return 0;
+		}
+		ns->buf = newbuf;
+		ns->bufsize = newsize;
+		Trace(ns->diag, "%s: realloc %u", __func__, newsize);
+	}
+
+	memcpy(ns->buf, src, newsize);
+	ns->bufpos = 0;
+	ns->remain = newsize;
+	Trace(ns->diag, "%s: produce %u", __func__, newsize);
+
+	return nmemb;
 }
 
 #else /* HAVE_LIBCURL */
