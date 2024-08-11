@@ -158,6 +158,7 @@ main(int ac, char *av[])
 	diag_image = diag_alloc();
 	diag_net   = diag_alloc();
 	diag_sixel = diag_alloc();
+	diag_set_timestamp(diag_net, true);
 
 	image_reduct_opt_init(&imageopt);
 	image_sixel_opt_init(&sixelopt);
