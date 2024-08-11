@@ -216,6 +216,7 @@ pstream_peek_cb(void *cookie, char *dst, int dstsize)
 
 	size_t len = MIN(ps->peeklen - ps->pos, dstsize);
 	memcpy(dst, ps->peekbuf + ps->pos, len);
+	ps->pos += len;
 	return len;
 }
 
