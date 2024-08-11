@@ -279,6 +279,31 @@ case "${with_libcurl}" in
  *)
 	CHECK_PKG([libcurl], [LIBCURL])
 
+	curl_req_major=7
+	curl_req_minor=61
+	curl_req_patch=0
+	curl_req_ver="${curl_req_major}.${curl_req_minor}.${curl_req_patch}"
+	AC_MSG_CHECKING([for libcurl >= ${curl_req_ver}])
+	AC_RUN_IFELSE([AC_LANG_PROGRAM([
+			#include <curl/curl.h>
+		], [
+			curl_version_info_data *info = curl_version_info(CURLVERSION_NOW);
+			if (info) {
+				if (info->version_num >= 
+					((${curl_req_major}<<16) | (${curl_req_minor}<<8) |
+					  ${curl_req_patch})) {
+					return 0;
+				}
+			}
+			return 1;
+		])], [
+			AC_MSG_RESULT([yes])
+		], [
+			AC_MSG_RESULT([no])
+			AC_MSG_FAILURE([libcurl >= ${curl_req_ver} required])
+		]
+	)
+
 	AC_MSG_CHECKING([whether the libcurl has mbedtls backend])
 	AC_RUN_IFELSE([AC_LANG_PROGRAM([
 			#include <curl/curl.h>
