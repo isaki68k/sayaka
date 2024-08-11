@@ -414,7 +414,6 @@ do_file(const char *infilename)
 			return false;
 		}
 
-		// XXX とりあえず
 		pstream = pstream_init_fp(ifp);
 		if (pstream == NULL) {
 			warn("pstream_init_fp(%s) failed", infilename);
