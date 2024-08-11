@@ -327,7 +327,7 @@ usage(void)
 		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
 	fprintf(stderr,
 "  -c <color>      : Color mode. 2, 8, 16, 256 (default:256)\n"
-"  --gray=<levvel> : Grayscale tone from 2 to 255 (default:255)\n"
+"  --gray=<level>  : Grayscale tone from 2 to 255 (default:255)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -d <method>     : Reduction method, none(simple) or high (default:high)\n"
