@@ -104,5 +104,6 @@ extern void string_append_cstr(string *, const char *);
 
 // util.c
 extern const char *strerrno(void);
+extern void chomp(char *);
 
 #endif // !sayaka_common_h
