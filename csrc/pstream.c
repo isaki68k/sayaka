@@ -252,10 +252,13 @@ pstream_read_cb(void *cookie, char *dst, int dstsize)
 {
 	struct pstream *ps = (struct pstream *)cookie;
 
+	DEBUG("called(dstsize=%d)", dstsize);
+
 	ssize_t len;
 	if (ps->pos < ps->peeklen) {
 		// ピークバッファ内ならピークバッファから読み出す。
 		len = MIN(ps->peeklen - ps->pos, dstsize);
+		DEBUG("from buf: pos=%u len=%d", ps->pos, (int)len);
 		memcpy(dst, ps->peekbuf + ps->pos, len);
 	} else {
 		// ピークバッファ外なら直接リード。
@@ -267,6 +270,7 @@ pstream_read_cb(void *cookie, char *dst, int dstsize)
 				return -1;
 			}
 		}
+		DEBUG("out buf : pos=%u len=%d", ps->pos, (int)len);
 	}
 	ps->pos += len;
 	return len;
@@ -279,6 +283,10 @@ pstream_seek_cb(void *cookie, off_t offset, int whence)
 	struct pstream *ps = (struct pstream *)cookie;
 	uint newpos;
 
+	DEBUG("called(offset=%jd, %s)", (intmax_t)offset,
+		(whence == SEEK_SET ? "SEEK_SET" :
+		(whence == SEEK_CUR ? "SEEK_CUR" :
+		(whence == SEEK_END ? "SEEK_END" : "?"))));
 
 	switch (whence) {
 	 case SEEK_SET:
@@ -289,17 +297,21 @@ pstream_seek_cb(void *cookie, off_t offset, int whence)
 		break;
 	 case SEEK_END:
 	 default:
+		DEBUG("whence=%d", whence);
 		errno = EINVAL;
 		return (off_t)-1;
 	}
 
 	// 読み込んであるバッファを通り過ぎることは面倒なので認めない。
 	if (newpos != ps->pos && newpos > ps->peeklen) {
+		DEBUG("newpos=%u (pos=%u peeklen=%u): EINVAL",
+			newpos, ps->pos, ps->peeklen);
 		errno = EINVAL;
 		return (off_t)-1;
 	}
 
 	ps->pos = newpos;
+	DEBUG("pos=%u", ps->pos);
 	return newpos;
 }
 
@@ -309,6 +321,7 @@ pstream_close_cb(void *cookie)
 {
 	struct pstream *ps = (struct pstream *)cookie;
 
+	DEBUG("called");
 	pstream_close(ps);
 	return 0;
 }
