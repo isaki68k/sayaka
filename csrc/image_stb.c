@@ -91,7 +91,7 @@ image_stb_read(FILE *fp, const struct diag *diag)
 
 	data = stbi_load_from_file(fp, &width, &height, &nch, 3);
 	if (data == NULL) {
-		return false;
+		return NULL;
 	}
 
 	img = image_create(width, height, 3);
