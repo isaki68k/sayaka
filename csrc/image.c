@@ -392,17 +392,6 @@ image_reduct(
 		break;
 	 }
 
-#if defined(IMAGE_FULL)
-	 case ReductorColor_GrayMean:
-	 {
-		uint graycount = ((uint)color >> 8) + 1;
-		ops.finder  = finder_graymean;
-		ops.palette = image_set_gray_palette(graycount);
-		ops.palette_count = graycount;
-		break;
-	 }
-#endif
-
 	 case ReductorColor_Fixed8:
 		op->finder  = finder_fixed8;
 		op->palette = palette_fixed8;
@@ -424,10 +413,6 @@ image_reduct(
 		op->palette_count = 256;
 		op->finder = finder_fixed256;
 		break;
-
-#if defined(IMAGE_FULL)
-	 case ReductorColor_Fixed256I?
-#endif
 
 	 default:
 		Debug(diag, "%s: Unsupported color %s", __func__,
