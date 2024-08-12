@@ -206,9 +206,8 @@ pstream_peek_cb(void *cookie, char *dst, int dstsize)
 		}
 
 		// バッファに空きがなければ拡大。
-		// 実際には、用途からして先頭の 256 バイト1回で足りる。
 		if (ps->peeklen == ps->bufsize) {
-			uint newsize = ps->bufsize + 256;
+			uint newsize = ps->bufsize + 1024;
 			char *newbuf = realloc(ps->peekbuf, newsize);
 			if (newbuf == NULL) {
 				return -1;
