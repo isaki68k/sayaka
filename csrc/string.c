@@ -105,6 +105,16 @@ string_get(const string *s)
 	}
 }
 
+// s の文字列を char * として返す。
+// s が空の時には呼び出さないこと(?)
+char *
+string_get_buf(const string *s)
+{
+	assert(s);
+
+	return s->buf;
+}
+
 // s の文字列の長さを返す。
 uint
 string_len(const string *s)

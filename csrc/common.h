@@ -95,6 +95,7 @@ extern string *string_alloc(uint);
 extern bool string_realloc(string *, uint);
 extern void string_free(string *);
 extern const char *string_get(const string *);
+extern char *string_get_buf(const string *);
 extern uint string_len(const string *);
 extern bool string_equal(const string *, const string *);
 extern bool string_equal_cstr(const string *, const char *);
