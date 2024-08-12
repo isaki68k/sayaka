@@ -246,6 +246,7 @@ image_get_loaderinfo(void)
 } while (0)
 
 	// ここはアルファベット順。
+	ADD("blurhash");
 #if defined(USE_LIBPNG)
 	ADD("libpng");
 #endif
