@@ -67,7 +67,6 @@ struct pstream {
 	int ifd;
 
 	uint pos;			// 上位レイヤから見た現在位置
-	bool seekable;		// シーク可能な期間は true
 
 	char *peekbuf;		// ピーク用バッファ
 	uint bufsize;		// 確保してあるバッファサイズ
@@ -90,7 +89,6 @@ pstream_init_common()
 		return NULL;
 	}
 
-	ps->seekable = true;
 	return ps;
 }
 
@@ -184,12 +182,9 @@ pstream_open_for_read(struct pstream *ps)
 	}
 
 	// 巻き戻さずに呼び出されたら辻褄を合わせるために seek する。
-	// (このためにこの時点までは seekable にしてある)
 	if (ps->pos != 0) {
 		fseek(fp, ps->pos, SEEK_SET);
 	}
-
-	ps->seekable = false;
 
 	return fp;
 }
@@ -283,12 +278,8 @@ static off_t
 pstream_seek_cb(void *cookie, off_t offset, int whence)
 {
 	struct pstream *ps = (struct pstream *)cookie;
-	off_t newpos;
+	uint newpos;
 
-	if (ps->seekable == false) {
-		errno = EPIPE;
-		return (off_t)-1;
-	}
 
 	switch (whence) {
 	 case SEEK_SET:
@@ -304,12 +295,12 @@ pstream_seek_cb(void *cookie, off_t offset, int whence)
 	}
 
 	// 読み込んであるバッファを通り過ぎることは面倒なので認めない。
-	if (newpos > ps->peeklen) {
+	if (newpos != ps->pos && newpos > ps->peeklen) {
 		errno = EINVAL;
 		return (off_t)-1;
 	}
 
-	ps->pos = (uint)newpos;
+	ps->pos = newpos;
 	return newpos;
 }
 
