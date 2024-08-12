@@ -31,6 +31,7 @@
 #include "common.h"
 #include "image.h"
 #include "image_proto.h"
+#include <errno.h>
 #include <string.h>
 #include <webp/decode.h>
 
@@ -146,6 +147,7 @@ image_webp_read(FILE *fp, const struct diag *diag)
 
 	if (r == VP8_STATUS_BITSTREAM_ERROR) {
 		// Webp ではない。
+		errno = 0;
 		goto abort;
 	} else if (r != 0) {
 		// それ以外のエラー。

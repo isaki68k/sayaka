@@ -31,6 +31,7 @@
 #include "common.h"
 #include "image.h"
 #include "image_proto.h"
+#include <errno.h>
 #include <string.h>
 
 struct image_reductor_handle;
@@ -260,7 +261,8 @@ image_get_loaderinfo(void)
 }
 
 // pstream から画像を読み込んで image を作成して返す。
-// 読み込めなければ NULL を返す。
+// 読み込めなければ errno をセットして NULL を返す。
+// 戻り値 NULL で errno = 0 なら画像形式を認識できなかった。
 struct image *
 image_read_pstream(struct pstream *ps, const struct diag *diag)
 {
@@ -277,12 +279,16 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 #define MATCH_THEN_READ(name)	do {	\
 	ok = image_##name##_match(pfp, diag);	\
 	fseek(pfp, 0, SEEK_SET);	\
+	if (diag_get_level(diag) >= 2) {	\
+		diag_print(diag, "%s: image_" #name "_match %u", __func__, ok);	\
+	}	\
 	if (ok) {	\
 		fclose(pfp);	\
 		fp = pstream_open_for_read(ps);	\
 		if (fp == NULL) {	\
 			if (diag_get_level(diag) >= 1) {	\
-				diag_print(diag, "pstream_open_for_read() failed");	\
+				diag_print(diag, "%s: pstream_open_for_read() failed", \
+					__func__);	\
 				return NULL;	\
 			}	\
 		}	\
@@ -306,10 +312,13 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 	MATCH_THEN_READ(blurhash);
 #endif
 
-	if (ok == -1) {
+	if (ok < 0) {
 		Debug(diag, "%s: no decoders available", __func__);
+	} else {
+		Debug(diag, "%s: unsupported image format", __func__);
 	}
 
+	errno = 0;
 	return NULL;
 }
 

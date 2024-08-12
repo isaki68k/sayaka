@@ -142,6 +142,7 @@ pstream_cleanup(struct pstream *ps)
 }
 
 // ストリームコンテキストから、判定フェーズで使うシーク可能な FILE* を返す。
+// 失敗すれば errno をセットして NULL を返す。
 // read、seek、close が可能。close は何も閉じない。
 FILE *
 pstream_open_for_peek(struct pstream *ps)
@@ -155,6 +156,7 @@ pstream_open_for_peek(struct pstream *ps)
 }
 
 // ストリームコンテキストから、直接読み込む FILE* を返す。
+// 失敗すれば errno をセットして NULL を返す。
 // read、close のみ可能。
 // クローズでディスクリプタをクローズする。(ps は解放しない)
 FILE *

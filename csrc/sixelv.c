@@ -33,6 +33,7 @@
 #include "sixelv.h"
 #include "image.h"
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <string.h>
@@ -410,13 +411,13 @@ do_file(const char *infilename)
 #if defined(HAVE_LIBCURL)
 		ifp = netstream_open(infilename, &netopt, diag_net);
 		if (ifp == NULL) {
-			warn("netstream_open(%s) failed", infilename);
+			warn("%s: netstream_open() failed", infilename);
 			return false;
 		}
 
 		pstream = pstream_init_fp(ifp);
 		if (pstream == NULL) {
-			warn("pstream_init_fp(%s) failed", infilename);
+			warn("%s: pstream_init_fp() failed", infilename);
 			goto abort;
 		}
 #else
@@ -431,14 +432,14 @@ do_file(const char *infilename)
 		} else {
 			ifd = open(infilename, O_RDONLY);
 			if (ifd < 0) {
-				warn("open(%s) failed", infilename);
+				warn("%s", infilename);
 				return false;
 			}
 		}
 
 		pstream = pstream_init_fd(ifd);
 		if (pstream == NULL) {
-			warn("pstream_init_fd(%s) failed", infilename);
+			warn("%s: pstream_init_fd() failed", infilename);
 			goto abort;
 		}
 	}
@@ -446,7 +447,11 @@ do_file(const char *infilename)
 	// 読み込み。
 	srcimg = image_read_pstream(pstream, diag_image);
 	if (srcimg == NULL) {
-		warn("image_read_fp(%s) failed", infilename);
+		if (errno == 0) {
+			warnx("%s: Unknown image format", infilename);
+		} else {
+			warn("%s: image_read_pstream() failed", infilename);
+		}
 		goto abort;
 	}
 
