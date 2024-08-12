@@ -96,7 +96,7 @@ image_reduct_opt_init(struct image_reduct_opt *opt)
 struct image *
 image_create(uint width_, uint height_, uint channels_)
 {
-	struct image *img = calloc(sizeof(struct image), 1);
+	struct image *img = calloc(1, sizeof(struct image));
 	if (img == NULL) {
 		return NULL;
 	}
