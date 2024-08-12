@@ -80,6 +80,7 @@ static int pstream_peek_cb(void *, char *, int);
 static int pstream_read_cb(void *, char *, int);
 static off_t pstream_seek_cb(void *, off_t, int);
 static int pstream_close_cb(void *);
+static off_t psseek(struct pstream *, off_t);
 
 static struct pstream *
 pstream_init_common()
@@ -307,24 +308,24 @@ pstream_seek_cb(void *cookie, off_t offset, int whence)
 		return newpos;
 	}
 
-	// バッファ外への移動は、下位ストリームがサポートしていれば可能?
-	// 実際には、バッファを超えて読み進めた後でピークバッファ内に seek で
-	// 戻ってそこから再び読み進めてバッファを超えると話が合わなくなる。
-	if (newpos > ps->peeklen) {
-		off_t r;
-		if (ps->ifp) {
-			if (fseek(ps->ifp, (long)newpos, SEEK_SET) < 0) {
-				DEBUG("fseek(%u): %s", (uint)newpos, strerrno());
-				return -1;
+	if (newpos < ps->peeklen) {
+		if (ps->pos > ps->peeklen) {
+			// バッファ外からバッファ内に戻る場合は、
+			// 下位ストリームの現在位置をバッファ境界まで巻き戻さないと、
+			// 次に読み進めてバッファ境界を超える時に話が合わなくなる。
+			// 今のところこのケースが呼ばれることはないが。
+			if (psseek(ps, ps->peeklen) < 0) {
+				DEBUG("psseek(%u) failed", ps->peeklen);
+				// 今のところ問題ないのでスルーする
 			}
 		} else {
-			r = lseek(ps->ifd, (off_t)newpos, SEEK_SET);
-			if (r < 0) {
-				DEBUG("lseek(%u): %s", (uint)newpos, strerrno());
-				return -1;
-			}
-			// 同じはずだが一応。
-			newpos = r;
+			// バッファ内からバッファ内への移動は無制限に可能。
+		}
+	} else {
+		// バッファ外への移動は下位ストリームに依存。
+		if (psseek(ps, newpos) < 0) {
+			DEBUG("psseek(%u) failed", newpos);
+			return -1;
 		}
 	}
 
@@ -342,4 +343,31 @@ pstream_close_cb(void *cookie)
 	DEBUG("called");
 	pstream_close(ps);
 	return 0;
+}
+
+// pstream に対する seek。whence は SEEK_SET 固定。
+// 戻り値は off_t の現在位置。
+// エラーなら errno をセットして (off_t)-1 を返す。
+static off_t
+psseek(struct pstream *ps, off_t offset)
+{
+	off_t newoff;
+
+	if (ps->ifp) {
+		if (fseek(ps->ifp, (long)offset, SEEK_SET) < 0) {
+			DEBUG("fseek(%u): %s", (uint)offset, strerrno());
+			return (off_t)-1;
+		}
+		// 成功したのならここにいるはず。
+		newoff = offset;
+	} else {
+		newoff = lseek(ps->ifd, offset, SEEK_SET);
+		if (newoff < 0) {
+			DEBUG("lseek(%u): %s", (uint)offset, strerrno());
+			return newoff;
+		}
+	}
+
+	DEBUG("newoff=%jd", (intmax_t)newoff);
+	return newoff;
 }
