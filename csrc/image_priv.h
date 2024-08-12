@@ -24,8 +24,14 @@
  * SUCH DAMAGE.
  */
 
+//
+// 画像処理 (private)
+//
+
 #ifndef sayaka_image_priv_h
 #define sayaka_image_priv_h
+
+#include "image.h"
 
 #define USE_BLURHASH
 #if defined(HAVE_LIBPNG)
@@ -37,6 +43,19 @@
 #if defined(HAVE_STB_IMAGE)
 #define USE_STB_IMAGE
 #endif
+
+typedef union ColorRGB_ {
+	uint32 u32;
+	struct {
+		uint8 r;
+		uint8 g;
+		uint8 b;
+		uint8 a;
+	};
+} ColorRGB;
+
+// image.c
+extern struct image *image_create(uint width_, uint height_, uint channels_);
 
 // image_*.c
 #define IMAGE_HANDLER(name)	\

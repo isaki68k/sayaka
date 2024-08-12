@@ -31,8 +31,7 @@
 #if !defined(GEN_L2SRGB) && !defined(GEN_BASE83)
 
 #include "common.h"
-#include "image.h"
-#include "image_proto.h"
+#include "image_priv.h"
 #include <string.h>
 #include <math.h>
 

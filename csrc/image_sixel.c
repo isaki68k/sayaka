@@ -30,7 +30,7 @@
 //
 
 #include "common.h"
-#include "image.h"
+#include "image_priv.h"
 #include <string.h>
 
 #define ESC "\x1b"

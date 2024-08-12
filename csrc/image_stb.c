@@ -29,8 +29,7 @@
 //
 
 #include "common.h"
-#include "image.h"
-#include "image_proto.h"
+#include "image_priv.h"
 
 // 外部ライブラリでサポートしているフォーマットを除く。
 #if defined(USE_LIBGIF)

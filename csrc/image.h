@@ -36,6 +36,7 @@
 struct diag;
 struct pstream;
 typedef struct string_ string;
+typedef union ColorRGB_ ColorRGB;
 
 // リサイズの基準軸。
 typedef enum {
@@ -139,16 +140,6 @@ typedef enum {
 	ReductorColor_MASK = 0xff,
 } ReductorColor;
 
-typedef union {
-	uint32 u32;
-	struct {
-		uint8 r;
-		uint8 g;
-		uint8 b;
-		uint8 a;
-	};
-} ColorRGB;
-
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define RGBToU32(r, g, b)	((uint32)(((r) <<  0) | ((g) << 8) | ((b) << 16)))
 #else
@@ -186,7 +177,6 @@ struct image_reduct_opt {
 	ReductorColor color;
 };
 extern void image_reduct_opt_init(struct image_reduct_opt *);
-extern struct image *image_create(uint width_, uint height_, uint channels_);
 extern struct image *image_read_pstream(struct pstream *, const struct diag *);
 extern void image_free(struct image *);
 extern uint image_get_stride(const struct image *);

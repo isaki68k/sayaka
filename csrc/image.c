@@ -29,8 +29,7 @@
 //
 
 #include "common.h"
-#include "image.h"
-#include "image_proto.h"
+#include "image_priv.h"
 #include <errno.h>
 #include <string.h>
 
