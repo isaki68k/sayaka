@@ -24,8 +24,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef sayaka_image_proto_h
-#define sayaka_image_proto_h
+#ifndef sayaka_image_priv_h
+#define sayaka_image_priv_h
 
 #define USE_BLURHASH
 #if defined(HAVE_LIBPNG)
@@ -50,4 +50,4 @@ IMAGE_HANDLER(webp);
 
 #undef IMAGE_HANDLER
 
-#endif // !sayaka_image_proto_h
+#endif // !sayaka_image_priv_h

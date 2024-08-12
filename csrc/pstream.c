@@ -49,6 +49,17 @@
 #include <string.h>
 #include <unistd.h>
 
+// ここは diag 遠いので…
+#if 0
+#define DEBUG(fmt...)	do {	\
+	printf("%s: ", __func__);	\
+	printf(fmt);	\
+	printf("\n");	\
+} while (0)
+#else
+#define DEBUG(fmt...)	/**/
+#endif
+
 struct pstream {
 	// 入力となるストリームかディスクリプタ。
 	// ifp != NULL なら ifp が有効。ifp == NULL なら ifd が有効。
@@ -61,6 +72,7 @@ struct pstream {
 	char *peekbuf;		// ピーク用バッファ
 	uint bufsize;		// 確保してあるバッファサイズ
 	uint peeklen;		// ピークバッファに読み込んである長さ
+	bool done;			// EOF に到達した
 };
 
 static struct pstream *pstream_init_common(void);
@@ -182,24 +194,34 @@ pstream_open_for_read(struct pstream *ps)
 	return fp;
 }
 
-// 現在位置から dstsize バイトを読み込んでバッファする。
+// 現在位置から最大 dstsize バイトを読み込んでバッファする。
 static int
 pstream_peek_cb(void *cookie, char *dst, int dstsize)
 {
 	struct pstream *ps = (struct pstream *)cookie;
 
-	// 必要になる総バイト数。
-	uint newsize = ps->pos + dstsize;
+	DEBUG("called(dstsize=%u)", dstsize);
+	while (ps->pos == ps->peeklen) {
+		// 内部バッファを末尾まで読んでいたら、次の読み込みを試行。
 
-	if (newsize > ps->peeklen) {
-		// 現在のピークバッファでは足りない場合。
-
-		char *newbuf = realloc(ps->peekbuf, newsize);
-		if (newbuf == NULL) {
-			return -1;
+		// 終了フラグが立っていれば EOF。
+		if (ps->done) {
+			DEBUG("return EOF");
+			return 0;
 		}
-		ps->peekbuf = newbuf;
-		ps->bufsize = newsize;
+
+		// バッファに空きがなければ拡大。
+		// 実際には、用途からして先頭の 256 バイト1回で足りる。
+		if (ps->peeklen == ps->bufsize) {
+			uint newsize = ps->bufsize + 256;
+			char *newbuf = realloc(ps->peekbuf, newsize);
+			if (newbuf == NULL) {
+				return -1;
+			}
+			ps->peekbuf = newbuf;
+			ps->bufsize = newsize;
+			DEBUG("realloc %u", newsize);
+		}
 
 		// 前回は peeklen まで読み込んでいるので、続きを読み込む。
 		char *buf = ps->peekbuf + ps->peeklen;
@@ -213,10 +235,18 @@ pstream_peek_cb(void *cookie, char *dst, int dstsize)
 				return -1;
 			}
 		}
+		DEBUG("n = %d", (int)n);
 		ps->peeklen += n;
+
+		// この読み込みで EOF に到達した。
+		if (n == 0) {
+			ps->done = true;
+		}
 	}
 
+	// 内部バッファにある限りは使う。
 	size_t len = MIN(ps->peeklen - ps->pos, dstsize);
+	DEBUG("len = %u from pos=%u", (uint)len, ps->pos);
 	memcpy(dst, ps->peekbuf + ps->pos, len);
 	ps->pos += len;
 	return len;
