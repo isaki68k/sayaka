@@ -80,6 +80,7 @@ static int pstream_peek_cb(void *, char *, int);
 static int pstream_read_cb(void *, char *, int);
 static off_t pstream_seek_cb(void *, off_t, int);
 static int pstream_close_cb(void *);
+static ssize_t psread(struct pstream *, void *, size_t);
 static off_t psseek(struct pstream *, off_t);
 
 static struct pstream *
@@ -221,14 +222,9 @@ pstream_peek_cb(void *cookie, char *dst, int dstsize)
 		// 前回は peeklen まで読み込んでいるので、続きを読み込む。
 		char *buf = ps->peekbuf + ps->peeklen;
 		size_t len = ps->bufsize - ps->peeklen;
-		ssize_t n;
-		if (ps->ifp) {
-			n = fread(buf, 1, len, ps->ifp);
-		} else {
-			n = read(ps->ifd, buf, len);
-			if (n < 0) {
-				return -1;
-			}
+		ssize_t n = psread(ps, buf, len);
+		if (n < 0) {
+			return -1;
 		}
 		DEBUG("n = %d", (int)n);
 		ps->peeklen += n;
@@ -263,13 +259,9 @@ pstream_read_cb(void *cookie, char *dst, int dstsize)
 		memcpy(dst, ps->peekbuf + ps->pos, len);
 	} else {
 		// ピークバッファ外なら直接リード。
-		if (ps->ifp) {
-			len = fread(dst, 1, dstsize, ps->ifp);
-		} else {
-			len = read(ps->ifd, dst, dstsize);
-			if (len < 0) {
-				return -1;
-			}
+		len = psread(ps, dst, dstsize);
+		if (len < 0) {
+			return -1;
 		}
 		DEBUG("out buf : pos=%u len=%d", ps->pos, (int)len);
 	}
@@ -343,6 +335,31 @@ pstream_close_cb(void *cookie)
 	DEBUG("called");
 	pstream_close(ps);
 	return 0;
+}
+
+// pstream に対する read。read(2) 互換。
+static ssize_t
+psread(struct pstream *ps, void *dst, size_t len)
+{
+	ssize_t n;
+
+	if (ps->ifp) {
+		n = fread(dst, 1, len, ps->ifp);
+		if (n == 0) {
+			if (ferror(ps->ifp)) {
+				DEBUG("fread(%zu): %s", len, strerrno());
+				return -1;
+			}
+		}
+	} else {
+		n = read(ps->ifd, dst, len);
+		if (n < 0) {
+			DEBUG("read(%zu): %s", len, strerrno());
+			return -1;
+		}
+	}
+
+	return n;
 }
 
 // pstream に対する seek。whence は SEEK_SET 固定。
