@@ -38,7 +38,7 @@
 static bool sixel_preamble(FILE *, const struct image *,
 	const struct image_sixel_opt *);
 static bool sixel_postamble(FILE *);
-static bool sixel_core(FILE *, const struct image *, const struct diag *);
+static bool sixel_convert(FILE *, const struct image *, const struct diag *);
 static void sixel_repunit(string *, uint, uint8);
 
 // opt を初期化する。
@@ -59,7 +59,7 @@ image_sixel_write(FILE *fp, const struct image *img,
 		return false;
 	}
 
-	if (sixel_core(fp, img, diag) == false) {
+	if (sixel_convert(fp, img, diag) == false) {
 		return false;
 	}
 
@@ -118,7 +118,7 @@ sixel_postamble(FILE *fp)
 #define REPUNIT(s, n, ptn)	sixel_repunit(s, n, ptn)
 
 static bool
-sixel_core(FILE *fp, const struct image *img, const struct diag *diag)
+sixel_convert(FILE *fp, const struct image *img, const struct diag *diag)
 {
 	uint w = img->width;
 	uint h = img->height;
