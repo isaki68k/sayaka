@@ -302,12 +302,30 @@ pstream_seek_cb(void *cookie, off_t offset, int whence)
 		return (off_t)-1;
 	}
 
-	// 読み込んであるバッファを通り過ぎることは面倒なので認めない。
-	if (newpos != ps->pos && newpos > ps->peeklen) {
-		DEBUG("newpos=%u (pos=%u peeklen=%u): EINVAL",
-			newpos, ps->pos, ps->peeklen);
-		errno = EINVAL;
-		return (off_t)-1;
+	if (newpos == ps->pos) {
+		DEBUG("newpos=%u (unchanged)", newpos);
+		return newpos;
+	}
+
+	// バッファ外への移動は、下位ストリームがサポートしていれば可能?
+	// 実際には、バッファを超えて読み進めた後でピークバッファ内に seek で
+	// 戻ってそこから再び読み進めてバッファを超えると話が合わなくなる。
+	if (newpos > ps->peeklen) {
+		off_t r;
+		if (ps->ifp) {
+			if (fseek(ps->ifp, (long)newpos, SEEK_SET) < 0) {
+				DEBUG("fseek(%u): %s", (uint)newpos, strerrno());
+				return -1;
+			}
+		} else {
+			r = lseek(ps->ifd, (off_t)newpos, SEEK_SET);
+			if (r < 0) {
+				DEBUG("lseek(%u): %s", (uint)newpos, strerrno());
+				return -1;
+			}
+			// 同じはずだが一応。
+			newpos = r;
+		}
 	}
 
 	ps->pos = newpos;
