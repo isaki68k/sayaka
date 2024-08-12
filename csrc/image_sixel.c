@@ -38,7 +38,11 @@
 static bool sixel_preamble(FILE *, const struct image *,
 	const struct image_sixel_opt *);
 static bool sixel_postamble(FILE *);
-static bool sixel_convert(FILE *, const struct image *, const struct diag *);
+static bool sixel_convert_normal(FILE *, const struct image *,
+	const struct diag *);
+static bool sixel_convert_ormode(FILE *, const struct image *,
+	const struct diag *);
+static void sixel_ormode_h6(string *, uint8 *, const uint8 *, uint, uint, uint);
 static void sixel_repunit(string *, uint, uint8);
 
 // opt を初期化する。
@@ -59,8 +63,14 @@ image_sixel_write(FILE *fp, const struct image *img,
 		return false;
 	}
 
-	if (sixel_convert(fp, img, diag) == false) {
-		return false;
+	if (opt->output_ormode) {
+		if (sixel_convert_ormode(fp, img, diag) == false) {
+			return false;
+		}
+	} else {
+		if (sixel_convert_normal(fp, img, diag) == false) {
+			return false;
+		}
 	}
 
 	if (sixel_postamble(fp) == false) {
@@ -117,8 +127,9 @@ sixel_postamble(FILE *fp)
 
 #define REPUNIT(s, n, ptn)	sixel_repunit(s, n, ptn)
 
+// SIXEL 従来モードで出力。
 static bool
-sixel_convert(FILE *fp, const struct image *img, const struct diag *diag)
+sixel_convert_normal(FILE *fp, const struct image *img, const struct diag *diag)
 {
 	uint w = img->width;
 	uint h = img->height;
@@ -257,6 +268,135 @@ sixel_convert(FILE *fp, const struct image *img, const struct diag *diag)
 	free(min_x);
 	free(max_x);
 	return rv;
+}
+
+static uint
+mylog2(uint n)
+{
+#if defined(HAVE___BUILTIN_POPCOUNT)
+	return 32 - __builtin_popcount(n);
+#else
+	for (uint i = 0; i < 8; i++) {
+		if (n <= (1U << i)) {
+			return i;
+		}
+	}
+	return 8;
+#endif
+}
+
+// SIXEL OR モードで出力。
+static bool
+sixel_convert_ormode(FILE *fp, const struct image *img, const struct diag *diag)
+{
+	const uint8 *src = img->buf;
+	uint w = img->width;
+	uint h = img->height;
+	uint palcnt = img->palette_count;
+	string *linebuf = NULL;
+	uint8 *sixelbuf = NULL;
+	uint y;
+	bool rv = true;
+
+	// パレットのビット数 (0 は来ないはず)
+	uint nplane = mylog2(palcnt);
+	linebuf = string_alloc((w + 5) * nplane);
+	if (linebuf == NULL) {
+		goto done;
+	}
+
+	sixelbuf = malloc(w * nplane);
+	if (sixelbuf == NULL) {
+		goto done;
+	}
+
+	// 6ラスターずつ。
+	for (y = 0; y < h - 6; y += 6) {
+		sixel_ormode_h6(linebuf, sixelbuf, src, w, 6, nplane);
+		if (fwrite(string_get(linebuf), string_len(linebuf), 1, fp) < 1) {
+			goto done;
+		}
+		string_clear(linebuf);
+		src += w * 6;
+	}
+
+	// 最終 SIXEL 行。
+	sixel_ormode_h6(linebuf, sixelbuf, src, w, h - y, nplane);
+	if (fwrite(string_get(linebuf), string_len(linebuf), 1, fp) < 1) {
+		goto done;
+	}
+
+	rv = true;
+ done:
+	free(sixelbuf);
+	string_free(linebuf);
+	return rv;
+}
+
+// sixelbuf は毎回同じサイズなので呼び出し元で一度だけ確保しておく。
+static void
+sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint8 *src,
+	uint width, uint height, uint nplane)
+{
+	uint8 *buf;
+
+	// y = 0 のケースで初期化も同時に実行する。
+	buf = sixelbuf;
+	for (uint x = 0; x < width; x++) {
+		uint8 cc = *src++;
+		for (uint i = 0; i < nplane; i++) {
+			*buf++ = (cc & 1) << 0;
+			cc >>= 1;
+		}
+	}
+
+	// y >= 1 は重ねていく。
+	for (uint y = 1; y < height; y++) {
+		buf = sixelbuf;
+		for (uint x = 0; x < width; x++) {
+			uint8 cc = *src++;
+			for (uint i = 0; i < nplane; i++) {
+				*buf |= (cc & 1) << y;
+				buf++;
+				cc >>= 1;
+			}
+		}
+	}
+
+	// 各プレーンデータを SIXEL に変換。
+	for (uint i = 0; i < nplane; i++) {
+		buf = &sixelbuf[i];
+
+		string_append_char(dst, '#');
+		char numbuf[12];
+		snprintf(numbuf, sizeof(numbuf), "%u", 1U << i);
+		string_append_cstr(dst, numbuf);
+
+		// [0]
+		uint rept = 1;
+		uint8 ptn = *buf;
+		buf += nplane;
+
+		// 1 から
+		for (uint x = 1; x < width; x++, buf += nplane) {
+			if (ptn == *buf) {
+				rept++;
+			} else {
+				sixel_repunit(dst, rept, ptn);
+				rept = 1;
+				ptn = *buf;
+			}
+		}
+		// 末尾の 0 パターンは出力しなくていい。
+		if (ptn != 0) {
+			sixel_repunit(dst, rept, ptn);
+		}
+		string_append_char(dst, '$');
+	}
+
+	// 復帰を改行に書き換える。
+	char *p = string_get_buf(dst);
+	p[string_len(dst) - 1] = '-';
 }
 
 static void

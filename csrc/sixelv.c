@@ -80,6 +80,7 @@ enum {
 	OPT_height,
 	OPT_help,
 	OPT_help_all,
+	OPT_ormode,
 	OPT_output_format,
 	OPT_resize_axis,
 	OPT_version,
@@ -99,6 +100,7 @@ static const struct option longopts[] = {
 	{ "help",			no_argument,		NULL,	OPT_help, },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ "ignore-error",	no_argument,		NULL,	'i' },
+	{ "ormode",			no_argument,		NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
 	{ "version",		no_argument,		NULL,	'v' },
@@ -257,6 +259,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_ormode:
+			sixelopt.output_ormode = true;
+			break;
+
 		 case 'o':
 			if (strcmp(optarg, "-") == 0) {
 				output_filename = NULL;
@@ -333,7 +339,7 @@ usage(void)
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -d <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
-"  --ignore-error\n"
+"  --ignore-error                        --ormode\n"
 "  --debug-image=<0..2>\n"
 "  --debug-net  =<0..2>\n"
 "  --debug-sixel=<0..2>\n"
@@ -369,6 +375,7 @@ help_all(void)
 "     2        : 2-pixels (right, down)\n"
 "     3        : 3-pixels (right, down, rightdown)\n"
 "  -O <fmt>, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
+"  --ormode    : Output SIXEL by OR-mode\n"
 "  --ignore-error\n"
 "  --debug-image=<0..2>\n"
 "  --debug-net  =<0..2>\n"
