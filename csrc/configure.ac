@@ -82,6 +82,16 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		AC_MSG_RESULT(no)
 	])
 
+AC_MSG_CHECKING(for __builtin_popcount)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
+		__builtin_popcount(1);
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE___BUILTIN_POPCOUNT)
+	],[
+		AC_MSG_RESULT(no)
+	])
+
 AC_MSG_CHECKING(for __attribute__((__format__)))
 old_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} -Wall -Werror"

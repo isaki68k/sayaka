@@ -3924,6 +3924,38 @@ esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_popcount" >&5
+printf %s "checking for __builtin_popcount... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+		__builtin_popcount(1);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE___BUILTIN_POPCOUNT 1" >>confdefs.h
+
+
+else case e in #(
+  e)
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __attribute__((__format__))" >&5
 printf %s "checking for __attribute__((__format__))... " >&6; }
 old_CFLAGS="${CFLAGS}"
