@@ -34,6 +34,8 @@ SRCS_sixelv+=	image_bmp.c
 
 SRCS_all=		${SRCS_common} ${SRCS_sixelv}
 
+LIBS+=	-lm
+
 all:	sixelv
 
 sixelv:	sixelv.o libsixelv.a libcommon.a
