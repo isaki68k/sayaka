@@ -140,7 +140,7 @@ AC_DEFUN([CHECK_HEADER], [
 # CHECK_PKG($1=pkgname, $2=PKGNAME)
 AC_DEFUN([CHECK_PKG], [
 	AC_MSG_CHECKING([for $1])
-	if ${PKG_CONFIG} --exists $1; then
+	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists $1; then
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([HAVE_$2])
 		AC_SUBST([DEFINE_$2], [HAVE_$2=yes])
@@ -223,11 +223,19 @@ if test "x${has_getprogname}" = "xno"; then
 fi
 
 AC_CHECK_TOOL([PKG_CONFIG], [pkg-config], [:])
-if test x"${PKG_CONFIG}" = x":"; then
+case "${PKG_CONFIG}" in
+ :)
 	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found.
 	On NetBSD(pkgsrc), install pkgsrc/devel/pkgconf
-	On Ubuntu, sudo apt install pkg-config])
-fi
+	On Ubuntu, sudo apt install pkg-config
+	Or you can ignore pkg-config by 'env PKG_CONFIG=no ...'])
+	;;
+ no)
+	PKG_CONFIG=:
+	;;
+ *)
+	;;
+esac
 
 # stb-image はデフォルト使用する。
 AC_ARG_ENABLE([stb-image],
