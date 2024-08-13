@@ -345,11 +345,12 @@ usage(void)
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -d <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
+"  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
+"  --diffusion=<diffusion>               --resize-axis=<axis>\n"
 "  --ormode                              --suppress-palette\n"
-"  --ignore-error\n"
-"  --debug-image=<0..2>\n"
-"  --debug-net  =<0..2>\n"
-"  --debug-sixel=<0..2>\n"
+"  -i, --ignore-error                    --ciphers=<ciphers>\n"
+"  --help-all                            --debug-image=<0..2>\n"
+"  --debug-net=<0..2>                    --debug-sixel=<0..2>\n"
 	);
 }
 
@@ -382,12 +383,15 @@ help_all(void)
 "     2        : 2-pixels (right, down)\n"
 "     3        : 3-pixels (right, down, rightdown)\n"
 "  -O <fmt>, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
+"  -o <filename> : Output filename, '-' means stdout (default: -)\n"
 "  --ormode    : Output SIXEL by OR-mode\n"
 "  --suppress-palette : Suppress output of SIXEL palette definition\n"
-"  --ignore-error\n"
+"  --ciphers <ciphers> : Only \"RSA\" can be specified for now\n"
+"  -i, --ignore-error\n"
 "  --debug-image=<0..2>\n"
 "  --debug-net  =<0..2>\n"
 "  --debug-sixel=<0..2>\n"
+"  --help-all  : This help.\n"
 	);
 	exit(0);
 }
