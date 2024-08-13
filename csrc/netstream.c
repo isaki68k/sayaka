@@ -247,7 +247,7 @@ netstream_get_sessioninfo(struct netstream *ns)
 			mbedtls_ssl_get_ciphersuite(ssl));
 	} else
 #endif
-#if defined(LIBCURL_HAS_OPENSSL_BACKEND) && defined(HAVE_OPENTLS)
+#if defined(LIBCURL_HAS_OPENSSL_BACKEND) && defined(HAVE_OPENSSL)
 	if (csession->backend == CURLSSLBACKEND_OPENSSL) {
 		SSL_SESSION *sess = SSL_get_session(csession->internals);
 		int ssl_version = SSL_SESSION_get_protocol_version(sess);
