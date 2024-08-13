@@ -156,7 +156,7 @@ AC_DEFUN([CHECK_PKG], [
 	fi
 ])
 
-# CHECK_LIB($1=name, $2=libs, $3=include, $4=src)
+# CHECK_LIB($1=name, $2=NAME, $3=libs, $4=include, $5=src)
 AC_DEFUN([CHECK_LIB], [
 	AC_MSG_CHECKING([for $1])
 	for path in ${PATHS}; do
@@ -164,14 +164,14 @@ AC_DEFUN([CHECK_LIB], [
 		old_LIBS=${LIBS}
 		case ${path} in
 		 none)
-			LIBS="${LIBS} $2"
+			LIBS="${LIBS} $3"
 			;;
 		 *)
 			CFLAGS="${CFLAGS} -I${path}/include"
-			LIBS="${LIBS} -L${path}/lib $2"
+			LIBS="${LIBS} -L${path}/lib $3"
 			;;
 		esac
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([$3], [$4])], [
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([$4], [$5])], [
 			has_$1=yes
 			break
 		], [
@@ -182,6 +182,8 @@ AC_DEFUN([CHECK_LIB], [
 	done
 	if test x"${has_$1}" = x"yes"; then
 		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE_$2])
+		AC_SUBST([DEFINE_$2], [HAVE_$2=yes])
 	else
 		AC_MSG_RESULT([no])
 	fi
@@ -297,7 +299,7 @@ case "${with_libcurl}" in
  *)
 	CHECK_PKG([libcurl], [LIBCURL])
 	if test x"${has_libcurl}" \!= x"yes"; then
-		CHECK_LIB([libcurl], [-lcurl], [
+		CHECK_LIB([libcurl], [LIBCURL], [-lcurl], [
 			#include <curl/curl.h>
 		], [
 			curl_version_info(CURLVERSION_NOW);
@@ -359,18 +361,27 @@ case "${with_libcurl}" in
 	)
 
 	if test x"${libcurl_has_mbedtls}" = x"yes"; then
-		CHECK_LIB([mbedtls], [-lmbedtls -lmbedcrypto], [
-			#include <mbedtls/net_sockets.h>
-			#include <mbedtls/entropy.h>
-		], [
-			mbedtls_net_context net;
-			mbedtls_entropy_context e;
-			mbedtls_net_init(&net);
-			mbedtls_entropy_init(&e);
-		])
-		if test x"${has_mbedtls}" \!= x"yes"; then
-			AC_MSG_FAILURE([mbedTLS not found??])
-		fi
+		AC_ARG_WITH([mbedtls],
+			AS_HELP_STRING([--with-mbedtls], [Only required for debug info]))
+		case "${with_mbedtls}" in
+		 no)
+			;;
+		 *)
+			CHECK_LIB([mbedtls], [MBEDTLS], [-lmbedtls -lmbedcrypto], [
+				#include <mbedtls/net_sockets.h>
+				#include <mbedtls/entropy.h>
+			], [
+				mbedtls_net_context net;
+				mbedtls_entropy_context e;
+				mbedtls_net_init(&net);
+				mbedtls_entropy_init(&e);
+			])
+			if test x"${has_mbedtls}" \!= x"yes"; then
+				AC_MSG_FAILURE(
+					[--with-mbedtls is specified but mbedtls not found.])
+			fi
+			;;
+		esac
 	fi
 
 	AC_MSG_CHECKING([whether the libcurl has openssl backend])
@@ -396,16 +407,26 @@ case "${with_libcurl}" in
 	)
 
 	if test x"${libcurl_has_openssl}" = x"yes"; then
-		CHECK_LIB([openssl], [-lssl -lcrypto], [
-			#include <openssl/sha.h>
-			#include <openssl/ssl.h>
-		], [
-			SSL_library_init();		// libssl
-			SHA1_Init(NULL);		// libcrypto
-		])
-		if test x"${has_openssl}" \!= x"yes"; then
-			AC_MSG_FAILURE([OpenSSL not found??])
-		fi
+		AC_ARG_WITH([openssl],
+			AS_HELP_STRING([--with-openssl], [Only required for debug info]))
+		case "${with_openssl}" in
+		 no)
+			;;
+		 *)
+			CHECK_LIB([openssl], [OPENSSL], [-lssl -lcrypto], [
+				#include <openssl/sha.h>
+				#include <openssl/ssl.h>
+			], [
+				SSL_library_init();		// libssl
+				SHA1_Init(NULL);		// libcrypto
+			])
+			if test x"${has_openssl}" \!= x"yes"; then
+				AC_MSG_FAILURE(
+					[--with-openssl is specified but openssl not found.
+	On Ubuntu, sudo apt install XXX])
+			fi
+			;;
+		esac
 	fi
 	;;
 esac

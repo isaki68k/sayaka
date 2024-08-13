@@ -640,6 +640,8 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+DEFINE_OPENSSL
+DEFINE_MBEDTLS
 DEFINE_LIBCURL
 DEFINE_LIBWEBP
 DEFINE_LIBPNG
@@ -707,6 +709,8 @@ enable_stb_image
 with_libpng
 with_libwebp
 with_libcurl
+with_mbedtls
+with_openssl
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1346,6 +1350,8 @@ Optional Packages:
   --with-libpng           Use libpng for PNG instead of stb_image (default:no)
   --with-libwebp          Use libwebp (default:yes)
   --with-libcurl          Use libcurl for network (default:yes)
+  --with-mbedtls          Only required for debug info
+  --with-openssl          Only required for debug info
 
 Some influential environment variables:
   CC          C compiler command
@@ -3999,7 +4005,7 @@ CFLAGS="${old_CFLAGS}"
 # CHECK_PKG($1=pkgname, $2=PKGNAME)
 
 
-# CHECK_LIB($1=name, $2=libs, $3=include, $4=src)
+# CHECK_LIB($1=name, $2=NAME, $3=libs, $4=include, $5=src)
 
 
 PATHS="none /usr/pkg /usr/local"
@@ -4503,6 +4509,10 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 	if test x"${has_libcurl}" = x"yes"; then
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_LIBCURL 1" >>confdefs.h
+
+		DEFINE_LIBCURL=HAVE_LIBCURL=yes
+
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
@@ -4637,6 +4647,17 @@ fi
 
 	if test x"${libcurl_has_mbedtls}" = x"yes"; then
 
+# Check whether --with-mbedtls was given.
+if test ${with_mbedtls+y}
+then :
+  withval=$with_mbedtls;
+fi
+
+		case "${with_mbedtls}" in
+		 no)
+			;;
+		 *)
+
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
 printf %s "checking for mbedtls... " >&6; }
 	for path in ${PATHS}; do
@@ -4654,17 +4675,17 @@ printf %s "checking for mbedtls... " >&6; }
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			#include <mbedtls/net_sockets.h>
-			#include <mbedtls/entropy.h>
+				#include <mbedtls/net_sockets.h>
+				#include <mbedtls/entropy.h>
 
 int
 main (void)
 {
 
-			mbedtls_net_context net;
-			mbedtls_entropy_context e;
-			mbedtls_net_init(&net);
-			mbedtls_entropy_init(&e);
+				mbedtls_net_context net;
+				mbedtls_entropy_context e;
+				mbedtls_net_init(&net);
+				mbedtls_entropy_init(&e);
 
   ;
   return 0;
@@ -4690,17 +4711,23 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 	if test x"${has_mbedtls}" = x"yes"; then
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_MBEDTLS 1" >>confdefs.h
+
+		DEFINE_MBEDTLS=HAVE_MBEDTLS=yes
+
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 	fi
 
-		if test x"${has_mbedtls}" \!= x"yes"; then
-			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+			if test x"${has_mbedtls}" \!= x"yes"; then
+				{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
-as_fn_error $? "mbedTLS not found??
+as_fn_error $? "--with-mbedtls is specified but mbedtls not found.
 See 'config.log' for more details" "$LINENO" 5; }
-		fi
+			fi
+			;;
+		esac
 	fi
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the libcurl has openssl backend" >&5
@@ -4760,6 +4787,17 @@ fi
 
 	if test x"${libcurl_has_openssl}" = x"yes"; then
 
+# Check whether --with-openssl was given.
+if test ${with_openssl+y}
+then :
+  withval=$with_openssl;
+fi
+
+		case "${with_openssl}" in
+		 no)
+			;;
+		 *)
+
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for openssl" >&5
 printf %s "checking for openssl... " >&6; }
 	for path in ${PATHS}; do
@@ -4777,15 +4815,15 @@ printf %s "checking for openssl... " >&6; }
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			#include <openssl/sha.h>
-			#include <openssl/ssl.h>
+				#include <openssl/sha.h>
+				#include <openssl/ssl.h>
 
 int
 main (void)
 {
 
-			SSL_library_init();		// libssl
-			SHA1_Init(NULL);		// libcrypto
+				SSL_library_init();		// libssl
+				SHA1_Init(NULL);		// libcrypto
 
   ;
   return 0;
@@ -4811,17 +4849,24 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
 	if test x"${has_openssl}" = x"yes"; then
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_OPENSSL 1" >>confdefs.h
+
+		DEFINE_OPENSSL=HAVE_OPENSSL=yes
+
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 	fi
 
-		if test x"${has_openssl}" \!= x"yes"; then
-			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+			if test x"${has_openssl}" \!= x"yes"; then
+				{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
-as_fn_error $? "OpenSSL not found??
+as_fn_error $? "--with-openssl is specified but openssl not found.
+	On Ubuntu, sudo apt install XXX
 See 'config.log' for more details" "$LINENO" 5; }
-		fi
+			fi
+			;;
+		esac
 	fi
 	;;
 esac
