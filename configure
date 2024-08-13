@@ -646,6 +646,7 @@ DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_LIBWEBP
 DEFINE_LIBPNG
+DEFINE_LIBJPEG
 PKG_CONFIG
 DEFINE___THREAD
 WARNFLAGS
@@ -706,6 +707,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_libjpeg
 with_libpng
 with_libwebp
 with_openssl
@@ -1340,6 +1342,8 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-libjpeg          Use libjpeg for JPEG instead of stb_image
+                          (default:yes)
   --with-libpng           Use libpng for PNG instead of stb_image (default:no)
   --with-libwebp          Use libwebp (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
@@ -4321,6 +4325,50 @@ See 'config.log' for more details" "$LINENO" 5; }
 	PKG_CONFIG=:
 	;;
  *)
+	;;
+esac
+
+# libjpeg はデフォルトで使用する。stb_image で扱えない JPEG があるため。
+
+# Check whether --with-libjpeg was given.
+if test ${with_libjpeg+y}
+then :
+  withval=$with_libjpeg;
+fi
+
+case ${with_libjpeg} in
+ no)
+	;;
+ *)
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libjpeg" >&5
+printf %s "checking for libjpeg... " >&6; }
+	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libjpeg; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_LIBJPEG 1" >>confdefs.h
+
+		DEFINE_LIBJPEG=HAVE_LIBJPEG=yes
+
+		has_libjpeg=yes
+
+		H=`${PKG_CONFIG} --cflags libjpeg`
+		L=`${PKG_CONFIG} --libs libjpeg`
+		CFLAGS="${CFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		has_libjpeg=no
+	fi
+
+
+	if test x"${has_libjpeg}" \!= x"yes"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "--with-libjpeg is specified but libjpeg not found.
+See 'config.log' for more details" "$LINENO" 5; }
+	fi
 	;;
 esac
 

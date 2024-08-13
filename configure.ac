@@ -227,6 +227,22 @@ case "${PKG_CONFIG}" in
 	;;
 esac
 
+# libjpeg はデフォルトで使用する。stb_image で扱えない JPEG があるため。
+AC_ARG_WITH([libjpeg],
+	AS_HELP_STRING([--with-libjpeg],
+		[Use libjpeg for JPEG instead of stb_image (default:yes)]))
+case ${with_libjpeg} in
+ no)
+	;;
+ *)
+	CHECK_PKG([libjpeg], [LIBJPEG])
+
+	if test x"${has_libjpeg}" \!= x"yes"; then
+		AC_MSG_FAILURE([--with-libjpeg is specified but libjpeg not found.])
+	fi
+	;;
+esac
+
 # libpng はデフォルト使用しない。
 # --with-libpng が指定されたら、なければエラー終了する。
 

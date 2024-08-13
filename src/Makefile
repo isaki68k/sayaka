@@ -26,6 +26,9 @@ LDFLAGS+=	${PROFOPT}
 SRCS_common+=	diag.c
 SRCS_common+=	httpclient.c
 SRCS_common+=	image_blurhash.c
+.if defined(HAVE_LIBJPEG)
+SRCS_common+=	image_jpeg.c
+.endif
 .if defined(HAVE_LIBPNG)
 SRCS_common+=	image_png.c
 .endif

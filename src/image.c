@@ -291,6 +291,9 @@ image_get_loaderinfo(void)
 
 	// ここはアルファベット順。
 	ADD("blurhash");
+#if defined(USE_LIBJPEG)
+	ADD("libjpeg");
+#endif
 #if defined(USE_LIBPNG)
 	ADD("libpng");
 #endif
@@ -329,6 +332,9 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 #define ENTRY(name)	{ image_##name##_match, image_##name##_read, #name }
 #if defined(USE_LIBWEBP)
 		ENTRY(webp),
+#endif
+#if defined(USE_LIBJPEG)
+		ENTRY(jpeg),
 #endif
 #if defined(USE_LIBPNG)
 		ENTRY(png),
