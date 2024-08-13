@@ -30,9 +30,13 @@ SRCS_common+=	pstream.c
 SRCS_common+=	string.c
 SRCS_common+=	util.c
 
-SRCS_sixelv+=	image_bmp.c
+SRCS_libsixelv+=	image_bmp.c
 
-SRCS_all=		${SRCS_common} ${SRCS_sixelv}
+SRCS_sixelv+=	sixelv.c
+
+SRCS_all=	${SRCS_common}	\
+		${SRCS_libsixelv}	\
+		${SRCS_sixelv}
 
 LIBS+=	-lm
 
@@ -45,7 +49,7 @@ libcommon.a:	${SRCS_common:.c=.o}
 	rm -f $@
 	ar r $@ $>
 
-libsixelv.a:	${SRCS_sixelv:.c=.o}
+libsixelv.a:	${SRCS_libsixelv:.c=.o}
 	rm -f $@
 	ar r $@ $>
 
