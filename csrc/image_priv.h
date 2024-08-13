@@ -34,14 +34,12 @@
 #include "image.h"
 
 #define USE_BLURHASH
+#define USE_STB_IMAGE
 #if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
 #endif
 #if defined(HAVE_LIBWEBP)
 #define USE_LIBWEBP
-#endif
-#if defined(HAVE_STB_IMAGE)
-#define USE_STB_IMAGE
 #endif
 
 typedef union ColorRGB_ {

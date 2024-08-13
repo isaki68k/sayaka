@@ -25,4 +25,3 @@
 #undef HAVE_LIBWEBP
 #undef HAVE_MBEDTLS
 #undef HAVE_OPENSSL
-#undef HAVE_STB_IMAGE

@@ -19,9 +19,7 @@ SRCS_common+=	image_blurhash.c
 SRCS_common+=	image_png.c
 .endif
 SRCS_common+=	image_sixel.c
-.if defined(HAVE_STB_IMAGE)
 SRCS_common+=	image_stb.c
-.endif
 .if defined(HAVE_LIBWEBP)
 SRCS_common+=	image_webp.c
 .endif

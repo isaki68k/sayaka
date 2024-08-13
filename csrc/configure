@@ -645,7 +645,6 @@ DEFINE_MBEDTLS
 DEFINE_LIBCURL
 DEFINE_LIBWEBP
 DEFINE_LIBPNG
-DEFINE_STB_IMAGE
 PKG_CONFIG
 WARNFLAGS
 OBJEXT
@@ -705,7 +704,6 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_stb_image
 with_libpng
 with_libwebp
 with_libcurl
@@ -1337,12 +1335,6 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of sayaka:";;
    esac
   cat <<\_ACEOF
-
-Optional Features:
-  --disable-option-checking  ignore unrecognized --enable/--with options
-  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
-  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-stb-image      Use bundled stb_image (default:enable)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4308,24 +4300,6 @@ See 'config.log' for more details" "$LINENO" 5; }
 	PKG_CONFIG=:
 	;;
  *)
-	;;
-esac
-
-# stb-image はデフォルト使用する。
-# Check whether --enable-stb-image was given.
-if test ${enable_stb_image+y}
-then :
-  enableval=$enable_stb_image;
-fi
-
-case "${with_stb_image}" in
- no)
-	;;
- *)
-	printf "%s\n" "#define HAVE_STB_IMAGE 1" >>confdefs.h
-
-	DEFINE_STB_IMAGE=HAVE_STB_IMAGE=yes
-
 	;;
 esac
 

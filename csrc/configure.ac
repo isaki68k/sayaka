@@ -239,19 +239,6 @@ case "${PKG_CONFIG}" in
 	;;
 esac
 
-# stb-image はデフォルト使用する。
-AC_ARG_ENABLE([stb-image],
-	AS_HELP_STRING([--enable-stb-image],
-		[Use bundled stb_image (default:enable)]))
-case "${with_stb_image}" in
- no)
-	;;
- *)
-	AC_DEFINE([HAVE_STB_IMAGE])
-	AC_SUBST([DEFINE_STB_IMAGE], [HAVE_STB_IMAGE=yes])
-	;;
-esac
-
 # libpng はデフォルト使用しない。
 # --with-libpng が指定されたら、なければエラー終了する。
 
