@@ -83,6 +83,7 @@ enum {
 	OPT_ormode,
 	OPT_output_format,
 	OPT_resize_axis,
+	OPT_suppress_palette,
 	OPT_version,
 	OPT_width,
 };
@@ -103,6 +104,7 @@ static const struct option longopts[] = {
 	{ "ormode",			no_argument,		NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
+	{ "suppress-palette", no_argument,		NULL,	OPT_suppress_palette },
 	{ "version",		no_argument,		NULL,	'v' },
 	{ "width",			required_argument,	NULL,	'w' },
 	{ NULL },
@@ -278,6 +280,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_suppress_palette:
+			sixelopt.suppress_palette = true;
+			break;
+
 		 case 'v':
 			version();
 			exit(0);
@@ -339,7 +345,8 @@ usage(void)
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -d <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
-"  --ignore-error                        --ormode\n"
+"  --ormode                              --suppress-palette\n"
+"  --ignore-error\n"
 "  --debug-image=<0..2>\n"
 "  --debug-net  =<0..2>\n"
 "  --debug-sixel=<0..2>\n"
@@ -376,6 +383,7 @@ help_all(void)
 "     3        : 3-pixels (right, down, rightdown)\n"
 "  -O <fmt>, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
 "  --ormode    : Output SIXEL by OR-mode\n"
+"  --suppress-palette : Suppress output of SIXEL palette definition\n"
 "  --ignore-error\n"
 "  --debug-image=<0..2>\n"
 "  --debug-net  =<0..2>\n"
