@@ -4453,14 +4453,21 @@ printf "%s\n" "no" >&6; }
 	fi
 
 
-	if test x"${has_libcurl}" = x"yes"; then
-		curl_req_major=7
-		curl_req_minor=61
-		curl_req_patch=0
-		curl_req_ver="${curl_req_major}.${curl_req_minor}.${curl_req_patch}"
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libcurl >= ${curl_req_ver}" >&5
+	if test x"${has_libcurl}" \!= x"yes"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "--with-libcurl is specified but libcurl not found.
+	On NetBSD(pkgsrc), install pkgsrc/www/curl
+See 'config.log' for more details" "$LINENO" 5; }
+	fi
+
+	curl_req_major=7
+	curl_req_minor=61
+	curl_req_patch=0
+	curl_req_ver="${curl_req_major}.${curl_req_minor}.${curl_req_patch}"
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libcurl >= ${curl_req_ver}" >&5
 printf %s "checking for libcurl >= ${curl_req_ver}... " >&6; }
-		if test "$cross_compiling" = yes
+	if test "$cross_compiling" = yes
 then :
   { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
@@ -4470,22 +4477,22 @@ else case e in #(
   e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-				#include <curl/curl.h>
+			#include <curl/curl.h>
 
 int
 main (void)
 {
 
-				curl_version_info_data *info;
-				info = curl_version_info(CURLVERSION_NOW);
-				if (info) {
-					if (info->version_num >=
-						((${curl_req_major}<<16) | (${curl_req_minor}<<8) |
-						  ${curl_req_patch})) {
-						return 0;
-					}
+			curl_version_info_data *info;
+			info = curl_version_info(CURLVERSION_NOW);
+			if (info) {
+				if (info->version_num >=
+					((${curl_req_major}<<16) | (${curl_req_minor}<<8) |
+					  ${curl_req_patch})) {
+					return 0;
 				}
-				return 1;
+			}
+			return 1;
 
   ;
   return 0;
@@ -4494,19 +4501,19 @@ _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
 
-				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
 else case e in #(
   e)
-				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-				{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
 as_fn_error $? "libcurl >= ${curl_req_ver} required
 See 'config.log' for more details" "$LINENO" 5; }
 
-		 ;;
+	 ;;
 esac
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
@@ -4515,9 +4522,9 @@ esac
 fi
 
 
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the libcurl has mbedtls backend" >&5
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the libcurl has mbedtls backend" >&5
 printf %s "checking whether the libcurl has mbedtls backend... " >&6; }
-		if test "$cross_compiling" = yes
+	if test "$cross_compiling" = yes
 then :
   { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
@@ -4527,21 +4534,21 @@ else case e in #(
   e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-				#include <curl/curl.h>
+			#include <curl/curl.h>
 
 int
 main (void)
 {
 
-				const curl_ssl_backend **list;
-				int i;
-				curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
-				for (i = 0; list[i]; i++) {
-					if (list[i]->id == CURLSSLBACKEND_MBEDTLS) {
-						return 0;
-					}
+			const curl_ssl_backend **list;
+			int i;
+			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
+			for (i = 0; list[i]; i++) {
+				if (list[i]->id == CURLSSLBACKEND_MBEDTLS) {
+					return 0;
 				}
-				return 1;
+			}
+			return 1;
 
   ;
   return 0;
@@ -4550,18 +4557,18 @@ _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
 
-				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-				printf "%s\n" "#define LIBCURL_HAS_MBEDTLS_BACKEND 1" >>confdefs.h
+			printf "%s\n" "#define LIBCURL_HAS_MBEDTLS_BACKEND 1" >>confdefs.h
 
-				libcurl_has_mbedtls=yes
+			libcurl_has_mbedtls=yes
 
 else case e in #(
   e)
-				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 
-		 ;;
+	 ;;
 esac
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
@@ -4570,7 +4577,7 @@ esac
 fi
 
 
-		if test x"${libcurl_has_mbedtls}" = x"yes"; then
+	if test x"${libcurl_has_mbedtls}" = x"yes"; then
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
 printf %s "checking for mbedtls... " >&6; }
@@ -4589,17 +4596,17 @@ printf %s "checking for mbedtls... " >&6; }
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			#include <mbedtls/net_sockets.h>
-				#include <mbedtls/entropy.h>
+		#include <mbedtls/net_sockets.h>
+			#include <mbedtls/entropy.h>
 
 int
 main (void)
 {
 
-				mbedtls_net_context net;
-				mbedtls_entropy_context e;
-				mbedtls_net_init(&net);
-				mbedtls_entropy_init(&e);
+			mbedtls_net_context net;
+			mbedtls_entropy_context e;
+			mbedtls_net_init(&net);
+			mbedtls_entropy_init(&e);
 
   ;
   return 0;
@@ -4630,17 +4637,17 @@ printf "%s\n" "yes" >&6; }
 printf "%s\n" "no" >&6; }
 	fi
 
-			if test x"${has_mbedtls}" \!= x"yes"; then
-				{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+		if test x"${has_mbedtls}" \!= x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
 as_fn_error $? "mbedTLS not found??
 See 'config.log' for more details" "$LINENO" 5; }
-			fi
 		fi
+	fi
 
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the libcurl has openssl backend" >&5
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the libcurl has openssl backend" >&5
 printf %s "checking whether the libcurl has openssl backend... " >&6; }
-		if test "$cross_compiling" = yes
+	if test "$cross_compiling" = yes
 then :
   { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
@@ -4650,21 +4657,21 @@ else case e in #(
   e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-				#include <curl/curl.h>
+			#include <curl/curl.h>
 
 int
 main (void)
 {
 
-				const curl_ssl_backend **list;
-				int i;
-				curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
-				for (i = 0; list[i]; i++) {
-					if (list[i]->id == CURLSSLBACKEND_OPENSSL) {
-						return 0;
-					}
+			const curl_ssl_backend **list;
+			int i;
+			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
+			for (i = 0; list[i]; i++) {
+				if (list[i]->id == CURLSSLBACKEND_OPENSSL) {
+					return 0;
 				}
-				return 1;
+			}
+			return 1;
 
   ;
   return 0;
@@ -4673,18 +4680,18 @@ _ACEOF
 if ac_fn_c_try_run "$LINENO"
 then :
 
-				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-				printf "%s\n" "#define LIBCURL_HAS_OPENSSL_BACKEND 1" >>confdefs.h
+			printf "%s\n" "#define LIBCURL_HAS_OPENSSL_BACKEND 1" >>confdefs.h
 
-				libcurl_has_openssl=yes
+			libcurl_has_openssl=yes
 
 else case e in #(
   e)
-				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 
-		 ;;
+	 ;;
 esac
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
@@ -4693,7 +4700,7 @@ esac
 fi
 
 
-		if test x"${libcurl_has_openssl}" = x"yes"; then
+	if test x"${libcurl_has_openssl}" = x"yes"; then
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for openssl" >&5
 printf %s "checking for openssl... " >&6; }
@@ -4712,15 +4719,15 @@ printf %s "checking for openssl... " >&6; }
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-				#include <openssl/sha.h>
-				#include <openssl/ssl.h>
+			#include <openssl/sha.h>
+			#include <openssl/ssl.h>
 
 int
 main (void)
 {
 
-				SSL_library_init();		// libssl
-				SHA1_Init(NULL);		// libcrypto
+			SSL_library_init();		// libssl
+			SHA1_Init(NULL);		// libcrypto
 
   ;
   return 0;
@@ -4751,12 +4758,11 @@ printf "%s\n" "yes" >&6; }
 printf "%s\n" "no" >&6; }
 	fi
 
-			if test x"${has_openssl}" \!= x"yes"; then
-				{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+		if test x"${has_openssl}" \!= x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
 as_fn_error $? "OpenSSL not found??
 See 'config.log' for more details" "$LINENO" 5; }
-			fi
 		fi
 	fi
 	;;
