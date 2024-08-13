@@ -352,7 +352,7 @@ case "${with_libcurl}" in
 
 	if test x"${libcurl_has_mbedtls}" = x"yes"; then
 		CHECK_LIB([mbedtls], [-lmbedtls -lmbedcrypto], [
-		#include <mbedtls/net_sockets.h>
+			#include <mbedtls/net_sockets.h>
 			#include <mbedtls/entropy.h>
 		], [
 			mbedtls_net_context net;
