@@ -320,7 +320,13 @@ main(int ac, char *av[])
 
 	rv = 0;
 	for (int i = 0; i < ac; i++) {
-		if (do_file(av[i]) == false && ignore_error == false) {
+		const char *infilename;
+		if (strcmp(av[i], "-") == 0) {
+			infilename = NULL;
+		} else {
+			infilename = av[i];
+		}
+		if (do_file(infilename) == false && ignore_error == false) {
 			rv = 1;
 			break;
 		}
@@ -418,9 +424,9 @@ parse_opt(const struct optmap *map, const char *arg)
 }
 
 // ファイル1つを表示する。
-// infilename はファイルパスか "-"(標準入力)。
+// infile はファイルパスか NULL なら標準入力。
 static bool
-do_file(const char *infilename)
+do_file(const char *infile)
 {
 	bool rv = false;
 	struct pstream *pstream = NULL;
@@ -428,41 +434,46 @@ do_file(const char *infilename)
 	struct image *resimg = NULL;
 	int ifd = -1;
 	FILE *ifp = NULL;
+	const char *infilename;	// 表示用
 	uint dst_width;
 	uint dst_height;
 
-	if (strncmp(infilename, "http://",  7) == 0 ||
-        strncmp(infilename, "https://", 8) == 0)
+	infilename = infile;
+	if (infile == NULL) {
+		// 標準入力
+		ifd = STDIN_FILENO;
+		infilename = "stdin";
+	} else if (strncmp(infilename, "http://",  7) == 0 ||
+	           strncmp(infilename, "https://", 8) == 0)
 	{
+		// URL
 #if defined(HAVE_LIBCURL)
-		ifp = netstream_open(infilename, &netopt, diag_net);
+		ifp = netstream_open(infile, &netopt, diag_net);
 		if (ifp == NULL) {
 			warn("%s: netstream_open() failed", infilename);
 			return false;
-		}
-
-		pstream = pstream_init_fp(ifp);
-		if (pstream == NULL) {
-			warn("%s: pstream_init_fp() failed", infilename);
-			goto abort;
 		}
 #else
 		warnx("%s: Network support has not been compiled", infilename);
 		return false;
 #endif
 	} else {
-		// 標準入力かファイル名
-		if (strcmp(infilename, "-") == 0) {
-			infilename = "stdin";
-			ifd = STDIN_FILENO;
-		} else {
-			ifd = open(infilename, O_RDONLY);
-			if (ifd < 0) {
-				warn("%s", infilename);
-				return false;
-			}
+		// ファイル名
+		ifd = open(infile, O_RDONLY);
+		if (ifd < 0) {
+			warn("%s", infilename);
+			return false;
 		}
+	}
 
+	// ifp or ifd からピークストリームを作成。
+	if (ifp) {
+		pstream = pstream_init_fp(ifp);
+		if (pstream == NULL) {
+			warn("%s: pstream_init_fp() failed", infilename);
+			goto abort;
+		}
+	} else {
 		pstream = pstream_init_fd(ifd);
 		if (pstream == NULL) {
 			warn("%s: pstream_init_fd() failed", infilename);
