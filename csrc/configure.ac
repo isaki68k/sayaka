@@ -296,10 +296,18 @@ case "${with_libcurl}" in
 	;;
  *)
 	CHECK_PKG([libcurl], [LIBCURL])
+	if test x"${has_libcurl}" \!= x"yes"; then
+		CHECK_LIB([libcurl], [-lcurl], [
+			#include <curl/curl.h>
+		], [
+			curl_version_info(CURLVERSION_NOW);
+		])
+	fi
 
 	if test x"${has_libcurl}" \!= x"yes"; then
 		AC_MSG_FAILURE([--with-libcurl is specified but libcurl not found.
-	On NetBSD(pkgsrc), install pkgsrc/www/curl])
+	On NetBSD(pkgsrc), install pkgsrc/www/curl
+	On Ubuntu, sudo apt install libcurl4-openssl-dev])
 	fi
 
 	curl_req_major=7

@@ -4452,12 +4452,70 @@ printf "%s\n" "no" >&6; }
 		has_libcurl=no
 	fi
 
+	if test x"${has_libcurl}" \!= x"yes"; then
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libcurl" >&5
+printf %s "checking for libcurl... " >&6; }
+	for path in ${PATHS}; do
+		old_CFLAGS=${CFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} -lcurl"
+			;;
+		 *)
+			CFLAGS="${CFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib -lcurl"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#include <curl/curl.h>
+
+int
+main (void)
+{
+
+			curl_version_info(CURLVERSION_NOW);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+			has_libcurl=yes
+			break
+
+else case e in #(
+  e)
+			has_libcurl=no
+		 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+		CFLAGS=${old_CFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_libcurl}" = x"yes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	fi
+
+	fi
 
 	if test x"${has_libcurl}" \!= x"yes"; then
 		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
 as_fn_error $? "--with-libcurl is specified but libcurl not found.
 	On NetBSD(pkgsrc), install pkgsrc/www/curl
+	On Ubuntu, sudo apt install libcurl4-openssl-dev
 See 'config.log' for more details" "$LINENO" 5; }
 	fi
 
