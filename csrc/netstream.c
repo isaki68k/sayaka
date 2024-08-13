@@ -295,7 +295,9 @@ netstream_timestamp(struct netstream *ns)
 	curl = ns->curl;
 	diag = ns->diag;
 
+#if defined(CURLINFO_QUEUE_TIME_T)
 	curl_easy_getinfo(curl, CURLINFO_QUEUE_TIME_T, &queue_time);
+#endif
 	curl_easy_getinfo(curl, CURLINFO_NAMELOOKUP_TIME_T, &name_time);
 	curl_easy_getinfo(curl, CURLINFO_CONNECT_TIME_T, &connect_time);
 	curl_easy_getinfo(curl, CURLINFO_APPCONNECT_TIME_T, &appconn_time);
