@@ -48,6 +48,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#if defined(HAVE_BSD_BSD_H)
+#include <bsd/stdio.h>
+#endif
 
 // ここは diag 遠いので…
 #if 0
