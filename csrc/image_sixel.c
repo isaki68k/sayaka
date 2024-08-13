@@ -34,6 +34,7 @@
 #include <string.h>
 #include <sys/time.h>
 
+#define CAN "\x18"
 #define ESC "\x1b"
 
 static bool sixel_preamble(FILE *, const struct image *,
@@ -52,6 +53,14 @@ image_sixel_opt_init(struct image_sixel_opt *opt)
 {
 	opt->output_ormode = false;
 	opt->suppress_palette = false;
+}
+
+// SIXEL 中断シーケンスを出力する。
+void
+image_sixel_abort(FILE *fp)
+{
+	fputs(CAN ESC "\\", fp);
+	fflush(fp);
 }
 
 // img を SIXEL に変換して fp に出力する。

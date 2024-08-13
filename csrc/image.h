@@ -200,6 +200,7 @@ struct image_sixel_opt {
 	bool suppress_palette;
 };
 extern void image_sixel_opt_init(struct image_sixel_opt *);
+extern void image_sixel_abort(FILE *);
 extern bool image_sixel_write(FILE *, const struct image *,
 	const struct image_sixel_opt *, const struct diag *);
 

@@ -36,6 +36,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <signal.h>
 #include <string.h>
 
 typedef enum {
@@ -54,11 +55,13 @@ static void usage(void);
 static void help_all(void);
 static int parse_opt(const struct optmap *, const char *);
 static bool do_file(const char *filename);
+static void signal_handler(int);
 
 static struct diag *diag_image;
 static struct diag *diag_net;
 static struct diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
+static FILE *ofp;					// 出力中のストリーム
 static uint opt_height;
 static uint opt_width;
 static ResizeAxis opt_resize_axis;
@@ -310,6 +313,10 @@ main(int ac, char *av[])
 			"-o <output_filename> cannot be used with multiple input file.");
 	}
 
+	if (output_format == OutputFormat_SIXEL) {
+		signal(SIGINT, signal_handler);
+	}
+
 	rv = 0;
 	for (int i = 0; i < ac; i++) {
 		if (do_file(av[i]) == false && ignore_error == false) {
@@ -420,7 +427,6 @@ do_file(const char *infilename)
 	struct image *resimg = NULL;
 	int ifd = -1;
 	FILE *ifp = NULL;
-	FILE *ofp = NULL;
 	uint dst_width;
 	uint dst_height;
 
@@ -525,6 +531,7 @@ do_file(const char *infilename)
 			fclose(ofp);
 		}
 	}
+	ofp = NULL;
 
 	image_free(resimg);
 	image_free(srcimg);
@@ -536,4 +543,18 @@ do_file(const char *infilename)
 		close(ifd);
 	}
 	return rv;
+}
+
+static void
+signal_handler(int signo)
+{
+	switch (signo) {
+	 case SIGINT:
+		if (ofp) {
+			image_sixel_abort(ofp);
+		}
+		break;
+	 default:
+		break;
+	}
 }
