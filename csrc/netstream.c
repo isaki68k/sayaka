@@ -36,6 +36,9 @@
 #include <errno.h>
 #include <string.h>
 #include <curl/curl.h>
+#if defined(HAVE_BSD_BSD_H)
+#include <bsd/stdio.h>
+#endif
 #if defined(LIBCURL_HAS_MBEDTLS_BACKEND) && defined(HAVE_MBEDTLS)
 #include <mbedtls/ssl.h>
 #endif
