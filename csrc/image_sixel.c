@@ -61,20 +61,6 @@ image_sixel_write(FILE *fp, const struct image *img,
 {
 	Debug(diag, "%s: source image (%u, %u) %u colors", __func__,
 		img->width, img->height, img->palette_count);
-#if 0 // さすがに冗長すぎる?
-	if (diag_get_level(diag) >= 1) {
-		string *s = string_init();
-		if (opt->output_ormode) {
-			string_append_cstr(s, " ormode");
-		}
-		if (opt->suppress_palette) {
-			string_append_cstr(s, " suppress-palette");
-		}
-		if (string_len(s) > 0) {
-			diag_print(diag, "%s: options:%s", __func__, string_get(s));
-		}
-	}
-#endif
 
 	if (sixel_preamble(fp, img, opt) == false) {
 		return false;
