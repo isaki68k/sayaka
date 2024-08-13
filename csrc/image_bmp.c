@@ -29,9 +29,8 @@
 // (BMP の読み込みは stb_image で行う)
 //
 
-#include "common.h"
-#include "image.h"
 #include "sixelv.h"
+#include "image.h"
 #include <string.h>
 
 typedef struct __packed {

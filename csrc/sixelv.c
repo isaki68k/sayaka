@@ -29,7 +29,6 @@
 // sixelv - SIXEL 画像コンバータ
 //
 
-#include "common.h"
 #include "sixelv.h"
 #include "image.h"
 #include <err.h>

@@ -27,9 +27,8 @@
 #ifndef sayaka_sixelv_h
 #define sayaka_sixelv_h
 
-#include "header.h"
+#include "common.h"
 
-struct diag;
 struct image;
 
 // image_bmp.c
