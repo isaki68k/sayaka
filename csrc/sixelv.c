@@ -38,6 +38,7 @@
 #include <getopt.h>
 #include <signal.h>
 #include <string.h>
+#include <unistd.h>
 
 typedef enum {
 	OutputFormat_SIXEL,
