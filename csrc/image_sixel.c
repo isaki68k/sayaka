@@ -32,6 +32,7 @@
 #include "common.h"
 #include "image_priv.h"
 #include <string.h>
+#include <sys/time.h>
 
 #define ESC "\x1b"
 
@@ -59,8 +60,12 @@ bool
 image_sixel_write(FILE *fp, const struct image *img,
 	const struct image_sixel_opt *opt, const struct diag *diag)
 {
+	struct timeval start, end, result;
+
 	Debug(diag, "%s: source image (%u, %u) %u colors", __func__,
 		img->width, img->height, img->palette_count);
+
+	gettimeofday(&start, NULL);
 
 	if (sixel_preamble(fp, img, opt) == false) {
 		return false;
@@ -78,6 +83,15 @@ image_sixel_write(FILE *fp, const struct image *img,
 
 	if (sixel_postamble(fp) == false) {
 		return false;
+	}
+
+	if (diag_get_level(diag) >= 1) {
+		gettimeofday(&end, NULL);
+		fflush(fp);
+		timersub(&end, &start, &result);
+		uint ms = (uint)(result.tv_sec * 1000) + (uint)(result.tv_usec / 1000);
+		uint us = (uint)(result.tv_usec % 1000);
+		diag_print(diag, "%s: total %u.%03u msec", __func__, ms, us);
 	}
 
 	return true;
