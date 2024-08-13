@@ -537,11 +537,8 @@ do_file(const char *infilename)
 	image_free(resimg);
 	image_free(srcimg);
 
-	if (ifp) {
-		fclose(ifp);
-	}
-	if (ifd >= 3) {
-		close(ifd);
+	if (pstream) {
+		pstream_cleanup(pstream);
 	}
 	return rv;
 }
