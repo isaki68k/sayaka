@@ -289,100 +289,103 @@ case "${with_libcurl}" in
  *)
 	CHECK_PKG([libcurl], [LIBCURL])
 
-	curl_req_major=7
-	curl_req_minor=61
-	curl_req_patch=0
-	curl_req_ver="${curl_req_major}.${curl_req_minor}.${curl_req_patch}"
-	AC_MSG_CHECKING([for libcurl >= ${curl_req_ver}])
-	AC_RUN_IFELSE([AC_LANG_PROGRAM([
-			#include <curl/curl.h>
-		], [
-			curl_version_info_data *info = curl_version_info(CURLVERSION_NOW);
-			if (info) {
-				if (info->version_num >= 
-					((${curl_req_major}<<16) | (${curl_req_minor}<<8) |
-					  ${curl_req_patch})) {
-					return 0;
+	if test x"${has_libcurl}" = x"yes"; then
+		curl_req_major=7
+		curl_req_minor=61
+		curl_req_patch=0
+		curl_req_ver="${curl_req_major}.${curl_req_minor}.${curl_req_patch}"
+		AC_MSG_CHECKING([for libcurl >= ${curl_req_ver}])
+		AC_RUN_IFELSE([AC_LANG_PROGRAM([
+				#include <curl/curl.h>
+			], [
+				curl_version_info_data *info;
+				info = curl_version_info(CURLVERSION_NOW);
+				if (info) {
+					if (info->version_num >= 
+						((${curl_req_major}<<16) | (${curl_req_minor}<<8) |
+						  ${curl_req_patch})) {
+						return 0;
+					}
 				}
-			}
-			return 1;
-		])], [
-			AC_MSG_RESULT([yes])
-		], [
-			AC_MSG_RESULT([no])
-			AC_MSG_FAILURE([libcurl >= ${curl_req_ver} required])
-		]
-	)
+				return 1;
+			])], [
+				AC_MSG_RESULT([yes])
+			], [
+				AC_MSG_RESULT([no])
+				AC_MSG_FAILURE([libcurl >= ${curl_req_ver} required])
+			]
+		)
 
-	AC_MSG_CHECKING([whether the libcurl has mbedtls backend])
-	AC_RUN_IFELSE([AC_LANG_PROGRAM([
-			#include <curl/curl.h>
-		], [
-			const curl_ssl_backend **list;
-			int i;
-			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
-			for (i = 0; list@<:@i@:>@; i++) {
-				if (list@<:@i@:>@->id == CURLSSLBACKEND_MBEDTLS) {
-					return 0;
+		AC_MSG_CHECKING([whether the libcurl has mbedtls backend])
+		AC_RUN_IFELSE([AC_LANG_PROGRAM([
+				#include <curl/curl.h>
+			], [
+				const curl_ssl_backend **list;
+				int i;
+				curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
+				for (i = 0; list@<:@i@:>@; i++) {
+					if (list@<:@i@:>@->id == CURLSSLBACKEND_MBEDTLS) {
+						return 0;
+					}
 				}
-			}
-			return 1;
-		])], [
-			AC_MSG_RESULT([yes])
-			AC_DEFINE([LIBCURL_HAS_MBEDTLS_BACKEND])
-			libcurl_has_mbedtls=yes
-		], [
-			AC_MSG_RESULT([no])
-		]
-	)
+				return 1;
+			])], [
+				AC_MSG_RESULT([yes])
+				AC_DEFINE([LIBCURL_HAS_MBEDTLS_BACKEND])
+				libcurl_has_mbedtls=yes
+			], [
+				AC_MSG_RESULT([no])
+			]
+		)
 
-	if test x"${libcurl_has_mbedtls}" = x"yes"; then
-		CHECK_LIB([mbedtls], [-lmbedtls -lmbedcrypto], [
-		#include <mbedtls/net_sockets.h>
-			#include <mbedtls/entropy.h>
-		], [
-			mbedtls_net_context net;
-			mbedtls_entropy_context e;
-			mbedtls_net_init(&net);
-			mbedtls_entropy_init(&e);
-		])
-		if test x"${has_mbedtls}" \!= x"yes"; then
-			AC_MSG_FAILURE([mbedTLS not found??])
+		if test x"${libcurl_has_mbedtls}" = x"yes"; then
+			CHECK_LIB([mbedtls], [-lmbedtls -lmbedcrypto], [
+			#include <mbedtls/net_sockets.h>
+				#include <mbedtls/entropy.h>
+			], [
+				mbedtls_net_context net;
+				mbedtls_entropy_context e;
+				mbedtls_net_init(&net);
+				mbedtls_entropy_init(&e);
+			])
+			if test x"${has_mbedtls}" \!= x"yes"; then
+				AC_MSG_FAILURE([mbedTLS not found??])
+			fi
 		fi
-	fi
 
-	AC_MSG_CHECKING([whether the libcurl has openssl backend])
-	AC_RUN_IFELSE([AC_LANG_PROGRAM([
-			#include <curl/curl.h>
-		], [
-			const curl_ssl_backend **list;
-			int i;
-			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
-			for (i = 0; list@<:@i@:>@; i++) {
-				if (list@<:@i@:>@->id == CURLSSLBACKEND_OPENSSL) {
-					return 0;
+		AC_MSG_CHECKING([whether the libcurl has openssl backend])
+		AC_RUN_IFELSE([AC_LANG_PROGRAM([
+				#include <curl/curl.h>
+			], [
+				const curl_ssl_backend **list;
+				int i;
+				curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
+				for (i = 0; list@<:@i@:>@; i++) {
+					if (list@<:@i@:>@->id == CURLSSLBACKEND_OPENSSL) {
+						return 0;
+					}
 				}
-			}
-			return 1;
-		])], [
-			AC_MSG_RESULT([yes])
-			AC_DEFINE([LIBCURL_HAS_OPENSSL_BACKEND])
-			libcurl_has_openssl=yes
-		], [
-			AC_MSG_RESULT([no])
-		]
-	)
+				return 1;
+			])], [
+				AC_MSG_RESULT([yes])
+				AC_DEFINE([LIBCURL_HAS_OPENSSL_BACKEND])
+				libcurl_has_openssl=yes
+			], [
+				AC_MSG_RESULT([no])
+			]
+		)
 
-	if test x"${libcurl_has_openssl}" = x"yes"; then
-		CHECK_LIB([openssl], [-lssl -lcrypto], [
-			#include <openssl/sha.h>
-			#include <openssl/ssl.h>
-		], [
-			SSL_library_init();		// libssl
-			SHA1_Init(NULL);		// libcrypto
-		])
-		if test x"${has_openssl}" \!= x"yes"; then
-			AC_MSG_FAILURE([OpenSSL not found??])
+		if test x"${libcurl_has_openssl}" = x"yes"; then
+			CHECK_LIB([openssl], [-lssl -lcrypto], [
+				#include <openssl/sha.h>
+				#include <openssl/ssl.h>
+			], [
+				SSL_library_init();		// libssl
+				SHA1_Init(NULL);		// libcrypto
+			])
+			if test x"${has_openssl}" \!= x"yes"; then
+				AC_MSG_FAILURE([OpenSSL not found??])
+			fi
 		fi
 	fi
 	;;
