@@ -429,24 +429,23 @@ curl_write_cb(void *src, size_t size, size_t nmemb, void *arg)
 {
 	struct netstream *ns = (struct netstream *)arg;
 
-	uint newsize = (uint)(size * nmemb);
-	if (newsize > ns->bufsize) {
-		char *newbuf = realloc(ns->buf, newsize);
-		if (newbuf == NULL) {
-			// と言われても何も出来ることはない気が…
-			Debug(ns->diag, "%s: realloc(%u) failed: %s",
-				__func__, newsize, strerrno());
-			return 0;
-		}
-		ns->buf = newbuf;
-		ns->bufsize = newsize;
-		Trace(ns->diag, "%s: realloc %u", __func__, newsize);
+	uint pos = ns->bufsize;
+	uint srclen = (uint)(size * nmemb);
+	uint newsize = ns->bufsize + srclen;
+	char *newbuf = realloc(ns->buf, newsize);
+	if (newbuf == NULL) {
+		// と言われても何も出来ることはない気が…
+		Debug(ns->diag, "%s: realloc(%u) failed: %s",
+			__func__, newsize, strerrno());
+		return 0;
 	}
+	ns->buf = newbuf;
+	ns->bufsize = newsize;
+	Trace(ns->diag, "%s: realloc %u", __func__, newsize);
 
-	memcpy(ns->buf, src, newsize);
-	ns->bufpos = 0;
-	ns->remain = newsize;
-	Trace(ns->diag, "%s: produce %u", __func__, newsize);
+	memcpy(ns->buf + pos, src, srclen);
+	ns->remain += srclen;
+	Trace(ns->diag, "%s: remain %u", __func__, ns->remain);
 
 	return nmemb;
 }
