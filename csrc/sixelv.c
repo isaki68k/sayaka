@@ -561,7 +561,8 @@ signal_handler(int signo)
 		if (ofp) {
 			image_sixel_abort(ofp);
 		}
-		break;
+		exit(0);
+
 	 default:
 		break;
 	}
