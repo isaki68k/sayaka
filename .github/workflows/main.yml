@@ -9,17 +9,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+        container: [ "ubuntu:latest", "ubuntu:22.04", "debian:12", "debian:11", "archlinux:base" ]
+
+    runs-on: ubuntu-latest
+
+    container:
+      image: ${{ matrix.container }}
+      options: --privileged
 
     steps:
       - name: install packages
         run: |
           uname -a
-          sudo apt update
-          sudo apt upgrade -y
-          sudo apt install -y build-essential pkg-config bmake libbsd-dev libwslay-dev libwebp-dev libmbedtls-dev
-          sudo apt install -y libgif-dev libjpeg-dev libpng-dev
+          case "${{ matrix.container }}" in
+          ubuntu*|debian*)
+            apt update
+            apt upgrade -y
+            apt install -y build-essential pkg-config bmake libbsd-dev libwslay-dev libwebp-dev libmbedtls-dev libssl-dev
+            apt install -y libgif-dev libjpeg-dev libpng-dev
+            ;;
+          archlinux*)
+            pacman -Syyu --noconfirm base-devel bmake libbsd libwslay libwebp mbedtls2 openssl giflib libjpeg-turbo libpng
+            ;;
+          esac
 
       - uses: actions/checkout@v4
         with:
@@ -28,21 +40,27 @@ jobs:
 
       - name: configure and make
         run: |
+          case "${{ matrix.container }}" in
+          archlinux*)
+            # mbedtls2 files are installed in separate dirs
+            export PKG_CONFIG_PATH=/usr/lib/mbedtls2/pkgconfig
+            ;;
+          esac
           echo build with \"configure\"
           bmake distclean
-          sh configure
+          sh configure ${CONFIGURE_ARGS}
           bmake -DRELEASE
           echo build with \"configure --without-stb-image\"
           bmake distclean
-          sh configure --without-stb-image
+          sh configure ${CONFIGURE_ARGS} --without-stb-image
           bmake -DRELEASE
           echo build with \"configure --without-mbedtls\"
           bmake distclean
-          sh configure --without-mbedtls
+          sh configure ${CONFIGURE_ARGS} --without-mbedtls
           bmake -DRELEASE
           echo build with \"configure --enable-twitter\"
           bmake distclean
-          sh configure --enable-twitter
+          sh configure ${CONFIGURE_ARGS} --enable-twitter
           bmake -DRELEASE
 
   build-netbsd:
