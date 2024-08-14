@@ -101,19 +101,19 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 
 	mhandle = curl_multi_init();
 	if (mhandle == NULL) {
-		Debug(diag, "curl_multi_init() failed");
+		Debug(diag, "%s: curl_multi_init() failed", __func__);
 		goto abort;
 	}
 
 	curl = curl_easy_init();
 	if (curl == NULL) {
-		Debug(diag, "curl_easy_init() failed");
+		Debug(diag, "%s: curl_easy_init() failed", __func__);
 		goto abort;
 	}
 
 	ns = calloc(1, sizeof(*ns));
 	if (ns == NULL) {
-		Debug(diag, "%s: calloc failed: %s", __func__, strerrno());
+		Debug(diag, "%s: calloc() failed: %s", __func__, strerrno());
 		goto abort;
 	}
 	ns->diag = diag;
@@ -140,8 +140,8 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 		if (strncmp(info->ssl_version, "OpenSSL", 7) == 0) {
 			ciphers = "AES128-SHA";
 		} else {
-			Debug(diag, "Not supported backend ssl_version \"%s\"",
-				info->ssl_version);
+			Debug(diag, "%s: Not supported backend ssl_version \"%s\"",
+				__func__, info->ssl_version);
 			goto abort;
 		}
 		curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, ciphers);
