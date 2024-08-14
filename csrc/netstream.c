@@ -87,7 +87,7 @@ netstream_global_cleanup(void)
 	}
 }
 
-// url をダウンロードしてファイルストリームにして返す。
+// url のコンテンツをファイルストリームにして返す。
 FILE *
 netstream_open(const char *url, const struct netstream_opt *opt,
 	const struct diag *diag)
