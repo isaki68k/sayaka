@@ -30,6 +30,7 @@
 
 #include "common.h"
 #include <string.h>
+#include <stdarg.h>
 
 typedef struct string_ {
 	char *buf;		// len == 0 の時 buf を触らないこと。
@@ -181,4 +182,45 @@ string_append_cstr(string *s, const char *cstr)
 
 	strlcpy(s->buf + s->len, cstr, s->capacity - s->len);
 	s->len += strlen(cstr);
+}
+
+// s の末尾に fmt... を追加する。
+void
+string_append_printf(string *s, const char *fmt, ...)
+{
+	va_list ap;
+	uint availbytes;	// 空きバイト数
+	uint reqlen;		// 必要な文字数
+
+	assert(s);
+
+	// 直接連結を試みる。後ろが空いてれば最速。
+	// s->buf が NULL でも vsnprintf() は動作する。
+	availbytes = s->capacity - s->len;
+	va_start(ap, fmt);
+	reqlen = vsnprintf(s->buf + s->len, availbytes, fmt, ap);
+	va_end(ap);
+	if (reqlen < availbytes) {
+		s->len += reqlen;
+		return;
+	}
+
+	// 今書いたのを取り消して..
+	if (s->buf) {
+		s->buf[s->len] = '\0';
+	}
+
+	// 長さは分かったので広げる。
+	uint newcap = roundup(s->len + reqlen + 1, 256);
+	if (string_realloc(s, newcap) == false) {
+		string_append_cstr(s, "<<Out of Memory>>");
+		return;
+	}
+
+	// 書き込めるはず。
+	va_start(ap, fmt);
+	reqlen = vsnprintf(s->buf + s->len, s->capacity - s->len, fmt, ap);
+	va_end(ap);
+
+	s->len += reqlen;
 }
