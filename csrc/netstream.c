@@ -61,8 +61,8 @@ struct netstream {
 
 	char *buf;		// realloc する
 	uint bufsize;	// 確保してあるバッファサイズ
+	uint buflen;	// 有効データ長
 	uint bufpos;	// buf 中の次回読み出し開始位置
-	uint remain;	// buf の読み出し可能な残りバイト数
 	bool done;		// 今回のバッファで最後
 
 	const struct diag *diag;
@@ -398,8 +398,9 @@ netstream_read_cb(void *arg, char *dst, int dstsize)
 	struct netstream *ns = (struct netstream *)arg;
 	const struct diag *diag = ns->diag;
 
-	Trace(diag, "%s: dstsize=%d remain=%u", __func__, dstsize, ns->remain);
-	while (ns->remain == 0) {
+	Trace(diag, "%s: dstsize=%d buf=%u/%u (remain=%u)", __func__,
+		dstsize, ns->bufpos, ns->buflen, ns->buflen - ns->bufpos);
+	while (ns->bufpos == ns->buflen) {
 		// 内部バッファが空なら、次の読み込みを試行。
 
 		// 終了フラグが立っていれば EOF。
@@ -417,11 +418,10 @@ netstream_read_cb(void *arg, char *dst, int dstsize)
 	}
 
 	// 内部バッファにあるのを吐き出すまで使う。
-	uint len = MIN(ns->remain, dstsize);
-	Trace(diag, "%s: len=%u", __func__, len);
+	uint len = MIN(ns->buflen - ns->bufpos, dstsize);
+	Trace(diag, "%s: copylen=%u", __func__, len);
 	memcpy(dst, ns->buf + ns->bufpos, len);
 	ns->bufpos += len;
-	ns->remain -= len;
 
 	return len;
 }
@@ -503,23 +503,41 @@ curl_write_cb(void *src, size_t size, size_t nmemb, void *arg)
 
 	ns->phase = NetPhase_Data;
 
-	uint pos = ns->bufsize;
+	// バッファが空ならバッファの先頭から使い回す。
+	// 空でなければ末尾に追加。
 	uint srclen = (uint)(size * nmemb);
-	uint newsize = ns->bufsize + srclen;
-	char *newbuf = realloc(ns->buf, newsize);
-	if (newbuf == NULL) {
-		// と言われても何も出来ることはない気が…
-		Debug(ns->diag, "%s: realloc(%u) failed: %s",
-			__func__, newsize, strerrno());
-		return 0;
+	Trace(ns->diag, "%s: called srclen=%u", __func__, srclen);
+	uint newlen;
+	if (ns->bufpos == ns->buflen) {
+		newlen = srclen;
+	} else {
+		newlen = ns->buflen + srclen;
 	}
-	ns->buf = newbuf;
-	ns->bufsize = newsize;
-	Trace(ns->diag, "%s: realloc %u", __func__, newsize);
+	if (newlen > ns->bufsize) {
+		char *newbuf = realloc(ns->buf, newlen);
+		if (newbuf == NULL) {
+			// と言われても何も出来ることはない気が…
+			Debug(ns->diag, "%s: realloc(%u) failed: %s",
+				__func__, newlen, strerrno());
+			return 0;
+		}
+		Trace(ns->diag, "%s: realloc %u -> %u", __func__, ns->bufsize, newlen);
+		ns->buf = newbuf;
+		ns->bufsize = newlen;
+	}
 
-	memcpy(ns->buf + pos, src, srclen);
-	ns->remain += srclen;
-	Trace(ns->diag, "%s: remain %u", __func__, ns->remain);
+	if (ns->bufpos == ns->buflen) {
+		// バッファが空なら先頭から。
+		memcpy(ns->buf, src, srclen);
+		ns->bufpos = 0;
+		ns->buflen = srclen;
+	} else {
+		// 空でなければ続きから。
+		memcpy(ns->buf + ns->buflen, src, srclen);
+		ns->buflen += srclen;
+	}
+	Trace(ns->diag, "%s: %u/%u/%u", __func__,
+		ns->bufpos, ns->buflen, ns->bufsize);
 
 	return nmemb;
 }
