@@ -153,7 +153,10 @@ netstream_cleanup(struct netstream *ns)
 }
 
 // url に接続する。
-bool
+// 戻り値は 0 なら成功、-1 なら API の失敗。
+// 1 なら名前解決か接続で失敗。
+// 400 以上なら HTTP の応答コード。
+int
 netstream_connect(struct netstream *ns,
 	const char *url, const struct netstream_opt *opt)
 {
@@ -187,7 +190,7 @@ netstream_connect(struct netstream *ns,
 		} else {
 			Debug(diag, "%s: Not supported backend ssl_version \"%s\"",
 				__func__, info->ssl_version);
-			return false;
+			return -1;
 		}
 		curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, ciphers);
 	}
@@ -205,16 +208,16 @@ netstream_connect(struct netstream *ns,
 	// データフェーズに到達していないのに閉じられたらエラー。
 	if (ns->phase < NetPhase_Data && still_running < 1) {
 		Debug(diag, "connection closed in phase %d", ns->phase);
-		return false;
+		return 1;
 	}
 
 	// ヘッダフェーズを通過して応答コードが 4xx 以上ならエラー。
 	if (ns->phase >= NetPhase_Header && ns->rescode >= 400) {
 		Debug(diag, "response code %03u", ns->rescode);
-		return false;
+		return ns->rescode;
 	}
 
-	return true;
+	return 0;
 }
 
 // url のコンテンツをファイルストリームにして返す。

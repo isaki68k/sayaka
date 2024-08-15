@@ -453,8 +453,15 @@ do_file(const char *infile)
 			warn("netstream_init() failed");
 			return false;
 		}
-		if (netstream_connect(net, infile, &netopt) == false) {
+		int code = netstream_connect(net, infile, &netopt);
+		if (code < 0) {
 			warn("%s: netstream_connect() failed", infilename);
+			goto abort;
+		} else if (code == 1) {
+			warnx("%s: connection failed", infilename);
+			goto abort;
+		} else if (code >= 400) {
+			warnx("%s: connection failed: HTTP %u", infilename, code);
 			goto abort;
 		}
 		ifp = netstream_fopen(net);
