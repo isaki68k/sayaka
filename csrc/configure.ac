@@ -300,7 +300,7 @@ case "${with_libcurl}" in
 	fi
 
 	curl_req_major=7
-	curl_req_minor=61
+	curl_req_minor=80
 	curl_req_patch=0
 	curl_req_ver="${curl_req_major}.${curl_req_minor}.${curl_req_patch}"
 	AC_MSG_CHECKING([for libcurl >= ${curl_req_ver}])
