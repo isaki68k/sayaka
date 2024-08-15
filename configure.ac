@@ -281,15 +281,21 @@ if test x"${with_mbedtls}" = x"yes"; then
 	#
 	# mbedTLS
 	#
-	CHECK_LIB([mbedtls], [-lmbedtls -lmbedcrypto], [
-	#include <mbedtls/net_sockets.h>
-		#include <mbedtls/entropy.h>
-	], [
-		mbedtls_net_context net;
-		mbedtls_entropy_context e;
-		mbedtls_net_init(&net);
-		mbedtls_entropy_init(&e);
-	])
+	# mbedtls 2.28.8 and later has .pc files
+	CHECK_PKG([mbedtls])
+	CHECK_PKG([mbedcrypto])
+	if test "x${has_mbedtls}" \!= x"yes"; then
+		# older mbedtls might not have pkgconf so check these manually
+		CHECK_LIB([mbedtls], [-lmbedtls -lmbedcrypto], [
+			#include <mbedtls/net_sockets.h>
+			#include <mbedtls/entropy.h>
+		], [
+			mbedtls_net_context net;
+			mbedtls_entropy_context e;
+			mbedtls_net_init(&net);
+			mbedtls_entropy_init(&e);
+		])
+	fi
 	if test "x${has_mbedtls}" = "xyes"; then
 		AC_DEFINE([USE_MBEDTLS])
 		AC_SUBST([MAKE_MBEDTLS], [yes])
