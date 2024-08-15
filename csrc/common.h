@@ -76,8 +76,11 @@ struct netstream_opt {
 	bool use_rsa_only;
 };
 extern void netstream_opt_init(struct netstream_opt *);
-extern FILE *netstream_open(const char *, const struct netstream_opt *,
-	const struct diag *);
+extern struct netstream *netstream_init(const struct diag *);
+extern void netstream_cleanup(struct netstream *);
+extern bool netstream_connect(struct netstream *, const char *,
+	const struct netstream_opt *);
+extern FILE *netstream_fopen(struct netstream *);
 extern void netstream_global_cleanup(void);
 
 // pstream.c

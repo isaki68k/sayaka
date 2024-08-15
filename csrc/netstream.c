@@ -31,7 +31,7 @@
 #include "common.h"
 
 #if defined(HAVE_LIBCURL)
-// curl の下限は 7.61.0 (2018/07)。CURLINFO_PRETRANSFER_TIME_T のため。
+// curl の下限は 7.80.0。CURLOPT_PREREQFUNCTION のため。
 
 #include <errno.h>
 #include <string.h>
@@ -49,6 +49,15 @@
 struct netstream {
 	CURLM *mhandle;
 	CURL *curl;
+	bool handle_attached;	// add_handle したら true
+
+	enum {
+		NetPhase_Begin = 0,
+		NetPhase_Connected,
+		NetPhase_Header,
+		NetPhase_Data,
+	} phase;
+	int rescode;
 
 	char *buf;		// realloc する
 	uint bufsize;	// 確保してあるバッファサイズ
@@ -60,10 +69,13 @@ struct netstream {
 };
 
 static void netstream_global_init(void);
+static int  netstream_perform(struct netstream *);
 static bool netstream_get_sessioninfo(struct netstream *);
 static void netstream_timestamp(struct netstream *);
-static int netstream_read_cb(void *, char *, int);
-static int netstream_close_cb(void *);
+static int  netstream_read_cb(void *, char *, int);
+static int  netstream_close_cb(void *);
+static int  curl_prereq_cb(void *, char *, char *, int, int);
+static size_t curl_header_cb(void *, size_t, size_t, void *);
 static size_t curl_write_cb(void *, size_t, size_t, void *);
 
 static bool curl_initialized;
@@ -87,42 +99,75 @@ netstream_global_cleanup(void)
 	}
 }
 
-// url のコンテンツをファイルストリームにして返す。
-FILE *
-netstream_open(const char *url, const struct netstream_opt *opt,
-	const struct diag *diag)
+// netstream コンテキストを生成する。
+struct netstream *
+netstream_init(const struct diag *diag)
 {
-	struct netstream *ns = NULL;
-	CURLM *mhandle = NULL;
-	CURL *curl = NULL;
-	FILE *fp;
+	struct netstream *ns;
 
 	netstream_global_init();
-
-	mhandle = curl_multi_init();
-	if (mhandle == NULL) {
-		Debug(diag, "%s: curl_multi_init() failed", __func__);
-		goto abort;
-	}
-
-	curl = curl_easy_init();
-	if (curl == NULL) {
-		Debug(diag, "%s: curl_easy_init() failed", __func__);
-		goto abort;
-	}
 
 	ns = calloc(1, sizeof(*ns));
 	if (ns == NULL) {
 		Debug(diag, "%s: calloc() failed: %s", __func__, strerrno());
-		goto abort;
+		return NULL;
 	}
 	ns->diag = diag;
-	ns->mhandle = mhandle;
-	ns->curl = curl;
+
+	ns->mhandle = curl_multi_init();
+	if (ns->mhandle == NULL) {
+		Debug(diag, "%s: curl_multi_init() failed", __func__);
+		goto abort;
+	}
+
+	ns->curl = curl_easy_init();
+	if (ns->curl == NULL) {
+		Debug(diag, "%s: curl_easy_init() failed", __func__);
+		goto abort;
+	}
+
+	return ns;
+
+ abort:
+	netstream_cleanup(ns);
+	return NULL;
+}
+
+// netstream コンテキストを解放する。
+void
+netstream_cleanup(struct netstream *ns)
+{
+	if (ns) {
+		netstream_close_cb(ns);
+
+		if (ns->curl) {
+			curl_easy_cleanup(ns->curl);
+			ns->curl = NULL;
+		}
+		if (ns->mhandle) {
+			curl_multi_cleanup(ns->mhandle);
+			ns->mhandle = NULL;
+		}
+		free(ns);
+	}
+}
+
+// url に接続する。
+bool
+netstream_connect(struct netstream *ns,
+	const char *url, const struct netstream_opt *opt)
+{
+	const struct diag *diag = ns->diag;
+	CURL *curl = ns->curl;
+	CURLM *mhandle = ns->mhandle;
 
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, (long)1);
 	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, (long)1);
+	curl_easy_setopt(curl, CURLOPT_PREREQFUNCTION, curl_prereq_cb);
+	curl_easy_setopt(curl, CURLOPT_PREREQDATA, ns);
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, curl_header_cb);
+	curl_easy_setopt(curl, CURLOPT_HEADERDATA, ns);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, ns);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, (long)0);
@@ -142,55 +187,41 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 		} else {
 			Debug(diag, "%s: Not supported backend ssl_version \"%s\"",
 				__func__, info->ssl_version);
-			goto abort;
+			return false;
 		}
 		curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, ciphers);
 	}
 
 	curl_multi_add_handle(mhandle, curl);
+	ns->handle_attached = true;
 
 	// ここではデータ転送直前までを担当する。
-	curl_off_t prexfer = 0;
+	// curl 的にはデータ転送に入ったところまで。
+	int still_running;
 	do {
-		CURLMcode mcode;
-		CURLcode r;
-		int still_running = 0;
+		still_running = netstream_perform(ns);
+	} while (ns->phase < NetPhase_Data && still_running > 0);
 
-		mcode = curl_multi_poll(mhandle, NULL, 0, 1000, NULL);
-		if (mcode != CURLM_OK) {
-			Debug(diag, "%s: curl_multi_poll() failed %d",
-				__func__, (int)mcode);
-			goto abort;
-		}
-
-		mcode = curl_multi_perform(mhandle, &still_running);
-		if (mcode != CURLM_OK) {
-			Debug(diag, "%s: curl_multi_perform() failed %d",
-				__func__, (int)mcode);
-			goto abort;
-		}
-
-		if (still_running == 0) {
-			Debug(diag, "%s: not running", __func__);
-			goto abort;
-		}
-
-		// perform が何か終えて戻ってきたので転送直前まで来てるか調べる。
-		r = curl_easy_getinfo(curl, CURLINFO_PRETRANSFER_TIME_T, &prexfer);
-		if (r != CURLE_OK) {
-			Debug(diag, "%s: CURLINFO_PRETRANSFER_TIME_T failed %d",
-				__func__, (int)r);
-			goto abort;
-		}
-	} while (prexfer == 0);
-
-	if (diag_get_level(diag) >= 1) {
-		// セッション情報をデバッグ表示。
-		netstream_get_sessioninfo(ns);
-
-		// 所要時間を表示。
-		netstream_timestamp(ns);
+	// データフェーズに到達していないのに閉じられたらエラー。
+	if (ns->phase < NetPhase_Data && still_running < 1) {
+		Debug(diag, "connection closed in phase %d", ns->phase);
+		return false;
 	}
+
+	// ヘッダフェーズを通過して応答コードが 4xx 以上ならエラー。
+	if (ns->phase >= NetPhase_Header && ns->rescode >= 400) {
+		Debug(diag, "response code %03u", ns->rescode);
+		return false;
+	}
+
+	return true;
+}
+
+// url のコンテンツをファイルストリームにして返す。
+FILE *
+netstream_fopen(struct netstream *ns)
+{
+	FILE *fp;
 
 	fp = funopen(ns,
 		netstream_read_cb,
@@ -198,24 +229,43 @@ netstream_open(const char *url, const struct netstream_opt *opt,
 		NULL,	// seek
 		netstream_close_cb);
 	if (fp == NULL) {
-		Debug(diag, "%s: funopen failed: %s", __func__, strerrno());
-		goto abort;
+		Debug(ns->diag, "%s: funopen failed: %s", __func__, strerrno());
 	}
 
 	return fp;
+}
 
- abort:
-	free(ns);
-	if (mhandle && curl) {
-		curl_multi_remove_handle(mhandle, curl);
+// curl 1回分の処理を回す。
+// curl は基本 curl からのコールバックですべてが動くことを前提にしているが、
+// ここではそうではなく自分が関数コールしてるだけのように見せたい。
+static int
+netstream_perform(struct netstream *ns)
+{
+	const struct diag *diag = ns->diag;
+	CURLMcode mcode;
+	int still_running;
+
+	mcode = curl_multi_poll(ns->mhandle, NULL, 0, 1000, NULL);
+	if (mcode != CURLM_OK) {
+		Debug(diag, "%s: curl_multi_poll() failed %d", __func__, (int)mcode);
+		return -1;
 	}
-	if (curl) {
-		curl_easy_cleanup(curl);
+
+	// 何か起きたかも知れないので実行する。
+	// (これによってフェーズごとのコールバック関数が呼び出される)
+	still_running = 0;
+	mcode = curl_multi_perform(ns->mhandle, &still_running);
+	if (mcode != CURLM_OK) {
+		Debug(diag, "%s: curl_multi_perform() failed %d", __func__, (int)mcode);
+		return -1;
 	}
-	if (mhandle) {
-		curl_multi_cleanup(mhandle);
+
+	// 今回の perform で処理が完了した。
+	if (still_running == 0) {
+		ns->done = true;
 	}
-	return NULL;
+
+	return still_running;
 }
 
 // 接続中の TLS バージョン等をデバッグ表示する。
@@ -338,12 +388,11 @@ netstream_timestamp(struct netstream *ns)
 		appbuf);
 }
 
+// fread() で呼ばれる。
 static int
 netstream_read_cb(void *arg, char *dst, int dstsize)
 {
 	struct netstream *ns = (struct netstream *)arg;
-	int still_running;
-	CURLMcode mcode;
 	const struct diag *diag = ns->diag;
 
 	Trace(diag, "%s: dstsize=%d remain=%u", __func__, dstsize, ns->remain);
@@ -356,37 +405,11 @@ netstream_read_cb(void *arg, char *dst, int dstsize)
 			return 0;
 		}
 
-		// 何か起きるかタイムアウトするまで待つ。
-		// 何か起きたかタイムアウトしたかは分からないっぽい。
-		mcode = curl_multi_poll(ns->mhandle, NULL, 0, 1000, NULL);
-		if (mcode != CURLM_OK) {
-			Debug(diag, "%s: curl_multi_poll() failed %d",
-				__func__, (int)mcode);
-			return -1;
-		}
-
-		// 何か起きたかも知れないので実行する。
-		// (ここでデータが届いていれば curl_write_cb() が呼ばれる)
-		still_running = 0;
-		mcode = curl_multi_perform(ns->mhandle, &still_running);
-		if (mcode != CURLM_OK) {
-			Debug(diag, "%s: curl_multi_perform() failed %d",
-				__func__, (int)mcode);
-			return -1;
-		}
-
-		// これで最後か。
-		if (still_running == 0) {
-			int rc;
-			CURLMsg *msg = curl_multi_info_read(ns->mhandle, &rc);
-			if (msg) {
-				if (msg->data.result != CURLE_OK) {
-					Debug(diag, "%s: curl_multi_info_read() returns %d",
-						__func__, (int)msg->data.result);
-					return -1;
-				}
-				ns->done = true;
-			}
+		// 1回分の実行。
+		int still_running = netstream_perform(ns);
+		if (still_running < 1) {
+			// エラーでも EOF でもここで終わりには違いない。
+			ns->done = true;
 		}
 	}
 
@@ -400,27 +423,73 @@ netstream_read_cb(void *arg, char *dst, int dstsize)
 	return len;
 }
 
+// fclose() で呼ばれる。
+// netstream_init() が確保したリソースはここでは解放しない。
 static int
 netstream_close_cb(void *arg)
 {
 	struct netstream *ns = (struct netstream *)arg;
 
 	if (ns) {
-		free(ns->buf);
-		if (ns->mhandle && ns->curl) {
+		if (ns->handle_attached) {
 			curl_multi_remove_handle(ns->mhandle, ns->curl);
+			ns->handle_attached = false;
 		}
-		if (ns->curl) {
-			curl_easy_cleanup(ns->curl);
+		if (ns->buf) {
+			free(ns->buf);
+			ns->buf = NULL;
 		}
-		if (ns->mhandle) {
-			curl_multi_cleanup(ns->mhandle);
-		}
-
-		free(ns);
 	}
 
 	return 0;
+}
+
+// curl からのコールバック関数。
+// コネクション接続後(SSL含む)で、ヘッダ送信前に来る。
+static int
+curl_prereq_cb(void *arg,
+	char *peerip, char *localip, int peerport, int localport)
+{
+	struct netstream *ns = (struct netstream *)arg;
+
+	ns->phase = NetPhase_Connected;
+
+	if (diag_get_level(ns->diag) >= 1) {
+		// セッション情報をデバッグ表示。
+		netstream_get_sessioninfo(ns);
+
+		// 所要時間を表示。
+		netstream_timestamp(ns);
+	}
+
+	return CURL_PREREQFUNC_OK;
+}
+
+// curl からのヘッダ受信コールバック関数。
+// ヘッダ1行ごと(最後の空行含む) に呼ばれる。
+static size_t
+curl_header_cb(void *src, size_t size, size_t nmemb, void *arg)
+{
+	struct netstream *ns = (struct netstream *)arg;
+
+	if (0) {
+		// ヘッダ (src) は '\0' 終端していない。
+		char header[size * nmemb + 1];
+		memcpy(header, src, sizeof(header) - 1);
+		header[sizeof(header) - 1] = '\0';
+		printf(">>> %s", header);
+	}
+
+	if (ns->phase != NetPhase_Header) {
+		ns->phase = NetPhase_Header;
+
+		// 応答コード取得。
+		long response_code;
+		curl_easy_getinfo(ns->curl, CURLINFO_RESPONSE_CODE, &response_code);
+		ns->rescode = response_code;
+	}
+
+	return nmemb;
 }
 
 // curl からのダウンロードコールバック関数
@@ -428,6 +497,8 @@ static size_t
 curl_write_cb(void *src, size_t size, size_t nmemb, void *arg)
 {
 	struct netstream *ns = (struct netstream *)arg;
+
+	ns->phase = NetPhase_Data;
 
 	uint pos = ns->bufsize;
 	uint srclen = (uint)(size * nmemb);

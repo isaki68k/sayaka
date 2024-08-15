@@ -428,6 +428,7 @@ static bool
 do_file(const char *infile)
 {
 	bool rv = false;
+	struct netstream *net = NULL;
 	struct pstream *pstream = NULL;
 	struct image *srcimg = NULL;
 	struct image *resimg = NULL;
@@ -447,10 +448,19 @@ do_file(const char *infile)
 	{
 		// URL
 #if defined(HAVE_LIBCURL)
-		ifp = netstream_open(infile, &netopt, diag_net);
+		net = netstream_init(diag_net);
+		if (net == NULL) {
+			warn("netstream_init() failed");
+			return false;
+		}
+		if (netstream_connect(net, infile, &netopt) == false) {
+			warn("%s: netstream_connect() failed", infilename);
+			goto abort;
+		}
+		ifp = netstream_fopen(net);
 		if (ifp == NULL) {
 			warn("%s: netstream_open() failed", infilename);
-			return false;
+			goto abort;
 		}
 #else
 		warnx("%s: Network support has not been compiled", infilename);
@@ -549,6 +559,9 @@ do_file(const char *infile)
 
 	if (pstream) {
 		pstream_cleanup(pstream);
+	}
+	if (net) {
+		netstream_cleanup(net);
 	}
 	return rv;
 }
