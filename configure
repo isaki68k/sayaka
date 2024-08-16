@@ -4022,6 +4022,45 @@ if test x"${with_mbedtls}" = x"yes"; then
 	#
 	# mbedTLS
 	#
+	# mbedtls 2.28.8 and later has .pc files
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
+printf %s "checking for mbedtls... " >&6; }
+	if ${PKG_CONFIG} --exists mbedtls; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		has_mbedtls=yes
+		H=`${PKG_CONFIG} --cflags mbedtls`
+		L=`${PKG_CONFIG} --libs mbedtls`
+
+		CPPFLAGS="${CPPFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		has_mbedtls=no
+	fi
+
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedcrypto" >&5
+printf %s "checking for mbedcrypto... " >&6; }
+	if ${PKG_CONFIG} --exists mbedcrypto; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		has_mbedcrypto=yes
+		H=`${PKG_CONFIG} --cflags mbedcrypto`
+		L=`${PKG_CONFIG} --libs mbedcrypto`
+
+		CPPFLAGS="${CPPFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		has_mbedcrypto=no
+	fi
+
+	if test "x${has_mbedtls}" \!= x"yes"; then
+		# older mbedtls might not have pkgconf so check these manually
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
 printf %s "checking for mbedtls... " >&6; }
@@ -4040,17 +4079,17 @@ printf %s "checking for mbedtls... " >&6; }
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-	#include <mbedtls/net_sockets.h>
-		#include <mbedtls/entropy.h>
+			#include <mbedtls/net_sockets.h>
+			#include <mbedtls/entropy.h>
 
 int
 main (void)
 {
 
-		mbedtls_net_context net;
-		mbedtls_entropy_context e;
-		mbedtls_net_init(&net);
-		mbedtls_entropy_init(&e);
+			mbedtls_net_context net;
+			mbedtls_entropy_context e;
+			mbedtls_net_init(&net);
+			mbedtls_entropy_init(&e);
 
   ;
   return 0;
@@ -4081,6 +4120,7 @@ printf "%s\n" "yes" >&6; }
 printf "%s\n" "no" >&6; }
 	fi
 
+	fi
 	if test "x${has_mbedtls}" = "xyes"; then
 		printf "%s\n" "#define USE_MBEDTLS 1" >>confdefs.h
 
