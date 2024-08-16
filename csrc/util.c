@@ -75,3 +75,54 @@ rnd_fill(void *dst, uint dstsize)
 		i += copylen;
 	}
 }
+
+// BASE64 エンコードした文字列を返す。
+string *
+base64_encode(const void *vsrc, uint srclen)
+{
+	static const char enc[] =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz"
+		"0123456789+/";
+
+	const uint8 *src = (const uint8 *)vsrc;
+	uint dstlen = ((srclen + 2) / 3) * 4;
+	string *dst = string_alloc(dstlen + 1);
+	uint i;
+
+	uint packed = (srclen / 3) * 3;
+	for (i = 0; i < packed; ) {
+		// 0000'0011  1111'2222  2233'3333
+		uint8 a0 = src[i++];
+		uint8 a1 = src[i++];
+		uint8 a2 = src[i++];
+
+		string_append_char(dst, enc[a0 >> 2]);
+		string_append_char(dst, enc[((a0 & 0x03) << 4) | (a1 >> 4)]);
+		string_append_char(dst, enc[((a1 & 0x0f) << 2) | (a2 >> 6)]);
+		string_append_char(dst, enc[a2 & 0x3f]);
+	}
+
+	// 残りは 0, 1, 2 バイト。
+	uint remain = srclen - packed;
+	if (remain == 1) {
+		uint8 a0 = src[i];
+
+		string_append_char(dst, enc[a0 >> 2]);
+		string_append_char(dst, enc[((a0 & 0x03) << 4)]);
+	} else if (remain == 2) {
+		uint8 a0 = src[i++];
+		uint8 a1 = src[i];
+
+		string_append_char(dst, enc[a0 >> 2]);
+		string_append_char(dst, enc[((a0 & 0x03) << 4) | (a1 >> 4)]);
+		string_append_char(dst, enc[((a1 & 0x0f) << 2)]);
+	}
+
+	// パディング。
+	while ((string_len(dst) % 4) != 0) {
+		string_append_char(dst, '=');
+	}
+
+	return dst;
+}

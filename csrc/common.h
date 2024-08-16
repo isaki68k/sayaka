@@ -111,5 +111,6 @@ extern void string_append_printf(string *, const char *, ...);
 extern const char *strerrno(void);
 extern void chomp(char *);
 extern void rnd_fill(void *, uint);
+extern string *base64_encode(const void *src, uint);
 
 #endif // !sayaka_common_h
