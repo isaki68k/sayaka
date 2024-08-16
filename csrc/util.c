@@ -31,6 +31,7 @@
 #include "common.h"
 #include <errno.h>
 #include <string.h>
+#include <sys/time.h>
 
 // strerror(errno) は Debug() 等のマクロ内から呼ぶことが多いのに
 // clang だと errno が再帰展開になるとかで怒られるので、回避のため。
@@ -51,5 +52,26 @@ chomp(char *s)
 		} else {
 			break;
 		}
+	}
+}
+
+// 乱数で埋める。
+void
+rnd_fill(void *dst, uint dstsize)
+{
+	static bool initialized = false;
+
+	if (initialized == false) {
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		srandom(tv.tv_sec ^ tv.tv_usec);
+		initialized = true;
+	}
+
+	for (int i = 0; i < dstsize; ) {
+		uint32 r = random();
+		uint copylen = MIN(dstsize - i, sizeof(r));
+		memcpy((char *)dst + i, &r, copylen);
+		i += copylen;
 	}
 }
