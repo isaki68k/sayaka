@@ -29,6 +29,7 @@ SRCS_common+=	string.c
 SRCS_common+=	util.c
 
 SRCS_sayaka+=	terminal.c
+SRCS_sayaka+=	wsstream.c
 
 SRCS_sixelv+=	image_bmp.c
 
@@ -67,9 +68,12 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 terminal:	terminal.c libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
 
+wsstream:	wsstream.c libcommon.a
+	${CC} ${LDFLAGS} ${CFLAGS} -DTEST -o $@ $> ${LIBS}
+
 .PHONY:	clean
 clean:
-	rm -f sayaka sixelv terminal *.o *.a
+	rm -f sayaka sixelv terminal wsstream *.o *.a *.core
 
 .PHONY:	depend
 depend:	${SRCS_all:.c=.d}

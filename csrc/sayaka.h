@@ -42,4 +42,11 @@ extern struct diag *diag_term;
 extern int  terminal_get_bgtheme(void);
 extern bool terminal_support_sixel(void);
 
+// wsstream.c
+struct wsstream;
+extern struct wsstream *wsstream_create(const struct diag *);
+extern void wsstream_destroy(struct wsstream *);
+extern int  wsstream_get_fd(const struct wsstream *);
+extern int  wsstream_connect(struct wsstream *, const char *);
+
 #endif // !sayaka_harada_h
