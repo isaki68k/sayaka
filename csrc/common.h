@@ -35,6 +35,10 @@
 #include <assert.h>
 #include <stdio.h>
 
+#define CAN "\x18"
+#define ESC "\x1b"
+#define ESCchar '\x1b'
+
 // diag.c
 #define Debug(diag_, fmt...)	do {	\
 	if (diag_get_level(diag_) >= 1)	\

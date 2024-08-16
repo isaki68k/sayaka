@@ -34,9 +34,6 @@
 #include <string.h>
 #include <sys/time.h>
 
-#define CAN "\x18"
-#define ESC "\x1b"
-
 static bool sixel_preamble(FILE *, const struct image *,
 	const struct image_sixel_opt *);
 static bool sixel_postamble(FILE *);

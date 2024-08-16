@@ -28,20 +28,31 @@ SRCS_common+=	pstream.c
 SRCS_common+=	string.c
 SRCS_common+=	util.c
 
+SRCS_sayaka+=	terminal.c
+
 SRCS_sixelv+=	image_bmp.c
 
 SRCS_all=	${SRCS_common}	\
+		${SRCS_sayaka}	\
 		${SRCS_sixelv}	\
+		sayaka.c	\
 		sixelv.c
 
 LIBS+=	-lm
 
-all:	sixelv
+all:	sayaka sixelv
+
+sayaka:	sayaka.o libsayaka.a libcommon.a
+	${CC} ${LDFLAGS} -o $@ $> ${LIBS} ${LIBS_sayaka}
 
 sixelv:	sixelv.o libsixelv.a libcommon.a
 	${CC} ${LDFLAGS} -o $@ $> ${LIBS} ${LIBS_sixelv}
 
 libcommon.a:	${SRCS_common:.c=.o}
+	rm -f $@
+	ar r $@ $>
+
+libsayaka.a:	${SRCS_sayaka:.c=.o}
 	rm -f $@
 	ar r $@ $>
 
@@ -52,9 +63,13 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 .c.o:
 	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
 
+# Test
+terminal:	terminal.c libcommon.a
+	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
+
 .PHONY:	clean
 clean:
-	rm -f *.o *.a
+	rm -f sayaka sixelv terminal *.o *.a
 
 .PHONY:	depend
 depend:	${SRCS_all:.c=.d}
