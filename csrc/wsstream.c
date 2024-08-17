@@ -29,357 +29,8 @@
 //
 
 #include "sayaka.h"
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
+#include <string.h>
 #include <curl/curl.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-
-#ifndef UNCONST
-#define UNCONST(p)	((void *)(uintptr_t)(const void *)(p))
-#endif
-
-struct net;
-struct net {
-	// *_create() と対になるもので net の中身をすべて解放する。
-	// net 自体はここでは解放せず呼び出し元が free() すること。
-	void (*f_cleanup)(struct net *);
-
-	bool (*f_connect)(struct net *, const char *, const char *);
-	ssize_t (*f_read)(struct net *, void *, size_t);
-	ssize_t (*f_write)(struct net *, const void *, size_t);
-	void (*f_close)(struct net *);
-
-	int sock;
-	SSL_CTX *ctx;
-	SSL *ssl;
-
-	const struct diag *diag;
-};
-
-int  sock_connect(const char *, const char *);
-int  sock_setblock(int, bool);
-struct net *net_create(const struct diag *);
-static void net_cleanup(struct net *);
-static bool net_connect(struct net *, const char *, const char *);
-static ssize_t net_read(struct net *, void *, size_t);
-static ssize_t net_write(struct net *, const void *, size_t);
-static void net_close(struct net *);
-struct net *tls_create(const struct diag *diag);
-static void tls_cleanup(struct net *);
-static bool tls_connect(struct net *, const char *, const char *);
-static ssize_t tls_read(struct net *, void *, size_t);
-static ssize_t tls_write(struct net *, const void *, size_t);
-static void tls_close(struct net *);
-
-// hostname:servname に TCP で接続しそのソケットを返す。
-// 失敗すれば errno をセットして -1 を返す。
-int
-sock_connect(const char *hostname, const char *servname)
-{
-	struct addrinfo hints;
-	struct addrinfo *ai;
-	struct addrinfo *ailist;
-	fd_set wfds;
-	struct timeval tv;
-	bool inprogress;
-	int fd;
-	int r;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = PF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
-
-	if (getaddrinfo(hostname, servname, &hints, &ailist) != 0) {
-		return -1;
-	}
-
-	inprogress = false;
-	for (ai = ailist; ai != NULL; ai = ai->ai_next) {
-		fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-		if (fd < 0) {
-			continue;
-		}
-
-		// ここでノンブロックに設定
-		if (sock_setblock(fd, false) < 0) {
-			goto abort_continue;
-		}
-
-		if (connect(fd, ai->ai_addr, ai->ai_addrlen) == 0) {
-			break;
-		}
-		// ノンブロッキングなので connect() は EINPROGRESS を返す
-		if (errno == EINPROGRESS) {
-			inprogress = true;
-			break;
-		}
-
- abort_continue:
-		close(fd);
-		fd = -1;
-	}
-	freeaddrinfo(ailist);
-
-	// 接続出来なかった
-	if (fd < 0) {
-		return -1;
-	}
-
-	// ここでブロッキングに戻す。
-	if (sock_setblock(fd, true) < 0) {
-		close(fd);
-		return -1;
-	}
-
-	// 接続待ちなら
-	if (inprogress) {
-		FD_ZERO(&wfds);
-		FD_SET(fd, &wfds);
-		memset(&tv, 0, sizeof(tv));
-		int timeout = 3000;	// XXX option
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout % 1000) * 1000;
-		r = select(fd + 1, NULL, &wfds, NULL, (timeout < 0) ? NULL : &tv);
-		if (r <= 0) {
-			close(fd);
-			return -1;
-		}
-	}
-	return fd;
-}
-
-// ソケット fd のブロッキングモードを変更する。
-// blocking = true ならブロッキングモード、
-// blocking = false ならノンブロッキングモード。
-// 成功すれば 0、失敗すれば errno をセットして -1 を返す。
-int
-sock_setblock(int fd, bool blocking)
-{
-	int val;
-
-	val = fcntl(fd, F_GETFL);
-	if (val < 0) {
-		return -1;
-	}
-
-	if (blocking) {
-		val &= ~O_NONBLOCK;
-	} else {
-		val |= O_NONBLOCK;
-	}
-
-	if (fcntl(fd, F_SETFL, val) < 0) {
-		return -1;
-	}
-
-	return 0;
-}
-
-
-struct net *
-net_create(const struct diag *diag)
-{
-	struct net *net = calloc(1, sizeof(*net));
-
-	net->f_connect = net_connect;
-	net->f_read    = net_read;
-	net->f_write   = net_write;
-	net->f_close   = net_close;
-	net->f_cleanup = net_cleanup;
-
-	net->sock = -1;
-	net->diag = diag;
-
-	return net;
-}
-
-static void
-net_cleanup(struct net *net)
-{
-	assert(net);
-
-	net_close(net);
-}
-
-static bool
-net_connect(struct net *net, const char *host, const char *serv)
-{
-	assert(net);
-
-	net->sock = sock_connect(host, serv);
-	if (net->sock < 0) {
-		return false;
-	}
-	return true;
-}
-
-static ssize_t
-net_read(struct net *net, void *dst, size_t dstsize)
-{
-	return read(net->sock, dst, dstsize);
-}
-
-static ssize_t
-net_write(struct net *net, const void *src, size_t srcsize)
-{
-	return write(net->sock, src, srcsize);
-}
-
-static void
-net_close(struct net *net)
-{
-	if (net->sock >= 3) {
-		close(net->sock);
-		net->sock = -1;
-	}
-}
-
-
-struct net *
-tls_create(const struct diag *diag)
-{
-	static bool initialized = false;
-	if (initialized == false) {
-		SSL_load_error_strings();
-		SSL_library_init();
-		initialized = true;
-	}
-
-	struct net *net = calloc(1, sizeof(*net));
-
-	net->f_connect = tls_connect;
-	net->f_read    = tls_read;
-	net->f_write   = tls_write;
-	net->f_close   = tls_close;
-	net->f_cleanup = tls_cleanup;
-
-	net->sock = -1;
-	net->diag = diag;
-
-	return net;
-}
-
-static void
-tls_cleanup(struct net *net)
-{
-	assert(net);
-
-	tls_close(net);
-	if (net->ssl) {
-		SSL_free(net->ssl);
-		net->ssl = NULL;
-	}
-	if (net->ctx) {
-		SSL_CTX_free(net->ctx);
-		net->ctx = NULL;
-	}
-}
-
-static bool
-tls_connect(struct net *net, const char *host, const char *serv)
-{
-	const struct diag *diag = net->diag;
-	int r;
-
-	assert(net);
-
-	net->ctx = SSL_CTX_new(TLS_client_method());
-	if (net->ctx == NULL) {
-		Debug(diag, "%s: SSL_CTX_new failed", __func__);
-		return false;
-	}
-	net->ssl = SSL_new(net->ctx);
-	if (net->ssl == NULL) {
-		Debug(diag, "%s: SSL_new failed", __func__);
-		return false;
-	}
-
-	net->sock = sock_connect(host, serv);
-	if (net->sock == -1) {
-		Debug(diag, "%s: sock_connect: %s:%s failed", __func__, host, serv);
-		return false;
-	}
-
-	r = SSL_set_fd(net->ssl, net->sock);
-	if (r == 0) {
-		ERR_print_errors_fp(stderr);
-		return false;
-	}
-
-	r = SSL_set_tlsext_host_name(net->ssl, UNCONST(host));
-	if (r != 1) {
-		ERR_print_errors_fp(stderr);
-		return false;
-	}
-
-	if (SSL_connect(net->ssl) < 1) {
-		Debug(diag, "%s: SSL_connect failed", __func__);
-		return false;
-	}
-
-	// 接続できたらログ?
-	Debug(net->diag, "%s done", __func__);
-
-	return true;
-}
-
-static ssize_t
-tls_read(struct net *net, void *dst, size_t dstsize)
-{
-	const struct diag *diag = net->diag;
-	ssize_t r;
-
-	Trace(diag, "%s (dstsize=%zu)", __func__, dstsize);
-	r = SSL_read(net->ssl, dst, dstsize);
-	if (r < 0) {
-		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
-			// とりあえず何かにしておく。
-			errno = EIO;
-		}
-		Trace(diag, "%s r=%zd, errno=%d", __func__, r, errno);
-	} else {
-		Trace(diag, "%s r=%zd", __func__, r);
-	}
-	return r;
-}
-
-static ssize_t
-tls_write(struct net *net, const void *src, size_t srcsize)
-{
-	const struct diag *diag = net->diag;
-	ssize_t r;
-
-	Trace(diag, "%s (srcsize=%zu)", __func__, srcsize);
-	r = SSL_write(net->ssl, src, srcsize);
-	if (r < 0) {
-		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
-			// とりあえず何かにしておく。
-			errno = EIO;
-		}
-		Trace(diag, "%s r=%zd, errno=%d", __func__, r, errno);
-	} else {
-		Trace(diag, "%s r=%zd", __func__, r);
-	}
-	return r;
-}
-
-static void
-tls_close(struct net *net)
-{
-	if (net->ssl) {
-		SSL_shutdown(net->ssl);
-	}
-	// 元ソケットも閉じる。
-	net_close(net);
-}
-
 
 enum {
 	// フレームの +0バイト目 (の下位4ビット)
@@ -442,10 +93,7 @@ void
 wsstream_destroy(struct wsstream *ws)
 {
 	if (ws) {
-		if (ws->net) {
-			ws->net->f_cleanup(ws->net);
-			free(ws->net);
-		}
+		net_destroy(ws->net);
 		free(ws->buf);
 		string_free(ws->text);
 		free(ws);
@@ -469,6 +117,7 @@ wsstream_init(struct wsstream *ws)
 	return true;
 }
 
+#if 0
 // ws からソケットを取得する。
 // まだなければ -1 が返る。
 int
@@ -481,6 +130,7 @@ wsstream_get_fd(const struct wsstream *ws)
 	}
 	return -1;
 }
+#endif
 
 // url に接続する。
 // 成功すれば 0、失敗すれば -1 を返す。
@@ -504,12 +154,10 @@ wsstream_connect(struct wsstream *ws, const char *url)
 
 	const char *serv = port;
 	if (strcmp(scheme, "ws") == 0) {
-		ws->net = net_create(diag);
 		if (serv == NULL) {
 			serv = "http";
 		}
 	} else if (strcmp(scheme, "wss") == 0) {
-		ws->net = tls_create(diag);
 		if (serv == NULL) {
 			serv = "https";
 		}
@@ -518,8 +166,15 @@ wsstream_connect(struct wsstream *ws, const char *url)
 		goto abort;
 	}
 
-	if (ws->net->f_connect(ws->net, host, serv) == false) {
-		Debug(diag, "%s: %s:%s: %s", __func__, host, serv, strerrno());
+	ws->net = net_create(diag);
+	if (ws->net == NULL) {
+		Debug(diag, "%s: net_create failed: %s", __func__, strerrno());
+		goto abort;
+	}
+
+	if (net_connect(ws->net, scheme, host, serv) == false) {
+		Debug(diag, "%s: %s://%s:%s failed %s", __func__,
+			scheme, host, serv, strerrno());
 		goto abort;
 	}
 
@@ -541,7 +196,7 @@ wsstream_connect(struct wsstream *ws, const char *url)
 	string_append_printf(hdr, "Sec-WebSocket-Key: %s\r\n", string_get(key));
 	string_append_cstr(hdr,   "\r\n");
 	Trace(diag, "<<< %s", string_get(hdr));
-	ssize_t sent = ws->net->f_write(ws->net, string_get(hdr), string_len(hdr));
+	ssize_t sent = net_write(ws->net, string_get(hdr), string_len(hdr));
 	if (sent < 0) {
 		Debug(diag, "%s: f_write: %s", __func__, strerrno());
 		goto abort;
@@ -551,8 +206,7 @@ wsstream_connect(struct wsstream *ws, const char *url)
 	char recvbuf[1024];
 	size_t len = 0;
 	for (;;) {
-		ssize_t n = ws->net->f_read(ws->net,
-			recvbuf + len, sizeof(recvbuf) - len);
+		ssize_t n = net_read(ws->net, recvbuf + len, sizeof(recvbuf) - len);
 		if (n < 0) {
 			Debug(diag, "%s: f_read: %s", __func__, strerrno());
 			goto abort;
@@ -640,8 +294,7 @@ printf("%s: realloc %u\n", __func__, newsize);
 
 printf("%s: read buflen=%u/%u\n", __func__, ws->buflen, ws->bufsize);
 	// ブロッキング。
-	r = ws->net->f_read(ws->net,
-		ws->buf + ws->buflen, ws->bufsize - ws->buflen);
+	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
 printf("%s: read r=%d\n", __func__, r);
 	if (r < 0) {
 		Debug(diag, "%s: f_read: %s", __func__, strerrno());
@@ -758,7 +411,7 @@ ws_send(struct wsstream *ws, uint8 opcode, const void *data, uint datalen)
 
 	// 送信。
 	uint framelen = hdrlen + datalen;
-	r = ws->net->f_write(ws->net, buf, framelen);
+	r = net_write(ws->net, buf, framelen);
 	if (r < 0) {
 		Debug(ws->diag, "%s: f_write(%u): %s", __func__, framelen, strerrno());
 		return -1;
@@ -847,15 +500,15 @@ testhttp(const struct diag *diag, int ac, char *av[])
 	serv = av[3];
 	path = av[4];
 
-	if (strcmp(serv, "http") == 0) {
-		net = net_create(diag);
-	} else if (strcmp(serv, "https") == 0) {
-		net = tls_create(diag);
-	} else {
-		errx(1, "%s: invalid service name", serv);
+	if (strcmp(serv, "http") != 0 && strcmp(serv, "https") != 0) {
+		errx(1, "<serv> argument must be \"http\" or \"https\"");
+	}
+	net = net_create(diag);
+	if (net == NULL) {
+		err(1, "%s: net_create failed", __func__);
 	}
 
-	if (net->f_connect(net, host, serv) == false) {
+	if (net_connect(net, serv, host, serv) == false) {
 		err(1, "%s:%s: connect failed", host, serv);
 	}
 
@@ -863,20 +516,17 @@ testhttp(const struct diag *diag, int ac, char *av[])
 	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", path);
 	string_append_printf(hdr, "Host: %s\r\n", host);
 	string_append_cstr(hdr, "\r\n");
-	ssize_t n = net->f_write(net, string_get(hdr), string_len(hdr));
+	ssize_t n = net_write(net, string_get(hdr), string_len(hdr));
 	printf("write=%zd\n", n);
 
 	char buf[1024];
-	ssize_t r = net->f_read(net, buf, sizeof(buf));
+	ssize_t r = net_read(net, buf, sizeof(buf));
 	printf("read=%zd\n", r);
 	buf[r] = 0;
 	printf("buf=|%s|\n", buf);
 
-	net->f_close(net);
-
-	net->f_cleanup(net);
-	free(net);
-
+	net_close(net);
+	net_destroy(net);
 	return 0;
 }
 
@@ -898,7 +548,7 @@ testws(const struct diag *diag, int ac, char *av[])
 		uint8 buf[100];
 		int i;
 
-		r = ws->net->f_read(ws->net, buf, sizeof(buf));
+		r = net_read(ws->net, buf, sizeof(buf));
 		if (r < 0) {
 			warn("f_read");
 			break;

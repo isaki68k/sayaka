@@ -23,6 +23,7 @@ SRCS_common+=	image_stb.c
 .if defined(HAVE_LIBWEBP)
 SRCS_common+=	image_webp.c
 .endif
+SRCS_common+=	net.c
 SRCS_common+=	netstream.c
 SRCS_common+=	pstream.c
 SRCS_common+=	string.c

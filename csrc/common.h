@@ -74,6 +74,15 @@ extern void diag_set_timestamp(struct diag *, bool enable);
 extern void diag_print(const struct diag *, const char *fmt, ...)
 	__attribute__((format(printf, 2, 3)));
 
+// net.c
+struct net;
+extern struct net *net_create(const struct diag *);
+extern void net_destroy(struct net *);
+extern bool net_connect(struct net *, const char *, const char *, const char *);
+extern ssize_t net_read(struct net *, void *, size_t);
+extern ssize_t net_write(struct net *, const void *, size_t);
+extern void net_close(struct net *);
+
 // netstream.c
 struct netstream_opt {
 	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
