@@ -66,6 +66,8 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
 
 # Test
+test:	all terminal wsstream
+
 terminal:	terminal.c libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
 
