@@ -333,22 +333,40 @@ tls_connect(struct net *net, const char *host, const char *serv)
 static ssize_t
 tls_read(struct net *net, void *dst, size_t dstsize)
 {
+	const struct diag *diag = net->diag;
 	ssize_t r;
 
-	Trace(net->diag, "%s (dstsize=%zu)", __func__, dstsize);
+	Trace(diag, "%s (dstsize=%zu)", __func__, dstsize);
 	r = SSL_read(net->ssl, dst, dstsize);
-	Trace(net->diag, "%s r=%zd", __func__, r);
+	if (r < 0) {
+		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
+			// とりあえず何かにしておく。
+			errno = EIO;
+		}
+		Trace(diag, "%s r=%zd, errno=%d", __func__, r, errno);
+	} else {
+		Trace(diag, "%s r=%zd", __func__, r);
+	}
 	return r;
 }
 
 static ssize_t
 tls_write(struct net *net, const void *src, size_t srcsize)
 {
+	const struct diag *diag = net->diag;
 	ssize_t r;
 
-	Trace(net->diag, "%s (srcsize=%zu)", __func__, srcsize);
+	Trace(diag, "%s (srcsize=%zu)", __func__, srcsize);
 	r = SSL_write(net->ssl, src, srcsize);
-	Trace(net->diag, "%s r=%zd", __func__, r);
+	if (r < 0) {
+		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
+			// とりあえず何かにしておく。
+			errno = EIO;
+		}
+		Trace(diag, "%s r=%zd, errno=%d", __func__, r, errno);
+	} else {
+		Trace(diag, "%s r=%zd", __func__, r);
+	}
 	return r;
 }
 
