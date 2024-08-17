@@ -114,6 +114,7 @@ extern void string_append_printf(string *, const char *, ...);
 // util.c
 extern const char *strerrno(void);
 extern void chomp(char *);
+extern uint32 rnd_get32(void);
 extern void rnd_fill(void *, uint);
 extern string *base64_encode(const void *src, uint);
 

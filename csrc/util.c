@@ -55,21 +55,28 @@ chomp(char *s)
 	}
 }
 
-// 乱数で埋める。
-void
-rnd_fill(void *dst, uint dstsize)
+// 32ビットの乱数を返す。
+uint32
+rnd_get32(void)
 {
 	static bool initialized = false;
 
-	if (initialized == false) {
+	if (__predict_false(initialized == false)) {
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
 		srandom(tv.tv_sec ^ tv.tv_usec);
 		initialized = true;
 	}
 
+	return random();
+}
+
+// 乱数で埋める。
+void
+rnd_fill(void *dst, uint dstsize)
+{
 	for (int i = 0; i < dstsize; ) {
-		uint32 r = random();
+		uint32 r = rnd_get32();
 		uint copylen = MIN(dstsize - i, sizeof(r));
 		memcpy((char *)dst + i, &r, copylen);
 		i += copylen;
