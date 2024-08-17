@@ -184,6 +184,21 @@ string_append_cstr(string *s, const char *cstr)
 	s->len += strlen(cstr);
 }
 
+// s の末尾に mem から memlen バイトのゼロ終端していない文字列を追加する。
+void
+string_append_mem(string *s, const void *mem, uint memlen)
+{
+	assert(s);
+
+	uint newlen = s->len + memlen + 1;
+	uint newcap = roundup(newlen, 256);
+	string_realloc(s, newcap);
+
+	memcpy(s->buf + s->len, mem, memlen);
+	s->len += memlen;
+	s->buf[s->len] = '\0';
+}
+
 // s の末尾に fmt... を追加する。
 void
 string_append_printf(string *s, const char *fmt, ...)
