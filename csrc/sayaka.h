@@ -28,6 +28,7 @@
 #define sayaka_harada_h
 
 #include "common.h"
+#include <wslay/wslay.h>
 
 enum {
 	BG_AUTO = -1,	// 背景色を自動判別する
@@ -46,6 +47,7 @@ extern bool terminal_support_sixel(void);
 struct wsstream;
 extern struct wsstream *wsstream_create(const struct diag *);
 extern void wsstream_destroy(struct wsstream *);
+extern bool wsstream_init(struct wsstream *, wslay_event_on_msg_recv_callback);
 extern int  wsstream_get_fd(const struct wsstream *);
 extern int  wsstream_connect(struct wsstream *, const char *);
 

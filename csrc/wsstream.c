@@ -383,6 +383,12 @@ tls_close(struct net *net)
 
 struct wsstream {
 	struct net *net;
+	wslay_event_context_ptr ctx;
+
+	// メッセージ受信コールバック。
+	// (wslay で受信が完了したので上位に渡すほう)
+	wslay_event_on_msg_recv_callback onmsg_callback;
+
 	const struct diag *diag;
 };
 
@@ -407,12 +413,50 @@ void
 wsstream_destroy(struct wsstream *ws)
 {
 	if (ws) {
+		if (ws->ctx) {
+		}
 		if (ws->net) {
 			ws->net->f_cleanup(ws->net);
 			free(ws->net);
 		}
 		free(ws);
 	}
+}
+
+// ws を初期化する。
+void
+wsstream_init(struct wsstream *ws, wslay_event_on_msg_recv_callback callback)
+{
+	assert(ws->ctx == NULL);
+
+	// wslay コンテキストを用意。
+	struct wslay_event_callbacks callbacks = {
+		.recv_callback			= wsstream_recv_cb,
+		.send_callback			= wsstream_send_cb,
+		.genmask_callback		= wsstream_genmask_cb,
+		.on_sg_recv_callback	= wsstream_on_msg_recv_cb,
+	};
+	int r = wslay_event_context_client_init(&ws->ctx, &callbacks, ws);
+	if (r != 0) {
+		Debug(ws->diag, "%s: wslay_event_context_client_init failed: %d",
+			__func__, r);
+		switch (r) {
+		 case WSLAY_ERR_NOMEM:
+			errno = ENOMEM;
+			break;
+		 default:
+			// XXX 他のエラーは来ないはず。
+			errno = EINVAL;
+			break;
+		}
+		return false;
+	}
+
+	// 呼び出し元(上位)向けの受信コールバック。
+	ws->onmsg_callback = callback;
+	ws->onmsg_arg = ws;
+
+	return true;
 }
 
 // ws からソケットを取得する。
@@ -429,6 +473,7 @@ wsstream_get_fd(const struct wsstream *ws)
 }
 
 // url に接続する。
+// 成功すれば 0、失敗すれば -1 を返す。
 int
 wsstream_connect(struct wsstream *ws, const char *url)
 {
@@ -542,6 +587,134 @@ wsstream_connect(struct wsstream *ws, const char *url)
 	curl_free(path);
 	curl_url_cleanup(cu);
 	return -1;
+}
+
+// 上位からの書き込み。
+// といっても送信キューに置くだけ。実際にはイベントループで送信される。
+// 成功すればキューに置いたバイト数を返す。
+// 失敗すれば errno をセットし -1 を返す。
+ssize_t
+wsstream_write(struct wsstream *ws, const void *buf, size_t len)
+{
+	struct wslay_event_msg msg;
+	int r;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.opcode = WSLAY_TEXT_FRAME;
+	msg.msg = (const uint8 *)buf;
+	msg.msg_length = len;
+
+	r = wslay_event_queue_msg(ws->ctx, &msg);
+	if (r != 0) {
+		Debug(ws->diag, "%s: wslay_event_queue_msg failed: %d", __func__, r);
+		// エラーメッセージを読み替える。
+		switch (r) {
+		 case WSLAY_ERR_NO_MORE_MSG:		errno = ESHUTDOWN;	break;
+		 case WSLAY_ERR_INVALID_ARGUMENT:	errno = EINVAL;		break;
+		 case WSLAY_ERR_NOMEM:				errno = ENOMEM;		break;
+		 default:
+			errno = EIO;
+			break;
+		}
+		return -1;
+	}
+
+	return msg.msg_length;
+}
+
+// 下位からの受信要求コールバック。
+ssize_t
+wsstream_recv_cb(wslay_event_context_ptr ctx,
+	uint8 *buf, size_t len, int flags, void *user_data)
+{
+	struct wsstream *ws = user_data;
+	ssize_t r;
+
+	for (;;) {
+		r = ws->net->f_read(ws->net, buf, len);
+		if (r < 0) {
+printf("%s: f_read r=%d\n", __func__, r);
+			if (errno == EINTR) {
+				continue;
+			}
+			if (errno == EWOULDBLOCK) {
+				wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
+			} else {
+				wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+			}
+		} else if (r == 0) {
+			// Unexpected EOF is also treated as an error.
+			wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+			r = -1;
+		}
+
+		return r;
+	}
+}
+
+// 下位層への送信要求コールバック。
+ssize_t
+wsstream_send_cb(wslay_event_context_ptr ctx,
+	const uint8 *buf, size_t len, int flags, void *user_data)
+{
+	struct wsstream *ws = user_data;
+	ssize_t r;
+
+	for (;;) {
+		r = ws->net->f_write(ws->net, buf, len);
+		if (r < 0) {
+printf("%s: f_write r=%d\n", __func__, r);
+			if (errno == EINTR) {
+				continue;
+			}
+			if (errno == EWOULDBLOCK) {
+				wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
+			} else {
+				wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+			}
+		}
+		return r;
+	}
+}
+
+// 送信マスク作成要求コールバック。
+int
+wsstream_genmask_cb(wslay_event_context_ptr ctx,
+	void *buf, size_t len, void *user_data)
+{
+	rnd_fill(buf, len);
+	return 0;
+}
+
+// 下位層からのメッセージ受信完了コールバック。
+void
+wsstream_on_msg_recv_cb(wslay_event_context_ptr ctx,
+	const wslay_event_on_msg_recv_arg *msg, void *user_data)
+{
+	struct wsstream *ws = user_data;
+
+	if (__predict_false(diag_get_level(ws->diag) >= 1)) {
+		const char *opstr;
+		char buf[8];
+		switch (msg->opcode) {
+		 case WSLAY_TEXT_FRAME:			opstr = "TEXT";		break;
+		 case WSLAY_BINARY_FRAME:		opstr = "BINARY";	break;
+		 case WSLAY_CONNECTION_CLOSE:	opstr = "CLOSE";	break;
+		 case WSLAY_PING:				opstr = "PING";		break;
+		 case WSLAY_PONG:				opstr = "PONG";		break;
+		 default:
+			snprintf(buf, sizeof(buf), "0x%x", msg->opcode);
+			opstr = buf;
+			break;
+		}
+		diag_print(ws->diag, "%s: opcode=%s len=%d", __func__,
+			opstr, (int)msg->msg_length);
+	}
+
+	if (!wslay_is_ctrl_frame(msg->opcode)) {
+		// クライアント指定のコールバックを呼ぶ。
+		(*ws->onmsg_callback)(ws, ctx, msg);
+	}
 }
 
 
