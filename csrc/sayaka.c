@@ -51,7 +51,6 @@ enum {
 
 static void version(void);
 static void usage(void);
-static void cmd_stream(void);
 static void cmd_play(void);
 static bool init(void);
 static void mkdir_if(const char *);
@@ -202,6 +201,11 @@ main(int ac, char *av[])
 	ac -= optind;
 	av += optind;
 
+	// XXX とりあえず
+	if (ac > 0) {
+		cmd = Cmd_stream;
+	}
+
 	if (cmd == Cmd_none) {
 		usage();
 		exit(0);
@@ -227,7 +231,7 @@ main(int ac, char *av[])
 			invalidate_cache();
 			progress("done\n");
 
-			cmd_stream();
+			cmd_misskey_stream(av[0]);
 		} else {
 			cmd_play();
 		}
@@ -390,12 +394,6 @@ invalidate_cache(void)
 	if (system(cmd) < 0) {
 		warn("system(find photo)");
 	}
-}
-
-static void
-cmd_stream(void)
-{
-	printf("%s\n", __func__);
 }
 
 static void

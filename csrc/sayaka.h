@@ -35,7 +35,11 @@ enum {
 	BG_LIGHT = 1,	// 背景色は明るい
 };
 
+// misskey.c
+extern void cmd_misskey_stream(const char *);
+
 // sayaka.c
+extern struct diag *diag_net;
 extern struct diag *diag_term;
 
 // terminal.c

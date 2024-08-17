@@ -29,6 +29,7 @@ SRCS_common+=	pstream.c
 SRCS_common+=	string.c
 SRCS_common+=	util.c
 
+SRCS_sayaka+=	misskey.c
 SRCS_sayaka+=	terminal.c
 SRCS_sayaka+=	wsclient.c
 
