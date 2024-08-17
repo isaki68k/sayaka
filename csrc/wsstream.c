@@ -381,16 +381,45 @@ tls_close(struct net *net)
 }
 
 
+enum {
+	// フレームの +0バイト目 (の下位4ビット)
+	WS_OPCODE_CONT		= 0x0,	// 継続
+	WS_OPCODE_TEXT		= 0x1,	// テキスト
+	WS_OPCODE_BINARY	= 0x2,	// バイナリ
+	WS_OPCODE_CLOSE		= 0x8,	// 終了
+	WS_OPCODE_PING		= 0x9,	// ping
+	WS_OPCODE_PONG		= 0xa,	// pong
+
+	// フレームの +0バイト目の最上位ビットは最終フレームビット。
+	WS_OPFLAG_FIN		= 0x80,
+
+	// フレームの +1バイト目の最上位ビットはマスクビット。
+	// クライアントからサーバへのフレームには立てる。
+	WS_MASK_BIT			= 0x80,	// Frame[1]
+};
+
+#define BUFSIZE	(1024)
+
 struct wsstream {
 	struct net *net;
-	wslay_event_context_ptr ctx;
 
-	// メッセージ受信コールバック。
-	// (wslay で受信が完了したので上位に渡すほう)
-	wslay_event_on_msg_recv_callback onmsg_callback;
+	uint8 *buf;			// 受信バッファ
+	uint bufsize;		// 確保してある recvbuf のバイト数
+	uint buflen;		// recvbuf の有効バイト数
+	uint bufpos;		// 現在の処理開始位置
+
+	uint8 opcode;		// opcode
+	string *text;		// テキストメッセージ
 
 	const struct diag *diag;
 };
+
+ssize_t wsstream_write(struct wsstream *, const void *, size_t);
+int  wsstream_process(struct wsstream *);
+static void wsstream_pong(struct wsstream *);
+static int  ws_send(struct wsstream *, uint8, const void *, uint);
+static uint ws_encode_len(uint8 *, uint);
+static uint ws_decode_len(const uint8 *, uint *);
 
 // wsstream コンテキストを生成する。
 struct wsstream *
@@ -413,48 +442,29 @@ void
 wsstream_destroy(struct wsstream *ws)
 {
 	if (ws) {
-		if (ws->ctx) {
-		}
 		if (ws->net) {
 			ws->net->f_cleanup(ws->net);
 			free(ws->net);
 		}
+		free(ws->buf);
+		string_free(ws->text);
 		free(ws);
 	}
 }
 
 // ws を初期化する。
-void
-wsstream_init(struct wsstream *ws, wslay_event_on_msg_recv_callback callback)
+bool
+wsstream_init(struct wsstream *ws)
 {
-	assert(ws->ctx == NULL);
-
-	// wslay コンテキストを用意。
-	struct wslay_event_callbacks callbacks = {
-		.recv_callback			= wsstream_recv_cb,
-		.send_callback			= wsstream_send_cb,
-		.genmask_callback		= wsstream_genmask_cb,
-		.on_sg_recv_callback	= wsstream_on_msg_recv_cb,
-	};
-	int r = wslay_event_context_client_init(&ws->ctx, &callbacks, ws);
-	if (r != 0) {
-		Debug(ws->diag, "%s: wslay_event_context_client_init failed: %d",
-			__func__, r);
-		switch (r) {
-		 case WSLAY_ERR_NOMEM:
-			errno = ENOMEM;
-			break;
-		 default:
-			// XXX 他のエラーは来ないはず。
-			errno = EINVAL;
-			break;
-		}
+	ws->buf = malloc(BUFSIZE);
+	if (ws->buf == NULL) {
 		return false;
 	}
 
-	// 呼び出し元(上位)向けの受信コールバック。
-	ws->onmsg_callback = callback;
-	ws->onmsg_arg = ws;
+	ws->text = string_alloc(BUFSIZE);
+	if (ws->text == NULL) {
+		return false;
+	}
 
 	return true;
 }
@@ -485,18 +495,24 @@ wsstream_connect(struct wsstream *ws, const char *url)
 	curl_url_set(cu, CURLUPART_URL, url, CURLU_NON_SUPPORT_SCHEME);
 	char *scheme = NULL;
 	char *host = NULL;
+	char *port = NULL;
 	char *path = NULL;
 	curl_url_get(cu, CURLUPART_SCHEME, &scheme, 0);
 	curl_url_get(cu, CURLUPART_HOST, &host, 0);
+	curl_url_get(cu, CURLUPART_PORT, &port, 0);
 	curl_url_get(cu, CURLUPART_PATH, &path, 0);
 
-	const char *serv;
+	const char *serv = port;
 	if (strcmp(scheme, "ws") == 0) {
 		ws->net = net_create(diag);
-		serv = "http";
+		if (serv == NULL) {
+			serv = "http";
+		}
 	} else if (strcmp(scheme, "wss") == 0) {
 		ws->net = tls_create(diag);
-		serv = "https";
+		if (serv == NULL) {
+			serv = "https";
+		}
 	} else {
 		Debug(diag, "%s: %s: Unsupported protocol", __func__, url);
 		goto abort;
@@ -584,139 +600,235 @@ wsstream_connect(struct wsstream *ws, const char *url)
 	string_free(key);
 	curl_free(scheme);
 	curl_free(host);
+	curl_free(port);
 	curl_free(path);
 	curl_url_cleanup(cu);
 	return -1;
 }
 
 // 上位からの書き込み。
-// といっても送信キューに置くだけ。実際にはイベントループで送信される。
-// 成功すればキューに置いたバイト数を返す。
 // 失敗すれば errno をセットし -1 を返す。
 ssize_t
 wsstream_write(struct wsstream *ws, const void *buf, size_t len)
 {
-	struct wslay_event_msg msg;
+	return ws_send(ws, WS_OPCODE_TEXT, buf, len);
+}
+
+// 受信処理。
+// 戻り値は -1 ならエラー。0 なら EOF。
+// 1 なら何かしら処理をしたが、上位には着信はない。
+// 2 なら上位に着信がある。
+int
+wsstream_process(struct wsstream *ws)
+{
+	const struct diag *diag = ws->diag;
+	int rv = 1;
 	int r;
 
-	memset(&msg, 0, sizeof(msg));
-	msg.opcode = WSLAY_TEXT_FRAME;
-	msg.msg = (const uint8 *)buf;
-	msg.msg_length = len;
-
-	r = wslay_event_queue_msg(ws->ctx, &msg);
-	if (r != 0) {
-		Debug(ws->diag, "%s: wslay_event_queue_msg failed: %d", __func__, r);
-		// エラーメッセージを読み替える。
-		switch (r) {
-		 case WSLAY_ERR_NO_MORE_MSG:		errno = ESHUTDOWN;	break;
-		 case WSLAY_ERR_INVALID_ARGUMENT:	errno = EINVAL;		break;
-		 case WSLAY_ERR_NOMEM:				errno = ENOMEM;		break;
-		 default:
-			errno = EIO;
-			break;
+	// 受信バッファに BUFSIZE 分の空きがあるか。
+	if (ws->bufsize - ws->buflen < BUFSIZE) {
+		uint newsize = ws->bufsize + BUFSIZE;
+		uint8 *newbuf = realloc(ws->buf, newsize);
+		if (newbuf == NULL) {
+			Debug(diag, "%s: realloc(%u): %s", __func__, newsize, strerrno());
+			return -1;
 		}
+		ws->buf = newbuf;
+		ws->bufsize = newsize;
+printf("%s: realloc %u\n", __func__, newsize);
+	}
+
+printf("%s: read buflen=%u/%u\n", __func__, ws->buflen, ws->bufsize);
+	// ブロッキング。
+	r = ws->net->f_read(ws->net,
+		ws->buf + ws->buflen, ws->bufsize - ws->buflen);
+printf("%s: read r=%d\n", __func__, r);
+	if (r < 0) {
+		Debug(diag, "%s: f_read: %s", __func__, strerrno());
 		return -1;
 	}
+	if (r == 0) {
+		Debug(diag, "%s: EOF", __func__);
+		return 0;
+	}
+	if (1) {
+		int j;
+		for (j = 0; j < r; j++) {
+			printf(" %02x", ws->buf[ws->buflen + j]);
+			if ((j % 8) == 7) {
+				printf("\n");
+			}
+		}
+		if ((j % 8) != 7) {
+			printf("\n");
+		}
+	}
+	ws->buflen += r;
 
-	return msg.msg_length;
+	// 読めたので処理する。
+	uint pos = ws->bufpos;
+	uint8 opbyte = ws->buf[pos++];
+	uint8 opcode = opbyte & 0x0f;
+	bool fin     = opbyte & WS_OPFLAG_FIN;
+	uint datalen;
+	pos += ws_decode_len(&ws->buf[pos], &datalen);
+
+	// ペイロードを全部読み込めているか。
+	if (ws->buflen - pos < datalen) {
+		// 足りなければ次のフレームを待つ。
+		Debug(diag, "%s: short", __func__);
+		return 1;
+	}
+
+	// このペイロードは全部受信出来ているので現在位置は進めてよい。
+	ws->bufpos = pos;
+
+	// opcode ごとの処理。
+	// バイナリフレームは未対応。
+	if (opcode == WS_OPCODE_PING) {
+		Debug(diag, "%s: PING", __func__);
+		wsstream_pong(ws);
+		return 1;
+	} else if (opcode == WS_OPCODE_CLOSE) {
+		Debug(diag, "%s: CLOSE", __func__);
+		return 0;
+	} else if (opcode == WS_OPCODE_TEXT || opcode == WS_OPCODE_CONT) {
+		// テキストフレーム
+		if (ws->opcode == WS_OPCODE_TEXT) {
+			ws->opcode = opcode;
+			string_clear(ws->text);
+		}
+		string_append_mem(ws->text, &ws->buf[ws->bufpos], datalen);
+		if (fin) {
+			rv = 2;
+		}
+	} else {
+		// 知らないフレーム。
+		Debug(diag, "%s: unsupported frame 0x%x", __func__, opcode);
+	}
+
+	ws->bufpos += datalen;
+
+	// 受信バッファを読み終えていれば先頭に巻き戻す。
+	if (ws->bufpos == ws->buflen) {
+		ws->bufpos = 0;
+		ws->buflen = 0;
+	}
+
+	return rv;
 }
 
-// 下位からの受信要求コールバック。
-ssize_t
-wsstream_recv_cb(wslay_event_context_ptr ctx,
-	uint8 *buf, size_t len, int flags, void *user_data)
+// PONG 応答を返す。
+static void
+wsstream_pong(struct wsstream *ws)
 {
-	struct wsstream *ws = user_data;
+	ws_send(ws, WS_OPCODE_PONG, NULL, 0);
+}
+
+// WebSocket フレームの送信。
+// datalen が 0 なら data は NULL でも可。
+static int
+ws_send(struct wsstream *ws, uint8 opcode, const void *data, uint datalen)
+{
+	uint8 buf[1 + (1+2) + 4 + datalen];
+	uint hdrlen;
 	ssize_t r;
+	union {
+		uint8 buf[4];
+		uint32 u32;
+	} key;
 
-	for (;;) {
-		r = ws->net->f_read(ws->net, buf, len);
-		if (r < 0) {
-printf("%s: f_read r=%d\n", __func__, r);
-			if (errno == EINTR) {
-				continue;
-			}
-			if (errno == EWOULDBLOCK) {
-				wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
-			} else {
-				wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-			}
-		} else if (r == 0) {
-			// Unexpected EOF is also treated as an error.
-			wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-			r = -1;
-		}
+	// ヘッダを作成。継続はとりあえず無視。
+	// OP & len
+	buf[0] = opcode | WS_OPFLAG_FIN;
+	hdrlen = 1;
+	hdrlen += ws_encode_len(&buf[1], datalen);
+	// Mask
+	buf[1] |= WS_MASK_BIT;
+	key.u32 = rnd_get32();
+	memcpy(&buf[hdrlen], &key.buf, sizeof(key.buf));
+	hdrlen += sizeof(key.buf);
 
-		return r;
+	// データをマスクする。
+	const uint8 *src = data;
+	uint8 *masked = &buf[hdrlen];
+	for (uint i = 0; i < datalen; i++) {
+		masked[i] = src[i] ^ key.buf[i % 4];
 	}
+
+	// 送信。
+	uint framelen = hdrlen + datalen;
+	r = ws->net->f_write(ws->net, buf, framelen);
+	if (r < 0) {
+		Debug(ws->diag, "%s: f_write(%u): %s", __func__, framelen, strerrno());
+		return -1;
+	}
+	if (r < framelen) {
+		Debug(ws->diag, "%s: f_write(%u): r=%zd", __func__, framelen, r);
+		return 0;
+	}
+
+	return datalen;
 }
 
-// 下位層への送信要求コールバック。
-ssize_t
-wsstream_send_cb(wslay_event_context_ptr ctx,
-	const uint8 *buf, size_t len, int flags, void *user_data)
+// WebSocket フレームの長さフィールドを作成する。
+// 戻り値は書き込んだバイト数。
+static uint
+ws_encode_len(uint8 *dst, uint len)
 {
-	struct wsstream *ws = user_data;
-	ssize_t r;
+	uint8 *d = dst;
 
-	for (;;) {
-		r = ws->net->f_write(ws->net, buf, len);
-		if (r < 0) {
-printf("%s: f_write r=%d\n", __func__, r);
-			if (errno == EINTR) {
-				continue;
-			}
-			if (errno == EWOULDBLOCK) {
-				wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK);
-			} else {
-				wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-			}
-		}
-		return r;
+printf("%s len=%u\n", __func__, len);
+	if (len < 126) {
+		*d++ = len;
+	} else if (len < 65536) {
+		*d++ = 126;
+		*d++ = len >> 8;
+		*d++ = len & 0xff;
+	} else {
+		*d++ = 127;
+		*d++ = 0;
+		*d++ = 0;
+		*d++ = 0;
+		*d++ = 0;
+		*d++ = (len >> 24) & 0xff;
+		*d++ = (len >> 16) & 0xff;
+		*d++ = (len >>  8) & 0xff;
+		*d++ =  len        & 0xff;
 	}
+
+printf("%s ret=%u\n", __func__, (int)(d-dst));
+	return d - dst;
 }
 
-// 送信マスク作成要求コールバック。
-int
-wsstream_genmask_cb(wslay_event_context_ptr ctx,
-	void *buf, size_t len, void *user_data)
+// WebSocket フレームの長さフィールドからデータ長を読み出して *lenp に格納する。
+// 長さは 32ビットまでしか対応していない。
+// 戻り値は読み進めたバイト数。
+static uint
+ws_decode_len(const uint8 *src, uint *lenp)
 {
-	rnd_fill(buf, len);
-	return 0;
-}
+	const uint8 *s = src;
+	uint8 s0;
+	uint len;
 
-// 下位層からのメッセージ受信完了コールバック。
-void
-wsstream_on_msg_recv_cb(wslay_event_context_ptr ctx,
-	const wslay_event_on_msg_recv_arg *msg, void *user_data)
-{
-	struct wsstream *ws = user_data;
-
-	if (__predict_false(diag_get_level(ws->diag) >= 1)) {
-		const char *opstr;
-		char buf[8];
-		switch (msg->opcode) {
-		 case WSLAY_TEXT_FRAME:			opstr = "TEXT";		break;
-		 case WSLAY_BINARY_FRAME:		opstr = "BINARY";	break;
-		 case WSLAY_CONNECTION_CLOSE:	opstr = "CLOSE";	break;
-		 case WSLAY_PING:				opstr = "PING";		break;
-		 case WSLAY_PONG:				opstr = "PONG";		break;
-		 default:
-			snprintf(buf, sizeof(buf), "0x%x", msg->opcode);
-			opstr = buf;
-			break;
-		}
-		diag_print(ws->diag, "%s: opcode=%s len=%d", __func__,
-			opstr, (int)msg->msg_length);
+	s0 = *s++;
+	if (s0 < 126) {
+		len = s0;
+	} else if (s0 == 126) {
+		len  = (*s++) << 8;
+		len |= (*s++);
+	} else {
+		// 32 ビット以上は無視。
+		s += 4;
+		len  = (*s++) << 24;
+		len |= (*s++) << 16;
+		len |= (*s++) <<  8;
+		len |= (*s++);
 	}
 
-	if (!wslay_is_ctrl_frame(msg->opcode)) {
-		// クライアント指定のコールバックを呼ぶ。
-		(*ws->onmsg_callback)(ws, ctx, msg);
-	}
+	*lenp = len;
+	return s - src;
 }
-
 
 #if defined(TEST)
 
@@ -773,6 +885,10 @@ testws(const struct diag *diag, int ac, char *av[])
 {
 	struct wsstream *ws = wsstream_create(diag);
 
+	if (wsstream_init(ws) == false) {
+		err(1, "wsstream_init failed");
+	}
+
 	int r = wsstream_connect(ws, av[2]);
 	if (r != 0) {
 		err(1, "wsstream_connect failed %d", r);
@@ -815,6 +931,42 @@ testws(const struct diag *diag, int ac, char *av[])
 	return 0;
 }
 
+static int
+testmisskey(const struct diag *diag, int ac, char *av[])
+{
+	struct wsstream *ws = wsstream_create(diag);
+
+	if (wsstream_init(ws) == false) {
+		err(1, "wsstream_init failed");
+	}
+
+	int r = wsstream_connect(ws, av[2]);
+	if (r != 0) {
+		err(1, "wsstream_connect failed %d", r);
+	}
+
+	char cmd[128];
+	snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
+		"\"channel\":\"localTimeline\",\"id\":\"sayaka-%08x\"}}",
+		rnd_get32());
+	if (wsstream_write(ws, cmd, strlen(cmd)) < 0) {
+		warn("%s: Sending command failed", __func__);
+		return -1;
+	}
+
+	for (;;) {
+		r = wsstream_process(ws);
+		printf("process = %d\n", r);
+		if (r == 0)
+			break;
+		if (r == 2) {
+			printf("recv=|%s|\n", string_get(ws->text));
+		}
+	}
+
+	return 0;
+}
+
 int
 main(int ac, char *av[])
 {
@@ -827,12 +979,17 @@ main(int ac, char *av[])
 	if (ac == 3 && strcmp(av[1], "ws") == 0) {
 		return testws(diag, ac, av);
 	}
+	if (ac == 3 && strcmp(av[1], "misskey") == 0) {
+		return testmisskey(diag, ac, av);
+	}
 
 	printf("usage: %s http <host> <serv> <path> ... HTTP/HTTPS client\n",
 		getprogname());
 	printf("       %s ws   <url> ... WebSocket test\n",
 		getprogname());
+	printf("       %s misskey <url> ... Misskey WebSocket test\n",
+		getprogname());
 	return 0;
 }
 
-#endif
+#endif // TEST
