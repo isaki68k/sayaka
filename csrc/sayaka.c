@@ -63,6 +63,7 @@ static void sigwinch(bool);
 
 static const char *basedir;
 static const char *cachedir;
+struct diag *diag_net;
 struct diag *diag_term;
 uint fontwidth;						// 使用するフォント幅   (ドット数)
 uint fontheight;					// 使用するフォント高さ (ドット数)
@@ -79,6 +80,7 @@ uint screen_cols;					// 画面の桁数
 enum {
 	OPT__start = 0x7f,
 	OPT_dark,
+	OPT_debug_net,
 	OPT_debug_term,
 	OPT_font,
 	OPT_light,
@@ -90,7 +92,8 @@ enum {
 
 static const struct option longopts[] = {
 	{ "dark",			no_argument,		NULL,	OPT_dark },
-	{ "debug-term",		required_argument,	NULL,	OPT_debug_term, },
+	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
+	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
@@ -106,6 +109,7 @@ main(int ac, char *av[])
 	int c;
 	uint cmd;
 
+	diag_net  = diag_alloc();
 	diag_term = diag_alloc();
 
 	cmd = Cmd_none;
@@ -120,6 +124,13 @@ main(int ac, char *av[])
 		 case OPT_dark:
 			opt_bgtheme = BG_DARK;
 			break;
+
+		 case OPT_debug_net:
+		 {
+			int lv = atoi(optarg);
+			diag_set_level(diag_net, lv);
+			break;
+		 }
 
 		 case OPT_debug_term:
 		 {
@@ -206,6 +217,11 @@ main(int ac, char *av[])
 		init_screen();
 
 		if (cmd == Cmd_stream) {
+			// XXX とりあえずいきなり引数でサーバを指定する。
+			if (ac < 1) {
+				errx(1, "please specify server name");
+			}
+
 			// 古いキャッシュを削除する。
 			progress("Deleting expired cache files...");
 			invalidate_cache();
