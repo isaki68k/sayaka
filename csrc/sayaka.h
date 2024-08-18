@@ -35,10 +35,27 @@ enum {
 	BG_LIGHT = 1,	// 背景色は明るい
 };
 
+// json.c
+typedef struct json_ json;
+extern json *json_create(const struct diag *);
+extern void json_destroy(json *);
+extern int  json_parse(json *, const string *);
+extern void json_jsmndump(const json *);
+extern void json_dump(const json *, uint);
+extern bool json_is_obj(const json *, uint);
+extern bool json_is_array(const json *, uint);
+extern bool json_is_str(const json *, uint);
+extern bool json_is_num(const json *, uint);
+extern bool json_is_bool(const json *, uint);
+extern bool json_get_str_buf(const json *, uint, char *, size_t);
+extern int  json_obj_find(json *, uint, const char *);
+
 // misskey.c
 extern void cmd_misskey_stream(const char *);
+extern void cmd_misskey_play(const char *);
 
 // sayaka.c
+extern struct diag *diag_json;
 extern struct diag *diag_net;
 extern struct diag *diag_term;
 

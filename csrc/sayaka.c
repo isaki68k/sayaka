@@ -51,7 +51,6 @@ enum {
 
 static void version(void);
 static void usage(void);
-static void cmd_play(void);
 static bool init(void);
 static void mkdir_if(const char *);
 static void progress(const char *);
@@ -62,6 +61,7 @@ static void sigwinch(bool);
 
 static const char *basedir;
 static const char *cachedir;
+struct diag *diag_json;
 struct diag *diag_net;
 struct diag *diag_term;
 uint fontwidth;						// 使用するフォント幅   (ドット数)
@@ -79,6 +79,7 @@ uint screen_cols;					// 画面の桁数
 enum {
 	OPT__start = 0x7f,
 	OPT_dark,
+	OPT_debug_json,
 	OPT_debug_net,
 	OPT_debug_term,
 	OPT_font,
@@ -91,12 +92,13 @@ enum {
 
 static const struct option longopts[] = {
 	{ "dark",			no_argument,		NULL,	OPT_dark },
+	{ "debug-json",		required_argument,	NULL,	OPT_debug_json },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
-	{ "play",			no_argument,		NULL,	OPT_play },
+	{ "play",			required_argument,	NULL,	OPT_play },
 //	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
 	{ NULL },
@@ -107,7 +109,9 @@ main(int ac, char *av[])
 {
 	int c;
 	uint cmd;
+	const char *playfile;
 
+	diag_json = diag_alloc();
 	diag_net  = diag_alloc();
 	diag_term = diag_alloc();
 
@@ -117,12 +121,20 @@ main(int ac, char *av[])
 	opt_fontheight = 0;
 	opt_progress = false;
 	opt_show_image = -1;
+	playfile = NULL;
 
 	while ((c = getopt_long(ac, av, "v", longopts, NULL)) != -1) {
 		switch (c) {
 		 case OPT_dark:
 			opt_bgtheme = BG_DARK;
 			break;
+
+		 case OPT_debug_json:
+		 {
+			int lv = atoi(optarg);
+			diag_set_level(diag_json, lv);
+			break;
+		 }
 
 		 case OPT_debug_net:
 		 {
@@ -169,8 +181,15 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_play:
+		 {
+			if (strcmp(optarg, "-") == 0) {
+				playfile = NULL;
+			} else {
+				playfile = optarg;
+			}
 			cmd = Cmd_play;
 			break;
+		 }
 
 		 case OPT_progress:
 			opt_progress = true;
@@ -233,7 +252,7 @@ main(int ac, char *av[])
 
 			cmd_misskey_stream(av[0]);
 		} else {
-			cmd_play();
+			cmd_misskey_play(playfile);
 		}
 	}
 
@@ -394,12 +413,6 @@ invalidate_cache(void)
 	if (system(cmd) < 0) {
 		warn("system(find photo)");
 	}
-}
-
-static void
-cmd_play(void)
-{
-	printf("play\n");
 }
 
 static void
