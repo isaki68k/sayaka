@@ -46,7 +46,7 @@ extern bool terminal_support_sixel(void);
 struct wsclient;
 extern struct wsclient *wsclient_create(const struct diag *);
 extern void wsclient_destroy(struct wsclient *);
-extern bool wsclient_init(struct wsclient *);
+extern bool wsclient_init(struct wsclient *, void (*)(const string *));
 extern int  wsclient_connect(struct wsclient *, const char *);
 extern int  wsclient_process(struct wsclient *);
 extern ssize_t wsclient_send_text(struct wsclient *, const char *);

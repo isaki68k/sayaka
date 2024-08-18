@@ -62,6 +62,10 @@ struct wsclient {
 	uint8 opcode;		// opcode
 	string *text;		// テキストメッセージ
 
+	// テキスト受信コールバック。
+	// テキストが 1フレーム受信できた時に呼ばれる。
+	void (*callback)(const string *);
+
 	const struct diag *diag;
 };
 
@@ -114,8 +118,12 @@ wsclient_destroy(struct wsclient *ws)
 
 // ws を初期化する。
 bool
-wsclient_init(struct wsclient *ws)
+wsclient_init(struct wsclient *ws, void (*callback)(const string *))
 {
+	assert(ws);
+
+	ws->callback = callback;
+
 	return true;
 }
 
@@ -344,6 +352,13 @@ wsclient_process(struct wsclient *ws)
 		ws->buflen = 0;
 	}
 
+	if (rv == 2) {
+		if (ws->callback) {
+			(ws->callback)(ws->text);
+		}
+		string_clear(ws->text);
+	}
+
 	return rv;
 }
 
@@ -514,13 +529,20 @@ testhttp(const struct diag *diag, int ac, char *av[])
 	return 0;
 }
 
+// 表示するだけのコールバック。
+static void
+cat_callback(const string *s)
+{
+	printf("%s (%u bytes)\n", string_get(s), string_len(s));
+}
+
 // WebSocket エコークライアント…にしたいが、今のところ1往復のみ。
 static int
 testwsecho(const struct diag *diag, int ac, char *av[])
 {
 	struct wsclient *ws = wsclient_create(diag);
 
-	if (wsclient_init(ws) == false) {
+	if (wsclient_init(ws, cat_callback) == false) {
 		err(1, "wsclient_init failed");
 	}
 
@@ -536,7 +558,6 @@ testwsecho(const struct diag *diag, int ac, char *av[])
 
 	for (;;) {
 		int r;
-		int i;
 
 		r = wsclient_process(ws);
 		if (r < 0) {
@@ -546,29 +567,6 @@ testwsecho(const struct diag *diag, int ac, char *av[])
 		if (r == 0) {
 			printf("EOF\n");
 			break;
-		}
-		if (r == 1) {
-			printf("not yet\n");
-			continue;
-		}
-
-		r = string_len(ws->text);
-		const uint8 *buf = (const uint8 *)string_get(ws->text);
-		printf("recv %d bytes:\n", r);
-		for (i = 0; i < r; i++) {
-			if ((i % 16) == 0) {
-				printf("%04x:", i);
-			}
-			if ((i % 16) == 8) {
-				printf(" ");
-			}
-			printf(" %02x", buf[i]);
-			if ((i % 16) == 15) {
-				printf("\n");
-			}
-		}
-		if ((i % 16) != 0) {
-			printf("\n");
 		}
 	}
 
@@ -582,7 +580,7 @@ testmisskey(const struct diag *diag, int ac, char *av[])
 {
 	struct wsclient *ws = wsclient_create(diag);
 
-	if (wsclient_init(ws) == false) {
+	if (wsclient_init(ws, cat_callback) == false) {
 		err(1, "wsclient_init failed");
 	}
 
@@ -608,9 +606,6 @@ testmisskey(const struct diag *diag, int ac, char *av[])
 		if (r == 1) {
 			continue;
 		}
-		printf("recv=|%s|(%d bytes)\n", string_get(ws->text),
-			(int)string_len(ws->text));
-		string_clear(ws->text);
 	}
 
 	wsclient_destroy(ws);
