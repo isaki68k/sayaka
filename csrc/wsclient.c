@@ -30,8 +30,6 @@
 
 #include "sayaka.h"
 #include <string.h>
-#include <unistd.h>
-#include <sys/select.h>
 #include <curl/curl.h>
 
 enum {
@@ -54,13 +52,6 @@ enum {
 #define BUFSIZE	(1024)
 
 struct wsclient {
-	//                           wsclient
-	//             socketpair   +-------+
-	// ユーザ側 <-------------->|       |---------> ネットワーク
-	//                          +-------+
-	//         ↑              ↑       ↑
-	//      peersock        localsock   net
-
 	struct net *net;
 
 	uint8 *buf;			// 受信バッファ
@@ -71,15 +62,9 @@ struct wsclient {
 	uint8 opcode;		// opcode
 	string *text;		// テキストメッセージ
 
-	int sockpair[2];
-#define localsock	sockpair[0]
-#define peersock	sockpair[1]
-
 	const struct diag *diag;
 };
 
-static ssize_t wsclient_send_text(struct wsclient *, const char *, size_t);
-static int  wsclient_process(struct wsclient *);
 static void wsclient_send_pong(struct wsclient *);
 static int  wsclient_send(struct wsclient *, uint8, const void *, uint);
 static uint ws_encode_len(uint8 *, uint);
@@ -106,8 +91,6 @@ wsclient_create(const struct diag *diag)
 		goto abort;
 	}
 
-	ws->localsock = -1;
-	ws->peersock  = -1;
 	ws->diag = diag;
 
 	return ws;
@@ -125,12 +108,6 @@ wsclient_destroy(struct wsclient *ws)
 		net_destroy(ws->net);
 		free(ws->buf);
 		string_free(ws->text);
-		if (ws->localsock >= 0) {
-			close(ws->localsock);
-		}
-		if (ws->peersock >= 0) {
-			close(ws->peersock);
-		}
 		free(ws);
 	}
 }
@@ -139,18 +116,11 @@ wsclient_destroy(struct wsclient *ws)
 bool
 wsclient_init(struct wsclient *ws)
 {
-	const struct diag *diag = ws->diag;
-
-	if (socketpair(PF_LOCAL, SOCK_STREAM, 0, ws->sockpair) < 0) {
-		Debug(diag, "%s: socketpair: %s", __func__, strerrno());
-		return false;
-	}
-
 	return true;
 }
 
 // url に接続する。
-// 成功すれば peersock、失敗すれば -1 を返す。
+// 成功すれば 0、失敗すれば -1 を返す。
 int
 wsclient_connect(struct wsclient *ws, const char *url)
 {
@@ -264,7 +234,7 @@ wsclient_connect(struct wsclient *ws, const char *url)
 
 	// XXX Sec-WebSocket-Accept のチェックとか。
 
-	return ws->peersock;
+	return 0;
 
  abort:
 	string_free(hdr);
@@ -277,86 +247,11 @@ wsclient_connect(struct wsclient *ws, const char *url)
 	return -1;
 }
 
-// wsclient を実行する。
-// エラーなら errno をセットして -1 を返す。
-// どれかが EOF になれば 0 を返す。
-int
-wsclient_run(struct wsclient *ws)
-{
-	const struct diag *diag = ws->diag;
-	fd_set readfds;
-	int maxfd;
-	ssize_t n;
-	int r;
-
-	FD_ZERO(&readfds);
-	int lfd = ws->localsock;
-	int nfd = net_get_fd(ws->net);
-	FD_SET(lfd, &readfds);
-	FD_SET(nfd, &readfds);
-	maxfd = MAX(lfd, nfd);
-printf("lfd=%d nfd=%d, maxfd=%d\n", lfd, nfd, maxfd);
-
-	for (;;) {
-printf("select\n");
-		r = select(maxfd + 1, &readfds, NULL, NULL, NULL);
-		if (__predict_false(r <= 0)) {
-			if (r < 0) {
-				Debug(diag, "%s: select: %s", __func__, strerrno());
-				return -1;
-			} else {
-				// タイムアウトはしないはずだが?
-				Debug(diag, "%s: select timed out?", __func__);
-				return 0;
-			}
-		}
-printf("select = %d\n", r);
-
-		if (__predict_true(FD_ISSET(nfd, &readfds))) {
-			// net への着信。
-			r = wsclient_process(ws);
-			if (r <= 0) {
-				return r;
-			}
-			if (r == 2) {
-				n = write(ws->localsock, string_get(ws->text),
-						string_len(ws->text));
-				if (n <= 0) {
-					if (n < 0) {
-						Debug(diag, "%s: write peer (%u) failed: %s",
-							__func__, string_len(ws->text), strerrno());
-						return -1;
-					} else {
-						return 0;
-					}
-				}
-			}
-		}
-		if (FD_ISSET(lfd, &readfds)) {
-			// localsock への着信。
-			char buf[BUFSIZE];
-
-			n = read(ws->localsock, buf, sizeof(buf));
-printf("%s: read from localsock = %zd\n", __func__, n);
-			if (n < 0) {
-				Debug(diag, "%s: read peer failed: %s", __func__, strerrno());
-				return -1;
-			}
-			if (n == 0) {
-				return 0;
-			}
-			wsclient_send_text(ws, buf, n);
-		}
-	}
-
-	return 0;
-}
-
-// net に着信したフレームの処理をする。
+// net に着信したフレームの処理をする (受信までブロックする)。
 // 戻り値は -1 ならエラー。0 なら EOF。
-// 1 なら何かしら処理をしたが、上位(peer)には関係がない。
-// 2 なら ws->text に上位(peer)に通知するデータが用意できた。
-static int
+// 1 なら何かしら処理をしたが、上位には関係がない。
+// 2 なら ws->text に上位に通知するデータが用意できた。
+int
 wsclient_process(struct wsclient *ws)
 {
 	const struct diag *diag = ws->diag;
@@ -456,10 +351,10 @@ printf("%s: read r=%d\n", __func__, r);
 }
 
 // テキストフレームを送信する。
-static ssize_t
-wsclient_send_text(struct wsclient *ws, const char *buf, size_t len)
+ssize_t
+wsclient_send_text(struct wsclient *ws, const char *buf)
 {
-	return wsclient_send(ws, WS_OPCODE_TEXT, buf, len);
+	return wsclient_send(ws, WS_OPCODE_TEXT, buf, strlen(buf));
 }
 
 // PONG 応答を送信する。
@@ -577,11 +472,10 @@ ws_decode_len(const uint8 *src, uint *lenp)
 
 #if defined(TEST)
 //
-// % cc -pthread -o wsclient wsclient.c libcommon.a -lthread
+// % cc -o wsclient wsclient.c libcommon.a
 //
 
 #include <err.h>
-#include <pthread.h>
 #include <stdio.h>
 
 static int
@@ -626,15 +520,7 @@ testhttp(const struct diag *diag, int ac, char *av[])
 	return 0;
 }
 
-static void *
-testws_thread(void *arg)
-{
-	struct wsclient *ws = arg;
-
-	return (void *)(intptr_t)wsclient_run(ws);
-}
-
-// WebSocket エコークライアント…にしたい
+// WebSocket エコークライアント…にしたいが、今のところ1往復のみ。
 static int
 testwsecho(const struct diag *diag, int ac, char *av[])
 {
@@ -649,20 +535,16 @@ testwsecho(const struct diag *diag, int ac, char *av[])
 		err(1, "wsclient_connect failed");
 	}
 
-	pthread_t tid;
-	pthread_create(&tid, NULL, testws_thread, ws);
-
 	// 1回だけ標準入力を受け付ける。
 	char sendbuf[100];
 	fgets(sendbuf, sizeof(sendbuf), stdin);
-	write(sock, sendbuf, strlen(sendbuf));
+	wsclient_send_text(ws, sendbuf);
 
 	for (;;) {
-		uint8 buf[100];
 		int r;
 		int i;
 
-		r = read(sock, buf, sizeof(buf));
+		r = wsclient_process(ws);
 		if (r < 0) {
 			warn("read");
 			break;
@@ -671,7 +553,13 @@ testwsecho(const struct diag *diag, int ac, char *av[])
 			printf("EOF\n");
 			break;
 		}
+		if (r == 1) {
+			printf("not yet\n");
+			continue;
+		}
 
+		r = string_len(ws->text);
+		const uint8 *buf = (const uint8 *)string_get(ws->text);
 		printf("recv %d bytes:\n", r);
 		for (i = 0; i < r; i++) {
 			if ((i % 16) == 0) {
@@ -690,7 +578,6 @@ testwsecho(const struct diag *diag, int ac, char *av[])
 		}
 	}
 
-	pthread_join(tid, NULL);
 	wsclient_destroy(ws);
 
 	return 0;
@@ -710,29 +597,28 @@ testmisskey(const struct diag *diag, int ac, char *av[])
 		err(1, "wsclient_connect failed");
 	}
 
-	pthread_t tid;
-	pthread_create(&tid, NULL, testws_thread, ws);
-
 	char cmd[128];
 	snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"localTimeline\",\"id\":\"sayaka-%08x\"}}",
 		rnd_get32());
-	if (write(sock, cmd, strlen(cmd)) < 0) {
+	if (wsclient_send_text(ws, cmd) < 0) {
 		warn("%s: Sending command failed", __func__);
 		return -1;
 	}
 
 	for (;;) {
-		char buf[4096];
-		int r = read(sock, buf, sizeof(buf) - 1);
+		int r = wsclient_process(ws);
 		if (r < 1) {
 			break;
 		}
-		buf[r] = '\0';
-		printf("recv=|%s|(%d bytes)\n", buf, r);
+		if (r == 1) {
+			continue;
+		}
+		printf("recv=|%s|(%d bytes)\n", string_get(ws->text),
+			(int)string_len(ws->text));
+		string_clear(ws->text);
 	}
 
-	pthread_join(tid, NULL);
 	wsclient_destroy(ws);
 
 	return 0;

@@ -48,6 +48,7 @@ extern struct wsclient *wsclient_create(const struct diag *);
 extern void wsclient_destroy(struct wsclient *);
 extern bool wsclient_init(struct wsclient *);
 extern int  wsclient_connect(struct wsclient *, const char *);
-extern int  wsclient_run(struct wsclient *);
+extern int  wsclient_process(struct wsclient *);
+extern ssize_t wsclient_send_text(struct wsclient *, const char *);
 
 #endif // !sayaka_harada_h
