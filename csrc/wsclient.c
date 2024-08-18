@@ -25,11 +25,13 @@
  */
 
 //
-// WebSocket
+// WebSocket クライアント
 //
 
 #include "sayaka.h"
 #include <string.h>
+#include <unistd.h>
+#include <sys/select.h>
 #include <curl/curl.h>
 
 enum {
@@ -51,7 +53,14 @@ enum {
 
 #define BUFSIZE	(1024)
 
-struct wsstream {
+struct wsclient {
+	//                           wsclient
+	//             socketpair   +-------+
+	// ユーザ側 <-------------->|       |---------> ネットワーク
+	//                          +-------+
+	//         ↑              ↑       ↑
+	//      peersock        localsock   net
+
 	struct net *net;
 
 	uint8 *buf;			// 受信バッファ
@@ -62,80 +71,88 @@ struct wsstream {
 	uint8 opcode;		// opcode
 	string *text;		// テキストメッセージ
 
+	int sockpair[2];
+#define localsock	sockpair[0]
+#define peersock	sockpair[1]
+
 	const struct diag *diag;
 };
 
-ssize_t wsstream_write(struct wsstream *, const void *, size_t);
-int  wsstream_process(struct wsstream *);
-static void wsstream_pong(struct wsstream *);
-static int  ws_send(struct wsstream *, uint8, const void *, uint);
+static ssize_t wsclient_send_text(struct wsclient *, const char *, size_t);
+static int  wsclient_process(struct wsclient *);
+static void wsclient_send_pong(struct wsclient *);
+static int  wsclient_send(struct wsclient *, uint8, const void *, uint);
 static uint ws_encode_len(uint8 *, uint);
 static uint ws_decode_len(const uint8 *, uint *);
 
-// wsstream コンテキストを生成する。
-struct wsstream *
-wsstream_create(const struct diag *diag)
+// wsclient コンテキストを生成する。
+struct wsclient *
+wsclient_create(const struct diag *diag)
 {
-	struct wsstream *ws;
+	struct wsclient *ws;
 
 	ws = calloc(1, sizeof(*ws));
 	if (ws == NULL) {
 		return NULL;
 	}
 
+	ws->buf = malloc(BUFSIZE);
+	if (ws->buf == NULL) {
+		goto abort;
+	}
+
+	ws->text = string_alloc(BUFSIZE);
+	if (ws->text == NULL) {
+		goto abort;
+	}
+
+	ws->localsock = -1;
+	ws->peersock  = -1;
 	ws->diag = diag;
 
 	return ws;
+
+ abort:
+	wsclient_destroy(ws);
+	return NULL;
 }
 
 // ws を解放する。
 void
-wsstream_destroy(struct wsstream *ws)
+wsclient_destroy(struct wsclient *ws)
 {
 	if (ws) {
 		net_destroy(ws->net);
 		free(ws->buf);
 		string_free(ws->text);
+		if (ws->localsock >= 0) {
+			close(ws->localsock);
+		}
+		if (ws->peersock >= 0) {
+			close(ws->peersock);
+		}
 		free(ws);
 	}
 }
 
 // ws を初期化する。
 bool
-wsstream_init(struct wsstream *ws)
+wsclient_init(struct wsclient *ws)
 {
-	ws->buf = malloc(BUFSIZE);
-	if (ws->buf == NULL) {
-		return false;
-	}
+	const struct diag *diag = ws->diag;
 
-	ws->text = string_alloc(BUFSIZE);
-	if (ws->text == NULL) {
+	if (socketpair(PF_LOCAL, SOCK_STREAM, 0, ws->sockpair) < 0) {
+		Debug(diag, "%s: socketpair: %s", __func__, strerrno());
 		return false;
 	}
 
 	return true;
 }
 
-#if 0
-// ws からソケットを取得する。
-// まだなければ -1 が返る。
-int
-wsstream_get_fd(const struct wsstream *ws)
-{
-	assert(ws);
-
-	if (ws->net) {
-		return ws->net->sock;
-	}
-	return -1;
-}
-#endif
-
 // url に接続する。
-// 成功すれば 0、失敗すれば -1 を返す。
+// 成功すれば peersock、失敗すれば -1 を返す。
 int
-wsstream_connect(struct wsstream *ws, const char *url)
+wsclient_connect(struct wsclient *ws, const char *url)
 {
 	const struct diag *diag = ws->diag;
 	string *key = NULL;
@@ -247,7 +264,7 @@ wsstream_connect(struct wsstream *ws, const char *url)
 
 	// XXX Sec-WebSocket-Accept のチェックとか。
 
-	return 0;
+	return ws->peersock;
 
  abort:
 	string_free(hdr);
@@ -260,20 +277,87 @@ wsstream_connect(struct wsstream *ws, const char *url)
 	return -1;
 }
 
-// 上位からの書き込み。
-// 失敗すれば errno をセットし -1 を返す。
-ssize_t
-wsstream_write(struct wsstream *ws, const void *buf, size_t len)
+// wsclient を実行する。
+// エラーなら errno をセットして -1 を返す。
+// どれかが EOF になれば 0 を返す。
+int
+wsclient_run(struct wsclient *ws)
 {
-	return ws_send(ws, WS_OPCODE_TEXT, buf, len);
+	const struct diag *diag = ws->diag;
+	fd_set readfds;
+	int maxfd;
+	ssize_t n;
+	int r;
+
+	FD_ZERO(&readfds);
+	int lfd = ws->localsock;
+	int nfd = net_get_fd(ws->net);
+	FD_SET(lfd, &readfds);
+	FD_SET(nfd, &readfds);
+	maxfd = MAX(lfd, nfd);
+printf("lfd=%d nfd=%d, maxfd=%d\n", lfd, nfd, maxfd);
+
+	for (;;) {
+printf("select\n");
+		r = select(maxfd + 1, &readfds, NULL, NULL, NULL);
+		if (__predict_false(r <= 0)) {
+			if (r < 0) {
+				Debug(diag, "%s: select: %s", __func__, strerrno());
+				return -1;
+			} else {
+				// タイムアウトはしないはずだが?
+				Debug(diag, "%s: select timed out?", __func__);
+				return 0;
+			}
+		}
+printf("select = %d\n", r);
+
+		if (__predict_true(FD_ISSET(nfd, &readfds))) {
+			// net への着信。
+			r = wsclient_process(ws);
+			if (r <= 0) {
+				return r;
+			}
+			if (r == 2) {
+				n = write(ws->localsock, string_get(ws->text),
+						string_len(ws->text));
+				if (n <= 0) {
+					if (n < 0) {
+						Debug(diag, "%s: write peer (%u) failed: %s",
+							__func__, string_len(ws->text), strerrno());
+						return -1;
+					} else {
+						return 0;
+					}
+				}
+			}
+		}
+		if (FD_ISSET(lfd, &readfds)) {
+			// localsock への着信。
+			char buf[BUFSIZE];
+
+			n = read(ws->localsock, buf, sizeof(buf));
+printf("%s: read from localsock = %zd\n", __func__, n);
+			if (n < 0) {
+				Debug(diag, "%s: read peer failed: %s", __func__, strerrno());
+				return -1;
+			}
+			if (n == 0) {
+				return 0;
+			}
+			wsclient_send_text(ws, buf, n);
+		}
+	}
+
+	return 0;
 }
 
-// 受信処理。
+// net に着信したフレームの処理をする。
 // 戻り値は -1 ならエラー。0 なら EOF。
-// 1 なら何かしら処理をしたが、上位には着信はない。
-// 2 なら上位に着信がある。
-int
-wsstream_process(struct wsstream *ws)
+// 1 なら何かしら処理をしたが、上位(peer)には関係がない。
+// 2 なら ws->text に上位(peer)に通知するデータが用意できた。
+static int
+wsclient_process(struct wsclient *ws)
 {
 	const struct diag *diag = ws->diag;
 	int rv = 1;
@@ -340,7 +424,7 @@ printf("%s: read r=%d\n", __func__, r);
 	// バイナリフレームは未対応。
 	if (opcode == WS_OPCODE_PING) {
 		Debug(diag, "%s: PING", __func__);
-		wsstream_pong(ws);
+		wsclient_send_pong(ws);
 		return 1;
 	} else if (opcode == WS_OPCODE_CLOSE) {
 		Debug(diag, "%s: CLOSE", __func__);
@@ -371,17 +455,24 @@ printf("%s: read r=%d\n", __func__, r);
 	return rv;
 }
 
-// PONG 応答を返す。
-static void
-wsstream_pong(struct wsstream *ws)
+// テキストフレームを送信する。
+static ssize_t
+wsclient_send_text(struct wsclient *ws, const char *buf, size_t len)
 {
-	ws_send(ws, WS_OPCODE_PONG, NULL, 0);
+	return wsclient_send(ws, WS_OPCODE_TEXT, buf, len);
 }
 
-// WebSocket フレームの送信。
+// PONG 応答を送信する。
+static void
+wsclient_send_pong(struct wsclient *ws)
+{
+	wsclient_send(ws, WS_OPCODE_PONG, NULL, 0);
+}
+
+// WebSocket フレームを送信する。
 // datalen が 0 なら data は NULL でも可。
 static int
-ws_send(struct wsstream *ws, uint8 opcode, const void *data, uint datalen)
+wsclient_send(struct wsclient *ws, uint8 opcode, const void *data, uint datalen)
 {
 	uint8 buf[1 + (1+2) + 4 + datalen];
 	uint hdrlen;
@@ -412,6 +503,7 @@ ws_send(struct wsstream *ws, uint8 opcode, const void *data, uint datalen)
 	// 送信。
 	uint framelen = hdrlen + datalen;
 	r = net_write(ws->net, buf, framelen);
+printf("%s: net_write=%zd\n", __func__, r);
 	if (r < 0) {
 		Debug(ws->diag, "%s: f_write(%u): %s", __func__, framelen, strerrno());
 		return -1;
@@ -484,8 +576,12 @@ ws_decode_len(const uint8 *src, uint *lenp)
 }
 
 #if defined(TEST)
+//
+// % cc -pthread -o wsclient wsclient.c libcommon.a -lthread
+//
 
 #include <err.h>
+#include <pthread.h>
 #include <stdio.h>
 
 static int
@@ -530,27 +626,45 @@ testhttp(const struct diag *diag, int ac, char *av[])
 	return 0;
 }
 
-static int
-testws(const struct diag *diag, int ac, char *av[])
+static void *
+testws_thread(void *arg)
 {
-	struct wsstream *ws = wsstream_create(diag);
+	struct wsclient *ws = arg;
 
-	if (wsstream_init(ws) == false) {
-		err(1, "wsstream_init failed");
+	return (void *)(intptr_t)wsclient_run(ws);
+}
+
+// WebSocket エコークライアント…にしたい
+static int
+testwsecho(const struct diag *diag, int ac, char *av[])
+{
+	struct wsclient *ws = wsclient_create(diag);
+
+	if (wsclient_init(ws) == false) {
+		err(1, "wsclient_init failed");
 	}
 
-	int r = wsstream_connect(ws, av[2]);
-	if (r != 0) {
-		err(1, "wsstream_connect failed %d", r);
+	int sock = wsclient_connect(ws, av[2]);
+	if (sock < 0) {
+		err(1, "wsclient_connect failed");
 	}
+
+	pthread_t tid;
+	pthread_create(&tid, NULL, testws_thread, ws);
+
+	// 1回だけ標準入力を受け付ける。
+	char sendbuf[100];
+	fgets(sendbuf, sizeof(sendbuf), stdin);
+	write(sock, sendbuf, strlen(sendbuf));
 
 	for (;;) {
 		uint8 buf[100];
+		int r;
 		int i;
 
-		r = net_read(ws->net, buf, sizeof(buf));
+		r = read(sock, buf, sizeof(buf));
 		if (r < 0) {
-			warn("f_read");
+			warn("read");
 			break;
 		}
 		if (r == 0) {
@@ -576,7 +690,8 @@ testws(const struct diag *diag, int ac, char *av[])
 		}
 	}
 
-	wsstream_destroy(ws);
+	pthread_join(tid, NULL);
+	wsclient_destroy(ws);
 
 	return 0;
 }
@@ -584,35 +699,41 @@ testws(const struct diag *diag, int ac, char *av[])
 static int
 testmisskey(const struct diag *diag, int ac, char *av[])
 {
-	struct wsstream *ws = wsstream_create(diag);
+	struct wsclient *ws = wsclient_create(diag);
 
-	if (wsstream_init(ws) == false) {
-		err(1, "wsstream_init failed");
+	if (wsclient_init(ws) == false) {
+		err(1, "wsclient_init failed");
 	}
 
-	int r = wsstream_connect(ws, av[2]);
-	if (r != 0) {
-		err(1, "wsstream_connect failed %d", r);
+	int sock = wsclient_connect(ws, av[2]);
+	if (sock < 0) {
+		err(1, "wsclient_connect failed");
 	}
+
+	pthread_t tid;
+	pthread_create(&tid, NULL, testws_thread, ws);
 
 	char cmd[128];
 	snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"localTimeline\",\"id\":\"sayaka-%08x\"}}",
 		rnd_get32());
-	if (wsstream_write(ws, cmd, strlen(cmd)) < 0) {
+	if (write(sock, cmd, strlen(cmd)) < 0) {
 		warn("%s: Sending command failed", __func__);
 		return -1;
 	}
 
 	for (;;) {
-		r = wsstream_process(ws);
-		printf("process = %d\n", r);
-		if (r == 0)
+		char buf[4096];
+		int r = read(sock, buf, sizeof(buf) - 1);
+		if (r < 1) {
 			break;
-		if (r == 2) {
-			printf("recv=|%s|\n", string_get(ws->text));
 		}
+		buf[r] = '\0';
+		printf("recv=|%s|(%d bytes)\n", buf, r);
 	}
+
+	pthread_join(tid, NULL);
+	wsclient_destroy(ws);
 
 	return 0;
 }
@@ -627,7 +748,7 @@ main(int ac, char *av[])
 		return testhttp(diag, ac, av);
 	}
 	if (ac == 3 && strcmp(av[1], "ws") == 0) {
-		return testws(diag, ac, av);
+		return testwsecho(diag, ac, av);
 	}
 	if (ac == 3 && strcmp(av[1], "misskey") == 0) {
 		return testmisskey(diag, ac, av);
@@ -635,7 +756,7 @@ main(int ac, char *av[])
 
 	printf("usage: %s http <host> <serv> <path> ... HTTP/HTTPS client\n",
 		getprogname());
-	printf("       %s ws   <url> ... WebSocket test\n",
+	printf("       %s wsecho  <url> ... WebSocket echo client\n",
 		getprogname());
 	printf("       %s misskey <url> ... Misskey WebSocket test\n",
 		getprogname());

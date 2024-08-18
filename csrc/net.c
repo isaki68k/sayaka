@@ -150,6 +150,14 @@ net_close(struct net *net)
 	net->f_close(net);
 }
 
+// 生ソケットを取得する。
+int
+net_get_fd(const struct net *net)
+{
+	assert(net);
+	return net->sock;
+}
+
 
 //
 // 生ソケット

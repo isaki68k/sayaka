@@ -42,12 +42,12 @@ extern struct diag *diag_term;
 extern int  terminal_get_bgtheme(void);
 extern bool terminal_support_sixel(void);
 
-// wsstream.c
-struct wsstream;
-extern struct wsstream *wsstream_create(const struct diag *);
-extern void wsstream_destroy(struct wsstream *);
-extern bool wsstream_init(struct wsstream *);
-extern int  wsstream_get_fd(const struct wsstream *);
-extern int  wsstream_connect(struct wsstream *, const char *);
+// wsclient.c
+struct wsclient;
+extern struct wsclient *wsclient_create(const struct diag *);
+extern void wsclient_destroy(struct wsclient *);
+extern bool wsclient_init(struct wsclient *);
+extern int  wsclient_connect(struct wsclient *, const char *);
+extern int  wsclient_run(struct wsclient *);
 
 #endif // !sayaka_harada_h
