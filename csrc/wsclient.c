@@ -268,13 +268,10 @@ wsclient_process(struct wsclient *ws)
 		}
 		ws->buf = newbuf;
 		ws->bufsize = newsize;
-printf("%s: realloc %u\n", __func__, newsize);
 	}
 
-printf("%s: read buflen=%u/%u\n", __func__, ws->buflen, ws->bufsize);
 	// ブロッキング。
 	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
-printf("%s: read r=%d\n", __func__, r);
 	if (r < 0) {
 		Debug(diag, "%s: f_read: %s", __func__, strerrno());
 		return -1;
@@ -283,15 +280,15 @@ printf("%s: read r=%d\n", __func__, r);
 		Debug(diag, "%s: EOF", __func__);
 		return 0;
 	}
-	if (1) {
+	if (0) {
 		int j;
 		for (j = 0; j < r; j++) {
 			printf(" %02x", ws->buf[ws->buflen + j]);
-			if ((j % 8) == 7) {
+			if ((j % 16) == 15) {
 				printf("\n");
 			}
 		}
-		if ((j % 8) != 7) {
+		if ((j % 16) != 15) {
 			printf("\n");
 		}
 	}
@@ -398,7 +395,6 @@ wsclient_send(struct wsclient *ws, uint8 opcode, const void *data, uint datalen)
 	// 送信。
 	uint framelen = hdrlen + datalen;
 	r = net_write(ws->net, buf, framelen);
-printf("%s: net_write=%zd\n", __func__, r);
 	if (r < 0) {
 		Debug(ws->diag, "%s: f_write(%u): %s", __func__, framelen, strerrno());
 		return -1;
@@ -418,7 +414,6 @@ ws_encode_len(uint8 *dst, uint len)
 {
 	uint8 *d = dst;
 
-printf("%s len=%u\n", __func__, len);
 	if (len < 126) {
 		*d++ = len;
 	} else if (len < 65536) {
@@ -437,7 +432,6 @@ printf("%s len=%u\n", __func__, len);
 		*d++ =  len        & 0xff;
 	}
 
-printf("%s ret=%u\n", __func__, (int)(d-dst));
 	return d - dst;
 }
 
