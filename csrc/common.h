@@ -109,6 +109,7 @@ extern FILE *pstream_open_for_read(struct pstream *);
 typedef struct string_ string;
 extern string *string_init(void);
 extern string *string_alloc(uint);
+extern string *string_dup_cstr(const char *);
 extern bool string_realloc(string *, uint);
 extern void string_free(string *);
 extern const char *string_get(const string *);

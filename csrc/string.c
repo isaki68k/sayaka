@@ -62,6 +62,20 @@ string_alloc(uint capacity)
 	return s;
 }
 
+// cstr を複製した文字列を返す。
+string *
+string_dup_cstr(const char *cstr)
+{
+	uint len = strlen(cstr);
+	string *s = string_alloc(len + 1);
+	if (s == NULL) {
+		return NULL;
+	}
+	strlcpy(s->buf, cstr, len + 1);
+	s->len = len;
+	return s;
+}
+
 // 確保量を拡大する。文字列は変わらない。
 // new_capacity が現行以下なら何もせず true を返す。
 // 拡大出来なければ変更せずに false を返す。
