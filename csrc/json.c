@@ -40,8 +40,12 @@
 
 typedef struct json_
 {
-	const string *str;		// 元文字列 (所有しない)
-	const char *cstr;		// 生ポインタ
+	// 入力文字列 (の先頭)。
+	// 入力時は C の文字列だが、jsmn_parser() で語句に分解した後
+	// ここをそのままバッファとして使って、各単語の末尾に '\0' を書き込み
+	// ゼロ終端させているため、json_parser() 実行後は単純な C の文字列では
+	// なくなっている (strlen(cstr) が出来ないという意味)。
+	char *cstr;
 
 	jsmntok_t *token;		// トークンの配列
 	uint tokencap;			// 確保してある要素数
@@ -53,6 +57,7 @@ typedef struct json_
 } json;
 
 static int  json_dump_r(const json *, int, uint);
+static const char *json_get_cstr_prim(const json *, int);
 static bool json_equal_cstr(const json *, int, const char *);
 
 static inline bool
@@ -71,6 +76,12 @@ static inline bool
 tok_is_str(const jsmntok_t *t)
 {
 	return (t->type == JSMN_STRING);
+}
+
+static inline bool
+tok_is_prim(const jsmntok_t *t)
+{
+	return (t->type == JSMN_PRIMITIVE);
 }
 
 
@@ -109,23 +120,22 @@ json_destroy(json *js)
 	}
 }
 
-// JSON 文字列 str を語句に分解する。
+// JSON 文字列 str を語句に分解する。その際 str を書き換える。
 // 成功すれば要素数を返す。
 // -1 .. -3 は jsmn のエラー。
 int
-json_parse(json *js, const string *str)
+json_parse(json *js, string *str)
 {
 	int n;
 
 	assert(js);
 
-	js->str = str;
-	js->cstr = string_get(str);
+	js->cstr = string_get_buf(str);
 	jsmn_init(&js->parser);
 
 	for (;;) {
 		n = jsmn_parse(&js->parser,
-				js->cstr, string_len(js->str),
+				js->cstr, string_len(str),
 				js->token, js->tokencap);
 		if (n != JSMN_ERROR_NOMEM) {
 			break;
@@ -148,8 +158,18 @@ json_parse(json *js, const string *str)
 		Debug(js->diag, "%s: jsmn_parse failed: %d", __func__, n);
 		return n;
 	}
-
 	js->tokenlen = n;
+
+	// STRING と NUMBER をゼロ終端させる。
+	// BOOL と NULL をゼロ終端させる必要はそんなにないが、プリミティブのうち
+	// NUMBER に限定するほうが手間なのでプリミティブは全部やってしまう。
+	for (int i = 0; i < n; i++) {
+		jsmntok_t *t = &js->token[i];
+		if (tok_is_str(t) || tok_is_prim(t)) {
+			js->cstr[t->end] = '\0';
+		}
+	}
+
 	return n;
 }
 
@@ -167,7 +187,7 @@ json_jsmndump(const json *js)
 		} else if (t->type == JSMN_ARRAY) {
 			printf(" ARRAY child=%u", t->size);
 		} else if (t->type == JSMN_STRING) {
-			printf(" STRING \"%.*s\"", t->end - t->start, &cstr[t->start]);
+			printf(" STRING \"%s\"", &cstr[t->start]);
 		} else if (t->type == JSMN_UNDEFINED) {
 			printf(" Undefined??");
 		} else {
@@ -179,7 +199,7 @@ json_jsmndump(const json *js)
 			} else if (ch == 'f') {
 				printf(" BOOL false");
 			} else {
-				printf(" NUMBER %.*s", t->end - t->start, &cstr[t->start]);
+				printf(" NUMBER %s", &cstr[t->start]);
 			}
 		}
 		printf("\n");
@@ -202,6 +222,7 @@ json_dump(const json *js, int root)
 static int
 json_dump_r(const json *js, int id, uint depth)
 {
+	const char *cstr = js->cstr;
 	jsmntok_t *t = &js->token[id];
 
 	if (t->type == JSMN_PRIMITIVE) {
@@ -213,16 +234,12 @@ json_dump_r(const json *js, int id, uint depth)
 		} else if (ch == 'f') {
 			printf("false");
 		} else if (ch == '-' || ('0' <= ch && ch <= '9')) {
-			char buf[t->end - t->start + 1];
-			json_get_buf(js, id, buf, sizeof(buf));
-			printf("%s", buf);
+			printf("%s", &cstr[t->start]);
 		}
 		return ++id;
 	}
 	if (tok_is_str(t)) {
-		char buf[t->end - t->start + 1];
-		json_get_buf(js, id, buf, sizeof(buf));
-		printf("\"%s\"", buf);	// XXX TODO エスケープ
+		printf("\"%s\"", &cstr[t->start]);	// XXX TODO エスケープ
 		return ++id;
 	}
 
@@ -296,7 +313,7 @@ json_is_num(const json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
-	if (t->type == JSMN_PRIMITIVE) {
+	if (tok_is_prim(t)) {
 		char ch = js->cstr[t->start];
 		if (('0' <= ch && ch <= '9') || ch == '-') {
 			return true;
@@ -311,7 +328,7 @@ json_is_bool(const json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
-	if (t->type == JSMN_PRIMITIVE) {
+	if (tok_is_prim(t)) {
 		char ch = js->cstr[t->start];
 		if (ch == 't' || ch == 'f') {
 			return true;
@@ -320,127 +337,76 @@ json_is_bool(const json *js, int idx)
 	return false;
 }
 
-// js[idx] の値が s2 と一致すれば true を返す。
-// 本来 STRING 用だが NUMBER などでも使える。
-// そのためこちらでは型のチェック行わないので、STRING 型の "null" という
-// 文字列もプリミティブの NULL 型 ("null") もどちらも s2 = "null" と比較
-// すると一致してしまうことに注意。
-static bool
-json_equal_cstr(const json *js, int idx, const char *s2)
+// js[idx] が null 型なら true を返す。
+bool
+json_is_null(const json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
-	const char *s1 = &js->cstr[t->start];
-	uint s1len = t->end - t->start;
-	uint s2len = strlen(s2);
-	if (s1len == s2len && strncmp(s1, s2, s1len) == 0) {
+	if (tok_is_prim(t) && js->cstr[t->start] == 'n') {
 		return true;
 	}
 	return false;
 }
 
 // js[idx] の値の長さを返す。
-// 本来 STRING 用だが NUMBER 型でも使える。それ以外の型に対しては意味がない。
-// 特にオブジェクト型、配列型では要素数を返さないので注意。
+// STRING 型、NUMBER 型で使う。
+// プリミティブ型でも動作はするがそれぞれ固定値が得られるだけで意味はない。
+// オブジェクト型、配列型では要素数を返したりはしないので使わないこと。
 uint
 json_get_len(const json *js, int idx)
 {
-	assert(idx < js->tokenlen);
 	jsmntok_t *t = &js->token[idx];
 
 	return t->end - t->start;
 }
 
-// js[idx] の値 [start..end) を dst にコピーする。
-// js[idx] の型が適切なことは呼び出し前に確認しておくこと。
-// 本来文字列をバッファに取り出すためだが NUMBER などでも使える。
-// dst に格納しきれなければ、dstsize を超える前に '\0' で終端し false を返す。
-bool
-json_get_buf(const json *js, int idx, char *dst, size_t dstsize)
+// js[idx] の値 (無加工の文字列) を返す。
+// STRING、NUMBER の他、プリミティブ型でもそのまま文字列を返す。
+// そのため STRING の "null" もプリミティブの null もどちらも "null" になる。
+static const char *
+json_get_cstr_prim(const json *js, int idx)
 {
-	assert(idx < js->tokenlen);
 	jsmntok_t *t = &js->token[idx];
 
-	const char *src = &js->cstr[t->start];
-	uint len = t->end - t->start;
-	if (__predict_true(len < dstsize)) {
-		memcpy(dst, src, len);
-		dst[len] = '\0';
-		return true;
+	return &js->cstr[t->start];
+}
+
+// js[idx] の値 (ただし null 加工済みの文字列) を返す。
+// プリミティブの null なら "" を返す。
+// STRING と NUMBER 型は文字列を返す。
+// プリミティブの true, false に対しては "true", "false" を返すが、
+// これは仕様として意図したものではないので使わないこと。
+// オブジェクト型、配列型に対しての動作は不定。
+const char *
+json_get_cstr(const json *js, int idx)
+{
+	if (json_is_null(js, idx) == false) {
+		return json_get_cstr_prim(js, idx);
 	} else {
-		strlcpy(dst, src, dstsize);
-		return false;
+		return "";
 	}
 }
 
-// js[idx] の値を string 型にして返す。
-string *
-json_as_string(const json *js, int idx)
+// js[idx] の値が s2 と一致すれば true を返す。
+// 本来 STRING 用だが NUMBER などでも使える。
+// プリミティブの null は "" とみなして比較する。
+// プリミティブの true, false は "true", "false" との比較になるが
+// これは仕様として意図したものではないので使わないこと。
+// オブジェクト型、配列型に対しての動作は不定。
+static bool
+json_equal_cstr(const json *js, int idx, const char *s2)
 {
-	assert(idx < js->tokenlen);
-	jsmntok_t *t = &js->token[idx];
+	const char *s1;
 
-	return string_from_mem(&js->cstr[t->start], t->end - t->start);
-}
-
-#if 0
-// js[idx] の要素を string を作成して返す。
-// 文字列でなければ defval を返す。
-string *
-json_get_str_def(json *js, int idx, const char *defval)
-{
-	assert(idx < js->tokenlen);
-
-	string *retval;
-	jsmntok_t *t = &js->token[idx];
-	if (tok_is_str(t)) {
-		uint len = t->end - t->start;
-		retval = string_alloc(len + 1);
-		char *d = string_get_buf(retval);
-		memcpy(d, string_get(js->str) + t->start, len);
-		d[len] = '\0';
+	if (json_is_null(js, idx) == false) {
+		s1 = json_get_cstr_prim(js, idx);
 	} else {
-		if (defval == NULL) {
-			retval = NULL;
-		} else {
-			retval = string_from_cstr(defval);
-		}
+		s1 = "";
 	}
 
-	return retval;
+	return (strcmp(s1, s2) == 0);
 }
-
-// js[idx] の要素を int32 として値を返す。
-// 小数点以下は無視する。
-// int に収まらなければ errno に ERANGE をセットして defval を返す。
-int
-json_get_int_def(json *js, int idx, int defval)
-{
-	assert(idx < js->tokenlen);
-
-	jsmntok_t *t = &js->token[idx];
-	if (t->type == JSMN_PRIMITIVE) {
-		const char *s = string_get(js->str);
-		char ch = s[t->start];
-		if (('0' <= ch && ch <= '9') || ch == '-') {
-			char *end;
-			long val;
-
-			errno = 0;
-			val = strtol(s, &end, 10);
-			if (errno == ERANGE) {
-				return defval;
-			}
-			if (val < INT32_MIN || val > INT32_MAX) {
-				errno = ERANGE;
-				return defval;
-			}
-			return (int)val;
-		}
-	}
-	return defval;
-}
-#endif
 
 // オブジェクト型である idx からキーが key である要素を探す。
 // 返されるのは key に対応する値のインデックス。

@@ -39,7 +39,7 @@ enum {
 typedef struct json_ json;
 extern json *json_create(const diag *);
 extern void json_destroy(json *);
-extern int  json_parse(json *, const string *);
+extern int  json_parse(json *, string *);
 extern void json_jsmndump(const json *);
 extern void json_dump(const json *, int);
 extern bool json_is_obj(const json *, int);
@@ -47,9 +47,9 @@ extern bool json_is_array(const json *, int);
 extern bool json_is_str(const json *, int);
 extern bool json_is_num(const json *, int);
 extern bool json_is_bool(const json *, int);
+extern bool json_is_null(const json *, int);
 extern uint json_get_len(const json *, int);
-extern bool json_get_buf(const json *, int, char *, size_t);
-extern string *json_as_string(const json *, int);
+extern const char *json_get_cstr(const json *, int);
 extern int  json_obj_find(const json *, int, const char *);
 
 // misskey.c

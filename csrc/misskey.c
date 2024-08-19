@@ -38,7 +38,7 @@
 static bool misskey_init(void);
 static bool misskey_stream(struct wsclient *);
 static void misskey_recv_cb(const string *);
-static void misskey_message(const string *);
+static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
 
 static json *js;
@@ -207,12 +207,12 @@ misskey_stream(struct wsclient *ws)
 static void
 misskey_recv_cb(const string *msg)
 {
-	misskey_message(msg);
+	misskey_message(UNCONST(msg));
 }
 
 // 1メッセージの処理。ここからストリーミングとローカル再生共通。
 static void
-misskey_message(const string *jsonstr)
+misskey_message(string *jsonstr)
 {
 	int n = json_parse(js, jsonstr);
 	Debug(diag_json, "token = %d\n", n);
@@ -249,8 +249,7 @@ misskey_message(const string *jsonstr)
 		if (typeid >= 0 && json_is_str(js, typeid) &&
 			bodyid >= 0 && json_is_obj(js, bodyid))
 		{
-			char typestr[24];
-			json_get_buf(js, typeid, typestr, sizeof(typestr));
+			const char *typestr = json_get_cstr(js, typeid);
 			if (strcmp(typestr, "channel") == 0 ||
 				strcmp(typestr, "note") == 0 ||
 				strcmp(typestr, "announcementCreated") == 0)
