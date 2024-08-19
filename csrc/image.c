@@ -51,6 +51,8 @@ typedef struct {
 
 struct image_reductor_handle
 {
+	bool is_gray;
+
 	// 色からパレット番号を検索する関数。
 	finder_t finder;
 
@@ -66,6 +68,8 @@ static uint finder_gray(struct image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(struct image_reductor_handle *, ColorRGB);
 static uint finder_ansi16(struct image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(struct image_reductor_handle *, ColorRGB);
+static void colorcvt_gray(struct image_reductor_handle *, ColorRGB *);
+static void colorcvt_gray32(struct image_reductor_handle *, ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 
@@ -389,6 +393,7 @@ image_reduct(
 		op->palette = op->palette_buf;
 		op->palette_count = graycount;
 		op->finder = finder_gray;
+		op->is_gray = true;
 		break;
 	 }
 
@@ -532,6 +537,9 @@ image_reduct_simple(struct image_reductor_handle *op,
 			c.r = *s++;
 			c.g = *s++;
 			c.b = *s++;
+			if (op->is_gray) {
+				colorcvt_gray(op, &c);
+			}
 			uint colorcode = op->finder(op, c);
 			*d++ = colorcode;
 		}
@@ -617,6 +625,10 @@ image_reduct_highquality(struct image_reductor_handle *op,
 			col.g += errbuf[0][x].g;
 			col.b += errbuf[0][x].b;
 
+			if (op->is_gray) {
+				colorcvt_gray32(op, &col);
+			}
+
 			ColorRGB c8;
 			c8.r = saturate_uint8(col.r);
 			c8.g = saturate_uint8(col.g);
@@ -625,35 +637,9 @@ image_reduct_highquality(struct image_reductor_handle *op,
 			uint colorcode = op->finder(op, c8);
 			*d++ = colorcode;
 
-			if (op->finder != finder_gray) {
-				col.r -= op->palette[colorcode].r;
-				col.g -= op->palette[colorcode].g;
-				col.b -= op->palette[colorcode].b;
-			} else {
-				// gray の誤差は最も誤差の小さいもので計算する。
-				int xr = col.r - op->palette[colorcode].r;
-				int xg = col.g - op->palette[colorcode].g;
-				int xb = col.b - op->palette[colorcode].b;
-				int ar = abs(xr);
-				int ag = abs(xg);
-				int ab = abs(xb);
-				if (ar < ag && ar < ab) {
-					// r
-					col.r = xr;
-					col.g = 0;
-					col.b = 0;
-				} else if (ab < ar && ab < ag) {
-					// b
-					col.r = 0;
-					col.g = 0;
-					col.b = xb;
-				} else {
-					// g
-					col.r = 0;
-					col.g = xg;
-					col.b = 0;
-				}
-			}
+			col.r -= op->palette[colorcode].r;
+			col.g -= op->palette[colorcode].g;
+			col.b -= op->palette[colorcode].b;
 
 			// ランダムノイズを加える
 			if (0) {
@@ -806,19 +792,37 @@ image_alloc_gray_palette(uint count)
 	return pal;
 }
 
-// palette_count 階調グレースケールパレットで
-// NTSC 輝度が最も近いパレット番号を返す。
+// 256 段階グレースケールになっている c からパレット番号を返す。
 static uint
 finder_gray(struct image_reductor_handle *op, ColorRGB c)
 {
 	uint count = op->palette_count;
 
-	int I = (((uint)c.r * 76 + (uint)c.g * 153 + (uint)c.b * 26) *
-	          (count - 1) + (255 / count)) / 255 / 255;
+	int I = (((uint)c.r) * (count - 1) + (255 / count)) / 255;
 	if (I >= count) {
 		return count - 1;
 	}
 	return I;
+}
+
+// c をグレー (NTSC 輝度) に変換する。
+static void
+colorcvt_gray(struct image_reductor_handle *op, ColorRGB *c)
+{
+	uint8 I = (uint8)((c->r * 76 + c->g * 153 + c->b * 26) / 255);
+	c->r = I;
+	c->g = I;
+	c->b = I;
+}
+
+// int32 の c をグレー (NTSC 輝度) に変換する。
+static void
+colorcvt_gray32(struct image_reductor_handle *op, ColorRGBint32 *c)
+{
+	int I = (c->r * 76 + c->g * 153 + c->b * 26) / 255;
+	c->r = I;
+	c->g = I;
+	c->b = I;
 }
 
 // RGB 固定8色
