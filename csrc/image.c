@@ -33,9 +33,9 @@
 #include <errno.h>
 #include <string.h>
 
-struct image_reductor_handle;
+typedef struct image_reductor_handle_ image_reductor_handle;
 
-typedef uint (*finder_t)(struct image_reductor_handle *, ColorRGB);
+typedef uint (*finder_t)(struct image_reductor_handle_ *, ColorRGB);
 
 typedef struct {
 	int16 r;
@@ -49,7 +49,7 @@ typedef struct {
 	int32 b;
 } ColorRGBint32;
 
-struct image_reductor_handle
+typedef struct image_reductor_handle_
 {
 	bool is_gray;
 
@@ -64,19 +64,19 @@ struct image_reductor_handle
 
 	// 動的に作成する場合はここがメモリを所有している。
 	ColorRGB *palette_buf;
-};
+} image_reductor_handle;
 
-static uint finder_gray(struct image_reductor_handle *, ColorRGB);
-static uint finder_fixed8(struct image_reductor_handle *, ColorRGB);
-static uint finder_ansi16(struct image_reductor_handle *, ColorRGB);
-static uint finder_fixed256(struct image_reductor_handle *, ColorRGB);
-static void colorcvt_gray(struct image_reductor_handle *, ColorRGBint32 *);
+static uint finder_gray(image_reductor_handle *, ColorRGB);
+static uint finder_fixed8(image_reductor_handle *, ColorRGB);
+static uint finder_ansi16(image_reductor_handle *, ColorRGB);
+static uint finder_fixed256(image_reductor_handle *, ColorRGB);
+static void colorcvt_gray(image_reductor_handle *, ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 
-static void image_reduct_simple(struct image_reductor_handle *,
+static void image_reduct_simple(image_reductor_handle *,
 	struct image *, const struct image *, const struct diag *diag);
-static bool image_reduct_highquality(struct image_reductor_handle *,
+static bool image_reduct_highquality(image_reductor_handle *,
 	struct image *, const struct image *, const struct image_opt *,
 	const struct diag *diag);
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
@@ -378,7 +378,7 @@ image_reduct(
 	const struct diag *diag)
 {
 	struct image *dst;
-	struct image_reductor_handle opbuf, *op;
+	image_reductor_handle opbuf, *op;
 
 	op = &opbuf;
 	memset(op, 0, sizeof(*op));
@@ -510,7 +510,7 @@ rational_add(Rational *sr, const Rational *x)
 
 // 単純間引き
 static void
-image_reduct_simple(struct image_reductor_handle *op,
+image_reduct_simple(image_reductor_handle *op,
 	struct image *dstimg, const struct image *srcimg,
 	const struct diag *diag)
 {
@@ -565,7 +565,7 @@ image_reduct_simple(struct image_reductor_handle *op,
 
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
-image_reduct_highquality(struct image_reductor_handle *op,
+image_reduct_highquality(image_reductor_handle *op,
 	struct image *dstimg, const struct image *srcimg,
 	const struct image_opt *param,
 	const struct diag *diag)
@@ -817,7 +817,7 @@ image_alloc_gray_palette(uint count)
 
 // 256 段階グレースケールになっている c からパレット番号を返す。
 static uint
-finder_gray(struct image_reductor_handle *op, ColorRGB c)
+finder_gray(image_reductor_handle *op, ColorRGB c)
 {
 	uint count = op->palette_count;
 
@@ -830,7 +830,7 @@ finder_gray(struct image_reductor_handle *op, ColorRGB c)
 
 // c をグレー (NTSC 輝度) に変換する。
 static void
-colorcvt_gray(struct image_reductor_handle *op, ColorRGBint32 *c)
+colorcvt_gray(image_reductor_handle *op, ColorRGBint32 *c)
 {
 	int I = (c->r * 76 + c->g * 153 + c->b * 26) / 255;
 	c->r = I;
@@ -851,7 +851,7 @@ static const ColorRGB palette_fixed8[] = {
 };
 
 static uint
-finder_fixed8(struct image_reductor_handle *op, ColorRGB c)
+finder_fixed8(image_reductor_handle *op, ColorRGB c)
 {
 	uint R = ((uint8)c.r >= 128);
 	uint G = ((uint8)c.g >= 128);
@@ -883,7 +883,7 @@ static const ColorRGB palette_ansi16[] = {
 
 // 色 c を ANSI 固定 16 色パレットへ変換する。
 static uint
-finder_ansi16(struct image_reductor_handle *op, ColorRGB c)
+finder_ansi16(image_reductor_handle *op, ColorRGB c)
 {
 	uint R;
 	uint G;
@@ -940,7 +940,7 @@ image_alloc_fixed256_palette(void)
 
 // 固定 256 色で c に最も近いパレット番号を返す。
 static uint
-finder_fixed256(struct image_reductor_handle *op, ColorRGB c)
+finder_fixed256(image_reductor_handle *op, ColorRGB c)
 {
 	uint R = c.r >> 5;
 	uint G = c.g >> 5;
