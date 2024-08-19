@@ -378,11 +378,11 @@ image_reduct(
 	const struct diag *diag)
 {
 	struct image *dst;
-	image_reductor_handle opbuf, *op;
+	image_reductor_handle irbuf, *ir;
 
-	op = &opbuf;
-	memset(op, 0, sizeof(*op));
-	op->gain = param->gain;
+	ir = &irbuf;
+	memset(ir, 0, sizeof(*ir));
+	ir->gain = param->gain;
 
 	dst = image_create(dst_width, dst_height, 1);
 	if (dst == NULL) {
@@ -394,37 +394,37 @@ image_reduct(
 	 case ReductorColor_Gray:
 	 {
 		uint graycount = ((uint)param->color >> 8) + 1;
-		op->palette_buf = image_alloc_gray_palette(graycount);
-		if (op->palette_buf == NULL) {
+		ir->palette_buf = image_alloc_gray_palette(graycount);
+		if (ir->palette_buf == NULL) {
 			goto abort;
 		}
-		op->palette = op->palette_buf;
-		op->palette_count = graycount;
-		op->finder = finder_gray;
-		op->is_gray = true;
+		ir->palette = ir->palette_buf;
+		ir->palette_count = graycount;
+		ir->finder = finder_gray;
+		ir->is_gray = true;
 		break;
 	 }
 
 	 case ReductorColor_Fixed8:
-		op->finder  = finder_fixed8;
-		op->palette = palette_fixed8;
-		op->palette_count = 8;
+		ir->finder  = finder_fixed8;
+		ir->palette = palette_fixed8;
+		ir->palette_count = 8;
 		break;
 
 	 case ReductorColor_ANSI16:
-		op->finder  = finder_ansi16;
-		op->palette = palette_ansi16;
-		op->palette_count = 16;
+		ir->finder  = finder_ansi16;
+		ir->palette = palette_ansi16;
+		ir->palette_count = 16;
 		break;
 
 	 case ReductorColor_Fixed256:
-		op->palette_buf = image_alloc_fixed256_palette();
-		if (op->palette_buf == NULL) {
+		ir->palette_buf = image_alloc_fixed256_palette();
+		if (ir->palette_buf == NULL) {
 			goto abort;
 		}
-		op->palette = op->palette_buf;
-		op->palette_count = 256;
-		op->finder = finder_fixed256;
+		ir->palette = ir->palette_buf;
+		ir->palette_count = 256;
+		ir->finder = finder_fixed256;
 		break;
 
 	 default:
@@ -435,11 +435,11 @@ image_reduct(
 
 	switch (param->method) {
 	 case ReductorMethod_Simple:
-		image_reduct_simple(op, dst, src, diag);
+		image_reduct_simple(ir, dst, src, diag);
 		break;
 
 	 case ReductorMethod_HighQuality:
-		if (image_reduct_highquality(op, dst, src, param, diag) == false) {
+		if (image_reduct_highquality(ir, dst, src, param, diag) == false) {
 			goto abort;
 		}
 		break;
@@ -452,14 +452,14 @@ image_reduct(
 
 	// 成功したので、使ったパレットを image にコピー。
 	// 動的に確保したやつはそのまま所有権を移す感じ。
-	dst->palette       = op->palette;
-	dst->palette_count = op->palette_count;
-	dst->palette_buf   = op->palette_buf;
+	dst->palette       = ir->palette;
+	dst->palette_count = ir->palette_count;
+	dst->palette_buf   = ir->palette_buf;
 
 	return dst;
 
  abort:
-	free(op->palette_buf);
+	free(ir->palette_buf);
 	image_free(dst);
 	return NULL;
 }
@@ -510,7 +510,7 @@ rational_add(Rational *sr, const Rational *x)
 
 // 単純間引き
 static void
-image_reduct_simple(image_reductor_handle *op,
+image_reduct_simple(image_reductor_handle *ir,
 	struct image *dstimg, const struct image *srcimg,
 	const struct diag *diag)
 {
@@ -545,19 +545,19 @@ image_reduct_simple(image_reductor_handle *op,
 			c.r = *s++;
 			c.g = *s++;
 			c.b = *s++;
-			if (op->gain != 256) {
-				c.r = (uint32)c.r * op->gain / 256;
-				c.g = (uint32)c.g * op->gain / 256;
-				c.b = (uint32)c.b * op->gain / 256;
+			if (ir->gain != 256) {
+				c.r = (uint32)c.r * ir->gain / 256;
+				c.g = (uint32)c.g * ir->gain / 256;
+				c.b = (uint32)c.b * ir->gain / 256;
 			}
-			if (op->is_gray) {
-				colorcvt_gray(op, &c);
+			if (ir->is_gray) {
+				colorcvt_gray(ir, &c);
 			}
 			ColorRGB c8;
 			c8.r = saturate_uint8(c.r);
 			c8.g = saturate_uint8(c.g);
 			c8.b = saturate_uint8(c.b);
-			uint colorcode = op->finder(op, c8);
+			uint colorcode = ir->finder(ir, c8);
 			*d++ = colorcode;
 		}
 	}
@@ -565,7 +565,7 @@ image_reduct_simple(image_reductor_handle *op,
 
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
-image_reduct_highquality(image_reductor_handle *op,
+image_reduct_highquality(image_reductor_handle *ir,
 	struct image *dstimg, const struct image *srcimg,
 	const struct image_opt *param,
 	const struct diag *diag)
@@ -638,18 +638,18 @@ image_reduct_highquality(image_reductor_handle *op,
 			col.g /= area;
 			col.b /= area;
 
-			if (op->gain != 256) {
-				col.r = (uint32)col.r * op->gain / 256;
-				col.g = (uint32)col.g * op->gain / 256;
-				col.b = (uint32)col.b * op->gain / 256;
+			if (ir->gain != 256) {
+				col.r = (uint32)col.r * ir->gain / 256;
+				col.g = (uint32)col.g * ir->gain / 256;
+				col.b = (uint32)col.b * ir->gain / 256;
 			}
 
 			col.r += errbuf[0][x].r;
 			col.g += errbuf[0][x].g;
 			col.b += errbuf[0][x].b;
 
-			if (op->is_gray) {
-				colorcvt_gray(op, &col);
+			if (ir->is_gray) {
+				colorcvt_gray(ir, &col);
 			}
 
 			ColorRGB c8;
@@ -657,12 +657,12 @@ image_reduct_highquality(image_reductor_handle *op,
 			c8.g = saturate_uint8(col.g);
 			c8.b = saturate_uint8(col.b);
 
-			uint colorcode = op->finder(op, c8);
+			uint colorcode = ir->finder(ir, c8);
 			*d++ = colorcode;
 
-			col.r -= op->palette[colorcode].r;
-			col.g -= op->palette[colorcode].g;
-			col.b -= op->palette[colorcode].b;
+			col.r -= ir->palette[colorcode].r;
+			col.g -= ir->palette[colorcode].g;
+			col.b -= ir->palette[colorcode].b;
 
 			// ランダムノイズを加える
 			if (0) {
@@ -817,9 +817,9 @@ image_alloc_gray_palette(uint count)
 
 // 256 段階グレースケールになっている c からパレット番号を返す。
 static uint
-finder_gray(image_reductor_handle *op, ColorRGB c)
+finder_gray(image_reductor_handle *ir, ColorRGB c)
 {
-	uint count = op->palette_count;
+	uint count = ir->palette_count;
 
 	int I = (((uint)c.r) * (count - 1) + (255 / count)) / 255;
 	if (I >= count) {
@@ -830,7 +830,7 @@ finder_gray(image_reductor_handle *op, ColorRGB c)
 
 // c をグレー (NTSC 輝度) に変換する。
 static void
-colorcvt_gray(image_reductor_handle *op, ColorRGBint32 *c)
+colorcvt_gray(image_reductor_handle *ir, ColorRGBint32 *c)
 {
 	int I = (c->r * 76 + c->g * 153 + c->b * 26) / 255;
 	c->r = I;
@@ -851,7 +851,7 @@ static const ColorRGB palette_fixed8[] = {
 };
 
 static uint
-finder_fixed8(image_reductor_handle *op, ColorRGB c)
+finder_fixed8(image_reductor_handle *ir, ColorRGB c)
 {
 	uint R = ((uint8)c.r >= 128);
 	uint G = ((uint8)c.g >= 128);
@@ -883,7 +883,7 @@ static const ColorRGB palette_ansi16[] = {
 
 // 色 c を ANSI 固定 16 色パレットへ変換する。
 static uint
-finder_ansi16(image_reductor_handle *op, ColorRGB c)
+finder_ansi16(image_reductor_handle *ir, ColorRGB c)
 {
 	uint R;
 	uint G;
@@ -940,7 +940,7 @@ image_alloc_fixed256_palette(void)
 
 // 固定 256 色で c に最も近いパレット番号を返す。
 static uint
-finder_fixed256(image_reductor_handle *op, ColorRGB c)
+finder_fixed256(image_reductor_handle *ir, ColorRGB c)
 {
 	uint R = c.r >> 5;
 	uint G = c.g >> 5;
