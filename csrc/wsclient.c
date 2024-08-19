@@ -553,7 +553,9 @@ testwsecho(const struct diag *diag, int ac, char *av[])
 
 	// 1回だけ標準入力を受け付ける。
 	char sendbuf[100];
-	fgets(sendbuf, sizeof(sendbuf), stdin);
+	if (fgets(sendbuf, sizeof(sendbuf), stdin) == NULL) {
+		err(1, "fgets failed");
+	}
 	wsclient_send_text(ws, sendbuf);
 
 	for (;;) {
