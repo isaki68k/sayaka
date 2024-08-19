@@ -79,6 +79,7 @@ enum {
 	OPT_debug_net,
 	OPT_debug_sixel,
 	OPT_diffusion,
+	OPT_gain,
 	OPT_gray,
 	OPT_height,
 	OPT_help,
@@ -98,6 +99,7 @@ static const struct option longopts[] = {
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
 	{ "diffusion",		required_argument,	NULL,	OPT_diffusion },
+	{ "gain",			required_argument,	NULL,	OPT_gain },
 	{ "gray",			required_argument,	NULL,	OPT_gray },
 	{ "grey",			required_argument,	NULL,	OPT_gray },
 	{ "height",			required_argument,	NULL,	'h' },
@@ -231,6 +233,16 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_gain:
+		 {
+			float f = atof(optarg);
+			if (f < 0 || f > 2) {
+				errx(1, "invalid gain");
+			}
+			imageopt.gain = (uint)(f * 256);
+			break;
+		 }
+
 		 case OPT_gray:
 		 {
 			uint num = atoi(optarg);
@@ -360,6 +372,7 @@ usage(void)
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
 "  --diffusion=<diffusion>               --resize-axis=<axis>\n"
+"  --gain=<0..2>\n"
 "  --ormode                              --suppress-palette\n"
 "  -i, --ignore-error                    --ciphers=<ciphers>\n"
 "  --help-all                            --debug-image=<0..2>\n"
@@ -395,6 +408,7 @@ help_all(void)
 "     burkes   : Burkes\n"
 "     2        : 2-pixels (right, down)\n"
 "     3        : 3-pixels (right, down, rightdown)\n"
+"  --gain=<gain> : Output gain between 0.0 and 2.0 (default:1.0)\n"
 "  -O <fmt>, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
 "  -o <filename> : Output filename, '-' means stdout (default: -)\n"
 "  --ormode    : Output SIXEL by OR-mode\n"

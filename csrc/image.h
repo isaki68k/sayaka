@@ -175,6 +175,9 @@ struct image_reduct_opt {
 	ReductorMethod method;
 	ReductorDiffuse diffuse;
 	ReductorColor color;
+
+	// 出力ゲイン。0 .. 512 で指定する。256 が 1.0倍。
+	uint gain;
 };
 extern void image_reduct_opt_init(struct image_reduct_opt *);
 extern struct image *image_read_pstream(struct pstream *, const struct diag *);

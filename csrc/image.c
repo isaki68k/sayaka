@@ -53,6 +53,8 @@ struct image_reductor_handle
 {
 	bool is_gray;
 
+	uint gain;
+
 	// 色からパレット番号を検索する関数。
 	finder_t finder;
 
@@ -68,8 +70,7 @@ static uint finder_gray(struct image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(struct image_reductor_handle *, ColorRGB);
 static uint finder_ansi16(struct image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(struct image_reductor_handle *, ColorRGB);
-static void colorcvt_gray(struct image_reductor_handle *, ColorRGB *);
-static void colorcvt_gray32(struct image_reductor_handle *, ColorRGBint32 *);
+static void colorcvt_gray(struct image_reductor_handle *, ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 
@@ -92,6 +93,7 @@ image_reduct_opt_init(struct image_reduct_opt *opt)
 	opt->method  = ReductorMethod_HighQuality;
 	opt->diffuse = RDM_FS;
 	opt->color   = ReductorColor_Fixed256;
+	opt->gain    = 256;
 }
 
 // width_ x height_ x channels_ の image を作成する。
@@ -375,6 +377,7 @@ image_reduct(
 
 	op = &opbuf;
 	memset(op, 0, sizeof(*op));
+	op->gain = param->gain;
 
 	dst = image_create(dst_width, dst_height, 1);
 	if (dst == NULL) {
@@ -533,14 +536,23 @@ image_reduct_simple(struct image_reductor_handle *op,
 			const uint8 *s = s0 + rx.I * 3;
 			rational_add(&rx, &xstep);
 
-			ColorRGB c = { 0 };
+			ColorRGBint32 c;
 			c.r = *s++;
 			c.g = *s++;
 			c.b = *s++;
+			if (op->gain != 256) {
+				c.r = c.r * op->gain / 256;
+				c.g = c.g * op->gain / 256;
+				c.b = c.b * op->gain / 256;
+			}
 			if (op->is_gray) {
 				colorcvt_gray(op, &c);
 			}
-			uint colorcode = op->finder(op, c);
+			ColorRGB c8;
+			c8.r = saturate_uint8(c.r);
+			c8.g = saturate_uint8(c.g);
+			c8.b = saturate_uint8(c.b);
+			uint colorcode = op->finder(op, c8);
 			*d++ = colorcode;
 		}
 	}
@@ -621,12 +633,18 @@ image_reduct_highquality(struct image_reductor_handle *op,
 			col.g /= area;
 			col.b /= area;
 
+			if (op->gain != 256) {
+				col.r = col.r * op->gain / 256;
+				col.g = col.g * op->gain / 256;
+				col.b = col.b * op->gain / 256;
+			}
+
 			col.r += errbuf[0][x].r;
 			col.g += errbuf[0][x].g;
 			col.b += errbuf[0][x].b;
 
 			if (op->is_gray) {
-				colorcvt_gray32(op, &col);
+				colorcvt_gray(op, &col);
 			}
 
 			ColorRGB c8;
@@ -807,17 +825,7 @@ finder_gray(struct image_reductor_handle *op, ColorRGB c)
 
 // c をグレー (NTSC 輝度) に変換する。
 static void
-colorcvt_gray(struct image_reductor_handle *op, ColorRGB *c)
-{
-	uint8 I = (uint8)((c->r * 76 + c->g * 153 + c->b * 26) / 255);
-	c->r = I;
-	c->g = I;
-	c->b = I;
-}
-
-// int32 の c をグレー (NTSC 輝度) に変換する。
-static void
-colorcvt_gray32(struct image_reductor_handle *op, ColorRGBint32 *c)
+colorcvt_gray(struct image_reductor_handle *op, ColorRGBint32 *c)
 {
 	int I = (c->r * 76 + c->g * 153 + c->b * 26) / 255;
 	c->r = I;
