@@ -73,20 +73,15 @@ jobs:
         uses: vmactions/netbsd-vm@v1
         with:
           release: "10.0"
-          usesh: true
           copyback: false
           # Check https://github.com/NetBSD/pkgsrc/blob/trunk/net/sayaka/Makefile to check dependencies
           prepare: |
             uname -a
-            PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R7/bin:/usr/pkg/bin:/usr/pkg/sbin:/usr/games:/usr/local/bin:/usr/local/sbin
-            export PATH
             pkg_add pkgconf
             pkg_add libwebp mbedtls wslay
             pkg_add giflib jpeg png
 
           run: |
-            PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R7/bin:/usr/pkg/bin:/usr/pkg/sbin:/usr/games:/usr/local/bin:/usr/local/sbin
-            export PATH
             echo build with \"configure\"
             make distclean
             sh configure
@@ -114,12 +109,9 @@ jobs:
         uses: vmactions/openbsd-vm@v1
         with:
           release: "7.5"
-          usesh: true
           copyback: false
           prepare: |
             uname -a
-            PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin:/usr/local/bin:/usr/local/sbin
-            export PATH
             pkg_add pkgconf
             pkg_add libwebp mbedtls wslay
             pkg_add giflib jpeg png
@@ -152,12 +144,9 @@ jobs:
         uses: vmactions/freebsd-vm@v1
         with:
           release: "14.0"
-          usesh: true
           copyback: false
           prepare: |
             uname -a
-            PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
-            export PATH
             pkg install -y pkgconf
             pkg install -y webp mbedtls wslay
             pkg install -y giflib jpeg-turbo png
