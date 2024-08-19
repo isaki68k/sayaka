@@ -541,9 +541,9 @@ image_reduct_simple(struct image_reductor_handle *op,
 			c.g = *s++;
 			c.b = *s++;
 			if (op->gain != 256) {
-				c.r = c.r * op->gain / 256;
-				c.g = c.g * op->gain / 256;
-				c.b = c.b * op->gain / 256;
+				c.r = (uint32)c.r * op->gain / 256;
+				c.g = (uint32)c.g * op->gain / 256;
+				c.b = (uint32)c.b * op->gain / 256;
 			}
 			if (op->is_gray) {
 				colorcvt_gray(op, &c);
@@ -634,9 +634,9 @@ image_reduct_highquality(struct image_reductor_handle *op,
 			col.b /= area;
 
 			if (op->gain != 256) {
-				col.r = col.r * op->gain / 256;
-				col.g = col.g * op->gain / 256;
-				col.b = col.b * op->gain / 256;
+				col.r = (uint32)col.r * op->gain / 256;
+				col.g = (uint32)col.g * op->gain / 256;
+				col.b = (uint32)col.b * op->gain / 256;
 			}
 
 			col.r += errbuf[0][x].r;
