@@ -94,6 +94,8 @@ image_opt_init(struct image_opt *opt)
 	opt->diffuse = RDM_FS;
 	opt->color   = ReductorColor_Fixed256;
 	opt->gain    = 256;
+	opt->output_ormode = false;
+	opt->suppress_palette = false;
 }
 
 // width_ x height_ x channels_ の image を作成する。

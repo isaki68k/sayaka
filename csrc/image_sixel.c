@@ -35,7 +35,7 @@
 #include <sys/time.h>
 
 static bool sixel_preamble(FILE *, const struct image *,
-	const struct image_sixel_opt *);
+	const struct image_opt *);
 static bool sixel_postamble(FILE *);
 static bool sixel_convert_normal(FILE *, const struct image *,
 	const struct diag *);
@@ -43,14 +43,6 @@ static bool sixel_convert_ormode(FILE *, const struct image *,
 	const struct diag *);
 static void sixel_ormode_h6(string *, uint8 *, const uint8 *, uint, uint, uint);
 static void sixel_repunit(string *, uint, uint8);
-
-// opt を初期化する。
-void
-image_sixel_opt_init(struct image_sixel_opt *opt)
-{
-	opt->output_ormode = false;
-	opt->suppress_palette = false;
-}
 
 // SIXEL 中断シーケンスを出力する。
 void
@@ -64,7 +56,7 @@ image_sixel_abort(FILE *fp)
 // (呼び出し後にフラッシュすること)
 bool
 image_sixel_write(FILE *fp, const struct image *img,
-	const struct image_sixel_opt *opt, const struct diag *diag)
+	const struct image_opt *opt, const struct diag *diag)
 {
 	struct timeval start, end, result;
 
@@ -105,7 +97,7 @@ image_sixel_write(FILE *fp, const struct image *img,
 
 static bool
 sixel_preamble(FILE *fp, const struct image *img,
-	const struct image_sixel_opt *opt)
+	const struct image_opt *opt)
 {
 	char buf[40];
 

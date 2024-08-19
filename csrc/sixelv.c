@@ -68,7 +68,6 @@ static ResizeAxis opt_resize_axis;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
 static struct image_opt imageopt;
-static struct image_sixel_opt sixelopt;
 static struct netstream_opt netopt;
 
 enum {
@@ -171,7 +170,6 @@ main(int ac, char *av[])
 	diag_set_timestamp(diag_net, true);
 
 	image_opt_init(&imageopt);
-	image_sixel_opt_init(&sixelopt);
 	netstream_opt_init(&netopt);
 	ignore_error = false;
 	opt_resize_axis = ResizeAxis_Both;
@@ -277,7 +275,7 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_ormode:
-			sixelopt.output_ormode = true;
+			imageopt.output_ormode = true;
 			break;
 
 		 case 'o':
@@ -296,7 +294,7 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_suppress_palette:
-			sixelopt.suppress_palette = true;
+			imageopt.suppress_palette = true;
 			break;
 
 		 case 'v':
@@ -551,7 +549,7 @@ do_file(const char *infile)
 
 	// 書き出し。
 	if (output_format == OutputFormat_SIXEL) {
-		image_sixel_write(ofp, resimg, &sixelopt, diag_sixel);
+		image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
 	} else {
 		struct image *bmpimg = image_coloring(resimg);
 		if (bmpimg == NULL) {

@@ -179,6 +179,10 @@ struct image_opt {
 
 	// 出力ゲイン。0 .. 512 で指定する。256 が 1.0倍。
 	uint gain;
+
+	// SIXEL 出力
+	bool output_ormode;
+	bool suppress_palette;
 };
 extern void image_opt_init(struct image_opt *);
 extern struct image *image_read_pstream(struct pstream *, const struct diag *);
@@ -199,13 +203,8 @@ extern const char *reductordiffuse_tostr(ReductorDiffuse);
 extern const char *reductorcolor_tostr(ReductorColor);
 
 // image_sixel.c
-struct image_sixel_opt {
-	bool output_ormode;
-	bool suppress_palette;
-};
-extern void image_sixel_opt_init(struct image_sixel_opt *);
 extern void image_sixel_abort(FILE *);
 extern bool image_sixel_write(FILE *, const struct image *,
-	const struct image_sixel_opt *, const struct diag *);
+	const struct image_opt *, const struct diag *);
 
 #endif // !sayaka_image_h
