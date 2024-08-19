@@ -48,7 +48,7 @@ extern bool json_is_str(const json *, uint);
 extern bool json_is_num(const json *, uint);
 extern bool json_is_bool(const json *, uint);
 extern bool json_get_str_buf(const json *, uint, char *, size_t);
-extern int  json_obj_find(json *, uint, const char *);
+extern int  json_obj_find(const json *, uint, const char *);
 
 // misskey.c
 extern void cmd_misskey_stream(const char *);

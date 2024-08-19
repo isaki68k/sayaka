@@ -426,7 +426,7 @@ json_get_int_def(json *js, uint idx, int defval)
 // 返されるのは key に対応する値のインデックス。
 // 見付からなければ -1 を返す。
 int
-json_obj_find(json *js, uint idx, const char *key)
+json_obj_find(const json *js, uint idx, const char *key)
 {
 	jsmntok_t *t = &js->token[idx];
 
