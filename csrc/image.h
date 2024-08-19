@@ -34,7 +34,7 @@
 #include "header.h"
 
 typedef struct diag_ diag;
-struct pstream;
+typedef struct pstream_ pstream;
 typedef struct string_ string;
 typedef union ColorRGB_ ColorRGB;
 
@@ -190,8 +190,7 @@ typedef struct image_opt_ {
 
 // image.c
 extern void image_opt_init(image_opt *);
-extern image *image_read_pstream(struct pstream *, const image_opt *,
-	const diag *);
+extern image *image_read_pstream(pstream *, const image_opt *, const diag *);
 extern void image_free(image *);
 extern uint image_get_stride(const image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,

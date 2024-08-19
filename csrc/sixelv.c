@@ -437,7 +437,7 @@ do_file(const char *infile)
 {
 	bool rv = false;
 	struct netstream *net = NULL;
-	struct pstream *pstream = NULL;
+	pstream *pstream = NULL;
 	image *srcimg = NULL;
 	image *resimg = NULL;
 	int ifd = -1;

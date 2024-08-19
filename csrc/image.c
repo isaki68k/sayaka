@@ -271,7 +271,7 @@ image_get_loaderinfo(void)
 // 読み込めなければ errno をセットして NULL を返す。
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかった。
 image *
-image_read_pstream(struct pstream *ps, const image_opt *opt, const diag *diag)
+image_read_pstream(pstream *ps, const image_opt *opt, const diag *diag)
 {
 	int ok = -1;
 	FILE *pfp;

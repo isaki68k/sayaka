@@ -98,12 +98,12 @@ extern FILE *netstream_fopen(struct netstream *);
 extern void netstream_global_cleanup(void);
 
 // pstream.c
-struct pstream;
-extern struct pstream *pstream_init_fp(FILE *);
-extern struct pstream *pstream_init_fd(int);
-extern void pstream_cleanup(struct pstream *);
-extern FILE *pstream_open_for_peek(struct pstream *);
-extern FILE *pstream_open_for_read(struct pstream *);
+typedef struct pstream_ pstream;
+extern pstream *pstream_init_fp(FILE *);
+extern pstream *pstream_init_fd(int);
+extern void pstream_cleanup(pstream *);
+extern FILE *pstream_open_for_peek(pstream *);
+extern FILE *pstream_open_for_read(pstream *);
 
 // string.c
 typedef struct string_ string;
