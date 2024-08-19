@@ -185,7 +185,8 @@ struct image_opt {
 	bool suppress_palette;
 };
 extern void image_opt_init(struct image_opt *);
-extern struct image *image_read_pstream(struct pstream *, const struct diag *);
+extern struct image *image_read_pstream(struct pstream *,
+	const struct image_opt *, const struct diag *);
 extern void image_free(struct image *);
 extern uint image_get_stride(const struct image *);
 extern void image_get_preferred_size(uint current_width, uint current_height,

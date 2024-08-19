@@ -510,7 +510,7 @@ do_file(const char *infile)
 	}
 
 	// 読み込み。
-	srcimg = image_read_pstream(pstream, diag_image);
+	srcimg = image_read_pstream(pstream, &imageopt, diag_image);
 	if (srcimg == NULL) {
 		if (errno == 0) {
 			warnx("%s: Unknown image format", infilename);

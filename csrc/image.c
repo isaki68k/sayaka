@@ -272,7 +272,8 @@ image_get_loaderinfo(void)
 // 読み込めなければ errno をセットして NULL を返す。
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかった。
 struct image *
-image_read_pstream(struct pstream *ps, const struct diag *diag)
+image_read_pstream(struct pstream *ps, const struct image_opt *opt,
+	const struct diag *diag)
 {
 	int ok = -1;
 	FILE *pfp;
@@ -285,8 +286,8 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 	}
 
 	static const struct {
-		bool (*match)(FILE *, const struct diag *);
-		struct image *(*read)(FILE *, const struct diag *);
+		image_match_t match;
+		image_read_t  read;
 		const char *name;
 	} loader[] = {
 #define ENTRY(name)	{ image_##name##_match, image_##name##_read, #name }
@@ -316,7 +317,7 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
 				return NULL;
 			}
-			struct image *img = loader[i].read(fp, diag);
+			struct image *img = loader[i].read(fp, opt, diag);
 			fclose(fp);
 			return img;
 		}
