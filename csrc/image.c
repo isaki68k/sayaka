@@ -625,9 +625,35 @@ image_reduct_highquality(struct image_reductor_handle *op,
 			uint colorcode = op->finder(op, c8);
 			*d++ = colorcode;
 
-			col.r -= op->palette[colorcode].r;
-			col.g -= op->palette[colorcode].g;
-			col.b -= op->palette[colorcode].b;
+			if (op->finder != finder_gray) {
+				col.r -= op->palette[colorcode].r;
+				col.g -= op->palette[colorcode].g;
+				col.b -= op->palette[colorcode].b;
+			} else {
+				// gray の誤差は最も誤差の小さいもので計算する。
+				int xr = col.r - op->palette[colorcode].r;
+				int xg = col.g - op->palette[colorcode].g;
+				int xb = col.b - op->palette[colorcode].b;
+				int ar = abs(xr);
+				int ag = abs(xg);
+				int ab = abs(xb);
+				if (ar < ag && ar < ab) {
+					// r
+					col.r = xr;
+					col.g = 0;
+					col.b = 0;
+				} else if (ab < ar && ab < ag) {
+					// b
+					col.r = 0;
+					col.g = 0;
+					col.b = xb;
+				} else {
+					// g
+					col.r = 0;
+					col.g = xg;
+					col.b = 0;
+				}
+			}
 
 			// ランダムノイズを加える
 			if (0) {
