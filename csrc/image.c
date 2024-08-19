@@ -284,41 +284,43 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 		return NULL;
 	}
 
-#define MATCH_THEN_READ(name)	do {	\
-	ok = image_##name##_match(pfp, diag);	\
-	fseek(pfp, 0, SEEK_SET);	\
-	if (diag_get_level(diag) >= 2) {	\
-		diag_print(diag, "%s: image_" #name "_match %u", __func__, ok);	\
-	}	\
-	if (ok) {	\
-		fclose(pfp);	\
-		fp = pstream_open_for_read(ps);	\
-		if (fp == NULL) {	\
-			if (diag_get_level(diag) >= 1) {	\
-				diag_print(diag, "%s: pstream_open_for_read() failed", \
-					__func__);	\
-				return NULL;	\
-			}	\
-		}	\
-		struct image *img = image_##name##_read(fp, diag);	\
-		fclose(fp);	\
-		return img;	\
-	}	\
-} while (0)
-
+	static const struct {
+		bool (*match)(FILE *, const struct diag *);
+		struct image *(*read)(FILE *, const struct diag *);
+		const char *name;
+	} loader[] = {
+#define ENTRY(name)	{ image_##name##_match, image_##name##_read, #name }
 #if defined(USE_LIBWEBP)
-	MATCH_THEN_READ(webp);
+		ENTRY(webp),
 #endif
 #if defined(USE_LIBPNG)
-	MATCH_THEN_READ(png);
+		ENTRY(png),
 #endif
 #if defined(USE_STB_IMAGE)
-	MATCH_THEN_READ(stb);
+		ENTRY(stb),
 #endif
-	// Blurhash はマジックとかの構造を持たないので最後に調べる。
+		// Blurhash はマジックとかの構造を持たないので最後に調べる。
 #if defined(USE_BLURHASH)
-	MATCH_THEN_READ(blurhash);
+		ENTRY(blurhash),
 #endif
+#undef ENTRY
+	};
+	for (uint i = 0; i < countof(loader); i++) {
+		ok = loader[i].match(pfp, diag);
+		fseek(pfp, 0, SEEK_SET);
+		Trace(diag, "%s: image_%s_match %u", __func__, loader[i].name, ok);
+		if (ok) {
+			fclose(pfp);
+			fp = pstream_open_for_read(ps);
+			if (fp == NULL) {
+				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
+				return NULL;
+			}
+			struct image *img = loader[i].read(fp, diag);
+			fclose(fp);
+			return img;
+		}
+	}
 
 	if (ok < 0) {
 		Debug(diag, "%s: no decoders available", __func__);
