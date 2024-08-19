@@ -67,7 +67,7 @@ static uint opt_width;
 static ResizeAxis opt_resize_axis;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
-static struct image_reduct_opt imageopt;
+static struct image_opt imageopt;
 static struct image_sixel_opt sixelopt;
 static struct netstream_opt netopt;
 
@@ -170,7 +170,7 @@ main(int ac, char *av[])
 	diag_sixel = diag_alloc();
 	diag_set_timestamp(diag_net, true);
 
-	image_reduct_opt_init(&imageopt);
+	image_opt_init(&imageopt);
 	image_sixel_opt_init(&sixelopt);
 	netstream_opt_init(&netopt);
 	ignore_error = false;

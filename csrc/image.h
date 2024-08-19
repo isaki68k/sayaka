@@ -171,7 +171,8 @@ struct image
 };
 
 // image.c
-struct image_reduct_opt {
+struct image_opt {
+	// 減色
 	ReductorMethod method;
 	ReductorDiffuse diffuse;
 	ReductorColor color;
@@ -179,7 +180,7 @@ struct image_reduct_opt {
 	// 出力ゲイン。0 .. 512 で指定する。256 が 1.0倍。
 	uint gain;
 };
-extern void image_reduct_opt_init(struct image_reduct_opt *);
+extern void image_opt_init(struct image_opt *);
 extern struct image *image_read_pstream(struct pstream *, const struct diag *);
 extern void image_free(struct image *);
 extern uint image_get_stride(const struct image *);
@@ -189,7 +190,7 @@ extern void image_get_preferred_size(uint current_width, uint current_height,
 extern string *image_get_loaderinfo(void);
 extern struct image *image_coloring(const struct image *);
 extern struct image *image_reduct(const struct image *src,
-	uint dst_width, uint dst_height, const struct image_reduct_opt *,
+	uint dst_width, uint dst_height, const struct image_opt *,
 	const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
