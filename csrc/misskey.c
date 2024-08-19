@@ -79,7 +79,7 @@ cmd_misskey_play(const char *infile)
 	}
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
-		string *s = string_dup_cstr(buf);
+		string *s = string_from_cstr(buf);
 		misskey_message(s);
 		string_free(s);
 	}

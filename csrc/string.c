@@ -64,7 +64,7 @@ string_alloc(uint capacity)
 
 // cstr を複製した文字列を返す。
 string *
-string_dup_cstr(const char *cstr)
+string_from_cstr(const char *cstr)
 {
 	uint len = strlen(cstr);
 	string *s = string_alloc(len + 1);
@@ -73,6 +73,20 @@ string_dup_cstr(const char *cstr)
 	}
 	strlcpy(s->buf, cstr, len + 1);
 	s->len = len;
+	return s;
+}
+
+// mem から memlen バイトのゼロ終端していない文字列を返す。
+string *
+string_from_mem(const void *mem, uint memlen)
+{
+	string *s = string_alloc(memlen + 1);
+	if (s == NULL) {
+		return NULL;
+	}
+	memcpy(s->buf, mem, memlen);
+	s->buf[memlen] = '\0';
+	s->len = memlen;
 	return s;
 }
 

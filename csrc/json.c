@@ -383,7 +383,7 @@ json_get_str_def(json *js, int idx, const char *defval)
 		if (defval == NULL) {
 			retval = NULL;
 		} else {
-			retval = string_dup_cstr(defval);
+			retval = string_from_cstr(defval);
 		}
 	}
 
