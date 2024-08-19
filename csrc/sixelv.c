@@ -62,8 +62,6 @@ static struct diag *diag_net;
 static struct diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static FILE *ofp;					// 出力中のストリーム
-static uint opt_height;
-static uint opt_width;
 static ResizeAxis opt_resize_axis;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
@@ -173,8 +171,6 @@ main(int ac, char *av[])
 	netstream_opt_init(&netopt);
 	ignore_error = false;
 	opt_resize_axis = ResizeAxis_Both;
-	opt_height = 0;
-	opt_width = 0;
 	output_filename = NULL;
 	output_format = OutputFormat_SIXEL;
 
@@ -252,7 +248,7 @@ main(int ac, char *av[])
 		 }
 
 		 case 'h':
-			opt_height = atoi(optarg);
+			imageopt.height = atoi(optarg);
 			break;
 
 		 case OPT_help:
@@ -302,7 +298,7 @@ main(int ac, char *av[])
 			exit(0);
 
 		 case 'w':
-			opt_width = atoi(optarg);
+			imageopt.width = atoi(optarg);
 			break;
 
 		 default:
@@ -522,7 +518,7 @@ do_file(const char *infile)
 
 	// いい感じにサイズを決定。
 	image_get_preferred_size(srcimg->width, srcimg->height,
-		opt_resize_axis, opt_width, opt_height,
+		opt_resize_axis, imageopt.width, imageopt.height,
 		&dst_width, &dst_height);
 	Debug(diag_image, "%s: src size=(%u, %u) dst size=(%u, %u) dst color=%s",
 		__func__,

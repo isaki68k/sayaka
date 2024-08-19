@@ -99,9 +99,14 @@ image_blurhash_read(FILE *fp, const struct image_opt *opt,
 	uint compx = (comp % 9) + 1;
 	uint compy = (comp / 9) + 1;
 
-	// XXX
-	uint width = compx;
-	uint height = compy;
+	// デフォルトでは適当に 20倍の大きさとする。
+	// comp[x,y] が 1..9 なので 20 〜 180 px。
+	// opt で指定することも可能。
+	uint width;
+	uint height;
+	image_get_preferred_size(20 * compx, 20 * compy,
+		ResizeAxis_Both, opt->width, opt->height,
+		&width, &height);
 	img = image_create(width, height, 3);
 	if (img == NULL) {
 		goto abort;

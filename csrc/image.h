@@ -172,6 +172,10 @@ struct image
 
 // image.c
 struct image_opt {
+	// Blurhash の読み込みで使われる。
+	uint width;
+	uint height;
+
 	// 減色
 	ReductorMethod method;
 	ReductorDiffuse diffuse;
