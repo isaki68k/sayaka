@@ -54,7 +54,7 @@ typedef union ColorRGB_ {
 } ColorRGB;
 
 // image.c
-extern struct image *image_create(uint width_, uint height_, uint channels_);
+extern struct image *image_create(uint, uint, uint);
 
 // image_*.c
 typedef bool (*image_match_t)(FILE *, const struct diag *);

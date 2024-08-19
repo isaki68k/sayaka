@@ -68,10 +68,10 @@ static inline int diag_get_level(const struct diag *diag)
 }
 extern struct diag *diag_alloc(void);
 extern void diag_free(struct diag *);
-extern void diag_set_name(struct diag *, const char *name);
-extern void diag_set_level(struct diag *, int level);
-extern void diag_set_timestamp(struct diag *, bool enable);
-extern void diag_print(const struct diag *, const char *fmt, ...)
+extern void diag_set_name(struct diag *, const char *);
+extern void diag_set_level(struct diag *, int);
+extern void diag_set_timestamp(struct diag *, bool);
+extern void diag_print(const struct diag *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
 // net.c
@@ -129,6 +129,6 @@ extern const char *strerrno(void);
 extern void chomp(char *);
 extern uint32 rnd_get32(void);
 extern void rnd_fill(void *, uint);
-extern string *base64_encode(const void *src, uint);
+extern string *base64_encode(const void *, uint);
 
 #endif // !sayaka_common_h

@@ -193,14 +193,12 @@ extern struct image *image_read_pstream(struct pstream *,
 	const struct image_opt *, const struct diag *);
 extern void image_free(struct image *);
 extern uint image_get_stride(const struct image *);
-extern void image_get_preferred_size(uint current_width, uint current_height,
-	ResizeAxis axis, uint request_width, uint request_height,
-	uint *preferred_width, uint *preferred_height);
+extern void image_get_preferred_size(uint, uint, ResizeAxis,
+	uint, uint, uint *, uint *);
 extern string *image_get_loaderinfo(void);
 extern struct image *image_coloring(const struct image *);
-extern struct image *image_reduct(const struct image *src,
-	uint dst_width, uint dst_height, const struct image_opt *,
-	const struct diag *);
+extern struct image *image_reduct(const struct image *,
+	uint, uint, const struct image_opt *, const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductormethod_tostr(ReductorMethod);
