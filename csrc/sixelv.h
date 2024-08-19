@@ -29,9 +29,9 @@
 
 #include "common.h"
 
-struct image;
+typedef struct image_ image;
 
 // image_bmp.c
-extern bool image_bmp_write(FILE *, const struct image *, const struct diag *);
+extern bool image_bmp_write(FILE *, const image *, const struct diag *);
 
 #endif // !sayaka_sixelv_h

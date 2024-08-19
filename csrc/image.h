@@ -146,7 +146,7 @@ typedef enum {
 #define RGBToU32(r, g, b)	((uint32)(((r) << 24) | ((g) << 16) | ((b) << 8)))
 #endif
 
-struct image
+typedef struct image_
 {
 	// buf はラスターパディングなし。
 	// ストライドを足しやすいように uint8 のポインタにしておく。
@@ -168,7 +168,7 @@ struct image
 
 	// 動的に作成したパレットはここで所有する。
 	ColorRGB *palette_buf;
-};
+} image;
 
 // image.c
 struct image_opt {
@@ -189,16 +189,16 @@ struct image_opt {
 	bool suppress_palette;
 };
 extern void image_opt_init(struct image_opt *);
-extern struct image *image_read_pstream(struct pstream *,
+extern image *image_read_pstream(struct pstream *,
 	const struct image_opt *, const struct diag *);
-extern void image_free(struct image *);
-extern uint image_get_stride(const struct image *);
+extern void image_free(image *);
+extern uint image_get_stride(const image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,
 	uint, uint, uint *, uint *);
 extern string *image_get_loaderinfo(void);
-extern struct image *image_coloring(const struct image *);
-extern struct image *image_reduct(const struct image *,
-	uint, uint, const struct image_opt *, const struct diag *);
+extern image *image_coloring(const image *);
+extern image *image_reduct(const image *, uint, uint, const struct image_opt *,
+	const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductormethod_tostr(ReductorMethod);
@@ -207,7 +207,7 @@ extern const char *reductorcolor_tostr(ReductorColor);
 
 // image_sixel.c
 extern void image_sixel_abort(FILE *);
-extern bool image_sixel_write(FILE *, const struct image *,
-	const struct image_opt *, const struct diag *);
+extern bool image_sixel_write(FILE *, const image *, const struct image_opt *,
+	const struct diag *);
 
 #endif // !sayaka_image_h

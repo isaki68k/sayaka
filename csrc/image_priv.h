@@ -54,16 +54,16 @@ typedef union ColorRGB_ {
 } ColorRGB;
 
 // image.c
-extern struct image *image_create(uint, uint, uint);
+extern image *image_create(uint, uint, uint);
 
 // image_*.c
 typedef bool (*image_match_t)(FILE *, const struct diag *);
-typedef struct image *(*image_read_t)(FILE *, const struct image_opt *,
+typedef image *(*image_read_t)(FILE *, const struct image_opt *,
 	const struct diag *);
 #define IMAGE_HANDLER(name)	\
 	extern bool image_##name##_match(FILE *, const struct diag *);	\
-	extern struct image *image_##name##_read(FILE *,	\
-		const struct image_opt *, const struct diag *)
+	extern image *image_##name##_read(FILE *, const struct image_opt *,	\
+		const struct diag *)
 
 IMAGE_HANDLER(blurhash);
 IMAGE_HANDLER(png);

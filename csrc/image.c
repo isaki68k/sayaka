@@ -75,10 +75,9 @@ static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 
 static void image_reduct_simple(image_reductor_handle *,
-	struct image *, const struct image *, const struct diag *diag);
+	image *, const image *, const struct diag *diag);
 static bool image_reduct_highquality(image_reductor_handle *,
-	struct image *, const struct image *, const struct image_opt *,
-	const struct diag *diag);
+	image *, const image *, const struct image_opt *, const struct diag *diag);
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
 static uint8 saturate_uint8(int);
 static int16 saturate_adderr(int16, int);
@@ -100,10 +99,10 @@ image_opt_init(struct image_opt *opt)
 
 // width_ x height_ x channels_ の image を作成する。
 // (バッファは未初期化)
-struct image *
+image *
 image_create(uint width_, uint height_, uint channels_)
 {
-	struct image *img = calloc(1, sizeof(struct image));
+	image *img = calloc(1, sizeof(*img));
 	if (img == NULL) {
 		return NULL;
 	}
@@ -122,7 +121,7 @@ image_create(uint width_, uint height_, uint channels_)
 
 // image を解放する。NULL なら何もしない。
 void
-image_free(struct image *img)
+image_free(image *img)
 {
 	if (img != NULL) {
 		free(img->buf);
@@ -133,7 +132,7 @@ image_free(struct image *img)
 
 // ストライドを返す。
 uint
-image_get_stride(const struct image *img)
+image_get_stride(const image *img)
 {
 	return img->width * img->channels;
 }
@@ -271,7 +270,7 @@ image_get_loaderinfo(void)
 // pstream から画像を読み込んで image を作成して返す。
 // 読み込めなければ errno をセットして NULL を返す。
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかった。
-struct image *
+image *
 image_read_pstream(struct pstream *ps, const struct image_opt *opt,
 	const struct diag *diag)
 {
@@ -317,7 +316,7 @@ image_read_pstream(struct pstream *ps, const struct image_opt *opt,
 				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
 				return NULL;
 			}
-			struct image *img = loader[i].read(fp, opt, diag);
+			image *img = loader[i].read(fp, opt, diag);
 			fclose(fp);
 			return img;
 		}
@@ -334,10 +333,10 @@ image_read_pstream(struct pstream *ps, const struct image_opt *opt,
 }
 
 // インデックスカラーの srcimg をパレットで着色した画像を返す。
-struct image *
-image_coloring(const struct image *srcimg)
+image *
+image_coloring(const image *srcimg)
 {
-	struct image *dstimg;
+	image *dstimg;
 
 	assert(srcimg->channels == 1);
 	assert(srcimg->palette != NULL);
@@ -369,15 +368,15 @@ image_coloring(const struct image *srcimg)
 
 // src 画像を (dst_width, dst_height) にリサイズしながら同時に
 // colormode (& graycount) に減色した新しい image を作成して返す。
-struct image *
+image *
 image_reduct(
-	const struct image *src,	// 元画像
+	const image *src,			// 元画像
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
 	const struct image_opt *param,	// パラメータ
 	const struct diag *diag)
 {
-	struct image *dst;
+	image *dst;
 	image_reductor_handle irbuf, *ir;
 
 	ir = &irbuf;
@@ -511,8 +510,7 @@ rational_add(Rational *sr, const Rational *x)
 // 単純間引き
 static void
 image_reduct_simple(image_reductor_handle *ir,
-	struct image *dstimg, const struct image *srcimg,
-	const struct diag *diag)
+	image *dstimg, const image *srcimg, const struct diag *diag)
 {
 	uint8 *d = dstimg->buf;
 	const uint8 *src = srcimg->buf;
@@ -566,9 +564,8 @@ image_reduct_simple(image_reductor_handle *ir,
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
 image_reduct_highquality(image_reductor_handle *ir,
-	struct image *dstimg, const struct image *srcimg,
-	const struct image_opt *param,
-	const struct diag *diag)
+	image *dstimg, const image *srcimg,
+	const struct image_opt *param, const struct diag *diag)
 {
 	uint8 *d = dstimg->buf;
 	const uint8 *src = srcimg->buf;

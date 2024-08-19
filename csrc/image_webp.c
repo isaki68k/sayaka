@@ -56,7 +56,7 @@ _Pragma("GCC diagnostic pop")
 static bool read_all(uint8 **, size_t *, FILE *, uint32,
 	const struct diag *diag);
 static void image_webp_rgba2rgb(uint8 *, const uint8 *, uint, uint, uint, uint);
-static bool image_webp_loadinc(struct image *, FILE *, WebPIDecoder *,
+static bool image_webp_loadinc(image *, FILE *, WebPIDecoder *,
 	const struct diag *diag);
 
 bool
@@ -105,14 +105,14 @@ image_webp_match(FILE *fp, const struct diag *diag)
 	}
 }
 
-struct image *
+image *
 image_webp_read(FILE *fp, const struct image_opt *dummy,
 	const struct diag *diag)
 {
 	uint8 *filebuf = NULL;
 	size_t filecap = 0;
 	size_t filelen = 0;
-	struct image *img = NULL;
+	image *img = NULL;
 	WebPDecoderConfig config;
 	VP8StatusCode r;
 	size_t n;
@@ -357,7 +357,7 @@ image_webp_rgba2rgb(uint8 *d, const uint8 *src,
 
 // インクリメンタル処理が出来る場合。
 static bool
-image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
+image_webp_loadinc(image *img, FILE *fp, WebPIDecoder *idec,
 	const struct diag *diag)
 {
 	uint8 buf[INCBUFSIZE];

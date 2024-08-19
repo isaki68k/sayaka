@@ -77,14 +77,14 @@ image_blurhash_match(FILE *fp, const struct diag *diag)
 	return ok;
 }
 
-struct image *
+image *
 image_blurhash_read(FILE *fp, const struct image_opt *opt,
 	const struct diag *diag)
 {
 	char src[BUFSIZE];
 	float maxvalue;
 	struct colorf *v;
-	struct image *img = NULL;
+	image *img = NULL;
 	struct colorf *values = NULL;
 	float *bases_x = NULL;
 	float *bases_y = NULL;

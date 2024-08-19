@@ -57,7 +57,7 @@ typedef struct __packed {
 
 // image を BMP 形式で fp に出力する。
 bool
-image_bmp_write(FILE *fp, const struct image *img, const struct diag *diag)
+image_bmp_write(FILE *fp, const image *img, const struct diag *diag)
 {
 	BITMAPFILEHEADER hdr;
 	BITMAPINFOHEADER info;

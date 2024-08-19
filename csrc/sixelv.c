@@ -438,8 +438,8 @@ do_file(const char *infile)
 	bool rv = false;
 	struct netstream *net = NULL;
 	struct pstream *pstream = NULL;
-	struct image *srcimg = NULL;
-	struct image *resimg = NULL;
+	image *srcimg = NULL;
+	image *resimg = NULL;
 	int ifd = -1;
 	FILE *ifp = NULL;
 	const char *infilename;	// 表示用
@@ -547,7 +547,7 @@ do_file(const char *infile)
 	if (output_format == OutputFormat_SIXEL) {
 		image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
 	} else {
-		struct image *bmpimg = image_coloring(resimg);
+		image *bmpimg = image_coloring(resimg);
 		if (bmpimg == NULL) {
 			warn("image_coloring(%s) failed", output_filename);
 			goto abort;
