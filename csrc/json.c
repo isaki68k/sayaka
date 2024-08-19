@@ -53,10 +53,25 @@ typedef struct json_
 } json;
 
 static int  json_dump_r(const json *, int, uint);
-static bool tok_is_obj(const jsmntok_t *);
-static bool tok_is_array(const jsmntok_t *);
-static bool tok_is_str(const jsmntok_t *);
 static bool json_equal_cstr(const json *, int, const char *);
+
+static inline bool
+tok_is_obj(const jsmntok_t *t)
+{
+	return (t->type == JSMN_OBJECT);
+}
+
+static inline bool
+tok_is_array(const jsmntok_t *t)
+{
+	return (t->type == JSMN_ARRAY);
+}
+
+static inline bool
+tok_is_str(const jsmntok_t *t)
+{
+	return (t->type == JSMN_STRING);
+}
 
 
 // json を生成する。
@@ -252,24 +267,6 @@ json_dump_r(const json *js, int id, uint depth)
 
 	printf("?\n");
 	return -1;
-}
-
-static bool
-tok_is_obj(const jsmntok_t *t)
-{
-	return (t->type == JSMN_OBJECT);
-}
-
-static bool
-tok_is_array(const jsmntok_t *t)
-{
-	return (t->type == JSMN_ARRAY);
-}
-
-static bool
-tok_is_str(const jsmntok_t *t)
-{
-	return (t->type == JSMN_STRING);
 }
 
 // js[idx] がオブジェクト { .. } なら true を返す。
