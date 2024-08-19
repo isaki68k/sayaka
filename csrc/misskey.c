@@ -39,7 +39,7 @@ static bool misskey_init(void);
 static bool misskey_stream(struct wsclient *);
 static void misskey_recv_cb(const string *);
 static void misskey_message(const string *);
-static bool misskey_show_note(const json *, uint, uint);
+static bool misskey_show_note(const json *, int, uint);
 
 static json *js;
 
@@ -279,7 +279,7 @@ misskey_message(const string *jsonstr)
 
 // 1ノートを処理する。
 static bool
-misskey_show_note(const json *js, uint id, uint depth)
+misskey_show_note(const json *js, int id, uint depth)
 {
 	json_dump(js, id);
 	return true;

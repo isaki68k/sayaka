@@ -41,14 +41,14 @@ extern json *json_create(const struct diag *);
 extern void json_destroy(json *);
 extern int  json_parse(json *, const string *);
 extern void json_jsmndump(const json *);
-extern void json_dump(const json *, uint);
-extern bool json_is_obj(const json *, uint);
-extern bool json_is_array(const json *, uint);
-extern bool json_is_str(const json *, uint);
-extern bool json_is_num(const json *, uint);
-extern bool json_is_bool(const json *, uint);
-extern bool json_get_str_buf(const json *, uint, char *, size_t);
-extern int  json_obj_find(const json *, uint, const char *);
+extern void json_dump(const json *, int);
+extern bool json_is_obj(const json *, int);
+extern bool json_is_array(const json *, int);
+extern bool json_is_str(const json *, int);
+extern bool json_is_num(const json *, int);
+extern bool json_is_bool(const json *, int);
+extern bool json_get_str_buf(const json *, int, char *, size_t);
+extern int  json_obj_find(const json *, int, const char *);
 
 // misskey.c
 extern void cmd_misskey_stream(const char *);

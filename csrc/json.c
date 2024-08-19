@@ -52,12 +52,12 @@ typedef struct json_
 	const struct diag *diag;
 } json;
 
-static uint json_dump_r(const json *, uint, uint);
+static int  json_dump_r(const json *, int, uint);
 static bool tok_is_obj(const jsmntok_t *);
 static bool tok_is_array(const jsmntok_t *);
 static bool tok_is_str(const jsmntok_t *);
-static bool json_str_eq(const json *, uint, const char *);
-int  json_get_int_def(json *, uint, int);
+static bool json_str_eq(const json *, int, const char *);
+int  json_get_int_def(json *, int, int);
 
 
 // json を生成する。
@@ -174,9 +174,9 @@ json_jsmndump(const json *js)
 
 // JSON のダンプを表示する。
 void
-json_dump(const json *js, uint root)
+json_dump(const json *js, int root)
 {
-	for (uint id = root; id < js->tokenlen; ) {
+	for (int id = root; id < js->tokenlen; ) {
 		id = json_dump_r(js, id, 0);
 	}
 	printf("\n");
@@ -185,8 +185,8 @@ json_dump(const json *js, uint root)
 #define INDENT(d)	printf("%*s", (d * 2), "")
 
 // TODO: もうちょっとちゃんとする
-static uint
-json_dump_r(const json *js, uint id, uint depth)
+static int
+json_dump_r(const json *js, int id, uint depth)
 {
 	jsmntok_t *t = &js->token[id];
 
@@ -275,28 +275,28 @@ tok_is_str(const jsmntok_t *t)
 
 // js[idx] がオブジェクト { .. } なら true を返す。
 bool
-json_is_obj(const json *js, uint idx)
+json_is_obj(const json *js, int idx)
 {
 	return tok_is_obj(&js->token[idx]);
 }
 
 // js[idx] が配列 [ .. ] なら true を返す。
 bool
-json_is_array(const json *js, uint idx)
+json_is_array(const json *js, int idx)
 {
 	return tok_is_array(&js->token[idx]);
 }
 
 // js[idx] が文字列なら true を返す。
 bool
-json_is_str(const json *js, uint idx)
+json_is_str(const json *js, int idx)
 {
 	return tok_is_str(&js->token[idx]);
 }
 
 // js[idx] が数値型なら true を返す。
 bool
-json_is_num(const json *js, uint idx)
+json_is_num(const json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -311,7 +311,7 @@ json_is_num(const json *js, uint idx)
 
 // js[idx] がブール型なら true を返す。
 bool
-json_is_bool(const json *js, uint idx)
+json_is_bool(const json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -326,7 +326,7 @@ json_is_bool(const json *js, uint idx)
 
 // js[idx] (STRING 型) が s2 と一致すれば true を返す。
 static bool
-json_str_eq(const json *js, uint idx, const char *s2)
+json_str_eq(const json *js, int idx, const char *s2)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -346,7 +346,7 @@ json_str_eq(const json *js, uint idx, const char *s2)
 // 本来文字列をバッファに取り出すためだが NUMBER や BOOL などでも使える。
 // dst に格納しきれなければ、dstsize を超える前に '\0' で終端し false を返す。
 bool
-json_get_str_buf(const json *js, uint idx, char *dst, size_t dstsize)
+json_get_str_buf(const json *js, int idx, char *dst, size_t dstsize)
 {
 	assert(idx < js->tokenlen);
 	jsmntok_t *t = &js->token[idx];
@@ -367,7 +367,7 @@ json_get_str_buf(const json *js, uint idx, char *dst, size_t dstsize)
 // js[idx] の要素を string を作成して返す。
 // 文字列でなければ defval を返す。
 string *
-json_get_str_def(json *js, uint idx, const char *defval)
+json_get_str_def(json *js, int idx, const char *defval)
 {
 	assert(idx < js->tokenlen);
 
@@ -394,7 +394,7 @@ json_get_str_def(json *js, uint idx, const char *defval)
 // 小数点以下は無視する。
 // int に収まらなければ errno に ERANGE をセットして defval を返す。
 int
-json_get_int_def(json *js, uint idx, int defval)
+json_get_int_def(json *js, int idx, int defval)
 {
 	assert(idx < js->tokenlen);
 
@@ -426,7 +426,7 @@ json_get_int_def(json *js, uint idx, int defval)
 // 返されるのは key に対応する値のインデックス。
 // 見付からなければ -1 を返す。
 int
-json_obj_find(const json *js, uint idx, const char *key)
+json_obj_find(const json *js, int idx, const char *key)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -436,7 +436,7 @@ json_obj_find(const json *js, uint idx, const char *key)
 	}
 
 	// 自分の次の要素から、size 個カウントするまで、自分を親に持つ要素を探す。
-	uint i = idx + 1;
+	int i = idx + 1;
 	uint childnum = t->size;
 	uint n = 0;
 	for (; i < js->tokenlen && n < childnum; i++) {
