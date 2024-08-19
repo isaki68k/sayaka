@@ -623,6 +623,8 @@ image_reduct_highquality(struct image_reductor_handle *op,
 			c8.b = saturate_uint8(col.b);
 
 			uint colorcode = op->finder(op, c8);
+			*d++ = colorcode;
+
 			col.r -= op->palette[colorcode].r;
 			col.g -= op->palette[colorcode].g;
 			col.b -= op->palette[colorcode].b;
@@ -705,8 +707,6 @@ image_reduct_highquality(struct image_reductor_handle *op,
 				errbuf[1][x+1].g = saturate_adderr(errbuf[1][x+1].g, col.g);
 				break;
 			}
-
-			*d++ = colorcode;
 		}
 
 		// 誤差バッファをローテート。
