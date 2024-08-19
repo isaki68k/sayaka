@@ -56,8 +56,7 @@ static int  json_dump_r(const json *, int, uint);
 static bool tok_is_obj(const jsmntok_t *);
 static bool tok_is_array(const jsmntok_t *);
 static bool tok_is_str(const jsmntok_t *);
-static bool json_str_eq(const json *, int, const char *);
-int  json_get_int_def(json *, int, int);
+static bool json_equal_cstr(const json *, int, const char *);
 
 
 // json を生成する。
@@ -200,14 +199,14 @@ json_dump_r(const json *js, int id, uint depth)
 			printf("false");
 		} else if (ch == '-' || ('0' <= ch && ch <= '9')) {
 			char buf[t->end - t->start + 1];
-			json_get_str_buf(js, id, buf, sizeof(buf));
+			json_get_buf(js, id, buf, sizeof(buf));
 			printf("%s", buf);
 		}
 		return ++id;
 	}
 	if (tok_is_str(t)) {
 		char buf[t->end - t->start + 1];
-		json_get_str_buf(js, id, buf, sizeof(buf));
+		json_get_buf(js, id, buf, sizeof(buf));
 		printf("\"%s\"", buf);	// XXX TODO エスケープ
 		return ++id;
 	}
@@ -324,29 +323,43 @@ json_is_bool(const json *js, int idx)
 	return false;
 }
 
-// js[idx] (STRING 型) が s2 と一致すれば true を返す。
+// js[idx] の値が s2 と一致すれば true を返す。
+// 本来 STRING 用だが NUMBER などでも使える。
+// そのためこちらでは型のチェック行わないので、STRING 型の "null" という
+// 文字列もプリミティブの NULL 型 ("null") もどちらも s2 = "null" と比較
+// すると一致してしまうことに注意。
 static bool
-json_str_eq(const json *js, int idx, const char *s2)
+json_equal_cstr(const json *js, int idx, const char *s2)
 {
 	jsmntok_t *t = &js->token[idx];
 
-	if (__predict_true(tok_is_str(t))) {
-		const char *s1 = &js->cstr[t->start];
-		uint s1len = t->end - t->start;
-		uint s2len = strlen(s2);
-		if (s1len == s2len && strncmp(s1, s2, s1len) == 0) {
-			return true;
-		}
+	const char *s1 = &js->cstr[t->start];
+	uint s1len = t->end - t->start;
+	uint s2len = strlen(s2);
+	if (s1len == s2len && strncmp(s1, s2, s1len) == 0) {
+		return true;
 	}
 	return false;
 }
 
+// js[idx] の値の長さを返す。
+// 本来 STRING 用だが NUMBER 型でも使える。それ以外の型に対しては意味がない。
+// 特にオブジェクト型、配列型では要素数を返さないので注意。
+uint
+json_get_len(const json *js, int idx)
+{
+	assert(idx < js->tokenlen);
+	jsmntok_t *t = &js->token[idx];
+
+	return t->end - t->start;
+}
+
 // js[idx] の値 [start..end) を dst にコピーする。
 // js[idx] の型が適切なことは呼び出し前に確認しておくこと。
-// 本来文字列をバッファに取り出すためだが NUMBER や BOOL などでも使える。
+// 本来文字列をバッファに取り出すためだが NUMBER などでも使える。
 // dst に格納しきれなければ、dstsize を超える前に '\0' で終端し false を返す。
 bool
-json_get_str_buf(const json *js, int idx, char *dst, size_t dstsize)
+json_get_buf(const json *js, int idx, char *dst, size_t dstsize)
 {
 	assert(idx < js->tokenlen);
 	jsmntok_t *t = &js->token[idx];
@@ -361,6 +374,16 @@ json_get_str_buf(const json *js, int idx, char *dst, size_t dstsize)
 		strlcpy(dst, src, dstsize);
 		return false;
 	}
+}
+
+// js[idx] の値を string 型にして返す。
+string *
+json_as_string(const json *js, int idx)
+{
+	assert(idx < js->tokenlen);
+	jsmntok_t *t = &js->token[idx];
+
+	return string_from_mem(&js->cstr[t->start], t->end - t->start);
 }
 
 #if 0
@@ -441,7 +464,7 @@ json_obj_find(const json *js, int idx, const char *key)
 	uint n = 0;
 	for (; i < js->tokenlen && n < childnum; i++) {
 		if (js->token[i].parent == idx) {
-			if (json_str_eq(js, i, key)) {
+			if (json_is_str(js, i) && json_equal_cstr(js, i, key)) {
 				return i + 1;
 			}
 			n++;

@@ -250,7 +250,7 @@ misskey_message(const string *jsonstr)
 			bodyid >= 0 && json_is_obj(js, bodyid))
 		{
 			char typestr[24];
-			json_get_str_buf(js, typeid, typestr, sizeof(typestr));
+			json_get_buf(js, typeid, typestr, sizeof(typestr));
 			if (strcmp(typestr, "channel") == 0 ||
 				strcmp(typestr, "note") == 0 ||
 				strcmp(typestr, "announcementCreated") == 0)
