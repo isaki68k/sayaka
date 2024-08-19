@@ -77,7 +77,7 @@ static ColorRGB *image_alloc_fixed256_palette(void);
 static void image_reduct_simple(image_reductor_handle *,
 	image *, const image *, const struct diag *diag);
 static bool image_reduct_highquality(image_reductor_handle *,
-	image *, const image *, const struct image_opt *, const struct diag *diag);
+	image *, const image *, const image_opt *, const struct diag *diag);
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
 static uint8 saturate_uint8(int);
 static int16 saturate_adderr(int16, int);
@@ -87,7 +87,7 @@ static const ColorRGB palette_ansi16[];
 
 // opt を初期化する。
 void
-image_opt_init(struct image_opt *opt)
+image_opt_init(image_opt *opt)
 {
 	opt->method  = ReductorMethod_HighQuality;
 	opt->diffuse = RDM_FS;
@@ -271,7 +271,7 @@ image_get_loaderinfo(void)
 // 読み込めなければ errno をセットして NULL を返す。
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかった。
 image *
-image_read_pstream(struct pstream *ps, const struct image_opt *opt,
+image_read_pstream(struct pstream *ps, const image_opt *opt,
 	const struct diag *diag)
 {
 	int ok = -1;
@@ -373,7 +373,7 @@ image_reduct(
 	const image *src,			// 元画像
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
-	const struct image_opt *param,	// パラメータ
+	const image_opt *opt,		// パラメータ
 	const struct diag *diag)
 {
 	image *dst;
@@ -381,7 +381,7 @@ image_reduct(
 
 	ir = &irbuf;
 	memset(ir, 0, sizeof(*ir));
-	ir->gain = param->gain;
+	ir->gain = opt->gain;
 
 	dst = image_create(dst_width, dst_height, 1);
 	if (dst == NULL) {
@@ -389,10 +389,10 @@ image_reduct(
 	}
 
 	// 減色モードからパレットオペレーションを用意。
-	switch (param->color & ReductorColor_MASK) {
+	switch (opt->color & ReductorColor_MASK) {
 	 case ReductorColor_Gray:
 	 {
-		uint graycount = ((uint)param->color >> 8) + 1;
+		uint graycount = ((uint)opt->color >> 8) + 1;
 		ir->palette_buf = image_alloc_gray_palette(graycount);
 		if (ir->palette_buf == NULL) {
 			goto abort;
@@ -428,24 +428,24 @@ image_reduct(
 
 	 default:
 		Debug(diag, "%s: Unsupported color %s", __func__,
-			reductorcolor_tostr(param->color));
+			reductorcolor_tostr(opt->color));
 		goto abort;
 	}
 
-	switch (param->method) {
+	switch (opt->method) {
 	 case ReductorMethod_Simple:
 		image_reduct_simple(ir, dst, src, diag);
 		break;
 
 	 case ReductorMethod_HighQuality:
-		if (image_reduct_highquality(ir, dst, src, param, diag) == false) {
+		if (image_reduct_highquality(ir, dst, src, opt, diag) == false) {
 			goto abort;
 		}
 		break;
 
 	 default:
 		Debug(diag, "%s: Unsupported method %s", __func__,
-			reductormethod_tostr(param->method));
+			reductormethod_tostr(opt->method));
 		goto abort;
 	}
 
@@ -565,7 +565,7 @@ image_reduct_simple(image_reductor_handle *ir,
 static bool
 image_reduct_highquality(image_reductor_handle *ir,
 	image *dstimg, const image *srcimg,
-	const struct image_opt *param, const struct diag *diag)
+	const image_opt *opt, const struct diag *diag)
 {
 	uint8 *d = dstimg->buf;
 	const uint8 *src = srcimg->buf;
@@ -665,7 +665,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 			if (0) {
 			}
 
-			switch (param->diffuse) {
+			switch (opt->diffuse) {
 			 case RDM_FS:
 				// Floyd Steinberg Method
 				set_err(errbuf[0], x + 1, &col, 112);

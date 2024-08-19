@@ -106,8 +106,7 @@ image_webp_match(FILE *fp, const struct diag *diag)
 }
 
 image *
-image_webp_read(FILE *fp, const struct image_opt *dummy,
-	const struct diag *diag)
+image_webp_read(FILE *fp, const image_opt *dummy, const struct diag *diag)
 {
 	uint8 *filebuf = NULL;
 	size_t filecap = 0;

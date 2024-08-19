@@ -170,8 +170,7 @@ typedef struct image_
 	ColorRGB *palette_buf;
 } image;
 
-// image.c
-struct image_opt {
+typedef struct image_opt_ {
 	// Blurhash の読み込みで使われる。
 	uint width;
 	uint height;
@@ -187,17 +186,19 @@ struct image_opt {
 	// SIXEL 出力
 	bool output_ormode;
 	bool suppress_palette;
-};
-extern void image_opt_init(struct image_opt *);
-extern image *image_read_pstream(struct pstream *,
-	const struct image_opt *, const struct diag *);
+} image_opt;
+
+// image.c
+extern void image_opt_init(image_opt *);
+extern image *image_read_pstream(struct pstream *, const image_opt *,
+	const struct diag *);
 extern void image_free(image *);
 extern uint image_get_stride(const image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,
 	uint, uint, uint *, uint *);
 extern string *image_get_loaderinfo(void);
 extern image *image_coloring(const image *);
-extern image *image_reduct(const image *, uint, uint, const struct image_opt *,
+extern image *image_reduct(const image *, uint, uint, const image_opt *,
 	const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
@@ -207,7 +208,7 @@ extern const char *reductorcolor_tostr(ReductorColor);
 
 // image_sixel.c
 extern void image_sixel_abort(FILE *);
-extern bool image_sixel_write(FILE *, const image *, const struct image_opt *,
+extern bool image_sixel_write(FILE *, const image *, const image_opt *,
 	const struct diag *);
 
 #endif // !sayaka_image_h

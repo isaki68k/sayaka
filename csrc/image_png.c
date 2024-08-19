@@ -56,7 +56,7 @@ image_png_match(FILE *fp, const struct diag *diag)
 }
 
 image *
-image_png_read(FILE *fp, const struct image_opt *opt, const struct diag *diag)
+image_png_read(FILE *fp, const image_opt *opt, const struct diag *diag)
 {
 	png_structp png;
 	png_infop info;

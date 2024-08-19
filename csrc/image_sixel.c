@@ -34,7 +34,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-static bool sixel_preamble(FILE *, const image *, const struct image_opt *);
+static bool sixel_preamble(FILE *, const image *, const image_opt *);
 static bool sixel_postamble(FILE *);
 static bool sixel_convert_normal(FILE *, const image *, const struct diag *);
 static bool sixel_convert_ormode(FILE *, const image *, const struct diag *);
@@ -53,7 +53,7 @@ image_sixel_abort(FILE *fp)
 // (呼び出し後にフラッシュすること)
 bool
 image_sixel_write(FILE *fp, const image *img,
-	const struct image_opt *opt, const struct diag *diag)
+	const image_opt *opt, const struct diag *diag)
 {
 	struct timeval start, end, result;
 
@@ -93,7 +93,7 @@ image_sixel_write(FILE *fp, const image *img,
 }
 
 static bool
-sixel_preamble(FILE *fp, const image *img, const struct image_opt *opt)
+sixel_preamble(FILE *fp, const image *img, const image_opt *opt)
 {
 	char buf[40];
 

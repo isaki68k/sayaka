@@ -65,7 +65,7 @@ static FILE *ofp;					// 出力中のストリーム
 static ResizeAxis opt_resize_axis;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
-static struct image_opt imageopt;
+static image_opt imageopt;
 static struct netstream_opt netopt;
 
 enum {
