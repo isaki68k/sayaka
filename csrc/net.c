@@ -346,6 +346,7 @@ socket_connect(const char *hostname, const char *servname)
 	}
 
 	inprogress = false;
+	fd = -1;
 	for (ai = ailist; ai != NULL; ai = ai->ai_next) {
 		fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 		if (fd < 0) {
