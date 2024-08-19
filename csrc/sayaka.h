@@ -66,12 +66,12 @@ extern int  terminal_get_bgtheme(void);
 extern bool terminal_support_sixel(void);
 
 // wsclient.c
-struct wsclient;
-extern struct wsclient *wsclient_create(const diag *);
-extern void wsclient_destroy(struct wsclient *);
-extern bool wsclient_init(struct wsclient *, void (*)(const string *));
-extern int  wsclient_connect(struct wsclient *, const char *);
-extern int  wsclient_process(struct wsclient *);
-extern ssize_t wsclient_send_text(struct wsclient *, const char *);
+typedef struct wsclient_ wsclient;
+extern wsclient *wsclient_create(const diag *);
+extern void wsclient_destroy(wsclient *);
+extern bool wsclient_init(wsclient *, void (*)(const string *));
+extern int  wsclient_connect(wsclient *, const char *);
+extern int  wsclient_process(wsclient *);
+extern ssize_t wsclient_send_text(wsclient *, const char *);
 
 #endif // !sayaka_harada_h

@@ -36,7 +36,7 @@
 #include <unistd.h>
 
 static bool misskey_init(void);
-static bool misskey_stream(struct wsclient *);
+static bool misskey_stream(wsclient *);
 static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
@@ -120,7 +120,7 @@ cmd_misskey_stream(const char *server)
 			fflush(stdout);
 		}
 
-		struct wsclient *ws = wsclient_create(diag);
+		wsclient *ws = wsclient_create(diag);
 		if (ws == NULL) {
 			Debug(diag, "%s: wsclient_create failed", __func__);
 			goto abort;
@@ -173,7 +173,7 @@ cmd_misskey_stream(const char *server)
 // 相手からの Connection Close なら true を返す。
 // エラー (おそらく復旧不可能)なら false を返す。
 static bool
-misskey_stream(struct wsclient *ws)
+misskey_stream(wsclient *ws)
 {
 	// コマンド送信。
 	char cmd[128];

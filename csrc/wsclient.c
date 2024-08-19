@@ -51,7 +51,7 @@ enum {
 
 #define BUFSIZE	(1024)
 
-struct wsclient {
+typedef struct wsclient_ {
 	struct net *net;
 
 	uint8 *buf;			// 受信バッファ
@@ -67,18 +67,18 @@ struct wsclient {
 	void (*callback)(const string *);
 
 	const diag *diag;
-};
+} wsclient;
 
-static void wsclient_send_pong(struct wsclient *);
-static int  wsclient_send(struct wsclient *, uint8, const void *, uint);
+static void wsclient_send_pong(wsclient *);
+static int  wsclient_send(wsclient *, uint8, const void *, uint);
 static uint ws_encode_len(uint8 *, uint);
 static uint ws_decode_len(const uint8 *, uint *);
 
 // wsclient コンテキストを生成する。
-struct wsclient *
+wsclient *
 wsclient_create(const diag *diag)
 {
-	struct wsclient *ws;
+	wsclient *ws;
 
 	ws = calloc(1, sizeof(*ws));
 	if (ws == NULL) {
@@ -106,7 +106,7 @@ wsclient_create(const diag *diag)
 
 // ws を解放する。
 void
-wsclient_destroy(struct wsclient *ws)
+wsclient_destroy(wsclient *ws)
 {
 	if (ws) {
 		net_destroy(ws->net);
@@ -118,7 +118,7 @@ wsclient_destroy(struct wsclient *ws)
 
 // ws を初期化する。
 bool
-wsclient_init(struct wsclient *ws, void (*callback)(const string *))
+wsclient_init(wsclient *ws, void (*callback)(const string *))
 {
 	assert(ws);
 
@@ -130,7 +130,7 @@ wsclient_init(struct wsclient *ws, void (*callback)(const string *))
 // url に接続する。
 // 成功すれば 0、失敗すれば -1 を返す。
 int
-wsclient_connect(struct wsclient *ws, const char *url)
+wsclient_connect(wsclient *ws, const char *url)
 {
 	const diag *diag = ws->diag;
 	string *key = NULL;
@@ -260,7 +260,7 @@ wsclient_connect(struct wsclient *ws, const char *url)
 // 1 なら何かしら処理をしたが、上位には関係がない。
 // 2 なら ws->text に上位に通知するデータが用意できた。
 int
-wsclient_process(struct wsclient *ws)
+wsclient_process(wsclient *ws)
 {
 	const diag *diag = ws->diag;
 	int rv = 1;
@@ -364,14 +364,14 @@ wsclient_process(struct wsclient *ws)
 
 // テキストフレームを送信する。
 ssize_t
-wsclient_send_text(struct wsclient *ws, const char *buf)
+wsclient_send_text(wsclient *ws, const char *buf)
 {
 	return wsclient_send(ws, WS_OPCODE_TEXT, buf, strlen(buf));
 }
 
 // PONG 応答を送信する。
 static void
-wsclient_send_pong(struct wsclient *ws)
+wsclient_send_pong(wsclient *ws)
 {
 	wsclient_send(ws, WS_OPCODE_PONG, NULL, 0);
 }
@@ -379,7 +379,7 @@ wsclient_send_pong(struct wsclient *ws)
 // WebSocket フレームを送信する。
 // datalen が 0 なら data は NULL でも可。
 static int
-wsclient_send(struct wsclient *ws, uint8 opcode, const void *data, uint datalen)
+wsclient_send(wsclient *ws, uint8 opcode, const void *data, uint datalen)
 {
 	uint8 buf[1 + (1+2) + 4 + datalen];
 	uint hdrlen;
@@ -540,7 +540,7 @@ cat_callback(const string *s)
 static int
 testwsecho(const diag *diag, int ac, char *av[])
 {
-	struct wsclient *ws = wsclient_create(diag);
+	wsclient *ws = wsclient_create(diag);
 
 	if (wsclient_init(ws, cat_callback) == false) {
 		err(1, "wsclient_init failed");
@@ -580,7 +580,7 @@ testwsecho(const diag *diag, int ac, char *av[])
 static int
 testmisskey(const diag *diag, int ac, char *av[])
 {
-	struct wsclient *ws = wsclient_create(diag);
+	wsclient *ws = wsclient_create(diag);
 
 	if (wsclient_init(ws, cat_callback) == false) {
 		err(1, "wsclient_init failed");
