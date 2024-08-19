@@ -65,6 +65,10 @@
 	a_ < b_ ? a_ : b_;	\
 })
 
+#ifndef UNCONST
+#define UNCONST(p)	((void *)(uintptr_t)(const void *)(p))
+#endif
+
 #ifndef countof
 #define countof(x)	(sizeof(x) / sizeof(x[0]))
 #endif

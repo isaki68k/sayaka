@@ -40,10 +40,6 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
-#ifndef UNCONST
-#define UNCONST(p)	((void *)(uintptr_t)(const void *)(p))
-#endif
-
 struct net;
 struct net {
 	bool (*f_connect)(struct net *, const char *, const char *);
