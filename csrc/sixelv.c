@@ -57,9 +57,9 @@ static int parse_opt(const struct optmap *, const char *);
 static bool do_file(const char *filename);
 static void signal_handler(int);
 
-static struct diag *diag_image;
-static struct diag *diag_net;
-static struct diag *diag_sixel;
+static diag *diag_image;
+static diag *diag_net;
+static diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static FILE *ofp;					// 出力中のストリーム
 static ResizeAxis opt_resize_axis;

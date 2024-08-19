@@ -66,7 +66,7 @@ struct wsclient {
 	// テキストが 1フレーム受信できた時に呼ばれる。
 	void (*callback)(const string *);
 
-	const struct diag *diag;
+	const diag *diag;
 };
 
 static void wsclient_send_pong(struct wsclient *);
@@ -76,7 +76,7 @@ static uint ws_decode_len(const uint8 *, uint *);
 
 // wsclient コンテキストを生成する。
 struct wsclient *
-wsclient_create(const struct diag *diag)
+wsclient_create(const diag *diag)
 {
 	struct wsclient *ws;
 
@@ -132,7 +132,7 @@ wsclient_init(struct wsclient *ws, void (*callback)(const string *))
 int
 wsclient_connect(struct wsclient *ws, const char *url)
 {
-	const struct diag *diag = ws->diag;
+	const diag *diag = ws->diag;
 	string *key = NULL;
 	string *hdr = NULL;
 
@@ -262,7 +262,7 @@ wsclient_connect(struct wsclient *ws, const char *url)
 int
 wsclient_process(struct wsclient *ws)
 {
-	const struct diag *diag = ws->diag;
+	const diag *diag = ws->diag;
 	int rv = 1;
 	int r;
 
@@ -488,7 +488,7 @@ ws_decode_len(const uint8 *src, uint *lenp)
 #include <stdio.h>
 
 static int
-testhttp(const struct diag *diag, int ac, char *av[])
+testhttp(const diag *diag, int ac, char *av[])
 {
 	struct net *net;
 	const char *host;
@@ -538,7 +538,7 @@ cat_callback(const string *s)
 
 // WebSocket エコークライアント…にしたいが、今のところ1往復のみ。
 static int
-testwsecho(const struct diag *diag, int ac, char *av[])
+testwsecho(const diag *diag, int ac, char *av[])
 {
 	struct wsclient *ws = wsclient_create(diag);
 
@@ -578,7 +578,7 @@ testwsecho(const struct diag *diag, int ac, char *av[])
 }
 
 static int
-testmisskey(const struct diag *diag, int ac, char *av[])
+testmisskey(const diag *diag, int ac, char *av[])
 {
 	struct wsclient *ws = wsclient_create(diag);
 
@@ -618,7 +618,7 @@ testmisskey(const struct diag *diag, int ac, char *av[])
 int
 main(int ac, char *av[])
 {
-	struct diag *diag = diag_alloc();
+	diag *diag = diag_alloc();
 	diag_set_level(diag, 2);
 
 	if (ac == 5 && strcmp(av[1], "http") == 0) {

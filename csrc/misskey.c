@@ -94,7 +94,7 @@ cmd_misskey_play(const char *infile)
 void
 cmd_misskey_stream(const char *server)
 {
-	const struct diag *diag = diag_net;
+	const diag *diag = diag_net;
 	char url[strlen(server) + 20];
 
 	misskey_init();

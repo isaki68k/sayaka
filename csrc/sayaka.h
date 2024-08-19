@@ -37,7 +37,7 @@ enum {
 
 // json.c
 typedef struct json_ json;
-extern json *json_create(const struct diag *);
+extern json *json_create(const diag *);
 extern void json_destroy(json *);
 extern int  json_parse(json *, const string *);
 extern void json_jsmndump(const json *);
@@ -57,9 +57,9 @@ extern void cmd_misskey_stream(const char *);
 extern void cmd_misskey_play(const char *);
 
 // sayaka.c
-extern struct diag *diag_json;
-extern struct diag *diag_net;
-extern struct diag *diag_term;
+extern diag *diag_json;
+extern diag *diag_net;
+extern diag *diag_term;
 
 // terminal.c
 extern int  terminal_get_bgtheme(void);
@@ -67,7 +67,7 @@ extern bool terminal_support_sixel(void);
 
 // wsclient.c
 struct wsclient;
-extern struct wsclient *wsclient_create(const struct diag *);
+extern struct wsclient *wsclient_create(const diag *);
 extern void wsclient_destroy(struct wsclient *);
 extern bool wsclient_init(struct wsclient *, void (*)(const string *));
 extern int  wsclient_connect(struct wsclient *, const char *);

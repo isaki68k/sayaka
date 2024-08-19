@@ -55,28 +55,28 @@
 		diag_print(diag_, fmt);	\
 } while (0)
 
-struct diag
+typedef struct diag_
 {
 	int level;
 	bool timestamp;
 	char name[32];
-};
+} diag;
 
-static inline int diag_get_level(const struct diag *diag)
+static inline int diag_get_level(const diag *diag)
 {
 	return diag->level;
 }
-extern struct diag *diag_alloc(void);
-extern void diag_free(struct diag *);
-extern void diag_set_name(struct diag *, const char *);
-extern void diag_set_level(struct diag *, int);
-extern void diag_set_timestamp(struct diag *, bool);
-extern void diag_print(const struct diag *, const char *, ...)
+extern diag *diag_alloc(void);
+extern void diag_free(diag *);
+extern void diag_set_name(diag *, const char *);
+extern void diag_set_level(diag *, int);
+extern void diag_set_timestamp(diag *, bool);
+extern void diag_print(const diag *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
 // net.c
 struct net;
-extern struct net *net_create(const struct diag *);
+extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
 extern bool net_connect(struct net *, const char *, const char *, const char *);
 extern ssize_t net_read(struct net *, void *, size_t);
@@ -90,7 +90,7 @@ struct netstream_opt {
 	bool use_rsa_only;
 };
 extern void netstream_opt_init(struct netstream_opt *);
-extern struct netstream *netstream_init(const struct diag *);
+extern struct netstream *netstream_init(const diag *);
 extern void netstream_cleanup(struct netstream *);
 extern int  netstream_connect(struct netstream *, const char *,
 	const struct netstream_opt *);

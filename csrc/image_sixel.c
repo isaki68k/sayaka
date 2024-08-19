@@ -36,8 +36,8 @@
 
 static bool sixel_preamble(FILE *, const image *, const image_opt *);
 static bool sixel_postamble(FILE *);
-static bool sixel_convert_normal(FILE *, const image *, const struct diag *);
-static bool sixel_convert_ormode(FILE *, const image *, const struct diag *);
+static bool sixel_convert_normal(FILE *, const image *, const diag *);
+static bool sixel_convert_ormode(FILE *, const image *, const diag *);
 static void sixel_ormode_h6(string *, uint8 *, const uint8 *, uint, uint, uint);
 static void sixel_repunit(string *, uint, uint8);
 
@@ -53,7 +53,7 @@ image_sixel_abort(FILE *fp)
 // (呼び出し後にフラッシュすること)
 bool
 image_sixel_write(FILE *fp, const image *img,
-	const image_opt *opt, const struct diag *diag)
+	const image_opt *opt, const diag *diag)
 {
 	struct timeval start, end, result;
 
@@ -140,7 +140,7 @@ sixel_postamble(FILE *fp)
 
 // SIXEL 従来モードで出力。
 static bool
-sixel_convert_normal(FILE *fp, const image *img, const struct diag *diag)
+sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 {
 	uint w = img->width;
 	uint h = img->height;
@@ -298,7 +298,7 @@ mylog2(uint n)
 
 // SIXEL OR モードで出力。
 static bool
-sixel_convert_ormode(FILE *fp, const image *img, const struct diag *diag)
+sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 {
 	const uint8 *src = img->buf;
 	uint w = img->width;

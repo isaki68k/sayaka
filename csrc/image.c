@@ -75,9 +75,9 @@ static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 
 static void image_reduct_simple(image_reductor_handle *,
-	image *, const image *, const struct diag *diag);
+	image *, const image *, const diag *diag);
 static bool image_reduct_highquality(image_reductor_handle *,
-	image *, const image *, const image_opt *, const struct diag *diag);
+	image *, const image *, const image_opt *, const diag *diag);
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
 static uint8 saturate_uint8(int);
 static int16 saturate_adderr(int16, int);
@@ -271,8 +271,7 @@ image_get_loaderinfo(void)
 // 読み込めなければ errno をセットして NULL を返す。
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかった。
 image *
-image_read_pstream(struct pstream *ps, const image_opt *opt,
-	const struct diag *diag)
+image_read_pstream(struct pstream *ps, const image_opt *opt, const diag *diag)
 {
 	int ok = -1;
 	FILE *pfp;
@@ -374,7 +373,7 @@ image_reduct(
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
 	const image_opt *opt,		// パラメータ
-	const struct diag *diag)
+	const diag *diag)
 {
 	image *dst;
 	image_reductor_handle irbuf, *ir;
@@ -510,7 +509,7 @@ rational_add(Rational *sr, const Rational *x)
 // 単純間引き
 static void
 image_reduct_simple(image_reductor_handle *ir,
-	image *dstimg, const image *srcimg, const struct diag *diag)
+	image *dstimg, const image *srcimg, const diag *diag)
 {
 	uint8 *d = dstimg->buf;
 	const uint8 *src = srcimg->buf;
@@ -564,8 +563,7 @@ image_reduct_simple(image_reductor_handle *ir,
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
 image_reduct_highquality(image_reductor_handle *ir,
-	image *dstimg, const image *srcimg,
-	const image_opt *opt, const struct diag *diag)
+	image *dstimg, const image *srcimg, const image_opt *opt, const diag *diag)
 {
 	uint8 *d = dstimg->buf;
 	const uint8 *src = srcimg->buf;

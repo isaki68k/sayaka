@@ -297,7 +297,7 @@ terminal_dump(char *dst, const char *src, uint dstsize)
 #if defined(TEST)
 #include <err.h>
 
-struct diag *diag_term;
+diag *diag_term;
 
 int
 main(int ac, char *av[])

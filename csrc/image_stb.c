@@ -65,7 +65,7 @@ _Pragma("GCC diagnostic pop")
 #endif
 
 bool
-image_stb_match(FILE *fp, const struct diag *diag)
+image_stb_match(FILE *fp, const diag *diag)
 {
 	int ok;
 	int w;
@@ -80,7 +80,7 @@ image_stb_match(FILE *fp, const struct diag *diag)
 }
 
 image *
-image_stb_read(FILE *fp, const image_opt *opt, const struct diag *diag)
+image_stb_read(FILE *fp, const image_opt *opt, const diag *diag)
 {
 	image *img;
 	stbi_uc *data;

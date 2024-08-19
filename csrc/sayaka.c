@@ -61,9 +61,9 @@ static void sigwinch(bool);
 
 static const char *basedir;
 static const char *cachedir;
-struct diag *diag_json;
-struct diag *diag_net;
-struct diag *diag_term;
+diag *diag_json;
+diag *diag_net;
+diag *diag_term;
 uint fontwidth;						// 使用するフォント幅   (ドット数)
 uint fontheight;					// 使用するフォント高さ (ドット数)
 uint iconsize;						// アイコンの大きさ (正方形、ドット数)

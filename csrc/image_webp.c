@@ -53,14 +53,13 @@ _Pragma("GCC diagnostic pop")
 
 #define TRANSBG		(0xe1)	// ?
 
-static bool read_all(uint8 **, size_t *, FILE *, uint32,
-	const struct diag *diag);
+static bool read_all(uint8 **, size_t *, FILE *, uint32, const diag *diag);
 static void image_webp_rgba2rgb(uint8 *, const uint8 *, uint, uint, uint, uint);
 static bool image_webp_loadinc(image *, FILE *, WebPIDecoder *,
-	const struct diag *diag);
+	const diag *diag);
 
 bool
-image_webp_match(FILE *fp, const struct diag *diag)
+image_webp_match(FILE *fp, const diag *diag)
 {
 	VP8StatusCode r = VP8_STATUS_BITSTREAM_ERROR;
 	uint8 *buf = NULL;
@@ -106,7 +105,7 @@ image_webp_match(FILE *fp, const struct diag *diag)
 }
 
 image *
-image_webp_read(FILE *fp, const image_opt *dummy, const struct diag *diag)
+image_webp_read(FILE *fp, const image_opt *dummy, const diag *diag)
 {
 	uint8 *filebuf = NULL;
 	size_t filecap = 0;
@@ -306,7 +305,7 @@ image_webp_read(FILE *fp, const image_opt *dummy, const struct diag *diag)
 // 成功すれば、buf と buflen を更新し true を返す。
 static bool
 read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
-	const struct diag *diag)
+	const diag *diag)
 {
 	uint8 *buf = *bufp;
 	size_t len = *buflenp;
@@ -356,8 +355,7 @@ image_webp_rgba2rgb(uint8 *d, const uint8 *src,
 
 // インクリメンタル処理が出来る場合。
 static bool
-image_webp_loadinc(image *img, FILE *fp, WebPIDecoder *idec,
-	const struct diag *diag)
+image_webp_loadinc(image *img, FILE *fp, WebPIDecoder *idec, const diag *diag)
 {
 	uint8 buf[INCBUFSIZE];
 	int status;

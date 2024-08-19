@@ -58,7 +58,7 @@ struct net {
 	SSL_CTX *ctx;
 	SSL *ssl;
 
-	const struct diag *diag;
+	const diag *diag;
 };
 
 static void sock_cleanup(struct net *);
@@ -76,7 +76,7 @@ static int  socket_setblock(int, bool);
 
 // net コンテキストを作成する。
 struct net *
-net_create(const struct diag *diag)
+net_create(const diag *diag)
 {
 	struct net *net = calloc(1, sizeof(*net));
 
@@ -207,7 +207,7 @@ sock_cleanup(struct net *net)
 static bool
 tls_connect(struct net *net, const char *host, const char *serv)
 {
-	const struct diag *diag = net->diag;
+	const diag *diag = net->diag;
 	int r;
 
 	static bool initialized = false;
@@ -260,7 +260,7 @@ tls_connect(struct net *net, const char *host, const char *serv)
 static ssize_t
 tls_read(struct net *net, void *dst, size_t dstsize)
 {
-	const struct diag *diag = net->diag;
+	const diag *diag = net->diag;
 	ssize_t r;
 
 	Trace(diag, "%s (dstsize=%zu)", __func__, dstsize);
@@ -280,7 +280,7 @@ tls_read(struct net *net, void *dst, size_t dstsize)
 static ssize_t
 tls_write(struct net *net, const void *src, size_t srcsize)
 {
-	const struct diag *diag = net->diag;
+	const diag *diag = net->diag;
 	ssize_t r;
 
 	Trace(diag, "%s (srcsize=%zu)", __func__, srcsize);

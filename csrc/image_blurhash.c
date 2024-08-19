@@ -57,7 +57,7 @@ static const uint8 table_L2SRGB[L2SRGBSIZE];
 static const uint8 table_base83[0x60];
 
 bool
-image_blurhash_match(FILE *fp, const struct diag *diag)
+image_blurhash_match(FILE *fp, const diag *diag)
 {
 	// 長さが必要なので全部読むしかない。
 	char src[BUFSIZE];
@@ -78,7 +78,7 @@ image_blurhash_match(FILE *fp, const struct diag *diag)
 }
 
 image *
-image_blurhash_read(FILE *fp, const image_opt *opt, const struct diag *diag)
+image_blurhash_read(FILE *fp, const image_opt *opt, const diag *diag)
 {
 	char src[BUFSIZE];
 	float maxvalue;

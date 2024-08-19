@@ -36,7 +36,7 @@ static const char *colortype2str(int type);
 static void png_read_cb(png_structp png, png_bytep data, png_size_t length);
 
 bool
-image_png_match(FILE *fp, const struct diag *diag)
+image_png_match(FILE *fp, const diag *diag)
 {
 	uint8 magic[4];
 
@@ -56,7 +56,7 @@ image_png_match(FILE *fp, const struct diag *diag)
 }
 
 image *
-image_png_read(FILE *fp, const image_opt *opt, const struct diag *diag)
+image_png_read(FILE *fp, const image_opt *opt, const diag *diag)
 {
 	png_structp png;
 	png_infop info;

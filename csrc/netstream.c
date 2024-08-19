@@ -65,7 +65,7 @@ struct netstream {
 	uint bufpos;	// buf 中の次回読み出し開始位置
 	bool done;		// 今回のバッファで最後
 
-	const struct diag *diag;
+	const diag *diag;
 };
 
 static void netstream_global_init(void);
@@ -101,7 +101,7 @@ netstream_global_cleanup(void)
 
 // netstream コンテキストを生成する。
 struct netstream *
-netstream_init(const struct diag *diag)
+netstream_init(const diag *diag)
 {
 	struct netstream *ns;
 
@@ -160,7 +160,7 @@ int
 netstream_connect(struct netstream *ns,
 	const char *url, const struct netstream_opt *opt)
 {
-	const struct diag *diag = ns->diag;
+	const diag *diag = ns->diag;
 	CURL *curl = ns->curl;
 	CURLM *mhandle = ns->mhandle;
 
@@ -244,7 +244,7 @@ netstream_fopen(struct netstream *ns)
 static int
 netstream_perform(struct netstream *ns)
 {
-	const struct diag *diag = ns->diag;
+	const diag *diag = ns->diag;
 	CURLMcode mcode;
 	int still_running;
 
@@ -277,7 +277,7 @@ static bool
 netstream_get_sessioninfo(struct netstream *ns)
 {
 	CURL *curl;
-	const struct diag *diag;
+	const diag *diag;
 	struct curl_tlssessioninfo *csession;
 
 	assert(ns);
@@ -337,7 +337,7 @@ static void
 netstream_timestamp(struct netstream *ns)
 {
 	CURL *curl;
-	const struct diag *diag;
+	const diag *diag;
 	curl_off_t start_time = 0;
 	curl_off_t queue_time = -1;
 	curl_off_t name_time = -1;
@@ -396,7 +396,7 @@ static int
 netstream_read_cb(void *arg, char *dst, int dstsize)
 {
 	struct netstream *ns = (struct netstream *)arg;
-	const struct diag *diag = ns->diag;
+	const diag *diag = ns->diag;
 
 	Trace(diag, "%s: dstsize=%d buf=%u/%u (remain=%u)", __func__,
 		dstsize, ns->bufpos, ns->buflen, ns->buflen - ns->bufpos);

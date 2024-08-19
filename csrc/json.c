@@ -49,7 +49,7 @@ typedef struct json_
 
 	jsmn_parser parser;
 
-	const struct diag *diag;
+	const diag *diag;
 } json;
 
 static int  json_dump_r(const json *, int, uint);
@@ -61,7 +61,7 @@ static bool json_equal_cstr(const json *, int, const char *);
 
 // json を生成する。
 json *
-json_create(const struct diag *diag)
+json_create(const diag *diag)
 {
 	json *js = calloc(1, sizeof(*js));
 	if (js == NULL) {
