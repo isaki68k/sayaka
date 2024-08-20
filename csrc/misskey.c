@@ -40,6 +40,8 @@ static bool misskey_stream(wsclient *);
 static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
+static bool misskey_show_announcement(const json *, int);
+static const char *misskey_get_username(const json *, int, string *, string *);
 
 static json *js;
 
@@ -278,8 +280,164 @@ misskey_message(string *jsonstr)
 
 // 1ノートを処理する。
 static bool
-misskey_show_note(const json *js, int id, uint depth)
+misskey_show_note(const json *js, int inote, uint depth)
 {
-	json_dump(js, id);
+	json_dump(js, inote);
+	assert(json_is_obj(js, inote));
+
+	// acl
+
+	// 録画?
+	// 階層変わるのはどうする?
+
+	// NG ワード
+
+	// アナウンスなら別処理。
+	int iann = json_obj_find(js, inote, "announcement");
+	if (iann >= 0 && json_is_obj(js, iann)) {
+		return misskey_show_announcement(js, iann);
+	}
+
+	// 地文なら note == renote。
+	// リノートなら RN 元を note、RN 先を renote。
+	bool has_renote;
+	int irenote = json_obj_find(js, inote, "renote");
+	if (irenote >= 0 && json_is_obj(js, irenote)) {
+		// XXX text があったらどうするのかとか。
+		has_renote = true;
+	} else {
+		irenote = inote;
+		has_renote = false;
+	}
+
+	const char *name = NULL;
+	string *userid = string_init();
+	string *instname = string_init();
+	int iuser = json_obj_find(js, irenote, "user");
+	if (iuser >= 0 && json_is_obj(js, iuser)) {
+		name = misskey_get_username(js, iuser, userid, instname);
+	}
+
+	// XXX CW
+	const char *text = NULL;
+	int itext = json_obj_find(js, irenote, "text");
+	if (__predict_true(itext >= 0 && json_is_str(js, itext))) {
+		text = json_get_cstr(js, itext);
+	}
+
+	// ShowIcon
+	// XXX print_ 未復旧
+	printf("%s", name);
+	printf(" ");
+	printf("%s", string_get(userid));
+	if (string_len(instname) != 0) {
+		printf("%s", string_get(instname));
+	}
+	printf("\n");
+	if (text) {
+		printf("\t");
+		printf("%s", text);
+		printf("\n");
+	}
+
+	// これらは本文付随なので CW 以降を表示する時だけ表示する。
+
+	// 引用部分
+
+	// 時刻と、あればこのノートの既 RN 数、リアクション数。
+	//string *time = misskey_format_time(js, irenote);
+	//rnmsg = misskey_display_renote_count(js, irenote);
+	//rectmsg = misskey_display_reaction_count(js, irenote);
+
+	// リノート元
+
+	(void)has_renote;
 	return true;
+}
+
+// アナウンス文を処理する。構造が全然違う。
+static bool
+misskey_show_announcement(const json *js, int inote)
+{
+	printf("%s not yet\n", __func__);
+	abort();
+	return true;
+}
+
+
+// user オブジェクトから
+// o ユーザ名 (表示名、user->name)、
+// o アカウント名 (user->username) + ホスト名(user->host)、
+// o インスタンス名 (instance->name)
+// の文字列を取得する。
+// ユーザ名は const char * で得られるので戻り値で返す。
+// アカウント名、インスタンス名は初期化済みの string * に書き出す。
+static const char *
+misskey_get_username(const json *js, int iuser,
+	string *userid, string *instance_name)
+{
+	const char *dispname;
+	const char *name;
+	const char *username;
+	const char *host;
+	const char *instname;
+
+	int iname = json_obj_find(js, iuser, "name");
+	if (__predict_true(iname >= 0 && json_is_str(js, iname))) {
+		name = json_get_cstr(js, iname);
+	} else {
+		name = "";
+	}
+
+	int iusername = json_obj_find(js, iuser, "username");
+	if (__predict_true(iusername >= 0 && json_is_str(js, iusername))) {
+		username = json_get_cstr(js, iusername);
+	} else {
+		username = NULL;
+	}
+
+	int ihost = json_obj_find(js, iuser, "host");
+	if (ihost >= 0 && json_is_str(js, ihost)) {
+		host = json_get_cstr(js, ihost);
+	} else {
+		host = NULL;
+	}
+
+	instname = NULL;
+	int iinstance = json_obj_find(js, iuser, "instance");
+	if (iinstance >= 0 && json_is_obj(js, iinstance)) {
+		int iinstname = json_obj_find(js, iinstance, "name");
+		if (iinstname >= 0 && json_is_str(js, iinstname)) {
+			instname = json_get_cstr(js, iinstname);
+		}
+	}
+
+	// ユーザ名(表示名) は name。name が空なら username を使う仕様のようだ。
+
+	if (__predict_true(name[0] != '\0')) {
+		dispname = name;
+	} else {
+		dispname = username;
+	}
+
+	// ユーザ ID は '@' + username。
+	// 外部サーバなら '@' + host を追加。
+
+	string_append_char(userid, '@');
+	if (__predict_true(username)) {
+		string_append_cstr(userid, username);
+	}
+	if (host) {
+		string_append_char(userid, '@');
+		string_append_cstr(userid, host);
+	}
+
+	// インスタンス名。
+	if (instname) {
+		string_append_cstr(instance_name, " [");
+		string_append_cstr(instance_name, instname);
+		string_append_char(instance_name, ']');
+	}
+
+	return dispname;
 }
