@@ -31,6 +31,7 @@ SRCS_common+=	util.c
 
 SRCS_sayaka+=	json.c
 SRCS_sayaka+=	misskey.c
+SRCS_sayaka+=	subr.c
 SRCS_sayaka+=	terminal.c
 SRCS_sayaka+=	wsclient.c
 
@@ -73,7 +74,7 @@ test:	all terminal wsclient
 terminal:	terminal.c libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
 
-wsclient:	wsclient.c libcommon.a
+wsclient:	wsclient.c libcommon.a libsayaka.a
 	${CC} ${LDFLAGS} ${CFLAGS} -DTEST -o $@ $> ${LIBS}
 
 .PHONY:	clean

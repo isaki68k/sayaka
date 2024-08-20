@@ -61,6 +61,11 @@ extern diag *diag_json;
 extern diag *diag_net;
 extern diag *diag_term;
 
+// subr.c
+extern uint32 rnd_get32(void);
+extern void rnd_fill(void *, uint);
+extern string *base64_encode(const void *, uint);
+
 // terminal.c
 extern int  terminal_get_bgtheme(void);
 extern bool terminal_support_sixel(void);
