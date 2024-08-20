@@ -56,7 +56,7 @@ typedef struct json_
 	const diag *diag;
 } json;
 
-static int  json_dump_r(const json *, int, uint);
+static int  json_dump_r(const json *, int, uint, const char *);
 static const char *json_get_cstr_prim(const json *, int);
 static bool json_equal_cstr(const json *, int, const char *);
 
@@ -211,16 +211,15 @@ void
 json_dump(const json *js, int root)
 {
 	for (int id = root; id < js->tokenlen; ) {
-		id = json_dump_r(js, id, 0);
+		id = json_dump_r(js, id, 0, "\n");
 	}
-	printf("\n");
 }
 
 #define INDENT(d)	printf("%*s", (d * 2), "")
 
 // TODO: もうちょっとちゃんとする
 static int
-json_dump_r(const json *js, int id, uint depth)
+json_dump_r(const json *js, int id, uint depth, const char *term)
 {
 	const char *cstr = js->cstr;
 	jsmntok_t *t = &js->token[id];
@@ -236,10 +235,12 @@ json_dump_r(const json *js, int id, uint depth)
 		} else if (ch == '-' || ('0' <= ch && ch <= '9')) {
 			printf("%s", &cstr[t->start]);
 		}
+		printf("%s", term);
 		return ++id;
 	}
 	if (tok_is_str(t)) {
 		printf("\"%s\"", &cstr[t->start]);	// XXX TODO エスケープ
+		printf("%s", term);
 		return ++id;
 	}
 
@@ -250,13 +251,12 @@ json_dump_r(const json *js, int id, uint depth)
 		uint n = 0;
 		for (id++; id < js->tokenlen && n < num; ) {
 			INDENT(depth);
-			id = json_dump_r(js, id, depth);
+			id = json_dump_r(js, id, depth, (n < num - 1) ? ",\n" : "\n");
 			n++;
-			printf("\n");
 		}
 		depth--;
 		INDENT(depth);
-		printf("]\n");
+		printf("]%s", term);
 		return id;
 	}
 
@@ -267,18 +267,15 @@ json_dump_r(const json *js, int id, uint depth)
 		uint n = 0;
 		for (id++; id < js->tokenlen && n < num; ) {
 			INDENT(depth);
-
 			// key
-			id = json_dump_r(js, id, depth);
-			printf(": ");
+			id = json_dump_r(js, id, depth, ":");
 			// val
-			id = json_dump_r(js, id, depth);
+			id = json_dump_r(js, id, depth, (n < num - 1) ? ",\n" : "\n");
 			n++;
-			printf("\n");
 		}
 		depth--;
 		INDENT(depth);
-		printf("}\n");
+		printf("}%s", term);
 		return id;
 	}
 
