@@ -182,15 +182,13 @@ json_jsmndump(const json *js)
 	for (int i = 0; i < js->tokenlen; i++) {
 		jsmntok_t *t = &js->token[i];
 		printf("[%4u] s=%-4u e=%-4u p=%-4d", i, t->start, t->end, t->parent);
-		if (t->type == JSMN_OBJECT) {
+		if (tok_is_obj(t)) {
 			printf(" OBJECT child=%u", t->size);
-		} else if (t->type == JSMN_ARRAY) {
+		} else if (tok_is_array(t)) {
 			printf(" ARRAY child=%u", t->size);
-		} else if (t->type == JSMN_STRING) {
+		} else if (tok_is_str(t)) {
 			printf(" STRING \"%s\"", &cstr[t->start]);
-		} else if (t->type == JSMN_UNDEFINED) {
-			printf(" Undefined??");
-		} else {
+		} else if (tok_is_prim(t)) {
 			char ch = cstr[t->start];
 			if (ch == 'n') {
 				printf(" NULL");
@@ -201,6 +199,8 @@ json_jsmndump(const json *js)
 			} else {
 				printf(" NUMBER %s", &cstr[t->start]);
 			}
+		} else {
+			printf(" Undefined??");
 		}
 		printf("\n");
 	}
@@ -225,7 +225,7 @@ json_dump_r(const json *js, int id, uint depth)
 	const char *cstr = js->cstr;
 	jsmntok_t *t = &js->token[id];
 
-	if (t->type == JSMN_PRIMITIVE) {
+	if (tok_is_prim(t)) {
 		char ch = js->cstr[t->start];
 		if (ch == 'n') {
 			printf("null");
