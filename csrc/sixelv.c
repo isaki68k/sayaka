@@ -156,6 +156,15 @@ static const struct optmap map_resize_axis[] = {
 	{ NULL },
 };
 
+#define SET_DIAG_LEVEL(name)	\
+	 {	\
+		int lv = stou32def(optarg, -1, NULL);	\
+		if (lv < 0)	\
+			errx(1, "invalid debug level: %s", optarg);	\
+		diag_set_level(name, lv);	\
+		break;	\
+	 }
+
 int
 main(int ac, char *av[])
 {
@@ -178,7 +187,7 @@ main(int ac, char *av[])
 		switch (c) {
 		 case 'c':
 		 {
-			int num = atoi(optarg);
+			int num = stou32def(optarg, -1, NULL);
 			ReductorColor color;
 			switch (num) {
 			 case 2:	color = ReductorColor_Gray | (1U << 8);	break;
@@ -209,15 +218,15 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_debug_image:
-			diag_set_level(diag_image, atoi(optarg));
+			SET_DIAG_LEVEL(diag_image);
 			break;
 
 		 case OPT_debug_net:
-			diag_set_level(diag_net, atoi(optarg));
+			SET_DIAG_LEVEL(diag_net);
 			break;
 
 		 case OPT_debug_sixel:
-			diag_set_level(diag_sixel, atoi(optarg));
+			SET_DIAG_LEVEL(diag_sixel);
 			break;
 
 		 case OPT_diffusion:
@@ -239,17 +248,22 @@ main(int ac, char *av[])
 
 		 case OPT_gray:
 		 {
-			uint num = atoi(optarg);
+			uint num = stou32def(optarg, 0, NULL);
 			if (num < 2 || num > 256) {
-				errx(1, "invalid grayscale");
+				errx(1, "invalid grayscale: %s", optarg);
 			}
 			imageopt.color = ReductorColor_Gray | ((num - 1) << 8);
 			break;
 		 }
 
 		 case 'h':
-			imageopt.height = atoi(optarg);
+		 {
+			imageopt.height = stou32def(optarg, -1, NULL);
+			if ((int32)imageopt.height < 0) {
+				errx(1, "invalid height: %s", optarg);
+			}
 			break;
+		 }
 
 		 case OPT_help:
 			usage();
@@ -298,8 +312,13 @@ main(int ac, char *av[])
 			exit(0);
 
 		 case 'w':
-			imageopt.width = atoi(optarg);
+		 {
+			imageopt.width = stou32def(optarg, -1, NULL);
+			if ((int32)imageopt.width < 0) {
+				errx(1, "invalid width: %s", optarg);
+			}
 			break;
+		 }
 
 		 default:
 			usage();

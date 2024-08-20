@@ -104,6 +104,15 @@ static const struct option longopts[] = {
 	{ NULL },
 };
 
+#define SET_DIAG_LEVEL(name)	\
+	 {	\
+		int lv = stou32def(optarg, -1, NULL);	\
+		if (lv < 0)	\
+			errx(1, "invalid debug level: %s", optarg);	\
+		diag_set_level(name, lv);	\
+		break;	\
+	 }
+
 int
 main(int ac, char *av[])
 {
@@ -130,25 +139,16 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_debug_json:
-		 {
-			int lv = atoi(optarg);
-			diag_set_level(diag_json, lv);
+			SET_DIAG_LEVEL(diag_json);
 			break;
-		 }
 
 		 case OPT_debug_net:
-		 {
-			int lv = atoi(optarg);
-			diag_set_level(diag_net, lv);
+			SET_DIAG_LEVEL(diag_net);
 			break;
-		 }
 
 		 case OPT_debug_term:
-		 {
-			int lv = atoi(optarg);
-			diag_set_level(diag_term, lv);
+			SET_DIAG_LEVEL(diag_term);
 			break;
-		 }
 
 		 case OPT_font:
 		 {
@@ -160,8 +160,8 @@ main(int ac, char *av[])
 				errx(1, "--font %s: argument must be <W>x<H>", optarg);
 			}
 			*h++ = '\0';
-			int width  = atoi(buf);
-			int height = atoi(h);
+			int width  = stou32def(buf, -1, NULL);
+			int height = stou32def(h, -1, NULL);
 			if (width < 1 || height < 1) {
 				errno = EINVAL;
 				err(1, "--font %s", optarg);
