@@ -284,8 +284,8 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 static uint
 mylog2(uint n)
 {
-#if defined(HAVE___BUILTIN_POPCOUNT)
-	return 32 - __builtin_popcount(n);
+#if defined(HAVE___BUILTIN_CLZ)
+	return 32 - __builtin_clz(n);
 #else
 	for (uint i = 0; i < 8; i++) {
 		if (n <= (1U << i)) {

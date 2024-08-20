@@ -72,22 +72,22 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		AC_MSG_RESULT(no)
 	])
 
+AC_MSG_CHECKING(for __builtin_clz)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
+		__builtin_clz(1);
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE___BUILTIN_CLZ)
+	],[
+		AC_MSG_RESULT(no)
+	])
+
 AC_MSG_CHECKING(for __builtin_expect)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		if (__builtin_expect(1, 1)) return 0;
 	]])],[
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE___BUILTIN_EXPECT)
-	],[
-		AC_MSG_RESULT(no)
-	])
-
-AC_MSG_CHECKING(for __builtin_popcount)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-		__builtin_popcount(1);
-	]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE___BUILTIN_POPCOUNT)
 	],[
 		AC_MSG_RESULT(no)
 	])
