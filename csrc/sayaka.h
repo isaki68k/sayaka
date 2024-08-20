@@ -28,6 +28,7 @@
 #define sayaka_harada_h
 
 #include "common.h"
+#include <time.h>
 
 enum {
 	BG_AUTO = -1,	// 背景色を自動判別する
@@ -65,6 +66,7 @@ extern diag *diag_term;
 extern uint32 rnd_get32(void);
 extern void rnd_fill(void *, uint);
 extern string *base64_encode(const void *, uint);
+extern time_t decode_isotime(const char *);
 
 // terminal.c
 extern int  terminal_get_bgtheme(void);

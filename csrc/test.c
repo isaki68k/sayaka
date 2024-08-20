@@ -24,7 +24,7 @@
  * SUCH DAMAGE.
  */
 
-#include "common.h"
+#include "sayaka.h"
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
@@ -34,6 +34,36 @@
 	printf(fmt);	\
 	printf("\n");	\
 } while(0)
+
+static void
+test_decode_isotime(void)
+{
+	printf("%s\n", __func__);
+
+	struct {
+		const char *src;
+		time_t expected;
+	} table[] = {
+		{ "2009-11-18T09:54:12Z",		1258538052 },
+		{ "2009-11-18T18:54:12+0900",	1258538052 },
+		{ "2009-11-18T18:54:12+09:00",	1258538052 },	// コロンもあり
+		{ "2009-11-18T08:24:12-0130",	1258538052 },	// TZが負で、分あり
+		{ "2009-11-18T09:54:12.01234Z",	1258538052 },	// 小数部何桁でも可
+
+		{ "2009-11-18T00:00:00",		0 },	// timezone がない
+		{ "2009-11-18T00:00:00.Z",		0 },	// 小数部がない
+	};
+	for (uint i = 0; i < countof(table); i++) {
+		const char *src = table[i].src;
+		time_t expected = table[i].expected;
+
+		time_t actual = decode_isotime(src);
+		if (expected != actual) {
+			fail("%s: expects %08lx but %08lx",
+				src, (long)expected, (long)actual);
+		}
+	}
+}
 
 static void
 test_stou32def(void)
@@ -91,6 +121,7 @@ test_stou32def(void)
 int
 main(int ac, char *av[])
 {
+	test_decode_isotime();
 	test_stou32def();
 	return 0;
 }

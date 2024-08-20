@@ -71,13 +71,13 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 # Test
 testall:	all test terminal wsclient
 
-test:	test.c libcommon.a
+test:	test.c libsayaka.a libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $> ${LIBS}
 
 terminal:	terminal.c libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
 
-wsclient:	wsclient.c libcommon.a libsayaka.a
+wsclient:	wsclient.c libsayaka.a libcommon.a
 	${CC} ${LDFLAGS} ${CFLAGS} -DTEST -o $@ $> ${LIBS}
 
 .PHONY:	clean
