@@ -69,7 +69,10 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
 
 # Test
-test:	all terminal wsclient
+testall:	all test terminal wsclient
+
+test:	test.c libcommon.a
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $> ${LIBS}
 
 terminal:	terminal.c libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}

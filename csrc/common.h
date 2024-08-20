@@ -128,5 +128,6 @@ extern void string_append_printf(string *, const char *, ...)
 // util.c
 extern const char *strerrno(void);
 extern void chomp(char *);
+extern uint32 stou32def(const char *, uint32, char **);
 
 #endif // !sayaka_common_h
