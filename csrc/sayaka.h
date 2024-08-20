@@ -67,6 +67,7 @@ extern uint32 rnd_get32(void);
 extern void rnd_fill(void *, uint);
 extern string *base64_encode(const void *, uint);
 extern time_t decode_isotime(const char *);
+extern string *format_time(time_t);
 
 // terminal.c
 extern int  terminal_get_bgtheme(void);

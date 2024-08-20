@@ -42,6 +42,7 @@ static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
 static bool misskey_show_announcement(const json *, int);
 static const char *misskey_get_username(const json *, int, string *, string *);
+static string *misskey_format_time(const json *, int);
 
 static json *js;
 
@@ -345,9 +346,13 @@ misskey_show_note(const json *js, int inote, uint depth)
 	// 引用部分
 
 	// 時刻と、あればこのノートの既 RN 数、リアクション数。
-	//string *time = misskey_format_time(js, irenote);
+	string *time = misskey_format_time(js, irenote);
 	//rnmsg = misskey_display_renote_count(js, irenote);
 	//rectmsg = misskey_display_reaction_count(js, irenote);
+
+	printf("\t");
+	printf("%s", string_get(time));
+	printf("\n");
 
 	// リノート元
 
@@ -363,7 +368,6 @@ misskey_show_announcement(const json *js, int inote)
 	abort();
 	return true;
 }
-
 
 // user オブジェクトから
 // o ユーザ名 (表示名、user->name)、
@@ -440,4 +444,19 @@ misskey_get_username(const json *js, int iuser,
 	}
 
 	return dispname;
+}
+
+// note オブジェクトから表示用時刻文字列を取得。
+static string *
+misskey_format_time(const json *js, int inote)
+{
+	const char *createdat;
+	int icreatedAt = json_obj_find(js, inote, "createdAt");
+	if (__predict_true(icreatedAt >= 0 && json_is_str(js, icreatedAt))) {
+		createdat = json_get_cstr(js, icreatedAt);
+		time_t unixtime = decode_isotime(createdat);
+		return format_time(unixtime);
+	} else {
+		return string_init();
+	}
 }
