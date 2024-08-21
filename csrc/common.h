@@ -39,7 +39,6 @@
 #define ESC "\x1b"
 #define ESCchar '\x1b'
 
-// diag.c
 #define Debug(diag_, fmt...)	do {	\
 	if (diag_get_level(diag_) >= 1)	\
 		diag_print(diag_, fmt);	\
@@ -61,7 +60,11 @@ typedef struct diag_
 	bool timestamp;
 	char name[32];
 } diag;
+struct net;
+typedef struct pstream_ pstream;
+typedef struct string_ string;
 
+// diag.c
 static inline int diag_get_level(const diag *diag)
 {
 	return diag->level;
@@ -75,7 +78,6 @@ extern void diag_print(const diag *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
 // net.c
-struct net;
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
 extern bool net_connect(struct net *, const char *, const char *, const char *);
@@ -98,7 +100,6 @@ extern FILE *netstream_fopen(struct netstream *);
 extern void netstream_global_cleanup(void);
 
 // pstream.c
-typedef struct pstream_ pstream;
 extern pstream *pstream_init_fp(FILE *);
 extern pstream *pstream_init_fd(int);
 extern void pstream_cleanup(pstream *);
@@ -106,7 +107,6 @@ extern FILE *pstream_open_for_peek(pstream *);
 extern FILE *pstream_open_for_read(pstream *);
 
 // string.c
-typedef struct string_ string;
 extern string *string_init(void);
 extern string *string_alloc(uint);
 extern string *string_from_cstr(const char *);

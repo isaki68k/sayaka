@@ -36,8 +36,11 @@ enum {
 	BG_LIGHT = 1,	// 背景色は明るい
 };
 
-// json.c
 typedef struct json_ json;
+typedef struct ustring_ ustring;
+typedef struct wsclient_ wsclient;
+
+// json.c
 extern json *json_create(const diag *);
 extern void json_destroy(json *);
 extern int  json_parse(json *, string *);
@@ -76,7 +79,6 @@ extern int  terminal_get_bgtheme(void);
 extern bool terminal_support_sixel(void);
 
 // ustring.c
-typedef struct ustring_ ustring;
 extern ustring *ustring_init(void);
 extern ustring *ustring_alloc(uint);
 extern bool ustring_realloc(ustring *, uint);
@@ -88,7 +90,6 @@ extern void ustring_append_char(ustring *, char);
 extern void ustring_append_cstr(ustring *, const char *);
 
 // wsclient.c
-typedef struct wsclient_ wsclient;
 extern wsclient *wsclient_create(const diag *);
 extern void wsclient_destroy(wsclient *);
 extern bool wsclient_init(wsclient *, void (*)(const string *));
