@@ -83,6 +83,9 @@ extern bool ustring_realloc(ustring *, uint);
 extern void ustring_free(ustring *);
 extern void ustring_clear(ustring *);
 extern uint ustring_len(const ustring *);
+extern ustring *ustring_from_utf8(const char *);
+extern void ustring_append_char(ustring *, char);
+extern void ustring_append_cstr(ustring *, const char *);
 
 // wsclient.c
 typedef struct wsclient_ wsclient;
