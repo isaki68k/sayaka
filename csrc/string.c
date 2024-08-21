@@ -112,16 +112,21 @@ string_equal_cstr(const string *s1, const char *cstr)
 	return (strcmp(string_get(s1), cstr) == 0);
 }
 
+// s を newlen 文字分が追加できるようブロック単位で拡大する。
+#define string_expand(s, newlen)	do {	\
+	uint newcap_ = roundup((s)->len + (newlen) + 1, 256);	\
+	if (__predict_false(string_realloc(s, newcap_) == false)) {	\
+		return;	\
+	}	\
+} while (0)
+
 // s の末尾に1文字追加する。
 void
 string_append_char(string *s, char ch)
 {
 	assert(s);
 
-	if (s->len + 1 >= s->capacity) {
-		string_realloc(s, s->capacity + 256);
-	}
-
+	string_expand(s, 1);
 	s->buf[s->len++] = ch;
 	s->buf[s->len] = '\0';
 }
@@ -132,10 +137,7 @@ string_append_cstr(string *s, const char *cstr)
 {
 	assert(s);
 
-	uint newlen = s->len + strlen(cstr) + 1;
-	uint newcap = roundup(newlen, 256);
-	string_realloc(s, newcap);
-
+	string_expand(s, strlen(cstr));
 	strlcpy(s->buf + s->len, cstr, s->capacity - s->len);
 	s->len += strlen(cstr);
 }
@@ -146,10 +148,7 @@ string_append_mem(string *s, const void *mem, uint memlen)
 {
 	assert(s);
 
-	uint newlen = s->len + memlen + 1;
-	uint newcap = roundup(newlen, 256);
-	string_realloc(s, newcap);
-
+	string_expand(s, memlen);
 	memcpy(s->buf + s->len, mem, memlen);
 	s->len += memlen;
 	s->buf[s->len] = '\0';
@@ -182,11 +181,7 @@ string_append_printf(string *s, const char *fmt, ...)
 	}
 
 	// 長さは分かったので広げる。
-	uint newcap = roundup(s->len + reqlen + 1, 256);
-	if (string_realloc(s, newcap) == false) {
-		string_append_cstr(s, "<<Out of Memory>>");
-		return;
-	}
+	string_expand(s, reqlen);
 
 	// 書き込めるはず。
 	va_start(ap, fmt);
