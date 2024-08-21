@@ -59,6 +59,9 @@ string_alloc(uint capacity)
 	}
 
 	string_realloc(s, capacity);
+	if (capacity > 0) {
+		s->buf[0] = '\0';
+	}
 	return s;
 }
 
