@@ -75,6 +75,15 @@ extern string *format_time(time_t);
 extern int  terminal_get_bgtheme(void);
 extern bool terminal_support_sixel(void);
 
+// ustring.c
+typedef struct ustring_ ustring;
+extern ustring *ustring_init(void);
+extern ustring *ustring_alloc(uint);
+extern bool ustring_realloc(ustring *, uint);
+extern void ustring_free(ustring *);
+extern void ustring_clear(ustring *);
+extern uint ustring_len(const ustring *);
+
 // wsclient.c
 typedef struct wsclient_ wsclient;
 extern wsclient *wsclient_create(const diag *);

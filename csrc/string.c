@@ -32,38 +32,11 @@
 #include <string.h>
 #include <stdarg.h>
 
-typedef struct string_ {
-	char *buf;		// len == 0 の時 buf を触らないこと。
-	uint len;		// 文字列の長さ ('\0' の位置)
-	uint capacity;	// 確保してあるバイト数
-} string;
-
-// 空の文字列を確保して返す。
-string *
-string_init(void)
-{
-	string *s = calloc(1, sizeof(string));
-	if (s == NULL) {
-		return NULL;
-	}
-	return s;
-}
-
-// 初期確保量を指定する。(文字列は空)
-string *
-string_alloc(uint capacity)
-{
-	string *s = string_init();
-	if (s == NULL) {
-		return NULL;
-	}
-
-	string_realloc(s, capacity);
-	if (capacity > 0) {
-		s->buf[0] = '\0';
-	}
-	return s;
-}
+#define xstring string
+#define xchar   char
+#include "xstring.h"
+#undef xstring
+#undef xchar
 
 // cstr を複製した文字列を返す。
 string *
@@ -93,37 +66,6 @@ string_from_mem(const void *mem, uint memlen)
 	return s;
 }
 
-// 確保量を拡大する。文字列は変わらない。
-// new_capacity が現行以下なら何もせず true を返す。
-// 拡大出来なければ変更せずに false を返す。
-bool
-string_realloc(string *s, uint new_capacity)
-{
-	assert(s);
-
-	if (new_capacity <= s->capacity) {
-		return true;
-	}
-
-	char *tmp = realloc(s->buf, new_capacity);
-	if (tmp == NULL) {
-		return false;
-	}
-	s->buf = tmp;
-	s->capacity = new_capacity;
-	return true;
-}
-
-// s を解放する。
-void
-string_free(string *s)
-{
-	if (s) {
-		free(s->buf);
-		free(s);
-	}
-}
-
 // s の文字列を返す。
 const char *
 string_get(const string *s)
@@ -147,14 +89,6 @@ string_get_buf(const string *s)
 	return s->buf;
 }
 
-// s の文字列の長さを返す。
-uint
-string_len(const string *s)
-{
-	assert(s);
-	return s->len;
-}
-
 // s1 と s2 が同じなら true を返す。
 bool
 string_equal(const string *s1, const string *s2)
@@ -176,15 +110,6 @@ string_equal_cstr(const string *s1, const char *cstr)
 	assert(cstr);
 
 	return (strcmp(string_get(s1), cstr) == 0);
-}
-
-// 文字列を空にする。容量は変わらない。
-void
-string_clear(string *s)
-{
-	assert(s);
-
-	s->len = 0;
 }
 
 // s の末尾に1文字追加する。

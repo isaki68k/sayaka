@@ -33,6 +33,7 @@ SRCS_sayaka+=	json.c
 SRCS_sayaka+=	misskey.c
 SRCS_sayaka+=	subr.c
 SRCS_sayaka+=	terminal.c
+SRCS_sayaka+=	ustring.c
 SRCS_sayaka+=	wsclient.c
 
 SRCS_sixelv+=	image_bmp.c
