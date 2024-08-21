@@ -432,3 +432,27 @@ json_obj_find(const json *js, int idx, const char *key)
 	}
 	return -1;
 }
+
+// オブジェクト型である idx からキーが key である子オブジェクトの
+// インデックスを返す。キーが見付からないかオブジェクトでなければ -1 を返す。
+int
+json_obj_find_obj(const json *js, int idx, const char *key)
+{
+	int validx = json_obj_find(js, idx, key);
+	if (validx >= 0 && __predict_true(json_is_obj(js, validx))) {
+		return validx;
+	}
+	return -1;
+}
+
+// オブジェクト型である idx から key に対応する文字列の値を返す。
+// key が見付からないか値が文字列でなければ NULL を返す。
+const char *
+json_obj_find_cstr(const json *js, int idx, const char *key)
+{
+	int validx = json_obj_find(js, idx, key);
+	if (validx >= 0 && __predict_true(json_is_str(js, validx))) {
+		return json_get_cstr(js, validx);
+	}
+	return NULL;
+}

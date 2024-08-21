@@ -247,12 +247,9 @@ misskey_message(string *jsonstr)
 
 	int id = 0;
 	for (;;) {
-		int typeid = json_obj_find(js, id, "type");
-		int bodyid = json_obj_find(js, id, "body");
-		if (typeid >= 0 && json_is_str(js, typeid) &&
-			bodyid >= 0 && json_is_obj(js, bodyid))
-		{
-			const char *typestr = json_get_cstr(js, typeid);
+		const char *typestr = json_obj_find_cstr(js, id, "type");
+		int bodyid = json_obj_find_obj(js, id, "body");
+		if (typestr != NULL && bodyid >= 0) {
 			if (strcmp(typestr, "channel") == 0 ||
 				strcmp(typestr, "note") == 0 ||
 				strcmp(typestr, "announcementCreated") == 0)
@@ -294,16 +291,16 @@ misskey_show_note(const json *js, int inote, uint depth)
 	// NG ワード
 
 	// アナウンスなら別処理。
-	int iann = json_obj_find(js, inote, "announcement");
-	if (iann >= 0 && json_is_obj(js, iann)) {
+	int iann = json_obj_find_obj(js, inote, "announcement");
+	if (iann >= 0) {
 		return misskey_show_announcement(js, iann);
 	}
 
 	// 地文なら note == renote。
 	// リノートなら RN 元を note、RN 先を renote。
 	bool has_renote;
-	int irenote = json_obj_find(js, inote, "renote");
-	if (irenote >= 0 && json_is_obj(js, irenote)) {
+	int irenote = json_obj_find_obj(js, inote, "renote");
+	if (irenote >= 0) {
 		// XXX text があったらどうするのかとか。
 		has_renote = true;
 	} else {
