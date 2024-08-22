@@ -76,7 +76,7 @@ XCAT(xstring,_realloc)(xstring *x, uint new_capacity)
 		return true;
 	}
 
-	xchar *tmp = realloc(x->buf, new_capacity);
+	xchar *tmp = realloc(x->buf, new_capacity * sizeof(xchar));
 	if (tmp == NULL) {
 		return false;
 	}

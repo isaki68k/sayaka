@@ -100,8 +100,8 @@ ustring_append(ustring *u, const ustring *t)
 	for (i = 0; i < tlen; i++) {
 		u->buf[u->len + i] = t->buf[i];
 	}
-	u->buf[i] = '\0';
 	u->len += tlen;
+	u->buf[u->len] = '\0';
 }
 
 // u の末尾に unichar 1文字追加する。
