@@ -361,10 +361,19 @@ misskey_show_note(const json *js, int inote, uint depth)
 	// -	y		y			text
 	// y	*		n			cw [CW]
 	// y	*		y			cw [CW] text
-	const char *c_cw   = json_obj_find_cstr(js, irenote, "cw");
+
 	const char *c_text = json_obj_find_cstr(js, irenote, "text");
+	// "cw":null は CW なし、"cw":"" は前置きなしの [CW]、で意味が違う。
+	const char *c_cw;
+	int icw = json_obj_find(js, irenote, "cw");
+	if (icw >= 0 && json_is_str(js, icw)) {
+		c_cw = json_get_cstr(js, icw);
+	} else {
+		c_cw = NULL;
+	}
+
 	ustring *textline = ustring_alloc(256);
-	if (c_cw && c_cw[0] != '\0') {
+	if (c_cw) {
 		ustring_append_utf8(textline, c_cw);
 		ustring_append_ascii(textline, " [CW]\n");
 		ustring_append_utf8(textline, c_text);
