@@ -94,13 +94,12 @@ ustring_append(ustring *u, const ustring *t)
 	assert(u);
 	assert(t);
 
-	uint tlen = ustring_len(t);
-	ustring_expand(u, tlen);
+	ustring_expand(u, t->len);
 	uint i;
-	for (i = 0; i < tlen; i++) {
+	for (i = 0; i < t->len; i++) {
 		u->buf[u->len + i] = t->buf[i];
 	}
-	u->len += tlen;
+	u->len += t->len;
 	u->buf[u->len] = '\0';
 }
 
@@ -140,8 +139,9 @@ ustring_append_utf8(ustring *u, const char *cstr)
 {
 	assert(u);
 
-	ustring *u2 = ustring_from_utf8(cstr);
-	ustring_append(u, u2);
+	ustring *t = ustring_from_utf8(cstr);
+	ustring_append(u, t);
+	ustring_free(t);
 }
 
 // src を UTF-8 文字列に変換して返す。
@@ -150,19 +150,16 @@ ustring_to_utf8(const ustring *src)
 {
 	assert(src);
 
-	uint srclen = ustring_len(src);
-	string *dst = string_alloc(srclen * 4 + 1);
+	string *dst = string_alloc(src->len * 4 + 1);
 	if (dst == NULL) {
 		return NULL;
 	}
 
-	// XXX 効率
-	const unichar *s = ustring_get(src);
 	uint i;
-	for (i = 0; i < srclen; i++) {
-		char buf[8];
-		uint outlen = uchar_to_utf8(buf, s[i]);
-		string_append_mem(dst, buf, outlen);
+	for (i = 0; i < src->len; i++) {
+		char utf8buf[8];
+		uint outlen = uchar_to_utf8(utf8buf, src->buf[i]);
+		string_append_mem(dst, utf8buf, outlen);
 	}
 
 	return dst;
