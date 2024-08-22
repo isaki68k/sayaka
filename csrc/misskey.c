@@ -279,7 +279,7 @@ misskey_message(string *jsonstr)
 static bool
 misskey_show_note(const json *js, int inote, uint depth)
 {
-	json_dump(js, inote);
+	//json_dump(js, inote);
 	assert(json_is_obj(js, inote));
 
 	// acl
