@@ -111,10 +111,23 @@ sixel_preamble(FILE *fp, const image *img, const image_opt *opt)
 	if (opt->suppress_palette == false) {
 		const ColorRGB *col = &img->palette[0];
 		for (uint i = 0, end = img->palette_count; i < end; i++, col++) {
-			snprintf(buf, sizeof(buf), "#%u;2;%u;%u;%u", i,
-				col->r * 100 / 255,
-				col->g * 100 / 255,
-				col->b * 100 / 255);
+			uint r = col->r * 100 / 255;
+			uint g = col->g * 100 / 255;
+			uint b = col->b * 100 / 255;
+			char *p = buf;
+
+			*p++ = '#';
+			p += PUTD(p, i, sizeof(buf) - (p - buf));	// palette num
+			*p++ = ';';
+			*p++ = '2';		// RGB
+			*p++ = ';';
+			p += PUTD(p, r, sizeof(buf) - (p - buf));
+			*p++ = ';';
+			p += PUTD(p, g, sizeof(buf) - (p - buf));
+			*p++ = ';';
+			p += PUTD(p, b, sizeof(buf) - (p - buf));
+			*p = '\0';
+
 			if (fwrite(buf, strlen(buf), 1, fp) < 1) {
 				return false;
 			}
@@ -215,8 +228,9 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 				}
 
 				// SIXEL に色コードを出力。
-				snprintf(cbuf, sizeof(cbuf), "#%u", min_color);
-				string_append_cstr(linebuf, cbuf);
+				cbuf[0] = '#';
+				uint clen = PUTD(cbuf + 1, min_color, sizeof(cbuf) - 1);
+				string_append_mem(linebuf, cbuf, clen + 1);
 
 				// 相対 X シーク処理。
 				int space = min_x[min_color] - (mx + 1);
@@ -378,10 +392,10 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint8 *src,
 	for (uint i = 0; i < nplane; i++) {
 		buf = &sixelbuf[i];
 
-		string_append_char(dst, '#');
 		char numbuf[12];
-		snprintf(numbuf, sizeof(numbuf), "%u", 1U << i);
-		string_append_cstr(dst, numbuf);
+		numbuf[0] = '#';
+		uint nlen = PUTD(numbuf + 1, (1U << i), sizeof(numbuf) - 1);
+		string_append_mem(dst, numbuf, nlen + 1);
 
 		// [0]
 		uint rept = 1;
@@ -417,11 +431,14 @@ sixel_repunit(string *s, uint n, uint8 ptn)
 
 	if (n >= 4) {
 		char buf[16];
-		snprintf(buf, sizeof(buf), "!%u%c", n, ptn);
-		string_append_cstr(s, buf);
+		char *p = buf;
+		*p++ = '!';
+		p += PUTD(p, n,   sizeof(buf) - (p - buf));
+		*p++ = ptn;
+		string_append_mem(s, buf, (p - buf));
 	} else {
-		for (uint i = 0; i < n; i++) {
-			string_append_char(s, ptn);
-		}
+		uint32 buf;
+		buf = (ptn << 24) | (ptn << 16) | (ptn << 8) | ptn;
+		string_append_mem(s, (const char *)&buf, n);
 	}
 }
