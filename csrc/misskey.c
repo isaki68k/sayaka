@@ -41,7 +41,6 @@ static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
 static bool misskey_show_announcement(const json *, int);
-static const char *misskey_get_username(const json *, int, string *, string *);
 static string *misskey_format_time(const json *, int);
 
 static json *js;
@@ -308,35 +307,67 @@ misskey_show_note(const json *js, int inote, uint depth)
 		has_renote = false;
 	}
 
-	const char *name = NULL;
-	string *userid = string_init();
-	string *instname = string_init();
-	int iuser = json_obj_find(js, irenote, "user");
-	if (iuser >= 0 && json_is_obj(js, iuser)) {
-		name = misskey_get_username(js, iuser, userid, instname);
+	// 1行目は名前、アカウント名など。
+	const char *name = "";
+	string *userid = string_alloc(64);
+	const char *instance = NULL;
+	int iuser = json_obj_find_obj(js, irenote, "user");
+	if (iuser >= 0) {
+		const char *c_name     = json_obj_find_cstr(js, iuser, "name");
+		const char *c_username = json_obj_find_cstr(js, iuser, "username");
+		const char *c_host     = json_obj_find_cstr(js, iuser, "host");
+
+		// ユーザ名 は name だが、空なら username を使う仕様のようだ。
+		if (c_name && c_name[0] != '\0') {
+			name = c_name;
+		} else {
+			name = c_username;
+		}
+
+		// @アカウント名 [ @外部ホスト名 ]
+		string_append_char(userid, '@');
+		string_append_cstr(userid, c_username);
+		if (c_host) {
+			string_append_char(userid, '@');
+			string_append_cstr(userid, c_host);
+		}
+
+		// インスタンス名
+		instance = json_obj_find_cstr(js, iuser, "instance");
+	}
+	ustring *headline = ustring_alloc(64);
+	ustring_append_utf8(headline, name);
+	ustring_append_unichar(headline, ' ');
+	ustring_append_utf8(headline, string_get(userid));
+	if (instance) {
+		ustring_append_unichar(headline, ' ');
+		ustring_append_utf8(headline, instance);
 	}
 
-	// XXX CW
-	const char *text = NULL;
-	int itext = json_obj_find(js, irenote, "text");
-	if (__predict_true(itext >= 0 && json_is_str(js, itext))) {
-		text = json_get_cstr(js, itext);
+	// 本文。
+	// cw	text	--show-cw	result
+	// ----	----	---------	-------
+	// -	y		n			text
+	// -	y		y			text
+	// y	*		n			cw [CW]
+	// y	*		y			cw [CW] text
+	const char *c_cw   = json_obj_find_cstr(js, irenote, "cw");
+	const char *c_text = json_obj_find_cstr(js, irenote, "text");
+	ustring *textline = ustring_alloc(256);
+	if (c_cw && c_cw[0] != '\0') {
+		ustring_append_utf8(textline, c_cw);
+		ustring_append_ascii(textline, " [CW]\n");
+		ustring_append_utf8(textline, c_text);
+	} else {
+		ustring_append_utf8(textline, c_text);
 	}
 
 	// ShowIcon
 	// XXX print_ 未復旧
-	printf("%s", name);
-	printf(" ");
-	printf("%s", string_get(userid));
-	if (string_len(instname) != 0) {
-		printf("%s", string_get(instname));
-	}
+	iprint(headline);
 	printf("\n");
-	if (text) {
-		printf("\t");
-		printf("%s", text);
-		printf("\n");
-	}
+	iprint(textline);
+	printf("\n");
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
 
@@ -347,8 +378,10 @@ misskey_show_note(const json *js, int inote, uint depth)
 	//rnmsg = misskey_display_renote_count(js, irenote);
 	//rectmsg = misskey_display_reaction_count(js, irenote);
 
-	printf("\t");
-	printf("%s", string_get(time));
+	ustring *footline = ustring_alloc(64);
+	ustring_append_ascii(footline, string_get(time));
+
+	iprint(footline);
 	printf("\n");
 
 	// リノート元
@@ -364,83 +397,6 @@ misskey_show_announcement(const json *js, int inote)
 	printf("%s not yet\n", __func__);
 	abort();
 	return true;
-}
-
-// user オブジェクトから
-// o ユーザ名 (表示名、user->name)、
-// o アカウント名 (user->username) + ホスト名(user->host)、
-// o インスタンス名 (instance->name)
-// の文字列を取得する。
-// ユーザ名は const char * で得られるので戻り値で返す。
-// アカウント名、インスタンス名は初期化済みの string * に書き出す。
-static const char *
-misskey_get_username(const json *js, int iuser,
-	string *userid, string *instance_name)
-{
-	const char *dispname;
-	const char *name;
-	const char *username;
-	const char *host;
-	const char *instname;
-
-	int iname = json_obj_find(js, iuser, "name");
-	if (__predict_true(iname >= 0 && json_is_str(js, iname))) {
-		name = json_get_cstr(js, iname);
-	} else {
-		name = "";
-	}
-
-	int iusername = json_obj_find(js, iuser, "username");
-	if (__predict_true(iusername >= 0 && json_is_str(js, iusername))) {
-		username = json_get_cstr(js, iusername);
-	} else {
-		username = NULL;
-	}
-
-	int ihost = json_obj_find(js, iuser, "host");
-	if (ihost >= 0 && json_is_str(js, ihost)) {
-		host = json_get_cstr(js, ihost);
-	} else {
-		host = NULL;
-	}
-
-	instname = NULL;
-	int iinstance = json_obj_find(js, iuser, "instance");
-	if (iinstance >= 0 && json_is_obj(js, iinstance)) {
-		int iinstname = json_obj_find(js, iinstance, "name");
-		if (iinstname >= 0 && json_is_str(js, iinstname)) {
-			instname = json_get_cstr(js, iinstname);
-		}
-	}
-
-	// ユーザ名(表示名) は name。name が空なら username を使う仕様のようだ。
-
-	if (__predict_true(name[0] != '\0')) {
-		dispname = name;
-	} else {
-		dispname = username;
-	}
-
-	// ユーザ ID は '@' + username。
-	// 外部サーバなら '@' + host を追加。
-
-	string_append_char(userid, '@');
-	if (__predict_true(username)) {
-		string_append_cstr(userid, username);
-	}
-	if (host) {
-		string_append_char(userid, '@');
-		string_append_cstr(userid, host);
-	}
-
-	// インスタンス名。
-	if (instname) {
-		string_append_cstr(instance_name, " [");
-		string_append_cstr(instance_name, instname);
-		string_append_char(instance_name, ']');
-	}
-
-	return dispname;
 }
 
 // note オブジェクトから表示用時刻文字列を取得。

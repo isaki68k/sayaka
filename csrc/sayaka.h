@@ -64,6 +64,9 @@ extern const char *json_obj_find_cstr(const json *, int, const char *);
 extern void cmd_misskey_stream(const char *);
 extern void cmd_misskey_play(const char *);
 
+// print.c
+extern void iprint(const ustring *);
+
 // sayaka.c
 extern diag *diag_json;
 extern diag *diag_net;
