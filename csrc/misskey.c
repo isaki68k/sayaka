@@ -397,6 +397,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	string_free(cw);
 
 	// ShowIcon
+	printf("*\r");
 
 	iprint(headline);
 	printf("\n");
