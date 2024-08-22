@@ -353,6 +353,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 		ustring_append_unichar(headline, ' ');
 		ustring_append_utf8(headline, instance);
 	}
+	string_free(userid);
 
 	// 本文。
 	// cw	text	--show-cw	result
@@ -387,6 +388,8 @@ misskey_show_note(const json *js, int inote, uint depth)
 	printf("\n");
 	iprint(textline);
 	printf("\n");
+	ustring_free(headline);
+	ustring_free(textline);
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
 
@@ -399,9 +402,11 @@ misskey_show_note(const json *js, int inote, uint depth)
 
 	ustring *footline = ustring_alloc(64);
 	ustring_append_ascii(footline, string_get(time));
+	string_free(time);
 
 	iprint(footline);
 	printf("\n");
+	ustring_free(footline);
 
 	// リノート元
 
