@@ -168,6 +168,29 @@ ustring_to_utf8(const ustring *src)
 	return dst;
 }
 
+// u のデバッグ用ダンプを表示する。
+void
+ustring_dump(const ustring *u, const char *head)
+{
+	for (uint i = 0, len = u->len; i < len; i++) {
+		unichar uni = u->buf[i];
+		printf("%s[%u] %02x", head, i, uni);
+
+		if (uni == '\t') {
+			printf(" \\t");
+		} else if (uni == '\r') {
+			printf(" \\r");
+		} else if (uni == '\n') {
+			printf(" \\n");
+		} else if (uni < ' ') {
+			printf(" \\x%02x", uni);
+		} else if (uni < 0x7f) {
+			printf(" %c", uni);
+		}
+		printf("\n");
+	}
+}
+
 // UTF-8 文字列の *srcp から始まる1文字を Unicode コードポイントにして返す。
 // *srcp には次の位置を書き戻す。
 static unichar
