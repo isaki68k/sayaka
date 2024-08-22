@@ -363,7 +363,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	}
 
 	// ShowIcon
-	// XXX print_ 未復旧
+
 	iprint(headline);
 	printf("\n");
 	iprint(textline);

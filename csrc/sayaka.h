@@ -71,6 +71,8 @@ extern void iprint(const ustring *);
 extern diag *diag_json;
 extern diag *diag_net;
 extern diag *diag_term;
+extern uint indent_cols;
+extern uint screen_cols;
 
 // subr.c
 extern uint32 rnd_get32(void);
