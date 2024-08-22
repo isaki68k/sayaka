@@ -129,5 +129,12 @@ extern void string_append_printf(string *, const char *, ...)
 extern const char *strerrno(void);
 extern void chomp(char *);
 extern uint32 stou32def(const char *, uint32, char **);
+#if defined(__OpenBSD__)
+extern uint putd(char *, uint, uint);
+#define PUTD(buf, n, bufsize)	putd(buf, n, bufsize)
+#else
+extern uint putd(char *, uint);
+#define PUTD(buf, n, bufsize)	putd(buf, n)
+#endif
 
 #endif // !sayaka_common_h
