@@ -41,6 +41,7 @@ static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
 static bool misskey_show_announcement(const json *, int);
+static string *string_unescape_c(const char *);
 static string *misskey_format_time(const json *, int);
 
 static json *js;
@@ -363,24 +364,37 @@ misskey_show_note(const json *js, int inote, uint depth)
 	// y	*		n			cw [CW]
 	// y	*		y			cw [CW] text
 
+	// jsmn はテキストを一切加工しないので、例えば改行文字は JSON エンコードに
+	// 従って '\' 'n' の2文字のまま。本文中の改行は画面でも改行してほしいので
+	// ここでエスケープを処理する。一方、名前中の改行('\' 'n' の2文字) は
+	// 都合がいいのでそのままにしておく (JSON パーサがテキストをデコードして
+	// いた場合にはこっちを再エスケープするはずだった)。
+
 	const char *c_text = json_obj_find_cstr(js, irenote, "text");
+	string *text = string_unescape_c(c_text);
+	if (text == NULL) {
+	}
+
 	// "cw":null は CW なし、"cw":"" は前置きなしの [CW]、で意味が違う。
-	const char *c_cw;
+	string *cw;
 	int icw = json_obj_find(js, irenote, "cw");
 	if (icw >= 0 && json_is_str(js, icw)) {
-		c_cw = json_get_cstr(js, icw);
+		const char *c_cw = json_get_cstr(js, icw);
+		cw = string_unescape_c(c_cw);
 	} else {
-		c_cw = NULL;
+		cw = NULL;
 	}
 
 	ustring *textline = ustring_alloc(256);
-	if (c_cw) {
-		ustring_append_utf8(textline, c_cw);
+	if (cw) {
+		ustring_append_utf8(textline, string_get(cw));
 		ustring_append_ascii(textline, " [CW]\n");
-		ustring_append_utf8(textline, c_text);
+		ustring_append_utf8(textline, string_get(text));
 	} else {
-		ustring_append_utf8(textline, c_text);
+		ustring_append_utf8(textline, string_get(text));
 	}
+	string_free(text);
+	string_free(cw);
 
 	// ShowIcon
 
@@ -421,6 +435,54 @@ misskey_show_announcement(const json *js, int inote)
 	printf("%s not yet\n", __func__);
 	abort();
 	return true;
+}
+
+// src 中の "\\n" などのエスケープされた文字を "\n" に戻す。
+static string *
+string_unescape_c(const char *src)
+{
+	// 最長で元文字列と同じ長さのはず?
+	string *dst = string_alloc(strlen(src) + 1);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	char c;
+	bool escape = false;
+	for (int i = 0; (c = src[i]) != '\0'; i++) {
+		if (escape == false) {
+			if (c == '\\') {
+				escape = true;
+			} else {
+				string_append_char(dst, c);
+			}
+		} else {
+			switch (c) {
+			 case 'n':
+				string_append_char(dst, '\n');
+				break;
+			 case 'r':
+				string_append_char(dst, '\r');
+				break;
+			 case 't':
+				string_append_char(dst, '\t');
+				break;
+			 case '\\':
+				string_append_char(dst, '\\');
+				break;
+			 case '\"':
+				string_append_char(dst, '"');
+				break;
+			 default:
+				string_append_char(dst, '\\');
+				string_append_char(dst, c);
+				break;
+			}
+			escape = false;
+		}
+	}
+
+	return dst;
 }
 
 // note オブジェクトから表示用時刻文字列を取得。
