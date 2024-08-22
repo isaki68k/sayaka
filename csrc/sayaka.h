@@ -72,6 +72,7 @@ extern diag *diag_json;
 extern diag *diag_net;
 extern diag *diag_term;
 extern uint indent_cols;
+extern const char *opt_record_file;
 extern uint screen_cols;
 
 // subr.c

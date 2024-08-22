@@ -209,6 +209,16 @@ misskey_stream(wsclient *ws)
 static void
 misskey_recv_cb(const string *msg)
 {
+	// 録画。
+	if (__predict_false(opt_record_file)) {
+		FILE *fp = fopen(opt_record_file, "a");
+		if (fp) {
+			fputs(string_get(msg), fp);
+			fputc('\n', fp);
+			fclose(fp);
+		}
+	}
+
 	misskey_message(UNCONST(msg));
 }
 
