@@ -36,6 +36,8 @@ enum {
 	BG_LIGHT = 1,	// 背景色は明るい
 };
 
+typedef uint32 unichar;
+
 typedef struct json_ json;
 typedef struct ustring_ ustring;
 typedef struct wsclient_ wsclient;
@@ -86,8 +88,12 @@ extern void ustring_free(ustring *);
 extern void ustring_clear(ustring *);
 extern uint ustring_len(const ustring *);
 extern ustring *ustring_from_utf8(const char *);
-extern void ustring_append_char(ustring *, char);
-extern void ustring_append_cstr(ustring *, const char *);
+extern string *ustring_to_utf8(const ustring *);
+extern const unichar *ustring_get(const ustring *);
+extern void ustring_append(ustring *, const ustring *);
+extern void ustring_append_unichar(ustring *, unichar);
+extern void ustring_append_ascii(ustring *, const char *);
+extern void ustring_append_utf8(ustring *, const char *);
 
 // wsclient.c
 extern wsclient *wsclient_create(const diag *);

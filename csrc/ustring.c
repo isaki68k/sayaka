@@ -32,8 +32,6 @@
 #include <errno.h>
 #include <string.h>
 
-typedef uint32 unichar;
-
 #define xstring ustring
 #define xchar   unichar
 #include "xstring.h"
@@ -41,6 +39,7 @@ typedef uint32 unichar;
 #undef xchar
 
 static unichar uchar_from_utf8(const char **);
+static uint uchar_to_utf8(char *, unichar);
 
 // UTF-8 文字列 str を ustring に変換する。
 ustring *
@@ -64,6 +63,22 @@ ustring_from_utf8(const char *cstr)
 	return u;
 }
 
+// u の生配列を返す。
+const unichar *
+ustring_get(const ustring *u)
+{
+	assert(u);
+
+	if (__predict_true(u->len != 0)) {
+		return u->buf;
+	} else {
+		static const unichar empty[1] = {
+			0,
+		};
+		return empty;
+	}
+}
+
 // u を newlen 文字分が追加できるようブロック単位で拡大する。
 #define ustring_expand(u, newlen)	do {	\
 	uint newcap_ = roundup((u)->len + (newlen) + 1, 64);	\
@@ -72,9 +87,26 @@ ustring_from_utf8(const char *cstr)
 	}	\
 } while (0)
 
-// u の末尾に1文字追加する。
+// u の末尾に ustring t を追加する。
 void
-ustring_append_char(ustring *u, char ch)
+ustring_append(ustring *u, const ustring *t)
+{
+	assert(u);
+	assert(t);
+
+	uint tlen = ustring_len(t);
+	ustring_expand(u, tlen);
+	uint i;
+	for (i = 0; i < tlen; i++) {
+		u->buf[u->len + i] = t->buf[i];
+	}
+	u->buf[i] = '\0';
+	u->len += tlen;
+}
+
+// u の末尾に unichar 1文字追加する。
+void
+ustring_append_unichar(ustring *u, unichar ch)
 {
 	assert(u);
 
@@ -84,8 +116,9 @@ ustring_append_char(ustring *u, char ch)
 }
 
 // u の末尾に cstr を追加する。
+// ただし文字コードは変換しないので置けるのは ASCII のみ。
 void
-ustring_append_cstr(ustring *u, const char *cstr)
+ustring_append_ascii(ustring *u, const char *cstr)
 {
 	assert(u);
 
@@ -101,19 +134,53 @@ ustring_append_cstr(ustring *u, const char *cstr)
 	u->buf[u->len] = '\0';
 }
 
+// u の末尾に UTF-8 文字列 cstr を追加する。
+void
+ustring_append_utf8(ustring *u, const char *cstr)
+{
+	assert(u);
+
+	ustring *u2 = ustring_from_utf8(cstr);
+	ustring_append(u, u2);
+}
+
+// src を UTF-8 文字列に変換して返す。
+string *
+ustring_to_utf8(const ustring *src)
+{
+	assert(src);
+
+	uint srclen = ustring_len(src);
+	string *dst = string_alloc(srclen * 4 + 1);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	// XXX 効率
+	const unichar *s = ustring_get(src);
+	uint i;
+	for (i = 0; i < srclen; i++) {
+		char buf[8];
+		uint outlen = uchar_to_utf8(buf, s[i]);
+		string_append_mem(dst, buf, outlen);
+	}
+
+	return dst;
+}
+
 // UTF-8 文字列の *srcp から始まる1文字を Unicode コードポイントにして返す。
 // *srcp には次の位置を書き戻す。
 static unichar
 uchar_from_utf8(const char **srcp)
 {
-	const char *src = *srcp;
+	const uint8 *src = (const uint8 *)*srcp;
 	unichar code;
 	uint bytelen;
 	uint8 c;
 
 	// UTF-8 は1バイト目でこの文字のバイト数が分かる。
 
-	c = (uint8)*src;
+	c = *src;
 	if (__predict_true(c < 0x80)) {
 		bytelen = 1;
 		code = c;
@@ -141,6 +208,40 @@ uchar_from_utf8(const char **srcp)
 	// 文字の途中で '\0' になってしまったらエラーだが、
 	// 正常系と同じ値でそのまま帰るくらいしか、出来ることはない。
 
-	*srcp = &src[pos];
+	*srcp = (const char *)&src[pos];
 	return code;
+}
+
+// Unicode コードポイント code を UTF-8 に変換して dst に書き出す。
+// dst は '\0' 終端しない。
+// 戻り値は書き出したバイト数。
+static uint
+uchar_to_utf8(char *dst, unichar code)
+{
+	if (code < 0x80) {
+		// 1バイト
+		*dst = (char)code;
+		return 1;
+
+	} else if (code < 0x7ff) {
+		// 2バイト
+		*dst++ = 0xc0 | (code >> 6);
+		*dst++ = 0x80 | (code & 0x3f);
+		return 2;
+
+	} else if (code < 0x10000) {
+		// 3バイト
+		*dst++ = 0xe0 |  (code >> 12);
+		*dst++ = 0x80 | ((code >> 6) & 0x3f);
+		*dst++ = 0x80 |  (code & 0x3f);
+		return 3;
+
+	} else {
+		// 4バイト
+		*dst++ = 0xf0 |  (code >> 18);
+		*dst++ = 0x80 | ((code >> 12) & 0x3f);
+		*dst++ = 0x80 | ((code >>  6) & 0x3f);
+		*dst++ = 0x80 |  (code & 0x3f);
+		return 4;
+	}
 }
