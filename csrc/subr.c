@@ -60,9 +60,9 @@ rnd_fill(void *dst, uint dstsize)
 	}
 }
 
-// 文字列の FNV1 ハッシュ(32ビット) を返す。
+// 文字列の FNV1a ハッシュ(32ビット) を返す。
 uint32
-hash_fnv1(const char *s)
+hash_fnv1a(const char *s)
 {
 	static const uint32 prime  = 16777619u;
 	static const uint32 offset = 2166136261u;
@@ -70,8 +70,8 @@ hash_fnv1(const char *s)
 	uint32 hash = offset;
 	uint32 c;
 	while ((c = *s++) != '\0') {
-		hash *= prime;
 		hash ^= c;
+		hash *= prime;
 	}
 	return hash;
 }

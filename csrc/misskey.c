@@ -477,7 +477,7 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 			char filename[PATH_MAX];
 			snprintf(filename, sizeof(filename), "icon-%ux%u-%s-%s-%08x",
 				iconsize, iconsize, colorname,
-				string_get(userid), hash_fnv1(avatar_url));
+				string_get(userid), hash_fnv1a(avatar_url));
 			shown = show_image(filename, avatar_url, iconsize, -1);
 		}
 	}
