@@ -493,7 +493,7 @@ do_file(const char *infile)
 		}
 		ifp = netstream_fopen(net);
 		if (ifp == NULL) {
-			warn("%s: netstream_open() failed", infilename);
+			warn("%s: netstream_fopen() failed", infilename);
 			goto abort;
 		}
 #else
