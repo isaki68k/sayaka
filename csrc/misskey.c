@@ -45,6 +45,8 @@ static bool misskey_show_announcement(const json *, int);
 static void misskey_show_icon(const json *, int, const string *);
 static string *string_unescape_c(const char *);
 static string *misskey_format_time(const json *, int);
+static string *misskey_display_renote_count(const json *, int);
+static string *misskey_display_reaction_count(const json *, int);
 
 static json *js;
 
@@ -412,12 +414,16 @@ misskey_show_note(const json *js, int inote, uint depth)
 
 	// 時刻と、あればこのノートの既 RN 数、リアクション数。
 	string *time = misskey_format_time(js, irenote);
-	//rnmsg = misskey_display_renote_count(js, irenote);
-	//rectmsg = misskey_display_reaction_count(js, irenote);
+	string *rnmsg = misskey_display_renote_count(js, irenote);
+	string *reactmsg = misskey_display_reaction_count(js, irenote);
 
 	ustring *footline = ustring_alloc(64);
 	ustring_append_ascii(footline, string_get(time));
+	ustring_append_ascii(footline, string_get(rnmsg));
+	ustring_append_ascii(footline, string_get(reactmsg));
 	string_free(time);
+	string_free(rnmsg);
+	string_free(reactmsg);
 
 	iprint(footline);
 	printf("\n");
@@ -559,4 +565,55 @@ misskey_format_time(const json *js, int inote)
 	} else {
 		return string_init();
 	}
+}
+
+// リノート数を表示用に整形して返す。
+static string *
+misskey_display_renote_count(const json *js, int inote)
+{
+	string *s;
+	uint rncnt = 0;
+
+	int irenoteCount = json_obj_find(js, inote, "renoteCount");
+	if (irenoteCount >= 0) {
+		rncnt = json_get_int(js, irenoteCount);
+	}
+
+	if (rncnt > 0) {
+		char buf[32];
+		snprintf(buf, sizeof(buf), " %uRN", rncnt);
+		s = string_from_cstr(buf);
+	} else {
+		s = string_init();
+	}
+	return s;
+}
+
+// リアクション数を表示用に整形して返す。
+static string *
+misskey_display_reaction_count(const json *js, int inote)
+{
+	string *s;
+	uint cnt = 0;
+
+	int ireactions = json_obj_find_obj(js, inote, "reactions");
+	if (ireactions >= 0) {
+		uint num = json_get_size(js, ireactions);
+		// reactions: { "name1":cnt1, "name2":cnt2, ... }
+		// の cnt だけをカウントする。
+		int id = ireactions + 1 + 1;
+		for (uint i = 0; i < num; i++) {
+			cnt += json_get_int(js, id);
+			id += 2;
+		}
+	}
+
+	if (cnt > 0) {
+		char buf[32];
+		snprintf(buf, sizeof(buf), " %uReact", cnt);
+		s = string_from_cstr(buf);
+	} else {
+		s = string_init();
+	}
+	return s;
 }
