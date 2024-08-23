@@ -227,7 +227,7 @@ iprint(const ustring *src)
 // 画像をキャッシュして表示する。
 // img_file はキャッシュディレクトリ内でのファイル名 (拡張子 .sixel なし)。
 // img_url は画像の URL。
-// resize_width は画像の表示幅。
+// width は画像の表示幅。
 // index は -1 ならアイコン、0 以上なら添付写真の何枚目かを表す。
 // どちらも位置決めなどのために使用する。
 // 表示できれば true を返す。
@@ -352,8 +352,15 @@ fetch_image(FILE *ofp, const char *img_url, uint size)
 	imageopt.width  = size;
 	imageopt.height = size;
 
-	if (strncmp(img_url, "http://",  7) == 0 ||
-		strncmp(img_url, "https://", 8) == 0)
+	if (strncmp(img_url, "blurhash://", 11) == 0) {
+		ifp = fmemopen(UNCONST(&img_url[11]), strlen(img_url) - 11, "r");
+		if (ifp == NULL) {
+			Debug(diag_image, "%s: fmemopen failed: %s", __func__, strerrno());
+			return false;
+		}
+
+	} else if (strncmp(img_url, "http://",  7) == 0 ||
+	           strncmp(img_url, "https://", 8) == 0)
 	{
 #if defined(HAVE_LIBCURL)
 		net = netstream_init(diag_net);
