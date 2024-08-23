@@ -32,6 +32,8 @@
 #include "image.h"
 #include <limits.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 // ヘッダの依存関係を減らすため。
 extern image_opt imageopt;
@@ -238,6 +240,7 @@ show_image(const char *img_file, const char *img_url, uint width, int index)
 	uint sx_height;
 	char buf[4096];
 	char *next;
+	struct stat st;
 	uint i;
 	uint n;
 	bool rv = false;
@@ -323,6 +326,10 @@ show_image(const char *img_file, const char *img_url, uint width, int index)
 	rv = true;
  abort:
 	fclose(fp);
+	// ファイルサイズ 0 なら消す。
+	if (lstat(cache_filename, &st) == 0 && st.st_size == 0) {
+		unlink(cache_filename);
+	}
 	return rv;
 }
 
