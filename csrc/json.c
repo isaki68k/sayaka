@@ -358,6 +358,16 @@ json_get_len(const json *js, int idx)
 	return t->end - t->start;
 }
 
+// js[idx] の子要素数を返す。
+// オブジェクト型、配列型で使う。他での動作は不定。
+uint
+json_get_size(const json *js, int idx)
+{
+	jsmntok_t *t = &js->token[idx];
+
+	return t->size;
+}
+
 // js[idx] の値 (無加工の文字列) を返す。
 // STRING、NUMBER の他、プリミティブ型でもそのまま文字列を返す。
 // そのため STRING の "null" もプリミティブの null もどちらも "null" になる。
@@ -403,6 +413,20 @@ json_equal_cstr(const json *js, int idx, const char *s2)
 	}
 
 	return (strcmp(s1, s2) == 0);
+}
+
+// js[idx] の値を int で返す。
+// NUMBER 型でないか、int で表現できない場合は 0 を返す。
+// 小数点以下は切り捨てて整数にする。
+int
+json_get_int(const json *js, int idx)
+{
+	int val = 0;
+	if (json_is_num(js, idx)) {
+		const char *s = json_get_cstr(js, idx);
+		val = stou32def(s, 0, NULL);
+	}
+	return val;
 }
 
 // オブジェクト型である idx からキーが key である要素を探す。
