@@ -71,7 +71,10 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
 
 # Test
-testall:	all test terminal wsclient
+testall:	all dump test terminal wsclient
+
+dump:	dump.c libsayaka.a libcommon.a
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $> ${LIBS}
 
 test:	test.c libsayaka.a libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $> ${LIBS}
@@ -84,7 +87,7 @@ wsclient:	wsclient.c libsayaka.a libcommon.a
 
 .PHONY:	clean
 clean:
-	rm -f sayaka sixelv terminal wsclient *.o *.a *.core
+	rm -f sayaka sixelv dump test terminal wsclient *.o *.a *.core
 
 .PHONY:	depend
 depend:	${SRCS_all:.c=.d}
