@@ -60,6 +60,22 @@ rnd_fill(void *dst, uint dstsize)
 	}
 }
 
+// 文字列の FNV1 ハッシュ(32ビット) を返す。
+uint32
+hash_fnv1(const char *s)
+{
+	static const uint32 prime  = 16777619u;
+	static const uint32 offset = 2166136261u;
+
+	uint32 hash = offset;
+	uint32 c;
+	while ((c = *s++) != '\0') {
+		hash *= prime;
+		hash ^= c;
+	}
+	return hash;
+}
+
 // BASE64 エンコードした文字列を返す。
 string *
 base64_encode(const void *vsrc, uint srclen)

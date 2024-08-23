@@ -78,6 +78,7 @@ extern uint screen_cols;
 // subr.c
 extern uint32 rnd_get32(void);
 extern void rnd_fill(void *, uint);
+extern uint32 hash_fnv1(const char *);
 extern string *base64_encode(const void *, uint);
 extern time_t decode_isotime(const char *);
 extern string *format_time(time_t);
