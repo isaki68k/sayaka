@@ -25,10 +25,18 @@
  */
 
 //
-// 文字列の表示周り
+// 表示周り
 //
 
 #include "sayaka.h"
+#include "image.h"
+#include <limits.h>
+#include <string.h>
+
+// ヘッダの依存関係を減らすため。
+extern image_opt imageopt;
+
+static bool fetch_image(FILE *, const char *, uint);
 
 uint indent_depth;				// 現在のインデント深さ
 const char *output_codeset;		// 出力文字コード (NULL なら UTF-8)
@@ -212,4 +220,208 @@ iprint(const ustring *src)
 
 	ustring_free(utext);
 	ustring_free(utext2);
+}
+
+// 画像をキャッシュして表示する。
+// img_file はキャッシュディレクトリ内でのファイル名 (拡張子 .sixel なし)。
+// img_url は画像の URL。
+// resize_width は画像の表示幅。
+// index は -1 ならアイコン、0 以上なら添付写真の何枚目かを表す。
+// どちらも位置決めなどのために使用する。
+// 表示できれば true を返す。
+bool
+show_image(const char *img_file, const char *img_url, uint width, int index)
+{
+	char cache_filename[PATH_MAX];
+	FILE *fp;
+	uint sx_width;
+	uint sx_height;
+	char buf[4096];
+	char *next;
+	uint i;
+	uint n;
+	bool rv = false;
+
+	snprintf(cache_filename, sizeof(cache_filename),
+		"%s/%s.sixel", cachedir, img_file);
+
+	fp = fopen(cache_filename, "r");
+	if (fp == NULL) {
+		// キャッシュファイルがないので、画像を取得してキャッシュに保存。
+
+		fp = fopen(cache_filename, "w+");
+		if (fp == NULL) {
+			Debug(diag_image, "%s: cache file '%s': %s", __func__,
+				cache_filename, strerrno());
+			return false;
+		}
+
+		if (fetch_image(fp, img_url, width) == false) {
+			Debug(diag_image, "%s: fetch_image failed", __func__);
+			goto abort;
+		}
+
+		fseek(fp, 0, SEEK_SET);
+	}
+
+	// SIXEL の先頭付近から幅と高さを取得。
+
+	n = fread(buf, 1, sizeof(buf), fp);
+	if (n < 32) {
+		Debug(diag_image, "%s: %s: file too short(n=%u)", __func__,
+			cache_filename, n);
+		goto abort;
+	}
+	// 先頭から少しのところに '"' <Pan> ';' <Pad> ';' <Ph> ';' <Pv>
+	// Search '"'
+	for (i = 0; i < n && buf[i] != '\x22'; i++)
+		;
+	// Skip <Pan>
+	for (i++; i < n && buf[i] != ';'; i++)
+		;
+	// Skip <Pad>
+	for (i++; i < n && buf[i] != ';'; i++)
+		;
+	// Obtain <Ph>
+	i++;
+	sx_width = stou32def(&buf[i], -1, &next);
+	// Obtain <Pv>
+	sx_height = stou32def(next + 1, -1, NULL);
+	if ((int)sx_width < 0 || (int)sx_height < 0) {
+		Debug(diag_image, "%s: %s: could not read size in SIXEL",
+			__func__, cache_filename);
+		goto abort;
+	}
+
+	// この画像が占める文字数。
+	//uint image_rows = (sx_height + fontheight - 1) / fontheight;
+	//uint image_cols = (sx_width + fontwidth - 1) / fontwidth;
+
+	if (index < 0) {
+		// アイコンの場合は呼び出し側で実施。
+	} else {
+		// 添付画像の場合、表示位置などを計算。
+	}
+
+	// 最初の1回はすでに buf に入っているのでまず出力して、
+	// 次からは順次読みながら最後まで出力。
+	do {
+		in_sixel = true;
+		fwrite(buf, 1, n, stdout);
+		fflush(stdout);
+		in_sixel = false;
+
+		n = fread(buf, 1, sizeof(buf), fp);
+	} while (n > 0);
+
+	if (index < 0) {
+		// アイコンの場合は呼び出し側で実施。
+	} else {
+		// 添付画像の場合
+	}
+
+	rv = true;
+ abort:
+	fclose(fp);
+	return rv;
+}
+
+// img_url から画像をダウンロードして、
+// 長辺を size [pixel] にリサイズして、
+// SIXEL 形式に変換して ofp に出力する。
+// 出力できれば true を返す。
+static bool
+fetch_image(FILE *ofp, const char *img_url, uint size)
+{
+	struct netstream *net = NULL;
+	pstream *pstream = NULL;
+	FILE *ifp = NULL;
+	image *srcimg = NULL;
+	image *dstimg = NULL;
+	uint dst_width;
+	uint dst_height;
+	bool rv = false;
+
+	imageopt.width  = size;
+	imageopt.height = size;
+
+	if (strncmp(img_url, "http://",  7) == 0 ||
+		strncmp(img_url, "https://", 8) == 0)
+	{
+#if defined(HAVE_LIBCURL)
+		net = netstream_init(diag_net);
+		if (net == NULL) {
+			Debug(diag_net, "%s: netstream_init failed", __func__);
+			return false;
+		}
+		int code = netstream_connect(net, img_url, &netopt);
+		if (code < 0) {
+			Debug(diag_net, "%s: %s: netstream_connect failed: %s", __func__,
+				img_url, strerrno());
+			goto abort;
+		} else if (code == 1) {
+			Debug(diag_net, "%s: %s: connection failed: %s", __func__,
+				img_url, strerrno());
+			goto abort;
+		} else if (code >= 400) {
+			Debug(diag_net, "%s: %s: connection failed: HTTP %u", __func__,
+				img_url, code);
+			goto abort;
+		}
+		ifp = netstream_fopen(net);
+		if (ifp == NULL) {
+			Debug(diag_net, "%s: netstream_fopen failed: %s", __func__,
+				strerrno());
+			goto abort;
+		}
+#else
+		Debug(diag_net, "%s: Network support has not been compiled", __func__);
+		return false;
+#endif
+	}
+
+	// ifp からピークストリームを作成。
+	pstream = pstream_init_fp(ifp);
+	if (pstream == NULL) {
+		Debug(diag_net, "%s: pstream_init_fp failed: %s", __func__, strerrno());
+		goto abort;
+	}
+
+	// 画像読み込み。
+	srcimg = image_read_pstream(pstream, &imageopt, diag_image);
+	if (srcimg == NULL) {
+		Debug(diag_image, "%s: image_read_pstream failed: %s", __func__,
+			strerrno());
+		goto abort;
+	}
+
+	// いい感じにサイズを決定。
+	image_get_preferred_size(srcimg->width, srcimg->height,
+		ResizeAxis_ScaleDownLong, imageopt.width, imageopt.height,
+		&dst_width, &dst_height);
+
+	// 減色 & リサイズ。
+	dstimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
+	if (dstimg == NULL) {
+		Debug(diag_image, "%s: image_reduct failed", __func__);
+		goto abort;
+	}
+
+	// 出力。
+	if (image_sixel_write(ofp, dstimg, &imageopt, diag_image) == false) {
+		Debug(diag_image, "%s: image_sixel_write failed", __func__);
+		goto abort;
+	}
+	fflush(ofp);
+
+	rv = true;
+ abort:
+	image_free(dstimg);
+	image_free(srcimg);
+	pstream_cleanup(pstream);
+	if (ifp) {
+		fclose(ifp);
+	}
+	netstream_cleanup(net);
+	return rv;
 }

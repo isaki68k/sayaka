@@ -29,6 +29,7 @@
 //
 
 #include "sayaka.h"
+#include "image.h"
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
@@ -60,26 +61,32 @@ static void signal_handler(int);
 static void sigwinch(bool);
 
 static const char *basedir;
-static const char *cachedir;
+const char *cachedir;
+char colorname[16];					// キャッシュファイルに使う色名
+diag *diag_image;
 diag *diag_json;
 diag *diag_net;
 diag *diag_term;
 uint fontwidth;						// 使用するフォント幅   (ドット数)
 uint fontheight;					// 使用するフォント高さ (ドット数)
 uint iconsize;						// アイコンの大きさ (正方形、ドット数)
+image_opt imageopt;					// 画像関係のオプション
 uint imagesize;						// 画像の大きさ
 uint indent_cols;					// インデント1階層の桁数
+bool in_sixel;						// SIXEL 出力中か。
+struct netstream_opt netopt;		// ネットワーク関係のオプション
 static int opt_bgtheme;				// -1:自動判別 0:Dark 1:Light
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
 static bool opt_progress;
 const char *opt_record_file;		// 録画ファイル名 (NULL なら録画しない)
-static int opt_show_image;			// -1:自動判別 0:出力しない 1:出力する
+int opt_show_image;					// -1:自動判別 0:出力しない 1:出力する
 uint screen_cols;					// 画面の桁数
 
 enum {
 	OPT__start = 0x7f,
 	OPT_dark,
+	OPT_debug_image,
 	OPT_debug_json,
 	OPT_debug_net,
 	OPT_debug_term,
@@ -93,7 +100,9 @@ enum {
 };
 
 static const struct option longopts[] = {
+	{ "color",			required_argument,	NULL,	'c' },
 	{ "dark",			no_argument,		NULL,	OPT_dark },
+	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-json",		required_argument,	NULL,	OPT_debug_json },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
@@ -123,11 +132,14 @@ main(int ac, char *av[])
 	uint cmd;
 	const char *playfile;
 
+	diag_image= diag_alloc();
 	diag_json = diag_alloc();
 	diag_net  = diag_alloc();
 	diag_term = diag_alloc();
 
 	cmd = Cmd_none;
+	image_opt_init(&imageopt);
+	netstream_opt_init(&netopt);
 	opt_bgtheme = BG_AUTO;
 	opt_fontwidth = 0;
 	opt_fontheight = 0;
@@ -135,10 +147,34 @@ main(int ac, char *av[])
 	opt_show_image = -1;
 	playfile = NULL;
 
-	while ((c = getopt_long(ac, av, "v", longopts, NULL)) != -1) {
+	imageopt.color   = ReductorColor_Fixed256;
+	imageopt.method  = ReductorMethod_HighQuality;
+	imageopt.diffuse = RDM_FS;
+
+	while ((c = getopt_long(ac, av, "c:v", longopts, NULL)) != -1) {
 		switch (c) {
+		 case 'c':
+		 {
+			int num = stou32def(optarg, -1, NULL);
+			ReductorColor color;
+			switch (num) {
+			 case 2:	color = ReductorColor_Gray | (1U << 8);	break;
+			 case 8:	color = ReductorColor_Fixed8;	break;
+			 case 16:	color = ReductorColor_ANSI16;	break;
+			 case 256:	color = ReductorColor_Fixed256;	break;
+			 default:
+				errx(1, "invalid color mode");
+			}
+			imageopt.color = color;
+			break;
+		 }
+
 		 case OPT_dark:
 			opt_bgtheme = BG_DARK;
+			break;
+
+		 case OPT_debug_image:
+			SET_DIAG_LEVEL(diag_image);
 			break;
 
 		 case OPT_debug_json:
@@ -397,6 +433,33 @@ init_screen(void)
 	// 色の初期化。
 	//init_color();
 
+	// キャッシュファイル用の色モード名。
+	switch (imageopt.color & ReductorColor_MASK) {
+	 case ReductorColor_Gray:
+	 {
+		uint grayscale = (imageopt.color >> 8) + 1;
+		if (grayscale == 2) {
+			strlcpy(colorname, "2", sizeof(colorname));
+		} else {
+			snprintf(colorname, sizeof(colorname), "gray%u", grayscale);
+		}
+		break;
+	 }
+	 case ReductorColor_Fixed8:
+		strlcpy(colorname, "8", sizeof(colorname));
+		break;
+	 case ReductorColor_ANSI16:
+		strlcpy(colorname, "16", sizeof(colorname));
+		break;
+	 case ReductorColor_Fixed256:
+		strlcpy(colorname, "256", sizeof(colorname));
+		break;
+	 default:
+		// ?
+		snprintf(colorname, sizeof(colorname), "RC%u", imageopt.color);
+		break;
+	}
+
 	// 一度手動で呼び出して桁数を取得。
 	sigwinch(true);
 }
@@ -428,7 +491,9 @@ signal_handler(int signo)
 	switch (signo) {
 	 case SIGINT:
 		// SIXEL 出力中なら中断する。
-		if (0) {
+		if (in_sixel) {
+			printf(CAN ESC "\\");
+			fflush(stdout);
 		} else {
 			exit(0);
 		}

@@ -65,15 +65,26 @@ extern void cmd_misskey_stream(const char *);
 extern void cmd_misskey_play(const char *);
 
 // print.c
+extern uint indent_depth;
 extern void iprint(const ustring *);
+extern bool show_image(const char *, const char *, uint, int);
 
 // sayaka.c
+extern const char *cachedir;
+extern char colorname[];
+extern diag *diag_image;
 extern diag *diag_json;
 extern diag *diag_net;
 extern diag *diag_term;
+extern uint fontwidth;
+extern uint fontheight;
+extern uint iconsize;
 extern uint indent_cols;
+extern bool in_sixel;
+extern struct netstream_opt netopt;
 extern const char *opt_record_file;
 extern uint screen_cols;
+extern int  opt_show_image;
 
 // subr.c
 extern uint32 rnd_get32(void);

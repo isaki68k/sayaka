@@ -30,6 +30,7 @@
 
 #include "sayaka.h"
 #include <err.h>
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -41,6 +42,7 @@ static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
 static bool misskey_show_announcement(const json *, int);
+static void misskey_show_icon(const json *, int, const string *);
 static string *string_unescape_c(const char *);
 static string *misskey_format_time(const json *, int);
 
@@ -354,7 +356,6 @@ misskey_show_note(const json *js, int inote, uint depth)
 		ustring_append_unichar(headline, ' ');
 		ustring_append_utf8(headline, instance);
 	}
-	string_free(userid);
 
 	// 本文。
 	// cw	text	--show-cw	result
@@ -396,8 +397,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	string_free(text);
 	string_free(cw);
 
-	// ShowIcon
-	printf("*\r");
+	misskey_show_icon(js, iuser, userid);
 
 	iprint(headline);
 	printf("\n");
@@ -426,6 +426,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	// リノート元
 
 	(void)has_renote;
+	string_free(userid);
 	return true;
 }
 
@@ -436,6 +437,65 @@ misskey_show_announcement(const json *js, int inote)
 	printf("%s not yet\n", __func__);
 	abort();
 	return true;
+}
+
+// アイコン表示。
+static void
+misskey_show_icon(const json *js, int iuser, const string *userid)
+{
+	const diag *diag = diag_image;
+
+	if (diag_get_level(diag) == 0) {
+		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
+		// 発生させ、アイコン表示時にスクロールしないようにしてから
+		// カーソル位置を保存する
+		// (スクロールするとカーソル位置復元時に位置が合わない)
+		printf("\n\n\n" CSI "3A" ESC "7");
+
+		// インデント。
+		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
+		if (indent_depth > 0) {
+			char buf[8];
+			char *p = buf;
+			int left = indent_cols * indent_depth;
+			*p++ = ESCchar;
+			*p++ = '[';
+			p += PUTD(p, left, sizeof(buf) - (p - buf));
+			*p++ = 'C';
+			*p = '\0';
+			fputs(buf, stdout);
+		}
+	}
+
+	bool shown = false;
+	if (__predict_true(opt_show_image)) {
+		const char *avatar_url = json_obj_find_cstr(js, iuser, "avatarUrl");
+		if (avatar_url && userid) {
+			// URL の FNV1 ハッシュをキャッシュのキーにする。
+			// Misskey の画像 URL は長いのと URL がネストした構造を
+			// しているので単純に一部を切り出して使う方法は無理。
+			char filename[PATH_MAX];
+			snprintf(filename, sizeof(filename), "icon-%ux%u-%s-%s-%08x",
+				iconsize, iconsize, colorname,
+				string_get(userid), hash_fnv1(avatar_url));
+			shown = show_image(filename, avatar_url, iconsize, -1);
+		}
+	}
+
+	if (__predict_true(shown)) {
+		if (diag_get_level(diag) == 0) {
+			printf(
+				// アイコン表示後、カーソル位置を復帰。
+				"\r"
+				// カーソル位置保存/復元に対応していない端末でも動作するように
+				// カーソル位置復元前にカーソル上移動x3を行う。
+				CSI "3A" ESC "8"
+			);
+		}
+	} else {
+		// アイコンを表示してない場合はここで代替アイコンを表示。
+		printf(" *\r");
+	}
 }
 
 // src 中の "\\n" などのエスケープされた文字を "\n" に戻す。

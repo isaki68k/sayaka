@@ -37,6 +37,7 @@
 
 #define CAN "\x18"
 #define ESC "\x1b"
+#define CSI ESC "["
 #define ESCchar '\x1b'
 
 #define Debug(diag_, fmt...)	do {	\
