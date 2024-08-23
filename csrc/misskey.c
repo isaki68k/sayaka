@@ -475,16 +475,29 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 
 	bool shown = false;
 	if (__predict_true(opt_show_image)) {
+		char filename[PATH_MAX];
 		const char *avatar_url = json_obj_find_cstr(js, iuser, "avatarUrl");
 		if (avatar_url && userid) {
 			// URL の FNV1 ハッシュをキャッシュのキーにする。
 			// Misskey の画像 URL は長いのと URL がネストした構造を
 			// しているので単純に一部を切り出して使う方法は無理。
-			char filename[PATH_MAX];
 			snprintf(filename, sizeof(filename), "icon-%ux%u-%s-%s-%08x",
 				iconsize, iconsize, colorname,
 				string_get(userid), hash_fnv1a(avatar_url));
 			shown = show_image(filename, avatar_url, iconsize, -1);
+		}
+
+		if (shown == false) {
+			const char *avatar_blurhash =
+				json_obj_find_cstr(js, iuser, "avatarBlurhash");
+			if (avatar_blurhash) {
+				char url[256];
+				snprintf(filename, sizeof(filename), "icon-%ux%u-%s-%s-%08x",
+					iconsize, iconsize, colorname,
+					string_get(userid), hash_fnv1a(avatar_blurhash));
+				snprintf(url, sizeof(url), "blurhash://%s", avatar_blurhash);
+				shown = show_image(filename, url, iconsize, -1);
+			}
 		}
 	}
 
