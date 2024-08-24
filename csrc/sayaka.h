@@ -67,11 +67,11 @@ extern const char *json_obj_find_cstr(const json *, int, const char *);
 #define JSON_FOR(var, js, parentidx, type)							\
 	for (int num_, i_ = 0, parent_ = (parentidx),					\
 			var = json_obj_first((js), parent_, &num_, (type));		\
-		var < (js)->tokenlen && i_ < num_;							\
+		var >= 0 && i_ < num_;										\
 		var = json_obj_next((js), var, parent_), i_++)
 
-#define JSON_OBJ_FOR(v, j, p)	JSON_FOR(v, j, p, JSMN_OBJECT)
-#define JSON_ARRAY_FOR(v, j, p)	JSON_FOR(v, j, p, JSMN_ARRAY)
+#define JSON_OBJ_FOR(v, j, p)	JSON_FOR(v, j, p, 1/*JSMN_OBJECT*/)
+#define JSON_ARRAY_FOR(v, j, p)	JSON_FOR(v, j, p, 2/*JSMN_ARRAY*/)
 
 // misskey.c
 extern void cmd_misskey_stream(const char *);

@@ -609,15 +609,13 @@ misskey_display_reaction_count(const json *js, int inote)
 	string *s;
 	uint cnt = 0;
 
-	int ireactions = json_obj_find_obj(js, inote, "reactions");
+	int ireactions = json_obj_find(js, inote, "reactions");
 	if (ireactions >= 0) {
-		uint num = json_get_size(js, ireactions);
 		// reactions: { "name1":cnt1, "name2":cnt2, ... }
 		// の cnt だけをカウントする。
-		int id = ireactions + 1 + 1;
-		for (uint i = 0; i < num; i++) {
-			cnt += json_get_int(js, id);
-			id += 2;
+		JSON_OBJ_FOR(ikey, js, ireactions) {
+			int ival = ikey + 1;
+			cnt += json_get_int(js, ival);
 		}
 	}
 

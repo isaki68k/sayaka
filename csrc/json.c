@@ -432,7 +432,7 @@ json_get_int(const json *js, int idx)
 // オブジェクトまたは配列型である idx の先頭の(キーの)インデックスを返す。
 // *nump には要素数を返す。
 // type には JSMN_* 型を指定すること。
-// オブジェクトまたは配列が空なら戻り値 js->tokenlen を返す。
+// オブジェクトまたは配列が空なら戻り値 -1 を返す。
 // JSON_OBJ_FOR マクロで使用する。
 int
 json_obj_first(const json *js, int idx, int *nump, int type)
@@ -444,12 +444,12 @@ json_obj_first(const json *js, int idx, int *nump, int type)
 			return idx + 1;
 		}
 	}
-	return js->tokenlen;
+	return -1;
 }
 
 // keyidx の次のキーのインデックスを返す。
 // 個数は呼び出し元が管理しているので見付からないはずはないが、
-// 見付からなければ js->tokenlen を返す。
+// 見付からなければ -1 を返す。
 // JSON_OBJ_FOR, JSON_ARRAY_FOR マクロで使用する。
 int
 json_obj_next(const json *js, int keyidx, int parentidx)
@@ -461,7 +461,7 @@ json_obj_next(const json *js, int keyidx, int parentidx)
 			return i;
 		}
 	}
-	return js->tokenlen;
+	return -1;
 }
 
 // オブジェクト型である idx からキーが target である要素を探す。
