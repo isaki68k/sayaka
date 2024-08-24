@@ -41,6 +41,10 @@ extern image_opt imageopt;
 static inline void make_indent(char *, uint, int);
 static bool fetch_image(FILE *, const char *, uint);
 
+uint image_count;				// この列に表示している画像の数
+uint image_next_cols;			// この列で次に表示する画像の位置(桁数)
+uint image_max_rows;			// この列で最大の画像の高さ(行数)
+int  max_image_count;			// この列に表示する画像の最大数
 uint indent_depth;				// 現在のインデント深さ
 const char *output_codeset;		// 出力文字コード (NULL なら UTF-8)
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
@@ -317,13 +321,35 @@ show_image(const char *img_file, const char *img_url, uint width, int index)
 	}
 
 	// この画像が占める文字数。
-	//uint image_rows = (sx_height + fontheight - 1) / fontheight;
-	//uint image_cols = (sx_width + fontwidth - 1) / fontwidth;
+	uint image_rows = (sx_height + fontheight - 1) / fontheight;
+	uint image_cols = (sx_width + fontwidth - 1) / fontwidth;
 
 	if (index < 0) {
 		// アイコンの場合は呼び出し側で実施。
 	} else {
 		// 添付画像の場合、表示位置などを計算。
+
+		uint indent = (indent_depth + 1) * indent_cols;
+		if ((max_image_count > 0 && image_count >= max_image_count) ||
+			(indent + image_next_cols + image_cols >= screen_cols))
+		{
+			// 指定された枚数を超えるか、画像が入らない場合は折り返す。
+			printf("\r");
+			print_indent(indent_depth + 1);
+			image_count = 0;
+			image_max_rows = 0;
+			image_next_cols = 0;
+		} else {
+			// 前の画像の横に並べる。
+			if (image_count > 0) {
+				if (image_max_rows > 0) {
+					printf(CSI "%dA", image_max_rows);
+				}
+				if (image_next_cols > 0) {
+					printf(CSI "%dC", image_next_cols);
+				}
+			}
+		}
 	}
 
 	// 最初の1回はすでに buf に入っているのでまず出力して、
@@ -340,7 +366,16 @@ show_image(const char *img_file, const char *img_url, uint width, int index)
 	if (index < 0) {
 		// アイコンの場合は呼び出し側で実施。
 	} else {
-		// 添付画像の場合
+		// 添付画像の場合。
+		image_count++;
+		image_next_cols += image_cols;
+
+		// カーソル位置は同じ列に表示した画像の中で最長のものの下端に揃える
+		if (image_max_rows > image_rows) {
+			printf(CSI "%dB", image_max_rows - image_rows);
+		} else {
+			image_max_rows = image_rows;
+		}
 	}
 
 	rv = true;

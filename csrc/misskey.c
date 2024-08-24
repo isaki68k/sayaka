@@ -43,6 +43,8 @@ static void misskey_message(string *);
 static bool misskey_show_note(const json *, int, uint);
 static bool misskey_show_announcement(const json *, int);
 static void misskey_show_icon(const json *, int, const string *);
+static bool misskey_show_photo(const json *, int, int);
+static string *get_cache_filename(const char *);
 static string *string_unescape_c(const char *);
 static string *misskey_format_time(const json *, int);
 static string *misskey_display_renote_count(const json *, int);
@@ -397,7 +399,6 @@ misskey_show_note(const json *js, int inote, uint depth)
 		ustring_append_utf8(textline, string_get(text));
 	}
 	string_free(text);
-	string_free(cw);
 
 	misskey_show_icon(js, iuser, userid);
 
@@ -409,6 +410,21 @@ misskey_show_note(const json *js, int inote, uint depth)
 	ustring_free(textline);
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
+	if (cw == NULL || 1) {
+		// picture
+		image_count = 0;
+		image_next_cols = 0;
+		image_max_rows = 0;
+		int ifiles = json_obj_find(js, irenote, "files");
+		if (ifiles >= 0) {
+			JSON_ARRAY_FOR(ifile, js, ifiles) {
+				print_indent(indent_depth + 1);
+				// i_ がループ変数なのを知っている
+				misskey_show_photo(js, ifile, i_);
+				printf("\r");
+			}
+		}
+	}
 
 	// 引用部分
 
@@ -432,6 +448,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	// リノート元
 
 	(void)has_renote;
+	string_free(cw);
 	string_free(userid);
 	return true;
 }
@@ -506,6 +523,62 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 		// アイコンを表示してない場合はここで代替アイコンを表示。
 		printf(" *\r");
 	}
+}
+
+// "files" : [ file1, file2, ... ]
+// file は {
+//   "blurhash" : "...",
+//   "isSensitive" : bool,
+//   "name" : string,
+//   "properties" : {
+//     "width" : int,
+//     "height" : int,
+//   },
+//   "size" : int,
+//   "thumbnailUrl" : "...",
+//   "type" : "image/jpeg",
+//   "url" : "...",
+// }
+static bool
+misskey_show_photo(const json *js, int ifile, int index)
+{
+	const char *img_url;
+	string *img_file;
+	bool result;
+
+//	int iisSensitive = json_obj_find(js, ifile, "isSensitive");
+	if (0) {
+	} else {
+		// 元画像を表示。thumbnailUrl を使う。
+		img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
+		if (img_url[0] == '\0') {
+			// なければ、ファイルタイプだけでも表示しとく?
+			//misskeky_print_filetype(js, ifile, "");
+			return false;
+		}
+		img_file = get_cache_filename(img_url);
+	}
+
+	result = show_image(string_get(img_file), img_url, imagesize, index);
+
+	string_free(img_file);
+	return result;
+}
+
+// 画像 URL からキャッシュファイル名を作成して返す。
+static string *
+get_cache_filename(const char *url)
+{
+	string *file = string_from_cstr(url);
+
+	char *p = string_get_buf(file);
+	for (; *p; p++) {
+		if (strchr(":/()? ", *p)) {
+			*p = '_';
+		}
+	}
+
+	return file;
 }
 
 // src 中の "\\n" などのエスケープされた文字を "\n" に戻す。

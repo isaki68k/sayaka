@@ -78,6 +78,10 @@ extern void cmd_misskey_stream(const char *);
 extern void cmd_misskey_play(const char *);
 
 // print.c
+extern uint image_count;
+extern uint image_next_cols;
+extern uint image_max_rows;
+extern int  max_image_count;
 extern uint indent_depth;
 extern void print_indent(uint);
 extern void iprint(const ustring *);
@@ -93,6 +97,7 @@ extern diag *diag_term;
 extern uint fontwidth;
 extern uint fontheight;
 extern uint iconsize;
+extern uint imagesize;
 extern uint indent_cols;
 extern bool in_sixel;
 extern struct netstream_opt netopt;

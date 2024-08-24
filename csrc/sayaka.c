@@ -92,6 +92,7 @@ enum {
 	OPT_debug_term,
 	OPT_font,
 	OPT_light,
+	OPT_max_image_cols,
 	OPT_no_image,	// backward compatibility
 	OPT_play,
 	OPT_progress,
@@ -108,6 +109,7 @@ static const struct option longopts[] = {
 	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "light",			no_argument,		NULL,	OPT_light },
+	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "play",			required_argument,	NULL,	OPT_play },
 //	{ "progress",		no_argument,		NULL,	OPT_progress },
@@ -212,6 +214,14 @@ main(int ac, char *av[])
 
 		 case OPT_light:
 			opt_bgtheme = BG_LIGHT;
+			break;
+
+		 case OPT_max_image_cols:
+			max_image_count = stou32def(optarg, -1, NULL);
+			if (max_image_count < 0) {
+				errno = EINVAL;
+				err(1, "--max-image-cols %s", optarg);
+			}
 			break;
 
 		 case OPT_no_image:
