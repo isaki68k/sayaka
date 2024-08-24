@@ -459,17 +459,8 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 		printf("\n\n\n" CSI "3A" ESC "7");
 
 		// インデント。
-		// CSI."0C" は0文字でなく1文字になってしまうので、必要な時だけ。
 		if (indent_depth > 0) {
-			char buf[8];
-			char *p = buf;
-			int left = indent_cols * indent_depth;
-			*p++ = ESCchar;
-			*p++ = '[';
-			p += PUTD(p, left, sizeof(buf) - (p - buf));
-			*p++ = 'C';
-			*p = '\0';
-			fputs(buf, stdout);
+			print_indent(indent_depth);
 		}
 	}
 

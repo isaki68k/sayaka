@@ -79,6 +79,7 @@ extern void cmd_misskey_play(const char *);
 
 // print.c
 extern uint indent_depth;
+extern void print_indent(uint);
 extern void iprint(const ustring *);
 extern bool show_image(const char *, const char *, uint, int);
 

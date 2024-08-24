@@ -38,12 +38,39 @@
 // ヘッダの依存関係を減らすため。
 extern image_opt imageopt;
 
+static inline void make_indent(char *, uint, int);
 static bool fetch_image(FILE *, const char *, uint);
 
 uint indent_depth;				// 現在のインデント深さ
 const char *output_codeset;		// 出力文字コード (NULL なら UTF-8)
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を合成しない
+
+// depth 分のインデントを行うエスケープ文字列を buf に書き出す。
+// CSI."0C" は0文字でなく1文字になってしまうし、インデント階層が 0 かどうかは
+// 呼び出し側で簡単に分かるし何もしなくていいので、呼び出し側で弾くこと。
+static inline void
+make_indent(char *buf, uint bufsize, int depth)
+{
+	char *p = buf;
+
+	int left = indent_cols * depth;
+	*p++ = ESCchar;
+	*p++ = '[';
+	p += PUTD(p, left, bufsize - (p - buf));
+	*p++ = 'C';
+	*p = '\0';
+}
+
+// depth 分のインデントを行うエスケープ文字列を画面に出力する。
+// depth == 0 では呼び出さないこと。
+void
+print_indent(uint depth)
+{
+	char buf[12];
+	make_indent(buf, sizeof(buf), depth);
+	fputs(buf, stdout);
+}
 
 // src をインデントをつけて出力する。
 void
@@ -118,16 +145,8 @@ iprint(const ustring *src)
 	ustring *utext2 = ustring_alloc(ustring_len(utext) + 32);
 
 	// インデント階層
-	uint left = indent_cols * (indent_depth + 1);
 	char indent[12];
-	{
-		char *p = indent;
-		*p++ = ESCchar;
-		*p++ = '[';
-		p += PUTD(p, left, sizeof(indent) - (p - indent));
-		*p++ = 'C';
-		*p = '\0';
-	}
+	make_indent(indent, sizeof(indent), indent_depth + 1);
 	ustring_append_ascii(utext2, indent);
 
 	if (__predict_false(screen_cols == 0)) {
@@ -136,6 +155,7 @@ iprint(const ustring *src)
 	} else {
 		// 1文字ずつ文字幅を数えながら出力用に整形していく
 		uint in_escape = 0;
+		uint left = indent_cols * (indent_depth + 1);
 		uint x = left;
 		const unichar *utextbuf = ustring_get(utext);
 		unichar uni;
