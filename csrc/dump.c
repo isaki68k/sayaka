@@ -29,10 +29,13 @@
 //
 
 #include "sayaka.h"
+#include <err.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <string.h>
 
 diag dummy;
+bool opt_j;
 
 static string *
 string_fgets(FILE *fp)
@@ -63,22 +66,52 @@ dump(FILE *fp)
 	while ((line = string_fgets(fp)) != NULL) {
 		json *js = json_create(&dummy);
 		json_parse(js, line);
-		json_dump(js, 0);
+		if (opt_j) {
+			json_jsmndump(js);
+		} else {
+			json_dump(js, 0);
+		}
+		json_destroy(js);
 		string_free(line);
 	}
+}
+
+static void
+usage(void)
+{
+	errx(1, "usage: %s [-j] <-|jsonfiles...>", getprogname());
 }
 
 int
 main(int ac, char *av[])
 {
 	FILE *fp;
+	int c;
 
-	if (ac > 1) {
-		fp = fopen(av[1], "r");
-		dump(fp);
-		fclose(fp);
-	} else {
-		dump(stdin);
+	while ((c = getopt(ac, av, "j")) != -1) {
+		switch (c) {
+		 case 'j':
+			opt_j = true;
+			break;
+		 default:
+			usage();
+			break;
+		}
+	}
+	ac -= optind;
+	av += optind;
+
+	if (ac == 0) {
+		usage();
+	}
+	for (int i = 0; i < ac; i++) {
+		if (strcmp(av[i], "-") == 0) {
+			dump(stdin);
+		} else {
+			fp = fopen(av[i], "r");
+			dump(fp);
+			fclose(fp);
+		}
 	}
 	return 0;
 }
