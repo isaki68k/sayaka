@@ -58,9 +58,20 @@ extern uint json_get_len(const json *, int);
 extern uint json_get_size(const json *, int);
 extern const char *json_get_cstr(const json *, int);
 extern int  json_get_int(const json *, int);
+extern int  json_obj_first(const json *, int, int *, int);
+extern int  json_obj_next(const json *, int, int);
 extern int  json_obj_find(const json *, int, const char *);
 extern int  json_obj_find_obj(const json *, int, const char *);
 extern const char *json_obj_find_cstr(const json *, int, const char *);
+
+#define JSON_FOR(var, js, parentidx, type)							\
+	for (int num_, i_ = 0, parent_ = (parentidx),					\
+			var = json_obj_first((js), parent_, &num_, (type));		\
+		var < (js)->tokenlen && i_ < num_;							\
+		var = json_obj_next((js), var, parent_), i_++)
+
+#define JSON_OBJ_FOR(v, j, p)	JSON_FOR(v, j, p, JSMN_OBJECT)
+#define JSON_ARRAY_FOR(v, j, p)	JSON_FOR(v, j, p, JSMN_ARRAY)
 
 // misskey.c
 extern void cmd_misskey_stream(const char *);

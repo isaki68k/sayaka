@@ -358,7 +358,7 @@ json_get_len(const json *js, int idx)
 	return t->end - t->start;
 }
 
-// js[idx] の子要素数を返す。
+// js[idx] の子要素数 (オブジェクトならペア数、配列なら要素数) を返す。
 // オブジェクト型、配列型で使う。他での動作は不定。
 uint
 json_get_size(const json *js, int idx)
@@ -429,31 +429,53 @@ json_get_int(const json *js, int idx)
 	return val;
 }
 
-// オブジェクト型である idx からキーが key である要素を探す。
+// オブジェクトまたは配列型である idx の先頭の(キーの)インデックスを返す。
+// *nump には要素数を返す。
+// type には JSMN_* 型を指定すること。
+// オブジェクトまたは配列が空なら戻り値 js->tokenlen を返す。
+// JSON_OBJ_FOR マクロで使用する。
+int
+json_obj_first(const json *js, int idx, int *nump, int type)
+{
+	if (__predict_true(js->token[idx].type == type)) {
+		int num = json_get_size(js, idx);
+		if (num > 0) {
+			*nump = num;
+			return idx + 1;
+		}
+	}
+	return js->tokenlen;
+}
+
+// keyidx の次のキーのインデックスを返す。
+// 個数は呼び出し元が管理しているので見付からないはずはないが、
+// 見付からなければ js->tokenlen を返す。
+// JSON_OBJ_FOR, JSON_ARRAY_FOR マクロで使用する。
+int
+json_obj_next(const json *js, int keyidx, int parentidx)
+{
+	// オブジェクトに限定するなら keyidx + 2 が最短の次のキー位置だが、
+	// +1 にしておくと配列でも同じ関数が使い回せる。
+	for (int i = keyidx + 1; i < js->tokenlen; i++) {
+		if (js->token[i].parent == parentidx) {
+			return i;
+		}
+	}
+	return js->tokenlen;
+}
+
+// オブジェクト型である idx からキーが target である要素を探す。
 // 返されるのは key に対応する値のインデックス。
 // 見付からなければ -1 を返す。
 int
-json_obj_find(const json *js, int idx, const char *key)
+json_obj_find(const json *js, int idx, const char *target)
 {
-	jsmntok_t *t = &js->token[idx];
-
-	// 自分がオブジェクトでなければ -1 が返ってきてもいい気がする。
-	if (__predict_false(tok_is_obj(t) == false)) {
-		return -1;
-	}
-
-	// 自分の次の要素から、size 個カウントするまで、自分を親に持つ要素を探す。
-	int i = idx + 1;
-	uint childnum = t->size;
-	uint n = 0;
-	for (; i < js->tokenlen && n < childnum; i++) {
-		if (js->token[i].parent == idx) {
-			if (json_is_str(js, i) && json_equal_cstr(js, i, key)) {
-				return i + 1;
-			}
-			n++;
+	JSON_OBJ_FOR(ikey, js, idx) {
+		if (json_is_str(js, ikey) && json_equal_cstr(js, ikey, target)) {
+			return ikey + 1;
 		}
 	}
+
 	return -1;
 }
 
