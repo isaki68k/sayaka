@@ -386,15 +386,15 @@ help_all(void)
 	fprintf(stderr,
 		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
 	fprintf(stderr,
-"  -c <color> : Specify color mode (default: 256)\n"
+"  -c,--color=<color> : Specify color mode (default: 256)\n"
 "     2        : Monochrome (2-level grayscale)\n"
 "     8        : Fixed RGB 8 colors\n"
 "     16       : Fixed ANSI compatible 16 colors\n"
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
 "     gray[<n>]: (2..256) shades of grayscale. 256 if <n> is ommitted.\n"
 "                'gray2' is a synonym for '2'.\n"
-"  -w=<width>,  --width=<width>   : Resize width to <width> pixel.\n"
-"  -h=<height>, --height=<height> : Resize height to <height> pixel.\n"
+"  -w,--width=<width>   : Resize width to <width> pixel.\n"
+"  -h,--height=<height> : Resize height to <height> pixel.\n"
 "  --resize-axis=<axis> : Specify an origin axis for resizing. (default:both)\n"
 "     both, width, height, long, short, and\n"
 "     scaledown-{both,width,height,long,short} or (sd*)\n"
@@ -410,7 +410,7 @@ help_all(void)
 "     2        : 2-pixels (right, down)\n"
 "     3        : 3-pixels (right, down, rightdown)\n"
 "  --gain=<gain> : Output gain between 0.0 and 2.0 (default:1.0)\n"
-"  -O <fmt>, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
+"  -O, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
 "  -o <filename> : Output filename, '-' means stdout (default: -)\n"
 "  --ormode    : Output SIXEL by OR-mode\n"
 "  --suppress-palette : Suppress output of SIXEL palette definition\n"
