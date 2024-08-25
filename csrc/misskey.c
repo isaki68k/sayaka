@@ -44,7 +44,7 @@ static bool misskey_show_note(const json *, int, uint);
 static bool misskey_show_announcement(const json *, int);
 static void misskey_show_icon(const json *, int, const string *);
 static bool misskey_show_photo(const json *, int, int);
-static string *get_cache_filename(const char *);
+static void make_cache_filename(char *, uint, const char *);
 static string *string_unescape_c(const char *);
 static string *misskey_format_time(const json *, int);
 static string *misskey_display_renote_count(const json *, int);
@@ -492,8 +492,8 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 			// URL の FNV1 ハッシュをキャッシュのキーにする。
 			// Misskey の画像 URL は長いのと URL がネストした構造を
 			// しているので単純に一部を切り出して使う方法は無理。
-			snprintf(filename, sizeof(filename), "icon-%ux%u-%s-%s-%08x",
-				iconsize, iconsize, colorname,
+			snprintf(filename, sizeof(filename), "icon-%s-%u-%s-%08x",
+				colorname, fontheight,
 				string_get(userid), hash_fnv1a(avatar_url));
 			shown = show_image(filename, avatar_url, iconsize, -1);
 		}
@@ -503,8 +503,8 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 				json_obj_find_cstr(js, iuser, "avatarBlurhash");
 			if (avatar_blurhash) {
 				char url[256];
-				snprintf(filename, sizeof(filename), "icon-%ux%u-%s-%s-%08x",
-					iconsize, iconsize, colorname,
+				snprintf(filename, sizeof(filename), "icon-%s-%u-%s-%08x",
+					colorname, fontheight,
 					string_get(userid), hash_fnv1a(avatar_blurhash));
 				snprintf(url, sizeof(url), "blurhash://%s", avatar_blurhash);
 				shown = show_image(filename, url, iconsize, -1);
@@ -545,9 +545,8 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 static bool
 misskey_show_photo(const json *js, int ifile, int index)
 {
+	char img_file[PATH_MAX];
 	const char *img_url;
-	string *img_file;
-	bool result;
 
 //	int iisSensitive = json_obj_find(js, ifile, "isSensitive");
 	if (0) {
@@ -559,29 +558,25 @@ misskey_show_photo(const json *js, int ifile, int index)
 			//misskeky_print_filetype(js, ifile, "");
 			return false;
 		}
-		img_file = get_cache_filename(img_url);
+		make_cache_filename(img_file, sizeof(img_file), img_url);
 	}
 
-	result = show_image(string_get(img_file), img_url, imagesize, index);
-
-	string_free(img_file);
-	return result;
+	return show_image(img_file, img_url, imagesize, index);
 }
 
 // 画像 URL からキャッシュファイル名を作成して返す。
-static string *
-get_cache_filename(const char *url)
+// "file-<color>-<fontheight>-<url>"(.sixel)
+static void
+make_cache_filename(char *filename, uint bufsize, const char *url)
 {
-	string *file = string_from_cstr(url);
+	snprintf(filename, bufsize, "file-%s-%u-%s", colorname, fontheight, url);
 
-	char *p = string_get_buf(file);
-	for (; *p; p++) {
+	// 面倒な文字を置換しておく。
+	for (char *p = filename; *p; p++) {
 		if (strchr(":/()? ", *p)) {
 			*p = '_';
 		}
 	}
-
-	return file;
 }
 
 // src 中の "\\n" などのエスケープされた文字を "\n" に戻す。
