@@ -37,9 +37,10 @@ enum {
 };
 
 enum {
-	NSFW_NO,		// 画像を表示しない (MIME type のみ表示する)
-	NSFW_BLUR,		// Blurhash を表示する (なければ MIME type を表示する)
-	NSFW_SHOW,		// 元画像を表示する (なければ Blurhash を表示する)
+	NSFW_HIDE,		// このノート自体を表示しない
+	NSFW_ALT,		// 画像を表示せず MIME type のみ表示する
+	NSFW_BLUR,		// ぼかし画像を表示する
+	NSFW_SHOW,		// 元画像を表示する
 };
 
 typedef uint32 unichar;

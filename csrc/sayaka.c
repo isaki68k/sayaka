@@ -241,10 +241,13 @@ main(int ac, char *av[])
 				opt_nsfw = NSFW_SHOW;
 			} else if (strcmp(optarg, "blur") == 0) {
 				opt_nsfw = NSFW_BLUR;
-			} else if (strcmp(optarg, "no") == 0) {
-				opt_nsfw = NSFW_NO;
+			} else if (strcmp(optarg, "alt") == 0) {
+				opt_nsfw = NSFW_ALT;
+			} else if (strcmp(optarg, "hide") == 0) {
+				opt_nsfw = NSFW_HIDE;
 			} else {
-				errx(1, "--nsfw %s: must be 'show', 'blur', or 'no'", optarg);
+				errx(1, "--nsfw %s: must be 'show', 'blur', 'alt', or 'hide'",
+					optarg);
 			}
 			break;
 

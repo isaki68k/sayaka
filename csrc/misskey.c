@@ -325,6 +325,21 @@ misskey_show_note(const json *js, int inote, uint depth)
 		has_renote = false;
 	}
 
+	// --nsfw=hide なら、添付ファイルに isSensitive が一つでも含まれていれば
+	// このノート自体を表示しない。
+	int ifiles = json_obj_find(js, irenote, "files");
+	if (opt_nsfw == NSFW_HIDE) {
+		bool has_sensitive = false;
+		if (ifiles >= 0) {
+			JSON_ARRAY_FOR(ifile, js, ifiles) {
+				has_sensitive |= json_obj_find_bool(js, ifile, "isSensitive");
+			}
+		}
+		if (has_sensitive) {
+			return false;
+		}
+	}
+
 	// 1行目は名前、アカウント名など。
 	const char *name = "";
 	string *userid = string_alloc(64);
@@ -419,7 +434,6 @@ misskey_show_note(const json *js, int inote, uint depth)
 		image_count = 0;
 		image_next_cols = 0;
 		image_max_rows = 0;
-		int ifiles = json_obj_find(js, irenote, "files");
 		if (ifiles >= 0) {
 			JSON_ARRAY_FOR(ifile, js, ifiles) {
 				print_indent(indent_depth + 1);
@@ -555,8 +569,8 @@ misskey_show_photo(const json *js, int ifile, int index)
 	bool isSensitive = json_obj_find_bool(js, ifile, "isSensitive");
 	if (isSensitive && opt_nsfw != NSFW_SHOW) {
 		const char *blurhash = json_obj_find_cstr(js, ifile, "blurhash");
-		if (blurhash[0] == '\0' || opt_nsfw == NSFW_NO) {
-			// 画像でないなど Blurhash がない、あるいは --nsfw=no なら、
+		if (blurhash[0] == '\0' || opt_nsfw == NSFW_ALT) {
+			// 画像でないなど Blurhash がない、あるいは --nsfw=alt なら、
 			// ファイルタイプだけでも表示しておくか。
 			misskey_print_filetype(js, ifile, " [NSFW]");
 			return false;
