@@ -64,13 +64,11 @@ static struct netstream_opt netopt;
 enum {
 	OPT__start = 0x7f,
 	OPT_ciphers,
-	OPT_color,
 	OPT_debug_image,
 	OPT_debug_net,
 	OPT_debug_sixel,
 	OPT_diffusion,
 	OPT_gain,
-	OPT_gray,
 	OPT_height,
 	OPT_help,
 	OPT_help_all,
@@ -90,8 +88,6 @@ static const struct option longopts[] = {
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
 	{ "diffusion",		required_argument,	NULL,	OPT_diffusion },
 	{ "gain",			required_argument,	NULL,	OPT_gain },
-	{ "gray",			required_argument,	NULL,	OPT_gray },
-	{ "grey",			required_argument,	NULL,	OPT_gray },
 	{ "height",			required_argument,	NULL,	'h' },
 	{ "help",			no_argument,		NULL,	OPT_help, },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
@@ -180,17 +176,26 @@ main(int ac, char *av[])
 		switch (c) {
 		 case 'c':
 		 {
-			int num = stou32def(optarg, -1, NULL);
-			ReductorColor color;
-			switch (num) {
-			 case 2:	color = ReductorColor_Gray | (1U << 8);	break;
-			 case 8:	color = ReductorColor_Fixed8;	break;
-			 case 16:	color = ReductorColor_ANSI16;	break;
-			 case 256:	color = ReductorColor_Fixed256;	break;
-			 default:
-				errx(1, "invalid color mode");
+			int n;
+			if (strcmp(optarg, "2") == 0) {
+				imageopt.color = ReductorColor_GrayLevel(2);
+			} else if (strcmp(optarg, "8") == 0) {
+				imageopt.color = ReductorColor_Fixed8;
+			} else if (strcmp(optarg, "16") == 0) {
+				imageopt.color = ReductorColor_ANSI16;
+			} else if (strcmp(optarg, "256") == 0) {
+				imageopt.color = ReductorColor_Fixed256;
+			} else if (strcmp(optarg, "gray") == 0 ||
+			           strcmp(optarg, "grey") == 0) {
+				imageopt.color = ReductorColor_GrayLevel(256);
+			} else if ((strncmp(optarg, "gray", 4) == 0 ||
+			            strncmp(optarg, "grey", 4) == 0   ) &&
+			           (n = stou32def(optarg + 4, -1, NULL)) != -1 &&
+			           (2 <= n && n <= 256)) {
+				imageopt.color = ReductorColor_GrayLevel(n);
+			} else {
+				errx(1, "%s: invalid color mode", optarg);
 			}
-			imageopt.color = color;
 			break;
 		 }
 
@@ -236,16 +241,6 @@ main(int ac, char *av[])
 				errx(1, "invalid gain");
 			}
 			imageopt.gain = (uint)(f * 256);
-			break;
-		 }
-
-		 case OPT_gray:
-		 {
-			uint num = stou32def(optarg, 0, NULL);
-			if (num < 2 || num > 256) {
-				errx(1, "invalid grayscale: %s", optarg);
-			}
-			imageopt.color = ReductorColor_Gray | ((num - 1) << 8);
 			break;
 		 }
 
@@ -370,8 +365,7 @@ usage(void)
 	fprintf(stderr,
 		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
 	fprintf(stderr,
-"  -c <color>      : Color mode. 2, 8, 16, 256 (default:256)\n"
-"  --gray=<level>  : Grayscale tone from 2 to 256 (default:256)\n"
+"  -c <color>      : Color mode. 2, 8, 16, 256 or gray[2..256] (default:256)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -d <method>     : Reduction method, none(simple) or high (default:high)\n"
@@ -393,11 +387,12 @@ help_all(void)
 		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
 	fprintf(stderr,
 "  -c <color> : Specify color mode (default: 256)\n"
-"     2   : monochrome (2-level grayscale)\n"
-"     8   : Fixed RGB 8 colors\n"
-"     16  : Fixed ANSI compatible 16 colors\n"
-"     256 : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
-"  --gray=<level> : Specify grayscale tone from 2 to 256 (default:256)\n"
+"     2        : Monochrome (2-level grayscale)\n"
+"     8        : Fixed RGB 8 colors\n"
+"     16       : Fixed ANSI compatible 16 colors\n"
+"     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
+"     gray[<n>]: (2..256) shades of grayscale. 256 if <n> is ommitted.\n"
+"                'gray2' is a synonym for '2'.\n"
 "  -w=<width>,  --width=<width>   : Resize width to <width> pixel.\n"
 "  -h=<height>, --height=<height> : Resize height to <height> pixel.\n"
 "  --resize-axis=<axis> : Specify an origin axis for resizing. (default:both)\n"

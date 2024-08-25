@@ -139,6 +139,8 @@ typedef enum {
 	// 下位8ビットが色モード
 	ReductorColor_MASK = 0xff,
 } ReductorColor;
+#define ReductorColor_GrayLevel(n)	\
+	(ReductorColor_Gray | (((unsigned int)n - 1) << 8))
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define RGBToU32(r, g, b)	((uint32)(((r) <<  0) | ((g) << 8) | ((b) << 16)))

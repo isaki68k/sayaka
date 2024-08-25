@@ -175,7 +175,7 @@ main(int ac, char *av[])
 			int num = stou32def(optarg, -1, NULL);
 			ReductorColor color;
 			switch (num) {
-			 case 2:	color = ReductorColor_Gray | (1U << 8);	break;
+			 case 2:	color = ReductorColor_GrayLevel(2);	break;
 			 case 8:	color = ReductorColor_Fixed8;	break;
 			 case 16:	color = ReductorColor_ANSI16;	break;
 			 case 256:	color = ReductorColor_Fixed256;	break;
