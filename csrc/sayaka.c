@@ -52,6 +52,7 @@ enum {
 
 static void version(void);
 static void usage(void);
+static void help_all(void);
 static bool init(void);
 static void mkdir_if(const char *);
 static void progress(const char *);
@@ -94,6 +95,7 @@ enum {
 	OPT_debug_net,
 	OPT_debug_term,
 	OPT_font,
+	OPT_help_all,
 	OPT_light,
 	OPT_max_image_cols,
 	OPT_no_image,	// backward compatibility
@@ -113,6 +115,7 @@ static const struct option longopts[] = {
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
 	{ "font",			required_argument,	NULL,	OPT_font },
+	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
@@ -251,6 +254,10 @@ main(int ac, char *av[])
 			break;
 		 }
 
+		 case OPT_help_all:
+			help_all();
+			exit(0);
+
 		 case OPT_light:
 			opt_bgtheme = BG_LIGHT;
 			break;
@@ -373,6 +380,37 @@ static void
 usage(void)
 {
 	fprintf(stderr, "usage: %s [<options...>]\n", getprogname());
+}
+
+static void
+help_all(void)
+{
+	fprintf(stderr, "usage: %s [<options>...]\n", getprogname());
+	fprintf(stderr,
+"  -c,--color=<color> : Specify color mode (default: 256)\n"
+"     1        : Monochrome image, and text has no escape sequences\n"
+"     2        : Monochrome (2-level grayscale) image\n"
+"     8        : Fixed RGB 8 colors\n"
+"     16       : Fixed ANSI compatible 16 colors\n"
+"     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
+"     gray[<n>]: (2..256) shades of grayscale. 256 if <n> is ommitted.\n"
+"                'gray2' is a synonym for '2'.\n"
+"  --dark/--light\n"
+"  --debug-image=<0..2>\n"
+"  --debug-json=<0..2>\n"
+"  --debug-net=<0..2>\n"
+"  --debug-term=<0..2>\n"
+"  --font=<W>x<H>\n"
+"  --help-all  : This help.\n"
+"  --max-image-cols=<n>\n"
+"  --nsfw=<mode>\n"
+"  --play=<filename|->\n"
+"  --progress\n"
+"  --record=<filename>\n"
+"  --show-cw\n"
+"  --show-image=<mode>\n"
+"  -v,--version\n"
+	);
 }
 
 // コマンド共通の初期化。
