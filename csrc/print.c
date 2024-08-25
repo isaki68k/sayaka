@@ -30,6 +30,7 @@
 
 #include "sayaka.h"
 #include "image.h"
+#include <errno.h>
 #include <limits.h>
 #include <string.h>
 #include <unistd.h>
@@ -459,8 +460,10 @@ fetch_image(FILE *ofp, const char *img_url, uint size)
 	// 画像読み込み。
 	srcimg = image_read_pstream(pstream, &imageopt, diag_image);
 	if (srcimg == NULL) {
-		Debug(diag_image, "%s: image_read_pstream failed: %s", __func__,
-			strerrno());
+		if (errno != 0) {
+			Debug(diag_image, "%s: image_read_pstream failed: %s",
+				__func__, strerrno());
+		}
 		goto abort;
 	}
 
