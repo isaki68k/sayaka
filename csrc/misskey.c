@@ -495,7 +495,7 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 			snprintf(filename, sizeof(filename), "icon-%s-%u-%s-%08x",
 				colorname, fontheight,
 				string_get(userid), hash_fnv1a(avatar_url));
-			shown = show_image(filename, avatar_url, iconsize, -1);
+			shown = show_image(filename, avatar_url, iconsize, iconsize, -1);
 		}
 
 		if (shown == false) {
@@ -507,7 +507,7 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 					colorname, fontheight,
 					string_get(userid), hash_fnv1a(avatar_blurhash));
 				snprintf(url, sizeof(url), "blurhash://%s", avatar_blurhash);
-				shown = show_image(filename, url, iconsize, -1);
+				shown = show_image(filename, url, iconsize, iconsize, -1);
 			}
 		}
 	}
@@ -561,7 +561,7 @@ misskey_show_photo(const json *js, int ifile, int index)
 		make_cache_filename(img_file, sizeof(img_file), img_url);
 	}
 
-	return show_image(img_file, img_url, imagesize, index);
+	return show_image(img_file, img_url, imagesize, imagesize, index);
 }
 
 // 画像 URL からキャッシュファイル名を作成して返す。

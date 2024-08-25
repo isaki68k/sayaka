@@ -88,7 +88,7 @@ extern int  max_image_count;
 extern uint indent_depth;
 extern void print_indent(uint);
 extern void iprint(const ustring *);
-extern bool show_image(const char *, const char *, uint, int);
+extern bool show_image(const char *, const char *, uint, uint, int);
 
 // sayaka.c
 extern const char *cachedir;

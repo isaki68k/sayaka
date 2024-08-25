@@ -40,7 +40,7 @@
 extern image_opt imageopt;
 
 static inline void make_indent(char *, uint, int);
-static bool fetch_image(FILE *, const char *, uint);
+static bool fetch_image(FILE *, const char *, uint, uint);
 
 uint image_count;				// この列に表示している画像の数
 uint image_next_cols;			// この列で次に表示する画像の位置(桁数)
@@ -252,12 +252,13 @@ iprint(const ustring *src)
 // 画像をキャッシュして表示する。
 // img_file はキャッシュディレクトリ内でのファイル名 (拡張子 .sixel なし)。
 // img_url は画像の URL。
-// width は画像の表示幅。
+// width、height は画像の表示幅と高さ。
 // index は -1 ならアイコン、0 以上なら添付写真の何枚目かを表す。
 // どちらも位置決めなどのために使用する。
 // 表示できれば true を返す。
 bool
-show_image(const char *img_file, const char *img_url, uint width, int index)
+show_image(const char *img_file, const char *img_url, uint width, uint height,
+	int index)
 {
 	char cache_filename[PATH_MAX];
 	FILE *fp;
@@ -284,7 +285,7 @@ show_image(const char *img_file, const char *img_url, uint width, int index)
 			return false;
 		}
 
-		if (fetch_image(fp, img_url, width) == false) {
+		if (fetch_image(fp, img_url, width, height) == false) {
 			Debug(diag_image, "%s: fetch_image failed", __func__);
 			goto abort;
 		}
@@ -394,7 +395,7 @@ show_image(const char *img_file, const char *img_url, uint width, int index)
 // SIXEL 形式に変換して ofp に出力する。
 // 出力できれば true を返す。
 static bool
-fetch_image(FILE *ofp, const char *img_url, uint size)
+fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 {
 	struct netstream *net = NULL;
 	pstream *pstream = NULL;
@@ -405,8 +406,8 @@ fetch_image(FILE *ofp, const char *img_url, uint size)
 	uint dst_height;
 	bool rv = false;
 
-	imageopt.width  = size;
-	imageopt.height = size;
+	imageopt.width  = width;
+	imageopt.height = height;
 
 	if (strncmp(img_url, "blurhash://", 11) == 0) {
 		ifp = fmemopen(UNCONST(&img_url[11]), strlen(img_url) - 11, "r");
