@@ -334,6 +334,21 @@ json_is_bool(const json *js, int idx)
 	return false;
 }
 
+// js[idx] がブール型で true なら true を返す。
+bool
+json_is_true(const json *js, int idx)
+{
+	jsmntok_t *t = &js->token[idx];
+
+	if (tok_is_prim(t)) {
+		char ch = js->cstr[t->start];
+		if (ch == 't') {
+			return true;
+		}
+	}
+	return false;
+}
+
 // js[idx] が null 型なら true を返す。
 bool
 json_is_null(const json *js, int idx)
@@ -477,6 +492,30 @@ json_obj_find(const json *js, int idx, const char *target)
 	}
 
 	return -1;
+}
+
+// オブジェクト型である idx から key に対応する BOOL の値を返す。
+// key が見付からないか値が BOOL 型でなければ false を返す。
+bool
+json_obj_find_bool(const json *js, int idx, const char *key)
+{
+	int validx = json_obj_find(js, idx, key);
+	if (validx >= 0) {
+		return json_is_true(js, validx);
+	}
+	return false;
+}
+
+// オブジェクト型である idx から key に対応する数値の値を int で返す。
+// key が見付からないか値が数値型でないか int で表現できなければ 0 を返す。
+int
+json_obj_find_int(const json *js, int idx, const char *key)
+{
+	int validx = json_obj_find(js, idx, key);
+	if (validx >= 0) {
+		return json_get_int(js, validx);
+	}
+	return 0;
 }
 
 // オブジェクト型である idx からキーが key である子オブジェクトの

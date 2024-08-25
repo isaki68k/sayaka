@@ -53,6 +53,7 @@ extern bool json_is_array(const json *, int);
 extern bool json_is_str(const json *, int);
 extern bool json_is_num(const json *, int);
 extern bool json_is_bool(const json *, int);
+extern bool json_is_true(const json *, int);
 extern bool json_is_null(const json *, int);
 extern uint json_get_len(const json *, int);
 extern uint json_get_size(const json *, int);
@@ -61,6 +62,8 @@ extern int  json_get_int(const json *, int);
 extern int  json_obj_first(const json *, int, int *, int);
 extern int  json_obj_next(const json *, int, int);
 extern int  json_obj_find(const json *, int, const char *);
+extern bool json_obj_find_bool(const json *, int, const char *);
+extern int  json_obj_find_int(const json *, int, const char *);
 extern int  json_obj_find_obj(const json *, int, const char *);
 extern const char *json_obj_find_cstr(const json *, int, const char *);
 
