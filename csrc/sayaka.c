@@ -80,6 +80,7 @@ static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
 static bool opt_progress;
 const char *opt_record_file;		// 録画ファイル名 (NULL なら録画しない)
+bool opt_show_cw;					// CW を表示するか。
 int opt_show_image;					// -1:自動判別 0:出力しない 1:出力する
 uint screen_cols;					// 画面の桁数
 
@@ -97,6 +98,7 @@ enum {
 	OPT_play,
 	OPT_progress,
 	OPT_record,
+	OPT_show_cw,
 	OPT_show_image,
 };
 
@@ -114,6 +116,7 @@ static const struct option longopts[] = {
 	{ "play",			required_argument,	NULL,	OPT_play },
 //	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	OPT_record },
+	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
 	{ NULL },
 };
@@ -246,6 +249,10 @@ main(int ac, char *av[])
 
 		 case OPT_record:
 			opt_record_file = optarg;
+			break;
+
+		 case OPT_show_cw:
+			opt_show_cw = true;
 			break;
 
 		 case OPT_show_image:

@@ -393,8 +393,11 @@ misskey_show_note(const json *js, int inote, uint depth)
 	ustring *textline = ustring_alloc(256);
 	if (cw) {
 		ustring_append_utf8(textline, string_get(cw));
-		ustring_append_ascii(textline, " [CW]\n");
-		ustring_append_utf8(textline, string_get(text));
+		ustring_append_ascii(textline, " [CW]");
+		if (opt_show_cw) {
+			ustring_append_unichar(textline, '\n');
+			ustring_append_utf8(textline, string_get(text));
+		}
 	} else {
 		ustring_append_utf8(textline, string_get(text));
 	}
@@ -410,7 +413,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	ustring_free(textline);
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
-	if (cw == NULL || 1) {
+	if (cw == NULL || opt_show_cw) {
 		// picture
 		image_count = 0;
 		image_next_cols = 0;

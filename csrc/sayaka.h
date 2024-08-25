@@ -102,8 +102,9 @@ extern uint indent_cols;
 extern bool in_sixel;
 extern struct netstream_opt netopt;
 extern const char *opt_record_file;
-extern uint screen_cols;
+extern bool opt_show_cw;
 extern int  opt_show_image;
+extern uint screen_cols;
 
 // subr.c
 extern uint32 rnd_get32(void);
