@@ -44,16 +44,9 @@ typedef enum {
 	OutputFormat_BMP,
 } OutputFormat;
 
-// コマンドラインオプション文字列のデコード用
-struct optmap {
-	const char *name;
-	int value;
-};
-
 static void version(void);
 static void usage(void);
 static void help_all(void);
-static int parse_opt(const struct optmap *, const char *);
 static bool do_file(const char *filename);
 static void signal_handler(int);
 
@@ -211,7 +204,7 @@ main(int ac, char *av[])
 			break;
 
 		 case 'd':
-			imageopt.method = parse_opt(map_reductor_method, optarg);
+			imageopt.method = parse_optmap(map_reductor_method, optarg);
 			if ((int)imageopt.method < 0) {
 				errx(1, "invalid reductor method '%s'", optarg);
 			}
@@ -230,7 +223,7 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_diffusion:
-			imageopt.diffuse = parse_opt(map_diffuse, optarg);
+			imageopt.diffuse = parse_optmap(map_diffuse, optarg);
 			if ((int)imageopt.diffuse < 0) {
 				errx(1, "Invalid diffusion '%s'", optarg);
 			}
@@ -278,7 +271,7 @@ main(int ac, char *av[])
 			break;
 
 		 case 'O':
-			output_format = parse_opt(map_output_format, optarg);
+			output_format = parse_optmap(map_output_format, optarg);
 			if ((int)output_format < 0) {
 				errx(1, "Invalid output format '%s'", optarg);
 			}
@@ -297,7 +290,7 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_resize_axis:
-			opt_resize_axis = parse_opt(map_resize_axis, optarg);
+			opt_resize_axis = parse_optmap(map_resize_axis, optarg);
 			if ((int)opt_resize_axis < 0) {
 				errx(1, "Invalid resize axis '%s'", optarg);
 			}
@@ -434,19 +427,6 @@ help_all(void)
 "  --help-all  : This help.\n"
 	);
 	exit(0);
-}
-
-// map から arg に対応する値を返す。
-// 見付からなければ -1 を返す。
-static int
-parse_opt(const struct optmap *map, const char *arg)
-{
-	for (int i = 0; map[i].name; i++) {
-		if (strcmp(map[i].name, arg) == 0) {
-			return map[i].value;
-		}
-	}
-	return -1;
 }
 
 // ファイル1つを表示する。

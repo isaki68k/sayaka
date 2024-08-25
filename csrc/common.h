@@ -65,6 +65,12 @@ struct net;
 typedef struct pstream_ pstream;
 typedef struct string_ string;
 
+// コマンドラインオプション文字列のデコード用
+struct optmap {
+	const char *name;
+	int value;
+};
+
 // diag.c
 static inline int diag_get_level(const diag *diag)
 {
@@ -129,6 +135,7 @@ extern void string_append_printf(string *, const char *, ...)
 // util.c
 extern const char *strerrno(void);
 extern void chomp(char *);
+extern int  parse_optmap(const struct optmap *, const char *);
 extern uint32 stou32def(const char *, uint32, char **);
 #if defined(__OpenBSD__)
 extern uint putd(char *, uint, uint);

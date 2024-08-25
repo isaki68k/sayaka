@@ -124,6 +124,14 @@ static const struct option longopts[] = {
 	{ NULL },
 };
 
+static const struct optmap map_nsfw[] = {
+	{ "hide",		NSFW_HIDE },
+	{ "alt",		NSFW_ALT },
+	{ "blur",		NSFW_BLUR },
+	{ "show",		NSFW_SHOW },
+	{ NULL },
+};
+
 #define SET_DIAG_LEVEL(name)	\
 	 {	\
 		int lv = stou32def(optarg, -1, NULL);	\
@@ -237,15 +245,8 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_nsfw:
-			if (strcmp(optarg, "show") == 0) {
-				opt_nsfw = NSFW_SHOW;
-			} else if (strcmp(optarg, "blur") == 0) {
-				opt_nsfw = NSFW_BLUR;
-			} else if (strcmp(optarg, "alt") == 0) {
-				opt_nsfw = NSFW_ALT;
-			} else if (strcmp(optarg, "hide") == 0) {
-				opt_nsfw = NSFW_HIDE;
-			} else {
+			opt_nsfw = parse_optmap(map_nsfw, optarg);
+			if ((int)opt_nsfw < 0) {
 				errx(1, "--nsfw %s: must be 'show', 'blur', 'alt', or 'hide'",
 					optarg);
 			}

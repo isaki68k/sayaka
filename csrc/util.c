@@ -55,6 +55,19 @@ chomp(char *s)
 	}
 }
 
+// map から arg に対応する値を返す。
+// 見付からなければ -1 を返す。
+int
+parse_optmap(const struct optmap *map, const char *arg)
+{
+	for (int i = 0; map[i].name; i++) {
+		if (strcmp(map[i].name, arg) == 0) {
+			return map[i].value;
+		}
+	}
+	return -1;
+}
+
 // 文字列 s を10進数符号なし整数とみなして数値に変換する、簡易版。
 // 数値以外の文字が来たところで変換を終了する。
 // 変換できればその値を返す。出来なければ errno をセットし defval を返す。
