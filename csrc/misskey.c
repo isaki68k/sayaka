@@ -48,8 +48,10 @@ static void misskey_print_filetype(const json *, int, const char *);
 static void make_cache_filename(char *, uint, const char *);
 static string *string_unescape_c(const char *);
 static string *misskey_format_time(const json *, int);
-static string *misskey_display_renote_count(const json *, int);
-static string *misskey_display_reaction_count(const json *, int);
+static string *misskey_format_renote_count(const json *, int);
+static string *misskey_format_reaction_count(const json *, int);
+static string *misskey_format_renote_owner(const json *, int);
+static const char *misskey_get_user(const json *, int, string *, const char **);
 
 static json *js;
 
@@ -341,33 +343,10 @@ misskey_show_note(const json *js, int inote, uint depth)
 	}
 
 	// 1行目は名前、アカウント名など。
-	const char *name = "";
+	int iuser = json_obj_find_obj(js, irenote, "user");
 	string *userid = string_alloc(64);
 	const char *instance = NULL;
-	int iuser = json_obj_find_obj(js, irenote, "user");
-	if (iuser >= 0) {
-		const char *c_name     = json_obj_find_cstr(js, iuser, "name");
-		const char *c_username = json_obj_find_cstr(js, iuser, "username");
-		const char *c_host     = json_obj_find_cstr(js, iuser, "host");
-
-		// ユーザ名 は name だが、空なら username を使う仕様のようだ。
-		if (c_name && c_name[0] != '\0') {
-			name = c_name;
-		} else {
-			name = c_username;
-		}
-
-		// @アカウント名 [ @外部ホスト名 ]
-		string_append_char(userid, '@');
-		string_append_cstr(userid, c_username);
-		if (c_host) {
-			string_append_char(userid, '@');
-			string_append_cstr(userid, c_host);
-		}
-
-		// インスタンス名
-		instance = json_obj_find_cstr(js, iuser, "instance");
-	}
+	const char *name = misskey_get_user(js, irenote, userid, &instance);
 	ustring *headline = ustring_alloc(64);
 	ustring_append_utf8_color(headline, name, COLOR_USERNAME);
 	ustring_append_unichar(headline, ' ');
@@ -448,8 +427,8 @@ misskey_show_note(const json *js, int inote, uint depth)
 
 	// 時刻と、あればこのノートの既 RN 数、リアクション数。
 	string *time = misskey_format_time(js, irenote);
-	string *rnmsg = misskey_display_renote_count(js, irenote);
-	string *reactmsg = misskey_display_reaction_count(js, irenote);
+	string *rnmsg = misskey_format_renote_count(js, irenote);
+	string *reactmsg = misskey_format_reaction_count(js, irenote);
 
 	ustring *footline = ustring_alloc(64);
 	ustring_append_ascii_color(footline, string_get(time), COLOR_TIME);
@@ -464,8 +443,16 @@ misskey_show_note(const json *js, int inote, uint depth)
 	ustring_free(footline);
 
 	// リノート元
+	if (has_renote) {
+		ustring *rnline = ustring_alloc(64);
+		string *rnowner = misskey_format_renote_owner(js, inote);
+		ustring_append_utf8_color(rnline, string_get(rnowner), COLOR_RENOTE);
+		iprint(rnline);
+		printf("\n");
+		string_free(rnowner);
+		ustring_free(rnline);
+	}
 
-	(void)has_renote;
 	string_free(cw);
 	string_free(userid);
 	return true;
@@ -709,7 +696,7 @@ misskey_format_time(const json *js, int inote)
 
 // リノート数を表示用に整形して返す。
 static string *
-misskey_display_renote_count(const json *js, int inote)
+misskey_format_renote_count(const json *js, int inote)
 {
 	string *s;
 	uint rncnt = 0;
@@ -731,7 +718,7 @@ misskey_display_renote_count(const json *js, int inote)
 
 // リアクション数を表示用に整形して返す。
 static string *
-misskey_display_reaction_count(const json *js, int inote)
+misskey_format_reaction_count(const json *js, int inote)
 {
 	string *s;
 	uint cnt = 0;
@@ -754,4 +741,72 @@ misskey_display_reaction_count(const json *js, int inote)
 		s = string_init();
 	}
 	return s;
+}
+
+// リノート元通知を表示用に整形して返す。
+static string *
+misskey_format_renote_owner(const json *js, int inote)
+{
+	string *s = string_init();
+	string *rn_time = misskey_format_time(js, inote);
+	string *rn_userid = string_alloc(64);
+	const char *rn_instance = NULL;
+	const char *rn_name = misskey_get_user(js, inote, rn_userid, &rn_instance);
+
+	string_append_cstr(s, string_get(rn_time));
+	string_append_char(s, ' ');
+	string_append_cstr(s, rn_name);
+	string_append_char(s, ' ');
+	string_append_cstr(s, string_get(rn_userid));
+	if (rn_instance) {
+		string_append_char(s, ' ');
+		string_append_cstr(s, rn_instance);
+	}
+	string_append_cstr(s, " renoted");
+
+	string_free(rn_time);
+	string_free(rn_userid);
+	return s;
+}
+
+// ノートのユーザ情報を返す。
+// 戻り値でユーザ名を返す。
+// userid にアカウント名を入れて(追加して)返す。
+// *instancep に、あればインスタンス名を格納する。
+static const char *
+misskey_get_user(const json *js, int inote, string *userid,
+	const char **instancep)
+{
+	const char *name = NULL;
+	const char *instance = NULL;
+
+	int iuser = json_obj_find_obj(js, inote, "user");
+	if (iuser >= 0) {
+		const char *c_name     = json_obj_find_cstr(js, iuser, "name");
+		const char *c_username = json_obj_find_cstr(js, iuser, "username");
+		const char *c_host     = json_obj_find_cstr(js, iuser, "host");
+
+		// ユーザ名 は name だが、空なら username を使う仕様のようだ。
+		if (c_name && c_name[0] != '\0') {
+			name = c_name;
+		} else {
+			name = c_username;
+		}
+
+		// @アカウント名 [ @外部ホスト名 ]
+		string_append_char(userid, '@');
+		string_append_cstr(userid, c_username);
+		if (c_host) {
+			string_append_char(userid, '@');
+			string_append_cstr(userid, c_host);
+		}
+
+		// インスタンス名
+		instance = json_obj_find_cstr(js, iuser, "instance");
+	}
+
+	if (instancep) {
+		*instancep = instance;
+	}
+	return name;
 }
