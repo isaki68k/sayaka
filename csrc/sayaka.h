@@ -36,6 +36,12 @@ enum {
 	BG_LIGHT = 1,	// 背景色は明るい
 };
 
+enum {
+	NSFW_NO,		// 画像を表示しない (MIME type のみ表示する)
+	NSFW_BLUR,		// Blurhash を表示する (なければ MIME type を表示する)
+	NSFW_SHOW,		// 元画像を表示する (なければ Blurhash を表示する)
+};
+
 typedef uint32 unichar;
 
 typedef struct json_ json;
@@ -104,6 +110,7 @@ extern uint imagesize;
 extern uint indent_cols;
 extern bool in_sixel;
 extern struct netstream_opt netopt;
+extern uint opt_nsfw;
 extern const char *opt_record_file;
 extern bool opt_show_cw;
 extern int  opt_show_image;

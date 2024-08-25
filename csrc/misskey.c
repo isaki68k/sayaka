@@ -44,6 +44,7 @@ static bool misskey_show_note(const json *, int, uint);
 static bool misskey_show_announcement(const json *, int);
 static void misskey_show_icon(const json *, int, const string *);
 static bool misskey_show_photo(const json *, int, int);
+static void misskey_print_filetype(const json *, int, const char *);
 static void make_cache_filename(char *, uint, const char *);
 static string *string_unescape_c(const char *);
 static string *misskey_format_time(const json *, int);
@@ -546,10 +547,45 @@ static bool
 misskey_show_photo(const json *js, int ifile, int index)
 {
 	char img_file[PATH_MAX];
+	char urlbuf[256];
 	const char *img_url;
+	uint width = 0;
+	uint height = 0;
 
-//	int iisSensitive = json_obj_find(js, ifile, "isSensitive");
-	if (0) {
+	bool isSensitive = json_obj_find_bool(js, ifile, "isSensitive");
+	if (isSensitive && opt_nsfw != NSFW_SHOW) {
+		const char *blurhash = json_obj_find_cstr(js, ifile, "blurhash");
+		if (blurhash[0] == '\0' || opt_nsfw == NSFW_NO) {
+			// 画像でないなど Blurhash がない、あるいは --nsfw=no なら、
+			// ファイルタイプだけでも表示しておくか。
+			misskey_print_filetype(js, ifile, " [NSFW]");
+			return false;
+		}
+		int iproperties = json_obj_find_obj(js, ifile, "properties");
+		if (iproperties >= 0) {
+			width  = json_obj_find_int(js, iproperties, "width");
+			height = json_obj_find_int(js, iproperties, "height");
+
+			// 原寸のアスペクト比を維持したまま長辺が imagesize になる
+			// ようにする。
+			// image_reduct() には入力画像サイズとしてこのサイズを、
+			// 出力画像サイズも同じサイズを指定することで等倍で動作させる。
+			if (width > height) {
+				height = height * imagesize / width;
+				width = imagesize;
+			} else {
+				width = width * imagesize / height;
+				height = imagesize;
+			}
+		}
+		if (width < 1) {
+			width = imagesize;
+		}
+		if (height < 1) {
+			height = imagesize;
+		}
+		snprintf(urlbuf, sizeof(urlbuf), "blurhash://%s", blurhash);
+		img_url = urlbuf;
 	} else {
 		// 元画像を表示。thumbnailUrl を使う。
 		img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
@@ -558,10 +594,25 @@ misskey_show_photo(const json *js, int ifile, int index)
 			//misskeky_print_filetype(js, ifile, "");
 			return false;
 		}
-		make_cache_filename(img_file, sizeof(img_file), img_url);
+		width  = imagesize;
+		height = imagesize;
 	}
+	make_cache_filename(img_file, sizeof(img_file), img_url);
+	return show_image(img_file, img_url, width, height, index);
+}
 
-	return show_image(img_file, img_url, imagesize, imagesize, index);
+// 改行してファイルタイプだけを出力する。
+static void
+misskey_print_filetype(const json *js, int ifile, const char *msg)
+{
+	image_count = 0;
+	image_max_rows = 0;
+	image_next_cols = 0;
+
+	const char *type = json_obj_find_cstr(js, ifile, "type");
+	printf("\r");
+	print_indent(indent_depth + 1);
+	printf("(%s)%s\n", type, msg);
 }
 
 // 画像 URL からキャッシュファイル名を作成して返す。

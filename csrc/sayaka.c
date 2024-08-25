@@ -78,6 +78,7 @@ struct netstream_opt netopt;		// ネットワーク関係のオプション
 static int opt_bgtheme;				// -1:自動判別 0:Dark 1:Light
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
+uint opt_nsfw;						// NSFW コンテンツの表示方法
 static bool opt_progress;
 const char *opt_record_file;		// 録画ファイル名 (NULL なら録画しない)
 bool opt_show_cw;					// CW を表示するか。
@@ -95,6 +96,7 @@ enum {
 	OPT_light,
 	OPT_max_image_cols,
 	OPT_no_image,	// backward compatibility
+	OPT_nsfw,
 	OPT_play,
 	OPT_progress,
 	OPT_record,
@@ -113,6 +115,7 @@ static const struct option longopts[] = {
 	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
+	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
 	{ "play",			required_argument,	NULL,	OPT_play },
 //	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	OPT_record },
@@ -148,6 +151,7 @@ main(int ac, char *av[])
 	opt_bgtheme = BG_AUTO;
 	opt_fontwidth = 0;
 	opt_fontheight = 0;
+	opt_nsfw = NSFW_BLUR;
 	opt_progress = false;
 	opt_show_image = -1;
 	playfile = NULL;
@@ -230,6 +234,18 @@ main(int ac, char *av[])
 		 case OPT_no_image:
 			warnx("--no-image is obsolete.  --show-image=no is used instead.");
 			opt_show_image = 0;
+			break;
+
+		 case OPT_nsfw:
+			if (strcmp(optarg, "show") == 0) {
+				opt_nsfw = NSFW_SHOW;
+			} else if (strcmp(optarg, "blur") == 0) {
+				opt_nsfw = NSFW_BLUR;
+			} else if (strcmp(optarg, "no") == 0) {
+				opt_nsfw = NSFW_NO;
+			} else {
+				errx(1, "--nsfw %s: must be 'show', 'blur', or 'no'", optarg);
+			}
 			break;
 
 		 case OPT_play:
