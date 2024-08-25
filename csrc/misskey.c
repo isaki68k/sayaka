@@ -369,12 +369,12 @@ misskey_show_note(const json *js, int inote, uint depth)
 		instance = json_obj_find_cstr(js, iuser, "instance");
 	}
 	ustring *headline = ustring_alloc(64);
-	ustring_append_utf8(headline, name);
+	ustring_append_utf8_color(headline, name, COLOR_USERNAME);
 	ustring_append_unichar(headline, ' ');
-	ustring_append_utf8(headline, string_get(userid));
+	ustring_append_utf8_color(headline, string_get(userid), COLOR_USERID);
 	if (instance) {
 		ustring_append_unichar(headline, ' ');
-		ustring_append_utf8(headline, instance);
+		ustring_append_utf8_color(headline, instance, COLOR_USERNAME);
 	}
 
 	// 本文。
@@ -452,9 +452,9 @@ misskey_show_note(const json *js, int inote, uint depth)
 	string *reactmsg = misskey_display_reaction_count(js, irenote);
 
 	ustring *footline = ustring_alloc(64);
-	ustring_append_ascii(footline, string_get(time));
-	ustring_append_ascii(footline, string_get(rnmsg));
-	ustring_append_ascii(footline, string_get(reactmsg));
+	ustring_append_ascii_color(footline, string_get(time), COLOR_TIME);
+	ustring_append_ascii_color(footline, string_get(rnmsg), COLOR_RENOTE);
+	ustring_append_ascii_color(footline, string_get(reactmsg), COLOR_REACTION);
 	string_free(time);
 	string_free(rnmsg);
 	string_free(reactmsg);

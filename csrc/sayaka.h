@@ -37,6 +37,18 @@ enum {
 };
 
 enum {
+	COLOR_USERNAME,
+	COLOR_USERID,
+	COLOR_TIME,
+	COLOR_RENOTE,
+	COLOR_REACTION,
+	COLOR_URL,
+	COLOR_TAG,
+
+	COLOR_MAX,
+};
+
+enum {
 	NSFW_HIDE,		// このノート自体を表示しない
 	NSFW_ALT,		// 画像を表示せず MIME type のみ表示する
 	NSFW_BLUR,		// ぼかし画像を表示する
@@ -93,12 +105,16 @@ extern uint image_next_cols;
 extern uint image_max_rows;
 extern int  max_image_count;
 extern uint indent_depth;
+extern void init_color(void);
+extern void ustring_append_ascii_color(ustring *, const char *, uint);
+extern void ustring_append_utf8_color(ustring *, const char *, uint);
 extern void print_indent(uint);
 extern void iprint(const ustring *);
 extern bool show_image(const char *, const char *, uint, uint, int);
 
 // sayaka.c
 extern const char *cachedir;
+extern uint colormode;
 extern char colorname[];
 extern diag *diag_image;
 extern diag *diag_json;
@@ -111,6 +127,7 @@ extern uint imagesize;
 extern uint indent_cols;
 extern bool in_sixel;
 extern struct netstream_opt netopt;
+extern int opt_bgtheme;
 extern uint opt_nsfw;
 extern const char *opt_record_file;
 extern bool opt_show_cw;

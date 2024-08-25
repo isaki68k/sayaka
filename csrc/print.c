@@ -36,9 +36,28 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+// 色定数
+#define BOLD		"1"
+#define UNDERSCORE	"4"
+#define STRIKE		"9"
+#define BLACK		"30"
+#define RED			"31"
+#define GREEN		"32"
+#define BROWN		"33"
+#define BLUE		"34"
+#define MAGENTA		"35"
+#define CYAN		"36"
+#define WHITE		"37"
+#define GRAY		"90"
+#define YELLOW		"93"
+
+#define BG_ISDARK()		(opt_bgtheme == BG_DARK)
+#define BG_ISLIGHT()	(opt_bgtheme != BG_DARK) // 姑息な最適化
+
 // ヘッダの依存関係を減らすため。
 extern image_opt imageopt;
 
+static void make_esc(char *, const char *);
 static inline void make_indent(char *, uint, int);
 static bool fetch_image(FILE *, const char *, uint, uint);
 
@@ -50,6 +69,119 @@ uint indent_depth;				// 現在のインデント深さ
 const char *output_codeset;		// 出力文字コード (NULL なら UTF-8)
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を合成しない
+
+#define C2EBUFSIZE	(16)
+static char color2esc[COLOR_MAX][C2EBUFSIZE];
+
+// 色関係の初期化。
+void
+init_color()
+{
+	char url[C2EBUFSIZE];
+	const char *c_blue = NULL;
+	const char *c_username = NULL;
+	const char *c_renote = NULL;
+	const char *c_react = NULL;
+	const char *c_gray = NULL;
+
+	url[0] = '\0';
+
+	if (colormode == 1) {
+		// -c 1 なら一切エスケープシーケンスを使わない。
+		return;
+	}
+
+	if (colormode == 2) {
+		// モノクロなら色は付けないが、
+		// ユーザ名だけボールドにすると少し目立って分かりやすいか。
+		c_username = BOLD;
+	} else {
+		// それ以外のケースは色ごとに個別調整。
+
+		// 青は黒背景か白背景かで色合いを変えたほうが読みやすい。
+		if (BG_ISLIGHT()) {
+			c_blue = BLUE;
+		} else {
+			c_blue = CYAN;
+		}
+		snprintf(url, sizeof(url), "%s;%s", UNDERSCORE, c_blue);
+
+		// ユーザ名。白地の場合は出来ればもう少し暗めにしたい。
+		if (BG_ISLIGHT() && colormode > 16) {
+			c_username = "38;5;28";
+		} else {
+			c_username = BROWN;
+		}
+
+		// リノートは緑色。出来れば濃い目にしたい。
+		if (colormode > 16) {
+			c_renote = BOLD ";" "38;5;28";
+		} else {
+			c_renote = BOLD ";" GREEN;
+		}
+
+		// リアクションは黄色。白地の場合は出来れば濃い目にしたいが
+		// こちらは太字なのでユーザ名ほどオレンジにしなくてもよさげ。
+		if (BG_ISLIGHT() && colormode > 16) {
+			c_react = BOLD ";" "38;5;184";
+		} else {
+			c_react = BOLD ";" BROWN;
+		}
+
+		// mlterm では 90 がグレー、97 は白。
+		c_gray = "90";
+	}
+
+	make_esc(color2esc[COLOR_USERNAME],	c_username);
+	make_esc(color2esc[COLOR_USERID],	c_blue);
+	make_esc(color2esc[COLOR_TIME],		c_gray);
+	make_esc(color2esc[COLOR_RENOTE],	c_renote);
+	make_esc(color2esc[COLOR_REACTION],	c_react);
+	make_esc(color2esc[COLOR_URL],		url);
+	make_esc(color2esc[COLOR_TAG],		c_blue);
+}
+
+static void
+make_esc(char *dst, const char *color)
+{
+	if (color != NULL && color[0] != '\0') {
+		snprintf(dst, C2EBUFSIZE, ESC "[%sm", color);
+	}
+}
+
+// ustring の u の末尾に color で着色した ASCII 文字列 str を追加する。
+void
+ustring_append_ascii_color(ustring *u, const char *str, uint color)
+{
+	if (str[0] != '\0') {
+		bool has_esc = (color2esc[color][0] != '\0');
+
+		if (has_esc) {
+			ustring_append_ascii(u, color2esc[color]);
+		}
+		ustring_append_ascii(u, str);
+		if (has_esc) {
+			ustring_append_ascii(u, ESC "[0m");
+		}
+	}
+}
+
+// ustring の u の末尾に color で着色した UTF-8 文字列 str を追加する。
+void
+ustring_append_utf8_color(ustring *u, const char *str, uint color)
+{
+	if (str[0] != '\0') {
+		bool has_esc = (color2esc[color][0] != '\0');
+
+		if (has_esc) {
+			ustring_append_ascii(u, color2esc[color]);
+		}
+		ustring_append_utf8(u, str);
+		if (has_esc) {
+			ustring_append_ascii(u, ESC "[0m");
+		}
+	}
+}
 
 // depth 分のインデントを行うエスケープ文字列を buf に書き出す。
 // CSI."0C" は0文字でなく1文字になってしまうし、インデント階層が 0 かどうかは

@@ -62,6 +62,7 @@ static void sigwinch(bool);
 
 static const char *basedir;
 const char *cachedir;
+uint colormode;						// テキストの色数(モード)
 char colorname[16];					// キャッシュファイルに使う色名
 diag *diag_image;
 diag *diag_json;
@@ -75,7 +76,7 @@ uint imagesize;						// 画像の大きさ
 uint indent_cols;					// インデント1階層の桁数
 bool in_sixel;						// SIXEL 出力中か。
 struct netstream_opt netopt;		// ネットワーク関係のオプション
-static int opt_bgtheme;				// -1:自動判別 0:Dark 1:Light
+int opt_bgtheme;					// -1:自動判別 0:Dark 1:Light
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
 uint opt_nsfw;						// NSFW コンテンツの表示方法
@@ -156,6 +157,7 @@ main(int ac, char *av[])
 	cmd = Cmd_none;
 	image_opt_init(&imageopt);
 	netstream_opt_init(&netopt);
+	colormode = 256;
 	opt_bgtheme = BG_AUTO;
 	opt_fontwidth = 0;
 	opt_fontheight = 0;
@@ -172,17 +174,39 @@ main(int ac, char *av[])
 		switch (c) {
 		 case 'c':
 		 {
-			int num = stou32def(optarg, -1, NULL);
-			ReductorColor color;
-			switch (num) {
-			 case 2:	color = ReductorColor_GrayLevel(2);	break;
-			 case 8:	color = ReductorColor_Fixed8;	break;
-			 case 16:	color = ReductorColor_ANSI16;	break;
-			 case 256:	color = ReductorColor_Fixed256;	break;
-			 default:
-				errx(1, "invalid color mode");
+			// ここは元々色数を指定しているのではなく、色モード指定。
+			// -c 2 は、画像はモノクロで、テキストはボールドのみ飾り付けを行う。
+			// -c 1 は、画像はモノクロで、テキストはボールドも含めて一切の
+			// 飾り付けを行わない (ボールドがつらい端末を救済するため)。
+			int n;
+			if (strcmp(optarg, "1") == 0) {
+				colormode = 1;
+				imageopt.color = ReductorColor_GrayLevel(2);
+			} else if (strcmp(optarg, "2") == 0) {
+				colormode = 2;
+				imageopt.color = ReductorColor_GrayLevel(2);
+			} else if (strcmp(optarg, "8") == 0) {
+				colormode = 8;
+				imageopt.color = ReductorColor_Fixed8;
+			} else if (strcmp(optarg, "16") == 0) {
+				colormode = 16;
+				imageopt.color = ReductorColor_ANSI16;
+			} else if (strcmp(optarg, "256") == 0) {
+				colormode = 256;
+				imageopt.color = ReductorColor_Fixed256;
+			} else if (strcmp(optarg, "gray") == 0 ||
+			           strcmp(optarg, "grey") == 0) {
+				colormode = 2;
+				imageopt.color = ReductorColor_GrayLevel(256);
+			} else if ((strncmp(optarg, "gray", 4) == 0 ||
+			            strncmp(optarg, "grey", 4) == 0   ) &&
+			           (n = stou32def(optarg + 4, -1, NULL)) != -1 &&
+			           (2 <= n && n <= 256)) {
+				colormode = 2;
+				imageopt.color = ReductorColor_GrayLevel(n);
+			} else {
+				errx(1, "%s: invalid color mode", optarg);
 			}
-			imageopt.color = color;
 			break;
 		 }
 
@@ -468,7 +492,7 @@ init_screen(void)
 	// 出力文字コードの初期化。
 
 	// 色の初期化。
-	//init_color();
+	init_color();
 
 	// キャッシュファイル用の色モード名。
 	switch (imageopt.color & ReductorColor_MASK) {
