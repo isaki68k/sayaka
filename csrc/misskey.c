@@ -377,9 +377,13 @@ misskey_show_note(const json *js, int inote, uint depth)
 	// 都合がいいのでそのままにしておく (JSON パーサがテキストをデコードして
 	// いた場合にはこっちを再エスケープするはずだった)。
 
+	string *text = NULL;
 	const char *c_text = json_obj_find_cstr(js, irenote, "text");
-	string *text = string_unescape_c(c_text);
-	if (text == NULL) {
+	if (c_text) {
+		text = string_unescape_c(c_text);
+	}
+	if (__predict_false(text == NULL)) {
+		text = string_from_cstr("");
 	}
 
 	// "cw":null は CW なし、"cw":"" は前置きなしの [CW]、で意味が違う。
