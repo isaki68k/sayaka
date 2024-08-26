@@ -549,57 +549,66 @@ misskey_show_photo(const json *js, int ifile, int index)
 {
 	char img_file[PATH_MAX];
 	char urlbuf[256];
+	const char *filetype_msg = "";
 	const char *img_url;
 	uint width = 0;
 	uint height = 0;
+	bool shown = false;
 
-	bool isSensitive = json_obj_find_bool(js, ifile, "isSensitive");
-	if (isSensitive && opt_nsfw != NSFW_SHOW) {
-		const char *blurhash = json_obj_find_cstr(js, ifile, "blurhash");
-		if (blurhash[0] == '\0' || opt_nsfw == NSFW_ALT) {
-			// 画像でないなど Blurhash がない、あるいは --nsfw=alt なら、
-			// ファイルタイプだけでも表示しておくか。
-			misskey_print_filetype(js, ifile, " [NSFW]");
-			return false;
-		}
-		int iproperties = json_obj_find_obj(js, ifile, "properties");
-		if (iproperties >= 0) {
-			width  = json_obj_find_int(js, iproperties, "width");
-			height = json_obj_find_int(js, iproperties, "height");
+	if (opt_show_image) {
+		bool isSensitive = json_obj_find_bool(js, ifile, "isSensitive");
+		if (isSensitive && opt_nsfw != NSFW_SHOW) {
+			const char *blurhash = json_obj_find_cstr(js, ifile, "blurhash");
+			if (blurhash[0] == '\0' || opt_nsfw == NSFW_ALT) {
+				// 画像でないなど Blurhash がない、あるいは --nsfw=alt なら、
+				// ファイルタイプだけでも表示しておくか。
+				filetype_msg = " [NSFW]";
+				goto next;
+			}
+			int iproperties = json_obj_find_obj(js, ifile, "properties");
+			if (iproperties >= 0) {
+				width  = json_obj_find_int(js, iproperties, "width");
+				height = json_obj_find_int(js, iproperties, "height");
 
-			// 原寸のアスペクト比を維持したまま長辺が imagesize になる
-			// ようにする。
-			// image_reduct() には入力画像サイズとしてこのサイズを、
-			// 出力画像サイズも同じサイズを指定することで等倍で動作させる。
-			if (width > height) {
-				height = height * imagesize / width;
+				// 原寸のアスペクト比を維持したまま長辺が imagesize になる
+				// ようにする。
+				// image_reduct() には入力画像サイズとしてこのサイズを、
+				// 出力画像サイズも同じサイズを指定することで等倍で動作させる。
+				if (width > height) {
+					height = height * imagesize / width;
+					width = imagesize;
+				} else {
+					width = width * imagesize / height;
+					height = imagesize;
+				}
+			}
+			if (width < 1) {
 				width = imagesize;
-			} else {
-				width = width * imagesize / height;
+			}
+			if (height < 1) {
 				height = imagesize;
 			}
-		}
-		if (width < 1) {
-			width = imagesize;
-		}
-		if (height < 1) {
+			snprintf(urlbuf, sizeof(urlbuf), "blurhash://%s", blurhash);
+			img_url = urlbuf;
+		} else {
+			// 元画像を表示。thumbnailUrl を使う。
+			img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
+			if (img_url[0] == '\0') {
+				// なければ、ファイルタイプだけでも表示しとく?
+				goto next;
+			}
+			width  = imagesize;
 			height = imagesize;
 		}
-		snprintf(urlbuf, sizeof(urlbuf), "blurhash://%s", blurhash);
-		img_url = urlbuf;
-	} else {
-		// 元画像を表示。thumbnailUrl を使う。
-		img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
-		if (img_url[0] == '\0') {
-			// なければ、ファイルタイプだけでも表示しとく?
-			//misskeky_print_filetype(js, ifile, "");
-			return false;
-		}
-		width  = imagesize;
-		height = imagesize;
+		make_cache_filename(img_file, sizeof(img_file), img_url);
+		shown = show_image(img_file, img_url, width, height, index);
 	}
-	make_cache_filename(img_file, sizeof(img_file), img_url);
-	return show_image(img_file, img_url, width, height, index);
+
+next:
+	if (shown == false) {
+		misskey_print_filetype(js, ifile, filetype_msg);
+	}
+	return shown;
 }
 
 // 改行してファイルタイプだけを出力する。
