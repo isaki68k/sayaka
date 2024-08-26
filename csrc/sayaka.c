@@ -79,6 +79,7 @@ uint indent_cols;					// インデント1階層の桁数
 bool in_sixel;						// SIXEL 出力中か。
 struct netstream_opt netopt;		// ネットワーク関係のオプション
 int opt_bgtheme;					// -1:自動判別 0:Dark 1:Light
+static const char *opt_codeset;		// 出力文字コード (NULL なら UTF-8)
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
 uint opt_nsfw;						// NSFW コンテンツの表示方法
@@ -96,8 +97,10 @@ enum {
 	OPT_debug_json,
 	OPT_debug_net,
 	OPT_debug_term,
+	OPT_euc_jp,
 	OPT_font,
 	OPT_help_all,
+	OPT_jis,
 	OPT_light,
 	OPT_max_image_cols,
 	OPT_no_image,	// backward compatibility
@@ -117,8 +120,10 @@ static const struct option longopts[] = {
 	{ "debug-json",		required_argument,	NULL,	OPT_debug_json },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
+	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
+	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
@@ -241,6 +246,10 @@ main(int ac, char *av[])
 			SET_DIAG_LEVEL(diag_term);
 			break;
 
+		 case OPT_euc_jp:
+			opt_codeset = "euc-jp";
+			break;
+
 		 case OPT_font:
 		 {
 			// "7x14" のような形式で指定する。
@@ -265,6 +274,10 @@ main(int ac, char *av[])
 		 case OPT_help_all:
 			help_all();
 			exit(0);
+
+		 case OPT_jis:
+			opt_codeset = "iso-2022-jp";
+			break;
 
 		 case OPT_light:
 			opt_bgtheme = BG_LIGHT;
@@ -408,6 +421,7 @@ help_all(void)
 "  --debug-json=<0..2>\n"
 "  --debug-net=<0..2>\n"
 "  --debug-term=<0..2>\n"
+"  --euc-jp/--jis\n"
 "  --font=<W>x<H>\n"
 "  --help-all  : This help.\n"
 "  --max-image-cols=<n>\n"
@@ -537,6 +551,13 @@ init_screen(void)
 	Debug(diag_image, "show_image = %d", opt_show_image);
 
 	// 出力文字コードの初期化。
+	if (init_codeset(opt_codeset) == false) {
+		if (errno == 0) {
+			errx(1, "output charset is specified but iconv is not builtin.");
+		} else {
+			err(1, "iconv_open failed");
+		}
+	}
 
 	// 色の初期化。
 	init_color();

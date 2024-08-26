@@ -31,6 +31,9 @@
 #include "sayaka.h"
 #include <errno.h>
 #include <string.h>
+#if defined(HAVE_ICONV)
+#include <iconv.h>
+#endif
 
 #define xstring ustring
 #define xchar   unichar
@@ -38,8 +41,59 @@
 #undef xstring
 #undef xchar
 
+#if defined(HAVE_ICONV)
+static string *utf8_to_outcode(const string *);
+#endif
 static unichar uchar_from_utf8(const char **);
 static uint uchar_to_utf8(char *, unichar);
+
+// 出力文字コードが UTF-8 以外 (iconv による変換が必要) なら true。
+static bool use_iconv;
+
+#if defined(HAVE_ICONV)
+// UTF-8 以外の文字コードへの変換用。
+static iconv_t cd;
+
+// 代替文字
+static string *altchar;
+#endif
+
+// 文字コードの初期化。
+// codeset は出力文字コード名。NULL なら文字コードを (UTF-8 から) 変換しない。
+// 失敗すれば errno をセットし false を返す。
+bool
+init_codeset(const char *codeset)
+{
+	use_iconv = false;
+
+	if (codeset == NULL) {
+		return true;
+	} else {
+#if defined(HAVE_ICONV)
+		// UTF-8 以外なら iconv を使う。
+		cd = iconv_open(codeset, "utf-8");
+		if (cd == (iconv_t)-1) {
+			return false;
+		}
+		use_iconv = true;
+
+		// UTF-8 を codeset に変換出来なかった時に出力する代替文字(ゲタ)を
+		// ここで用意しておく。
+		string *altsrc = string_from_cstr("〓");
+		if (altsrc) {
+			altchar = utf8_to_outcode(altsrc);
+		}
+		string_free(altsrc);
+
+		return true;
+#else
+		// UTF-8 以外が指定されたのに iconv がなければエラー。
+		// (iconv_open() のエラーと区別つけるため errno = 0 にする)
+		errno = 0;
+		return false;
+#endif
+	}
+}
 
 // UTF-8 文字列 str を ustring に変換する。
 ustring *
@@ -186,6 +240,89 @@ ustring_to_utf8(const ustring *src)
 
 	return dst;
 }
+
+// src を初期化時に指定した出力文字コードに変換して返す。
+string *
+ustring_to_string(const ustring *src)
+{
+	string *utf8 = ustring_to_utf8(src);
+	if (utf8 == NULL) {
+		return NULL;
+	}
+#if defined(HAVE_ICONV)
+	if (use_iconv) {
+		string *dst = utf8_to_outcode(utf8);
+		string_free(utf8);
+		return dst;
+	} else
+#endif
+	{
+		return utf8;
+	}
+}
+
+#if defined(HAVE_ICONV)
+// UTF-8 文字列を、初期化時に設定した出力文字コードに変換して返す。
+static string *
+utf8_to_outcode(const string *utf8)
+{
+	size_t tmpsize = 2048;
+	char *tmpbuf = malloc(tmpsize);
+	if (tmpbuf == NULL) {
+		return NULL;
+	}
+
+	string *dst = string_init();
+	if (dst == NULL) {
+		goto done;
+	}
+
+	// 文字列全体を変換してみる。
+	const char *src = string_get(utf8);
+	size_t srcleft = string_len(utf8);
+	char *tmp = tmpbuf;
+	size_t tmpleft = tmpsize;
+	while (srcleft) {
+		size_t r = ICONV(cd, &src, &srcleft, &tmp, &tmpleft);
+		if (r == (size_t)-1) {
+			if (errno == EILSEQ) {
+				// 変換できない文字の場合、
+				// まず代わりにゲタを出力する。
+				uint altlen = string_len(altchar);
+				if (tmpleft > altlen) {
+					strlcpy(tmp, string_get(altchar), tmpleft);
+					tmp += altlen;
+					tmpleft -= altlen;
+				} else {
+					// 足りなければ増やして、再度やり直し。
+					goto nomem;
+				}
+
+				// で、変換できなかった入力の1文字を飛ばす。
+				const char *next = src;
+				uchar_from_utf8(&next);
+				srcleft += (next - src);
+				src = next;
+
+			} else if (errno == E2BIG) {
+		nomem:
+				string_append_mem(dst, tmpbuf, tmpsize - tmpleft);
+				tmp = tmpbuf;
+				tmpleft = tmpsize;
+
+			} else {
+				// それ以外のエラーならどうする?
+				break;
+			}
+		}
+	}
+	string_append_mem(dst, tmpbuf, tmpsize - tmpleft);
+
+ done:
+	free(tmpbuf);
+	return dst;
+}
+#endif
 
 // u のデバッグ用ダンプを表示する。
 void

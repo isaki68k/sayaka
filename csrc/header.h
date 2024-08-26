@@ -88,4 +88,10 @@ typedef int8_t		int8;
 typedef int16_t		int16;
 typedef int32_t		int32;
 
+// iconv() の第2引数の型は OS によって違う…
+#if defined(ICONV_HAS_CONST_SRC)
+#define ICONV(cd, s, slen, d, dlen)	iconv((cd), (s), (slen), (d), (dlen))
+#else
+#define ICONV(cd, s, slen, d, dlen)	iconv((cd), UNCONST(s), (slen), (d), (dlen))
+#endif
 #endif // !sayaka_header_h

@@ -640,6 +640,7 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_MBEDTLS
 DEFINE_LIBCURL
@@ -709,6 +710,7 @@ with_libwebp
 with_libcurl
 with_mbedtls
 with_openssl
+with_iconv
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1344,6 +1346,7 @@ Optional Packages:
   --with-libcurl          Use libcurl for network (default:yes)
   --with-mbedtls          Only required for debug info
   --with-openssl          Only required for debug info
+  --with-iconv            Use iconv to convert output charset (default:yes)
 
 Some influential environment variables:
   CC          C compiler command
@@ -4842,6 +4845,188 @@ See 'config.log' for more details" "$LINENO" 5; }
 			;;
 		esac
 	fi
+	;;
+esac
+
+# iconv
+
+# Check whether --with-iconv was given.
+if test ${with_iconv+y}
+then :
+  withval=$with_iconv;
+fi
+
+case "${with_iconv}" in
+ no)
+	;;
+ *)
+	# まずベースシステムの iconv が使えるか調べる。
+	# configure のここまでの処理によって各種ライブラリのためにインクルード
+	# パスが求められているはず (なのでこの iconv を最後に行う)。
+	# もし OS の iconv と外部ライブラリの iconv がどちらも存在する場合、
+	# ヘッダファイルはその検索順から外部ライブラリのものが使われるが -l で
+	# 外部ライブラリを指定しないので、リンクに失敗する。これを回避して
+	# OS 標準のものが使えるよう、外部ライブラリは -DLIBICONV_PLUG が
+	# 与えられると、自分ではなく OS の iconv を使うように名前を向けてくれる
+	# 機能があるようだ。正気か?
+	# なのでまずは (外部ライブラリがいてもいなくても) -DLIBICONV_PLUG を
+	# 指定して OS の iconv がリンク出来るか試す。
+	# リンクできれば OS が iconv を持っている (素の NetBSD/FreeBSD とか)。
+	# 出来なければ OS が iconv を持っていない (OpenBSD とか)。
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for iconv in base system" >&5
+printf %s "checking for iconv in base system... " >&6; }
+	has_iconv=no
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#define LIBICONV_PLUG
+			#include <iconv.h>
+
+int
+main (void)
+{
+
+			iconv_t cd = iconv_open("", "");
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+			has_iconv=base
+			printf "%s\n" "#define HAVE_ICONV 1" >>confdefs.h
+
+			CFLAGS="${CFLAGS} -DLIBICONV_PLUG"
+
+else case e in #(
+  e)
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+	if test x"${has_iconv}" = x"no"; then
+		# ベースシステムが iconv を持っていないので、外部ライブラリを試す。
+		# インクルードパスはおそらくもう外部ライブラリを見ているので
+		# -DLIBICONV_PLUG なしで -liconv を指定してリンクできれば iconv あり。
+		# リンクできなければ iconv なし (素の OpenBSD とか)。
+		# 外部ライブラリを優先して使いたいケースは未考慮。
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for iconv" >&5
+printf %s "checking for iconv... " >&6; }
+	for path in ${PATHS}; do
+		old_CFLAGS=${CFLAGS}
+		old_LIBS=${LIBS}
+		case ${path} in
+		 none)
+			LIBS="${LIBS} -liconv"
+			;;
+		 *)
+			CFLAGS="${CFLAGS} -I${path}/include"
+			LIBS="${LIBS} -L${path}/lib -liconv"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#include <iconv.h>
+
+int
+main (void)
+{
+
+			iconv_t cd = iconv_open("", "");
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+			has_iconv=yes
+			break
+
+else case e in #(
+  e)
+			has_iconv=no
+		 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+		CFLAGS=${old_CFLAGS}
+		LIBS=${old_LIBS}
+	done
+	if test x"${has_iconv}" = x"yes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_ICONV 1" >>confdefs.h
+
+		DEFINE_ICONV=HAVE_ICONV=yes
+
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	fi
+
+		# has_iconv=yes/no がセットされる
+	fi
+
+	if test x"${has_iconv}" = x"no"; then
+		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "iconv not found.
+	On OpenBSD, install ports/converter/libiconv
+	Or specify --without-iconv
+See 'config.log' for more details" "$LINENO" 5; }
+	fi
+
+	# OS によって第2引数(src)の型が違う。どうしてこうなった…
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether iconv needs const" >&5
+printf %s "checking whether iconv needs const... " >&6; }
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#include <iconv.h>
+
+int
+main (void)
+{
+
+			const char *a;
+			iconv(0, &a, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+			printf "%s\n" "#define ICONV_HAS_CONST_SRC 1" >>confdefs.h
+
+
+else case e in #(
+  e)
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CFLAGS="${old_CFLAGS}"
 	;;
 esac
 

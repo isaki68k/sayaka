@@ -418,6 +418,82 @@ case "${with_libcurl}" in
 	;;
 esac
 
+# iconv
+AC_ARG_WITH([iconv],
+	AS_HELP_STRING([--with-iconv],
+		[Use iconv to convert output charset (default:yes)]))
+case "${with_iconv}" in
+ no)
+	;;
+ *)
+	# まずベースシステムの iconv が使えるか調べる。
+	# configure のここまでの処理によって各種ライブラリのためにインクルード
+	# パスが求められているはず (なのでこの iconv を最後に行う)。
+	# もし OS の iconv と外部ライブラリの iconv がどちらも存在する場合、
+	# ヘッダファイルはその検索順から外部ライブラリのものが使われるが -l で
+	# 外部ライブラリを指定しないので、リンクに失敗する。これを回避して
+	# OS 標準のものが使えるよう、外部ライブラリは -DLIBICONV_PLUG が
+	# 与えられると、自分ではなく OS の iconv を使うように名前を向けてくれる
+	# 機能があるようだ。正気か?
+	# なのでまずは (外部ライブラリがいてもいなくても) -DLIBICONV_PLUG を
+	# 指定して OS の iconv がリンク出来るか試す。
+	# リンクできれば OS が iconv を持っている (素の NetBSD/FreeBSD とか)。
+	# 出来なければ OS が iconv を持っていない (OpenBSD とか)。
+	AC_MSG_CHECKING([for iconv in base system])
+	has_iconv=no
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+			#define LIBICONV_PLUG
+			#include <iconv.h>
+		]], [[
+			iconv_t cd = iconv_open("", "");
+		]])], [
+			AC_MSG_RESULT([yes])
+			has_iconv=base
+			AC_DEFINE([HAVE_ICONV])
+			CFLAGS="${CFLAGS} -DLIBICONV_PLUG"
+		], [
+			AC_MSG_RESULT([no])
+		])
+
+	if test x"${has_iconv}" = x"no"; then
+		# ベースシステムが iconv を持っていないので、外部ライブラリを試す。
+		# インクルードパスはおそらくもう外部ライブラリを見ているので
+		# -DLIBICONV_PLUG なしで -liconv を指定してリンクできれば iconv あり。
+		# リンクできなければ iconv なし (素の OpenBSD とか)。
+		# 外部ライブラリを優先して使いたいケースは未考慮。
+		CHECK_LIB([iconv], [ICONV], [-liconv], [
+			#include <iconv.h>
+		], [
+			iconv_t cd = iconv_open("", "");
+		])
+		# has_iconv=yes/no がセットされる
+	fi
+
+	if test x"${has_iconv}" = x"no"; then
+		AC_MSG_FAILURE([iconv not found.
+	On OpenBSD, install ports/converter/libiconv
+	Or specify --without-iconv])
+	fi
+
+	# OS によって第2引数(src)の型が違う。どうしてこうなった…
+	AC_MSG_CHECKING(whether iconv needs const)
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+			#include <iconv.h>
+		]], [[
+			const char *a;
+			iconv(0, &a, 0, 0, 0);
+		]])],[
+			AC_MSG_RESULT(yes)
+			AC_DEFINE(ICONV_HAS_CONST_SRC)
+		],[
+			AC_MSG_RESULT(no)
+		])
+	CFLAGS="${old_CFLAGS}"
+	;;
+esac
+
 # Uniq
 CFLAGS=[`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 LIBS=[`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]

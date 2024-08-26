@@ -150,6 +150,7 @@ extern int  terminal_get_bgtheme(void);
 extern bool terminal_support_sixel(void);
 
 // ustring.c
+extern bool init_codeset(const char *);
 extern ustring *ustring_init(void);
 extern ustring *ustring_alloc(uint);
 extern bool ustring_realloc(ustring *, uint);
@@ -157,7 +158,6 @@ extern void ustring_free(ustring *);
 extern void ustring_clear(ustring *);
 extern uint ustring_len(const ustring *);
 extern ustring *ustring_from_utf8(const char *);
-extern string *ustring_to_utf8(const ustring *);
 extern const unichar *ustring_get(const ustring *);
 extern unichar ustring_at(const ustring *, int);
 extern void ustring_append(ustring *, const ustring *);
@@ -165,6 +165,8 @@ extern void ustring_append_unichar(ustring *, unichar);
 extern void ustring_append_ascii(ustring *, const char *);
 extern void ustring_append_utf8(ustring *, const char *);
 extern void ustring_tolower_inplace(ustring *);
+extern string *ustring_to_utf8(const ustring *);
+extern string *ustring_to_string(const ustring *);
 extern void ustring_dump(const ustring *, const char *);
 
 // wsclient.c

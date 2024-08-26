@@ -283,7 +283,42 @@ iprint(const ustring *src)
 		if (__predict_false(output_codeset)) {
 			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
 			// 本当は変換先がこれらの時だけのほうがいいだろうけど。
+
+			// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
+			if (uni == 0xff5e) {
+				ustring_append_unichar(utext, 0x301c);
+				continue;
+			}
+
+			// 全角ハイフンマイナス(U+FF0D) -> マイナス記号(U+2212)
+			if (uni == 0xff0d) {
+				ustring_append_unichar(utext, 0x2212);
+				continue;
+			}
+
+			// BULLET (U+2022) -> 中黒(U+30FB)
+			if (uni == 0x2022) {
+				ustring_append_unichar(utext, 0x30fb);
+				continue;
+			}
+
+			// NetBSD/x68k なら半角カナは表示できる。
+			// XXX 正確には JIS という訳ではないのだがとりあえず
+			if (strcmp(output_codeset, "iso-2022-jp") == 0) {
+				if (__predict_false(0xff61 <= uni && uni < 0xffa0)) {
+					ustring_append_ascii(utext, ESC "(I");
+					ustring_append_unichar(utext, uni - 0xff60 + 0x20);
+					ustring_append_ascii(utext, ESC "(B");
+					continue;
+				}
+			}
+
 #if 0
+			// 変換先に対応する文字がなければゲタ'〓'(U+3013)にする
+			if (__predict_false(uchar_is_convertible(uni) == false)) {
+				ustring_append_unichar(utext, 0x3013);
+				continue;
+			}
 #endif
 		}
 
@@ -392,8 +427,11 @@ iprint(const ustring *src)
 	}
 
 	// 出力文字コードに変換。
-	string *outstr = ustring_to_utf8(utext2);
-	fputs(string_get(outstr), stdout);
+	string *outstr = ustring_to_string(utext2);
+	if (outstr) {
+		fputs(string_get(outstr), stdout);
+		string_free(outstr);
+	}
 
 	ustring_free(utext);
 	ustring_free(utext2);
