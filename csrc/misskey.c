@@ -431,8 +431,6 @@ misskey_show_note(const json *js, int inote, uint depth)
 	printf("\n");
 	iprint(textline);
 	printf("\n");
-	ustring_free(headline);
-	ustring_free(textline);
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
 	if (cw == NULL || opt_show_cw) {
@@ -461,13 +459,9 @@ misskey_show_note(const json *js, int inote, uint depth)
 	ustring_append_ascii_color(footline, string_get(time), COLOR_TIME);
 	ustring_append_ascii_color(footline, string_get(rnmsg), COLOR_RENOTE);
 	ustring_append_ascii_color(footline, string_get(reactmsg), COLOR_REACTION);
-	string_free(time);
-	string_free(rnmsg);
-	string_free(reactmsg);
 
 	iprint(footline);
 	printf("\n");
-	ustring_free(footline);
 
 	// リノート元
 	if (has_renote) {
@@ -480,8 +474,14 @@ misskey_show_note(const json *js, int inote, uint depth)
 		ustring_free(rnline);
 	}
 
-	string_free(text);
+	ustring_free(footline);
+	string_free(time);
+	string_free(rnmsg);
+	string_free(reactmsg);
+	ustring_free(textline);
 	string_free(cw);
+	string_free(text);
+	ustring_free(headline);
 	string_free(userid);
 	return true;
 }
@@ -908,6 +908,7 @@ misskey_display_text(const json *js, int inote, const char *text)
 		ustring_free(tags[i]);
 	}
 	free(tags);
+	ustring_free(src);
 
 	if (__predict_false(diag_get_level(diag) >= 1)) {
 		ustring_dump(dst, "dst");
