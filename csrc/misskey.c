@@ -364,12 +364,12 @@ misskey_show_note(const json *js, int inote, uint depth)
 	}
 
 	// 本文。
-	// cw	text	--show-cw	result			top		bottom
-	// ----	----	---------	-------			-----	------
-	// -	y		n			text			text	null
-	// -	y		y			text			text	null
-	// y	*		n			cw [CW]			cw		null
-	// y	*		y			cw [CW] text	cw		text
+	// cw	text	--show-cw	result			top		bottom	画像
+	// ----	----	---------	-------			-----	------	----
+	// -	y		n			text			text	null	y
+	// -	y		y			text			text	null	y
+	// y	*		n			cw [CW]			cw		null	n
+	// y	*		y			cw [CW] text	cw		text	y
 
 	// jsmn はテキストを一切加工しないので、例えば改行文字は JSON エンコードに
 	// 従って '\' 'n' の2文字のまま。本文中の改行は画面でも改行してほしいので
@@ -435,7 +435,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	ustring_free(textline);
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
-	if (bottom) {
+	if (cw == NULL || opt_show_cw) {
 		// picture
 		image_count = 0;
 		image_next_cols = 0;
