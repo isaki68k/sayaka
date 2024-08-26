@@ -364,12 +364,12 @@ misskey_show_note(const json *js, int inote, uint depth)
 	}
 
 	// 本文。
-	// cw	text	--show-cw	result
-	// ----	----	---------	-------
-	// -	y		n			text
-	// -	y		y			text
-	// y	*		n			cw [CW]
-	// y	*		y			cw [CW] text
+	// cw	text	--show-cw	result			top		bottom
+	// ----	----	---------	-------			-----	------
+	// -	y		n			text			text	null
+	// -	y		y			text			text	null
+	// y	*		n			cw [CW]			cw		null
+	// y	*		y			cw [CW] text	cw		text
 
 	// jsmn はテキストを一切加工しないので、例えば改行文字は JSON エンコードに
 	// 従って '\' 'n' の2文字のまま。本文中の改行は画面でも改行してほしいので
@@ -392,20 +392,34 @@ misskey_show_note(const json *js, int inote, uint depth)
 		cw = NULL;
 	}
 
-	ustring *textline = ustring_alloc(256);
-	if (cw) {
-		ustring_append_utf8(textline, string_get(cw));
-		ustring_append_ascii(textline, " [CW]");
-		if (opt_show_cw) {
-			ustring_append_unichar(textline, '\n');
-			ustring_append_utf8(textline, string_get(text));
-		}
+	// cw, text のままだと条件が複雑なので、top と bottom ということにする。
+	const string *top;
+	const string *bottom = NULL;
+	if (cw == NULL) {
+		top = text;
 	} else {
-		ustring *utext = misskey_display_text(js, irenote, string_get(text));
-		ustring_append(textline, utext);
-		ustring_free(utext);
+		top = cw;
+		if (opt_show_cw) {
+			bottom = text;
+		}
 	}
-	string_free(text);
+
+	ustring *textline = ustring_alloc(256);
+
+	ustring *utop = misskey_display_text(js, irenote, string_get(top));
+	ustring_append(textline, utop);
+	ustring_free(utop);
+	if (cw) {
+		ustring_append_ascii(textline, " [CW]");
+		if (bottom) {
+			ustring_append_unichar(textline, '\n');
+		}
+	}
+	if (bottom) {
+		ustring *ubtm = misskey_display_text(js, irenote, string_get(bottom));
+		ustring_append(textline, ubtm);
+		ustring_free(ubtm);
+	}
 
 	misskey_show_icon(js, iuser, userid);
 
@@ -417,7 +431,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 	ustring_free(textline);
 
 	// これらは本文付随なので CW 以降を表示する時だけ表示する。
-	if (cw == NULL || opt_show_cw) {
+	if (bottom) {
 		// picture
 		image_count = 0;
 		image_next_cols = 0;
@@ -462,6 +476,7 @@ misskey_show_note(const json *js, int inote, uint depth)
 		ustring_free(rnline);
 	}
 
+	string_free(text);
 	string_free(cw);
 	string_free(userid);
 	return true;
