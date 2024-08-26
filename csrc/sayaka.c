@@ -65,6 +65,7 @@ static const char *basedir;
 const char *cachedir;
 uint colormode;						// テキストの色数(モード)
 char colorname[16];					// キャッシュファイルに使う色名
+diag *diag_format;
 diag *diag_image;
 diag *diag_json;
 diag *diag_net;
@@ -90,6 +91,7 @@ uint screen_cols;					// 画面の桁数
 enum {
 	OPT__start = 0x7f,
 	OPT_dark,
+	OPT_debug_format,
 	OPT_debug_image,
 	OPT_debug_json,
 	OPT_debug_net,
@@ -110,6 +112,7 @@ enum {
 static const struct option longopts[] = {
 	{ "color",			required_argument,	NULL,	'c' },
 	{ "dark",			no_argument,		NULL,	OPT_dark },
+	{ "debug-format",	required_argument,	NULL,	OPT_debug_format },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-json",		required_argument,	NULL,	OPT_debug_json },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
@@ -152,7 +155,8 @@ main(int ac, char *av[])
 	uint cmd;
 	const char *playfile;
 
-	diag_image= diag_alloc();
+	diag_format = diag_alloc();
+	diag_image = diag_alloc();
 	diag_json = diag_alloc();
 	diag_net  = diag_alloc();
 	diag_term = diag_alloc();
@@ -215,6 +219,10 @@ main(int ac, char *av[])
 
 		 case OPT_dark:
 			opt_bgtheme = BG_DARK;
+			break;
+
+		 case OPT_debug_format:
+			SET_DIAG_LEVEL(diag_format);
 			break;
 
 		 case OPT_debug_image:

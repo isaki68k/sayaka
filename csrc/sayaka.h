@@ -116,6 +116,7 @@ extern bool show_image(const char *, const char *, uint, uint, int);
 extern const char *cachedir;
 extern uint colormode;
 extern char colorname[];
+extern diag *diag_format;
 extern diag *diag_image;
 extern diag *diag_json;
 extern diag *diag_net;

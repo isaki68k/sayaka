@@ -239,7 +239,9 @@ misskey_message(string *jsonstr)
 	int n = json_parse(js, jsonstr);
 	Debug(diag_json, "token = %d\n", n);
 
-	//json_jsmndump(js);
+	if (__predict_false(diag_get_level(diag_format) >= 3)) {
+		json_jsmndump(js);
+	}
 
 	// ストリームから来る JSON は以下のような構造。
 	// {
@@ -299,7 +301,9 @@ misskey_message(string *jsonstr)
 static bool
 misskey_show_note(const json *js, int inote, uint depth)
 {
-	//json_dump(js, inote);
+	if (__predict_false(diag_get_level(diag_format) >= 2)) {
+		json_dump(js, inote);
+	}
 	assert(json_is_obj(js, inote));
 
 	// acl
