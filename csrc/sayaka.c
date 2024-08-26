@@ -534,6 +534,7 @@ init_screen(void)
 			opt_show_image = 0;
 		}
 	}
+	Debug(diag_image, "show_image = %d", opt_show_image);
 
 	// 出力文字コードの初期化。
 
