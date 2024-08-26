@@ -157,6 +157,7 @@ extern uint ustring_len(const ustring *);
 extern ustring *ustring_from_utf8(const char *);
 extern string *ustring_to_utf8(const ustring *);
 extern const unichar *ustring_get(const ustring *);
+extern unichar ustring_at(const ustring *, int);
 extern void ustring_append(ustring *, const ustring *);
 extern void ustring_append_unichar(ustring *, unichar);
 extern void ustring_append_ascii(ustring *, const char *);

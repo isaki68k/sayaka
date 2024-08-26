@@ -79,6 +79,17 @@ ustring_get(const ustring *u)
 	}
 }
 
+// u の i 番目の文字を返す。
+// i が範囲外なら安全に 0 を返す。
+unichar
+ustring_at(const ustring *u, int i)
+{
+	if (i < 0 || i >= u->len) {
+		return 0;
+	}
+	return u->buf[i];
+}
+
 // u を newlen 文字分が追加できるようブロック単位で拡大する。
 #define ustring_expand(u, newlen)	do {	\
 	uint newcap_ = roundup((u)->len + (newlen) + 1, 64);	\
