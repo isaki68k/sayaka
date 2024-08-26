@@ -47,6 +47,9 @@ static bool misskey_show_photo(const json *, int, int);
 static void misskey_print_filetype(const json *, int, const char *);
 static void make_cache_filename(char *, uint, const char *);
 static string *string_unescape_c(const char *);
+static ustring *misskey_display_text(const json *, int, const char *);
+static bool unichar_submatch(const unichar *, const char *);
+static int  unichar_ncasecmp(const unichar *, const unichar *);
 static string *misskey_format_time(const json *, int);
 static string *misskey_format_renote_count(const json *, int);
 static string *misskey_format_reaction_count(const json *, int);
@@ -398,7 +401,9 @@ misskey_show_note(const json *js, int inote, uint depth)
 			ustring_append_utf8(textline, string_get(text));
 		}
 	} else {
-		ustring_append_utf8(textline, string_get(text));
+		ustring *utext = misskey_display_text(js, irenote, string_get(text));
+		ustring_append(textline, utext);
+		ustring_free(utext);
 	}
 	string_free(text);
 
@@ -690,6 +695,246 @@ string_unescape_c(const char *src)
 	}
 
 	return dst;
+}
+
+// 本文を表示用に整形。
+static ustring *
+misskey_display_text(const json *js, int inote, const char *text)
+{
+	const diag *diag = diag_format;
+	ustring *src = ustring_from_utf8(text);
+	ustring *dst = ustring_alloc(strlen(text));
+
+	if (__predict_false(diag_get_level(diag) >= 1)) {
+		ustring_dump(src, "display_text src");
+	}
+
+	// 記号をどれだけ含むかだけが違う。
+	// Mention 1文字目は   "_" + Alnum
+	// Mention 2文字目以降 "_" + Alnum + "@.-"
+	// URL は              "_" + Alnum + "@.-" + "#%&/:;=?^~"
+	static const char urlchars[] =
+		"#%&/:;=?^~"
+		"@.-"
+		"_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	#define ment2chars (urlchars + 9)
+	#define ment1chars (urlchars + 9 + 3)
+
+	// タグを集めて小文字にしておく。
+	ustring **tags = NULL;
+	uint tagcount = 0;
+	int itags = json_obj_find(js, inote, "tags");
+	if (itags >= 0 && json_is_array(js, itags)) {
+		tagcount = json_get_size(js, itags);
+		if (tagcount > 0) {
+			tags = calloc(tagcount, sizeof(ustring *));
+			JSON_ARRAY_FOR(itag, js, itags) {
+				if (json_is_str(js, itag)) {
+					const char *tag = json_get_cstr(js, itag);
+					ustring *utag = ustring_from_utf8(tag);
+					ustring_tolower_inplace(utag);
+					tags[i_] = utag;
+				}
+			}
+		}
+	}
+	if (diag_get_level(diag) >= 1) {
+		diag_print(diag, "tagcount=%u", tagcount);
+		for (uint i = 0; i < tagcount; i++) {
+			printf("tags[%u] ", i);
+			if (tags[i]) {
+				string *s = ustring_to_utf8(tags[i]);
+				printf("|%s|\n", string_get(s));
+				string_free(s);
+			} else {
+				printf("null\n");
+			}
+		}
+	}
+
+	const unichar *srcarray = ustring_get(src);
+	int mfmtag = 0;
+	for (int pos = 0, posend = ustring_len(src); pos < posend; ) {
+		unichar c = srcarray[pos];
+
+		if (c == '<') {
+			if (unichar_submatch(&srcarray[pos + 1], "plain>")) {
+				// <plain> なら閉じ </plain> を探す。
+				pos += 7;
+				int e;
+				// ループは本当は posend-7 くらいまでで十分だが、閉じタグが
+				// なければ最後まで plain 扱いにするために posend まで回す。
+				for (e = pos; e < posend; e++) {
+					if (srcarray[e] == '<' &&
+						unichar_submatch(&srcarray[e + 1], "/plain>"))
+					{
+						break;
+					}
+				}
+				// この間は無加工で出力。
+				for (; pos < e; pos++) {
+					ustring_append_unichar(dst, srcarray[pos]);
+				}
+				pos += 8;
+				continue;
+			}
+			// 他の HTML タグはとりあえず放置。
+
+		} else if (c == '$' && ustring_at(src, pos + 1) == '[') {
+			// MFM タグ開始。
+			int e = pos + 2;
+			// タグは全部無視するのでタグ名をスキップ。
+			for (; e < posend && srcarray[e] != ' '; e++)
+				;
+			// 空白の次から ']' の手前までが本文。
+			mfmtag++;
+			pos = e + 1;
+			continue;
+
+		} else if (c == ']' && mfmtag > 0) {
+			// MFM タグ終端。
+			mfmtag--;
+			pos++;
+			continue;
+
+		} else if (c == '@') {
+			// '@' の次が [\w\d_] ならメンション。
+			unichar nc = ustring_at(src, pos + 1);
+			if (nc < 0x80 && strchr(ment1chars, nc) != NULL) {
+				ustring_append_ascii(dst, color_begin(COLOR_USERID));
+				ustring_append_unichar(dst, c);
+				ustring_append_unichar(dst, nc);
+				// 2文字目以降はホスト名も来る可能性がある。
+				for (pos += 2; pos < posend; pos++) {
+					c = srcarray[pos];
+					if (c < 0x80 && strchr(ment2chars, c) != NULL) {
+						ustring_append_unichar(dst, c);
+					} else {
+						break;
+					}
+				}
+				ustring_append_ascii(dst, color_end(COLOR_USERID));
+				continue;
+			}
+
+		} else if (c == '#') {
+			// タグはこの時点で範囲(長さ)が分かるのでステート分岐不要。
+			int i = 0;
+			for (; i < tagcount; i++) {
+				const unichar *utag = tags[i] ? ustring_get(tags[i]) : NULL;
+				if (unichar_ncasecmp(&srcarray[pos + 1], utag) == 0) {
+					break;
+				}
+			}
+			if (i != tagcount) {
+				// 一致したらタグ。'#' 文字自身も含めてコピーする。
+				ustring_append_ascii(dst, color_begin(COLOR_TAG));
+				ustring_append_unichar(dst, c);
+				pos++;
+				uint len = ustring_len(tags[i]);
+				// tags は正規化によって何が起きてるか分からないので、
+				// posend のほうを信じる。
+				uint end = MIN(pos + len, (int)posend);
+				Debug(diag, "tag[%d] found at pos=%u len=%u end=%u",
+					i, pos, len, end);
+				for (; pos < end; pos++) {
+					ustring_append_unichar(dst, srcarray[pos]);
+				}
+				ustring_append_ascii(dst, color_end(COLOR_TAG));
+				continue;
+			}
+
+		} else if (c == 'h' &&
+			(unichar_submatch(&srcarray[pos], "https://") ||
+			 unichar_submatch(&srcarray[pos], "http://")))
+		{
+			// URL
+			int url_in_paren = 0;
+			ustring_append_ascii(dst, color_begin(COLOR_URL));
+			for (; pos < posend; pos++) {
+				// URL に使える文字集合がよく分からない。
+				// 括弧 "(",")" は、開き括弧なしで閉じ括弧が来ると URL 終了。
+				// 一方開き括弧は URL 内に来てもよい。
+				// "(http://foo/a)b" は http://foo/a が URL。
+				// "http://foo/a(b)c" は http://foo/a(b)c が URL。
+				// 正気か?
+				c = srcarray[pos];
+				if (c < 0x80 && strchr(urlchars, c) != NULL) {
+					ustring_append_unichar(dst, c);
+				} else if (c == '(') {
+					url_in_paren++;
+					ustring_append_unichar(dst, c);
+				} else if (c == ')' && url_in_paren > 0) {
+					url_in_paren--;
+					ustring_append_unichar(dst, c);
+				} else {
+					break;
+				}
+			}
+			ustring_append_ascii(dst, color_end(COLOR_URL));
+			continue;
+		}
+
+		// どれでもなければここに落ちてくる。
+		ustring_append_unichar(dst, c);
+		pos++;
+	}
+
+	for (uint i = 0; i < tagcount; i++) {
+		ustring_free(tags[i]);
+	}
+	free(tags);
+
+	if (__predict_false(diag_get_level(diag) >= 1)) {
+		ustring_dump(dst, "dst");
+	}
+	return dst;
+}
+
+// ustring (の中身の配列) u 以降が key と部分一致すれば true を返す。
+static bool
+unichar_submatch(const unichar *u, const char *key)
+{
+	for (uint i = 0; key[i]; i++) {
+		if (u[i] == '\0') {
+			return false;
+		}
+		if (u[i] != key[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// ustring (の中身の配列) u1 以降が u2 の長さ分だけ大文字小文字を無視して
+// 一致すれば 0 を返す。一致しなければ大小を返すはずだがそこは適当。
+// 便宜上 u2 は NULL も受け付ける (tags[] が NULL の可能性が一応あるので)。
+static int
+unichar_ncasecmp(const unichar *u1, const unichar *u2)
+{
+	assert(u1);
+
+	if (u2 == NULL) {
+		return 1;
+	}
+
+	for (uint i = 0; u2[i]; i++) {
+		if (u1[i] == '\0') {
+			return 1;
+		}
+		unichar c1 = u1[i];
+		unichar c2 = u2[i];
+		if ('A' <= c1 && c1 <= 'Z') {
+			c1 += 0x20;
+		}
+		if ('A' <= c2 && c2 <= 'Z') {
+			c2 += 0x20;
+		}
+		if (c1 != c2) {
+			return 1;
+		}
+	}
+	return 0;
 }
 
 // note オブジェクトから表示用時刻文字列を取得。

@@ -149,6 +149,24 @@ make_esc(char *dst, const char *color)
 	}
 }
 
+// color の開始シーケンスを返す。
+const char *
+color_begin(uint color)
+{
+	return color2esc[color];
+}
+
+// color の終了シーケンスを返す。
+const char *
+color_end(uint color)
+{
+	// 開始シーケンスが定義されていれば返す
+	if (color2esc[color][0] != '\0') {
+		return ESC "[0m";
+	}
+	return "";
+}
+
 // ustring の u の末尾に color で着色した ASCII 文字列 str を追加する。
 void
 ustring_append_ascii_color(ustring *u, const char *str, uint color)

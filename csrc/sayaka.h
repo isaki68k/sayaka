@@ -106,6 +106,8 @@ extern uint image_max_rows;
 extern int  max_image_count;
 extern uint indent_depth;
 extern void init_color(void);
+extern const char *color_begin(uint);
+extern const char *color_end(uint);
 extern void ustring_append_ascii_color(ustring *, const char *, uint);
 extern void ustring_append_utf8_color(ustring *, const char *, uint);
 extern void print_indent(uint);
