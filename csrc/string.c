@@ -190,3 +190,18 @@ string_append_printf(string *s, const char *fmt, ...)
 
 	s->len += reqlen;
 }
+
+// s の末尾の連続する空白・改行文字を削除する (s を書き換える)
+void
+string_rtrim_inplace(string *s)
+{
+	for (; s->len != 0; ) {
+		char c = s->buf[s->len - 1];
+		if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
+			s->len--;
+			s->buf[s->len] = '\0';
+		} else {
+			break;
+		}
+	}
+}

@@ -131,6 +131,7 @@ extern void string_append_cstr(string *, const char *);
 extern void string_append_mem(string *, const void *, uint);
 extern void string_append_printf(string *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
+extern void string_rtrim_inplace(string *);
 
 // util.c
 extern const char *strerrno(void);
