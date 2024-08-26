@@ -155,6 +155,17 @@ ustring_append_utf8(ustring *u, const char *cstr)
 	ustring_free(t);
 }
 
+// u の ASCII 大文字を小文字に変換する。u を書き換える。
+void
+ustring_tolower_inplace(ustring *u)
+{
+	for (uint i = 0; i < u->len; i++) {
+		if ('A' <= u->buf[i] && u->buf[i] <= 'Z') {
+			u->buf[i] += 0x20;
+		}
+	}
+}
+
 // src を UTF-8 文字列に変換して返す。
 string *
 ustring_to_utf8(const ustring *src)

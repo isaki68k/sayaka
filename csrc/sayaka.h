@@ -162,6 +162,7 @@ extern void ustring_append(ustring *, const ustring *);
 extern void ustring_append_unichar(ustring *, unichar);
 extern void ustring_append_ascii(ustring *, const char *);
 extern void ustring_append_utf8(ustring *, const char *);
+extern void ustring_tolower_inplace(ustring *);
 extern void ustring_dump(const ustring *, const char *);
 
 // wsclient.c
