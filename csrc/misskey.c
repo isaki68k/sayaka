@@ -50,6 +50,7 @@ static string *string_unescape_c(const char *);
 static ustring *misskey_display_text(const json *, int, const char *);
 static bool unichar_submatch(const unichar *, const char *);
 static int  unichar_ncasecmp(const unichar *, const unichar *);
+static string *misskey_format_poll(const json *, int);
 static string *misskey_format_time(const json *, int);
 static string *misskey_format_renote_count(const json *, int);
 static string *misskey_format_reaction_count(const json *, int);
@@ -444,6 +445,22 @@ misskey_show_note(const json *js, int inote, uint depth)
 				// i_ がループ変数なのを知っている
 				misskey_show_photo(js, ifile, i_);
 				printf("\r");
+			}
+		}
+
+		// 投票(poll)
+		int ipoll = json_obj_find_obj(js, irenote, "poll");
+		if (ipoll >= 0) {
+			string *pollstr = misskey_format_poll(js, ipoll);
+			if (pollstr) {
+				ustring *pollline = ustring_init();
+				if (pollline) {
+					ustring_append_utf8(pollline, string_get(pollstr));
+					iprint(pollline);
+					printf("\n");
+					ustring_free(pollline);
+				}
+				string_free(pollstr);
 			}
 		}
 	}
@@ -960,6 +977,45 @@ unichar_ncasecmp(const unichar *u1, const unichar *u2)
 		}
 	}
 	return 0;
+}
+
+// 投票を表示用に整形して返す。
+static string *
+misskey_format_poll(const json *js, int ipoll)
+{
+	// "poll" : {
+	//   "choices" : [ { choice1, choice2 } ],
+	//   "expiresAt" : null (or string?),
+	//   "multiple" : bool,
+	// }
+
+	string *s = string_init();
+	int ichoices = json_obj_find(js, ipoll, "choices");
+	if (ichoices >= 0 && json_is_array(js, ichoices)) {
+		// choice は {
+		//   "isVoted" : bool (自分が投票したかかな?)
+		//   "text" : string
+		//   "votes" : number
+		// }
+
+		// 本当は列整形したいところだが表示文字数のカウントが面倒。
+
+		// 整形。
+		JSON_ARRAY_FOR(ichoice, js, ichoices) {
+			bool voted = json_obj_find_bool(js, ichoice, "isVoted");
+			const char *text = json_obj_find_cstr(js, ichoice, "text");
+			int votes = json_obj_find_int(js, ichoice, "votes");
+
+			string_append_printf(s, " [%c] %s : %u\n",
+				(voted ? '*' : ' '),
+				(text ? text : ""),
+				votes);
+		}
+	}
+	// 最後の改行は除く。
+	string_rtrim_inplace(s);
+
+	return s;
 }
 
 // note オブジェクトから表示用時刻文字列を取得。
