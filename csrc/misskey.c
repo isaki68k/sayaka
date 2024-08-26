@@ -587,7 +587,9 @@ misskey_show_photo(const json *js, int ifile, int index)
 		bool isSensitive = json_obj_find_bool(js, ifile, "isSensitive");
 		if (isSensitive && opt_nsfw != NSFW_SHOW) {
 			const char *blurhash = json_obj_find_cstr(js, ifile, "blurhash");
-			if (blurhash[0] == '\0' || opt_nsfw == NSFW_ALT) {
+			if (blurhash == NULL || blurhash[0] == '\0' ||
+				opt_nsfw == NSFW_ALT)
+			{
 				// 画像でないなど Blurhash がない、あるいは --nsfw=alt なら、
 				// ファイルタイプだけでも表示しておくか。
 				filetype_msg = " [NSFW]";
@@ -621,7 +623,7 @@ misskey_show_photo(const json *js, int ifile, int index)
 		} else {
 			// 元画像を表示。thumbnailUrl を使う。
 			img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
-			if (img_url[0] == '\0') {
+			if (img_url == NULL || img_url[0] == '\0') {
 				// なければ、ファイルタイプだけでも表示しとく?
 				goto next;
 			}
@@ -648,6 +650,9 @@ misskey_print_filetype(const json *js, int ifile, const char *msg)
 	image_next_cols = 0;
 
 	const char *type = json_obj_find_cstr(js, ifile, "type");
+	if (type == NULL) {
+		type = "no filetype?";
+	}
 	printf("\r");
 	print_indent(indent_depth + 1);
 	printf("(%s)%s\n", type, msg);
