@@ -454,22 +454,8 @@ get_eaw_width(unichar c)
 	}
 
 	// 1バイトに4文字分埋め込んである。
-	switch (c & 3) {
-	 case 0:
-		val = packed >> 6;
-		break;
-	 case 1:
-		val = (packed >> 4) & 3;
-		break;
-	 case 2:
-		val = (packed >> 2) & 3;
-		break;
-	 case 3:
-		val = packed & 3;
-		break;
-	 default:
-		__builtin_unreachable();
-	}
+	val = packed >> (6 - (c & 3) * 2);
+	val &= 3U;
 
 	switch (val) {
 	 case 0x0:	// H (Narrow, HalfWidth)
