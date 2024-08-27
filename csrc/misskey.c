@@ -121,8 +121,13 @@ cmd_misskey_stream(const char *server)
 
 	// -1 は初回。0 は EOF による正常リトライ。
 	int retry_count = -1;
-	bool terminate = false;
 	for (;;) {
+		enum {
+			CLOSED,	// 接続後、正常に EOF になった -> 再接続
+			RETRY,	// reconnect できなかった -> 再接続
+			ERROR,	// エラー -> 中止
+		} status;
+
 		if (retry_count > 0) {
 			time_t now;
 			struct tm tm;
@@ -137,15 +142,22 @@ cmd_misskey_stream(const char *server)
 
 		wsclient *ws = wsclient_create(diag);
 		if (ws == NULL) {
-			Debug(diag, "%s: wsclient_create failed", __func__);
-			goto abort;
+			warn("%s: wsclient_create failed", __func__);
+			break;
 		}
 
 		wsclient_init(ws, misskey_recv_cb);
 
 		if (wsclient_connect(ws, url) != 0) {
-			Debug(diag, "%s: %s: wsclient_connect failed", __func__, server);
-			goto abort;
+			warnx("%s: %s: wsclient_connect failed", __func__, server);
+			if (retry_count < 0) {
+				// 初回接続でエラーなら、それはエラー。再試行しない。
+				status = ERROR;
+			} else {
+				// 接続実績はあるが、今回の接続がエラーになったら再試行。
+				status = RETRY;
+			}
+			goto done;
 		}
 
 		// 接続成功。
@@ -153,29 +165,29 @@ cmd_misskey_stream(const char *server)
 		if (retry_count != 0) {
 			printf("Connected\n");
 		}
+		retry_count = 0;
 
 		// メイン処理。
-		if (misskey_stream(ws) == false) {
-			// エラーなら終了。メッセージは表示済み。
-			terminate = true;
-			goto abort;
+		if (misskey_stream(ws) == true) {
+			status = CLOSED;
+		} else {
+			status = RETRY;
 		}
 
-		retry_count = 0;
- abort:
+ done:
 		wsclient_destroy(ws);
-		if (terminate) {
+		if (status == ERROR) {
+			// エラーなら終了。メッセージは表示済み。
 			break;
 		}
-		// 初回で失敗か、リトライ回数を超えたら終了。
-		if (retry_count < 0) {
-			break;
+		if (status == RETRY) {
+			retry_count++;
+			if (retry_count >= 5) {
+				warnx("Gave up reconnecting.");
+				break;
+			}
 		}
-		if (++retry_count >= 5) {
-			warnx("Gave up reconnecting.");
-			break;
-		}
-		sleep(1 << retry_count);
+		sleep(1);
 	}
 
 	misskey_cleanup();
