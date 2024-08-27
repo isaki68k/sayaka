@@ -548,9 +548,12 @@ progress(const char *msg)
 static void
 init_screen(void)
 {
+	// 出力先が端末かどうか。
+	bool is_tty = (isatty(STDOUT_FILENO) != 0);
+
 	// 端末の背景色を調べる (オプションで指定されてなければ)。
 	// 判定できなければ背景色白をデフォルトにしておく。
-	if (opt_bgtheme == BG_AUTO) {
+	if (opt_bgtheme == BG_AUTO && is_tty) {
 		progress("Checking background color...");
 		opt_bgtheme = terminal_get_bgtheme();
 		switch (opt_bgtheme) {
@@ -572,7 +575,11 @@ init_screen(void)
 	// 端末が SIXEL をサポートしているか。
 	if (opt_show_image == -1) {
 		progress("Checking whether the terminal supports sixel...");
-		opt_show_image = terminal_support_sixel();
+		if (is_tty) {
+			opt_show_image = terminal_support_sixel();
+		} else {
+			opt_show_image = 0;
+		}
 		if (opt_show_image == 0) {
 			progress("no\n");
 		} else if (opt_show_image == 1) {
@@ -678,6 +685,7 @@ static void
 sigwinch(bool initializing)
 {
 	struct winsize ws;
+	bool is_tty;
 	int ws_cols = 0;
 	int ws_width = 0;
 	int ws_height = 0;
@@ -686,17 +694,22 @@ sigwinch(bool initializing)
 	const char *msg_height = "";
 	int r;
 
-	r = ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
-	if (r != 0) {
-		warn("TIOCGWINSZ failed");
-	} else {
-		ws_cols = ws.ws_col;
+	// 出力先が端末かどうか。
+	is_tty = (isatty(STDOUT_FILENO) != 0);
 
-		if (ws.ws_col != 0) {
-			ws_width = ws.ws_xpixel / ws.ws_col;
-		}
-		if (ws.ws_row != 0) {
-			ws_height = ws.ws_ypixel / ws.ws_row;
+	if (is_tty) {
+		r = ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+		if (r != 0) {
+			warn("TIOCGWINSZ failed");
+		} else {
+			ws_cols = ws.ws_col;
+
+			if (ws.ws_col != 0) {
+				ws_width = ws.ws_xpixel / ws.ws_col;
+			}
+			if (ws.ws_row != 0) {
+				ws_height = ws.ws_ypixel / ws.ws_row;
+			}
 		}
 	}
 
@@ -735,7 +748,7 @@ sigwinch(bool initializing)
 			use_default_font = true;
 		}
 	}
-	if (use_default_font) {
+	if (use_default_font && is_tty) {
 		printf("sayaka: Fontsize not detected. "
 			"Application default %dx%d is used.\n", fontwidth, fontheight);
 	}

@@ -58,6 +58,7 @@ static int parse_bgcolor(char *);
 static uint32 stox32def(const char *, uint32, char **);
 
 // 端末が SIXEL をサポートしていれば true を返す。
+// 出力先が端末であること (isatty(3)) は呼び出し側で調べておくこと。
 bool
 terminal_support_sixel(void)
 {
@@ -65,14 +66,7 @@ terminal_support_sixel(void)
 	char *p;
 	char *e;
 	int n;
-	bool support;
-
-	support = false;
-
-	// 出力先が端末でない(パイプとか)なら帰る。
-	if (isatty(STDOUT_FILENO) == 0) {
-		goto done;
-	}
+	bool support = false;
 
 	// 問い合わせ。
 	const char *query = ESC "[c";
@@ -107,17 +101,13 @@ terminal_support_sixel(void)
 
 // 端末の背景色を調べる。
 // 黒に近ければ 1、白に近ければ 0、取得できなければ -1 を返す。
+// 出力先が端末であること (isatty(3)) は呼び出し側で調べておくこと。
 int
 terminal_get_bgtheme(void)
 {
 	char result[64];
 	int n;
 	int bgcolor = -1;
-
-	// 出力先が端末でない(パイプとか)なら帰る。
-	if (isatty(STDOUT_FILENO) == 0) {
-		goto done;
-	}
 
 	// 問い合わせ。
 	const char *query = ESC "]11;?" ESC "\\";
