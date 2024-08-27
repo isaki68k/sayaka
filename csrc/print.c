@@ -568,7 +568,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 		} else {
 			// 前の画像の横に並べる。
 			if (image_count > 0) {
-				if (image_max_rows > 0) {
+				if (image_max_rows > 0 && diag_get_level(diag_image) == 0) {
 					printf(CSI "%dA", image_max_rows);
 				}
 				if (image_next_cols > 0) {
