@@ -555,13 +555,13 @@ init_screen(void)
 		opt_bgtheme = terminal_get_bgtheme();
 		switch (opt_bgtheme) {
 		 case BG_LIGHT:
-			progress("light");
+			progress("light\n");
 			break;
 		 case BG_DARK:
-			progress("dark");
+			progress("dark\n");
 			break;
 		 default:
-			progress("done");
+			progress("done\n");
 			warnx("Terminal doesn't support contol sequence; "
 				"assume --light");
 			opt_bgtheme = BG_LIGHT;
