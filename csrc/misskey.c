@@ -80,7 +80,7 @@ misskey_cleanup(void)
 void
 cmd_misskey_play(const char *infile)
 {
-	char buf[8192];	// XXX
+	string *s;
 	FILE *fp;
 
 	misskey_init();
@@ -94,8 +94,7 @@ cmd_misskey_play(const char *infile)
 		}
 	}
 
-	while (fgets(buf, sizeof(buf), fp) != NULL) {
-		string *s = string_from_cstr(buf);
+	while ((s = string_fgets(fp)) != NULL) {
 		misskey_message(s);
 		string_free(s);
 	}
