@@ -93,6 +93,10 @@ extern int  net_get_fd(const struct net *);
 
 // netstream.c
 struct netstream_opt {
+	// 接続に使用するプロトコル。
+	// 0 なら指定なし、4 なら IPv4、6 なら IPv6。
+	int address_family;
+
 	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
 	bool use_rsa_only;
 };

@@ -175,6 +175,15 @@ netstream_connect(struct netstream *ns,
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, ns);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, (long)0);
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, (long)0);
+	if (opt->address_family != 0) {
+		long resolve;
+		if (opt->address_family == 4) {
+			resolve = CURL_IPRESOLVE_V4;
+		} else {
+			resolve = CURL_IPRESOLVE_V6;
+		}
+		curl_easy_setopt(curl, CURLOPT_IPRESOLVE, resolve);
+	}
 	if (opt->use_rsa_only) {
 		// 通称 RSA が使えるのは TLSv1.2 以下のみ。
 		curl_easy_setopt(curl, CURLOPT_SSLVERSION,
@@ -556,5 +565,7 @@ netstream_global_cleanup(void)
 void
 netstream_opt_init(struct netstream_opt *opt)
 {
+	memset(opt, 0, sizeof(*opt));
+	opt->address_family = 0;
 	opt->use_rsa_only = false;
 }

@@ -102,6 +102,8 @@ enum {
 	OPT_euc_jp,
 	OPT_font,
 	OPT_help_all,
+	OPT_ipv4,
+	OPT_ipv6,
 	OPT_jis,
 	OPT_light,
 	OPT_mathalpha,
@@ -129,6 +131,8 @@ static const struct option longopts[] = {
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
+	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
+	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
@@ -299,6 +303,14 @@ main(int ac, char *av[])
 			help_all();
 			exit(0);
 
+		 case OPT_ipv4:
+			netopt.address_family = 4;
+			break;
+
+		 case OPT_ipv6:
+			netopt.address_family = 6;
+			break;
+
 		 case OPT_jis:
 			opt_codeset = "iso-2022-jp";
 			break;
@@ -457,6 +469,7 @@ help_all(void)
 "  --euc-jp/--jis\n"
 "  --font=<W>x<H>\n"
 "  --help-all  : This help.\n"
+"  --ipv4 / --ipv6\n"
 "  --mathalpha\n"
 "  --max-image-cols=<n>\n"
 "  --no-conbine\n"

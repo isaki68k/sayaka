@@ -72,6 +72,8 @@ enum {
 	OPT_height,
 	OPT_help,
 	OPT_help_all,
+	OPT_ipv4,
+	OPT_ipv6,
 	OPT_ormode,
 	OPT_output_format,
 	OPT_resize_axis,
@@ -92,6 +94,8 @@ static const struct option longopts[] = {
 	{ "help",			no_argument,		NULL,	OPT_help, },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ "ignore-error",	no_argument,		NULL,	'i' },
+	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
+	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "ormode",			no_argument,		NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
@@ -265,6 +269,14 @@ main(int ac, char *av[])
 			ignore_error = true;
 			break;
 
+		 case OPT_ipv4:
+			netopt.address_family = 4;
+			break;
+
+		 case OPT_ipv6:
+			netopt.address_family = 6;
+			break;
+
 		 case 'O':
 			output_format = parse_optmap(map_output_format, optarg);
 			if ((int)output_format < 0) {
@@ -416,6 +428,7 @@ help_all(void)
 "  --suppress-palette : Suppress output of SIXEL palette definition\n"
 "  --ciphers <ciphers> : Only \"RSA\" can be specified for now\n"
 "  -i, --ignore-error\n"
+"  --ipv4 / --ipv6\n"
 "  --debug-image=<0..2>\n"
 "  --debug-net  =<0..2>\n"
 "  --debug-sixel=<0..2>\n"
