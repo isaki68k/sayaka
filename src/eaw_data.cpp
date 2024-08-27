@@ -401,7 +401,7 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 2f80
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 2fa0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, NN, NN, NN, NN, NN, // 2fc0
- NN, NN, NN, NN, NN, NN, NN, NN, FF, FF, FF, FF, FF, FF, NN, NN, // 2fe0
+ NN, NN, NN, NN, NN, NN, NN, NN, FF, FF, FF, FF, FF, FF, FF, FF, // 2fe0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 3000
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, // 3020
  NF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 3040
@@ -417,7 +417,7 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  FF, FF, FF, FF, FF, FF, FF, FN, FF, FF, FF, FF, FF, FF, FF, FF, // 3180
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 31a0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 31c0
- FF, FF, NN, NN, NN, NN, NN, NN, FF, FF, FF, FF, FF, FF, FF, FF, // 31e0
+ FF, FF, NN, NN, NN, NN, NN, NF, FF, FF, FF, FF, FF, FF, FF, FF, // 31e0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, // 3200
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 3220
  FF, FF, FF, FF, AA, AA, AA, AA, FF, FF, FF, FF, FF, FF, FF, FF, // 3240
@@ -3473,7 +3473,7 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1af80
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1afa0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1afc0
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1afe0
+ NN, NN, NN, NN, NN, NN, NN, NN, FF, FF, NF, FF, FF, FF, NF, FN, // 1afe0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b000
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b020
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b040
@@ -3482,9 +3482,9 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b0a0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b0c0
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b0e0
- FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FN, // 1b100
- NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1b120
- NN, NN, NN, NN, NN, NN, NN, NN, FF, FN, NN, NN, NN, NN, NN, NN, // 1b140
+ FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b100
+ FF, FN, NN, NN, NN, NN, NN, NN, NN, FN, NN, NN, NN, NN, NN, NN, // 1b120
+ NN, NN, NN, NN, NN, NN, NN, NN, FF, FN, NF, NN, NN, NN, NN, NN, // 1b140
  NN, NN, FF, FF, NN, NN, NN, NN, FF, FF, FF, FF, FF, FF, FF, FF, // 1b160
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b180
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1b1a0
@@ -4040,7 +4040,7 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f660
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f680
  FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, FF, // 1f6a0
- FF, FF, FF, NN, NN, NN, FN, NN, FF, FN, NF, FF, NN, NN, NN, NN, // 1f6c0
+ FF, FF, FF, NN, NN, NN, FN, NN, FF, FN, NF, FF, NN, NN, FF, FF, // 1f6c0
  NN, NN, NN, NN, NN, NF, FN, NN, NN, NN, FF, FF, FF, FF, FN, NN, // 1f6e0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f700
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f720
@@ -4049,7 +4049,7 @@ const std::array<uint8,0x10000> eaw2width_packed = {
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f780
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f7a0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f7c0
- FF, FF, FF, FF, FF, FF, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f7e0
+ FF, FF, FF, FF, FF, FF, NN, NN, FN, NN, NN, NN, NN, NN, NN, NN, // 1f7e0
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f800
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f820
  NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, NN, // 1f840
