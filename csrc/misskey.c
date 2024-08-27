@@ -842,9 +842,14 @@ misskey_display_text(const json *js, int inote, const char *text)
 			continue;
 
 		} else if (c == '@') {
-			// '@' の次が [\w\d_] ならメンション。
+			// '@' の直前が ment2 でなく(?)、直後が ment1 ならメンション。
+			unichar pc = ustring_at(src, pos - 1);
 			unichar nc = ustring_at(src, pos + 1);
-			if (nc < 0x80 && strchr(ment1chars, nc) != NULL) {
+			bool prev_is_ment2 =
+				(pc != 0 && pc < 0x80 && strchr(ment2chars, pc) != NULL);
+			bool next_is_ment1 =
+				(nc != 0 && nc < 0x80 && strchr(ment1chars, nc) != NULL);
+			if (prev_is_ment2 == false && next_is_ment1 == true) {
 				ustring_append_ascii(dst, color_begin(COLOR_USERID));
 				ustring_append_unichar(dst, c);
 				ustring_append_unichar(dst, nc);
