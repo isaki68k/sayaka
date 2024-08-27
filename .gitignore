@@ -7,6 +7,7 @@ Makefile.cfg
 config.h
 config.log
 config.status
+csrc/eaw_gen
 csrc/sayaka
 csrc/sixelv
 csrc/terminal

@@ -61,6 +61,9 @@ typedef struct json_ json;
 typedef struct ustring_ ustring;
 typedef struct wsclient_ wsclient;
 
+// eaw_data.c
+extern const uint8 eaw2width_packed[0x10000];
+
 // json.c
 extern json *json_create(const diag *);
 extern void json_destroy(json *);
@@ -105,6 +108,8 @@ extern uint image_next_cols;
 extern uint image_max_rows;
 extern int  max_image_count;
 extern uint indent_depth;
+extern uint opt_eaw_a;
+extern uint opt_eaw_n;
 extern void init_color(void);
 extern const char *color_begin(uint);
 extern const char *color_end(uint);

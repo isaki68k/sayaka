@@ -97,6 +97,8 @@ enum {
 	OPT_debug_json,
 	OPT_debug_net,
 	OPT_debug_term,
+	OPT_eaw_a,
+	OPT_eaw_n,
 	OPT_euc_jp,
 	OPT_font,
 	OPT_help_all,
@@ -120,6 +122,8 @@ static const struct option longopts[] = {
 	{ "debug-json",		required_argument,	NULL,	OPT_debug_json },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
+	{ "eaw-a",			required_argument,	NULL,	OPT_eaw_a },
+	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
@@ -171,6 +175,8 @@ main(int ac, char *av[])
 	netstream_opt_init(&netopt);
 	colormode = 256;
 	opt_bgtheme = BG_AUTO;
+	opt_eaw_a = 2;
+	opt_eaw_n = 1;
 	opt_fontwidth = 0;
 	opt_fontheight = 0;
 	opt_nsfw = NSFW_BLUR;
@@ -244,6 +250,20 @@ main(int ac, char *av[])
 
 		 case OPT_debug_term:
 			SET_DIAG_LEVEL(diag_term);
+			break;
+
+		 case OPT_eaw_a:
+			opt_eaw_a = stou32def(optarg, -1, NULL);
+			if (opt_eaw_a < 1 || opt_eaw_a > 2) {
+				errx(1, "--eaw-a %s: must be either 1 or 2", optarg);
+			}
+			break;
+
+		 case OPT_eaw_n:
+			opt_eaw_n = stou32def(optarg, -1, NULL);
+			if (opt_eaw_n < 1 || opt_eaw_n > 2) {
+				errx(1, "--eaw-n %s: must be either 1 or 2", optarg);
+			}
 			break;
 
 		 case OPT_euc_jp:
@@ -421,6 +441,7 @@ help_all(void)
 "  --debug-json=<0..2>\n"
 "  --debug-net=<0..2>\n"
 "  --debug-term=<0..2>\n"
+"  --eaw-a=<1|2> / --eaw-n=<1|2>\n"
 "  --euc-jp/--jis\n"
 "  --font=<W>x<H>\n"
 "  --help-all  : This help.\n"

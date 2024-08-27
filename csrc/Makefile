@@ -29,6 +29,7 @@ SRCS_common+=	pstream.c
 SRCS_common+=	string.c
 SRCS_common+=	util.c
 
+SRCS_sayaka+=	eaw_data.c
 SRCS_sayaka+=	json.c
 SRCS_sayaka+=	misskey.c
 SRCS_sayaka+=	print.c
@@ -70,6 +71,13 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 .c.o:
 	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
 
+eaw_data.c:	eaw_gen
+	rm -f $@
+	./eaw_gen > $@
+
+eaw_gen:	eaw_gen.c
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $> ${LIBS} -licuuc
+
 # Test
 testall:	all dump test terminal wsclient
 
@@ -87,7 +95,7 @@ wsclient:	wsclient.c libsayaka.a libcommon.a
 
 .PHONY:	clean
 clean:
-	rm -f sayaka sixelv dump test terminal wsclient *.o *.a *.core
+	rm -f sayaka sixelv eaw_gen dump test terminal wsclient *.o *.a *.core
 
 .PHONY:	depend
 depend:	${SRCS_all:.c=.d}

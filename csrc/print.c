@@ -59,6 +59,7 @@ extern image_opt imageopt;
 
 static void make_esc(char *, const char *);
 static inline void make_indent(char *, uint, int);
+static uint get_eaw_width(unichar c);
 static bool fetch_image(FILE *, const char *, uint, uint);
 
 uint image_count;				// この列に表示している画像の数
@@ -67,6 +68,8 @@ uint image_max_rows;			// この列で最大の画像の高さ(行数)
 int  max_image_count;			// この列に表示する画像の最大数
 uint indent_depth;				// 現在のインデント深さ
 const char *output_codeset;		// 出力文字コード (NULL なら UTF-8)
+uint opt_eaw_a;					// Ambiguous 文字の文字幅
+uint opt_eaw_n;					// Neutral 文字の文字幅
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を合成しない
 
@@ -385,11 +388,7 @@ iprint(const ustring *src)
 					x = left;
 				} else {
 					// 文字幅を取得
-#if 0
 					uint width = get_eaw_width(uni);
-#else
-					uint width = (uni < 0x80) ? 1 : 2;
-#endif
 					if (width == 1) {
 						ustring_append_unichar(utext2, uni);
 						x++;
@@ -435,6 +434,48 @@ iprint(const ustring *src)
 
 	ustring_free(utext);
 	ustring_free(utext2);
+}
+
+// Unicode コードポイント c の文字幅を返す。
+// Narrow、HalfWidth は 1、
+// Wide、FullWidth は 2、
+// Neutral と Ambiguous は設定値による。
+static uint
+get_eaw_width(unichar c)
+{
+	uint8 packed;
+	uint8 val;
+
+	if (__predict_true((c / 2) < sizeof(eaw2width_packed))) {
+		packed = eaw2width_packed[c / 2];
+	} else {
+		// 安全のため FullWidth としておく。
+		packed = 0x11;
+	}
+
+	// 1バイトに2文字分埋め込んである。
+	if (c % 2 == 0) {
+		val = packed >> 4;
+	} else {
+		val = packed & 0xf;
+	}
+
+	switch (val) {
+	 case 0x0:	// H (Narrow, HalfWidth)
+		return 1;
+
+	 case 0x1:	// F (Wide, FullWidth)
+		return 2;
+
+	 case 0x2:	// N (Neutral)
+		return opt_eaw_n;
+
+	 case 0x3:	// A (Ambiguous)
+		return opt_eaw_a;
+
+	 default:
+		__builtin_unreachable();
+	}
 }
 
 // 画像をキャッシュして表示する。
