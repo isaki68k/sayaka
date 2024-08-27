@@ -106,6 +106,7 @@ enum {
 	OPT_light,
 	OPT_mathalpha,
 	OPT_max_image_cols,
+	OPT_no_combine,
 	OPT_no_image,	// backward compatibility
 	OPT_nsfw,
 	OPT_play,
@@ -132,6 +133,7 @@ static const struct option longopts[] = {
 	{ "light",			no_argument,		NULL,	OPT_light },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
+	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
 	{ "play",			required_argument,	NULL,	OPT_play },
@@ -317,6 +319,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_no_combine:
+			opt_nocombine = true;
+			break;
+
 		 case OPT_no_image:
 			warnx("--no-image is obsolete.  --show-image=no is used instead.");
 			opt_show_image = 0;
@@ -453,6 +459,7 @@ help_all(void)
 "  --help-all  : This help.\n"
 "  --mathalpha\n"
 "  --max-image-cols=<n>\n"
+"  --no-conbine\n"
 "  --nsfw=<mode>\n"
 "  --play=<filename|->\n"
 "  --progress\n"

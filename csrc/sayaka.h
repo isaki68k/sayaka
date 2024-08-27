@@ -114,6 +114,7 @@ extern uint indent_depth;
 extern uint opt_eaw_a;
 extern uint opt_eaw_n;
 extern bool opt_mathalpha;
+extern bool opt_nocombine;
 extern void init_color(void);
 extern const char *color_begin(uint);
 extern const char *color_end(uint);
