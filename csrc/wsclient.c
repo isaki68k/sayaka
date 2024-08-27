@@ -330,7 +330,7 @@ wsclient_process(wsclient *ws)
 		Debug(diag, "%s: CLOSE", __func__);
 		return 0;
 	} else if (opcode == WS_OPCODE_TEXT || opcode == WS_OPCODE_CONT) {
-		// テキストフレーム
+		// テキストフレーム。
 		if (ws->opcode == WS_OPCODE_TEXT) {
 			ws->opcode = opcode;
 			string_clear(ws->text);

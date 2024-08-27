@@ -634,14 +634,14 @@ invalidate_cache(void)
 {
 	char cmd[1024];
 
-	// アイコンは1か月分くらいか
+	// アイコンは1か月分くらいか。
 	snprintf(cmd, sizeof(cmd),
 		"find %s -name icon-\\* -type f -atime +30 -exec rm {} +", cachedir);
 	if (system(cmd) < 0) {
 		warn("system(find icon)");
 	}
 
-	// 写真は2日分くらいか
+	// 写真は2日分くらいか。
 	snprintf(cmd, sizeof(cmd),
 		"find %s -name http\\* -type f -atime +2 -exec rm {} +", cachedir);
 	if (system(cmd) < 0) {
@@ -700,7 +700,7 @@ sigwinch(bool initializing)
 		}
 	}
 
-	// 画面幅は常に更新
+	// 画面幅は常に更新。
 	if (ws_cols > 0) {
 		screen_cols = ws_cols;
 		msg_cols = " (from ioctl)";
@@ -709,7 +709,7 @@ sigwinch(bool initializing)
 		msg_cols = " (not detected)";
 	}
 
-	// フォント幅と高さは指定されてない時だけ取得した値を使う
+	// フォント幅と高さは指定されてない時だけ取得した値を使う。
 	bool use_default_font = false;
 	if (opt_fontwidth > 0) {
 		fontwidth = opt_fontwidth;
@@ -753,7 +753,7 @@ sigwinch(bool initializing)
 	// XXX まだ縦横について考慮してない
 	imagesize = ((fontheight * 9 - 1) / 6) * 6;
 
-	// そこからインデント幅を決定
+	// そこからインデント幅を決定。
 	indent_cols = ((int)(iconsize / fontwidth)) + 1;
 
 	const char *f = (initializing ? "init_screen" : __func__);

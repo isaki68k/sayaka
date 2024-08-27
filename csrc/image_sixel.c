@@ -266,9 +266,9 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 					REPUNIT(linebuf, n, prev_t);
 				}
 
-				// X 位置を更新
+				// X 位置を更新。
 				mx = max_x[min_color];
-				// 済んだ印
+				// 済んだ印。
 				min_x[min_color] = -1;
 			}
 
@@ -323,7 +323,7 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 	uint y;
 	bool rv = true;
 
-	// パレットのビット数 (0 は来ないはず)
+	// パレットのビット数。(0 は来ないはず)
 	uint nplane = mylog2(palcnt);
 	linebuf = string_alloc((w + 5) * nplane);
 	if (linebuf == NULL) {
@@ -402,7 +402,7 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint8 *src,
 		uint8 ptn = *buf;
 		buf += nplane;
 
-		// 1 から
+		// 1 から。
 		for (uint x = 1; x < width; x++, buf += nplane) {
 			if (ptn == *buf) {
 				rept++;

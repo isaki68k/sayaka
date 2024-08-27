@@ -651,7 +651,7 @@ misskey_show_photo(const json *js, int ifile, int index)
 		shown = show_image(img_file, img_url, width, height, index);
 	}
 
-next:
+ next:
 	if (shown == false) {
 		misskey_print_filetype(js, ifile, filetype_msg);
 	}

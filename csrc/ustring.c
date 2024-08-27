@@ -373,7 +373,7 @@ uchar_from_utf8(const char **srcp)
 		bytelen = 4;
 		code = c & 0x07;
 	} else {
-		// 来ないはずだけど、とりあえず
+		// 来ないはずだけど、とりあえず。
 		bytelen = 1;
 		code = c;
 	}
@@ -398,25 +398,25 @@ static uint
 uchar_to_utf8(char *dst, unichar code)
 {
 	if (code < 0x80) {
-		// 1バイト
+		// 1バイト。
 		*dst = (char)code;
 		return 1;
 
 	} else if (code < 0x7ff) {
-		// 2バイト
+		// 2バイト。
 		*dst++ = 0xc0 | (code >> 6);
 		*dst++ = 0x80 | (code & 0x3f);
 		return 2;
 
 	} else if (code < 0x10000) {
-		// 3バイト
+		// 3バイト。
 		*dst++ = 0xe0 |  (code >> 12);
 		*dst++ = 0x80 | ((code >> 6) & 0x3f);
 		*dst++ = 0x80 |  (code & 0x3f);
 		return 3;
 
 	} else {
-		// 4バイト
+		// 4バイト。
 		*dst++ = 0xf0 |  (code >> 18);
 		*dst++ = 0x80 | ((code >> 12) & 0x3f);
 		*dst++ = 0x80 | ((code >>  6) & 0x3f);

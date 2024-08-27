@@ -86,10 +86,10 @@ image_png_read(FILE *fp, const image_opt *opt, const diag *diag)
 		goto abort;
 	}
 
-	// コールバック設定
+	// コールバック設定。
 	png_set_read_fn(png, fp, png_read_cb);
 
-	// ヘッダを読み込む
+	// ヘッダを読み込む。
 	png_read_info(png, info);
 	png_get_IHDR(png, info, &width, &height, &bitdepth,
 		&color_type, &interlace_type, &compression_type, &filter_type);
@@ -111,7 +111,7 @@ image_png_read(FILE *fp, const image_opt *opt, const diag *diag)
 		}
 		png_set_gray_to_rgb(png);
 	}
-	// Alpha 無視
+	// Alpha 無視。
 	png_set_strip_alpha(png);
 
 	img = image_create(width, height, 3);

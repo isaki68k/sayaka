@@ -120,10 +120,10 @@ image_blurhash_read(FILE *fp, const image_opt *opt, const diag *diag)
 		goto abort;
 	}
 
-	// 1つ目
+	// 1つ目。
 	decode_dc(&values[0], decode83(src, 2, 4));
 
-	// 残り
+	// 残り。
 	v = &values[1];
 	for (uint pos = 6, end = strlen(src); pos < end; pos += 2) {
 		uint q = decode83(src, pos, 2);

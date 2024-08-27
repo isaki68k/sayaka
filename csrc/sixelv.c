@@ -519,7 +519,7 @@ do_file(const char *infile)
 		srcimg->width, srcimg->height, dst_width, dst_height,
 		reductorcolor_tostr(imageopt.color));
 
-	// 減色 & リサイズ
+	// 減色 & リサイズ。
 	resimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
 	if (resimg == NULL) {
 		warnx("reductor failed");

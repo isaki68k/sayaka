@@ -78,7 +78,7 @@ image_bmp_write(FILE *fp, const image *img, const diag *diag)
 	hdr.bfType[1] = 'M';
 	hdr.bfOffBits = htole32(sizeof(hdr) + sizeof(info));
 
-	// 情報ヘッダ
+	// 情報ヘッダ。
 	memset(&info, 0, sizeof(info));
 	info.biSize			= htole32(sizeof(info));
 	info.biWidth		= htole32(img->width);

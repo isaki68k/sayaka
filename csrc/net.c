@@ -349,7 +349,7 @@ socket_connect(const char *hostname, const char *servname)
 			continue;
 		}
 
-		// ここでノンブロックに設定
+		// ここでノンブロックに設定。
 		if (socket_setblock(fd, false) < 0) {
 			goto abort_continue;
 		}
@@ -357,7 +357,7 @@ socket_connect(const char *hostname, const char *servname)
 		if (connect(fd, ai->ai_addr, ai->ai_addrlen) == 0) {
 			break;
 		}
-		// ノンブロッキングなので connect() は EINPROGRESS を返す
+		// ノンブロッキングなので connect() は EINPROGRESS を返す。
 		if (errno == EINPROGRESS) {
 			inprogress = true;
 			break;
@@ -369,7 +369,7 @@ socket_connect(const char *hostname, const char *servname)
 	}
 	freeaddrinfo(ailist);
 
-	// 接続出来なかった
+	// 接続出来なかった。
 	if (fd < 0) {
 		return -1;
 	}
@@ -380,7 +380,7 @@ socket_connect(const char *hostname, const char *servname)
 		return -1;
 	}
 
-	// 接続待ちなら
+	// 接続待ちなら…
 	if (inprogress) {
 		FD_ZERO(&wfds);
 		FD_SET(fd, &wfds);

@@ -83,7 +83,7 @@ stou32def(const char *s, uint32 defval, char **endp)
 	int error;
 
 	val = 0;
-	error = EINVAL;	// 1桁もなければエラー
+	error = EINVAL;	// 1桁もなければエラー。
 
 	if (__predict_false(s == NULL)) {
 		errno = error;
@@ -98,7 +98,7 @@ stou32def(const char *s, uint32 defval, char **endp)
 		}
 		c -= '0';
 
-		// オーバーフローチェックは演算ごとに必要
+		// オーバーフローチェックは演算ごとに必要。
 		uint32 n1 = val * 10;
 		uint32 n2 = n1 + c;
 		if (__predict_false(n1 < val || n2 < val)) {

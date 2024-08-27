@@ -659,7 +659,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 			col.g -= ir->palette[colorcode].g;
 			col.b -= ir->palette[colorcode].b;
 
-			// ランダムノイズを加える
+			// ランダムノイズを加える。
 			if (0) {
 			}
 
@@ -745,7 +745,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 			errbuf[i] = errbuf[i + 1];
 		}
 		errbuf[errbuf_count - 1] = tmp;
-		// errbuf[y] には左マージンがあるのを考慮する
+		// errbuf[y] には左マージンがあるのを考慮する。
 		memset(errbuf[errbuf_count - 1] - errbuf_left, 0, errbuf_len);
 	}
 
@@ -833,7 +833,7 @@ colorcvt_gray(image_reductor_handle *ir, ColorRGBint32 *c)
 	c->b = I;
 }
 
-// RGB 固定8色
+// RGB 固定8色。
 static const ColorRGB palette_fixed8[] = {
 	{ RGBToU32(  0,   0,   0) },
 	{ RGBToU32(255,   0,   0) },
