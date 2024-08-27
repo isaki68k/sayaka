@@ -51,11 +51,11 @@ LIBS+=	-lm
 
 all:	sayaka sixelv
 
-sayaka:	sayaka.o libsayaka.a libcommon.a
-	${CC} ${LDFLAGS} -o $@ $> ${LIBS} ${LIBS_sayaka}
+sayaka:	libcommon.a libsayaka.a sayaka.o
+	${CC} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS} ${LIBS_sayaka}
 
-sixelv:	sixelv.o libsixelv.a libcommon.a
-	${CC} ${LDFLAGS} -o $@ $> ${LIBS} ${LIBS_sixelv}
+sixelv:	libcommon.a libsixelv.a sixelv.o
+	${CC} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS} ${LIBS_sixelv}
 
 libcommon.a:	${SRCS_common:.c=.o}
 	rm -f $@
@@ -82,17 +82,17 @@ eaw_gen:	eaw_gen.c
 # Test
 testall:	all dump test terminal wsclient
 
-dump:	dump.c libsayaka.a libcommon.a
-	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $> ${LIBS}
+dump:	libcommon.a libsayaka.a dump.c
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS}
 
-test:	test.c libsayaka.a libcommon.a
-	${CC} ${CFLAGS} ${LDFLAGS} -o $@ $> ${LIBS}
+test:	libcommon.a libsayaka.a test.c
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS}
 
-terminal:	terminal.c libcommon.a
-	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
+terminal:	libcommon.a terminal.c
+	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ ${>:[-1..1]} ${LIBS}
 
-wsclient:	wsclient.c libsayaka.a libcommon.a
-	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
+wsclient:	libcommon.a libsayaka.a wsclient.c
+	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ ${>:[-1..1]} ${LIBS}
 
 .PHONY:	clean
 clean:
