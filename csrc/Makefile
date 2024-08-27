@@ -91,7 +91,7 @@ terminal:	terminal.c libcommon.a
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
 
 wsclient:	wsclient.c libsayaka.a libcommon.a
-	${CC} ${LDFLAGS} ${CFLAGS} -DTEST -o $@ $> ${LIBS}
+	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ $> ${LIBS}
 
 .PHONY:	clean
 clean:
