@@ -241,7 +241,11 @@ static void
 misskey_message(string *jsonstr)
 {
 	int n = json_parse(js, jsonstr);
-	Debug(diag_json, "token = %d\n", n);
+	if (__predict_false(n < 0)) {
+		warnx("%s: json_parse failed: %d", __func__, n);
+		return;
+	}
+	Debug(diag_json, "%s: token = %d\n", __func__, n);
 
 	if (__predict_false(diag_get_level(diag_format) >= 3)) {
 		json_jsmndump(js);
