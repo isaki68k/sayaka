@@ -91,6 +91,7 @@ uint screen_cols;					// 画面の桁数
 
 enum {
 	OPT__start = 0x7f,
+	OPT_ciphers,
 	OPT_dark,
 	OPT_debug_format,
 	OPT_debug_image,
@@ -119,6 +120,7 @@ enum {
 };
 
 static const struct option longopts[] = {
+	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	'c' },
 	{ "dark",			no_argument,		NULL,	OPT_dark },
 	{ "debug-format",	required_argument,	NULL,	OPT_debug_format },
@@ -235,6 +237,15 @@ main(int ac, char *av[])
 			}
 			break;
 		 }
+
+		 case OPT_ciphers:
+			// 今のところ "RSA" (大文字) しか指定できない。
+			if (strcmp(optarg, "RSA") == 0) {
+				netopt.use_rsa_only = true;
+			} else {
+				errx(1, "Invalid ciphers: '%s'", optarg);
+			}
+			break;
 
 		 case OPT_dark:
 			opt_bgtheme = BG_DARK;
@@ -460,6 +471,7 @@ help_all(void)
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
 "     gray[<n>]: (2..256) shades of grayscale. 256 if <n> is ommitted.\n"
 "                'gray2' is a synonym for '2'.\n"
+"  --ciphers=<ciphers>\n"
 "  --dark/--light\n"
 "  --debug-image=<0..2>\n"
 "  --debug-json=<0..2>\n"
