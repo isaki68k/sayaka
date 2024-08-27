@@ -193,7 +193,7 @@ wsclient_connect(wsclient *ws, const char *url)
 	Trace(diag, "<<< %s", string_get(hdr));
 	ssize_t sent = net_write(ws->net, string_get(hdr), string_len(hdr));
 	if (sent < 0) {
-		Debug(diag, "%s: f_write: %s", __func__, strerrno());
+		Debug(diag, "%s: net_write: %s", __func__, strerrno());
 		goto abort;
 	}
 
@@ -203,7 +203,7 @@ wsclient_connect(wsclient *ws, const char *url)
 	for (;;) {
 		ssize_t n = net_read(ws->net, recvbuf + len, sizeof(recvbuf) - len);
 		if (n < 0) {
-			Debug(diag, "%s: f_read: %s", __func__, strerrno());
+			Debug(diag, "%s: net_read: %s", __func__, strerrno());
 			goto abort;
 		}
 		if (n == 0) {
@@ -281,7 +281,7 @@ wsclient_process(wsclient *ws)
 	// ブロッキング。
 	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
 	if (r < 0) {
-		Debug(diag, "%s: f_read: %s", __func__, strerrno());
+		Debug(diag, "%s: net_read: %s", __func__, strerrno());
 		return -1;
 	}
 	if (r == 0) {
@@ -411,11 +411,12 @@ wsclient_send(wsclient *ws, uint8 opcode, const void *data, uint datalen)
 	uint framelen = hdrlen + datalen;
 	r = net_write(ws->net, buf, framelen);
 	if (r < 0) {
-		Debug(ws->diag, "%s: f_write(%u): %s", __func__, framelen, strerrno());
+		Debug(ws->diag, "%s: net_write(%u): %s", __func__,
+			framelen, strerrno());
 		return -1;
 	}
 	if (r < framelen) {
-		Debug(ws->diag, "%s: f_write(%u): r=%zd", __func__, framelen, r);
+		Debug(ws->diag, "%s: net_write(%u): r=%zd", __func__, framelen, r);
 		return 0;
 	}
 
