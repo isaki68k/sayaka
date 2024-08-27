@@ -59,7 +59,6 @@ typedef struct diag_
 {
 	int level;
 	bool timestamp;
-	char name[32];
 } diag;
 struct net;
 typedef struct pstream_ pstream;
@@ -78,7 +77,6 @@ static inline int diag_get_level(const diag *diag)
 }
 extern diag *diag_alloc(void);
 extern void diag_free(diag *);
-extern void diag_set_name(diag *, const char *);
 extern void diag_set_level(diag *, int);
 extern void diag_set_timestamp(diag *, bool);
 extern void diag_print(const diag *, const char *, ...)

@@ -53,16 +53,6 @@ diag_free(diag *diag)
 	}
 }
 
-// クラス名を設定する。
-void
-diag_set_name(diag *diag, const char *name)
-{
-	assert(diag);
-	assert(name);
-
-	strlcpy(diag->name, name, sizeof(diag->name));
-}
-
 // デバッグレベルを lv に設定する。
 void
 diag_set_level(diag *diag, int level_)
@@ -97,8 +87,6 @@ diag_print(const diag *diag, const char *fmt, ...)
 		fprintf(stderr, "%02u:%02u:%02u.%03u ",
 			tm->tm_hour, tm->tm_min, tm->tm_sec, ms);
 	}
-
-	fputs(diag->name, stderr);
 
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
