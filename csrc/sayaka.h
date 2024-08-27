@@ -62,7 +62,7 @@ typedef struct ustring_ ustring;
 typedef struct wsclient_ wsclient;
 
 // eaw_data.c
-extern const uint8 eaw2width_packed[0x10000];
+extern const uint8 eaw2width_packed[0x8000];
 
 // json.c
 extern json *json_create(const diag *);

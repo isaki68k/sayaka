@@ -446,18 +446,29 @@ get_eaw_width(unichar c)
 	uint8 packed;
 	uint8 val;
 
-	if (__predict_true((c / 2) < sizeof(eaw2width_packed))) {
-		packed = eaw2width_packed[c / 2];
+	if (__predict_true((c / 4) < sizeof(eaw2width_packed))) {
+		packed = eaw2width_packed[c / 4];
 	} else {
 		// 安全のため FullWidth としておく。
-		packed = 0x11;
+		packed = 0x55;
 	}
 
-	// 1バイトに2文字分埋め込んである。
-	if (c % 2 == 0) {
-		val = packed >> 4;
-	} else {
-		val = packed & 0xf;
+	// 1バイトに4文字分埋め込んである。
+	switch (c & 3) {
+	 case 0:
+		val = packed >> 6;
+		break;
+	 case 1:
+		val = (packed >> 4) & 3;
+		break;
+	 case 2:
+		val = (packed >> 2) & 3;
+		break;
+	 case 3:
+		val = packed & 3;
+		break;
+	 default:
+		__builtin_unreachable();
 	}
 
 	switch (val) {

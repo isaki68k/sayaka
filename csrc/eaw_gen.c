@@ -108,11 +108,17 @@ preamble(void)
 	printf("\n");
 	for (int i = 0; i < sizeof(name); i++) {
 		for (int j = 0; j < sizeof(name); j++) {
-			printf("#define %c%c (0x%x%x)\n", name[i], name[j], i, j);
+			for (int k = 0; k < sizeof(name); k++) {
+				for (int n = 0; n < sizeof(name); n++) {
+					printf("#define %c%c%c%c (0x%02x)\n",
+						name[i], name[j], name[k], name[n],
+						((i << 6) | (j << 4) | (k << 2) | n));
+				}
+			}
 		}
 	}
 	printf("\n");
-	printf("const uint8 eaw2width_packed[0x%x] = {\n", MAXCHARS / 2);
+	printf("const uint8 eaw2width_packed[0x%x] = {\n", MAXCHARS / 4);
 }
 
 static void
@@ -131,6 +137,8 @@ main(int ac, char *av[])
 
 	preamble();
 	for (int i = 0; i < MAXCHARS; ) {
+		*d++ = conv(i++);
+		*d++ = conv(i++);
 		*d++ = conv(i++);
 		*d++ = conv(i++);
 		*d++ = ',';
