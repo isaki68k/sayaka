@@ -66,6 +66,31 @@ string_from_mem(const void *mem, uint memlen)
 	return s;
 }
 
+// fp から1行読み込む。
+// EOF なら NULL を返す。
+string *
+string_fgets(FILE *fp)
+{
+	char buf[4096];
+	string *s = string_init();
+
+	while (fgets(buf, sizeof(buf), fp)) {
+		string_append_cstr(s, buf);
+
+		uint len = strlen(buf);
+		if (len < sizeof(buf) - 1 || buf[len - 1] == '\n') {
+			// バッファ目一杯ではないか最後の文字が改行なら、無事に1行読めた。
+			break;
+		}
+	}
+
+	if (s->len == 0) {
+		string_free(s);
+		s = NULL;
+	}
+	return s;
+}
+
 // s の文字列を返す。
 const char *
 string_get(const string *s)
