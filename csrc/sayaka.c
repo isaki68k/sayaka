@@ -464,7 +464,7 @@ help_all(void)
 	fprintf(stderr, "usage: %s [<options>...]\n", getprogname());
 	fprintf(stderr,
 "  -c,--color=<color> : Specify color mode (default: 256)\n"
-"     1        : Monochrome image, and text has no escape sequences\n"
+"     1        : Monochrome image, and disable all text color sequences\n"
 "     2        : Monochrome (2-level grayscale) image\n"
 "     8        : Fixed RGB 8 colors\n"
 "     16       : Fixed ANSI compatible 16 colors\n"
