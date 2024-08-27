@@ -117,14 +117,12 @@ wsclient_destroy(wsclient *ws)
 }
 
 // ws を初期化する。
-bool
+void
 wsclient_init(wsclient *ws, void (*callback)(const string *))
 {
 	assert(ws);
 
 	ws->callback = callback;
-
-	return true;
 }
 
 // url に接続する。
@@ -542,10 +540,7 @@ static int
 testwsecho(const diag *diag, int ac, char *av[])
 {
 	wsclient *ws = wsclient_create(diag);
-
-	if (wsclient_init(ws, cat_callback) == false) {
-		err(1, "wsclient_init failed");
-	}
+	wsclient_init(ws, cat_callback);
 
 	int sock = wsclient_connect(ws, av[2]);
 	if (sock < 0) {
@@ -582,10 +577,7 @@ static int
 testmisskey(const diag *diag, int ac, char *av[])
 {
 	wsclient *ws = wsclient_create(diag);
-
-	if (wsclient_init(ws, cat_callback) == false) {
-		err(1, "wsclient_init failed");
-	}
+	wsclient_init(ws, cat_callback);
 
 	int sock = wsclient_connect(ws, av[2]);
 	if (sock < 0) {

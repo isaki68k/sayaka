@@ -141,10 +141,7 @@ cmd_misskey_stream(const char *server)
 			goto abort;
 		}
 
-		if (wsclient_init(ws, misskey_recv_cb) == false) {
-			Debug(diag, "%s: wsclient_init failed", __func__);
-			goto abort;
-		}
+		wsclient_init(ws, misskey_recv_cb);
 
 		if (wsclient_connect(ws, url) != 0) {
 			Debug(diag, "%s: %s: wsclient_connect failed", __func__, server);

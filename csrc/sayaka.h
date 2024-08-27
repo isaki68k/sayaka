@@ -182,7 +182,7 @@ extern void ustring_dump(const ustring *, const char *);
 // wsclient.c
 extern wsclient *wsclient_create(const diag *);
 extern void wsclient_destroy(wsclient *);
-extern bool wsclient_init(wsclient *, void (*)(const string *));
+extern void wsclient_init(wsclient *, void (*)(const string *));
 extern int  wsclient_connect(wsclient *, const char *);
 extern int  wsclient_process(wsclient *);
 extern ssize_t wsclient_send_text(wsclient *, const char *);
