@@ -104,6 +104,7 @@ enum {
 	OPT_help_all,
 	OPT_jis,
 	OPT_light,
+	OPT_mathalpha,
 	OPT_max_image_cols,
 	OPT_no_image,	// backward compatibility
 	OPT_nsfw,
@@ -129,6 +130,7 @@ static const struct option longopts[] = {
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "light",			no_argument,		NULL,	OPT_light },
+	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
@@ -303,6 +305,10 @@ main(int ac, char *av[])
 			opt_bgtheme = BG_LIGHT;
 			break;
 
+		 case OPT_mathalpha:
+			opt_mathalpha = true;
+			break;
+
 		 case OPT_max_image_cols:
 			max_image_count = stou32def(optarg, -1, NULL);
 			if (max_image_count < 0) {
@@ -445,6 +451,7 @@ help_all(void)
 "  --euc-jp/--jis\n"
 "  --font=<W>x<H>\n"
 "  --help-all  : This help.\n"
+"  --mathalpha\n"
 "  --max-image-cols=<n>\n"
 "  --nsfw=<mode>\n"
 "  --play=<filename|->\n"

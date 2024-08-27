@@ -98,6 +98,9 @@ extern const char *json_obj_find_cstr(const json *, int, const char *);
 #define JSON_OBJ_FOR(v, j, p)	JSON_FOR(v, j, p, 1/*JSMN_OBJECT*/)
 #define JSON_ARRAY_FOR(v, j, p)	JSON_FOR(v, j, p, 2/*JSMN_ARRAY*/)
 
+// mathalpha.c
+extern unichar conv_mathalpha(unichar);
+
 // misskey.c
 extern void cmd_misskey_stream(const char *);
 extern void cmd_misskey_play(const char *);
@@ -110,6 +113,7 @@ extern int  max_image_count;
 extern uint indent_depth;
 extern uint opt_eaw_a;
 extern uint opt_eaw_n;
+extern bool opt_mathalpha;
 extern void init_color(void);
 extern const char *color_begin(uint);
 extern const char *color_end(uint);

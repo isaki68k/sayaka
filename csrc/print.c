@@ -264,10 +264,8 @@ iprint(const ustring *src)
 		if (__predict_false(opt_mathalpha) &&
 			__predict_false(0x1d400 <= uni && uni <= 0x1d7ff))
 		{
-#if 0
 			// Mathematical Alphanumeric Symbols を全角英数字に変換
-			utext.Append(ConvMathAlpha(uni));
-#endif
+			ustring_append_unichar(utext, conv_mathalpha(uni));
 			continue;
 		}
 
