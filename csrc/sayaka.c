@@ -109,6 +109,7 @@ enum {
 	OPT_light,
 	OPT_mathalpha,
 	OPT_max_image_cols,
+	OPT_misskey,
 	OPT_no_combine,
 	OPT_no_image,	// backward compatibility
 	OPT_nsfw,
@@ -140,6 +141,7 @@ static const struct option longopts[] = {
 	{ "local",			required_argument,	NULL,	'l' },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
+	{ "misskey",		no_argument,		NULL,	OPT_misskey },
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
@@ -350,6 +352,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_misskey:
+			// 今のところ何もしない。
+			break;
+
 		 case OPT_no_combine:
 			opt_nocombine = true;
 			break;
@@ -485,6 +491,7 @@ help_all(void)
 "  -l,--local=<server>\n"
 "  --mathalpha\n"
 "  --max-image-cols=<n>\n"
+"  --misskey\n"
 "  --no-conbine\n"
 "  --nsfw=<mode>\n"
 "  --play=<filename|->\n"
