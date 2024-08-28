@@ -49,7 +49,9 @@ SRCS_all=	${SRCS_common}	\
 
 LIBS+=	-lm
 
-all:	sayaka sixelv
+PROGS=	sayaka sixelv dump test terminal wsclient
+
+all:	${PROGS}
 
 sayaka:	libcommon.a libsayaka.a sayaka.o
 	${CC} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS} ${LIBS_sayaka}
@@ -72,6 +74,8 @@ libsixelv.a:	${SRCS_sixelv:.c=.o}
 .c.o:
 	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
 
+# Not necessary for normal builds.  It's only for developpers.
+.if defined(REGEN_EAW)
 eaw_data.c:	eaw_gen
 	rm -f $@
 	./eaw_gen > $@
@@ -79,8 +83,7 @@ eaw_data.c:	eaw_gen
 eaw_gen:	eaw_gen.c
 	${CC} ${CFLAGS} -o $@ $> -L/usr/pkg/lib -Wl,-R,/usr/pkg/lib -licuuc
 
-# Test
-testall:	all dump test terminal wsclient
+.endif
 
 dump:	libcommon.a libsayaka.a dump.c
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS}
@@ -96,7 +99,7 @@ wsclient:	libcommon.a libsayaka.a wsclient.c
 
 .PHONY:	clean
 clean:
-	rm -f sayaka sixelv eaw_gen dump test terminal wsclient *.o *.a *.core
+	rm -f ${PROGS} eaw_gen *.o *.a *.core
 
 .PHONY:	depend
 depend:	${SRCS_all:.c=.d}
