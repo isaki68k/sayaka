@@ -57,14 +57,14 @@ static string *misskey_format_reaction_count(const json *, int);
 static string *misskey_format_renote_owner(const json *, int);
 static const char *misskey_get_user(const json *, int, string *, const char **);
 
-static json *js;
+static json *global_js;
 
 // サーバ接続とローカル再生との共通の初期化。
 static bool
 misskey_init(void)
 {
-	js = json_create(diag_json);
-	if (js == NULL) {
+	global_js = json_create(diag_json);
+	if (global_js == NULL) {
 		return false;
 	}
 
@@ -74,7 +74,7 @@ misskey_init(void)
 static void
 misskey_cleanup(void)
 {
-	json_destroy(js);
+	json_destroy(global_js);
 }
 
 void
@@ -248,6 +248,8 @@ misskey_recv_cb(const string *msg)
 static void
 misskey_message(string *jsonstr)
 {
+	json *js = global_js;
+
 	int n = json_parse(js, jsonstr);
 	if (__predict_false(n < 0)) {
 		warnx("%s: json_parse failed: %d", __func__, n);
