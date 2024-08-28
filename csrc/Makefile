@@ -54,10 +54,10 @@ PROGS=	sayaka sixelv dump test terminal wsclient
 all:	${PROGS}
 
 sayaka:	libcommon.a libsayaka.a sayaka.o
-	${CC} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS} ${LIBS_sayaka}
+	${CC} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS}
 
 sixelv:	libcommon.a libsixelv.a sixelv.o
-	${CC} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS} ${LIBS_sixelv}
+	${CC} ${LDFLAGS} -o $@ ${>:[-1..1]} ${LIBS}
 
 libcommon.a:	${SRCS_common:.c=.o}
 	rm -f $@
