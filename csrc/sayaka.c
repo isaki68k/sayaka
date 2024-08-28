@@ -606,13 +606,9 @@ init_screen(void)
 	}
 
 	// 端末が SIXEL をサポートしているか。
-	if (opt_show_image == -1) {
+	if (opt_show_image == -1 && is_tty) {
 		progress("Checking whether the terminal supports sixel...");
-		if (is_tty) {
-			opt_show_image = terminal_support_sixel();
-		} else {
-			opt_show_image = 0;
-		}
+		opt_show_image = terminal_support_sixel();
 		if (opt_show_image == 0) {
 			progress("no\n");
 		} else if (opt_show_image == 1) {
