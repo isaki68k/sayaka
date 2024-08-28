@@ -34,8 +34,8 @@
 #include <stdio.h>
 #include <string.h>
 
-diag dummy;
-bool opt_j;
+static diag dummy;
+static bool opt_j;
 
 static void
 dump(FILE *fp)
