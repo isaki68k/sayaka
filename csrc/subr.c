@@ -36,6 +36,9 @@
 uint32
 rnd_get32(void)
 {
+#if defined(HAVE_ARC4RANDOM)
+	return arc4random();
+#else
 	static bool initialized = false;
 
 	if (__predict_false(initialized == false)) {
@@ -46,18 +49,23 @@ rnd_get32(void)
 	}
 
 	return random();
+#endif
 }
 
 // 乱数で埋める。
 void
 rnd_fill(void *dst, uint dstsize)
 {
+#if defined(HAVE_ARC4RANDOM_BUF)
+	arc4random_buf(dst, dstsize);
+#else
 	for (int i = 0; i < dstsize; ) {
 		uint32 r = rnd_get32();
 		uint copylen = MIN(dstsize - i, sizeof(r));
 		memcpy((char *)dst + i, &r, copylen);
 		i += copylen;
 	}
+#endif
 }
 
 // 文字列の FNV1a ハッシュ(32ビット) を返す。

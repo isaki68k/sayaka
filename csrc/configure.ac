@@ -227,6 +227,9 @@ CFLAGS="${old_CFLAGS}"
 
 # Checks for library functions.
 
+AC_CHECK_FUNCS([arc4random])
+AC_CHECK_FUNCS([arc4random_buf])
+
 # libbsd on Linux
 AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
 if test "x${has_getprogname}" = "xno"; then
