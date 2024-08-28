@@ -521,8 +521,63 @@ misskey_show_note(const json *js, int inote, uint depth)
 static bool
 misskey_show_announcement(const json *js, int inote)
 {
-	printf("%s not yet\n", __func__);
-	abort();
+	ustring *line = ustring_alloc(16);
+
+	// "icon":"info" はどうしたらいいんだ…。
+	printf(" *\r");
+
+	ustring_append_ascii_color(line, "announcement", COLOR_USERNAME);
+	iprint(line);
+	printf("\n");
+
+	const char *title = json_obj_find_cstr(js, inote, "title");
+	const char *text  = json_obj_find_cstr(js, inote, "text");
+	ustring_clear(line);
+	if (title && title[0]) {
+		string *unescape_title = string_unescape_c(title);
+		ustring_append_utf8(line, string_get(unescape_title));
+		ustring_append_unichar(line, '\n');
+		ustring_append_unichar(line, '\n');
+		string_free(unescape_title);
+	}
+	if (text && text[0]) {
+		string *unescape_text = string_unescape_c(text);
+		ustring_append_utf8(line, string_get(unescape_text));
+		string_free(unescape_text);
+	}
+	iprint(line);
+	printf("\n");
+
+	const char *imageUrl = json_obj_find_cstr(js, inote, "imageUrl");
+	if (imageUrl) {
+		// picture
+		char img_file[PATH_MAX];
+		make_cache_filename(img_file, sizeof(img_file), imageUrl);
+
+		image_count = 0;
+		image_next_cols = 0;
+		image_max_rows = 0;
+		print_indent(1);
+		show_image(img_file, imageUrl, imagesize, imagesize, 0);
+		printf("\r");
+	}
+
+	// 時間は updatedAt と createdAt があるので順に探す。
+	const char *at = json_obj_find_cstr(js, inote, "updatedAt");
+	if (at == NULL) {
+		at = json_obj_find_cstr(js, inote, "createdAt");
+	}
+	if (at) {
+		time_t unixtime = decode_isotime(at);
+		string *time = format_time(unixtime);
+		ustring_clear(line);
+		ustring_append_ascii_color(line, string_get(time), COLOR_TIME);
+		iprint(line);
+		printf("\n");
+		string_free(time);
+	}
+
+	ustring_free(line);
 	return true;
 }
 
