@@ -75,6 +75,7 @@ static uint ws_encode_len(uint8 *, uint);
 static uint ws_decode_len(const uint8 *, uint *);
 
 // wsclient コンテキストを生成する。
+// 失敗すれば errno をセットし NULL を返す。
 wsclient *
 wsclient_create(const diag *diag)
 {
