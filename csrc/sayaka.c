@@ -50,6 +50,9 @@ enum {
 	Cmd_play,
 };
 
+// ヘッダの依存関係を減らすため。
+extern image_opt imageopt;
+
 static void version(void);
 static void usage(void);
 static void help_all(void);
