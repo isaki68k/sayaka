@@ -37,27 +37,6 @@
 diag dummy;
 bool opt_j;
 
-static string *
-string_fgets(FILE *fp)
-{
-	char buf[1024];
-
-	string *s = string_init();
-	while (fgets(buf, sizeof(buf), fp)) {
-		string_append_cstr(s, buf);
-
-		int n = strlen(buf);
-		if (n > 0 && buf[n - 1] == '\n') {
-			break;
-		}
-	}
-	if (string_len(s) == 0) {
-		string_free(s);
-		s = NULL;
-	}
-	return s;
-}
-
 static void
 dump(FILE *fp)
 {

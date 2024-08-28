@@ -77,9 +77,8 @@ string_fgets(FILE *fp)
 	while (fgets(buf, sizeof(buf), fp)) {
 		string_append_cstr(s, buf);
 
-		uint len = strlen(buf);
-		if (len < sizeof(buf) - 1 || buf[len - 1] == '\n') {
-			// バッファ目一杯ではないか最後の文字が改行なら、無事に1行読めた。
+		uint n = strlen(buf);
+		if (n > 0 && buf[n - 1] == '\n') {
 			break;
 		}
 	}
