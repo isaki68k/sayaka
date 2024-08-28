@@ -3,7 +3,8 @@
 // Copyright (C) 2021-2024 isaki@NetBSD.org
 //
 
-#pragma once
+#ifndef sayaka_config_h
+#define sayaka_config_h
 
 #undef HAVE_ENDIAN_H
 #undef HAVE_BSD_BSD_H
@@ -27,3 +28,5 @@
 #undef HAVE_LIBWEBP
 #undef HAVE_MBEDTLS
 #undef HAVE_OPENSSL
+
+#endif // !sayaka_config_h
