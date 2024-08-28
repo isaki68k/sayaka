@@ -468,7 +468,7 @@ get_eaw_width(unichar c)
 		return opt_eaw_a;
 
 	 default:
-		__builtin_unreachable();
+		__unreachable();
 	}
 }
 

@@ -92,6 +92,16 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
 		AC_MSG_RESULT(no)
 	])
 
+AC_MSG_CHECKING(for __builtin_unreachable)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
+		__builtin_unreachable();
+	]])],[
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE___BUILTIN_UNREACHABLE)
+	],[
+		AC_MSG_RESULT(no)
+	])
+
 AC_MSG_CHECKING(for __attribute__((__format__)))
 old_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} -Wall -Werror"

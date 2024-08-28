@@ -188,7 +188,7 @@ image_get_preferred_size(
 		break;
 
 	 default:
-		__builtin_unreachable();
+		__unreachable();
 	}
 
 	if (request_width <= 0) {
@@ -228,7 +228,7 @@ image_get_preferred_size(
 		break;
 
 	 default:
-		__builtin_unreachable();
+		__unreachable();
 	}
 
 	// 代入。
