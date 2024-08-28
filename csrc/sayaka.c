@@ -146,7 +146,7 @@ static const struct option longopts[] = {
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
 	{ "play",			required_argument,	NULL,	OPT_play },
-//	{ "progress",		no_argument,		NULL,	OPT_progress },
+	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
