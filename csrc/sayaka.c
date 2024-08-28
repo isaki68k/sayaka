@@ -137,6 +137,7 @@ static const struct option longopts[] = {
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "light",			no_argument,		NULL,	OPT_light },
+	{ "local",			required_argument,	NULL,	'l' },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
@@ -173,6 +174,7 @@ main(int ac, char *av[])
 	int c;
 	uint cmd;
 	const char *playfile;
+	const char *server;
 
 	diag_format = diag_alloc();
 	diag_image = diag_alloc();
@@ -193,12 +195,13 @@ main(int ac, char *av[])
 	opt_progress = false;
 	opt_show_image = -1;
 	playfile = NULL;
+	server = NULL;
 
 	imageopt.color   = ReductorColor_Fixed256;
 	imageopt.method  = ReductorMethod_HighQuality;
 	imageopt.diffuse = RDM_FS;
 
-	while ((c = getopt_long(ac, av, "c:v", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:l:v", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
 		 {
@@ -326,6 +329,11 @@ main(int ac, char *av[])
 			opt_codeset = "iso-2022-jp";
 			break;
 
+		 case 'l':
+			cmd = Cmd_stream;
+			server = optarg;
+			break;
+
 		 case OPT_light:
 			opt_bgtheme = BG_LIGHT;
 			break;
@@ -407,11 +415,6 @@ main(int ac, char *av[])
 	ac -= optind;
 	av += optind;
 
-	// XXX とりあえず
-	if (ac > 0) {
-		cmd = Cmd_stream;
-	}
-
 	if (cmd == Cmd_none) {
 		usage();
 		exit(0);
@@ -427,17 +430,14 @@ main(int ac, char *av[])
 		init_screen();
 
 		if (cmd == Cmd_stream) {
-			// XXX とりあえずいきなり引数でサーバを指定する。
-			if (ac < 1) {
-				errx(1, "please specify server name");
-			}
+			assert(server);
 
 			// 古いキャッシュを削除する。
 			progress("Deleting expired cache files...");
 			invalidate_cache();
 			progress("done\n");
 
-			cmd_misskey_stream(av[0]);
+			cmd_misskey_stream(server);
 		} else {
 			cmd_misskey_play(playfile);
 		}
@@ -482,6 +482,7 @@ help_all(void)
 "  --font=<W>x<H>\n"
 "  --help-all  : This help.\n"
 "  --ipv4 / --ipv6\n"
+"  -l,--local=<server>\n"
 "  --mathalpha\n"
 "  --max-image-cols=<n>\n"
 "  --no-conbine\n"
