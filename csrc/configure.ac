@@ -494,6 +494,23 @@ case "${with_iconv}" in
 	;;
 esac
 
+# icu-uc
+# これはメインで使うものではないので変数も分ける。
+# そのため CHECK_PKG を横目に見ながら似たのを用意する。
+# 見付からなくても気にしない。
+AC_MSG_CHECKING([for icu-uc])
+if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists icu-uc; then
+	AC_MSG_RESULT([yes])
+
+	CFLAGS_ICU=`${PKG_CONFIG} --cflags icu-uc`
+	LIBS_ICU=`${PKG_CONFIG} --libs icu-uc`
+	AC_SUBST([CFLAGS_ICU])
+	AC_SUBST([LIBS_ICU])
+else
+	AC_MSG_RESULT([no])
+fi
+
+
 # Uniq
 CFLAGS=[`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 LIBS=[`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]

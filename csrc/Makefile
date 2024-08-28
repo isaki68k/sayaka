@@ -81,7 +81,7 @@ eaw_data.c:	eaw_gen
 	./eaw_gen > $@
 
 eaw_gen:	eaw_gen.c
-	${CC} ${CFLAGS} -o $@ $> -L/usr/pkg/lib -Wl,-R,/usr/pkg/lib -licuuc
+	${CC} ${CFLAGS_ICU} -o $@ $> ${LIBS_ICU}
 
 .endif
 

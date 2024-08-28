@@ -640,6 +640,8 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+LIBS_ICU
+CFLAGS_ICU
 DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_MBEDTLS
@@ -5029,6 +5031,26 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 	CFLAGS="${old_CFLAGS}"
 	;;
 esac
+
+# icu-uc
+# これはメインで使うものではないので変数も分ける。
+# そのため CHECK_PKG を横目に見ながら似たのを用意する。
+# 見付からなくても気にしない。
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for icu-uc" >&5
+printf %s "checking for icu-uc... " >&6; }
+if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists icu-uc; then
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+	CFLAGS_ICU=`${PKG_CONFIG} --cflags icu-uc`
+	LIBS_ICU=`${PKG_CONFIG} --libs icu-uc`
+
+
+else
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
 
 # Uniq
 CFLAGS=`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
