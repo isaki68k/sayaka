@@ -141,6 +141,7 @@ extern uint indent_cols;
 extern bool in_sixel;
 extern struct netstream_opt netopt;
 extern int opt_bgtheme;
+extern const char *opt_codeset;
 extern uint opt_nsfw;
 extern const char *opt_record_file;
 extern bool opt_show_cw;

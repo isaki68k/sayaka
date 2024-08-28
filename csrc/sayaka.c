@@ -79,7 +79,7 @@ uint indent_cols;					// インデント1階層の桁数
 bool in_sixel;						// SIXEL 出力中か。
 struct netstream_opt netopt;		// ネットワーク関係のオプション
 int opt_bgtheme;					// -1:自動判別 0:Dark 1:Light
-static const char *opt_codeset;		// 出力文字コード (NULL なら UTF-8)
+const char *opt_codeset;			// 出力文字コード (NULL なら UTF-8)
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
 uint opt_nsfw;						// NSFW コンテンツの表示方法

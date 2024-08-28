@@ -67,7 +67,6 @@ uint image_next_cols;			// この列で次に表示する画像の位置(桁数)
 uint image_max_rows;			// この列で最大の画像の高さ(行数)
 int  max_image_count;			// この列に表示する画像の最大数
 uint indent_depth;				// 現在のインデント深さ
-const char *output_codeset;		// 出力文字コード (NULL なら UTF-8)
 uint opt_eaw_a;					// Ambiguous 文字の文字幅
 uint opt_eaw_n;					// Neutral 文字の文字幅
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
@@ -281,7 +280,7 @@ iprint(const ustring *src)
 			ustring_append_unichar(utext, 0x20);
 		}
 
-		if (__predict_false(output_codeset)) {
+		if (__predict_false(opt_codeset)) {
 			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
 			// 本当は変換先がこれらの時だけのほうがいいだろうけど。
 
@@ -305,7 +304,7 @@ iprint(const ustring *src)
 
 			// NetBSD/x68k なら半角カナは表示できる。
 			// XXX 正確には JIS という訳ではないのだがとりあえず
-			if (strcmp(output_codeset, "iso-2022-jp") == 0) {
+			if (strcmp(opt_codeset, "iso-2022-jp") == 0) {
 				if (__predict_false(0xff61 <= uni && uni < 0xffa0)) {
 					ustring_append_ascii(utext, ESC "(I");
 					ustring_append_unichar(utext, uni - 0xff60 + 0x20);
