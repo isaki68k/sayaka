@@ -29,6 +29,7 @@
 //
 
 #include "common.h"
+#include <string.h>
 
 #if defined(HAVE_LIBCURL)
 // curl の下限は 7.80.0。CURLOPT_PREREQFUNCTION のため。
