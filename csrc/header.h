@@ -40,7 +40,7 @@
 #endif
 
 #if !defined(__predict_true)
-#if 1//defined(HAVE___BUILTIN_EXPECT)
+#if defined(HAVE___BUILTIN_EXPECT)
 # define __predict_true(exp)	__builtin_expect((exp) != 0, 1)
 # define __predict_false(exp)	__builtin_expect((exp) != 0, 0)
 #else
