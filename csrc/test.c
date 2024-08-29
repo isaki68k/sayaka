@@ -35,6 +35,34 @@
 	printf("\n");	\
 } while(0)
 
+// src の C 文字列をエスケープした文字列を返す。
+static string *
+string_escape_c(const char *src)
+{
+	string *dst = string_init();
+
+	char c;
+	for (int i = 0; (c = src[i]) != '\0'; i++) {
+		// 適当。
+		if (c == '\r') {
+			string_append_cstr(dst, "\\r");
+		} else if (c == '\n') {
+			string_append_cstr(dst, "\\n");
+		} else if (c == '\t') {
+			string_append_cstr(dst, "\\t");
+		} else if (c < 0x20) {
+			string_append_printf(dst, "\\x%02x", (uint8)c);
+		} else if (c == '"') {
+			string_append_cstr(dst, "\\\"");
+		} else if (c == '\\') {
+			string_append_cstr(dst, "\\\\");
+		} else {
+			string_append_char(dst, c);
+		}
+	}
+	return dst;
+}
+
 static void
 test_decode_isotime(void)
 {
@@ -118,10 +146,47 @@ test_stou32def(void)
 #undef DEF
 }
 
+static void
+test_string_rtrim_inplace(void)
+{
+	printf("%s\n", __func__);
+
+	struct {
+		const char *src;
+		const char *exp;
+	} table[] = {
+		// input		expected
+		{ "ab c",		"ab c" },
+		{ "ab c \n",	"ab c" },
+		{ "a\t \r \n",	"a" },
+		{ "\r\n",		"" },
+		{ "",			"" },
+	};
+	for (uint i = 0; i < countof(table); i++) {
+		const char *src = table[i].src;
+		const char *exp = table[i].exp;
+
+		string *s = string_from_cstr(src);
+		string_rtrim_inplace(s);
+		if (strcmp(exp, string_get(s)) != 0) {
+			string *src_esc = string_escape_c(src);
+			string *act_esc = string_escape_c(string_get(s));
+			string *exp_esc = string_escape_c(exp);
+			fail("\"%s\" expects \"%s\" but \"%s\"\n",
+				string_get(src_esc), string_get(exp_esc), string_get(act_esc));
+			string_free(src_esc);
+			string_free(act_esc);
+			string_free(exp_esc);
+		}
+		string_free(s);
+	}
+}
+
 int
 main(int ac, char *av[])
 {
 	test_decode_isotime();
 	test_stou32def();
+	test_string_rtrim_inplace();
 	return 0;
 }
