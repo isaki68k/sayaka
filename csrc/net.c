@@ -70,6 +70,177 @@ static void tls_close(struct net *);
 static int  socket_connect(const char *, const char *);
 static int  socket_setblock(int, bool);
 
+//
+// URL パーサ
+//
+
+// url をパースして urlinfo を作成して返す。
+struct urlinfo *
+urlinfo_parse(const char *urlstr)
+{
+	char url[strlen(urlstr) + 1];
+	char *sep;
+	const char *scheme;
+	const char *authority;
+	const char *userpass;
+	const char *user;
+	const char *pass;
+	const char *hostport;
+	const char *host;
+	const char *port;
+	const char *pqf;
+#if !defined(URLINFO_PQF)
+	const char *pq;
+	const char *path;
+	const char *query;
+	const char *fragment;
+#endif
+
+	strlcpy(url, urlstr, sizeof(url));
+
+	// スキームとそれ以降(オーソリティ+PQF)を分離。
+	sep = strstr(url, "://");
+	if (sep) {
+		*sep = '\0';
+		scheme = url;
+		authority = sep + 3;
+	} else {
+		scheme = "";
+		authority = url;
+	}
+
+	// オーソリティとそれ以降(PathQueryFragment)を分離。
+	sep = strchr(authority, '/');
+	if (sep) {
+		*sep++ = '\0';
+		pqf = sep;
+	} else {
+		pqf = "";
+	}
+
+	// オーソリティからユーザ情報とホストポートを分離。
+	sep = strchr(authority, '@');
+	if (sep) {
+		*sep++ = '\0';
+		userpass = authority;
+		hostport = sep;
+	} else {
+		userpass = "";
+		hostport = authority;
+	}
+
+	// ユーザ情報をユーザ名とパスワードに分離。
+	sep = strchr(userpass, ':');
+	if (sep) {
+		*sep++ = '\0';
+		user = userpass;
+		pass = sep;
+	} else {
+		user = userpass;
+		pass = "";
+	}
+
+	// ホストポートをホストとポートに分離。
+	port = "";
+	if (hostport[0] == '[') {
+		// IPv6 アドレスは中に ':' があるので先に見ないといけない。
+		char *e = strchr(hostport, ']');
+		if (e) {
+			*e++ = '\0';
+			host = hostport + 1;
+			// ':' が続いてるはずだが。
+			sep = strchr(e, ':');
+			if (sep) {
+				port = sep + 1;
+			}
+		} else {
+			// 閉じ括弧がない?
+			host = hostport + 1;
+		}
+	} else {
+		sep = strchr(hostport, ':');
+		if (sep) {
+			*sep++ = '\0';
+			host = hostport;
+			port = sep;
+		} else {
+			host = hostport;
+		}
+	}
+
+#if defined(URLINFO_PQF)
+	// PathQueryFragment の分離は不要。
+#else
+	// PathQueryFragment を PQ と Fragment に分離。
+	sep = strrchr(pqf, '#');
+	if (sep) {
+		*sep++ = '\0';
+		pq = pqf;
+		fragment = sep;
+	} else {
+		pq = pqf;
+		fragment = "";
+	}
+
+	// PathQuery を Path と Query に分離。
+	sep = strchr(pq, '?');
+	if (sep) {
+		*sep++ = '\0';
+		path = pq;
+		query = sep;
+	} else {
+		path = pq;
+		query = "";
+	}
+#endif
+
+	struct urlinfo *info = calloc(1, sizeof(*info));
+	if (info == NULL) {
+		return NULL;
+	}
+	info->scheme	= string_from_cstr(scheme);
+	info->host		= string_from_cstr(host);
+	info->port		= string_from_cstr(port);
+	info->user		= string_from_cstr(user);
+	info->password	= string_from_cstr(pass);
+#if defined(URLINFO_PQF)
+	info->pqf		= string_alloc(strlen(pqf) + 2);
+	string_append_char(info->pqf, '/');
+	string_append_cstr(info->pqf, pqf);
+#else
+	info->path		= string_alloc(strlen(path) + 2);
+	string_append_char(info->path, '/');
+	string_append_cstr(info->path, path);
+	info->query		= string_from_cstr(query);
+	info->fragment	= string_from_cstr(fragment);
+#endif
+	return info;
+}
+
+// info を解放する。info が NULL なら何もしない。
+void
+urlinfo_free(struct urlinfo *info)
+{
+	if (info) {
+		string_free(info->scheme);
+		string_free(info->host);
+		string_free(info->port);
+		string_free(info->user);
+		string_free(info->password);
+#if defined(URLINFO_PQF)
+		string_free(info->pqf);
+#else
+		string_free(info->path);
+		string_free(info->query);
+		string_free(info->fragment);
+#endif
+	}
+}
+
+//
+// コネクション
+//
+
 // net コンテキストを作成する。
 struct net *
 net_create(const diag *diag)

@@ -83,6 +83,23 @@ extern void diag_print(const diag *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
 // net.c
+struct urlinfo {
+	string *scheme;
+	string *host;
+	string *port;
+	string *user;
+	string *password;
+#define URLINFO_PQF
+#if defined(URLINFO_PQF)
+	string *pqf;
+#else
+	string *path;
+	string *query;
+	string *fragment;
+#endif
+};
+extern struct urlinfo *urlinfo_parse(const char *);
+extern void urlinfo_free(struct urlinfo *);
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
 extern bool net_connect(struct net *, const char *, const char *, const char *);

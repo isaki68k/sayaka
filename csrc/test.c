@@ -223,6 +223,100 @@ test_string_rtrim_inplace(void)
 	}
 }
 
+static void
+test_urlinfo_parse(void)
+{
+	printf("%s (PQF:%s)\n", __func__,
+#if defined(URLINFO_PQF)
+		"Unified"
+#else
+		"Separated"
+#endif
+	);
+
+	struct {
+		const char *src;
+		const char *exp_scheme;
+		const char *exp_host;
+		const char *exp_port;
+		const char *exp_user;
+		const char *exp_pass;
+		const char *exp_path;
+		const char *exp_query;
+		const char *exp_frag;
+	} table[] = {
+ // input		scheme	host	port	user,	pass,	path	query	frag
+ { "a://b",		"a",	"b",	"",		"",		"",		"/",	"",		"" },
+ { "a://b/",	"a",	"b",	"",		"",		"",		"/",	"",		"" },
+ { "a://b:c",	"a",	"b",	"c",	"",		"",		"/",	"",		"" },
+ { "a://b:c/d",	"a",	"b",	"c",	"",		"",		"/d",	"",		"" },
+ { "a://[b:b]/","a",	"b:b",	"",		"",		"",		"/",	"",		"" },
+ { "a://[b:b]:c/","a",	"b:b",	"c",	"",		"",		"/",	"",		"" },
+ { "a://u@b",	"a",	"b",	"",		"u",	"",		"/",	"",		"" },
+ { "a://u:p@b",	"a",	"b",	"",		"u",	"p",	"/",	"",		"" },
+ { "/d",		"",		"",		"",		"",		"",		"/d",	"",		"" },
+ { "b:c",		"",		"b",	"c",	"",		"",		"/",	"",		"" },
+ { "b:c/d/e",	"",		"b",	"c",	"",		"",		"/d/e",	"",		"" },
+ { "b/d?q",		"",		"b",	"",		"",		"",		"/d",	"q",	"" },
+ { "b/d?q#f",	"",		"b",	"",		"",		"",		"/d",	"q",	"f" },
+ { "b/d#f",		"",		"b",	"",		"",		"",		"/d",	"",		"f" },
+ { "b/#f",		"",		"b",	"",		"",		"",		"/",	"",		"f" },
+ { "http://user:pass@host:port/path?query#frag",
+			"http",	"host",	"port",	"user",	"pass",	"/path", "query", "frag" },
+ { "http://user:pass@[f::1%0]:port/path",
+			"http",	"f::1%0", "port", "user", "pass", "/path", "", "" },
+	};
+
+#define TEST(x)	do {	\
+	const char *exp_ = exp_##x;	\
+	const char *act_ = string_get(info->x);	\
+	if (strcmp(exp_, act_) != 0)	\
+		fail("\"%s\": %s expects \"%s\" but \"%s\"", src, #x, exp_, act_);	\
+} while (0)
+
+	for (uint i = 0; i < countof(table); i++) {
+		const char *src = table[i].src;
+		const char *exp_scheme	= table[i].exp_scheme;
+		const char *exp_host	= table[i].exp_host;
+		const char *exp_port	= table[i].exp_port;
+		const char *exp_user	= table[i].exp_user;
+		const char *exp_password= table[i].exp_pass;
+		const char *exp_path	= table[i].exp_path;
+		const char *exp_query	= table[i].exp_query;
+		const char *exp_fragment= table[i].exp_frag;
+
+		struct urlinfo *info = urlinfo_parse(src);
+		if (info == NULL)
+			fail("info returned NULL\n");
+		TEST(scheme);
+		TEST(host);
+		TEST(port);
+		TEST(user);
+		TEST(password);
+#if defined(URLINFO_PQF)
+		string *s_pqf = string_init();
+		string_append_cstr(s_pqf, exp_path);
+		if (exp_query[0]) {
+			string_append_char(s_pqf, '?');
+			string_append_cstr(s_pqf, exp_query);
+		}
+		if (exp_fragment[0]) {
+			string_append_char(s_pqf, '#');
+			string_append_cstr(s_pqf, exp_fragment);
+		}
+		const char *exp_pqf = string_get(s_pqf);
+		TEST(pqf);
+		string_free(s_pqf);
+#else
+		TEST(path);
+		TEST(query);
+		TEST(fragment);
+#endif
+
+		urlinfo_free(info);
+	}
+}
+
 int
 main(int ac, char *av[])
 {
@@ -230,5 +324,6 @@ main(int ac, char *av[])
 	test_decode_isotime();
 	test_stou32def();
 	test_string_rtrim_inplace();
+	test_urlinfo_parse();
 	return 0;
 }
