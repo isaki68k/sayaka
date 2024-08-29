@@ -106,16 +106,13 @@ preamble(void)
 		U_ICU_VERSION_MAJOR_NUM, U_ICU_VERSION_MINOR_NUM);
 	printf("#include \"sayaka.h\"\n");
 	printf("\n");
-	for (int i = 0; i < sizeof(name); i++) {
-		for (int j = 0; j < sizeof(name); j++) {
-			for (int k = 0; k < sizeof(name); k++) {
-				for (int n = 0; n < sizeof(name); n++) {
-					printf("#define %c%c%c%c (0x%02x)\n",
-						name[i], name[j], name[k], name[n],
-						((i << 6) | (j << 4) | (k << 2) | n));
-				}
-			}
-		}
+	for (uint i = 0; i < 256; i++) {
+		uint a = (i >> 6) & 3;
+		uint b = (i >> 4) & 3;
+		uint c = (i >> 2) & 3;
+		uint d =  i       & 3;
+		printf("#define %c%c%c%c (0x%02x)\n",
+			name[a], name[b], name[c], name[d], i);
 	}
 	printf("\n");
 	printf("const uint8 eaw2width_packed[0x%x] = {\n", MAXCHARS / 4);
