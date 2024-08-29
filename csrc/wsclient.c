@@ -30,7 +30,6 @@
 
 #include "sayaka.h"
 #include <string.h>
-#include <curl/curl.h>
 
 enum {
 	// フレームの +0バイト目 (の下位4ビット)
@@ -135,16 +134,15 @@ wsclient_connect(wsclient *ws, const char *url)
 	string *key = NULL;
 	string *hdr = NULL;
 
-	CURLU *cu = curl_url();
-	curl_url_set(cu, CURLUPART_URL, url, CURLU_NON_SUPPORT_SCHEME);
-	char *scheme = NULL;
-	char *host = NULL;
-	char *port = NULL;
-	char *path = NULL;
-	curl_url_get(cu, CURLUPART_SCHEME, &scheme, 0);
-	curl_url_get(cu, CURLUPART_HOST, &host, 0);
-	curl_url_get(cu, CURLUPART_PORT, &port, 0);
-	curl_url_get(cu, CURLUPART_PATH, &path, 0);
+	struct urlinfo *info = urlinfo_parse(url);
+	if (info == NULL) {
+		Debug(diag, "%s: urlinfo_parse: %s", __func__, strerrno());
+		goto abort;
+	}
+	const char *scheme = string_get(info->scheme);
+	const char *host = string_get(info->host);
+	const char *port = string_len(info->port) ? string_get(info->port) : NULL;
+	const char *pqf  = string_get(info->pqf);
 
 	const char *serv = port;
 	if (strcmp(scheme, "ws") == 0) {
@@ -179,8 +177,7 @@ wsclient_connect(wsclient *ws, const char *url)
 
 	// WebSocket ヘッダを送信。
 	hdr = string_init();
-	// XXX path は PQF にしたほうがいい
-	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", path);
+	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", pqf);
 	string_append_printf(hdr, "Host: %s\r\n", host);
 	string_append_printf(hdr, "User-Agent: sayaka/c\r\n");
 	string_append_cstr(hdr,
@@ -246,11 +243,7 @@ wsclient_connect(wsclient *ws, const char *url)
  abort:
 	string_free(hdr);
 	string_free(key);
-	curl_free(scheme);
-	curl_free(host);
-	curl_free(port);
-	curl_free(path);
-	curl_url_cleanup(cu);
+	urlinfo_free(info);
 	return -1;
 }
 
