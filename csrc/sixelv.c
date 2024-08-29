@@ -119,7 +119,7 @@ static const struct optmap map_diffuse[] = {
 	{ "burkes",		RDM_BURKES },
 	{ "2",			RDM_2 },
 	{ "3",			RDM_3 },
-	{ "RGB",		RDM_RGB },
+	{ "rgb",		RDM_RGB },
 	{ NULL },
 };
 
