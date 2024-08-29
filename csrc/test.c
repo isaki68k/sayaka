@@ -28,6 +28,7 @@
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #define fail(fmt...)	do {	\
 	printf("%s: ", __func__);	\
