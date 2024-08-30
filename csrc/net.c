@@ -362,14 +362,18 @@ static int
 sock_read(void *arg, char *dst, int dstsize)
 {
 	struct net *net = (struct net *)arg;
-	return read(net->sock, dst, dstsize);
+	int n;
+	n = read(net->sock, dst, dstsize);
+	return n;
 }
 
 static int
 sock_write(void *arg, const char *src, int srcsize)
 {
 	struct net *net = (struct net *)arg;
-	return write(net->sock, src, srcsize);
+	int n;
+	n = write(net->sock, src, srcsize);
+	return n;
 }
 
 static void
