@@ -82,6 +82,12 @@ extern void diag_set_timestamp(diag *, bool);
 extern void diag_print(const diag *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
+// httpclient.c
+typedef struct httpclient_ httpclient;
+extern httpclient *httpclient_create(const diag *);
+extern void httpclient_destroy(httpclient *);
+extern int  httpclient_connect(httpclient *, const char *);
+
 // net.c
 struct urlinfo {
 	string *scheme;

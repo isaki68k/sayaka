@@ -13,6 +13,7 @@ CFLAGS+=	-Wall -Werror ${WARNFLAGS}
 CFLAGS+=	-I..
 
 SRCS_common+=	diag.c
+SRCS_common+=	httpclient.c
 SRCS_common+=	image.c
 SRCS_common+=	image_blurhash.c
 .if defined(HAVE_LIBPNG)
@@ -49,7 +50,7 @@ SRCS_all=	${SRCS_common}	\
 
 LIBS+=	-lm
 
-PROGS=	sayaka sixelv dump test terminal wsclient
+PROGS=	sayaka sixelv dump httpclient test terminal wsclient
 
 all:	${PROGS}
 
@@ -87,6 +88,9 @@ eaw_gen:	eaw_gen.c
 
 dump:	libcommon.a libsayaka.a dump.c
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ dump.c libsayaka.a libcommon.a ${LIBS}
+
+httpclient:	libcommon.a httpclient.c
+	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ httpclient.c libcommon.a ${LIBS}
 
 test:	libcommon.a libsayaka.a test.c
 	${CC} ${CFLAGS} ${LDFLAGS} -o $@ test.c libsayaka.a libcommon.a ${LIBS}
