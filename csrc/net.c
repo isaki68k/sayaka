@@ -241,6 +241,41 @@ urlinfo_free(struct urlinfo *info)
 	}
 }
 
+// url を文字列にして返す。
+string *
+urlinfo_to_string(const struct urlinfo *url)
+{
+	string *s = string_init();
+
+	if (string_len(url->scheme)) {
+		string_append_cstr(s, string_get(url->scheme));
+		string_append_cstr(s, "://");
+	}
+	if (string_len(url->user)) {
+		string_append_cstr(s, string_get(url->user));
+		if (string_len(url->password)) {
+			string_append_char(s, ':');
+			string_append_cstr(s, string_get(url->password));
+		}
+		string_append_char(s, '@');
+	}
+	if (strchr(string_get(url->host), ':')) {
+		string_append_char(s, '[');
+		string_append_cstr(s, string_get(url->host));
+		string_append_char(s, ']');
+	} else {
+		string_append_cstr(s, string_get(url->host));
+	}
+	if (string_len(url->port)) {
+		string_append_char(s, ':');
+		string_append_cstr(s, string_get(url->port));
+	}
+	string_append_cstr(s, string_get(url->pqf));
+
+	return s;
+}
+
+
 //
 // コネクション
 //

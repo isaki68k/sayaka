@@ -116,6 +116,7 @@ struct net_opt {
 };
 extern struct urlinfo *urlinfo_parse(const char *);
 extern void urlinfo_free(struct urlinfo *);
+extern string *urlinfo_to_string(const struct urlinfo *);
 extern void net_opt_init(struct net_opt *);
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
