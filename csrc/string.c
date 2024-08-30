@@ -66,6 +66,20 @@ string_from_mem(const void *mem, uint memlen)
 	return s;
 }
 
+// old を複製した文字列を返す。
+string *
+string_dup(const string *old)
+{
+	uint len = old->len;
+	string *s = string_alloc(len + 1);
+	if (s == NULL) {
+		return NULL;
+	}
+	memcpy(s->buf, old->buf, len + 1);
+	s->len = len;
+	return s;
+}
+
 // fp から1行読み込む。
 // EOF なら NULL を返す。
 string *

@@ -137,6 +137,7 @@ extern string *string_init(void);
 extern string *string_alloc(uint);
 extern string *string_from_cstr(const char *);
 extern string *string_from_mem(const void *, uint);
+extern string *string_dup(const string *);
 extern string *string_fgets(FILE *);
 extern bool string_realloc(string *, uint);
 extern void string_free(string *);
