@@ -36,6 +36,9 @@ typedef struct httpclient_ {
 	struct net *net;
 	FILE *fp;
 
+	// 接続中の URL
+	struct urlinfo *url;
+
 	// HTTP 応答行
 	string *resline;
 	uint rescode;
@@ -48,6 +51,12 @@ typedef struct httpclient_ {
 	const diag *diag;
 } httpclient;
 
+static bool do_connect(httpclient *);
+static void dump_sendhdr(httpclient *, const string *);
+static int  recv_header(httpclient *);
+static const char *find_recvhdr(const httpclient *, const char *);
+static void clear_recvhdr(httpclient *);
+
 httpclient *
 httpclient_create(const diag *diag)
 {
@@ -55,6 +64,12 @@ httpclient_create(const diag *diag)
 
 	http = calloc(1, sizeof(*http));
 	if (http == NULL) {
+		return NULL;
+	}
+
+	http->net = net_create(diag);
+	if (http->net == NULL) {
+		free(http);
 		return NULL;
 	}
 
@@ -68,89 +83,195 @@ httpclient_destroy(httpclient *http)
 {
 	if (http) {
 		string_free(http->resline);
-		for (uint i = 0; i < http->recvhdr_num; i++) {
-			string_free(http->recvhdr[i]);
-		}
+		clear_recvhdr(http);
 
 		// http->fp は fclose 時に NULL 代入を保証しないと
 		// ここでクローズできない。
 
 		net_destroy(http->net);
+		urlinfo_free(http->url);
 		free(http);
 	}
 }
 
 // url に接続する。
-// 成功すれば 0、失敗すれば -1 を返す。
+// 成功すれば 0 を返す。失敗すれば -1 を返す。
+// 400 以上なら HTTP のエラーコード。
 int
-httpclient_connect(httpclient *http, const char *url)
+httpclient_connect(httpclient *http, const char *urlstr)
 {
 	const diag *diag = http->diag;
 	int rv = -1;
 
-	struct urlinfo *info = urlinfo_parse(url);
-	if (info == NULL) {
-		Debug(diag, "%s: urlinfo_parse: %s", __func__, strerrno());
-		goto done;
+	http->url = urlinfo_parse(urlstr);
+	if (http->url == NULL) {
+		Debug(diag, "%s: urlinfo_parse failed", __func__);
+		return rv;
 	}
-	const char *scheme = string_get(info->scheme);
-	const char *host = string_get(info->host);
-	const char *serv = string_get(info->port);
-	const char *pqf  = string_get(info->pqf);
+	if (diag_get_level(diag) >= 2) {
+		string *u = urlinfo_to_string(http->url);
+		diag_print(diag, "%s: initial url |%s|", __func__, string_get(u));
+		string_free(u);
+	}
+
+	for (;;) {
+		// 接続。
+		if (do_connect(http) == false) {
+			Debug(diag, "%s: do_connect failed", __func__);
+			break;
+		}
+
+		// ヘッダを送信。
+		const char *host = string_get(http->url->host);
+		const char *pqf  = string_get(http->url->pqf);
+		string *hdr = string_init();
+		string_append_printf(hdr, "GET %s HTTP/1.1\r\n", pqf);
+		string_append_printf(hdr, "Host: %s\r\n", host);
+		string_append_cstr(hdr,   "Connection: close\r\n");
+		string_append_printf(hdr, "User-Agent: sayaka/c\r\n");
+		string_append_cstr(hdr,   "\r\n");
+		if (__predict_false(diag_get_level(diag) >= 2)) {
+			dump_sendhdr(http, hdr);	// デバッグ表示
+		}
+		fputs(string_get(hdr), http->fp);
+		fflush(http->fp);
+		string_free(hdr);
+
+		// 応答を受信。
+		int code = recv_header(http);
+		Debug(diag, "%s: rescode = %3u |%s|", __func__,
+			http->rescode, http->resmsg);
+
+		if (300 <= code && code < 400) {
+			const char *location = find_recvhdr(http, "Location:");
+			if (location) {
+				struct urlinfo *newurl = urlinfo_parse(location);
+				if (string_len(newurl->scheme) != 0) {
+					// scheme があればフル URL とみなす。
+					urlinfo_free(http->url);
+					http->url = newurl;
+				} else {
+					// そうでなければ相対パスとみなす。
+					urlinfo_update_path(http->url, newurl);
+					urlinfo_free(newurl);
+				}
+				if (diag_get_level(diag) >= 1) {
+					string *u = urlinfo_to_string(http->url);
+					diag_print(diag, "new url |%s|", string_get(u));
+					string_free(u);
+				}
+				// 内部状態をリセット。
+				fclose(http->fp);
+				net_close(http->net);
+				clear_recvhdr(http);
+				string_free(http->resline);
+				http->resline = NULL;
+				http->rescode = 0;
+				http->resmsg = NULL;
+				continue;
+			}
+		} else if (code >= 400) {
+			return code;
+		}
+
+		rv = 0;
+		Trace(diag, "%s: connected.", __func__);
+		break;
+	}
+
+	net_shutdown(http->net);
+	return rv;
+}
+
+// http->url に接続するところまで。
+// 接続できれば true を返す。
+static bool
+do_connect(httpclient *http)
+{
+	const diag *diag = http->diag;
+
+	const char *scheme = string_get(http->url->scheme);
+	const char *host = string_get(http->url->host);
+	const char *serv = string_get(http->url->port);
 
 	if (strcmp(scheme, "http") != 0 && strcmp(scheme, "https") != 0) {
 		Debug(diag, "%s: Unsupported protocol: %s", __func__, scheme);
-		goto done;
+		return false;
 	}
 
 	if (serv[0] == '\0') {
 		serv = scheme;
 	}
 
-	http->net = net_create(diag);
-	if (http->net == NULL) {
-		Debug(diag, "%s: net_create failed: %s", __func__, strerrno());
-		goto done;
-	}
-
+	Trace(diag, "%s: connecting %s://%s:%s", __func__, scheme, host, serv);
 	if (net_connect(http->net, scheme, host, serv) == false) {
 		Debug(diag, "%s: %s://%s:%s failed %s", __func__,
 			scheme, host, serv, strerrno());
-		goto done;
+		return false;
 	}
 
 	http->fp = net_fopen(http->net);
 	if (http->fp == NULL) {
 		Debug(diag, "%s: net_fopen failed: %s", __func__, strerrno());
-		goto done;
+		return false;
 	}
 
-	// HTTP ヘッダを送信。
-	string *hdr = string_init();
-	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", pqf);
-	string_append_printf(hdr, "Host: %s\r\n", host);
-	string_append_cstr(hdr,   "Connection: close\r\n");
-	string_append_printf(hdr, "User-Agent: sayaka/c\r\n");
-	string_append_cstr(hdr,   "\r\n");
-	Trace(diag, "<<< %s", string_get(hdr));
-	fputs(string_get(hdr), http->fp);
-	fflush(http->fp);
-	string_free(hdr);
+	return true;
+}
+
+// 送信ヘッダをデバッグ表示する。
+static void
+dump_sendhdr(httpclient *http, const string *hdr)
+{
+	char buf[1024];
+
+	// 改行を忘れたりすると事故なので、改行をエスケープして表示する。
+	const char *s = string_get(hdr);
+	char *d = buf;
+	for (; *s; s++) {
+		if (*s == '\r') {
+			*d++ = '\\';
+			*d++ = 'r';
+		} else if (*s == '\n') {
+			*d++ = '\\';
+			*d++ = 'n';
+			*d = '\0';
+			Trace(http->diag, "<-- |%s|", buf);
+			d = buf;
+		} else {
+			*d++ = *s;
+		}
+	}
+	if (d != buf) {
+		*d = '\0';
+		Trace(http->diag, "<-! |%s|", buf);
+	}
+}
+
+// 応答を受信する。
+// 戻り値は HTTP 応答コード。
+// エラーなら -1 を返す。
+static int
+recv_header(httpclient *http)
+{
+	const diag *diag = http->diag;
 
 	// 応答の1行目を受信。
 	http->resline = string_fgets(http->fp);
 	if (http->resline == NULL) {
 		Debug(diag, "%s: No HTTP response?", __func__);
-		goto done;
+		return -1;
 	}
 	string_rtrim_inplace(http->resline);
+	Trace(diag, "--> |%s|", string_get(http->resline));
 
 	// 残りのヘッダを受信。
 	string *recv;
 	while ((recv = string_fgets(http->fp)) != NULL) {
 		string_rtrim_inplace(recv);
-		Trace(diag, ">>> |%s|", string_get(recv));
+		Trace(diag, "--> |%s|", string_get(recv));
 		if (string_len(recv) != 0) {
+			// XXX 足りなくなったら無視…
 			if (http->recvhdr_num < countof(http->recvhdr)) {
 				http->recvhdr[http->recvhdr_num++] = recv;
 			}
@@ -163,36 +284,63 @@ httpclient_connect(httpclient *http, const char *url)
 	// 1行目を雑にチェックする。
 	// "HTTP/1.1 200 OK\r\n"。
 	const char *p = string_get(http->resline);
-	if (strncmp(p, "HTTP/", 5) != 0) {
-		Debug(diag, "%s: Invalid HTTP response?", __func__);
-		goto done;
+	const char *e = strchr(p, ' ');
+	if (e == NULL) {
+		Debug(diag, "%s: Invaild HTTP response: %s", __func__,
+			string_get(http->resline));
+		return -1;
 	}
-	p += 5;
-	while (*p != '\0' && *p != ' ')
-		p++;
+	if (strncmp(p, "HTTP/1.0", e - p) != 0 &&
+		strncmp(p, "HTTP/1.1", e - p) != 0)
+	{
+		Debug(diag, "%s: Unsupported HTTP version?", __func__);
+		return -1;
+	}
+
+	p = e;
 	while (*p != '\0' && *p == ' ')
 		p++;
 
 	// 応答コードをチェック。
 	http->rescode = stou32def(p, 0, UNCONST(&p));
-	if (http->rescode >= 400) {
-		rv = http->rescode;
-	} else {
-		rv = 0;
-	}
 
 	// メッセージを取得。
 	while (*p != '\0' && *p == ' ')
 		p++;
 	http->resmsg = p;
 
-	Debug(diag, "rescode = %3u |%s|", http->rescode, http->resmsg);
+	return http->rescode;
+}
 
-	net_shutdown(http->net);
+// 受信ヘッダからヘッダ名 key (":" を含むこと) に対応する値を返す。
+// 戻り値は http->recvhdr 内を指しているので解放不要。
+// 見付からなければ NULL を返す。
+static const char *
+find_recvhdr(const httpclient *http, const char *key)
+{
+	uint keylen = strlen(key);
 
- done:
-	urlinfo_free(info);
-	return rv;
+	for (uint i = 0; i < http->recvhdr_num; i++) {
+		const char *h = string_get(http->recvhdr[i]);
+		if (strncasecmp(h, key, keylen) == 0) {
+			const char *p = h + keylen;
+			while (*p != '\0' && *p == ' ')
+				p++;
+			return p;
+		}
+	}
+	return NULL;
+}
+
+// 受信ヘッダをクリアする。
+static void
+clear_recvhdr(httpclient *http)
+{
+	for (uint i = 0; i < http->recvhdr_num; i++) {
+		string_free(http->recvhdr[i]);
+	}
+	memset(&http->recvhdr, 0, sizeof(http->recvhdr));
+	http->recvhdr_num = 0;
 }
 
 // HTTP 応答のメッセージ部分を返す。
@@ -210,6 +358,7 @@ httpclient_fopen(const httpclient *http)
 {
 	return http->fp;
 }
+
 
 #if defined(TEST)
 

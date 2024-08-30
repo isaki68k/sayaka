@@ -241,6 +241,27 @@ urlinfo_free(struct urlinfo *info)
 	}
 }
 
+// baseurl の path, query, fragment を newurl のもので更新する。
+// newurl のほうは影響を受けない。
+void
+urlinfo_update_path(struct urlinfo *baseurl, const struct urlinfo *newurl)
+{
+	assert(baseurl);
+	assert(newurl);
+
+#if defined(URLINFO_PQF)
+	string_free(baseurl->pqf);
+	baseurl->pqf = string_dup(newurl->pqf);
+#else
+	string_free(baseurl->path);
+	string_free(baseurl->query);
+	string_free(baseurl->fragment);
+	baseurl->path     = string_dup(newurl->path);
+	baseurl->query    = string_dup(newurl->query);
+	baseurl->fragment = string_dup(newurl->fragment);
+#endif
+}
+
 // url を文字列にして返す。
 string *
 urlinfo_to_string(const struct urlinfo *url)
