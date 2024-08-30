@@ -25,7 +25,6 @@ SRCS_common+=	image_stb.c
 SRCS_common+=	image_webp.c
 .endif
 SRCS_common+=	net.c
-SRCS_common+=	netstream.c
 SRCS_common+=	pstream.c
 SRCS_common+=	string.c
 SRCS_common+=	util.c

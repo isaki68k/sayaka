@@ -620,9 +620,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 static bool
 fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 {
-#if defined(HAVE_LIBCURL)
-	struct netstream *net = NULL;
-#endif
+	httpclient *http = NULL;
 	pstream *pstream = NULL;
 	FILE *ifp = NULL;
 	image *srcimg = NULL;
@@ -644,36 +642,27 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 	} else if (strncmp(img_url, "http://",  7) == 0 ||
 	           strncmp(img_url, "https://", 8) == 0)
 	{
-#if defined(HAVE_LIBCURL)
-		net = netstream_init(diag_net);
-		if (net == NULL) {
-			Debug(diag_net, "%s: netstream_init failed", __func__);
+		http = httpclient_create(diag_net);
+		if (http == NULL) {
+			Debug(diag_net, "%s: httpclient_create failed", __func__);
 			return false;
 		}
-		int code = netstream_connect(net, img_url, &netopt);
+		int code = httpclient_connect(http, img_url);
 		if (code < 0) {
-			Debug(diag_net, "%s: %s: netstream_connect failed: %s", __func__,
-				img_url, strerrno());
-			goto abort;
-		} else if (code == 1) {
-			Debug(diag_net, "%s: %s: connection failed: %s", __func__,
+			Debug(diag_net, "%s: %s: httpclient_connect failed: %s", __func__,
 				img_url, strerrno());
 			goto abort;
 		} else if (code >= 400) {
-			Debug(diag_net, "%s: %s: connection failed: HTTP %u", __func__,
-				img_url, code);
+			Debug(diag_net, "%s: %s: connection failed: HTTP %u %s", __func__,
+				img_url, code, httpclient_get_resmsg(http));
 			goto abort;
 		}
-		ifp = netstream_fopen(net);
+		ifp = httpclient_fopen(http);
 		if (ifp == NULL) {
-			Debug(diag_net, "%s: netstream_fopen failed: %s", __func__,
+			Debug(diag_net, "%s: httpclient_fopen failed: %s", __func__,
 				strerrno());
 			goto abort;
 		}
-#else
-		Debug(diag_net, "%s: Network support has not been compiled", __func__);
-		return false;
-#endif
 	}
 
 	// ifp からピークストリームを作成。
@@ -720,8 +709,6 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 	if (ifp) {
 		fclose(ifp);
 	}
-#if defined(HAVE_LIBCURL)
-	netstream_cleanup(net);
-#endif
+	httpclient_destroy(http);
 	return rv;
 }

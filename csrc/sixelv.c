@@ -356,7 +356,6 @@ main(int ac, char *av[])
 		}
 	}
 
-	netstream_global_cleanup();
 	return rv;
 }
 
@@ -443,11 +442,7 @@ static bool
 do_file(const char *infile)
 {
 	bool rv = false;
-#if defined(HAVE_LIBCURL)
-	struct netstream *net = NULL;
-#else
 	httpclient *http = NULL;
-#endif
 	pstream *pstream = NULL;
 	image *srcimg = NULL;
 	image *resimg = NULL;
@@ -466,29 +461,6 @@ do_file(const char *infile)
 	           strncmp(infilename, "https://", 8) == 0)
 	{
 		// URL
-#if defined(HAVE_LIBCURL)
-		net = netstream_init(diag_net);
-		if (net == NULL) {
-			warn("netstream_init() failed");
-			return false;
-		}
-		int code = netstream_connect(net, infile, &netopt);
-		if (code < 0) {
-			warn("%s: netstream_connect() failed", infilename);
-			goto abort;
-		} else if (code == 1) {
-			warnx("%s: connection failed", infilename);
-			goto abort;
-		} else if (code >= 400) {
-			warnx("%s: connection failed: HTTP %u", infilename, code);
-			goto abort;
-		}
-		ifp = netstream_fopen(net);
-		if (ifp == NULL) {
-			warn("%s: netstream_fopen() failed", infilename);
-			goto abort;
-		}
-#else
 		http = httpclient_create(diag_net);
 		if (http == NULL) {
 			warn("httpclient_create() failed");
@@ -508,7 +480,6 @@ do_file(const char *infile)
 			warn("%s: httpclient_fopen() failed", infilename);
 			goto abort;
 		}
-#endif
 	} else {
 		// ファイル名
 		ifd = open(infile, O_RDONLY);
@@ -603,15 +574,9 @@ do_file(const char *infile)
 	if (pstream) {
 		pstream_cleanup(pstream);
 	}
-#if defined(HAVE_LIBCURL)
-	if (net) {
-		netstream_cleanup(net);
-	}
-#else
 	if (http) {
 		httpclient_destroy(http);
 	}
-#endif
 	return rv;
 }
 

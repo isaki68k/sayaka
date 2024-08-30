@@ -291,142 +291,23 @@ case "${with_libwebp}" in
 	;;
 esac
 
-AC_ARG_WITH([libcurl],
-	AS_HELP_STRING([--with-libcurl], [Use libcurl for network (default:yes)]))
-case "${with_libcurl}" in
+AC_ARG_WITH([openssl], AS_HELP_STRING(
+	[--with-openssl], [Use OpenSSL for HTTPS/WSS (default:yes)]))
+case "${with_openssl}" in
  no)
 	;;
  *)
-	CHECK_PKG([libcurl], [LIBCURL])
-	if test x"${has_libcurl}" \!= x"yes"; then
-		CHECK_LIB([libcurl], [LIBCURL], [-lcurl], [
-			#include <curl/curl.h>
-		], [
-			curl_version_info(CURLVERSION_NOW);
-		])
-	fi
-
-	if test x"${has_libcurl}" \!= x"yes"; then
-		AC_MSG_FAILURE([--with-libcurl is specified but libcurl not found.
-	On NetBSD(pkgsrc), install pkgsrc/www/curl
-	On Ubuntu, sudo apt install libcurl4-openssl-dev])
-	fi
-
-	curl_req_major=7
-	curl_req_minor=80
-	curl_req_patch=0
-	curl_req_ver="${curl_req_major}.${curl_req_minor}.${curl_req_patch}"
-	AC_MSG_CHECKING([for libcurl >= ${curl_req_ver}])
-	AC_RUN_IFELSE([AC_LANG_PROGRAM([
-			#include <curl/curl.h>
-		], [
-			curl_version_info_data *info;
-			info = curl_version_info(CURLVERSION_NOW);
-			if (info) {
-				if (info->version_num >= 
-					((${curl_req_major}<<16) | (${curl_req_minor}<<8) |
-					  ${curl_req_patch})) {
-					return 0;
-				}
-			}
-			return 1;
-		])], [
-			AC_MSG_RESULT([yes])
-		], [
-			AC_MSG_RESULT([no])
-			AC_MSG_FAILURE([libcurl >= ${curl_req_ver} required])
-		]
-	)
-
-	AC_MSG_CHECKING([whether the libcurl has mbedtls backend])
-	AC_RUN_IFELSE([AC_LANG_PROGRAM([
-			#include <curl/curl.h>
-		], [
-			const curl_ssl_backend **list;
-			int i;
-			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
-			for (i = 0; list@<:@i@:>@; i++) {
-				if (list@<:@i@:>@->id == CURLSSLBACKEND_MBEDTLS) {
-					return 0;
-				}
-			}
-			return 1;
-		])], [
-			AC_MSG_RESULT([yes])
-			AC_DEFINE([LIBCURL_HAS_MBEDTLS_BACKEND])
-			libcurl_has_mbedtls=yes
-		], [
-			AC_MSG_RESULT([no])
-		]
-	)
-
-	if test x"${libcurl_has_mbedtls}" = x"yes"; then
-		AC_ARG_WITH([mbedtls],
-			AS_HELP_STRING([--with-mbedtls], [Only required for debug info]))
-		case "${with_mbedtls}" in
-		 no)
-			;;
-		 *)
-			CHECK_LIB([mbedtls], [MBEDTLS], [-lmbedtls -lmbedcrypto], [
-				#include <mbedtls/net_sockets.h>
-				#include <mbedtls/entropy.h>
-			], [
-				mbedtls_net_context net;
-				mbedtls_entropy_context e;
-				mbedtls_net_init(&net);
-				mbedtls_entropy_init(&e);
-			])
-			if test x"${has_mbedtls}" \!= x"yes"; then
-				AC_MSG_FAILURE(
-					[--with-mbedtls is specified but mbedtls not found.])
-			fi
-			;;
-		esac
-	fi
-
-	AC_MSG_CHECKING([whether the libcurl has openssl backend])
-	AC_RUN_IFELSE([AC_LANG_PROGRAM([
-			#include <curl/curl.h>
-		], [
-			const curl_ssl_backend **list;
-			int i;
-			curl_global_sslset(CURLSSLBACKEND_NONE, NULL, &list);
-			for (i = 0; list@<:@i@:>@; i++) {
-				if (list@<:@i@:>@->id == CURLSSLBACKEND_OPENSSL) {
-					return 0;
-				}
-			}
-			return 1;
-		])], [
-			AC_MSG_RESULT([yes])
-			AC_DEFINE([LIBCURL_HAS_OPENSSL_BACKEND])
-			libcurl_has_openssl=yes
-		], [
-			AC_MSG_RESULT([no])
-		]
-	)
-
-	if test x"${libcurl_has_openssl}" = x"yes"; then
-		AC_ARG_WITH([openssl],
-			AS_HELP_STRING([--with-openssl], [Only required for debug info]))
-		case "${with_openssl}" in
-		 no)
-			;;
-		 *)
-			CHECK_LIB([openssl], [OPENSSL], [-lssl -lcrypto], [
-				#include <openssl/sha.h>
-				#include <openssl/ssl.h>
-			], [
-				SSL_library_init();		// libssl
-				SHA1_Init(NULL);		// libcrypto
-			])
-			if test x"${has_openssl}" \!= x"yes"; then
-				AC_MSG_FAILURE(
-					[--with-openssl is specified but openssl not found.
+	CHECK_LIB([openssl], [OPENSSL], [-lssl -lcrypto], [
+		#include <openssl/sha.h>
+		#include <openssl/ssl.h>
+	], [
+		SSL_library_init();		// libssl
+		SHA1_Init(NULL);		// libcrypto
+	])
+	if test x"${has_openssl}" \!= x"yes"; then
+		AC_MSG_FAILURE(
+			[--with-openssl is specified but openssl not found.
 	On Ubuntu, sudo apt install openssl(?)])
-			fi
-			;;
-		esac
 	fi
 	;;
 esac

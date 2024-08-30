@@ -125,14 +125,6 @@ extern void net_shutdown(struct net *);
 extern void net_close(struct net *);
 extern int  net_get_fd(const struct net *);
 
-// netstream.c
-extern struct netstream *netstream_init(const diag *);
-extern void netstream_cleanup(struct netstream *);
-extern int  netstream_connect(struct netstream *, const char *,
-	const struct net_opt *);
-extern FILE *netstream_fopen(struct netstream *);
-extern void netstream_global_cleanup(void);
-
 // pstream.c
 extern pstream *pstream_init_fp(FILE *);
 extern pstream *pstream_init_fd(int);
