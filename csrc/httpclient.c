@@ -129,6 +129,7 @@ httpclient_connect(httpclient *http, const char *url)
 	string *hdr = string_init();
 	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", pqf);
 	string_append_printf(hdr, "Host: %s\r\n", host);
+	string_append_cstr(hdr,   "Connection: close\r\n");
 	string_append_printf(hdr, "User-Agent: sayaka/c\r\n");
 	string_append_cstr(hdr,   "\r\n");
 	Trace(diag, "<<< %s", string_get(hdr));
