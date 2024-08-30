@@ -43,8 +43,8 @@
 struct net;
 struct net {
 	bool (*f_connect)(struct net *, const char *, const char *);
-	ssize_t (*f_read)(struct net *, void *, size_t);
-	ssize_t (*f_write)(struct net *, const void *, size_t);
+	int (*f_read)(void *, char *, int);
+	int (*f_write)(void *, const char *, int);
 	void (*f_close)(struct net *);
 	// f_connect() が確保したリソースを解放する。
 	// net 自体はここではなく呼び出し元の net_destroy() が解放する。
@@ -59,13 +59,13 @@ struct net {
 
 static void sock_cleanup(struct net *);
 static bool sock_connect(struct net *, const char *, const char *);
-static ssize_t sock_read(struct net *, void *, size_t);
-static ssize_t sock_write(struct net *, const void *, size_t);
+static int  sock_read(void *, char *, int);
+static int  sock_write(void *, const char *, int);
 static void sock_close(struct net *);
 static void tls_cleanup(struct net *);
 static bool tls_connect(struct net *, const char *, const char *);
-static ssize_t tls_read(struct net *, void *, size_t);
-static ssize_t tls_write(struct net *, const void *, size_t);
+static int  tls_read(void *, char *, int);
+static int  tls_write(void *, const char *, int);
 static void tls_close(struct net *);
 static int  socket_connect(const char *, const char *);
 static int  socket_setblock(int, bool);
@@ -296,18 +296,22 @@ net_connect(struct net *net,
 	return net->f_connect(net, host, serv);
 }
 
-ssize_t
-net_read(struct net *net, void *dst, size_t dstsize)
+// オープン後のストリームを FILE* にして返す。
+// read/write をラップしてるだけで、close では何も解放しない。
+// fclose(fp) 後 net_close(net) でリソースを解放すること。
+FILE *
+net_fopen(struct net *net)
 {
-	assert(net);
-	return net->f_read(net, dst, dstsize);
-}
-
-ssize_t
-net_write(struct net *net, const void *src, size_t srcsize)
-{
-	assert(net);
-	return net->f_write(net, src, srcsize);
+	FILE *fp = funopen(net,
+		net->f_read,
+		net->f_write,
+		NULL,
+		NULL);
+	if (fp == NULL) {
+		Debug(net->diag, "%s: funopen failed: %s", __func__, strerrno());
+		return NULL;
+	}
+	return fp;
 }
 
 void
@@ -340,15 +344,17 @@ sock_connect(struct net *net, const char *host, const char *serv)
 	return true;
 }
 
-static ssize_t
-sock_read(struct net *net, void *dst, size_t dstsize)
+static int
+sock_read(void *arg, char *dst, int dstsize)
 {
+	struct net *net = (struct net *)arg;
 	return read(net->sock, dst, dstsize);
 }
 
-static ssize_t
-sock_write(struct net *net, const void *src, size_t srcsize)
+static int
+sock_write(void *arg, const char *src, int srcsize)
 {
+	struct net *net = (struct net *)arg;
 	return write(net->sock, src, srcsize);
 }
 
@@ -424,13 +430,14 @@ tls_connect(struct net *net, const char *host, const char *serv)
 	return true;
 }
 
-static ssize_t
-tls_read(struct net *net, void *dst, size_t dstsize)
+static int
+tls_read(void *arg, char *dst, int dstsize)
 {
+	struct net *net = (struct net *)arg;
 	const diag *diag = net->diag;
 	ssize_t r;
 
-	Trace(diag, "%s (dstsize=%zu)", __func__, dstsize);
+	Trace(diag, "%s (dstsize=%u)", __func__, dstsize);
 	r = SSL_read(net->ssl, dst, dstsize);
 	if (r < 0) {
 		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
@@ -444,13 +451,14 @@ tls_read(struct net *net, void *dst, size_t dstsize)
 	return r;
 }
 
-static ssize_t
-tls_write(struct net *net, const void *src, size_t srcsize)
+static int
+tls_write(void *arg, const char *src, int srcsize)
 {
+	struct net *net = (struct net *)arg;
 	const diag *diag = net->diag;
 	ssize_t r;
 
-	Trace(diag, "%s (srcsize=%zu)", __func__, srcsize);
+	Trace(diag, "%s (srcsize=%u)", __func__, srcsize);
 	r = SSL_write(net->ssl, src, srcsize);
 	if (r < 0) {
 		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {

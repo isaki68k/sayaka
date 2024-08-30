@@ -103,8 +103,7 @@ extern void urlinfo_free(struct urlinfo *);
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
 extern bool net_connect(struct net *, const char *, const char *, const char *);
-extern ssize_t net_read(struct net *, void *, size_t);
-extern ssize_t net_write(struct net *, const void *, size_t);
+extern FILE *net_fopen(struct net *);
 extern void net_close(struct net *);
 extern int  net_get_fd(const struct net *);
 

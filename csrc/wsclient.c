@@ -52,6 +52,7 @@ enum {
 
 typedef struct wsclient_ {
 	struct net *net;
+	FILE *fp;
 
 	uint8 *buf;			// 受信バッファ
 	uint bufsize;		// 確保してある recvbuf のバイト数
@@ -109,6 +110,9 @@ void
 wsclient_destroy(wsclient *ws)
 {
 	if (ws) {
+		if (ws->fp) {
+			fclose(ws->fp);
+		}
 		net_destroy(ws->net);
 		free(ws->buf);
 		string_free(ws->text);
@@ -133,6 +137,7 @@ wsclient_connect(wsclient *ws, const char *url)
 	const diag *diag = ws->diag;
 	string *key = NULL;
 	string *hdr = NULL;
+	string *response = NULL;
 
 	struct urlinfo *info = urlinfo_parse(url);
 	if (info == NULL) {
@@ -167,6 +172,12 @@ wsclient_connect(wsclient *ws, const char *url)
 		goto abort;
 	}
 
+	ws->fp = net_fopen(ws->net);
+	if (ws->fp == NULL) {
+		Debug(diag, "%s: net_fopen failed: %s", __func__, strerrno());
+		goto abort;
+	}
+
 	// キー(乱数)を作成。
 	char nonce[16];
 	rnd_fill(nonce, sizeof(nonce));
@@ -184,38 +195,36 @@ wsclient_connect(wsclient *ws, const char *url)
 	string_append_printf(hdr, "Sec-WebSocket-Key: %s\r\n", string_get(key));
 	string_append_cstr(hdr,   "\r\n");
 	Trace(diag, "<<< %s", string_get(hdr));
-	ssize_t sent = net_write(ws->net, string_get(hdr), string_len(hdr));
-	if (sent < 0) {
-		Debug(diag, "%s: net_write: %s", __func__, strerrno());
+	size_t sent = fwrite(string_get(hdr), string_len(hdr), 1, ws->fp);
+	if (sent < 1) {
+		Debug(diag, "%s: fwrite: %s", __func__, strerrno());
 		goto abort;
 	}
 
-	// 応答を受信。
-	char recvbuf[1024];
-	size_t len = 0;
-	for (;;) {
-		ssize_t n = net_read(ws->net, recvbuf + len, sizeof(recvbuf) - len);
-		if (n < 0) {
-			Debug(diag, "%s: net_read: %s", __func__, strerrno());
-			goto abort;
-		}
-		if (n == 0) {
-			break;
-		}
+	// 応答の1行目を受信。
+	response = string_fgets(ws->fp);
+	if (response == NULL) {
+		Debug(diag, "%s: No WebSocket response header", __func__);
+		goto abort;
+	}
 
-		// 応答を全部受信したか。
-		len += n;
-		recvbuf[len] = '\0';
-		if (len >= 4 && strcmp(&recvbuf[len - 4], "\r\n\r\n") == 0) {
+	// 残りの行は今のところ使ってないので読み捨てる。
+	string *recvhdr;
+	while ((recvhdr = string_fgets(ws->fp)) != NULL) {
+		string_rtrim_inplace(recvhdr);
+		bool newline = (string_len(recvhdr) == 0);
+		Trace(diag, ">>> |%s|", string_get(recvhdr));
+		string_free(recvhdr);
+		if (newline) {
 			break;
 		}
 	}
-	Trace(diag, ">>> |%s|", recvbuf);
 
 	// 1行目を雑にチェックする。
 	// "HTTP/1.1 101 Switching Protocols\r\n" みたいなのが来るはず。
 
 	// 先頭が "HTTP/1.1"。
+	const char *recvbuf = string_get(response);
 	if (strncmp(recvbuf, "HTTP/1.1", 8) != 0) {
 		Debug(diag, "%s: No HTTP/1.1 response?", __func__);
 		goto abort;
@@ -235,9 +244,11 @@ wsclient_connect(wsclient *ws, const char *url)
 
 	// XXX Sec-WebSocket-Accept のチェックとか。
 
+	string_free(response);
 	return 0;
 
  abort:
+	string_free(response);
 	string_free(hdr);
 	string_free(key);
 	urlinfo_free(info);
@@ -268,11 +279,7 @@ wsclient_process(wsclient *ws)
 	}
 
 	// ブロッキング。
-	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
-	if (r < 0) {
-		Debug(diag, "%s: net_read: %s", __func__, strerrno());
-		return -1;
-	}
+	r = fread(ws->buf + ws->buflen, 1, ws->bufsize - ws->buflen, ws->fp);
 	if (r == 0) {
 		Debug(diag, "%s: EOF", __func__);
 		return 0;
@@ -372,7 +379,7 @@ wsclient_send(wsclient *ws, uint8 opcode, const void *data, uint datalen)
 {
 	uint8 buf[1 + (1+2) + 4 + datalen];
 	uint hdrlen;
-	ssize_t r;
+	size_t r;
 	union {
 		uint8 buf[4];
 		uint32 u32;
@@ -398,15 +405,11 @@ wsclient_send(wsclient *ws, uint8 opcode, const void *data, uint datalen)
 
 	// 送信。
 	uint framelen = hdrlen + datalen;
-	r = net_write(ws->net, buf, framelen);
-	if (r < 0) {
-		Debug(ws->diag, "%s: net_write(%u): %s", __func__,
+	r = fwrite(buf, framelen, 1, ws->fp);
+	if (r < 1) {
+		Debug(ws->diag, "%s: fwrite(%u): %s", __func__,
 			framelen, strerrno());
 		return -1;
-	}
-	if (r < framelen) {
-		Debug(ws->diag, "%s: net_write(%u): r=%zd", __func__, framelen, r);
-		return 0;
 	}
 
 	return datalen;
@@ -502,19 +505,33 @@ testhttp(const diag *diag, int ac, char *av[])
 		err(1, "%s:%s: connect failed", host, serv);
 	}
 
+	FILE *fp = net_fopen(net);
+	if (fp == NULL) {
+		err(1, "%s: net_fopen failed", __func__);
+	}
+
+	// HTTP ヘッダを送信。
 	string *hdr = string_init();
 	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", path);
 	string_append_printf(hdr, "Host: %s\r\n", host);
 	string_append_cstr(hdr, "\r\n");
-	ssize_t n = net_write(net, string_get(hdr), string_len(hdr));
-	printf("write=%zd\n", n);
+	size_t n = fputs(string_get(hdr), fp);
+	printf("fputs=%zu\n", n);
+	fflush(fp);
 
-	char buf[1024];
-	ssize_t r = net_read(net, buf, sizeof(buf));
-	printf("read=%zd\n", r);
-	buf[r] = 0;
-	printf("buf=|%s|\n", buf);
+	// HTTP 応答を受信して表示。
+	string *buf;
+	while ((buf = string_fgets(fp)) != NULL) {
+		string_rtrim_inplace(buf);
+		bool end = (string_len(buf) == 0);
+		printf("%s\n", string_get(buf));
+		string_free(buf);
+		if (end)
+			break;
+	}
+	// 本文は無視。
 
+	fclose(fp);
 	net_close(net);
 	net_destroy(net);
 	return 0;
