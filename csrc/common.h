@@ -110,6 +110,7 @@ extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
 extern bool net_connect(struct net *, const char *, const char *, const char *);
 extern FILE *net_fopen(struct net *);
+extern void net_shutdown(struct net *);
 extern void net_close(struct net *);
 extern int  net_get_fd(const struct net *);
 

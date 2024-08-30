@@ -45,7 +45,9 @@ struct net {
 	bool (*f_connect)(struct net *, const char *, const char *);
 	int (*f_read)(void *, char *, int);
 	int (*f_write)(void *, const char *, int);
+	void (*f_shutdown)(struct net *);
 	void (*f_close)(struct net *);
+
 	// f_connect() が確保したリソースを解放する。
 	// net 自体はここではなく呼び出し元の net_destroy() が解放する。
 	void (*f_cleanup)(struct net *);
@@ -61,11 +63,13 @@ static void sock_cleanup(struct net *);
 static bool sock_connect(struct net *, const char *, const char *);
 static int  sock_read(void *, char *, int);
 static int  sock_write(void *, const char *, int);
+static void sock_shutdown(struct net *);
 static void sock_close(struct net *);
 static void tls_cleanup(struct net *);
 static bool tls_connect(struct net *, const char *, const char *);
 static int  tls_read(void *, char *, int);
 static int  tls_write(void *, const char *, int);
+static void tls_shutdown(struct net *);
 static void tls_close(struct net *);
 static int  socket_connect(const char *, const char *);
 static int  socket_setblock(int, bool);
@@ -283,12 +287,14 @@ net_connect(struct net *net,
 		net->f_connect = tls_connect;
 		net->f_read    = tls_read;
 		net->f_write   = tls_write;
+		net->f_shutdown= tls_shutdown;
 		net->f_close   = tls_close;
 		net->f_cleanup = tls_cleanup;
 	} else {
 		net->f_connect = sock_connect;
 		net->f_read    = sock_read;
 		net->f_write   = sock_write;
+		net->f_shutdown= sock_shutdown;
 		net->f_close   = sock_close;
 		net->f_cleanup = sock_cleanup;
 	}
@@ -312,6 +318,14 @@ net_fopen(struct net *net)
 		return NULL;
 	}
 	return fp;
+}
+
+// 送信方向を shutdown する。
+void
+net_shutdown(struct net *net)
+{
+	assert(net);
+	net->f_shutdown(net);
 }
 
 void
@@ -356,6 +370,12 @@ sock_write(void *arg, const char *src, int srcsize)
 {
 	struct net *net = (struct net *)arg;
 	return write(net->sock, src, srcsize);
+}
+
+static void
+sock_shutdown(struct net *net)
+{
+	shutdown(net->sock, SHUT_WR);
 }
 
 static void
@@ -470,6 +490,12 @@ tls_write(void *arg, const char *src, int srcsize)
 		Trace(diag, "%s r=%zd", __func__, r);
 	}
 	return r;
+}
+
+static void
+tls_shutdown(struct net *net)
+{
+	SSL_shutdown(net->ssl);
 }
 
 static void
