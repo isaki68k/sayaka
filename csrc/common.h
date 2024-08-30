@@ -106,8 +106,17 @@ struct urlinfo {
 	string *fragment;
 #endif
 };
+struct net_opt {
+	// 接続に使用するプロトコル。
+	// 0 なら指定なし、4 なら IPv4、6 なら IPv6。
+	int address_family;
+
+	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
+	bool use_rsa_only;
+};
 extern struct urlinfo *urlinfo_parse(const char *);
 extern void urlinfo_free(struct urlinfo *);
+extern void net_opt_init(struct net_opt *);
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
 extern bool net_connect(struct net *, const char *, const char *, const char *);
@@ -117,19 +126,10 @@ extern void net_close(struct net *);
 extern int  net_get_fd(const struct net *);
 
 // netstream.c
-struct netstream_opt {
-	// 接続に使用するプロトコル。
-	// 0 なら指定なし、4 なら IPv4、6 なら IPv6。
-	int address_family;
-
-	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
-	bool use_rsa_only;
-};
-extern void netstream_opt_init(struct netstream_opt *);
 extern struct netstream *netstream_init(const diag *);
 extern void netstream_cleanup(struct netstream *);
 extern int  netstream_connect(struct netstream *, const char *,
-	const struct netstream_opt *);
+	const struct net_opt *);
 extern FILE *netstream_fopen(struct netstream *);
 extern void netstream_global_cleanup(void);
 

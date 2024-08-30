@@ -159,7 +159,7 @@ netstream_cleanup(struct netstream *ns)
 // 400 以上なら HTTP の応答コード。
 int
 netstream_connect(struct netstream *ns,
-	const char *url, const struct netstream_opt *opt)
+	const char *url, const struct net_opt *opt)
 {
 	const diag *diag = ns->diag;
 	CURL *curl = ns->curl;
@@ -561,12 +561,3 @@ netstream_global_cleanup(void)
 }
 
 #endif /* HAVE_LIBCURL */
-
-// opt を初期化する。
-void
-netstream_opt_init(struct netstream_opt *opt)
-{
-	memset(opt, 0, sizeof(*opt));
-	opt->address_family = 0;
-	opt->use_rsa_only = false;
-}

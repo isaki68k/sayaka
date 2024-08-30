@@ -245,6 +245,15 @@ urlinfo_free(struct urlinfo *info)
 // コネクション
 //
 
+// opt を初期化する。
+void
+net_opt_init(struct net_opt *opt)
+{
+	memset(opt, 0, sizeof(*opt));
+	opt->address_family = 0;
+	opt->use_rsa_only = false;
+}
+
 // net コンテキストを作成する。
 struct net *
 net_create(const diag *diag)

@@ -59,7 +59,7 @@ static ResizeAxis opt_resize_axis;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
 static image_opt imageopt;
-static struct netstream_opt netopt;
+static struct net_opt netopt;
 
 enum {
 	OPT__start = 0x7f,
@@ -170,7 +170,7 @@ main(int ac, char *av[])
 	diag_set_timestamp(diag_net, true);
 
 	image_opt_init(&imageopt);
-	netstream_opt_init(&netopt);
+	net_opt_init(&netopt);
 	ignore_error = false;
 	opt_resize_axis = ResizeAxis_Both;
 	output_filename = NULL;

@@ -81,7 +81,7 @@ image_opt imageopt;					// 画像関係のオプション
 uint imagesize;						// 画像の大きさ
 uint indent_cols;					// インデント1階層の桁数
 bool in_sixel;						// SIXEL 出力中か。
-struct netstream_opt netopt;		// ネットワーク関係のオプション
+struct net_opt netopt;				// ネットワーク関係のオプション
 int opt_bgtheme;					// -1:自動判別 0:Dark 1:Light
 const char *opt_codeset;			// 出力文字コード (NULL なら UTF-8)
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
@@ -190,7 +190,7 @@ main(int ac, char *av[])
 
 	cmd = Cmd_none;
 	image_opt_init(&imageopt);
-	netstream_opt_init(&netopt);
+	net_opt_init(&netopt);
 	colormode = 256;
 	opt_bgtheme = BG_AUTO;
 	opt_eaw_a = 2;
