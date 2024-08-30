@@ -68,7 +68,7 @@ parse_optmap(const struct optmap *map, const char *arg)
 	return -1;
 }
 
-// 文字列 s を10進数符号なし整数とみなして数値に変換する、簡易版。
+// 文字列 s を radix 進数符号なし整数とみなして数値に変換する、簡易版。
 // 数値以外の文字が来たところで変換を終了する。
 // 変換できればその値を返す。出来なければ errno をセットし defval を返す。
 // errno は EINVAL なら s が NULL か数字で始まっていない(負号を含む)。
@@ -76,8 +76,8 @@ parse_optmap(const struct optmap *map, const char *arg)
 // strto*(3) と異なり前置されている空白文字をスキップしない。
 // endp が NULL でなければ、*endp に数値の次の文字の位置を返す。
 // 変換できなければ endp は変更しない。
-uint32
-stou32def(const char *s, uint32 defval, char **endp)
+static uint32
+sto32def(const char *s, uint32 defval, char **endp, uint radix)
 {
 	uint32 val;
 	int error;
@@ -93,13 +93,26 @@ stou32def(const char *s, uint32 defval, char **endp)
 	for (; *s; s++) {
 		int c = *s;
 
-		if (c < '0' || c > '9') {
-			break;
+		// 10 か 16 のみ。
+		if (radix == 10) {
+			if (c < '0' || c > '9') {
+				break;
+			}
+			c -= '0';
+		} else {
+			if ('0' <= c && c <= '9') {
+				c -= '0';
+			} else if ('A' <= c && c <= 'F') {
+				c = c - 'A' + 10;
+			} else if ('a' <= c && c <= 'f') {
+				c = c - 'a' + 10;
+			} else {
+				break;
+			}
 		}
-		c -= '0';
 
 		// オーバーフローチェックは演算ごとに必要。
-		uint32 n1 = val * 10;
+		uint32 n1 = val * radix;
 		uint32 n2 = n1 + c;
 		if (__predict_false(n1 < val || n2 < val)) {
 			errno = ERANGE;
@@ -118,6 +131,18 @@ stou32def(const char *s, uint32 defval, char **endp)
 		*endp = UNCONST(s);
 	}
 	return val;
+}
+
+uint32
+stou32def(const char *s, uint32 defval, char **endp)
+{
+	return sto32def(s, defval, endp, 10);
+}
+
+uint32
+stox32def(const char *s, uint32 defval, char **endp)
+{
+	return sto32def(s, defval, endp, 16);
 }
 
 // 10進数(0-99) を BCD(0x00-0x99) に変換するテーブル。

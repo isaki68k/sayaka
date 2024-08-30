@@ -55,7 +55,6 @@
 static int terminal_query(const char *, char *, uint);
 static void terminal_dump(char *, const char *, uint);
 static int parse_bgcolor(char *);
-static uint32 stox32def(const char *, uint32, char **);
 
 // 端末が SIXEL をサポートしていれば true を返す。
 // 出力先が端末であること (isatty(3)) は呼び出し側で調べておくこと。
@@ -182,18 +181,6 @@ parse_bgcolor(char *result)
 	float I = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
 	// 四捨五入。
 	return (int)(I + 0.5);
-}
-
-// XXX
-static uint32
-stox32def(const char *s, uint32 defval, char **endp)
-{
-	errno = 0;
-	unsigned long r = strtoul(s, endp, 16); 
-	if (*endp == s || errno == ERANGE) {
-		return defval;
-	}
-	return r;
 }
 
 // 端末に問い合わせて応答を受け取る。

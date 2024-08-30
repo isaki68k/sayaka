@@ -184,6 +184,54 @@ test_stou32def(void)
 				fail("%s: errno expects %d but %d", src, experr, errno);
 		}
 	}
+}
+
+static void
+test_stox32def(void)
+{
+	printf("%s\n", __func__);
+
+	struct {
+		const char *src;
+		uint32 expval;
+		uint32 experr;
+		uint32 expoff;	// *end の src 先頭からのオフセット
+	} table[] = {
+		// input		val			error	endoffset
+		{ "0",			0,			0,		1 },
+		{ "9",			0x9,		0,		1 },
+		{ "F",			0xf,		0,		1 },
+		{ "f",			0xf,		0,		1 },
+		{ "1f",			0x1f,		0,		2 },
+		{ "fffffff",	0x0fffffff,	0,		7 },	// 一桁少ない
+		{ "ffffffff",	0xffffffff,	0,		8 },	// UINT32_MAX
+		{ "fffffffff",	DEF,		ERANGE,	-1 },	// 一桁多い
+		{ "ffffffffg",	0xffffffff,	0,		8 },	// これは正常...
+		{ "",			DEF,		EINVAL,	-1 },	// 空
+		{ "-1",			DEF,		EINVAL,	-1 },	// 負数
+		{ "0xff",		0,			0,		1 },	// 正常な 0 で終わる...
+		{ "1.9",		1,			0,		1 },	// 整数以外は無視
+		{ "00000000009",9,			0,		11 },	// 先頭のゼロを8進数にしない
+	};
+	for (uint i = 0; i < countof(table); i++) {
+		const char *src = table[i].src;
+		uint32 expval = table[i].expval;
+		int    experr = table[i].experr;
+		int    expoff = table[i].expoff;
+
+		char *actend = UNCONST(src - 1);
+		uint32 actval = stox32def(src, DEF, &actend);
+		int actoff = actend - src;
+		if (expval != actval)
+			fail("%s: val expects 0x%x but 0x%x", src, expval, actval);
+		if (expoff != actoff)
+			fail("%s: offset expects %d but %d", src, expoff, actoff);
+		if (actval == DEF) {
+			// errno は失敗した時だけ更新される
+			if (experr != errno)
+				fail("%s: errno expects %d but %d", src, experr, errno);
+		}
+	}
 #undef DEF
 }
 
@@ -323,6 +371,7 @@ main(int ac, char *av[])
 	test_chomp();
 	test_decode_isotime();
 	test_stou32def();
+	test_stox32def();
 	test_string_rtrim_inplace();
 	test_urlinfo_parse();
 	return 0;
