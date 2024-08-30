@@ -141,21 +141,18 @@ wsclient_connect(wsclient *ws, const char *url)
 	}
 	const char *scheme = string_get(info->scheme);
 	const char *host = string_get(info->host);
-	const char *port = string_len(info->port) ? string_get(info->port) : NULL;
+	const char *serv = string_get(info->port);
 	const char *pqf  = string_get(info->pqf);
 
-	const char *serv = port;
-	if (strcmp(scheme, "ws") == 0) {
-		if (serv == NULL) {
+	if (serv[0] == '\0') {
+		if (strcmp(scheme, "ws") == 0) {
 			serv = "http";
-		}
-	} else if (strcmp(scheme, "wss") == 0) {
-		if (serv == NULL) {
+		} else if (strcmp(scheme, "wss") == 0) {
 			serv = "https";
+		} else {
+			Debug(diag, "%s: %s: Unsupported protocol", __func__, url);
+			goto abort;
 		}
-	} else {
-		Debug(diag, "%s: %s: Unsupported protocol", __func__, url);
-		goto abort;
 	}
 
 	ws->net = net_create(diag);
@@ -193,7 +190,7 @@ wsclient_connect(wsclient *ws, const char *url)
 		goto abort;
 	}
 
-	// ヘッダを受信。
+	// 応答を受信。
 	char recvbuf[1024];
 	size_t len = 0;
 	for (;;) {
@@ -206,7 +203,7 @@ wsclient_connect(wsclient *ws, const char *url)
 			break;
 		}
 
-		// ヘッダを全部受信したか。
+		// 応答を全部受信したか。
 		len += n;
 		recvbuf[len] = '\0';
 		if (len >= 4 && strcmp(&recvbuf[len - 4], "\r\n\r\n") == 0) {
