@@ -29,6 +29,7 @@
 //
 
 #include "common.h"
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -48,6 +49,13 @@ typedef struct httpclient_ {
 	string *recvhdr[64];
 	uint recvhdr_num;
 
+	// チャンク
+	FILE *chunkfp;
+	uint8 *chunk_buf;
+	uint chunk_cap;		// 確保してあるバッファサイズ
+	uint chunk_len;		// 現在のバッファの有効長
+	uint chunk_pos;		// 現在位置
+
 	const diag *diag;
 } httpclient;
 
@@ -56,6 +64,9 @@ static void dump_sendhdr(httpclient *, const string *);
 static int  recv_header(httpclient *);
 static const char *find_recvhdr(const httpclient *, const char *);
 static void clear_recvhdr(httpclient *);
+static int  http_chunk_read_cb(void *, char *, int);
+static int  http_chunk_close_cb(void *);
+static int  read_chunk(httpclient *);
 
 httpclient *
 httpclient_create(const diag *diag)
@@ -90,6 +101,7 @@ httpclient_destroy(httpclient *http)
 
 		net_destroy(http->net);
 		urlinfo_free(http->url);
+		free(http->chunk_buf);
 		free(http);
 	}
 }
@@ -354,9 +366,135 @@ httpclient_get_resmsg(const httpclient *http)
 // ストリームを返す。
 // httpclient_connect() が成功した場合のみ有効。
 FILE *
-httpclient_fopen(const httpclient *http)
+httpclient_fopen(httpclient *http)
 {
-	return http->fp;
+	const char *transfer = find_recvhdr(http, "Transfer-Encoding:");
+	if (transfer && strcasecmp(transfer, "chunked") == 0) {
+		// Chunked
+		http->chunkfp = funopen(http,
+			http_chunk_read_cb,
+			NULL,
+			NULL,
+			http_chunk_close_cb);
+		if (http->chunkfp == NULL) {
+			Debug(http->diag, "%s: funopen failed: %s", __func__, strerrno());
+			return NULL;
+		}
+		return http->chunkfp;
+	} else {
+		return http->fp;
+	}
+}
+
+static int
+http_chunk_read_cb(void *arg, char *dst, int dstsize)
+{
+	httpclient *http = (httpclient *)arg;
+	const diag *diag = http->diag;
+
+	Trace(diag, "%s(%d)", __func__, dstsize);
+
+	// バッファが空なら次のチャンクを読み込む。
+	if (http->chunk_pos == http->chunk_len) {
+		Trace(diag, "%s Need to fill", __func__);
+		int r = read_chunk(http);
+		Trace(diag, "%s read_chunk filled %d", __func__, r);
+		if (__predict_false(r < 1)) {
+			return r;
+		}
+	}
+
+	// バッファから dst に入るだけコピー。
+	uint copylen = MIN(http->chunk_len - http->chunk_pos, dstsize);
+	Trace(diag, "%s copylen=%d", __func__, copylen);
+	memcpy(dst, http->chunk_buf + http->chunk_pos, copylen);
+	http->chunk_pos += copylen;
+	return copylen;
+}
+
+// 1つのチャンクを読み込む。
+// 成功すれば読み込んだバイト数を返す。
+// 失敗すれば errno をセットして -1 を返す。
+static int
+read_chunk(httpclient *http)
+{
+	const diag *diag = http->diag;
+
+	// 先頭行はチャンク長 + CRLF。
+	string *slen = string_fgets(http->fp);
+	if (__predict_false(slen == NULL)) {
+		Debug(diag, "%s: Unexpected EOF while reading chunk length?", __func__);
+		return -1;
+	}
+
+	// チャンク長を取り出す。
+	string_rtrim_inplace(slen);
+	char *end;
+	int intlen = stox32def(string_get(slen), -1, &end);
+	if (intlen < 0) {
+		Debug(diag, "%s: Invalid chunk length: %s", __func__, string_get(slen));
+		errno = EIO;
+		return -1;
+	}
+	if (*end != '\0') {
+		Debug(diag, "%s: Chunk length has a trailing garbage: %s", __func__,
+			string_get(slen));
+		errno = EIO;
+		return -1;
+	}
+	Trace(diag, "intlen=%d", intlen);
+
+	if (intlen == 0) {
+		// データ終わり。CRLF を読み捨てる。
+		string *dummy = string_fgets(http->fp);
+		string_free(dummy);
+		Trace(diag, "%s: This wa sthe last chunk.", __func__);
+		return 0;
+	}
+
+	// チャンク本体を読み込む。
+	if (intlen > http->chunk_cap) {
+		uint8 *newbuf = realloc(http->chunk_buf, intlen);
+		if (newbuf == NULL) {
+			Debug(diag, "%s: realloc failed: %s", __func__, strerrno());
+			return -1;
+		}
+		http->chunk_buf = newbuf;
+		http->chunk_cap = intlen;
+		Trace(diag, "%s realloc %u", __func__, http->chunk_cap);
+	}
+	int readlen = 0;
+	while (readlen < intlen) {
+		size_t r;
+		r = fread(http->chunk_buf + readlen, 1, intlen - readlen, http->fp);
+		if (r == 0) {
+			break;
+		}
+		readlen += r;
+		Trace(diag, "read=%zu readlen=%d", r, readlen);
+	}
+	if (__predict_false(readlen != intlen)) {
+		Debug(diag, "%s: readlen=%d intlen=%d", __func__, readlen, intlen);
+		errno = EIO;
+		return -1;
+	}
+	http->chunk_len = readlen;
+	http->chunk_pos = 0;
+
+	// 最後の CRLF を読み捨てる。
+	string *dummy = string_fgets(http->fp);
+	string_free(dummy);
+
+	return intlen;
+}
+
+static int
+http_chunk_close_cb(void *arg)
+{
+	httpclient *http = (httpclient *)arg;
+
+	fclose(http->fp);
+	return 0;
 }
 
 
