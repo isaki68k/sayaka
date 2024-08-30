@@ -620,7 +620,9 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 static bool
 fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 {
+#if defined(HAVE_LIBCURL)
 	struct netstream *net = NULL;
+#endif
 	pstream *pstream = NULL;
 	FILE *ifp = NULL;
 	image *srcimg = NULL;
@@ -718,6 +720,8 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 	if (ifp) {
 		fclose(ifp);
 	}
+#if defined(HAVE_LIBCURL)
 	netstream_cleanup(net);
+#endif
 	return rv;
 }

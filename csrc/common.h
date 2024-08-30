@@ -87,6 +87,8 @@ typedef struct httpclient_ httpclient;
 extern httpclient *httpclient_create(const diag *);
 extern void httpclient_destroy(httpclient *);
 extern int  httpclient_connect(httpclient *, const char *);
+extern const char *httpclient_get_resmsg(const httpclient *);
+extern FILE *httpclient_fopen(const httpclient *);
 
 // net.c
 struct urlinfo {

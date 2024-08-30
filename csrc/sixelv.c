@@ -443,7 +443,11 @@ static bool
 do_file(const char *infile)
 {
 	bool rv = false;
+#if defined(HAVE_LIBCURL)
 	struct netstream *net = NULL;
+#else
+	httpclient *http = NULL;
+#endif
 	pstream *pstream = NULL;
 	image *srcimg = NULL;
 	image *resimg = NULL;
@@ -485,8 +489,25 @@ do_file(const char *infile)
 			goto abort;
 		}
 #else
-		warnx("%s: Network support has not been compiled", infilename);
-		return false;
+		http = httpclient_create(diag_net);
+		if (http == NULL) {
+			warn("httpclient_create() failed");
+			return false;
+		}
+		int code = httpclient_connect(http, infile);
+		if (code < 0) {
+			warn("%s: httpclient_connect() failed", infilename);
+			goto abort;
+		} else if (code >= 400) {
+			warnx("%s: connection failed: HTTP %u %s", infilename,
+				code, httpclient_get_resmsg(http));
+			goto abort;
+		}
+		ifp = httpclient_fopen(http);
+		if (ifp == NULL) {
+			warn("%s: httpclient_fopen() failed", infilename);
+			goto abort;
+		}
 #endif
 	} else {
 		// ファイル名
@@ -582,9 +603,15 @@ do_file(const char *infile)
 	if (pstream) {
 		pstream_cleanup(pstream);
 	}
+#if defined(HAVE_LIBCURL)
 	if (net) {
 		netstream_cleanup(net);
 	}
+#else
+	if (http) {
+		httpclient_destroy(http);
+	}
+#endif
 	return rv;
 }
 

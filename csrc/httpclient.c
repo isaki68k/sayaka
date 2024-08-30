@@ -187,9 +187,27 @@ httpclient_connect(httpclient *http, const char *url)
 
 	Debug(diag, "rescode = %3u |%s|", http->rescode, http->resmsg);
 
+	net_shutdown(http->net);
+
  done:
 	urlinfo_free(info);
 	return rv;
+}
+
+// HTTP 応答のメッセージ部分を返す。
+// 接続していないなどでメッセージがなければ NULL を返す。
+const char *
+httpclient_get_resmsg(const httpclient *http)
+{
+	return http->resmsg;
+}
+
+// ストリームを返す。
+// httpclient_connect() が成功した場合のみ有効。
+FILE *
+httpclient_fopen(const httpclient *http)
+{
+	return http->fp;
 }
 
 #if defined(TEST)
