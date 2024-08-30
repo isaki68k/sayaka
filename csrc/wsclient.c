@@ -476,6 +476,7 @@ ws_decode_len(const uint8 *src, uint *lenp)
 
 #include <err.h>
 #include <stdio.h>
+#include <signal.h>
 
 static int
 testhttp(const diag *diag, int ac, char *av[])
@@ -604,6 +605,8 @@ main(int ac, char *av[])
 {
 	diag *diag = diag_alloc();
 	diag_set_level(diag, 2);
+
+	signal(SIGPIPE, SIG_IGN);
 
 	if (ac == 5 && strcmp(av[1], "http") == 0) {
 		return testhttp(diag, ac, av);
