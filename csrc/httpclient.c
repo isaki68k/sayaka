@@ -144,8 +144,6 @@ httpclient_connect(httpclient *http, const char *urlstr)
 
 		// 応答を受信。
 		int code = recv_header(http);
-		Debug(diag, "%s: rescode = %3u |%s|", __func__,
-			http->rescode, http->resmsg);
 
 		if (300 <= code && code < 400) {
 			const char *location = find_recvhdr(http, "Location:");
