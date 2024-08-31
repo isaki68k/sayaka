@@ -122,7 +122,6 @@ extern void net_opt_init(struct net_opt *);
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
 extern bool net_connect(struct net *, const char *, const char *, const char *);
-extern FILE *net_fopen(struct net *, const char *);
 extern string *net_gets(struct net *);
 extern int  net_read(struct net *, void *, uint);
 extern int  net_write(struct net *, const void *, uint);

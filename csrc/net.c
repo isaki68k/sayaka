@@ -43,8 +43,8 @@
 struct net;
 struct net {
 	bool (*f_connect)(struct net *, const char *, const char *);
-	int (*f_read)(void *, char *, int);
-	int (*f_write)(void *, const char *, int);
+	int (*f_read)(struct net *, void *, int);
+	int (*f_write)(struct net *, const void *, int);
 	void (*f_shutdown)(struct net *);
 	void (*f_close)(struct net *);
 
@@ -68,14 +68,14 @@ struct net {
 
 static void sock_cleanup(struct net *);
 static bool sock_connect(struct net *, const char *, const char *);
-static int  sock_read(void *, char *, int);
-static int  sock_write(void *, const char *, int);
+static int  sock_read(struct net *, void *, int);
+static int  sock_write(struct net *, const void *, int);
 static void sock_shutdown(struct net *);
 static void sock_close(struct net *);
 static void tls_cleanup(struct net *);
 static bool tls_connect(struct net *, const char *, const char *);
-static int  tls_read(void *, char *, int);
-static int  tls_write(void *, const char *, int);
+static int  tls_read(struct net *, void *, int);
+static int  tls_write(struct net *, const void *, int);
 static void tls_shutdown(struct net *);
 static void tls_close(struct net *);
 static int  socket_connect(const char *, const char *);
@@ -374,41 +374,6 @@ net_connect(struct net *net,
 	return net->f_connect(net, host, serv);
 }
 
-// オープン後のストリームを FILE* にして返す。
-// funopen(2) の制約で双方向に出来ないので "r" か "w" の単方向ずつ。
-// read もしくは write をラップしてるだけで、close では何も解放しない。
-// fclose(fp) 後 net_close(net) でリソースを解放すること。
-// また net_read のバッファを経由しないので混合して使わないこと。
-FILE *
-net_fopen(struct net *net, const char *mode)
-{
-	FILE *fp;
-	int (*readfunc)(void *, char *, int);
-	int (*writefunc)(void *, const char *, int);
-
-	if (mode[0] == 'r') {
-		readfunc  = net->f_read;
-		writefunc = NULL;
-	} else if (mode[0] == 'w') {
-		readfunc  = NULL;
-		writefunc = net->f_write;
-	} else {
-		errno = EINVAL;
-		return NULL;
-	}
-
-	fp = funopen(net,
-		readfunc,
-		writefunc,
-		NULL,
-		NULL);
-	if (fp == NULL) {
-		Debug(net->diag, "%s: funopen() failed: %s", __func__, strerrno());
-		return NULL;
-	}
-	return fp;
-}
-
 // 1行受信して返す。
 string *
 net_gets(struct net *net)
@@ -524,20 +489,16 @@ sock_connect(struct net *net, const char *host, const char *serv)
 }
 
 static int
-sock_read(void *arg, char *dst, int dstsize)
+sock_read(struct net *net, void *dst, int dstsize)
 {
-	struct net *net = (struct net *)arg;
-	int n;
-	n = read(net->sock, dst, dstsize);
+	int n = read(net->sock, dst, dstsize);
 	return n;
 }
 
 static int
-sock_write(void *arg, const char *src, int srcsize)
+sock_write(struct net *net, const void *src, int srcsize)
 {
-	struct net *net = (struct net *)arg;
-	int n;
-	n = write(net->sock, src, srcsize);
+	int n = write(net->sock, src, srcsize);
 	return n;
 }
 
@@ -620,9 +581,8 @@ tls_connect(struct net *net, const char *host, const char *serv)
 }
 
 static int
-tls_read(void *arg, char *dst, int dstsize)
+tls_read(struct net *net, void *dst, int dstsize)
 {
-	struct net *net = (struct net *)arg;
 	const diag *diag = net->diag;
 	ssize_t r;
 
@@ -641,9 +601,8 @@ tls_read(void *arg, char *dst, int dstsize)
 }
 
 static int
-tls_write(void *arg, const char *src, int srcsize)
+tls_write(struct net *net, const void *src, int srcsize)
 {
-	struct net *net = (struct net *)arg;
 	const diag *diag = net->diag;
 	ssize_t r;
 
