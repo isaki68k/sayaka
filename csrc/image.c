@@ -331,40 +331,6 @@ image_read_pstream(pstream *ps, const image_opt *opt, const diag *diag)
 	return NULL;
 }
 
-// インデックスカラーの srcimg をパレットで着色した画像を返す。
-image *
-image_coloring(const image *srcimg)
-{
-	image *dstimg;
-
-	assert(srcimg->channels == 1);
-	assert(srcimg->palette != NULL);
-
-	dstimg = image_create(srcimg->width, srcimg->height, 3);
-	if (dstimg == NULL) {
-		return NULL;
-	}
-
-	const uint8 *s = srcimg->buf;
-	uint8 *d = dstimg->buf;
-	for (uint y = 0, yend = srcimg->height; y < yend; y++) {
-		for (uint x = 0, xend = srcimg->width; x < xend; x++) {
-			uint32 colorcode = *s++;
-			ColorRGB c;
-			if (colorcode < srcimg->palette_count) {
-				c = srcimg->palette[colorcode];
-			} else {
-				c.u32 = 0;
-			}
-			*d++ = c.r;
-			*d++ = c.g;
-			*d++ = c.b;
-		}
-	}
-
-	return dstimg;
-}
-
 // src 画像を (dst_width, dst_height) にリサイズしながら同時に
 // colormode (& graycount) に減色した新しい image を作成して返す。
 image *

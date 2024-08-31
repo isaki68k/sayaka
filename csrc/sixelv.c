@@ -546,14 +546,7 @@ do_file(const char *infile)
 	if (output_format == OutputFormat_SIXEL) {
 		image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
 	} else {
-		image *bmpimg = image_coloring(resimg);
-		if (bmpimg == NULL) {
-			warn("image_coloring(%s) failed", output_filename);
-			goto abort;
-		}
-		bool r = image_bmp_write(ofp, bmpimg, diag_image);
-		image_free(bmpimg);
-		if (r == false) {
+		if (image_bmp_write(ofp, resimg, diag_image) == false) {
 			goto abort;
 		}
 	}

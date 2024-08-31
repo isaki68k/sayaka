@@ -30,7 +30,7 @@
 //
 
 #include "sixelv.h"
-#include "image.h"
+#include "image_priv.h"
 #include <string.h>
 
 typedef struct __packed {
@@ -55,22 +55,40 @@ typedef struct __packed {
 	uint32 biCirImportant;
 } BITMAPINFOHEADER;
 
+static image *image_coloring(const image *);
+
 // image を BMP 形式で fp に出力する。
 bool
-image_bmp_write(FILE *fp, const image *img, const diag *diag)
+image_bmp_write(FILE *fp, const image *srcimg, const diag *diag)
 {
+	image *img;
 	BITMAPFILEHEADER hdr;
 	BITMAPINFOHEADER info;
 	uint32 istride;	// 入力ストライド
 	uint32 ostride;	// 出力ストライド (4バイトの倍数でなければならない)
 	uint32 padding;
 	uint32 datasize;
+	bool rv = false;
 
-	assert(img->channels == 3);
+	if (srcimg->channels == 1) {
+		// インデックスカラーを RGB に戻す。
+		img = image_coloring(srcimg);
+		if (img == NULL) {
+			Debug(diag, "%s: image_coloring failed: %s", __func__, strerrno());
+			return false;
+		}
+	} else if (srcimg->channels == 3) {
+		img = UNCONST(srcimg);
+	} else {
+		Debug(diag, "%s: Unsupported channels: %u", __func__, srcimg->channels);
+		return false;
+	}
+
 	istride = image_get_stride(img);
 	ostride = roundup(istride, 4);
 	padding = ostride - istride;
 	datasize = ostride * img->height;
+	uint8 dst[ostride];
 
 	// ファイルヘッダ。
 	memset(&hdr, 0, sizeof(hdr));
@@ -92,15 +110,14 @@ image_bmp_write(FILE *fp, const image *img, const diag *diag)
 
 	if (fwrite(&hdr, sizeof(hdr), 1, fp) < 1) {
 		Debug(diag, "%s: fwrite(hdr) failed: %s", __func__, strerrno());
-		return false;
+		goto done;
 	}
 
 	if (fwrite(&info, sizeof(info), 1, fp) < 1) {
 		Debug(diag, "%s: fwrite(info) failed: %s", __func__, strerrno());
-		return false;
+		goto done;
 	}
 
-	uint8 dst[ostride];
 	if (padding > 0) {
 		memset(&dst[ostride - padding], 0, padding);
 	}
@@ -120,5 +137,44 @@ image_bmp_write(FILE *fp, const image *img, const diag *diag)
 		fwrite(dst, 1, ostride, fp);
 	}
 
-	return true;
+	rv = true;
+ done:
+	if (img != srcimg) {
+		image_free(img);
+	}
+	return rv;
+}
+
+// インデックスカラーの srcimg をパレットで着色した画像を返す。
+static image *
+image_coloring(const image *srcimg)
+{
+	image *dstimg;
+
+	assert(srcimg->channels == 1);
+	assert(srcimg->palette != NULL);
+
+	dstimg = image_create(srcimg->width, srcimg->height, 3);
+	if (dstimg == NULL) {
+		return NULL;
+	}
+
+	const uint8 *s = srcimg->buf;
+	uint8 *d = dstimg->buf;
+	for (uint y = 0, yend = srcimg->height; y < yend; y++) {
+		for (uint x = 0, xend = srcimg->width; x < xend; x++) {
+			uint32 colorcode = *s++;
+			ColorRGB c;
+			if (colorcode < srcimg->palette_count) {
+				c = srcimg->palette[colorcode];
+			} else {
+				c.u32 = 0;
+			}
+			*d++ = c.r;
+			*d++ = c.g;
+			*d++ = c.b;
+		}
+	}
+
+	return dstimg;
 }
