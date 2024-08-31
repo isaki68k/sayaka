@@ -35,7 +35,8 @@
 
 typedef struct httpclient_ {
 	struct net *net;
-	FILE *fp;
+	FILE *rfp;			// 受信方向
+	FILE *wfp;			// 送信方向
 
 	// 接続中の URL
 	struct urlinfo *url;
@@ -96,7 +97,7 @@ httpclient_destroy(httpclient *http)
 		string_free(http->resline);
 		clear_recvhdr(http);
 
-		// http->fp は fclose 時に NULL 代入を保証しないと
+		// http->*fp は fclose 時に NULL 代入を保証しないと
 		// ここでクローズできない。
 
 		net_destroy(http->net);
@@ -145,8 +146,8 @@ httpclient_connect(httpclient *http, const char *urlstr)
 		if (__predict_false(diag_get_level(diag) >= 2)) {
 			dump_sendhdr(http, hdr);	// デバッグ表示
 		}
-		fputs(string_get(hdr), http->fp);
-		fflush(http->fp);
+		fputs(string_get(hdr), http->wfp);
+		fflush(http->wfp);
 		string_free(hdr);
 
 		// 応答を受信。
@@ -173,7 +174,8 @@ httpclient_connect(httpclient *http, const char *urlstr)
 					string_free(u);
 				}
 				// 内部状態をリセット。
-				fclose(http->fp);
+				fclose(http->rfp);
+				fclose(http->wfp);
 				net_close(http->net);
 				clear_recvhdr(http);
 				string_free(http->resline);
@@ -222,9 +224,17 @@ do_connect(httpclient *http)
 		return false;
 	}
 
-	http->fp = net_fopen(http->net);
-	if (http->fp == NULL) {
-		Debug(diag, "%s: net_fopen failed: %s", __func__, strerrno());
+	http->rfp = net_fopen(http->net, "r");
+	if (http->rfp == NULL) {
+		Debug(diag, "%s: net_fopen(r) failed: %s", __func__, strerrno());
+		return false;
+	}
+
+	http->wfp = net_fopen(http->net, "w");
+	if (http->wfp == NULL) {
+		Debug(diag, "%s: net_fopen(w) failed: %s", __func__, strerrno());
+		fclose(http->rfp);
+		http->rfp = NULL;
 		return false;
 	}
 
@@ -269,7 +279,7 @@ recv_header(httpclient *http)
 	const diag *diag = http->diag;
 
 	// 応答の1行目を受信。
-	http->resline = string_fgets(http->fp);
+	http->resline = string_fgets(http->rfp);
 	if (http->resline == NULL) {
 		Debug(diag, "%s: No HTTP response?", __func__);
 		return -1;
@@ -279,7 +289,7 @@ recv_header(httpclient *http)
 
 	// 残りのヘッダを受信。
 	string *recv;
-	while ((recv = string_fgets(http->fp)) != NULL) {
+	while ((recv = string_fgets(http->rfp)) != NULL) {
 		string_rtrim_inplace(recv);
 		Trace(diag, "--> |%s|", string_get(recv));
 		if (string_len(recv) != 0) {
@@ -382,7 +392,7 @@ httpclient_fopen(httpclient *http)
 		}
 		return http->chunkfp;
 	} else {
-		return http->fp;
+		return http->rfp;
 	}
 }
 
@@ -421,7 +431,7 @@ read_chunk(httpclient *http)
 	const diag *diag = http->diag;
 
 	// 先頭行はチャンク長 + CRLF。
-	string *slen = string_fgets(http->fp);
+	string *slen = string_fgets(http->rfp);
 	if (__predict_false(slen == NULL)) {
 		Debug(diag, "%s: Unexpected EOF while reading chunk length?", __func__);
 		return -1;
@@ -446,7 +456,7 @@ read_chunk(httpclient *http)
 
 	if (intlen == 0) {
 		// データ終わり。CRLF を読み捨てる。
-		string *dummy = string_fgets(http->fp);
+		string *dummy = string_fgets(http->rfp);
 		string_free(dummy);
 		Trace(diag, "%s: This wa sthe last chunk.", __func__);
 		return 0;
@@ -466,7 +476,7 @@ read_chunk(httpclient *http)
 	int readlen = 0;
 	while (readlen < intlen) {
 		size_t r;
-		r = fread(http->chunk_buf + readlen, 1, intlen - readlen, http->fp);
+		r = fread(http->chunk_buf + readlen, 1, intlen - readlen, http->rfp);
 		if (r == 0) {
 			break;
 		}
@@ -482,7 +492,7 @@ read_chunk(httpclient *http)
 	http->chunk_pos = 0;
 
 	// 最後の CRLF を読み捨てる。
-	string *dummy = string_fgets(http->fp);
+	string *dummy = string_fgets(http->rfp);
 	string_free(dummy);
 
 	return intlen;
@@ -493,7 +503,7 @@ http_chunk_close_cb(void *arg)
 {
 	httpclient *http = (httpclient *)arg;
 
-	fclose(http->fp);
+	fclose(http->rfp);
 	return 0;
 }
 

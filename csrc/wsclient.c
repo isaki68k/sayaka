@@ -52,7 +52,8 @@ enum {
 
 typedef struct wsclient_ {
 	struct net *net;
-	FILE *fp;
+	FILE *rfp;			// 受信方向
+	FILE *wfp;			// 送信方向
 
 	uint8 *buf;			// 受信バッファ
 	uint bufsize;		// 確保してある recvbuf のバイト数
@@ -110,8 +111,11 @@ void
 wsclient_destroy(wsclient *ws)
 {
 	if (ws) {
-		if (ws->fp) {
-			fclose(ws->fp);
+		if (ws->rfp) {
+			fclose(ws->rfp);
+		}
+		if (ws->wfp) {
+			fclose(ws->wfp);
 		}
 		net_destroy(ws->net);
 		free(ws->buf);
@@ -172,9 +176,15 @@ wsclient_connect(wsclient *ws, const char *url)
 		goto abort;
 	}
 
-	ws->fp = net_fopen(ws->net);
-	if (ws->fp == NULL) {
-		Debug(diag, "%s: net_fopen failed: %s", __func__, strerrno());
+	ws->rfp = net_fopen(ws->net, "r");
+	if (ws->rfp == NULL) {
+		Debug(diag, "%s: net_fopen(r) failed: %s", __func__, strerrno());
+		goto abort;
+	}
+
+	ws->wfp = net_fopen(ws->net, "w");
+	if (ws->wfp == NULL) {
+		Debug(diag, "%s: net_fopen(w) failed: %s", __func__, strerrno());
 		goto abort;
 	}
 
@@ -195,14 +205,15 @@ wsclient_connect(wsclient *ws, const char *url)
 	string_append_printf(hdr, "Sec-WebSocket-Key: %s\r\n", string_get(key));
 	string_append_cstr(hdr,   "\r\n");
 	Trace(diag, "<<< %s", string_get(hdr));
-	size_t sent = fwrite(string_get(hdr), string_len(hdr), 1, ws->fp);
+	size_t sent = fwrite(string_get(hdr), string_len(hdr), 1, ws->wfp);
 	if (sent < 1) {
 		Debug(diag, "%s: fwrite: %s", __func__, strerrno());
 		goto abort;
 	}
+	fflush(ws->wfp);
 
 	// 応答の1行目を受信。
-	response = string_fgets(ws->fp);
+	response = string_fgets(ws->rfp);
 	if (response == NULL) {
 		Debug(diag, "%s: No WebSocket response header", __func__);
 		goto abort;
@@ -210,7 +221,7 @@ wsclient_connect(wsclient *ws, const char *url)
 
 	// 残りの行は今のところ使ってないので読み捨てる。
 	string *recvhdr;
-	while ((recvhdr = string_fgets(ws->fp)) != NULL) {
+	while ((recvhdr = string_fgets(ws->rfp)) != NULL) {
 		string_rtrim_inplace(recvhdr);
 		bool newline = (string_len(recvhdr) == 0);
 		Trace(diag, ">>> |%s|", string_get(recvhdr));
@@ -251,6 +262,14 @@ wsclient_connect(wsclient *ws, const char *url)
 	string_free(response);
 	string_free(hdr);
 	string_free(key);
+	if (ws->rfp) {
+		fclose(ws->rfp);
+		ws->rfp = NULL;
+	}
+	if (ws->wfp) {
+		fclose(ws->wfp);
+		ws->wfp = NULL;
+	}
 	urlinfo_free(info);
 	return -1;
 }
@@ -279,7 +298,7 @@ wsclient_process(wsclient *ws)
 	}
 
 	// ブロッキング。
-	r = fread(ws->buf + ws->buflen, 1, ws->bufsize - ws->buflen, ws->fp);
+	r = fread(ws->buf + ws->buflen, 1, ws->bufsize - ws->buflen, ws->rfp);
 	if (r == 0) {
 		Debug(diag, "%s: EOF", __func__);
 		return 0;
@@ -405,12 +424,13 @@ wsclient_send(wsclient *ws, uint8 opcode, const void *data, uint datalen)
 
 	// 送信。
 	uint framelen = hdrlen + datalen;
-	r = fwrite(buf, framelen, 1, ws->fp);
+	r = fwrite(buf, framelen, 1, ws->wfp);
 	if (r < 1) {
 		Debug(ws->diag, "%s: fwrite(%u): %s", __func__,
 			framelen, strerrno());
 		return -1;
 	}
+	fflush(ws->wfp);
 
 	return datalen;
 }
@@ -505,9 +525,14 @@ testhttp(const diag *diag, int ac, char *av[])
 		err(1, "%s:%s: connect failed", host, serv);
 	}
 
-	FILE *fp = net_fopen(net);
-	if (fp == NULL) {
-		err(1, "%s: net_fopen failed", __func__);
+	FILE *rfp = net_fopen(net, "r");
+	if (rfp == NULL) {
+		err(1, "%s: net_fopen(r) failed", __func__);
+	}
+
+	FILE *wfp = net_fopen(net, "w");
+	if (wfp == NULL) {
+		err(1, "%s: net_fopen(w) failed", __func__);
 	}
 
 	// HTTP ヘッダを送信。
@@ -515,13 +540,13 @@ testhttp(const diag *diag, int ac, char *av[])
 	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", path);
 	string_append_printf(hdr, "Host: %s\r\n", host);
 	string_append_cstr(hdr, "\r\n");
-	size_t n = fputs(string_get(hdr), fp);
+	size_t n = fputs(string_get(hdr), wfp);
 	printf("fputs=%zu\n", n);
-	fflush(fp);
+	fflush(wfp);
 
 	// HTTP 応答を受信して表示。
 	string *buf;
-	while ((buf = string_fgets(fp)) != NULL) {
+	while ((buf = string_fgets(rfp)) != NULL) {
 		string_rtrim_inplace(buf);
 		bool end = (string_len(buf) == 0);
 		printf("%s\n", string_get(buf));
@@ -531,7 +556,8 @@ testhttp(const diag *diag, int ac, char *av[])
 	}
 	// 本文は無視。
 
-	fclose(fp);
+	fclose(rfp);
+	fclose(wfp);
 	net_close(net);
 	net_destroy(net);
 	return 0;

@@ -368,18 +368,34 @@ net_connect(struct net *net,
 }
 
 // オープン後のストリームを FILE* にして返す。
-// read/write をラップしてるだけで、close では何も解放しない。
+// funopen(2) の制約で双方向に出来ないので "r" か "w" の単方向ずつ。
+// read もしくは write をラップしてるだけで、close では何も解放しない。
 // fclose(fp) 後 net_close(net) でリソースを解放すること。
 FILE *
-net_fopen(struct net *net)
+net_fopen(struct net *net, const char *mode)
 {
-	FILE *fp = funopen(net,
-		net->f_read,
-		net->f_write,
+	FILE *fp;
+	int (*readfunc)(void *, char *, int);
+	int (*writefunc)(void *, const char *, int);
+
+	if (mode[0] == 'r') {
+		readfunc  = net->f_read;
+		writefunc = NULL;
+	} else if (mode[0] == 'w') {
+		readfunc  = NULL;
+		writefunc = net->f_write;
+	} else {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	fp = funopen(net,
+		readfunc,
+		writefunc,
 		NULL,
 		NULL);
 	if (fp == NULL) {
-		Debug(net->diag, "%s: funopen failed: %s", __func__, strerrno());
+		Debug(net->diag, "%s: funopen() failed: %s", __func__, strerrno());
 		return NULL;
 	}
 	return fp;
