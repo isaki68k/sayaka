@@ -574,8 +574,29 @@ tls_connect(struct net *net, const char *host, const char *serv)
 		return false;
 	}
 
-	// 接続できたらログ?
-	Debug(net->diag, "%s done", __func__);
+	// 接続できたらログ。
+	if (__predict_false(diag_get_level(diag) >= 1)) {
+		SSL_SESSION *sess = SSL_get_session(net->ssl);
+		int ssl_version = SSL_SESSION_get_protocol_version(sess);
+		char verbuf[16];
+		const char *ver;
+		switch (ssl_version) {
+		 case SSL3_VERSION:		ver = "SSLv3";		break;
+		 case TLS1_VERSION:		ver = "TLSv1.0";	break;
+		 case TLS1_1_VERSION:	ver = "TLSv1.1";	break;
+		 case TLS1_2_VERSION:	ver = "TLSv1.2";	break;
+		 case TLS1_3_VERSION:	ver = "TLSv1.3";	break;
+		 default:
+			snprintf(verbuf, sizeof(verbuf), "0x%04x", ssl_version);
+			ver = verbuf;
+			break;
+		}
+
+		const SSL_CIPHER *ssl_cipher = SSL_SESSION_get0_cipher(sess);
+		const char *cipher_name = SSL_CIPHER_get_name(ssl_cipher);
+
+		diag_print(diag, "Connected %s %s", ver, cipher_name);
+	}
 
 	return true;
 }
