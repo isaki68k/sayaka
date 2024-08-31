@@ -57,6 +57,13 @@ struct net {
 	SSL *ssl;
 
 	const diag *diag;
+
+	// 行単位受信用の受信バッファ。
+	// バッファにあればこちらから優先して読み出す。
+	// バッファが空で行単位受信でない場合はここを経由しなくてよい。
+	uint buflen;			// バッファの有効長
+	uint bufpos;			// 現在位置
+	char buf[1024];
 };
 
 static void sock_cleanup(struct net *);
@@ -371,6 +378,7 @@ net_connect(struct net *net,
 // funopen(2) の制約で双方向に出来ないので "r" か "w" の単方向ずつ。
 // read もしくは write をラップしてるだけで、close では何も解放しない。
 // fclose(fp) 後 net_close(net) でリソースを解放すること。
+// また net_read のバッファを経由しないので混合して使わないこと。
 FILE *
 net_fopen(struct net *net, const char *mode)
 {
@@ -399,6 +407,82 @@ net_fopen(struct net *net, const char *mode)
 		return NULL;
 	}
 	return fp;
+}
+
+// 1行受信して返す。
+string *
+net_gets(struct net *net)
+{
+	assert(net);
+	const diag *diag = net->diag;
+
+	Trace(diag, "%s: begin", __func__);
+	string *s = string_init();
+
+	for (;;) {
+		// バッファが空なら受信。
+		if (net->bufpos == net->buflen) {
+			int n = net_read(net, net->buf, sizeof(net->buf));
+			Trace(diag, "%s: net_read=%d", __func__, n);
+			if (n < 0) {
+				Debug(diag, "%s: net_read failed: %s", __func__, strerrno());
+				return s;
+			}
+			if (n == 0) {
+				// EOF
+				string_free(s);
+				return NULL;
+			}
+			net->bufpos = 0;
+			net->buflen = n;
+		}
+
+		// バッファから改行を探す。
+		uint pos;
+		bool lf_found = false;
+		for (pos = net->bufpos; pos < net->buflen; pos++) {
+			if (net->buf[pos] == '\n') {
+				pos++;
+				lf_found = true;
+				break;
+			}
+		}
+		uint copylen = pos - net->bufpos;
+		string_append_mem(s, net->buf + net->bufpos, copylen);
+		net->bufpos += copylen;
+		Trace(diag, "%s: copied=%u, pos=%u/len=%u%s", __func__,
+			copylen, net->bufpos, net->buflen,
+			(lf_found ? " lf_found" : ""));
+		if (lf_found) {
+			return s;
+		}
+	}
+}
+
+// dst に最大 dstsize バイトを受信する。
+int
+net_read(struct net *net, void *dst, uint dstsize)
+{
+	assert(net);
+
+	// バッファにあれば先に使い切る。
+	if (net->bufpos != net->buflen) {
+		uint copylen = MIN(net->buflen - net->bufpos, dstsize);
+		memcpy(dst, net->buf + net->bufpos, copylen);
+		net->bufpos += copylen;
+		return copylen;
+	}
+
+	int n = net->f_read(net, dst, dstsize);
+	return n;
+}
+
+int
+net_write(struct net *net, const void *src, uint srcsize)
+{
+	assert(net);
+	int n = net->f_write(net, src, srcsize);
+	return n;
 }
 
 // 送信方向を shutdown する。

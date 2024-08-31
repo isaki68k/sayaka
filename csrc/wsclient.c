@@ -52,8 +52,6 @@ enum {
 
 typedef struct wsclient_ {
 	struct net *net;
-	FILE *rfp;			// 受信方向
-	FILE *wfp;			// 送信方向
 
 	uint8 *buf;			// 受信バッファ
 	uint bufsize;		// 確保してある buf のバイト数
@@ -111,12 +109,6 @@ void
 wsclient_destroy(wsclient *ws)
 {
 	if (ws) {
-		if (ws->rfp) {
-			fclose(ws->rfp);
-		}
-		if (ws->wfp) {
-			fclose(ws->wfp);
-		}
 		net_destroy(ws->net);
 		free(ws->buf);
 		string_free(ws->text);
@@ -176,18 +168,6 @@ wsclient_connect(wsclient *ws, const char *url)
 		goto abort;
 	}
 
-	ws->rfp = net_fopen(ws->net, "r");
-	if (ws->rfp == NULL) {
-		Debug(diag, "%s: net_fopen(r) failed: %s", __func__, strerrno());
-		goto abort;
-	}
-
-	ws->wfp = net_fopen(ws->net, "w");
-	if (ws->wfp == NULL) {
-		Debug(diag, "%s: net_fopen(w) failed: %s", __func__, strerrno());
-		goto abort;
-	}
-
 	// キー(乱数)を作成。
 	char nonce[16];
 	rnd_fill(nonce, sizeof(nonce));
@@ -205,15 +185,14 @@ wsclient_connect(wsclient *ws, const char *url)
 	string_append_printf(hdr, "Sec-WebSocket-Key: %s\r\n", string_get(key));
 	string_append_cstr(hdr,   "\r\n");
 	Trace(diag, "<<< %s", string_get(hdr));
-	size_t sent = fwrite(string_get(hdr), string_len(hdr), 1, ws->wfp);
-	if (sent < 1) {
-		Debug(diag, "%s: fwrite: %s", __func__, strerrno());
+	int sent = net_write(ws->net, string_get(hdr), string_len(hdr));
+	if (sent < 0) {
+		Debug(diag, "%s: net_write: %s", __func__, strerrno());
 		goto abort;
 	}
-	fflush(ws->wfp);
 
 	// 応答の1行目を受信。
-	response = string_fgets(ws->rfp);
+	response = net_gets(ws->net);
 	if (response == NULL) {
 		Debug(diag, "%s: No WebSocket response header", __func__);
 		goto abort;
@@ -221,7 +200,7 @@ wsclient_connect(wsclient *ws, const char *url)
 
 	// 残りの行は今のところ使ってないので読み捨てる。
 	string *recvhdr;
-	while ((recvhdr = string_fgets(ws->rfp)) != NULL) {
+	while ((recvhdr = net_gets(ws->net)) != NULL) {
 		string_rtrim_inplace(recvhdr);
 		bool newline = (string_len(recvhdr) == 0);
 		Trace(diag, ">>> |%s|", string_get(recvhdr));
@@ -262,14 +241,6 @@ wsclient_connect(wsclient *ws, const char *url)
 	string_free(response);
 	string_free(hdr);
 	string_free(key);
-	if (ws->rfp) {
-		fclose(ws->rfp);
-		ws->rfp = NULL;
-	}
-	if (ws->wfp) {
-		fclose(ws->wfp);
-		ws->wfp = NULL;
-	}
 	urlinfo_free(info);
 	return -1;
 }
@@ -298,7 +269,7 @@ wsclient_process(wsclient *ws)
 	}
 
 	// ブロッキング。
-	r = fread(ws->buf + ws->buflen, 1, ws->bufsize - ws->buflen, ws->rfp);
+	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
 	if (r == 0) {
 		Debug(diag, "%s: EOF", __func__);
 		return 0;
@@ -403,7 +374,7 @@ wsclient_send(wsclient *ws, uint8 opcode, const void *data, uint datalen)
 {
 	uint8 buf[1 + (1+2) + 4 + datalen];
 	uint hdrlen;
-	size_t r;
+	int r;
 	union {
 		uint8 buf[4];
 		uint32 u32;
@@ -429,13 +400,12 @@ wsclient_send(wsclient *ws, uint8 opcode, const void *data, uint datalen)
 
 	// 送信。
 	uint framelen = hdrlen + datalen;
-	r = fwrite(buf, framelen, 1, ws->wfp);
-	if (r < 1) {
-		Debug(ws->diag, "%s: fwrite(%u): %s", __func__,
+	r = net_write(ws->net, buf, framelen);
+	if (r < 0) {
+		Debug(ws->diag, "%s: net_write(%u): %s", __func__,
 			framelen, strerrno());
 		return -1;
 	}
-	fflush(ws->wfp);
 
 	return datalen;
 }
@@ -530,28 +500,17 @@ testhttp(const diag *diag, int ac, char *av[])
 		err(1, "%s:%s: connect failed", host, serv);
 	}
 
-	FILE *rfp = net_fopen(net, "r");
-	if (rfp == NULL) {
-		err(1, "%s: net_fopen(r) failed", __func__);
-	}
-
-	FILE *wfp = net_fopen(net, "w");
-	if (wfp == NULL) {
-		err(1, "%s: net_fopen(w) failed", __func__);
-	}
-
 	// HTTP ヘッダを送信。
 	string *hdr = string_init();
 	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", path);
 	string_append_printf(hdr, "Host: %s\r\n", host);
 	string_append_cstr(hdr, "\r\n");
-	size_t n = fputs(string_get(hdr), wfp);
-	printf("fputs=%zu\n", n);
-	fflush(wfp);
+	int n = net_write(net, string_get(hdr), string_len(hdr));
+	printf("net_write=%d\n", n);
 
 	// HTTP 応答を受信して表示。
 	string *buf;
-	while ((buf = string_fgets(rfp)) != NULL) {
+	while ((buf = net_gets(net)) != NULL) {
 		string_rtrim_inplace(buf);
 		bool end = (string_len(buf) == 0);
 		printf("%s\n", string_get(buf));
@@ -561,8 +520,6 @@ testhttp(const diag *diag, int ac, char *av[])
 	}
 	// 本文は無視。
 
-	fclose(rfp);
-	fclose(wfp);
 	net_close(net);
 	net_destroy(net);
 	return 0;
