@@ -312,7 +312,7 @@ wsclient_process(wsclient *ws)
 	if (opcode == WS_OPCODE_PING) {
 		Debug(diag, "%s: PING len=%u", __func__, datalen);
 		wsclient_send_pong(ws);
-		return 1;
+		rv = 1;
 	} else if (opcode == WS_OPCODE_CLOSE) {
 		Debug(diag, "%s: CLOSE", __func__);
 		return 0;
