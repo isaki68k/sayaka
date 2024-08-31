@@ -111,7 +111,8 @@ extern void diag_print(const diag *, const char *, ...)
 typedef struct httpclient_ httpclient;
 extern httpclient *httpclient_create(const diag *);
 extern void httpclient_destroy(httpclient *);
-extern int  httpclient_connect(httpclient *, const char *);
+extern int  httpclient_connect(httpclient *, const char *,
+	const struct net_opt *);
 extern const char *httpclient_get_resmsg(const httpclient *);
 extern FILE *httpclient_fopen(httpclient *);
 
@@ -123,7 +124,8 @@ extern string *urlinfo_to_string(const struct urlinfo *);
 extern void net_opt_init(struct net_opt *);
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
-extern bool net_connect(struct net *, const char *, const char *, const char *);
+extern bool net_connect(struct net *, const char *, const char *, const char *,
+	const struct net_opt *);
 extern string *net_gets(struct net *);
 extern int  net_read(struct net *, void *, uint);
 extern int  net_write(struct net *, const void *, uint);

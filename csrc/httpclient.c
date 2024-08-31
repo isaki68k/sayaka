@@ -57,7 +57,7 @@ typedef struct httpclient_ {
 	const diag *diag;
 } httpclient;
 
-static bool do_connect(httpclient *);
+static bool do_connect(httpclient *, const struct net_opt *);
 static void dump_sendhdr(httpclient *, const string *);
 static int  recv_header(httpclient *);
 static const char *find_recvhdr(const httpclient *, const char *);
@@ -104,7 +104,8 @@ httpclient_destroy(httpclient *http)
 // 成功すれば 0 を返す。失敗すれば -1 を返す。
 // 400 以上なら HTTP のエラーコード。
 int
-httpclient_connect(httpclient *http, const char *urlstr)
+httpclient_connect(httpclient *http, const char *urlstr,
+	const struct net_opt *opt)
 {
 	const diag *diag = http->diag;
 	int rv = -1;
@@ -122,7 +123,7 @@ httpclient_connect(httpclient *http, const char *urlstr)
 
 	for (;;) {
 		// 接続。
-		if (do_connect(http) == false) {
+		if (do_connect(http, opt) == false) {
 			Debug(diag, "%s: do_connect failed", __func__);
 			break;
 		}
@@ -188,7 +189,7 @@ httpclient_connect(httpclient *http, const char *urlstr)
 // http->url に接続するところまで。
 // 接続できれば true を返す。
 static bool
-do_connect(httpclient *http)
+do_connect(httpclient *http, const struct net_opt *opt)
 {
 	const diag *diag = http->diag;
 
@@ -206,7 +207,7 @@ do_connect(httpclient *http)
 	}
 
 	Trace(diag, "%s: connecting %s://%s:%s", __func__, scheme, host, serv);
-	if (net_connect(http->net, scheme, host, serv) == false) {
+	if (net_connect(http->net, scheme, host, serv, opt) == false) {
 		Debug(diag, "%s: %s://%s:%s failed %s", __func__,
 			scheme, host, serv, strerrno());
 		return false;
@@ -507,7 +508,10 @@ testhttp(const diag *diag, int ac, char *av[])
 		err(1, "%s: http_create failed", __func__);
 	}
 
-	int code = httpclient_connect(http, url);
+	struct net_opt netopt;
+	net_opt_init(&netopt);
+
+	int code = httpclient_connect(http, url, &netopt);
 	if (code < 0) {
 		err(1, "%s: http_connect failed", __func__);
 	}

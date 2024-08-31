@@ -128,7 +128,7 @@ wsclient_init(wsclient *ws, void (*callback)(const string *))
 // url に接続する。
 // 成功すれば 0、失敗すれば -1 を返す。
 int
-wsclient_connect(wsclient *ws, const char *url)
+wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 {
 	const diag *diag = ws->diag;
 	string *key = NULL;
@@ -162,7 +162,7 @@ wsclient_connect(wsclient *ws, const char *url)
 		goto abort;
 	}
 
-	if (net_connect(ws->net, scheme, host, serv) == false) {
+	if (net_connect(ws->net, scheme, host, serv, opt) == false) {
 		Debug(diag, "%s: %s://%s:%s failed %s", __func__,
 			scheme, host, serv, strerrno());
 		goto abort;
@@ -476,6 +476,8 @@ ws_decode_len(const uint8 *src, uint *lenp)
 #include <stdio.h>
 #include <signal.h>
 
+struct net_opt opt;
+
 static int
 testhttp(const diag *diag, int ac, char *av[])
 {
@@ -496,7 +498,7 @@ testhttp(const diag *diag, int ac, char *av[])
 		err(1, "%s: net_create failed", __func__);
 	}
 
-	if (net_connect(net, serv, host, serv) == false) {
+	if (net_connect(net, serv, host, serv, &opt) == false) {
 		err(1, "%s:%s: connect failed", host, serv);
 	}
 
@@ -539,7 +541,7 @@ testwsecho(const diag *diag, int ac, char *av[])
 	wsclient *ws = wsclient_create(diag);
 	wsclient_init(ws, cat_callback);
 
-	int sock = wsclient_connect(ws, av[2]);
+	int sock = wsclient_connect(ws, av[2], &opt);
 	if (sock < 0) {
 		err(1, "wsclient_connect failed");
 	}
@@ -576,7 +578,7 @@ testmisskey(const diag *diag, int ac, char *av[])
 	wsclient *ws = wsclient_create(diag);
 	wsclient_init(ws, cat_callback);
 
-	int sock = wsclient_connect(ws, av[2]);
+	int sock = wsclient_connect(ws, av[2], &opt);
 	if (sock < 0) {
 		err(1, "wsclient_connect failed");
 	}
@@ -611,6 +613,7 @@ main(int ac, char *av[])
 	diag *diag = diag_alloc();
 	diag_set_level(diag, 2);
 
+	net_opt_init(&opt);
 	signal(SIGPIPE, SIG_IGN);
 
 	if (ac == 5 && strcmp(av[1], "http") == 0) {

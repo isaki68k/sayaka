@@ -43,7 +43,8 @@
 
 struct net;
 struct net {
-	bool (*f_connect)(struct net *, const char *, const char *);
+	bool (*f_connect)(struct net *, const char *, const char *,
+		const struct net_opt *);
 	int (*f_read)(struct net *, void *, int);
 	int (*f_write)(struct net *, const void *, int);
 	void (*f_shutdown)(struct net *);
@@ -68,18 +69,20 @@ struct net {
 };
 
 static void sock_cleanup(struct net *);
-static bool sock_connect(struct net *, const char *, const char *);
+static bool sock_connect(struct net *, const char *, const char *,
+	const struct net_opt *);
 static int  sock_read(struct net *, void *, int);
 static int  sock_write(struct net *, const void *, int);
 static void sock_shutdown(struct net *);
 static void sock_close(struct net *);
 static void tls_cleanup(struct net *);
-static bool tls_connect(struct net *, const char *, const char *);
+static bool tls_connect(struct net *, const char *, const char *,
+	const struct net_opt *);
 static int  tls_read(struct net *, void *, int);
 static int  tls_write(struct net *, const void *, int);
 static void tls_shutdown(struct net *);
 static void tls_close(struct net *);
-static int  socket_connect(const char *, const char *);
+static int  socket_connect(const char *, const char *, const struct net_opt *);
 static int  socket_setblock(int, bool);
 
 //
@@ -349,7 +352,8 @@ net_destroy(struct net *net)
 // 失敗すれば errno をセットして false を返す。
 bool
 net_connect(struct net *net,
-	const char *scheme, const char *host, const char *serv)
+	const char *scheme, const char *host, const char *serv,
+	const struct net_opt *opt)
 {
 	assert(net);
 
@@ -384,7 +388,7 @@ net_connect(struct net *net,
 
 	// f_connect() は接続出来たら Debug レベルで "Connected"
 	// (と SSL 等の追加情報) を表示する。
-	return net->f_connect(net, host, serv);
+	return net->f_connect(net, host, serv, opt);
 }
 
 // 1行受信して返す。
@@ -492,12 +496,13 @@ net_get_fd(const struct net *net)
 //
 
 static bool
-sock_connect(struct net *net, const char *host, const char *serv)
+sock_connect(struct net *net, const char *host, const char *serv,
+	const struct net_opt *opt)
 {
 	struct timeval start, end, res;
 
 	gettimeofday(&start, NULL);
-	net->sock = socket_connect(host, serv);
+	net->sock = socket_connect(host, serv, opt);
 	if (net->sock < 0) {
 		return false;
 	}
@@ -548,7 +553,8 @@ sock_cleanup(struct net *net)
 //
 
 static bool
-tls_connect(struct net *net, const char *host, const char *serv)
+tls_connect(struct net *net, const char *host, const char *serv,
+	const struct net_opt *opt)
 {
 	struct timeval start, end, res;
 	const diag *diag = net->diag;
@@ -574,7 +580,7 @@ tls_connect(struct net *net, const char *host, const char *serv)
 
 	gettimeofday(&start, NULL);
 
-	net->sock = socket_connect(host, serv);
+	net->sock = socket_connect(host, serv, opt);
 	if (net->sock == -1) {
 		Debug(diag, "%s: %s:%s failed: %s", __func__, host, serv, strerrno());
 		return false;
@@ -702,7 +708,8 @@ tls_cleanup(struct net *net)
 // hostname:servname に TCP で接続しそのソケットを返す。
 // 失敗すれば errno をセットして -1 を返す。
 static int
-socket_connect(const char *hostname, const char *servname)
+socket_connect(const char *hostname, const char *servname,
+	const struct net_opt *opt)
 {
 	struct addrinfo hints;
 	struct addrinfo *ai;
@@ -714,7 +721,17 @@ socket_connect(const char *hostname, const char *servname)
 	int r;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = PF_UNSPEC;
+	switch (opt->address_family) {
+	 case 4:
+		hints.ai_family = PF_INET;
+		break;
+	 case 6:
+		hints.ai_family = PF_INET6;
+		break;
+	 default:
+		hints.ai_family = PF_UNSPEC;
+		break;
+	}
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 

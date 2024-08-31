@@ -466,7 +466,7 @@ do_file(const char *infile)
 			warn("httpclient_create() failed");
 			return false;
 		}
-		int code = httpclient_connect(http, infile);
+		int code = httpclient_connect(http, infile, &netopt);
 		if (code < 0) {
 			warn("%s: httpclient_connect() failed", infilename);
 			goto abort;
