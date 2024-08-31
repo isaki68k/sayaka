@@ -64,10 +64,35 @@ struct net;
 typedef struct pstream_ pstream;
 typedef struct string_ string;
 
+struct net_opt {
+	// 接続に使用するプロトコル。
+	// 0 なら指定なし、4 なら IPv4、6 なら IPv6。
+	int address_family;
+
+	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
+	bool use_rsa_only;
+};
+
 // コマンドラインオプション文字列のデコード用
 struct optmap {
 	const char *name;
 	int value;
+};
+
+struct urlinfo {
+	string *scheme;
+	string *host;
+	string *port;
+	string *user;
+	string *password;
+#define URLINFO_PQF
+#if defined(URLINFO_PQF)
+	string *pqf;
+#else
+	string *path;
+	string *query;
+	string *fragment;
+#endif
 };
 
 // diag.c
@@ -91,29 +116,6 @@ extern const char *httpclient_get_resmsg(const httpclient *);
 extern FILE *httpclient_fopen(httpclient *);
 
 // net.c
-struct urlinfo {
-	string *scheme;
-	string *host;
-	string *port;
-	string *user;
-	string *password;
-#define URLINFO_PQF
-#if defined(URLINFO_PQF)
-	string *pqf;
-#else
-	string *path;
-	string *query;
-	string *fragment;
-#endif
-};
-struct net_opt {
-	// 接続に使用するプロトコル。
-	// 0 なら指定なし、4 なら IPv4、6 なら IPv6。
-	int address_family;
-
-	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
-	bool use_rsa_only;
-};
 extern struct urlinfo *urlinfo_parse(const char *);
 extern void urlinfo_free(struct urlinfo *);
 extern void urlinfo_update_path(struct urlinfo *, const struct urlinfo *);
