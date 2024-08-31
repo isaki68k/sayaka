@@ -56,8 +56,8 @@ typedef struct wsclient_ {
 	FILE *wfp;			// 送信方向
 
 	uint8 *buf;			// 受信バッファ
-	uint bufsize;		// 確保してある recvbuf のバイト数
-	uint buflen;		// recvbuf の有効バイト数
+	uint bufsize;		// 確保してある buf のバイト数
+	uint buflen;		// buf の有効バイト数
 	uint bufpos;		// 現在の処理開始位置
 
 	uint8 opcode;		// opcode
