@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -352,6 +353,16 @@ net_connect(struct net *net,
 {
 	assert(net);
 
+	if (diag_get_level(net->diag) >= 1) {
+		char portbuf[16];
+		if (strcmp(scheme, serv) == 0) {
+			portbuf[0] = '\0';
+		} else {
+			snprintf(portbuf, sizeof(portbuf), ":%s", serv);
+		}
+		diag_print(net->diag, "Trying %s %s%s ...", scheme, host, portbuf);
+	}
+
 	// ここでプロトコル選択。
 	if (strcmp(scheme, "https") == 0 ||
 		strcmp(scheme, "wss") == 0)
@@ -371,6 +382,8 @@ net_connect(struct net *net,
 		net->f_cleanup = sock_cleanup;
 	}
 
+	// f_connect() は接続出来たら Debug レベルで "Connected"
+	// (と SSL 等の追加情報) を表示する。
 	return net->f_connect(net, host, serv);
 }
 
@@ -481,10 +494,17 @@ net_get_fd(const struct net *net)
 static bool
 sock_connect(struct net *net, const char *host, const char *serv)
 {
+	struct timeval start, end, res;
+
+	gettimeofday(&start, NULL);
 	net->sock = socket_connect(host, serv);
 	if (net->sock < 0) {
 		return false;
 	}
+	gettimeofday(&end, NULL);
+	timersub(&end, &start, &res);
+	Debug(net->diag, "Connected (%u msec)",
+		(uint)(res.tv_sec * 1000 + res.tv_usec / 1000));
 	return true;
 }
 
@@ -530,6 +550,7 @@ sock_cleanup(struct net *net)
 static bool
 tls_connect(struct net *net, const char *host, const char *serv)
 {
+	struct timeval start, end, res;
 	const diag *diag = net->diag;
 	int r;
 
@@ -550,6 +571,8 @@ tls_connect(struct net *net, const char *host, const char *serv)
 		Debug(diag, "%s: SSL_new failed", __func__);
 		return false;
 	}
+
+	gettimeofday(&start, NULL);
 
 	net->sock = socket_connect(host, serv);
 	if (net->sock == -1) {
@@ -576,6 +599,9 @@ tls_connect(struct net *net, const char *host, const char *serv)
 
 	// 接続できたらログ。
 	if (__predict_false(diag_get_level(diag) >= 1)) {
+		gettimeofday(&end, NULL);
+		timersub(&end, &start, &res);
+
 		SSL_SESSION *sess = SSL_get_session(net->ssl);
 		int ssl_version = SSL_SESSION_get_protocol_version(sess);
 		char verbuf[16];
@@ -595,7 +621,8 @@ tls_connect(struct net *net, const char *host, const char *serv)
 		const SSL_CIPHER *ssl_cipher = SSL_SESSION_get0_cipher(sess);
 		const char *cipher_name = SSL_CIPHER_get_name(ssl_cipher);
 
-		diag_print(diag, "Connected %s %s", ver, cipher_name);
+		uint msec = (uint)(res.tv_sec * 1000 + res.tv_usec / 1000);
+		diag_print(diag, "Connected %s %s (%u msec)", ver, cipher_name, msec);
 	}
 
 	return true;
