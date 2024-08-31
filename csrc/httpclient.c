@@ -421,7 +421,7 @@ read_chunk(httpclient *http)
 	string *slen = net_gets(http->net);
 	if (__predict_false(slen == NULL)) {
 		Debug(diag, "%s: Unexpected EOF while reading chunk length?", __func__);
-		return -1;
+		return 0;
 	}
 
 	// チャンク長を取り出す。
