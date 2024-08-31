@@ -187,6 +187,7 @@ main(int ac, char *av[])
 	diag_json = diag_alloc();
 	diag_net  = diag_alloc();
 	diag_term = diag_alloc();
+	diag_set_timestamp(diag_net, true);
 
 	cmd = Cmd_none;
 	image_opt_init(&imageopt);
