@@ -428,6 +428,7 @@ read_chunk(httpclient *http)
 	string_rtrim_inplace(slen);
 	char *end;
 	int intlen = stox32def(string_get(slen), -1, &end);
+	string_free(slen);
 	if (intlen < 0) {
 		Debug(diag, "%s: Invalid chunk length: %s", __func__, string_get(slen));
 		errno = EIO;
