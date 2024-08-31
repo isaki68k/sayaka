@@ -173,10 +173,6 @@ typedef struct image_
 } image;
 
 typedef struct image_opt_ {
-	// Blurhash の読み込みで使われる。
-	uint width;
-	uint height;
-
 	// 減色
 	ReductorMethod method;
 	ReductorDiffuse diffuse;
@@ -192,7 +188,7 @@ typedef struct image_opt_ {
 
 // image.c
 extern void image_opt_init(image_opt *);
-extern image *image_read_pstream(pstream *, const image_opt *, const diag *);
+extern image *image_read_pstream(pstream *, const diag *);
 extern void image_free(image *);
 extern uint image_get_stride(const image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,
@@ -205,6 +201,9 @@ extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductormethod_tostr(ReductorMethod);
 extern const char *reductordiffuse_tostr(ReductorDiffuse);
 extern const char *reductorcolor_tostr(ReductorColor);
+
+// image_blurhash.c
+extern image *image_blurhash_read(FILE *, int, int, const diag *);
 
 // image_sixel.c
 extern void image_sixel_abort(FILE *);

@@ -55,7 +55,10 @@ static diag *diag_net;
 static diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static FILE *ofp;					// 出力中のストリーム
+static bool opt_blurhash_nearest;	// Blurhash を最近傍補間する
 static ResizeAxis opt_resize_axis;
+static uint opt_width;
+static uint opt_height;
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
 static image_opt imageopt;
@@ -63,6 +66,7 @@ static struct net_opt netopt;
 
 enum {
 	OPT__start = 0x7f,
+	OPT_blurhash_nearest,
 	OPT_ciphers,
 	OPT_debug_image,
 	OPT_debug_net,
@@ -82,6 +86,8 @@ enum {
 };
 
 static const struct option longopts[] = {
+	{ "blurhash-nearest",no_argument,		NULL,	OPT_blurhash_nearest },
+	{ "bn",				no_argument,		NULL,	OPT_blurhash_nearest },
 	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	'c' },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
@@ -180,6 +186,10 @@ main(int ac, char *av[])
 					longopts, NULL)) != -1)
 	{
 		switch (c) {
+		 case OPT_blurhash_nearest:
+			opt_blurhash_nearest = true;
+			break;
+
 		 case 'c':
 		 {
 			int n;
@@ -245,8 +255,8 @@ main(int ac, char *av[])
 
 		 case 'h':
 		 {
-			imageopt.height = stou32def(optarg, -1, NULL);
-			if ((int32)imageopt.height < 0) {
+			opt_height = stou32def(optarg, -1, NULL);
+			if ((int32)opt_height < 0) {
 				errx(1, "invalid height: %s", optarg);
 			}
 			break;
@@ -315,8 +325,8 @@ main(int ac, char *av[])
 
 		 case 'w':
 		 {
-			imageopt.width = stou32def(optarg, -1, NULL);
-			if ((int32)imageopt.width < 0) {
+			opt_width = stou32def(optarg, -1, NULL);
+			if ((int32)opt_width < 0) {
 				errx(1, "invalid width: %s", optarg);
 			}
 			break;
@@ -385,7 +395,7 @@ usage(void)
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
 "  -d <diffusion>                        --resize-axis=<axis>\n"
-"  --gain=<gain>\n"
+"  --gain=<gain>                         --blurhash-nearest\n"
 "  --ormode                              --suppress-palette\n"
 "  -i, --ignore-error                    --ciphers=<ciphers>\n"
 "  --help-all                            --debug-image=<0..2>\n"
@@ -422,6 +432,7 @@ help_all(void)
 "     burkes   : Burkes\n"
 "     2        : 2-pixels (right, down)\n"
 "     3        : 3-pixels (right, down, rightdown)\n"
+"  --bn,--blurhash-nearest\n"
 "  --gain=<gain> : Output gain between 0.0 and 2.0 (default:1.0)\n"
 "  -O, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
 "  -o <filename> : Output filename, '-' means stdout (default: -)\n"
@@ -507,7 +518,79 @@ do_file(const char *infile)
 	}
 
 	// 読み込み。
-	srcimg = image_read_pstream(pstream, &imageopt, diag_image);
+	srcimg = image_read_pstream(pstream, diag_image);
+	if (srcimg) {
+		// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
+		image_get_preferred_size(srcimg->width, srcimg->height,
+			opt_resize_axis, opt_width, opt_height,
+			&dst_width, &dst_height);
+	} else {
+		// 読み込めなければ Blurhash を試す。
+
+		// 先に生成する画像サイズを決定してローダに渡す必要がある。
+		// -w,-h	--bn
+		// なし		なし		: 20倍で生成、等倍にリサイズ。
+		// あり		なし		: WxH で生成、等倍にリサイズ。
+		// なし		あり		: 1倍で生成、 20倍にリサイズ。
+		// あり		あり		: 1倍で生成、 WxH にリサイズ。
+
+		int bw;
+		int bh;
+		if (opt_blurhash_nearest) {
+			bw = -1;
+			bh = -1;
+		} else {
+			if (opt_width <= 0 && opt_height <= 0) {
+				// -w, -h ともに指定されなければ勝手に縦横 20倍とする。
+				bw = -20;
+				bh = -20;
+			} else if (opt_width > 0 && opt_height > 0) {
+				// 両方指定されたらそのサイズ。
+				bw = opt_width;
+				bh = opt_height;
+			} else {
+				// -w か -h 片方しか指定されなかった場合、どのみち
+				// オリジナルのアスペクト比も不明なので 1:1 とするしかない。
+				if (opt_width > 0) {
+					bw = opt_width;
+				} else {
+					bw = opt_height;
+				}
+				bh = bw;
+			}
+		}
+
+		FILE *fp = pstream_open_for_read(pstream);
+		if (fp) {
+			srcimg = image_blurhash_read(fp, bw, bh, diag_image);
+			fclose(fp);
+		}
+
+		if (srcimg) {
+			// リサイズ後のサイズを決定。
+			if (opt_blurhash_nearest) {
+				if (opt_width <= 0 && opt_height <= 0) {
+					dst_width  = srcimg->width * 20;
+					dst_height = srcimg->height * 20;
+				} else if (opt_width > 0 && opt_height > 0) {
+					dst_width  = opt_width;
+					dst_height = opt_height;
+				} else {
+					if (opt_width > 0) {
+						dst_width = opt_width;
+					} else {
+						dst_width = opt_height;
+					}
+					dst_height = dst_width;
+				}
+			} else {
+				// 等倍にリサイズ。
+				dst_width  = srcimg->width;
+				dst_height = srcimg->height;
+			}
+		}
+	}
+
 	if (srcimg == NULL) {
 		if (errno == 0) {
 			warnx("%s: Unknown image format", infilename);
@@ -517,10 +600,6 @@ do_file(const char *infile)
 		goto abort;
 	}
 
-	// いい感じにサイズを決定。
-	image_get_preferred_size(srcimg->width, srcimg->height,
-		opt_resize_axis, imageopt.width, imageopt.height,
-		&dst_width, &dst_height);
 	Debug(diag_image, "%s: src size=(%u, %u) dst size=(%u, %u) dst color=%s",
 		__func__,
 		srcimg->width, srcimg->height, dst_width, dst_height,

@@ -58,12 +58,11 @@ extern image *image_create(uint, uint, uint);
 
 // image_*.c
 typedef bool (*image_match_t)(FILE *, const diag *);
-typedef image *(*image_read_t)(FILE *, const image_opt *, const diag *);
+typedef image *(*image_read_t)(FILE *, const diag *);
 #define IMAGE_HANDLER(name)	\
 	extern bool image_##name##_match(FILE *, const diag *);	\
-	extern image *image_##name##_read(FILE *, const image_opt *, const diag *)
+	extern image *image_##name##_read(FILE *, const diag *)
 
-IMAGE_HANDLER(blurhash);
 IMAGE_HANDLER(png);
 IMAGE_HANDLER(stb);
 IMAGE_HANDLER(webp);

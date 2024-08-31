@@ -80,7 +80,7 @@ image_stb_match(FILE *fp, const diag *diag)
 }
 
 image *
-image_stb_read(FILE *fp, const image_opt *opt, const diag *diag)
+image_stb_read(FILE *fp, const diag *diag)
 {
 	image *img;
 	stbi_uc *data;

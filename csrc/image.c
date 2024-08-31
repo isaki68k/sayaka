@@ -269,9 +269,10 @@ image_get_loaderinfo(void)
 
 // pstream から画像を読み込んで image を作成して返す。
 // 読み込めなければ errno をセットして NULL を返す。
-// 戻り値 NULL で errno = 0 なら画像形式を認識できなかった。
+// 戻り値 NULL で errno = 0 なら画像形式を認識できなかったことを示す。
+// ここでは Blurhash は扱わない。
 image *
-image_read_pstream(pstream *ps, const image_opt *opt, const diag *diag)
+image_read_pstream(pstream *ps, const diag *diag)
 {
 	int ok = -1;
 	FILE *pfp;
@@ -298,10 +299,6 @@ image_read_pstream(pstream *ps, const image_opt *opt, const diag *diag)
 #if defined(USE_STB_IMAGE)
 		ENTRY(stb),
 #endif
-		// Blurhash はマジックとかの構造を持たないので最後に調べる。
-#if defined(USE_BLURHASH)
-		ENTRY(blurhash),
-#endif
 #undef ENTRY
 	};
 	for (uint i = 0; i < countof(loader); i++) {
@@ -315,7 +312,7 @@ image_read_pstream(pstream *ps, const image_opt *opt, const diag *diag)
 				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
 				return NULL;
 			}
-			image *img = loader[i].read(fp, opt, diag);
+			image *img = loader[i].read(fp, diag);
 			fclose(fp);
 			return img;
 		}

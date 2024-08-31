@@ -32,6 +32,7 @@
 
 #include "common.h"
 #include "image_priv.h"
+#include <errno.h>
 #include <string.h>
 #include <math.h>
 
@@ -56,31 +57,15 @@ static float *bases_for(uint, uint);
 static const uint8 table_L2SRGB[L2SRGBSIZE];
 static const uint8 table_base83[0x60];
 
-bool
-image_blurhash_match(FILE *fp, const diag *diag)
-{
-	// 長さが必要なので全部読むしかない。
-	char src[BUFSIZE];
-
-	if (fgets(src, sizeof(src), fp) == NULL) {
-		return NULL;
-	}
-	chomp(src);
-
-	uint comp = decode83(src, 0, 1);
-	uint compx = (comp % 9) + 1;
-	uint compy = (comp / 9) + 1;
-	bool ok = (strlen(src) == compx * compy * 2 + 4);
-	if (ok) {
-		Debug(diag, "%s: looks OK", __func__);
-	}
-	return ok;
-}
-
+// bw, bh は出力サイズ指定。指定方法は2通りあり、
+// 正数ならそのままピクセルサイズ、
+// 負数なら (符号を取り除いて) コンポーネントの倍率を示す。0 は不正。
 image *
-image_blurhash_read(FILE *fp, const image_opt *opt, const diag *diag)
+image_blurhash_read(FILE *fp, int bw, int bh, const diag *diag)
 {
 	char src[BUFSIZE];
+	uint width;
+	uint height;
 	float maxvalue;
 	struct colorf *v;
 	image *img = NULL;
@@ -98,14 +83,34 @@ image_blurhash_read(FILE *fp, const image_opt *opt, const diag *diag)
 	uint compx = (comp % 9) + 1;
 	uint compy = (comp / 9) + 1;
 
-	// デフォルトでは適当に 20倍の大きさとする。
-	// comp[x,y] が 1..9 なので 20 〜 180 px。
-	// opt で指定することも可能。
-	uint width;
-	uint height;
-	image_get_preferred_size(20 * compx, 20 * compy,
-		ResizeAxis_Both, opt->width, opt->height,
-		&width, &height);
+	// 入力長が足りないくらいは事前に分かるので調べるか。
+	uint srclen = strlen(src);
+	uint datalen = compx * compy * 2 + 4;
+	if (srclen < datalen) {
+		Debug(diag, "%s: too short (%u < %u)", __func__, srclen, datalen);
+		return NULL;
+	}
+
+	// 作成する画像サイズ。
+	if (bw > 0) {
+		width = bw;
+	} else if (bw < 0) {
+		width = compx * -bw;
+	} else {
+		Debug(diag, "%s: bw == 0 is invalid", __func__);
+		errno = EINVAL;
+		return NULL;
+	}
+	if (bh > 0) {
+		height = bh;
+	} else if (bh < 0) {
+		height = compy * -bh;
+	} else {
+		Debug(diag, "%s: bh == 0 is invalid", __func__);
+		errno = EINVAL;
+		return NULL;
+	}
+
 	img = image_create(width, height, 3);
 	if (img == NULL) {
 		goto abort;

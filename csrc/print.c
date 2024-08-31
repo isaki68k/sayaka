@@ -629,14 +629,24 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 	uint dst_height;
 	bool rv = false;
 
-	imageopt.width  = width;
-	imageopt.height = height;
-
 	if (strncmp(img_url, "blurhash://", 11) == 0) {
 		ifp = fmemopen(UNCONST(&img_url[11]), strlen(img_url) - 11, "r");
 		if (ifp == NULL) {
 			Debug(diag_image, "%s: fmemopen failed: %s", __func__, strerrno());
 			return false;
+		}
+
+		// ここは width x height で読み込んで、等倍リサイズのみ。
+		dst_width = width;
+		dst_height = height;
+
+		srcimg = image_blurhash_read(ifp, dst_width, dst_height, diag_image);
+		if (srcimg == NULL) {
+			if (errno != 0) {
+				Debug(diag_image, "%s: image_blurhash_read failed: %s",
+					__func__, strerrno());
+			}
+			goto abort;
 		}
 
 	} else if (strncmp(img_url, "http://",  7) == 0 ||
@@ -663,29 +673,30 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 				strerrno());
 			goto abort;
 		}
-	}
 
-	// ifp からピークストリームを作成。
-	pstream = pstream_init_fp(ifp);
-	if (pstream == NULL) {
-		Debug(diag_net, "%s: pstream_init_fp failed: %s", __func__, strerrno());
-		goto abort;
-	}
-
-	// 画像読み込み。
-	srcimg = image_read_pstream(pstream, &imageopt, diag_image);
-	if (srcimg == NULL) {
-		if (errno != 0) {
-			Debug(diag_image, "%s: image_read_pstream failed: %s",
-				__func__, strerrno());
+		// ifp からピークストリームを作成。
+		pstream = pstream_init_fp(ifp);
+		if (pstream == NULL) {
+			Debug(diag_net, "%s: pstream_init_fp failed: %s", __func__,
+				strerrno());
+			goto abort;
 		}
-		goto abort;
-	}
 
-	// いい感じにサイズを決定。
-	image_get_preferred_size(srcimg->width, srcimg->height,
-		ResizeAxis_ScaleDownLong, imageopt.width, imageopt.height,
-		&dst_width, &dst_height);
+		// 画像読み込み。
+		srcimg = image_read_pstream(pstream, diag_image);
+		if (srcimg == NULL) {
+			if (errno != 0) {
+				Debug(diag_image, "%s: image_read_pstream failed: %s",
+					__func__, strerrno());
+			}
+			goto abort;
+		}
+
+		// いい感じにサイズを決定。
+		image_get_preferred_size(srcimg->width, srcimg->height,
+			ResizeAxis_ScaleDownLong, width, height,
+			&dst_width, &dst_height);
+	}
 
 	// 減色 & リサイズ。
 	dstimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
