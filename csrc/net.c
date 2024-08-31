@@ -572,6 +572,19 @@ tls_connect(struct net *net, const char *host, const char *serv,
 		Debug(diag, "%s: SSL_CTX_new failed", __func__);
 		return false;
 	}
+
+	if (opt->use_rsa_only) {
+		// RSA 指定なら TLSv1.2 以下を強制する。
+		// (TLSv1.3 ではそもそも RSA128-SHA とかの指定自体が存在しない)
+		SSL_CTX_set_max_proto_version(net->ctx, TLS1_2_VERSION);
+
+		r = SSL_CTX_set_cipher_list(net->ctx, "AES128-SHA");
+		if (r != 1) {
+			ERR_print_errors_fp(stderr);
+			return false;
+		}
+	}
+
 	net->ssl = SSL_new(net->ctx);
 	if (net->ssl == NULL) {
 		Debug(diag, "%s: SSL_new failed", __func__);
