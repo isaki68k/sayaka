@@ -558,7 +558,7 @@ misskey_show_announcement(const json *js, int inote)
 		image_next_cols = 0;
 		image_max_rows = 0;
 		print_indent(1);
-		show_image(img_file, imageUrl, imagesize, imagesize, 0);
+		show_image(img_file, imageUrl, imagesize, imagesize, false, 0);
 		printf("\r");
 	}
 
@@ -611,7 +611,8 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 			snprintf(filename, sizeof(filename), "icon-%s-%u-%s-%08x",
 				colorname, fontheight,
 				string_get(userid), hash_fnv1a(avatar_url));
-			shown = show_image(filename, avatar_url, iconsize, iconsize, -1);
+			shown = show_image(filename, avatar_url, iconsize, iconsize,
+				false, -1);
 		}
 
 		if (shown == false) {
@@ -623,7 +624,8 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 					colorname, fontheight,
 					string_get(userid), hash_fnv1a(avatar_blurhash));
 				snprintf(url, sizeof(url), "blurhash://%s", avatar_blurhash);
-				shown = show_image(filename, url, iconsize, iconsize, -1);
+				shown = show_image(filename, url, iconsize, iconsize,
+					false, -1);
 			}
 		}
 	}
@@ -667,6 +669,7 @@ misskey_show_photo(const json *js, int ifile, int index)
 	const char *img_url;
 	uint width = 0;
 	uint height = 0;
+	bool shade;
 	bool shown = false;
 
 	if (opt_show_image) {
@@ -706,6 +709,7 @@ misskey_show_photo(const json *js, int ifile, int index)
 			}
 			snprintf(urlbuf, sizeof(urlbuf), "blurhash://%s", blurhash);
 			img_url = urlbuf;
+			shade = true;
 		} else {
 			// 元画像を表示。thumbnailUrl を使う。
 			img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
@@ -715,9 +719,10 @@ misskey_show_photo(const json *js, int ifile, int index)
 			}
 			width  = imagesize;
 			height = imagesize;
+			shade = false;
 		}
 		make_cache_filename(img_file, sizeof(img_file), img_url);
-		shown = show_image(img_file, img_url, width, height, index);
+		shown = show_image(img_file, img_url, width, height, shade, index);
 	}
 
  next:

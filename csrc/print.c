@@ -60,7 +60,7 @@ extern image_opt imageopt;
 static void make_esc(char *, const char *);
 static inline void make_indent(char *, uint, int);
 static uint get_eaw_width(unichar c);
-static bool fetch_image(FILE *, const char *, uint, uint);
+static bool fetch_image(FILE *, const char *, uint, uint, bool);
 
 uint image_count;				// この列に表示している画像の数
 uint image_next_cols;			// この列で次に表示する画像の位置(桁数)
@@ -476,12 +476,13 @@ get_eaw_width(unichar c)
 // img_file はキャッシュディレクトリ内でのファイル名 (拡張子 .sixel なし)。
 // img_url は画像の URL。
 // width、height は画像の表示幅と高さ。
+// shade が true ならゲイン 70% で出力。
 // index は -1 ならアイコン、0 以上なら添付写真の何枚目かを表す。
 // どちらも位置決めなどのために使用する。
 // 表示できれば true を返す。
 bool
 show_image(const char *img_file, const char *img_url, uint width, uint height,
-	int index)
+	bool shade, int index)
 {
 	char cache_filename[PATH_MAX];
 	FILE *fp;
@@ -508,7 +509,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 			return false;
 		}
 
-		if (fetch_image(fp, img_url, width, height) == false) {
+		if (fetch_image(fp, img_url, width, height, shade) == false) {
 			Debug(diag_image, "%s: fetch_image failed", __func__);
 			goto abort;
 		}
@@ -618,7 +619,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 // SIXEL 形式に変換して ofp に出力する。
 // 出力できれば true を返す。
 static bool
-fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
+fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 {
 	httpclient *http = NULL;
 	pstream *pstream = NULL;
@@ -627,6 +628,7 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 	image *dstimg = NULL;
 	uint dst_width;
 	uint dst_height;
+	image_opt localopt;
 	bool rv = false;
 
 	if (strncmp(img_url, "blurhash://", 11) == 0) {
@@ -698,15 +700,20 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height)
 			&dst_width, &dst_height);
 	}
 
+	memcpy(&localopt, &imageopt, sizeof(localopt));
+	if (shade) {
+		localopt.gain = (uint)(0.7 * 256);
+	}
+
 	// 減色 & リサイズ。
-	dstimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
+	dstimg = image_reduct(srcimg, dst_width, dst_height, &localopt, diag_image);
 	if (dstimg == NULL) {
 		Debug(diag_image, "%s: image_reduct failed", __func__);
 		goto abort;
 	}
 
 	// 出力。
-	if (image_sixel_write(ofp, dstimg, &imageopt, diag_image) == false) {
+	if (image_sixel_write(ofp, dstimg, &localopt, diag_image) == false) {
 		Debug(diag_image, "%s: image_sixel_write failed", __func__);
 		goto abort;
 	}

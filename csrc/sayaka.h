@@ -122,7 +122,7 @@ extern void ustring_append_ascii_color(ustring *, const char *, uint);
 extern void ustring_append_utf8_color(ustring *, const char *, uint);
 extern void print_indent(uint);
 extern void iprint(const ustring *);
-extern bool show_image(const char *, const char *, uint, uint, int);
+extern bool show_image(const char *, const char *, uint, uint, bool, int);
 
 // sayaka.c
 extern const char *cachedir;
