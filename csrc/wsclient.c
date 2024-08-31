@@ -328,7 +328,8 @@ wsclient_process(wsclient *ws)
 	// ペイロードを全部読み込めているか。
 	if (ws->buflen - pos < datalen) {
 		// 足りなければ次のフレームを待つ。
-		Debug(diag, "%s: short", __func__);
+		Debug(diag, "%s: wait more data: filled=%u < datalen=%u", __func__,
+			ws->buflen - pos, datalen);
 		return 1;
 	}
 
@@ -338,7 +339,7 @@ wsclient_process(wsclient *ws)
 	// opcode ごとの処理。
 	// バイナリフレームは未対応。
 	if (opcode == WS_OPCODE_PING) {
-		Debug(diag, "%s: PING", __func__);
+		Debug(diag, "%s: PING len=%u", __func__, datalen);
 		wsclient_send_pong(ws);
 		return 1;
 	} else if (opcode == WS_OPCODE_CLOSE) {
@@ -347,8 +348,11 @@ wsclient_process(wsclient *ws)
 	} else if (opcode == WS_OPCODE_TEXT || opcode == WS_OPCODE_CONT) {
 		// テキストフレーム。
 		if (ws->opcode == WS_OPCODE_TEXT) {
+			Debug(diag, "%s: TEXT len=%u", __func__, datalen);
 			ws->opcode = opcode;
 			string_clear(ws->text);
+		} else {
+			Debug(diag, "%s: CONT len=%u", __func__, datalen);
 		}
 		string_append_mem(ws->text, &ws->buf[ws->bufpos], datalen);
 		if (fin) {
@@ -356,7 +360,8 @@ wsclient_process(wsclient *ws)
 		}
 	} else {
 		// 知らないフレーム。
-		Debug(diag, "%s: unsupported frame 0x%x", __func__, opcode);
+		Debug(diag, "%s: Unsupported frame code=0x%x, len=0x%x", __func__,
+			opcode, datalen);
 	}
 
 	ws->bufpos += datalen;
