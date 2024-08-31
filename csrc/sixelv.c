@@ -67,7 +67,6 @@ enum {
 	OPT_debug_image,
 	OPT_debug_net,
 	OPT_debug_sixel,
-	OPT_diffusion,
 	OPT_gain,
 	OPT_height,
 	OPT_help,
@@ -88,7 +87,7 @@ static const struct option longopts[] = {
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
-	{ "diffusion",		required_argument,	NULL,	OPT_diffusion },
+	{ "diffusion",		required_argument,	NULL,	'd' },
 	{ "gain",			required_argument,	NULL,	OPT_gain },
 	{ "height",			required_argument,	NULL,	'h' },
 	{ "help",			no_argument,		NULL,	OPT_help, },
@@ -98,6 +97,7 @@ static const struct option longopts[] = {
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "ormode",			no_argument,		NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	'O' },
+	{ "reduction",		required_argument,	NULL,	'r' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
 	{ "suppress-palette", no_argument,		NULL,	OPT_suppress_palette },
 	{ "version",		no_argument,		NULL,	'v' },
@@ -176,7 +176,9 @@ main(int ac, char *av[])
 	output_filename = NULL;
 	output_format = OutputFormat_SIXEL;
 
-	while ((c = getopt_long(ac, av, "c:d:h:iO:o:vw:", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:d:h:iO:o:r:vw:",
+					longopts, NULL)) != -1)
+	{
 		switch (c) {
 		 case 'c':
 		 {
@@ -213,9 +215,9 @@ main(int ac, char *av[])
 			break;
 
 		 case 'd':
-			imageopt.method = parse_optmap(map_reductor_method, optarg);
-			if ((int)imageopt.method < 0) {
-				errx(1, "invalid reductor method '%s'", optarg);
+			imageopt.diffuse = parse_optmap(map_diffuse, optarg);
+			if ((int)imageopt.diffuse < 0) {
+				errx(1, "Invalid diffusion '%s'", optarg);
 			}
 			break;
 
@@ -229,13 +231,6 @@ main(int ac, char *av[])
 
 		 case OPT_debug_sixel:
 			SET_DIAG_LEVEL(diag_sixel);
-			break;
-
-		 case OPT_diffusion:
-			imageopt.diffuse = parse_optmap(map_diffuse, optarg);
-			if ((int)imageopt.diffuse < 0) {
-				errx(1, "Invalid diffusion '%s'", optarg);
-			}
 			break;
 
 		 case OPT_gain:
@@ -293,6 +288,13 @@ main(int ac, char *av[])
 				output_filename = NULL;
 			} else {
 				output_filename = optarg;
+			}
+			break;
+
+		 case 'r':
+			imageopt.method = parse_optmap(map_reductor_method, optarg);
+			if ((int)imageopt.method < 0) {
+				errx(1, "invalid reductor method '%s'", optarg);
 			}
 			break;
 
@@ -379,10 +381,10 @@ usage(void)
 "  -c <color>      : Color mode. 2, 8, 16, 256 or gray[2..256] (default:256)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
-"  -d <method>     : Reduction method, none(simple) or high (default:high)\n"
+"  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
-"  --diffusion=<diffusion>               --resize-axis=<axis>\n"
+"  -d <diffusion>                        --resize-axis=<axis>\n"
 "  --gain=<gain>\n"
 "  --ormode                              --suppress-palette\n"
 "  -i, --ignore-error                    --ciphers=<ciphers>\n"
@@ -409,10 +411,10 @@ help_all(void)
 "  --resize-axis=<axis> : Specify an origin axis for resizing. (default:both)\n"
 "     both, width, height, long, short, and\n"
 "     scaledown-{both,width,height,long,short} or (sd*)\n"
-"  -d <method> : Specify reduction method (default: high)\n"
+"  -r,--reduction=<method> : Specify reduction method (default: high)\n"
 "     none, simple : No diffusion\n"
-"     high         : Use 2D Diffusion (default: fs)\n"
-"  --diffusion=<diffusion> : Specify diffusion algorithm\n"
+"     high         : Use 2D Diffusion (default diffusion: fs)\n"
+"  -d,--diffusion=<diffusion> : Specify diffusion algorithm\n"
 "     fs       : Floyd Steinberg\n"
 "     atkinson : Atkinson\n"
 "     jajuni   : Jarvis, Judice, Ninke\n"
