@@ -13,6 +13,9 @@ CFLAGS+=	-Wall -Werror ${WARNFLAGS}
 
 CFLAGS+=	-I..
 
+CFLAGS+=	${PROFOPT}
+LDFLAGS+=	${PROFOPT}
+
 SRCS_common+=	diag.c
 SRCS_common+=	httpclient.c
 SRCS_common+=	image.c
