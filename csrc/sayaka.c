@@ -46,9 +46,9 @@ enum {
 };
 
 enum {
-	Cmd_none = 0,
-	Cmd_stream,
-	Cmd_play,
+	CMD_NONE = 0,
+	CMD_STREAM,
+	CMD_PLAY,
 };
 
 // ヘッダの依存関係を減らすため。
@@ -192,7 +192,7 @@ main(int ac, char *av[])
 	diag_term = diag_alloc();
 	diag_set_timestamp(diag_net, true);
 
-	cmd = Cmd_none;
+	cmd = CMD_NONE;
 	image_opt_init(&imageopt);
 	net_opt_init(&netopt_image);
 	net_opt_init(&netopt_main);
@@ -342,7 +342,7 @@ main(int ac, char *av[])
 			break;
 
 		 case 'l':
-			cmd = Cmd_stream;
+			cmd = CMD_STREAM;
 			server = optarg;
 			break;
 
@@ -390,7 +390,7 @@ main(int ac, char *av[])
 			} else {
 				playfile = optarg;
 			}
-			cmd = Cmd_play;
+			cmd = CMD_PLAY;
 			break;
 		 }
 
@@ -439,7 +439,7 @@ main(int ac, char *av[])
 	ac -= optind;
 	av += optind;
 
-	if (cmd == Cmd_none) {
+	if (cmd == CMD_NONE) {
 		usage();
 		exit(0);
 	}
@@ -449,11 +449,11 @@ main(int ac, char *av[])
 		err(1, "init failed");
 	}
 
-	if (cmd == Cmd_stream || cmd == Cmd_play) {
+	if (cmd == CMD_STREAM || cmd == CMD_PLAY) {
 		// 表示系の初期化。
 		init_screen();
 
-		if (cmd == Cmd_stream) {
+		if (cmd == CMD_STREAM) {
 			assert(server);
 
 			// 古いキャッシュを削除する。
