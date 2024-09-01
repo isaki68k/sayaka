@@ -661,7 +661,7 @@ init_screen(void)
 		break;
 	 default:
 		// ?
-		snprintf(colorname, sizeof(colorname), "RC%u", imageopt.color);
+		snprintf(colorname, sizeof(colorname), "RC%d", imageopt.color);
 		break;
 	}
 
@@ -784,7 +784,7 @@ sigwinch(bool initializing)
 	}
 	if (use_default_font && is_tty) {
 		printf("sayaka: Fontsize not detected. "
-			"Application default %dx%d is used.\n", fontwidth, fontheight);
+			"Application default %ux%u is used.\n", fontwidth, fontheight);
 	}
 
 	// フォントの高さからアイコンサイズを決定する。

@@ -409,7 +409,7 @@ iprint(const ustring *src)
 
 			// デバッグ用
 			if (0) {
-				printf("[%d] U+%04x, x = %d", i, uni, x);
+				printf("[%d] U+%04x, x = %u", i, uni, x);
 				if (uni == ESCchar) {
 					printf(" ESC");
 				} else if (uni == '\n') {
@@ -569,10 +569,10 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 			// 前の画像の横に並べる。
 			if (image_count > 0) {
 				if (image_max_rows > 0 && diag_get_level(diag_image) == 0) {
-					printf(CSI "%dA", image_max_rows);
+					printf(CSI "%uA", image_max_rows);
 				}
 				if (image_next_cols > 0) {
-					printf(CSI "%dC", image_next_cols);
+					printf(CSI "%uC", image_next_cols);
 				}
 			}
 		}
@@ -598,7 +598,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 
 		// カーソル位置は同じ列に表示した画像の中で最長のものの下端に揃える
 		if (image_max_rows > image_rows) {
-			printf(CSI "%dB", image_max_rows - image_rows);
+			printf(CSI "%uB", image_max_rows - image_rows);
 		} else {
 			image_max_rows = image_rows;
 		}

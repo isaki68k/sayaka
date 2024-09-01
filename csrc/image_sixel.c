@@ -98,7 +98,7 @@ sixel_preamble(FILE *fp, const image *img, const image_opt *opt)
 	char buf[40];
 
 	snprintf(buf, sizeof(buf), ESC "P7;%u;q\"1;1;%u;%u",
-		opt->output_ormode ? 5 : 1,
+		opt->output_ormode ? 5U : 1U,
 		img->width,
 		img->height);
 

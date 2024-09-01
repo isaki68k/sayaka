@@ -181,11 +181,11 @@ json_jsmndump(const json *js)
 
 	for (int i = 0; i < js->tokenlen; i++) {
 		jsmntok_t *t = &js->token[i];
-		printf("[%4u] s=%-4u e=%-4u p=%-4d", i, t->start, t->end, t->parent);
+		printf("[%4d] s=%-4d e=%-4d p=%-4d", i, t->start, t->end, t->parent);
 		if (tok_is_obj(t)) {
-			printf(" OBJECT child=%u", t->size);
+			printf(" OBJECT child=%d", t->size);
 		} else if (tok_is_array(t)) {
-			printf(" ARRAY child=%u", t->size);
+			printf(" ARRAY child=%d", t->size);
 		} else if (tok_is_str(t)) {
 			printf(" STRING \"%s\"", &cstr[t->start]);
 		} else if (tok_is_prim(t)) {
