@@ -38,8 +38,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#if defined(HAVE_OPENSSL)
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#endif
 
 struct net;
 struct net {
@@ -55,8 +57,10 @@ struct net {
 	void (*f_cleanup)(struct net *);
 
 	int sock;
+#if defined(HAVE_OPENSSL)
 	SSL_CTX *ctx;
 	SSL *ssl;
+#endif
 
 	const diag *diag;
 
@@ -75,6 +79,7 @@ static int  sock_read(struct net *, void *, int);
 static int  sock_write(struct net *, const void *, int);
 static void sock_shutdown(struct net *);
 static void sock_close(struct net *);
+#if defined(HAVE_OPENSSL)
 static void tls_cleanup(struct net *);
 static bool tls_connect(struct net *, const char *, const char *,
 	const struct net_opt *);
@@ -82,6 +87,7 @@ static int  tls_read(struct net *, void *, int);
 static int  tls_write(struct net *, const void *, int);
 static void tls_shutdown(struct net *);
 static void tls_close(struct net *);
+#endif
 static int  socket_connect(const char *, const char *, const struct net_opt *);
 static int  socket_setblock(int, bool);
 
@@ -319,12 +325,18 @@ net_connect(struct net *net,
 	if (strcmp(scheme, "https") == 0 ||
 		strcmp(scheme, "wss") == 0)
 	{
+#if defined(HAVE_OPENSSL)
 		net->f_connect = tls_connect;
 		net->f_read    = tls_read;
 		net->f_write   = tls_write;
 		net->f_shutdown= tls_shutdown;
 		net->f_close   = tls_close;
 		net->f_cleanup = tls_cleanup;
+#else
+		Debug(net->diag, "%s: SSL library not compiled", __func__);
+		errno = EPROTO;
+		return false;
+#endif
 	} else {
 		net->f_connect = sock_connect;
 		net->f_read    = sock_read;
@@ -496,6 +508,8 @@ sock_cleanup(struct net *net)
 }
 
 
+#if defined(HAVE_OPENSSL)
+
 //
 // TLS
 //
@@ -663,6 +677,8 @@ tls_cleanup(struct net *net)
 		net->ctx = NULL;
 	}
 }
+
+#endif // HAVE_OPENSSL
 
 
 // 下請け。
