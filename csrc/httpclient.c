@@ -295,14 +295,14 @@ recv_header(httpclient *http)
 	}
 
 	p = e;
-	while (*p != '\0' && *p == ' ')
+	while (*p == ' ')
 		p++;
 
 	// 応答コードをチェック。
 	http->rescode = stou32def(p, 0, UNCONST(&p));
 
 	// メッセージを取得。
-	while (*p != '\0' && *p == ' ')
+	while (*p == ' ')
 		p++;
 	http->resmsg = p;
 
@@ -321,7 +321,7 @@ find_recvhdr(const httpclient *http, const char *key)
 		const char *h = string_get(http->recvhdr[i]);
 		if (strncasecmp(h, key, keylen) == 0) {
 			const char *p = h + keylen;
-			while (*p != '\0' && *p == ' ')
+			while (*p == ' ')
 				p++;
 			return p;
 		}
