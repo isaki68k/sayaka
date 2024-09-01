@@ -663,7 +663,7 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 			Debug(diag_net, "%s: httpclient_create failed", __func__);
 			return false;
 		}
-		int code = httpclient_connect(http, img_url, &netopt);
+		int code = httpclient_connect(http, img_url, &netopt_image);
 		if (code < 0) {
 			Debug(diag_net, "%s: %s: connection failed: %s", __func__,
 				img_url, strerrno());

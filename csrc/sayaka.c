@@ -81,7 +81,8 @@ image_opt imageopt;					// 画像関係のオプション
 uint imagesize;						// 画像の大きさ
 uint indent_cols;					// インデント1階層の桁数
 bool in_sixel;						// SIXEL 出力中か。
-struct net_opt netopt;				// ネットワーク関係のオプション
+struct net_opt netopt_image;		// 画像ダウンロード用ネットワークオプション
+struct net_opt netopt_main;			// メインストリーム用ネットワークオプション
 int opt_bgtheme;					// -1:自動判別 0:Dark 1:Light
 const char *opt_codeset;			// 出力文字コード (NULL なら UTF-8)
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
@@ -122,6 +123,7 @@ enum {
 	OPT_record,
 	OPT_show_cw,
 	OPT_show_image,
+	OPT_timeout_image,
 };
 
 static const struct option longopts[] = {
@@ -154,6 +156,7 @@ static const struct option longopts[] = {
 	{ "record",			required_argument,	NULL,	OPT_record },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
+	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
 	{ NULL },
 };
 
@@ -191,7 +194,8 @@ main(int ac, char *av[])
 
 	cmd = Cmd_none;
 	image_opt_init(&imageopt);
-	net_opt_init(&netopt);
+	net_opt_init(&netopt_image);
+	net_opt_init(&netopt_main);
 	colormode = 256;
 	opt_bgtheme = BG_AUTO;
 	opt_eaw_a = 2;
@@ -203,6 +207,8 @@ main(int ac, char *av[])
 	opt_show_image = -1;
 	playfile = NULL;
 	server = NULL;
+
+	netopt_image.timeout_msec = 3000;
 
 	while ((c = getopt_long(ac, av, "c:l:v", longopts, NULL)) != -1) {
 		switch (c) {
@@ -247,7 +253,8 @@ main(int ac, char *av[])
 		 case OPT_ciphers:
 			// 今のところ "RSA" (大文字) しか指定できない。
 			if (strcmp(optarg, "RSA") == 0) {
-				netopt.use_rsa_only = true;
+				netopt_main.use_rsa_only = true;
+				netopt_image.use_rsa_only = true;
 			} else {
 				errx(1, "Invalid ciphers: '%s'", optarg);
 			}
@@ -321,11 +328,13 @@ main(int ac, char *av[])
 			exit(0);
 
 		 case OPT_ipv4:
-			netopt.address_family = 4;
+			netopt_main.address_family = 4;
+			netopt_image.address_family = 4;
 			break;
 
 		 case OPT_ipv6:
-			netopt.address_family = 6;
+			netopt_main.address_family = 6;
+			netopt_image.address_family = 6;
 			break;
 
 		 case OPT_jis:
@@ -407,6 +416,14 @@ main(int ac, char *av[])
 			} else {
 				errx(1,
 					"--show-image=<option> must be one of [ auto | no | yes ]");
+			}
+			break;
+
+		 case OPT_timeout_image:
+			netopt_image.timeout_msec = stou32def(optarg, -1, NULL);
+			if ((int32)netopt_image.timeout_msec == -1) {
+				errno = EINVAL;
+				err(1, "--timeout-image %s", optarg);
 			}
 			break;
 

@@ -148,7 +148,7 @@ cmd_misskey_stream(const char *server)
 
 		wsclient_init(ws, misskey_recv_cb);
 
-		if (wsclient_connect(ws, url, &netopt) != 0) {
+		if (wsclient_connect(ws, url, &netopt_main) != 0) {
 			warnx("%s: %s: wsclient_connect failed", __func__, server);
 			if (retry_count < 0) {
 				// 初回接続でエラーなら、それはエラー。再試行しない。
