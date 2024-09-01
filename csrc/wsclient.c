@@ -134,6 +134,7 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 	string *key = NULL;
 	string *hdr = NULL;
 	string *response = NULL;
+	int rv = -1;
 
 	struct urlinfo *info = urlinfo_parse(url);
 	if (info == NULL) {
@@ -234,15 +235,13 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 
 	// XXX Sec-WebSocket-Accept のチェックとか。
 
-	string_free(response);
-	return 0;
-
+	rv = 0;
  abort:
 	string_free(response);
 	string_free(hdr);
 	string_free(key);
 	urlinfo_free(info);
-	return -1;
+	return rv;
 }
 
 // net に着信したフレームの処理をする (受信までブロックする)。

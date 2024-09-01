@@ -205,6 +205,7 @@ urlinfo_free(struct urlinfo *info)
 		string_free(info->user);
 		string_free(info->password);
 		string_free(info->pqf);
+		free(info);
 	}
 }
 
