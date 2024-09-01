@@ -191,10 +191,10 @@ image_get_preferred_size(
 		__unreachable();
 	}
 
-	if (request_width <= 0) {
+	if (request_width < 1) {
 		request_width = current_width;
 	}
-	if (request_height <= 0) {
+	if (request_height < 1) {
 		request_height = current_height;
 	}
 

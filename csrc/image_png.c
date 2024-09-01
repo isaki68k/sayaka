@@ -164,7 +164,7 @@ png_read_cb(png_structp png, png_bytep data, png_size_t length)
 	size_t total = 0;
 	while (total < length) {
 		size_t r = fread((char *)data + total, 1, length - total, fp);
-		if (r <= 0)
+		if (r < 1)
 			break;
 		total += r;
 	}

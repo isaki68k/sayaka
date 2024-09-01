@@ -238,7 +238,7 @@ main(int ac, char *av[])
 				imageopt.color = ReductorColor_GrayLevel(256);
 			} else if ((strncmp(optarg, "gray", 4) == 0 ||
 			            strncmp(optarg, "grey", 4) == 0   ) &&
-			           (n = stou32def(optarg + 4, -1, NULL)) != -1 &&
+			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
 			           (2 <= n && n <= 256)) {
 				colormode = 2;
 				imageopt.color = ReductorColor_GrayLevel(n);

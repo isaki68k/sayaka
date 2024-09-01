@@ -206,7 +206,7 @@ main(int ac, char *av[])
 				imageopt.color = ReductorColor_GrayLevel(256);
 			} else if ((strncmp(optarg, "gray", 4) == 0 ||
 			            strncmp(optarg, "grey", 4) == 0   ) &&
-			           (n = stou32def(optarg + 4, -1, NULL)) != -1 &&
+			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
 			           (2 <= n && n <= 256)) {
 				imageopt.color = ReductorColor_GrayLevel(n);
 			} else {
@@ -255,8 +255,8 @@ main(int ac, char *av[])
 
 		 case 'h':
 		 {
-			opt_height = stou32def(optarg, -1, NULL);
-			if ((int32)opt_height < 0) {
+			opt_height = stou32def(optarg, 0, NULL);
+			if (opt_height == 0) {
 				errx(1, "invalid height: %s", optarg);
 			}
 			break;
@@ -325,8 +325,8 @@ main(int ac, char *av[])
 
 		 case 'w':
 		 {
-			opt_width = stou32def(optarg, -1, NULL);
-			if ((int32)opt_width < 0) {
+			opt_width = stou32def(optarg, 0, NULL);
+			if (opt_width == 0) {
 				errx(1, "invalid width: %s", optarg);
 			}
 			break;
@@ -540,7 +540,7 @@ do_file(const char *infile)
 			bw = -1;
 			bh = -1;
 		} else {
-			if (opt_width <= 0 && opt_height <= 0) {
+			if (opt_width == 0 && opt_height == 0) {
 				// -w, -h ともに指定されなければ勝手に縦横 20倍とする。
 				bw = -20;
 				bh = -20;
@@ -569,7 +569,7 @@ do_file(const char *infile)
 		if (srcimg) {
 			// リサイズ後のサイズを決定。
 			if (opt_blurhash_nearest) {
-				if (opt_width <= 0 && opt_height <= 0) {
+				if (opt_width == 0 && opt_height == 0) {
 					dst_width  = srcimg->width * 20;
 					dst_height = srcimg->height * 20;
 				} else if (opt_width > 0 && opt_height > 0) {

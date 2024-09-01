@@ -356,7 +356,7 @@ main(int ac, char *av[])
 		} else {
 			val = pow(val, (float)1 / 2.4) * 1.055 - 0.055;
 		}
-		int d = (int)(val * 255 + 0.5);
+		uint d = (uint)(val * 255 + 0.5);
 
 		printf("%c%3u,", ((i % 8) ? ' ' : '\t'), d);
 		if ((i % 8) == 7) {
