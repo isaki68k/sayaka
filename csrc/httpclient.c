@@ -32,6 +32,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#if defined(HAVE_BSD_BSD_H)
+#include <bsd/stdio.h>
+#endif
 
 typedef struct httpclient_ {
 	struct net *net;
