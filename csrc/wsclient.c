@@ -475,7 +475,7 @@ ws_decode_len(const uint8 *src, uint *lenp)
 #include <stdio.h>
 #include <signal.h>
 
-struct net_opt opt;
+static struct net_opt opt;
 
 static int
 testhttp(const diag *diag, int ac, char *av[])
