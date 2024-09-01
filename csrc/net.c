@@ -104,12 +104,6 @@ urlinfo_parse(const char *urlstr)
 	const char *host;
 	const char *port;
 	const char *pqf;
-#if !defined(URLINFO_PQF)
-	const char *pq;
-	const char *path;
-	const char *query;
-	const char *fragment;
-#endif
 
 	strlcpy(url, urlstr, sizeof(url));
 
@@ -183,31 +177,7 @@ urlinfo_parse(const char *urlstr)
 		}
 	}
 
-#if defined(URLINFO_PQF)
 	// PathQueryFragment の分離は不要。
-#else
-	// PathQueryFragment を PQ と Fragment に分離。
-	sep = strrchr(pqf, '#');
-	if (sep) {
-		*sep++ = '\0';
-		pq = pqf;
-		fragment = sep;
-	} else {
-		pq = pqf;
-		fragment = "";
-	}
-
-	// PathQuery を Path と Query に分離。
-	sep = strchr(pq, '?');
-	if (sep) {
-		*sep++ = '\0';
-		path = pq;
-		query = sep;
-	} else {
-		path = pq;
-		query = "";
-	}
-#endif
 
 	struct urlinfo *info = calloc(1, sizeof(*info));
 	if (info == NULL) {
@@ -218,17 +188,9 @@ urlinfo_parse(const char *urlstr)
 	info->port		= string_from_cstr(port);
 	info->user		= string_from_cstr(user);
 	info->password	= string_from_cstr(pass);
-#if defined(URLINFO_PQF)
 	info->pqf		= string_alloc(strlen(pqf) + 2);
 	string_append_char(info->pqf, '/');
 	string_append_cstr(info->pqf, pqf);
-#else
-	info->path		= string_alloc(strlen(path) + 2);
-	string_append_char(info->path, '/');
-	string_append_cstr(info->path, path);
-	info->query		= string_from_cstr(query);
-	info->fragment	= string_from_cstr(fragment);
-#endif
 	return info;
 }
 
@@ -242,13 +204,7 @@ urlinfo_free(struct urlinfo *info)
 		string_free(info->port);
 		string_free(info->user);
 		string_free(info->password);
-#if defined(URLINFO_PQF)
 		string_free(info->pqf);
-#else
-		string_free(info->path);
-		string_free(info->query);
-		string_free(info->fragment);
-#endif
 	}
 }
 
@@ -260,17 +216,8 @@ urlinfo_update_path(struct urlinfo *baseurl, const struct urlinfo *newurl)
 	assert(baseurl);
 	assert(newurl);
 
-#if defined(URLINFO_PQF)
 	string_free(baseurl->pqf);
 	baseurl->pqf = string_dup(newurl->pqf);
-#else
-	string_free(baseurl->path);
-	string_free(baseurl->query);
-	string_free(baseurl->fragment);
-	baseurl->path     = string_dup(newurl->path);
-	baseurl->query    = string_dup(newurl->query);
-	baseurl->fragment = string_dup(newurl->fragment);
-#endif
 }
 
 // url を文字列にして返す。

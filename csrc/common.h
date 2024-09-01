@@ -85,14 +85,7 @@ struct urlinfo {
 	string *port;
 	string *user;
 	string *password;
-#define URLINFO_PQF
-#if defined(URLINFO_PQF)
 	string *pqf;
-#else
-	string *path;
-	string *query;
-	string *fragment;
-#endif
 };
 
 // diag.c

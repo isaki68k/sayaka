@@ -274,13 +274,7 @@ test_string_rtrim_inplace(void)
 static void
 test_urlinfo_parse(void)
 {
-	printf("%s (PQF:%s)\n", __func__,
-#if defined(URLINFO_PQF)
-		"Unified"
-#else
-		"Separated"
-#endif
-	);
+	printf("%s\n", __func__);
 
 	struct {
 		const char *src;
@@ -341,7 +335,8 @@ test_urlinfo_parse(void)
 		TEST(port);
 		TEST(user);
 		TEST(password);
-#if defined(URLINFO_PQF)
+
+		// path, query, fragment から pqf の期待値を作成。
 		string *s_pqf = string_init();
 		string_append_cstr(s_pqf, exp_path);
 		if (exp_query[0]) {
@@ -355,11 +350,6 @@ test_urlinfo_parse(void)
 		const char *exp_pqf = string_get(s_pqf);
 		TEST(pqf);
 		string_free(s_pqf);
-#else
-		TEST(path);
-		TEST(query);
-		TEST(fragment);
-#endif
 
 		urlinfo_free(info);
 	}
