@@ -13,6 +13,7 @@ CFLAGS+=	-Wall -Werror ${WARNFLAGS}
 
 CFLAGS+=	-I..
 
+#PROFOPT=	-g -fsanitize=leak # gcc
 CFLAGS+=	${PROFOPT}
 LDFLAGS+=	${PROFOPT}
 
