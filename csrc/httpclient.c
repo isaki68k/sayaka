@@ -108,12 +108,11 @@ httpclient_connect(httpclient *http, const char *urlstr,
 	const struct net_opt *opt)
 {
 	const diag *diag = http->diag;
-	int rv = -1;
 
 	http->url = urlinfo_parse(urlstr);
 	if (http->url == NULL) {
 		Debug(diag, "%s: urlinfo_parse failed", __func__);
-		return rv;
+		return -1;
 	}
 	if (diag_get_level(diag) >= 2) {
 		string *u = urlinfo_to_string(http->url);
@@ -125,7 +124,7 @@ httpclient_connect(httpclient *http, const char *urlstr,
 		// 接続。
 		if (do_connect(http, opt) == false) {
 			Debug(diag, "%s: do_connect failed", __func__);
-			break;
+			return -1;
 		}
 
 		// ヘッダを送信。
@@ -177,13 +176,10 @@ httpclient_connect(httpclient *http, const char *urlstr,
 			return code;
 		}
 
-		rv = 0;
 		Trace(diag, "%s: connected.", __func__);
-		break;
+		net_shutdown(http->net);
+		return 0;
 	}
-
-	net_shutdown(http->net);
-	return rv;
 }
 
 // http->url に接続するところまで。
