@@ -600,8 +600,8 @@ do_file(const char *infile)
 		goto abort;
 	}
 
-	Debug(diag_image, "%s: src size=(%u, %u) dst size=(%u, %u) dst color=%s",
-		__func__,
+	Debug(diag_image,
+		"InputSize=(%u, %u) OutputSize=(%u, %u) OutputColor=%s",
 		srcimg->width, srcimg->height, dst_width, dst_height,
 		reductorcolor_tostr(imageopt.color));
 
