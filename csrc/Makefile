@@ -4,6 +4,7 @@
 .include "./Makefile.cfg"
 .endif
 
+DBG=
 CFLAGS+=	-O2
 
 .if !defined(RELEASE)
