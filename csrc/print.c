@@ -626,10 +626,18 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 	FILE *ifp = NULL;
 	image *srcimg = NULL;
 	image *dstimg = NULL;
-	uint dst_width;
-	uint dst_height;
 	image_opt localopt;
 	bool rv = false;
+
+	// dst_{width,height} は
+	// blurhash なら width x height で画像を作成して、等倍リサイズする動作
+	// のみなので、dst_{width,height} はこの代入式のようになる。
+	// それ以外の画像 (http(s)) の場合 dst_{width,height} は
+	// image_get_preferred_size() によって書き戻されるので、未初期化のまま
+	// 使われることは実際はないがコンパイラにはそれは分からないので、
+	// 仕方ないのでここで代入だけしておく。
+	uint dst_width = width;
+	uint dst_height = height;
 
 	if (strncmp(img_url, "blurhash://", 11) == 0) {
 		ifp = fmemopen(UNCONST(&img_url[11]), strlen(img_url) - 11, "r");
@@ -637,10 +645,6 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 			Debug(diag_image, "%s: fmemopen failed: %s", __func__, strerrno());
 			return false;
 		}
-
-		// ここは width x height で読み込んで、等倍リサイズのみ。
-		dst_width = width;
-		dst_height = height;
 
 		srcimg = image_blurhash_read(ifp, dst_width, dst_height, diag_image);
 		if (srcimg == NULL) {
