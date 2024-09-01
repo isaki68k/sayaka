@@ -504,13 +504,14 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 
 		fp = fopen(cache_filename, "w+");
 		if (fp == NULL) {
-			Debug(diag_image, "%s: cache file '%s': %s", __func__,
+			fprintf(stderr, "%s: cache file '%s': %s\n", __func__,
 				cache_filename, strerrno());
 			return false;
 		}
 
 		if (fetch_image(fp, img_url, width, height, shade) == false) {
-			Debug(diag_image, "%s: fetch_image failed", __func__);
+			fprintf(stderr, "%s: fetch_image failed: %s\n", __func__,
+				strerrno());
 			goto abort;
 		}
 
@@ -521,7 +522,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 
 	n = fread(buf, 1, sizeof(buf), fp);
 	if (n < 32) {
-		Debug(diag_image, "%s: %s: file too short(n=%u)", __func__,
+		fprintf(stderr, "%s: %s: file too short(n=%u)\n", __func__,
 			cache_filename, n);
 		goto abort;
 	}
