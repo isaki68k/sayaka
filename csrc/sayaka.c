@@ -204,10 +204,6 @@ main(int ac, char *av[])
 	playfile = NULL;
 	server = NULL;
 
-	imageopt.color   = ReductorColor_Fixed256;
-	imageopt.method  = ReductorMethod_HighQuality;
-	imageopt.diffuse = RDM_FS;
-
 	while ((c = getopt_long(ac, av, "c:l:v", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
