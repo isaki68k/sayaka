@@ -602,9 +602,14 @@ init_screen(void)
 	// 出力先が端末かどうか。
 	bool is_tty = (isatty(STDOUT_FILENO) != 0);
 
-	// 端末の背景色を調べる (オプションで指定されてなければ)。
+	// 端末の背景色を調べる。
 	// 判定できなければ背景色白をデフォルトにしておく。
-	if (opt_bgtheme == BG_AUTO && is_tty) {
+	// モノクロモードなら不要。
+	if (opt_bgtheme == BG_AUTO && is_tty &&
+		(imageopt.color == ReductorColor_Fixed8 ||
+		 imageopt.color == ReductorColor_ANSI16 ||
+		 imageopt.color == ReductorColor_Fixed256 ))
+	{
 		progress("Checking background color...");
 		opt_bgtheme = terminal_get_bgtheme();
 		switch (opt_bgtheme) {
@@ -794,7 +799,7 @@ sigwinch(bool initializing)
 			use_default_font = true;
 		}
 	}
-	if (use_default_font && is_tty) {
+	if (use_default_font && opt_show_image == 1 && is_tty) {
 		printf("sayaka: Fontsize not detected. "
 			"Application default %ux%u is used.\n", fontwidth, fontheight);
 	}
