@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <netdb.h>
 #if defined(HAVE_OPENSSL)
 #include <openssl/err.h>
