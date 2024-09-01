@@ -1101,10 +1101,9 @@ misskey_format_poll(const json *js, int ipoll)
 static string *
 misskey_format_time(const json *js, int inote)
 {
-	const char *createdat;
 	int icreatedAt = json_obj_find(js, inote, "createdAt");
 	if (__predict_true(icreatedAt >= 0 && json_is_str(js, icreatedAt))) {
-		createdat = json_get_cstr(js, icreatedAt);
+		const char *createdat = json_get_cstr(js, icreatedAt);
 		time_t unixtime = decode_isotime(createdat);
 		return format_time(unixtime);
 	} else {

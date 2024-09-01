@@ -63,18 +63,16 @@ image_webp_match(FILE *fp, const diag *diag)
 {
 	VP8StatusCode r = VP8_STATUS_BITSTREAM_ERROR;
 	uint8 *buf = NULL;
-	size_t bufsize = 0;
 	size_t len = 0;
 
 	do {
-		size_t newsize = len + 64;
-		uint8 *newbuf = realloc(buf, newsize);
+		size_t bufsize = len + 64;
+		uint8 *newbuf = realloc(buf, bufsize);
 		if (newbuf == NULL) {
 			Debug(diag, "%s: realloc failed: %s", __func__, strerrno());
 			break;
 		}
 		buf = newbuf;
-		bufsize = newsize;
 
 		size_t n = fread(buf + len, 1, bufsize - len, fp);
 		if (n == 0) {
