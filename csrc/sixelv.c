@@ -481,7 +481,7 @@ do_file(const char *infile)
 		}
 		int code = httpclient_connect(http, infile, &netopt);
 		if (code < 0) {
-			warn("%s: httpclient_connect() failed", infilename);
+			warn("%s: connection failed", infilename);
 			goto abort;
 		} else if (code >= 400) {
 			warnx("%s: connection failed: HTTP %u %s", infilename,
