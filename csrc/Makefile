@@ -13,13 +13,15 @@ CFLAGS+=	-Wall -Werror ${WARNFLAGS}
 
 CFLAGS+=	-I..
 
+CFLAGS.image.o.sayaka.c	=
+CFLAGS.image.o.sixelv.c	= -DSIXELV
+
 #PROFOPT=	-g -fsanitize=leak # gcc
 CFLAGS+=	${PROFOPT}
 LDFLAGS+=	${PROFOPT}
 
 SRCS_common+=	diag.c
 SRCS_common+=	httpclient.c
-SRCS_common+=	image.c
 SRCS_common+=	image_blurhash.c
 .if defined(HAVE_LIBPNG)
 SRCS_common+=	image_png.c
@@ -68,16 +70,21 @@ libcommon.a:	${SRCS_common:.c=.o}
 	rm -f $@
 	ar r $@ $>
 
-libsayaka.a:	${SRCS_sayaka:.c=.o}
+libsayaka.a:	${SRCS_sayaka:.c=.o} image.o.sayaka.o
 	rm -f $@
 	ar r $@ $>
 
-libsixelv.a:	${SRCS_sixelv:.c=.o}
+libsixelv.a:	${SRCS_sixelv:.c=.o} image.o.sixelv.o
 	rm -f $@
 	ar r $@ $>
 
 .c.o:
 	${CC} ${CFLAGS} ${CFLAGS.${.IMPSRC}} -c ${.IMPSRC} -o $@
+
+image.o.sayaka.o:	image.c
+	${CC} ${CFLAGS} ${CFLAGS.${@:.o=.c}} -c image.c -o $@
+image.o.sixelv.o:	image.c
+	${CC} ${CFLAGS} ${CFLAGS.${@:.o=.c}} -c image.c -o $@
 
 # Not necessary for normal builds.  It's only for developpers.
 .if defined(REGEN_EAW)
@@ -111,7 +118,7 @@ clean:
 	rm -f ${PROGS} eaw_gen *.o *.a *.core
 
 .PHONY:	depend
-depend:	${SRCS_all:.c=.d}
+depend:	${SRCS_all:.c=.d} image.o.sayaka.d image.o.sixelv.d
 	cat ${.ALLSRC} > .depends
 	-rm -f *.d
 
@@ -119,6 +126,12 @@ depend:	${SRCS_all:.c=.d}
 ${S:.c=.d}:
 	${CC} ${CFLAGS} ${CFLAGS.${S}} -E -MM ${S} > $@
 .endfor
+
+image.o.sayaka.d:	image.c
+	${CC} ${CFLAGS} ${CFLAGS.${@:.d=.c}} -E -MM -MT ${@:.d=.o} image.c > $@
+
+image.o.sixelv.d:	image.c
+	${CC} ${CFLAGS} ${CFLAGS.${@:.d=.c}} -E -MM -MT ${@:.d=.o} image.c > $@
 
 .if exists(.depends)
 .include ".depends"

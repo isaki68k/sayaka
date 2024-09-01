@@ -74,8 +74,10 @@ static void colorcvt_gray(image_reductor_handle *, ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 
+#if defined(SIXELV)
 static void image_reduct_simple(image_reductor_handle *,
 	image *, const image *, const diag *diag);
+#endif
 static bool image_reduct_highquality(image_reductor_handle *,
 	image *, const image *, const image_opt *, const diag *diag);
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
@@ -394,15 +396,18 @@ image_reduct(
 		goto abort;
 	}
 
+#if defined(SIXELV)
 	switch (opt->method) {
 	 case ReductorMethod_Simple:
 		image_reduct_simple(ir, dst, src, diag);
 		break;
 
 	 case ReductorMethod_HighQuality:
+#endif
 		if (image_reduct_highquality(ir, dst, src, opt, diag) == false) {
 			goto abort;
 		}
+#if defined(SIXELV)
 		break;
 
 	 default:
@@ -410,6 +415,7 @@ image_reduct(
 			reductormethod_tostr(opt->method));
 		goto abort;
 	}
+#endif
 
 	// 成功したので、使ったパレットを image にコピー。
 	// 動的に確保したやつはそのまま所有権を移す感じ。
@@ -469,6 +475,7 @@ rational_add(Rational *sr, const Rational *x)
 // 減色 & リサイズ
 //
 
+#if defined(SIXELV)
 // 単純間引き
 static void
 image_reduct_simple(image_reductor_handle *ir,
@@ -522,6 +529,7 @@ image_reduct_simple(image_reductor_handle *ir,
 		}
 	}
 }
+#endif
 
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
@@ -626,13 +634,16 @@ image_reduct_highquality(image_reductor_handle *ir,
 			if (0) {
 			}
 
+#if defined(SIXELV)
 			switch (opt->diffuse) {
 			 case RDM_FS:
+#endif
 				// Floyd Steinberg Method
 				set_err(errbuf[0], x + 1, &col, 112);
 				set_err(errbuf[1], x - 1, &col, 48);
 				set_err(errbuf[1], x    , &col, 80);
 				set_err(errbuf[1], x + 1, &col, 16);
+#if defined(SIXELV)
 				break;
 			 case RDM_ATKINSON:
 				// Atkinson
@@ -700,6 +711,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 				errbuf[1][x+1].g = saturate_adderr(errbuf[1][x+1].g, col.g);
 				break;
 			}
+#endif
 		}
 
 		// 誤差バッファをローテート。
