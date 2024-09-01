@@ -391,8 +391,7 @@ image_reduct(
 		break;
 
 	 default:
-		Debug(diag, "%s: Unsupported color %s", __func__,
-			reductorcolor_tostr(opt->color));
+		Debug(diag, "%s: Unsupported color 0x%x", __func__, opt->color);
 		goto abort;
 	}
 
@@ -921,6 +920,8 @@ finder_fixed256(image_reductor_handle *ir, ColorRGB c)
 #undef RGB
 
 
+#if defined(SIXELV)
+
 //
 // enum のデバッグ表示用
 //
@@ -1048,3 +1049,5 @@ reductorcolor_tostr(ReductorColor color)
 	snprintf(buf, sizeof(buf), "0x%x", (uint)color);
 	return buf;
 }
+
+#endif // SIXELV
