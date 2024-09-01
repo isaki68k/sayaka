@@ -271,6 +271,8 @@ recv_header(httpclient *http)
 			// XXX 足りなくなったら無視…
 			if (http->recvhdr_num < countof(http->recvhdr)) {
 				http->recvhdr[http->recvhdr_num++] = recv;
+			} else {
+				string_free(recv);
 			}
 		} else {
 			string_free(recv);
