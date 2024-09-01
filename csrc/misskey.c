@@ -40,7 +40,7 @@ static bool misskey_init(void);
 static bool misskey_stream(wsclient *);
 static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
-static bool misskey_show_note(const json *, int, uint);
+static bool misskey_show_note(const json *, int);
 static bool misskey_show_announcement(const json *, int);
 static void misskey_show_icon(const json *, int, const string *);
 static bool misskey_show_photo(const json *, int, int);
@@ -309,7 +309,8 @@ misskey_message(string *jsonstr)
 		}
 	}
 
-	bool crlf = misskey_show_note(js, id, 0);
+	indent_depth = 0;
+	bool crlf = misskey_show_note(js, id);
 	if (crlf) {
 		printf("\n");
 	}
@@ -317,7 +318,7 @@ misskey_message(string *jsonstr)
 
 // 1ノートを処理する。
 static bool
-misskey_show_note(const json *js, int inote, uint depth)
+misskey_show_note(const json *js, int inote)
 {
 	if (__predict_false(diag_get_level(diag_format) >= 2)) {
 		json_dump(js, inote);
@@ -508,7 +509,9 @@ misskey_show_note(const json *js, int inote, uint depth)
 
 	// 引用部分
 	if (iquote >= 0) {
-		misskey_show_note(js, iquote, depth + 1);
+		indent_depth++;
+		misskey_show_note(js, iquote);
+		indent_depth--;
 	}
 
 	// 時刻と、あればこのノートの既 RN 数、リアクション数。
