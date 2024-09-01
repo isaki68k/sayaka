@@ -39,14 +39,17 @@
 #include <bsd/bsd.h>
 #endif
 
-#if !defined(__predict_true)
+// FreeBSD の __predict_true/false は定義がいまいちで使えない。
+// __builtin_expect() があることが分かればどの環境でも自前で定義できるので
+// 既存定義は取り消す。
 #if defined(HAVE___BUILTIN_EXPECT)
+# undef  __predict_true
+# undef  __predict_false
 # define __predict_true(exp)	__builtin_expect((exp) != 0, 1)
 # define __predict_false(exp)	__builtin_expect((exp) != 0, 0)
-#else
+#elif !defined(__predict_true)
 # define __predict_true(exp)	(exp)
 # define __predict_false(exp)	(exp)
-#endif
 #endif
 
 #if !defined(__unreachable)
