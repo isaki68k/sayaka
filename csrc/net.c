@@ -274,6 +274,7 @@ net_opt_init(struct net_opt *opt)
 	memset(opt, 0, sizeof(*opt));
 	opt->address_family = 0;
 	opt->use_rsa_only = false;
+	opt->timeout_msec = 0;
 }
 
 // net コンテキストを作成する。
@@ -693,7 +694,6 @@ socket_connect(const char *hostname, const char *servname,
 	struct addrinfo *ai;
 	struct addrinfo *ailist;
 	fd_set wfds;
-	struct timeval tv;
 	bool inprogress;
 	int fd;
 	int r;
@@ -758,15 +758,24 @@ socket_connect(const char *hostname, const char *servname,
 
 	// 接続待ちなら…
 	if (inprogress) {
+		struct timeval tv;
+		struct timeval *tvp;
 		FD_ZERO(&wfds);
 		FD_SET(fd, &wfds);
-		memset(&tv, 0, sizeof(tv));
-		int timeout = 3000;	// XXX option
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout % 1000) * 1000;
-		r = select(fd + 1, NULL, &wfds, NULL, (timeout < 0) ? NULL : &tv);
+		if (__predict_false(opt->timeout_msec == 0)) {
+			tvp = NULL;
+		} else {
+			memset(&tv, 0, sizeof(tv));
+			tv.tv_sec = opt->timeout_msec / 1000;
+			tv.tv_usec = (opt->timeout_msec % 1000) * 1000;
+			tvp = &tv;
+		}
+		r = select(fd + 1, NULL, &wfds, NULL, tvp);
 		if (r <= 0) {
 			close(fd);
+			if (r == 0) {
+				errno = ETIMEDOUT;
+			}
 			return -1;
 		}
 	}

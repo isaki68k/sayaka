@@ -71,6 +71,10 @@ struct net_opt {
 
 	// 接続に使用する cipher suites を RSA_WITH_AES_128_CBC_SHA に限定する。
 	bool use_rsa_only;
+
+	// 接続タイムアウト [msec]。
+	// 0 ならタイムアウトしない (デフォルト)。
+	uint timeout_msec;
 };
 
 // コマンドラインオプション文字列のデコード用
