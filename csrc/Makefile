@@ -52,8 +52,6 @@ SRCS_all=	${SRCS_common}	\
 		sixelv.c
 
 LIBS+=	-lm
-#XXX
-LIBS+=	-lcrypto -lssl
 
 PROGS=	sayaka sixelv dump httpclient test terminal wsclient
 
