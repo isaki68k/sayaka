@@ -5,9 +5,9 @@
 .endif
 
 DBG=
-CFLAGS+=	-O2
 
 .if !defined(RELEASE)
+CFLAGS+=	-Og
 CFLAGS+=	-Wall -Werror ${WARNFLAGS}
 .endif
 
