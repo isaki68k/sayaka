@@ -337,16 +337,43 @@ misskey_show_note(const json *js, int inote, uint depth)
 		return misskey_show_announcement(js, iann);
 	}
 
+	// text	renote
+	// ----	------
+	// null	-		: 存在しないはず?
+	// "*"	-		: 独立したノート
+	// null	yes		: リノート (同段落で renote を表示)
+	// "*"	yes		: 引用 (本文後に一段下げて renote を表示)
+
 	// 地文なら note == renote。
 	// リノートなら RN 元を note、RN 先を renote。
 	bool has_renote;
+	int iquote = -1;
+
+	// "text" があって null でないなら itext は 0 以上。
+	int itext = json_obj_find(js, inote, "text");
+	if (itext >= 0 && json_is_str(js, itext) == false) {
+		itext = -1;
+	}
 	int irenote = json_obj_find_obj(js, inote, "renote");
-	if (irenote >= 0) {
-		// XXX text があったらどうするのかとか。
-		has_renote = true;
+
+	if (itext >= 0) {
+		if (irenote < 0) {
+			// 独立ノート。
+			has_renote = false;
+			irenote = inote;
+		} else {
+			// 引用の親なら、この文を表示。引用は後ろの方で処理。
+			has_renote = false;
+			iquote = irenote;
+			irenote = inote;
+		}
 	} else {
-		irenote = inote;
-		has_renote = false;
+		if (irenote < 0) {
+			// どちらもないのは何?
+			return false;
+		}
+		// (無言)リノート。
+		has_renote = true;
 	}
 
 	// --nsfw=hide なら、添付ファイルに isSensitive が一つでも含まれていれば
@@ -480,6 +507,9 @@ misskey_show_note(const json *js, int inote, uint depth)
 	}
 
 	// 引用部分
+	if (iquote >= 0) {
+		misskey_show_note(js, iquote, depth + 1);
+	}
 
 	// 時刻と、あればこのノートの既 RN 数、リアクション数。
 	string *time = misskey_format_time(js, irenote);
