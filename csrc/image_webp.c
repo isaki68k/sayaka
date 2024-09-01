@@ -93,7 +93,6 @@ image_webp_match(FILE *fp, const diag *diag)
 		return false;
 	} else if (r == 0) {
 		// Webp っぽい。
-		Debug(diag, "%s: OK", __func__);
 		return true;
 	} else {
 		// それ以外のエラー。

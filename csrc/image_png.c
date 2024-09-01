@@ -51,7 +51,6 @@ image_png_match(FILE *fp, const diag *diag)
 		return false;
 	}
 
-	Debug(diag, "%s: OK", __func__);
 	return true;
 }
 

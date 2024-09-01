@@ -73,9 +73,6 @@ image_stb_match(FILE *fp, const diag *diag)
 	int ch;
 
 	ok = stbi_info_from_file(fp, &w, &h, &ch);
-	if (ok) {
-		Debug(diag, "%s: OK", __func__);
-	}
 	return ok;
 }
 

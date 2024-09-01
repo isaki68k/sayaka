@@ -305,8 +305,9 @@ image_read_pstream(pstream *ps, const diag *diag)
 	};
 	for (uint i = 0; i < countof(loader); i++) {
 		ok = loader[i].match(pfp, diag);
+		Trace(diag, "Checking %-4s.. %s",
+			loader[i].name, (ok ? "matched" : "no"));
 		fseek(pfp, 0, SEEK_SET);
-		Trace(diag, "%s: image_%s_match %u", __func__, loader[i].name, ok);
 		if (ok) {
 			fclose(pfp);
 			fp = pstream_open_for_read(ps);
