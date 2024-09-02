@@ -128,6 +128,7 @@ wsclient_init(wsclient *ws, void (*callback)(const string *))
 
 // url に接続する。
 // 失敗すれば errno をセットして -1 を返す。
+// WSS なのに SSL ライブラリがない場合は -2 を返す。
 // 0 なら EOF?。
 // 接続して HTTP(WebSocket) 応答まで受け取れれば応答コードを返す
 // (101 なら成功)。
@@ -168,9 +169,12 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 		goto abort;
 	}
 
-	if (net_connect(ws->net, scheme, host, serv, opt) == false) {
-		Debug(diag, "%s: %s://%s:%s failed %s", __func__,
-			scheme, host, serv, strerrno());
+	int r = net_connect(ws->net, scheme, host, serv, opt);
+	if (r < 0) {
+		Debug(diag, "%s: %s://%s:%s failed: %s", __func__,
+			scheme, host, serv,
+			(r == -1 ? strerrno() : "SSL not compiled"));
+		rv = r;
 		goto abort;
 	}
 
@@ -508,8 +512,12 @@ testhttp(const diag *diag, int ac, char *av[])
 		err(1, "%s: net_create failed", __func__);
 	}
 
-	if (net_connect(net, serv, host, serv, &opt) == false) {
+	int r = net_connect(net, serv, host, serv, &opt);
+	if (r == -1) {
 		err(1, "%s:%s: connect failed", host, serv);
+	}
+	if (r == -2) {
+		errx(1, "%s: %s: connect failed: SSL not compiled", host, serv);
 	}
 
 	// HTTP ヘッダを送信。
@@ -552,8 +560,11 @@ testwsecho(const diag *diag, int ac, char *av[])
 	wsclient_init(ws, cat_callback);
 
 	int sock = wsclient_connect(ws, av[2], &opt);
-	if (sock < 0) {
+	if (sock == -1) {
 		err(1, "wsclient_connect failed");
+	}
+	if (sock == -2) {
+		errx(1, "SSL not compiled");
 	}
 
 	// 1回だけ標準入力を受け付ける。
@@ -589,8 +600,11 @@ testmisskey(const diag *diag, int ac, char *av[])
 	wsclient_init(ws, cat_callback);
 
 	int sock = wsclient_connect(ws, av[2], &opt);
-	if (sock < 0) {
+	if (sock == -1) {
 		err(1, "wsclient_connect failed");
+	}
+	if (sock == -2) {
+		errx(1, "SSL not compiled");
 	}
 
 	char cmd[128];

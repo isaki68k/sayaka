@@ -480,7 +480,10 @@ do_file(const char *infile)
 			return false;
 		}
 		int code = httpclient_connect(http, infile, &netopt);
-		if (code < 0) {
+		if (code == -2) {
+			warnx("%s: SSL not compiled", infilename);
+			goto abort;
+		} else if (code < 0) {
 			warn("%s: connection failed", infilename);
 			goto abort;
 		} else if (code >= 400) {

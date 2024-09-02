@@ -151,7 +151,9 @@ cmd_misskey_stream(const char *server)
 		// 応答コード 101 が成功。
 		int code = wsclient_connect(ws, url, &netopt_main);
 		if (code != 101) {
-			if (code < 0) {
+			if (code == -2) {
+				warnx("SSL not compiled");
+			} else if (code < 0) {
 				warn("%s: connection failed", server);
 			} else if (code == 0) {
 				warnx("%s: connection failed: EOF?", server);

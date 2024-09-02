@@ -122,7 +122,7 @@ extern string *urlinfo_to_string(const struct urlinfo *);
 extern void net_opt_init(struct net_opt *);
 extern struct net *net_create(const diag *);
 extern void net_destroy(struct net *);
-extern bool net_connect(struct net *, const char *, const char *, const char *,
+extern int  net_connect(struct net *, const char *, const char *, const char *,
 	const struct net_opt *);
 extern string *net_gets(struct net *);
 extern int  net_read(struct net *, void *, uint);

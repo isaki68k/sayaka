@@ -46,7 +46,7 @@
 
 struct net;
 struct net {
-	bool (*f_connect)(struct net *, const char *, const char *,
+	int (*f_connect)(struct net *, const char *, const char *,
 		const struct net_opt *);
 	int (*f_read)(struct net *, void *, int);
 	int (*f_write)(struct net *, const void *, int);
@@ -74,7 +74,7 @@ struct net {
 };
 
 static void sock_cleanup(struct net *);
-static bool sock_connect(struct net *, const char *, const char *,
+static int  sock_connect(struct net *, const char *, const char *,
 	const struct net_opt *);
 static int  sock_read(struct net *, void *, int);
 static int  sock_write(struct net *, const void *, int);
@@ -82,7 +82,7 @@ static void sock_shutdown(struct net *);
 static void sock_close(struct net *);
 #if defined(HAVE_OPENSSL)
 static void tls_cleanup(struct net *);
-static bool tls_connect(struct net *, const char *, const char *,
+static int  tls_connect(struct net *, const char *, const char *,
 	const struct net_opt *);
 static int  tls_read(struct net *, void *, int);
 static int  tls_write(struct net *, const void *, int);
@@ -305,8 +305,11 @@ net_destroy(struct net *net)
 }
 
 // scheme://host:serv/ に接続する。
-// 失敗すれば errno をセットして false を返す。
-bool
+// 成功すれば 0 を返す。
+// 失敗すれば (おそらく) errno をセットして -1 を返す
+// (OpenSSL は返さないかも知れないが)。
+// SSL 接続なのに SSL ライブラリが有効でない時は -2 を返す。
+int
 net_connect(struct net *net,
 	const char *scheme, const char *host, const char *serv,
 	const struct net_opt *opt)
@@ -336,8 +339,7 @@ net_connect(struct net *net,
 		net->f_cleanup = tls_cleanup;
 #else
 		Debug(net->diag, "%s: SSL library not compiled", __func__);
-		errno = EPROTO;
-		return false;
+		return -2;
 #endif
 	} else {
 		net->f_connect = sock_connect;
@@ -457,7 +459,7 @@ net_get_fd(const struct net *net)
 // 生ソケット
 //
 
-static bool
+static int
 sock_connect(struct net *net, const char *host, const char *serv,
 	const struct net_opt *opt)
 {
@@ -466,13 +468,13 @@ sock_connect(struct net *net, const char *host, const char *serv,
 	gettimeofday(&start, NULL);
 	net->sock = socket_connect(host, serv, opt);
 	if (net->sock < 0) {
-		return false;
+		return -1;
 	}
 	gettimeofday(&end, NULL);
 	timersub(&end, &start, &res);
 	Debug(net->diag, "Connected (%u msec)",
 		(uint)(res.tv_sec * 1000 + res.tv_usec / 1000));
-	return true;
+	return 0;
 }
 
 static int
@@ -516,7 +518,9 @@ sock_cleanup(struct net *net)
 // TLS
 //
 
-static bool
+// 失敗すると errno をセットして -1 を返す仕様だが、
+// OpenSSL のライブラリが何を返すかいまいち分からない。orz
+static int
 tls_connect(struct net *net, const char *host, const char *serv,
 	const struct net_opt *opt)
 {
@@ -534,7 +538,7 @@ tls_connect(struct net *net, const char *host, const char *serv,
 	net->ctx = SSL_CTX_new(TLS_client_method());
 	if (net->ctx == NULL) {
 		Debug(diag, "%s: SSL_CTX_new failed", __func__);
-		return false;
+		return -1;
 	}
 
 	if (opt->use_rsa_only) {
@@ -545,14 +549,14 @@ tls_connect(struct net *net, const char *host, const char *serv,
 		r = SSL_CTX_set_cipher_list(net->ctx, "AES128-SHA");
 		if (r != 1) {
 			ERR_print_errors_fp(stderr);
-			return false;
+			return -1;
 		}
 	}
 
 	net->ssl = SSL_new(net->ctx);
 	if (net->ssl == NULL) {
 		Debug(diag, "%s: SSL_new failed", __func__);
-		return false;
+		return -1;
 	}
 
 	gettimeofday(&start, NULL);
@@ -560,24 +564,24 @@ tls_connect(struct net *net, const char *host, const char *serv,
 	net->sock = socket_connect(host, serv, opt);
 	if (net->sock == -1) {
 		Debug(diag, "%s: %s:%s failed: %s", __func__, host, serv, strerrno());
-		return false;
+		return -1;
 	}
 
 	r = SSL_set_fd(net->ssl, net->sock);
 	if (r == 0) {
 		ERR_print_errors_fp(stderr);
-		return false;
+		return -1;
 	}
 
 	r = SSL_set_tlsext_host_name(net->ssl, UNCONST(host));
 	if (r != 1) {
 		ERR_print_errors_fp(stderr);
-		return false;
+		return -1;
 	}
 
 	if (SSL_connect(net->ssl) < 1) {
 		Debug(diag, "%s: SSL_connect failed", __func__);
-		return false;
+		return -1;
 	}
 
 	// 接続できたらログ。
@@ -608,7 +612,7 @@ tls_connect(struct net *net, const char *host, const char *serv,
 		diag_print(diag, "Connected %s %s (%u msec)", ver, cipher_name, msec);
 	}
 
-	return true;
+	return 0;
 }
 
 static int

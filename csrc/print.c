@@ -665,13 +665,15 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 			return false;
 		}
 		int code = httpclient_connect(http, img_url, &netopt_image);
-		if (code < 0) {
-			Debug(diag_net, "%s: %s: connection failed: %s", __func__,
-				img_url, strerrno());
-			goto abort;
-		} else if (code >= 400) {
-			Debug(diag_net, "%s: %s: connection failed: HTTP %u %s", __func__,
-				img_url, code, httpclient_get_resmsg(http));
+		if (code != 0) {
+			if (code < 0) {
+				Debug(diag_net, "%s: %s: connection failed: %s",
+					__func__, img_url,
+					(code == -1 ? strerrno() : "SSL not compiled"));
+			} else if (code >= 400) {
+				Debug(diag_net, "%s: %s: connection failed: HTTP %u %s",
+					__func__, img_url, code, httpclient_get_resmsg(http));
+			}
 			goto abort;
 		}
 		ifp = httpclient_fopen(http);

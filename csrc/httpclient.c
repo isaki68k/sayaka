@@ -60,7 +60,7 @@ typedef struct httpclient_ {
 	const diag *diag;
 } httpclient;
 
-static bool do_connect(httpclient *, const struct net_opt *);
+static int  do_connect(httpclient *, const struct net_opt *);
 static int  recv_header(httpclient *);
 static const char *find_recvhdr(const httpclient *, const char *);
 static void clear_recvhdr(httpclient *);
@@ -104,6 +104,7 @@ httpclient_destroy(httpclient *http)
 
 // url に接続する。
 // 成功すれば 0 を返す。失敗すれば -1 を返す。
+// HTTPS なのに SSL ライブラリがない場合は -2 を返す。
 // 400 以上なら HTTP のエラーコード。
 int
 httpclient_connect(httpclient *http, const char *urlstr,
@@ -124,9 +125,11 @@ httpclient_connect(httpclient *http, const char *urlstr,
 
 	for (;;) {
 		// 接続。
-		if (do_connect(http, opt) == false) {
-			Debug(diag, "%s: do_connect failed", __func__);
-			return -1;
+		int r = do_connect(http, opt);
+		if (r < 0) {
+			Debug(diag, "%s: do_connect failed: %s", __func__,
+				(r == -1 ? strerrno() : "SSL not compiled"));
+			return r;
 		}
 
 		// ヘッダを送信。
@@ -185,8 +188,10 @@ httpclient_connect(httpclient *http, const char *urlstr,
 }
 
 // http->url に接続するところまで。
-// 接続できれば true を返す。
-static bool
+// 接続できれば 0 を返す。
+// 失敗すれば errno をセットして -1 を返す。
+// SSL 接続なのに SSL ライブラリが有効でない時は -2 を返す。
+static int
 do_connect(httpclient *http, const struct net_opt *opt)
 {
 	const diag *diag = http->diag;
@@ -196,8 +201,9 @@ do_connect(httpclient *http, const struct net_opt *opt)
 	const char *serv = string_get(http->url->port);
 
 	if (strcmp(scheme, "http") != 0 && strcmp(scheme, "https") != 0) {
-		Debug(diag, "%s: Unsupported protocol: %s", __func__, scheme);
-		return false;
+		errno = EPROTONOSUPPORT;
+		Debug(diag, "%s: %s: %s", __func__, scheme, strerrno());
+		return -1;
 	}
 
 	if (serv[0] == '\0') {
@@ -205,13 +211,15 @@ do_connect(httpclient *http, const struct net_opt *opt)
 	}
 
 	Trace(diag, "%s: connecting %s://%s:%s", __func__, scheme, host, serv);
-	if (net_connect(http->net, scheme, host, serv, opt) == false) {
-		Debug(diag, "%s: %s://%s:%s failed %s", __func__,
-			scheme, host, serv, strerrno());
-		return false;
+	int r = net_connect(http->net, scheme, host, serv, opt);
+	if (r < 0) {
+		Debug(diag, "%s: %s://%s:%s failed: %s", __func__,
+			scheme, host, serv,
+			(r == -1 ? strerrno() : "SSL not compiled"));
+		return r;
 	}
 
-	return true;
+	return 0;
 }
 
 // 送信ヘッダをデバッグ表示する。
