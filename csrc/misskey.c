@@ -1110,13 +1110,15 @@ misskey_format_poll(const json *js, int ipoll)
 		// 整形。
 		JSON_ARRAY_FOR(ichoice, js, ichoices) {
 			bool voted = json_obj_find_bool(js, ichoice, "isVoted");
-			const char *text = json_obj_find_cstr(js, ichoice, "text");
+			const char *c_text = json_obj_find_cstr(js, ichoice, "text");
+			string *text = string_unescape_c(c_text);
 			int votes = json_obj_find_int(js, ichoice, "votes");
 
 			string_append_printf(s, " [%c] %s : %u\n",
 				(voted ? '*' : ' '),
-				(text ? text : ""),
+				(text ? string_get(text) : ""),
 				votes);
+			string_free(text);
 		}
 	}
 	// 最後の改行は除く。
