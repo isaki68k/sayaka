@@ -47,7 +47,8 @@ enum {
 
 enum {
 	CMD_NONE = 0,
-	CMD_STREAM,
+	CMD_STREAM_HOME,
+	CMD_STREAM_LOCAL,
 	CMD_PLAY,
 };
 
@@ -140,11 +141,12 @@ static const struct option longopts[] = {
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
+	{ "xxx-home",		no_argument,		NULL,	'h' },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "light",			no_argument,		NULL,	OPT_light },
-	{ "local",			required_argument,	NULL,	'l' },
+	{ "xxx-local",		required_argument,	NULL,	'l' },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "misskey",		no_argument,		NULL,	OPT_misskey },
@@ -154,9 +156,11 @@ static const struct option longopts[] = {
 	{ "play",			required_argument,	NULL,	OPT_play },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	OPT_record },
+	{ "xxx-server",		required_argument,	NULL,	's' },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
+	{ "xxx-token",		required_argument,	NULL,	't' },
 	{ NULL },
 };
 
@@ -182,8 +186,9 @@ main(int ac, char *av[])
 {
 	int c;
 	uint cmd;
+	const char *token_file;
+	const char *local_server;
 	const char *playfile;
-	const char *server;
 
 	diag_format = diag_alloc();
 	diag_image = diag_alloc();
@@ -205,12 +210,13 @@ main(int ac, char *av[])
 	opt_nsfw = NSFW_BLUR;
 	opt_progress = false;
 	opt_show_image = -1;
+	token_file = NULL;
+	local_server = NULL;
 	playfile = NULL;
-	server = NULL;
 
 	netopt_image.timeout_msec = 3000;
 
-	while ((c = getopt_long(ac, av, "c:l:v", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:hls:t:v", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
 		 {
@@ -323,6 +329,10 @@ main(int ac, char *av[])
 			break;
 		 }
 
+		 case 'h':
+			cmd = CMD_STREAM_HOME;
+			break;
+
 		 case OPT_help_all:
 			help_all();
 			exit(0);
@@ -342,8 +352,7 @@ main(int ac, char *av[])
 			break;
 
 		 case 'l':
-			cmd = CMD_STREAM;
-			server = optarg;
+			cmd = CMD_STREAM_LOCAL;
 			break;
 
 		 case OPT_light:
@@ -402,6 +411,10 @@ main(int ac, char *av[])
 			opt_record_file = optarg;
 			break;
 
+		 case 's':
+			local_server = optarg;
+			break;
+
 		 case OPT_show_cw:
 			opt_show_cw = true;
 			break;
@@ -417,6 +430,10 @@ main(int ac, char *av[])
 				errx(1,
 					"--show-image=<option> must be one of [ auto | no | yes ]");
 			}
+			break;
+
+		 case 't':
+			token_file = optarg;
 			break;
 
 		 case OPT_timeout_image:
@@ -449,19 +466,34 @@ main(int ac, char *av[])
 		err(1, "init failed");
 	}
 
-	if (cmd == CMD_STREAM || cmd == CMD_PLAY) {
+	if (cmd == CMD_STREAM_HOME || cmd == CMD_STREAM_LOCAL || cmd == CMD_PLAY) {
 		// 表示系の初期化。
 		init_screen();
 
-		if (cmd == CMD_STREAM) {
-			assert(server);
+		if (cmd == CMD_STREAM_HOME || cmd == CMD_STREAM_LOCAL) {
+			char token[64];
+			memset(token, 0, sizeof(token));
+			if (token_file) {
+				FILE *fp = fopen(token_file, "r");
+				if (fp == NULL) {
+					err(1, "%s", token_file);
+				}
+				fgets(token, sizeof(token), fp);
+				chomp(token);
+				fclose(fp);
+			}
+			if (token[0] == '\0' && cmd == CMD_STREAM_HOME) {
+				errx(1, "Home timeline requires your access token");
+			}
 
 			// 古いキャッシュを削除する。
 			progress("Deleting expired cache files...");
 			invalidate_cache();
 			progress("done\n");
 
-			cmd_misskey_stream(server);
+			cmd_misskey_stream(local_server,
+				(cmd == CMD_STREAM_HOME),
+				token[0] ? token : NULL);
 		} else {
 			cmd_misskey_play(playfile);
 		}

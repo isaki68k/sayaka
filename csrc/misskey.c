@@ -37,7 +37,7 @@
 #include <unistd.h>
 
 static bool misskey_init(void);
-static bool misskey_stream(wsclient *);
+static bool misskey_stream(wsclient *, bool);
 static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static int  misskey_show_note(const json *, int);
@@ -106,14 +106,18 @@ cmd_misskey_play(const char *infile)
 }
 
 void
-cmd_misskey_stream(const char *server)
+cmd_misskey_stream(const char *server, bool home, const char *token)
 {
 	const diag *diag = diag_net;
-	char url[strlen(server) + 20];
+	char url[strlen(server) + strlen(token) + 32];
 
 	misskey_init();
 
 	snprintf(url, sizeof(url), "wss://%s/streaming", server);
+	if (token) {
+		strlcat(url, "?i=", sizeof(url));
+		strlcat(url, token, sizeof(url));
+	}
 
 	printf("Ready...");
 	fflush(stdout);
@@ -177,7 +181,7 @@ cmd_misskey_stream(const char *server)
 		retry_count = 0;
 
 		// メイン処理。
-		if (misskey_stream(ws) == true) {
+		if (misskey_stream(ws, home) == true) {
 			status = CLOSED;
 		} else {
 			status = RETRY;
@@ -206,12 +210,13 @@ cmd_misskey_stream(const char *server)
 // 相手からの Connection Close なら true を返す。
 // エラー (おそらく復旧不可能)なら false を返す。
 static bool
-misskey_stream(wsclient *ws)
+misskey_stream(wsclient *ws, bool home)
 {
 	// コマンド送信。
 	char cmd[128];
 	snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
-		"\"channel\":\"localTimeline\",\"id\":\"sayaka-%08x\"}}",
+		"\"channel\":\"%s\",\"id\":\"sayaka-%08x\"}}",
+		home ? "homeTimeline" : "localTimeline",
 		rnd_get32());
 
 	if (wsclient_send_text(ws, cmd) < 0) {

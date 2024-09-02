@@ -103,7 +103,7 @@ extern const char *json_obj_find_cstr(const json *, int, const char *);
 extern unichar conv_mathalpha(unichar);
 
 // misskey.c
-extern void cmd_misskey_stream(const char *);
+extern void cmd_misskey_stream(const char *, bool, const char *);
 extern void cmd_misskey_play(const char *);
 
 // print.c
