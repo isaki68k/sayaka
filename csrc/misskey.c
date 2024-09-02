@@ -341,14 +341,9 @@ misskey_show_note(const json *js, int inote)
 	// text	renote
 	// ----	------
 	// null	-		: 存在しないはず?
-	// "*"	-		: 独立したノート
-	// null	yes		: リノート (同段落で renote を表示)
-	// "*"	yes		: 引用 (本文後に一段下げて renote を表示)
-
-	// 地文なら note == renote。
-	// リノートなら RN 元を note、RN 先を renote。
-	bool has_renote;
-	int iquote = -1;
+	// null	yes		: リノート
+	// "*"	-		: ノート
+	// "*"	yes		: ノート + 引用
 
 	// "text" があって null でないなら itext は 0 以上。
 	int itext = json_obj_find(js, inote, "text");
@@ -357,29 +352,33 @@ misskey_show_note(const json *js, int inote)
 	}
 	int irenote = json_obj_find_obj(js, inote, "renote");
 
-	if (itext >= 0) {
+	if (itext < 0) {
 		if (irenote < 0) {
-			// 独立ノート。
-			has_renote = false;
-			irenote = inote;
-		} else {
-			// 引用の親なら、この文を表示。引用は後ろの方で処理。
-			has_renote = false;
-			iquote = irenote;
-			irenote = inote;
-		}
-	} else {
-		if (irenote < 0) {
-			// どちらもないのは何?
+			// どちらもない?
 			return false;
+		} else {
+			// リノート。
+			bool crlf = misskey_show_note(js, irenote);
+
+			// リノート元。
+			ustring *rnline = ustring_alloc(64);
+			string *rnowner = misskey_format_renote_owner(js, inote);
+			ustring_append_utf8_color(rnline, string_get(rnowner),
+				COLOR_RENOTE);
+			iprint(rnline);
+			printf("\n");
+			string_free(rnowner);
+			ustring_free(rnline);
+
+			return crlf;
 		}
-		// (無言)リノート。
-		has_renote = true;
 	}
+
+	// ここから単独ノートか、引用付きノート。
 
 	// --nsfw=hide なら、添付ファイルに isSensitive が一つでも含まれていれば
 	// このノート自体を表示しない。
-	int ifiles = json_obj_find(js, irenote, "files");
+	int ifiles = json_obj_find(js, inote, "files");
 	if (opt_nsfw == NSFW_HIDE) {
 		bool has_sensitive = false;
 		if (ifiles >= 0) {
@@ -393,10 +392,10 @@ misskey_show_note(const json *js, int inote)
 	}
 
 	// 1行目は名前、アカウント名など。
-	int iuser = json_obj_find_obj(js, irenote, "user");
+	int iuser = json_obj_find_obj(js, inote, "user");
 	string *userid = string_alloc(64);
 	const char *instance = NULL;
-	const char *name = misskey_get_user(js, irenote, userid, &instance);
+	const char *name = misskey_get_user(js, inote, userid, &instance);
 	ustring *headline = ustring_alloc(64);
 	ustring_append_utf8_color(headline, name, COLOR_USERNAME);
 	ustring_append_unichar(headline, ' ');
@@ -420,18 +419,15 @@ misskey_show_note(const json *js, int inote)
 	// 都合がいいのでそのままにしておく (JSON パーサがテキストをデコードして
 	// いた場合にはこっちを再エスケープするはずだった)。
 
-	string *text = NULL;
-	const char *c_text = json_obj_find_cstr(js, irenote, "text");
-	if (c_text) {
-		text = string_unescape_c(c_text);
-	}
+	const char *c_text = json_get_cstr(js, itext);
+	string *text = string_unescape_c(c_text);
 	if (__predict_false(text == NULL)) {
 		text = string_from_cstr("");
 	}
 
 	// "cw":null は CW なし、"cw":"" は前置きなしの [CW]、で意味が違う。
 	string *cw;
-	int icw = json_obj_find(js, irenote, "cw");
+	int icw = json_obj_find(js, inote, "cw");
 	if (icw >= 0 && json_is_str(js, icw)) {
 		const char *c_cw = json_get_cstr(js, icw);
 		cw = string_unescape_c(c_cw);
@@ -453,7 +449,7 @@ misskey_show_note(const json *js, int inote)
 
 	ustring *textline = ustring_alloc(256);
 
-	ustring *utop = misskey_display_text(js, irenote, string_get(top));
+	ustring *utop = misskey_display_text(js, inote, string_get(top));
 	ustring_append(textline, utop);
 	ustring_free(utop);
 	if (cw) {
@@ -463,7 +459,7 @@ misskey_show_note(const json *js, int inote)
 		}
 	}
 	if (bottom) {
-		ustring *ubtm = misskey_display_text(js, irenote, string_get(bottom));
+		ustring *ubtm = misskey_display_text(js, inote, string_get(bottom));
 		ustring_append(textline, ubtm);
 		ustring_free(ubtm);
 	}
@@ -491,7 +487,7 @@ misskey_show_note(const json *js, int inote)
 		}
 
 		// 投票(poll)
-		int ipoll = json_obj_find_obj(js, irenote, "poll");
+		int ipoll = json_obj_find_obj(js, inote, "poll");
 		if (ipoll >= 0) {
 			string *pollstr = misskey_format_poll(js, ipoll);
 			if (pollstr) {
@@ -508,16 +504,16 @@ misskey_show_note(const json *js, int inote)
 	}
 
 	// 引用部分
-	if (iquote >= 0) {
+	if (irenote >= 0) {
 		indent_depth++;
-		misskey_show_note(js, iquote);
+		misskey_show_note(js, irenote);
 		indent_depth--;
 	}
 
 	// 時刻と、あればこのノートの既 RN 数、リアクション数。
-	string *time = misskey_format_time(js, irenote);
-	string *rnmsg = misskey_format_renote_count(js, irenote);
-	string *reactmsg = misskey_format_reaction_count(js, irenote);
+	string *time = misskey_format_time(js, inote);
+	string *rnmsg = misskey_format_renote_count(js, inote);
+	string *reactmsg = misskey_format_reaction_count(js, inote);
 
 	ustring *footline = ustring_alloc(64);
 	ustring_append_ascii_color(footline, string_get(time), COLOR_TIME);
@@ -526,17 +522,6 @@ misskey_show_note(const json *js, int inote)
 
 	iprint(footline);
 	printf("\n");
-
-	// リノート元
-	if (has_renote) {
-		ustring *rnline = ustring_alloc(64);
-		string *rnowner = misskey_format_renote_owner(js, inote);
-		ustring_append_utf8_color(rnline, string_get(rnowner), COLOR_RENOTE);
-		iprint(rnline);
-		printf("\n");
-		string_free(rnowner);
-		ustring_free(rnline);
-	}
 
 	ustring_free(footline);
 	string_free(time);
