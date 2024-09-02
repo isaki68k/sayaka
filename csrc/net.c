@@ -360,14 +360,14 @@ net_gets(struct net *net)
 	assert(net);
 	const diag *diag = net->diag;
 
-	Trace(diag, "%s: begin", __func__);
+	Verbose(diag, "%s: begin", __func__);
 	string *s = string_init();
 
 	for (;;) {
 		// バッファが空なら受信。
 		if (net->bufpos == net->buflen) {
 			int n = net_read(net, net->buf, sizeof(net->buf));
-			Trace(diag, "%s: net_read=%d", __func__, n);
+			Verbose(diag, "%s: net_read=%d", __func__, n);
 			if (n < 0) {
 				Debug(diag, "%s: net_read failed: %s", __func__, strerrno());
 				return s;
@@ -394,7 +394,7 @@ net_gets(struct net *net)
 		uint copylen = pos - net->bufpos;
 		string_append_mem(s, net->buf + net->bufpos, copylen);
 		net->bufpos += copylen;
-		Trace(diag, "%s: copied=%u, pos=%u/len=%u%s", __func__,
+		Verbose(diag, "%s: copied=%u, pos=%u/len=%u%s", __func__,
 			copylen, net->bufpos, net->buflen,
 			(lf_found ? " lf_found" : ""));
 		if (lf_found) {
@@ -617,16 +617,16 @@ tls_read(struct net *net, void *dst, int dstsize)
 	const diag *diag = net->diag;
 	ssize_t r;
 
-	Trace(diag, "%s (dstsize=%u)", __func__, dstsize);
+	Verbose(diag, "%s (dstsize=%u)", __func__, dstsize);
 	r = SSL_read(net->ssl, dst, dstsize);
 	if (r < 0) {
 		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
 			// とりあえず何かにしておく。
 			errno = EIO;
 		}
-		Trace(diag, "%s r=%zd, errno=%d", __func__, r, errno);
+		Verbose(diag, "%s r=%zd, errno=%d", __func__, r, errno);
 	} else {
-		Trace(diag, "%s r=%zd", __func__, r);
+		Verbose(diag, "%s r=%zd", __func__, r);
 	}
 	return r;
 }
@@ -637,16 +637,16 @@ tls_write(struct net *net, const void *src, int srcsize)
 	const diag *diag = net->diag;
 	ssize_t r;
 
-	Trace(diag, "%s (srcsize=%u)", __func__, srcsize);
+	Verbose(diag, "%s (srcsize=%u)", __func__, srcsize);
 	r = SSL_write(net->ssl, src, srcsize);
 	if (r < 0) {
 		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
 			// とりあえず何かにしておく。
 			errno = EIO;
 		}
-		Trace(diag, "%s r=%zd, errno=%d", __func__, r, errno);
+		Verbose(diag, "%s r=%zd, errno=%d", __func__, r, errno);
 	} else {
-		Trace(diag, "%s r=%zd", __func__, r);
+		Verbose(diag, "%s r=%zd", __func__, r);
 	}
 	return r;
 }
