@@ -1227,9 +1227,12 @@ misskey_get_user(const json *js, int inote, string *name, string *userid)
 		}
 
 		// インスタンス名
-		const char *c_instance = json_obj_find_cstr(js, iuser, "instance");
-		if (c_instance && c_instance[0] != '\0') {
-			instance = json_unescape(c_instance);
+		int iinstance = json_obj_find_obj(js, iuser, "instance");
+		if (iinstance >= 0) {
+			const char *c_instname = json_obj_find_cstr(js, iinstance, "name");
+			if (c_instname && c_instname[0] != '\0') {
+				instance = json_unescape(c_instname);
+			}
 		}
 	}
 
