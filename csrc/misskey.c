@@ -40,8 +40,8 @@ static bool misskey_init(void);
 static bool misskey_stream(wsclient *);
 static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
-static bool misskey_show_note(const json *, int);
-static bool misskey_show_announcement(const json *, int);
+static int  misskey_show_note(const json *, int);
+static int  misskey_show_announcement(const json *, int);
 static void misskey_show_icon(const json *, int, const string *);
 static bool misskey_show_photo(const json *, int, int);
 static void misskey_print_filetype(const json *, int, const char *);
@@ -319,14 +319,19 @@ misskey_message(string *jsonstr)
 	}
 
 	indent_depth = 0;
-	bool crlf = misskey_show_note(js, id);
-	if (crlf) {
+	int crlf = misskey_show_note(js, id);
+	if (crlf > 0) {
 		printf("\n");
 	}
 }
 
 // 1ノートを処理する。
-static bool
+// 戻り値は、
+// 1 ならノートを表示してこの後この関数を抜けたら改行が必要。
+// 0 ならノートを表示したがこの後この関数を抜けても改行は不要。
+// -1 なら (NG や NSFW 等で) ノートを表示しなかったので、
+//   この親もリノート行の出力は不要。その後の改行も不要。
+static int
 misskey_show_note(const json *js, int inote)
 {
 	if (__predict_false(diag_get_level(diag_format) >= 2)) {
@@ -347,28 +352,36 @@ misskey_show_note(const json *js, int inote)
 		return misskey_show_announcement(js, iann);
 	}
 
-	// text	renote
-	// ----	------
-	// null	-		: 存在しないはず?
-	// null	yes		: リノート
-	// "*"	-		: ノート
-	// "*"	yes		: ノート + 引用
+	// text は null も "" も等価?。
+	// cw は cw:null なら CW なし、cw:"" なら前半パート無言で [CW] 開始、
+	// のような気がする。
+	// files (配列) はなければ空配列のようだ。(null は来ない?)
+	//
+	// ここで「公式リツイート」相当は
+	//  text は null か "" かつ、
+	//  cw が null かつ、
+	//  files が空、
+	// だろうか。
 
-	// "text" があって null でないなら itext は 0 以上。
-	int itext = json_obj_find(js, inote, "text");
-	if (itext >= 0 && json_is_str(js, itext) == false) {
-		itext = -1;
+	const char *c_text = json_obj_find_cstr(js, inote, "text");
+	int icw = json_obj_find(js, inote, "cw");
+	if (icw >= 0 && json_is_str(js, icw) == false) {
+		icw = -1;
+	}
+	int ifiles = json_obj_find(js, inote, "files");
+	if (ifiles >= 0) {
+		if (json_is_array(js, ifiles) == false || json_get_size(js, ifiles) < 1)
+		{
+			ifiles = -1;
+		}
 	}
 	int irenote = json_obj_find_obj(js, inote, "renote");
 
-	if (itext < 0) {
-		if (irenote < 0) {
-			// どちらもない?
-			return false;
-		} else {
-			// リノート。
-			bool crlf = misskey_show_note(js, irenote);
+	if (c_text == NULL && icw < 0 && ifiles < 0 && irenote >= 0) {
+		// リノート。
+		int crlf = misskey_show_note(js, irenote);
 
+		if (crlf >= 0) {
 			// リノート元。
 			ustring *rnline = ustring_alloc(64);
 			string *rnowner = misskey_format_renote_owner(js, inote);
@@ -378,16 +391,15 @@ misskey_show_note(const json *js, int inote)
 			printf("\n");
 			string_free(rnowner);
 			ustring_free(rnline);
-
-			return crlf;
 		}
+
+		return crlf;
 	}
 
 	// ここから単独ノートか、引用付きノート。
 
 	// --nsfw=hide なら、添付ファイルに isSensitive が一つでも含まれていれば
 	// このノート自体を表示しない。
-	int ifiles = json_obj_find(js, inote, "files");
 	if (opt_nsfw == NSFW_HIDE) {
 		bool has_sensitive = false;
 		if (ifiles >= 0) {
@@ -396,7 +408,7 @@ misskey_show_note(const json *js, int inote)
 			}
 		}
 		if (has_sensitive) {
-			return false;
+			return -1;
 		}
 	}
 
@@ -429,16 +441,18 @@ misskey_show_note(const json *js, int inote)
 	// 都合がいいのでそのままにしておく (JSON パーサがテキストをデコードして
 	// いた場合にはこっちを再エスケープするはずだった)。
 
-	const char *c_text = json_get_cstr(js, itext);
-	string *text = json_unescape(c_text);
-	if (__predict_false(text == NULL)) {
-		text = string_from_cstr("");
+	string *text = NULL;
+	if (c_text) {
+		text = json_unescape(c_text);
+	}
+	if (text == NULL) {
+		text = string_init();
 	}
 
 	// "cw":null は CW なし、"cw":"" は前置きなしの [CW]、で意味が違う。
+	// 文字列かどうかはチェック済み。
 	string *cw;
-	int icw = json_obj_find(js, inote, "cw");
-	if (icw >= 0 && json_is_str(js, icw)) {
+	if (icw >= 0) {
 		const char *c_cw = json_get_cstr(js, icw);
 		cw = json_unescape(c_cw);
 	} else {
@@ -513,7 +527,8 @@ misskey_show_note(const json *js, int inote)
 		}
 	}
 
-	// 引用部分
+	// 引用部分。
+	// 引用先の非表示状態はこれより親に伝搬しない。
 	if (irenote >= 0) {
 		indent_depth++;
 		misskey_show_note(js, irenote);
@@ -544,11 +559,11 @@ misskey_show_note(const json *js, int inote)
 	string_free(instance);
 	string_free(userid);
 	string_free(name);
-	return true;
+	return 1;
 }
 
 // アナウンス文を処理する。構造が全然違う。
-static bool
+static int
 misskey_show_announcement(const json *js, int inote)
 {
 	ustring *line = ustring_alloc(16);
@@ -608,7 +623,7 @@ misskey_show_announcement(const json *js, int inote)
 	}
 
 	ustring_free(line);
-	return true;
+	return 1;
 }
 
 // アイコン表示。
