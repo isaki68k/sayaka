@@ -92,7 +92,7 @@ void
 image_opt_init(image_opt *opt)
 {
 	opt->method  = REDUCT_HIGH_QUALITY;
-	opt->diffuse = RDM_FS;
+	opt->diffuse = DIFFUSE_FS;
 	opt->color   = ReductorColor_Fixed256;
 	opt->gain    = 256;
 	opt->output_ormode = false;
@@ -636,7 +636,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 
 #if defined(SIXELV)
 			switch (opt->diffuse) {
-			 case RDM_FS:
+			 case DIFFUSE_FS:
 #endif
 				// Floyd Steinberg Method
 				set_err(errbuf[0], x + 1, &col, 112);
@@ -645,7 +645,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 				set_err(errbuf[1], x + 1, &col, 16);
 #if defined(SIXELV)
 				break;
-			 case RDM_ATKINSON:
+			 case DIFFUSE_ATKINSON:
 				// Atkinson
 				set_err(errbuf[0], x + 1, &col, 32);
 				set_err(errbuf[0], x + 2, &col, 32);
@@ -654,7 +654,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 				set_err(errbuf[1], x + 1, &col, 32);
 				set_err(errbuf[2], x,     &col, 32);
 				break;
-			 case RDM_JAJUNI:
+			 case DIFFUSE_JAJUNI:
 				// Jarvis, Judice, Ninke
 				set_err(errbuf[0], x + 1, &col, 37);
 				set_err(errbuf[0], x + 2, &col, 27);
@@ -669,7 +669,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 				set_err(errbuf[2], x + 1, &col, 16);
 				set_err(errbuf[2], x + 2, &col,  5);
 				break;
-			 case RDM_STUCKI:
+			 case DIFFUSE_STUCKI:
 				// Stucki
 				set_err(errbuf[0], x + 1, &col, 43);
 				set_err(errbuf[0], x + 2, &col, 21);
@@ -684,7 +684,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 				set_err(errbuf[2], x + 1, &col, 11);
 				set_err(errbuf[2], x + 2, &col,  5);
 				break;
-			 case RDM_BURKES:
+			 case DIFFUSE_BURKES:
 				// Burkes
 				set_err(errbuf[0], x + 1, &col, 64);
 				set_err(errbuf[0], x + 2, &col, 32);
@@ -694,18 +694,18 @@ image_reduct_highquality(image_reductor_handle *ir,
 				set_err(errbuf[1], x + 1, &col, 32);
 				set_err(errbuf[1], x + 2, &col, 16);
 				break;
-			 case RDM_2:
+			 case DIFFUSE_2:
 				// (x+1,y), (x,y+1)
 				set_err(errbuf[0], x + 1, &col, 128);
 				set_err(errbuf[1], x,     &col, 128);
 				break;
-			 case RDM_3:
+			 case DIFFUSE_3:
 				// (x+1,y), (x,y+1), (x+1,y+1)
 				set_err(errbuf[0], x + 1, &col, 102);
 				set_err(errbuf[1], x,     &col, 102);
 				set_err(errbuf[1], x + 1, &col,  51);
 				break;
-			 case RDM_RGB:
+			 case DIFFUSE_RGB:
 				errbuf[0][x].r   = saturate_adderr(errbuf[0][x].r,   col.r);
 				errbuf[1][x].b   = saturate_adderr(errbuf[1][x].b,   col.b);
 				errbuf[1][x+1].g = saturate_adderr(errbuf[1][x+1].g, col.g);
@@ -993,14 +993,14 @@ reductordiffuse_tostr(ReductorDiffuse diffuse)
 		ReductorDiffuse value;
 		const char *name;
 	} table[] = {
-		{ RDM_FS,		"RDM_FS" },
-		{ RDM_ATKINSON,	"RDM_ATKINSON" },
-		{ RDM_JAJUNI,	"RDM_JAJUNI" },
-		{ RDM_STUCKI,	"RDM_STUCKI" },
-		{ RDM_BURKES,	"RDM_BURKES" },
-		{ RDM_2,		"RDM_2" },
-		{ RDM_3,		"RDM_3" },
-		{ RDM_RGB,		"RDM_RGB" },
+		{ DIFFUSE_FS,		"FS" },
+		{ DIFFUSE_ATKINSON,	"ATKINSON" },
+		{ DIFFUSE_JAJUNI,	"JAJUNI" },
+		{ DIFFUSE_STUCKI,	"STUCKI" },
+		{ DIFFUSE_BURKES,	"BURKES" },
+		{ DIFFUSE_2,		"2" },
+		{ DIFFUSE_3,		"3" },
+		{ DIFFUSE_RGB,		"RGB" },
 	};
 
 	for (int i = 0; i < countof(table); i++) {

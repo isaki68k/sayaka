@@ -111,14 +111,14 @@ typedef enum {
 
 // 誤差拡散アルゴリズム
 typedef enum {
-	RDM_FS,			// Floyd Steinberg
-	RDM_ATKINSON,	// Atkinson
-	RDM_JAJUNI,		// Jarvis, Judice, Ninke
-	RDM_STUCKI,		// Stucki
-	RDM_BURKES,		// Burkes
-	RDM_2,			// 2 pixels (right, down)
-	RDM_3,			// 3 pixels (right, down, rightdown)
-	RDM_RGB,		// RGB color sepalated
+	DIFFUSE_FS,			// Floyd Steinberg
+	DIFFUSE_ATKINSON,	// Atkinson
+	DIFFUSE_JAJUNI,		// Jarvis, Judice, Ninke
+	DIFFUSE_STUCKI,		// Stucki
+	DIFFUSE_BURKES,		// Burkes
+	DIFFUSE_2,			// 2 pixels (right, down)
+	DIFFUSE_3,			// 3 pixels (right, down, rightdown)
+	DIFFUSE_RGB,		// RGB color sepalated
 } ReductorDiffuse;
 
 // 色モードは下位8ビットが enum。

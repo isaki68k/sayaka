@@ -118,14 +118,14 @@ static const struct optmap map_output_format[] = {
 };
 
 static const struct optmap map_diffuse[] = {
-	{ "fs",			RDM_FS },
-	{ "atkinson",	RDM_ATKINSON },
-	{ "jajuni",		RDM_JAJUNI },
-	{ "stucki",		RDM_STUCKI },
-	{ "burkes",		RDM_BURKES },
-	{ "2",			RDM_2 },
-	{ "3",			RDM_3 },
-	{ "rgb",		RDM_RGB },
+	{ "fs",			DIFFUSE_FS },
+	{ "atkinson",	DIFFUSE_ATKINSON },
+	{ "jajuni",		DIFFUSE_JAJUNI },
+	{ "stucki",		DIFFUSE_STUCKI },
+	{ "burkes",		DIFFUSE_BURKES },
+	{ "2",			DIFFUSE_2 },
+	{ "3",			DIFFUSE_3 },
+	{ "rgb",		DIFFUSE_RGB },
 	{ NULL },
 };
 
