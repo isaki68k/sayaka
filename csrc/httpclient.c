@@ -61,7 +61,6 @@ typedef struct httpclient_ {
 } httpclient;
 
 static bool do_connect(httpclient *, const struct net_opt *);
-static void dump_sendhdr(httpclient *, const string *);
 static int  recv_header(httpclient *);
 static const char *find_recvhdr(const httpclient *, const char *);
 static void clear_recvhdr(httpclient *);
@@ -140,7 +139,7 @@ httpclient_connect(httpclient *http, const char *urlstr,
 		string_append_printf(hdr, "User-Agent: sayaka/c\r\n");
 		string_append_cstr(hdr,   "\r\n");
 		if (__predict_false(diag_get_level(diag) >= 2)) {
-			dump_sendhdr(http, hdr);	// デバッグ表示
+			diag_http_header(http->diag, hdr);	// デバッグ表示
 		}
 		net_write(http->net, string_get(hdr), string_len(hdr));
 		string_free(hdr);
@@ -216,8 +215,9 @@ do_connect(httpclient *http, const struct net_opt *opt)
 }
 
 // 送信ヘッダをデバッグ表示する。
-static void
-dump_sendhdr(httpclient *http, const string *hdr)
+// ログレベルが有効な場合のみ呼ぶこと。
+void
+diag_http_header(const diag *diag, const string *hdr)
 {
 	char buf[1024];
 
@@ -232,7 +232,7 @@ dump_sendhdr(httpclient *http, const string *hdr)
 			*d++ = '\\';
 			*d++ = 'n';
 			*d = '\0';
-			Trace(http->diag, "<-- |%s|", buf);
+			diag_print(diag, "<-- |%s|", buf);
 			d = buf;
 		} else {
 			*d++ = *s;
@@ -240,7 +240,7 @@ dump_sendhdr(httpclient *http, const string *hdr)
 	}
 	if (d != buf) {
 		*d = '\0';
-		Trace(http->diag, "<-! |%s|", buf);
+		diag_print(diag, "<-! |%s|", buf);
 	}
 }
 

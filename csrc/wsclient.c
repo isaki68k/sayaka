@@ -185,7 +185,9 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 		"Sec-WebSocket-Version: 13\r\n");
 	string_append_printf(hdr, "Sec-WebSocket-Key: %s\r\n", string_get(key));
 	string_append_cstr(hdr,   "\r\n");
-	Trace(diag, "<<< %s", string_get(hdr));
+	if (__predict_false(diag_get_level(diag) >= 2)) {
+		diag_http_header(diag, hdr);
+	}
 	int sent = net_write(ws->net, string_get(hdr), string_len(hdr));
 	if (sent < 0) {
 		Debug(diag, "%s: net_write: %s", __func__, strerrno());
@@ -204,7 +206,7 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 	while ((recvhdr = net_gets(ws->net)) != NULL) {
 		string_rtrim_inplace(recvhdr);
 		bool newline = (string_len(recvhdr) == 0);
-		Trace(diag, ">>> |%s|", string_get(recvhdr));
+		Trace(diag, "--> |%s|", string_get(recvhdr));
 		string_free(recvhdr);
 		if (newline) {
 			break;

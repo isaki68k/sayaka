@@ -112,6 +112,7 @@ extern int  httpclient_connect(httpclient *, const char *,
 	const struct net_opt *);
 extern const char *httpclient_get_resmsg(const httpclient *);
 extern FILE *httpclient_fopen(httpclient *);
+extern void diag_http_header(const diag *, const string *);
 
 // net.c
 extern struct urlinfo *urlinfo_parse(const char *);
