@@ -390,13 +390,13 @@ http_chunk_read_cb(void *arg, char *dst, int dstsize)
 	httpclient *http = (httpclient *)arg;
 	const diag *diag = http->diag;
 
-	Trace(diag, "%s(%d)", __func__, dstsize);
+	Verbose(diag, "%s(%d)", __func__, dstsize);
 
 	// バッファが空なら次のチャンクを読み込む。
 	if (http->chunk_pos == http->chunk_len) {
-		Trace(diag, "%s Need to fill", __func__);
+		Verbose(diag, "%s Need to fill", __func__);
 		int r = read_chunk(http);
-		Trace(diag, "%s read_chunk filled %d", __func__, r);
+		Verbose(diag, "%s read_chunk filled %d", __func__, r);
 		if (__predict_false(r < 1)) {
 			return r;
 		}
@@ -404,7 +404,7 @@ http_chunk_read_cb(void *arg, char *dst, int dstsize)
 
 	// バッファから dst に入るだけコピー。
 	uint copylen = MIN(http->chunk_len - http->chunk_pos, dstsize);
-	Trace(diag, "%s copylen=%d", __func__, copylen);
+	Verbose(diag, "%s copylen=%d", __func__, copylen);
 	memcpy(dst, http->chunk_buf + http->chunk_pos, copylen);
 	http->chunk_pos += copylen;
 	return copylen;
@@ -443,13 +443,13 @@ read_chunk(httpclient *http)
 		chunklen = -1;
 		goto done;
 	}
-	Trace(diag, "chunklen=%d", chunklen);
+	Verbose(diag, "chunklen=%d", chunklen);
 
 	if (chunklen == 0) {
 		// データ終わり。CRLF を読み捨てる。
 		string *dummy = net_gets(http->net);
 		string_free(dummy);
-		Trace(diag, "%s: This wa sthe last chunk.", __func__);
+		Verbose(diag, "%s: This wa sthe last chunk.", __func__);
 		goto done;
 	}
 
@@ -463,7 +463,7 @@ read_chunk(httpclient *http)
 		}
 		http->chunk_buf = newbuf;
 		http->chunk_cap = chunklen;
-		Trace(diag, "%s realloc %u", __func__, http->chunk_cap);
+		Verbose(diag, "%s realloc %u", __func__, http->chunk_cap);
 	}
 	int readlen = 0;
 	while (readlen < chunklen) {
@@ -478,7 +478,7 @@ read_chunk(httpclient *http)
 			break;
 		}
 		readlen += r;
-		Trace(diag, "read=%d readlen=%d", r, readlen);
+		Verbose(diag, "read=%d readlen=%d", r, readlen);
 	}
 	if (__predict_false(readlen != chunklen)) {
 		Debug(diag, "%s: readlen=%d chunklen=%d", __func__, readlen, chunklen);
