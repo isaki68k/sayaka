@@ -8,6 +8,8 @@ config.h
 config.log
 config.status
 csrc/eaw_gen
+csrc/dump
+csrc/httpclient
 csrc/sayaka
 csrc/sixelv
 csrc/terminal
