@@ -130,9 +130,9 @@ static const struct optmap map_diffuse[] = {
 };
 
 static const struct optmap map_reductor_method[] = {
-	{ "none",		ReductorMethod_Simple },
-	{ "simple",		ReductorMethod_Simple },
-	{ "high",		ReductorMethod_HighQuality },
+	{ "none",		REDUCT_SIMPLE },
+	{ "simple",		REDUCT_SIMPLE },
+	{ "high",		REDUCT_HIGH_QUALITY },
 	{ NULL },
 };
 

@@ -91,7 +91,7 @@ static const ColorRGB palette_ansi16[];
 void
 image_opt_init(image_opt *opt)
 {
-	opt->method  = ReductorMethod_HighQuality;
+	opt->method  = REDUCT_HIGH_QUALITY;
 	opt->diffuse = RDM_FS;
 	opt->color   = ReductorColor_Fixed256;
 	opt->gain    = 256;
@@ -398,11 +398,11 @@ image_reduct(
 
 #if defined(SIXELV)
 	switch (opt->method) {
-	 case ReductorMethod_Simple:
+	 case REDUCT_SIMPLE:
 		image_reduct_simple(ir, dst, src, diag);
 		break;
 
-	 case ReductorMethod_HighQuality:
+	 case REDUCT_HIGH_QUALITY:
 #endif
 		if (image_reduct_highquality(ir, dst, src, opt, diag) == false) {
 			goto abort;
@@ -968,9 +968,9 @@ reductormethod_tostr(ReductorMethod method)
 		ReductorMethod value;
 		const char *name;
 	} table[] = {
-		{ ReductorMethod_Simple,		"Simple" },
-		{ ReductorMethod_Fast,			"Fast" },
-		{ ReductorMethod_HighQuality,	"High" },
+		{ REDUCT_SIMPLE,		"Simple" },
+		{ REDUCT_FAST,			"Fast" },
+		{ REDUCT_HIGH_QUALITY,	"High" },
 	};
 
 	for (int i = 0; i < countof(table); i++) {
