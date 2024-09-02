@@ -66,6 +66,7 @@
 typedef struct pstream_ {
 	// 入力となるストリームかディスクリプタ。
 	// ifp != NULL なら ifp が有効。ifp == NULL なら ifd が有効。
+	// いずれも所有しない。
 	FILE *ifp;
 	int ifd;
 
@@ -78,11 +79,9 @@ typedef struct pstream_ {
 } pstream;
 
 static pstream *pstream_init_common(void);
-static void pstream_close(pstream *);
 static int pstream_peek_cb(void *, char *, int);
 static int pstream_read_cb(void *, char *, int);
 static off_t pstream_seek_cb(void *, off_t, int);
-static int pstream_close_cb(void *);
 static ssize_t psread(pstream *, void *, size_t);
 static off_t psseek(pstream *, off_t);
 
@@ -125,30 +124,12 @@ pstream_init_fp(FILE *ifp)
 	return ps;
 }
 
-// ストリームの入力を閉じる。
-static void
-pstream_close(pstream *ps)
-{
-	assert(ps);
-
-	if (ps->ifp) {
-		fclose(ps->ifp);
-	} else {
-		if (ps->ifd >= 3) {
-			close(ps->ifd);
-		}
-	}
-	ps->ifp = NULL;
-	ps->ifd = -1;
-}
-
 // ストリームコンテキストを解放する。
 // ps が NULL なら何もしない。
 void
 pstream_cleanup(pstream *ps)
 {
 	if (ps) {
-		pstream_close(ps);
 		free(ps->peekbuf);
 		ps->peekbuf = NULL;
 
@@ -181,7 +162,7 @@ pstream_open_for_read(pstream *ps)
 		pstream_read_cb,
 		NULL,	// write
 		pstream_seek_cb,
-		pstream_close_cb);
+		NULL);	// close
 	if (fp == NULL) {
 		return NULL;
 	}
@@ -327,17 +308,6 @@ pstream_seek_cb(void *cookie, off_t offset, int whence)
 	ps->pos = newpos;
 	DEBUG("pos=%u", ps->pos);
 	return newpos;
-}
-
-// ストリームを閉じる。
-static int
-pstream_close_cb(void *cookie)
-{
-	pstream *ps = (pstream *)cookie;
-
-	DEBUG("called");
-	pstream_close(ps);
-	return 0;
 }
 
 // pstream に対する read。read(2) 互換。

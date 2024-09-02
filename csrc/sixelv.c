@@ -648,6 +648,12 @@ do_file(const char *infile)
 	if (pstream) {
 		pstream_cleanup(pstream);
 	}
+	if (ifp) {
+		fclose(ifp);
+	}
+	if (ifd >= 3) {
+		close(ifd);
+	}
 	if (http) {
 		httpclient_destroy(http);
 	}

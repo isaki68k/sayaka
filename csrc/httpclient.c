@@ -351,6 +351,7 @@ httpclient_get_resmsg(const httpclient *http)
 
 // ストリームを返す。
 // httpclient_connect() が成功した場合のみ有効。
+// 受け取った fp は fclose() すること。
 FILE *
 httpclient_fopen(httpclient *http)
 {
