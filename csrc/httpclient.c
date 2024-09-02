@@ -417,6 +417,7 @@ static int
 read_chunk(httpclient *http)
 {
 	const diag *diag = http->diag;
+	int intlen = -1;
 
 	// 先頭行はチャンク長 + CRLF。
 	string *slen = net_gets(http->net);
@@ -427,19 +428,20 @@ read_chunk(httpclient *http)
 
 	// チャンク長を取り出す。
 	string_rtrim_inplace(slen);
+
 	char *end;
-	int intlen = stox32def(string_get(slen), -1, &end);
-	string_free(slen);
+	intlen = stox32def(string_get(slen), -1, &end);
 	if (intlen < 0) {
 		Debug(diag, "%s: Invalid chunk length: %s", __func__, string_get(slen));
 		errno = EIO;
-		return -1;
+		goto done;
 	}
 	if (*end != '\0') {
 		Debug(diag, "%s: Chunk length has a trailing garbage: %s", __func__,
 			string_get(slen));
 		errno = EIO;
-		return -1;
+		intlen = -1;
+		goto done;
 	}
 	Trace(diag, "intlen=%d", intlen);
 
@@ -448,7 +450,7 @@ read_chunk(httpclient *http)
 		string *dummy = net_gets(http->net);
 		string_free(dummy);
 		Trace(diag, "%s: This wa sthe last chunk.", __func__);
-		return 0;
+		goto done;
 	}
 
 	// チャンク本体を読み込む。
@@ -456,7 +458,8 @@ read_chunk(httpclient *http)
 		uint8 *newbuf = realloc(http->chunk_buf, intlen);
 		if (newbuf == NULL) {
 			Debug(diag, "%s: realloc failed: %s", __func__, strerrno());
-			return -1;
+			intlen = -1;
+			goto done;
 		}
 		http->chunk_buf = newbuf;
 		http->chunk_cap = intlen;
@@ -468,7 +471,8 @@ read_chunk(httpclient *http)
 		r = net_read(http->net, http->chunk_buf + readlen, intlen - readlen);
 		if (r < 0) {
 			Debug(diag, "%s: net_read failed: %s", __func__, strerrno());
-			return -1;
+			intlen = -1;
+			goto done;
 		}
 		if (r == 0) {
 			break;
@@ -479,7 +483,8 @@ read_chunk(httpclient *http)
 	if (__predict_false(readlen != intlen)) {
 		Debug(diag, "%s: readlen=%d intlen=%d", __func__, readlen, intlen);
 		errno = EIO;
-		return -1;
+		intlen = -1;
+		goto done;
 	}
 	http->chunk_len = readlen;
 	http->chunk_pos = 0;
@@ -488,6 +493,8 @@ read_chunk(httpclient *http)
 	string *dummy = net_gets(http->net);
 	string_free(dummy);
 
+ done:
+	string_free(slen);
 	return intlen;
 }
 
