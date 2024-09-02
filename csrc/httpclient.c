@@ -417,7 +417,7 @@ static int
 read_chunk(httpclient *http)
 {
 	const diag *diag = http->diag;
-	int intlen = -1;
+	int chunklen = -1;
 
 	// 先頭行はチャンク長 + CRLF。
 	string *slen = net_gets(http->net);
@@ -430,8 +430,8 @@ read_chunk(httpclient *http)
 	string_rtrim_inplace(slen);
 
 	char *end;
-	intlen = stox32def(string_get(slen), -1, &end);
-	if (intlen < 0) {
+	chunklen = stox32def(string_get(slen), -1, &end);
+	if (chunklen < 0) {
 		Debug(diag, "%s: Invalid chunk length: %s", __func__, string_get(slen));
 		errno = EIO;
 		goto done;
@@ -440,12 +440,12 @@ read_chunk(httpclient *http)
 		Debug(diag, "%s: Chunk length has a trailing garbage: %s", __func__,
 			string_get(slen));
 		errno = EIO;
-		intlen = -1;
+		chunklen = -1;
 		goto done;
 	}
-	Trace(diag, "intlen=%d", intlen);
+	Trace(diag, "chunklen=%d", chunklen);
 
-	if (intlen == 0) {
+	if (chunklen == 0) {
 		// データ終わり。CRLF を読み捨てる。
 		string *dummy = net_gets(http->net);
 		string_free(dummy);
@@ -454,24 +454,24 @@ read_chunk(httpclient *http)
 	}
 
 	// チャンク本体を読み込む。
-	if (intlen > http->chunk_cap) {
-		uint8 *newbuf = realloc(http->chunk_buf, intlen);
+	if (chunklen > http->chunk_cap) {
+		uint8 *newbuf = realloc(http->chunk_buf, chunklen);
 		if (newbuf == NULL) {
 			Debug(diag, "%s: realloc failed: %s", __func__, strerrno());
-			intlen = -1;
+			chunklen = -1;
 			goto done;
 		}
 		http->chunk_buf = newbuf;
-		http->chunk_cap = intlen;
+		http->chunk_cap = chunklen;
 		Trace(diag, "%s realloc %u", __func__, http->chunk_cap);
 	}
 	int readlen = 0;
-	while (readlen < intlen) {
+	while (readlen < chunklen) {
 		int r;
-		r = net_read(http->net, http->chunk_buf + readlen, intlen - readlen);
+		r = net_read(http->net, http->chunk_buf + readlen, chunklen - readlen);
 		if (r < 0) {
 			Debug(diag, "%s: net_read failed: %s", __func__, strerrno());
-			intlen = -1;
+			chunklen = -1;
 			goto done;
 		}
 		if (r == 0) {
@@ -480,10 +480,10 @@ read_chunk(httpclient *http)
 		readlen += r;
 		Trace(diag, "read=%d readlen=%d", r, readlen);
 	}
-	if (__predict_false(readlen != intlen)) {
-		Debug(diag, "%s: readlen=%d intlen=%d", __func__, readlen, intlen);
+	if (__predict_false(readlen != chunklen)) {
+		Debug(diag, "%s: readlen=%d chunklen=%d", __func__, readlen, chunklen);
 		errno = EIO;
-		intlen = -1;
+		chunklen = -1;
 		goto done;
 	}
 	http->chunk_len = readlen;
@@ -495,7 +495,7 @@ read_chunk(httpclient *http)
 
  done:
 	string_free(slen);
-	return intlen;
+	return chunklen;
 }
 
 
