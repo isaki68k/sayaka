@@ -148,8 +148,16 @@ cmd_misskey_stream(const char *server)
 
 		wsclient_init(ws, misskey_recv_cb);
 
-		if (wsclient_connect(ws, url, &netopt_main) != 0) {
-			warnx("%s: %s: wsclient_connect failed", __func__, server);
+		// 応答コード 101 が成功。
+		int code = wsclient_connect(ws, url, &netopt_main);
+		if (code != 101) {
+			if (code < 0) {
+				warn("%s: connection failed", server);
+			} else if (code == 0) {
+				warnx("%s: connection failed: EOF?", server);
+			} else {
+				warnx("%s: connection failed: HTTP %u", server, code);
+			}
 			if (retry_count < 0) {
 				// 初回接続でエラーなら、それはエラー。再試行しない。
 				status = ERROR;

@@ -29,6 +29,7 @@
 //
 
 #include "sayaka.h"
+#include <errno.h>
 #include <string.h>
 
 enum {
@@ -126,7 +127,10 @@ wsclient_init(wsclient *ws, void (*callback)(const string *))
 }
 
 // url に接続する。
-// 成功すれば 0、失敗すれば -1 を返す。
+// 失敗すれば errno をセットして -1 を返す。
+// 0 なら EOF?。
+// 接続して HTTP(WebSocket) 応答まで受け取れれば応答コードを返す
+// (101 なら成功)。
 int
 wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 {
@@ -152,7 +156,8 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 		} else if (strcmp(scheme, "wss") == 0) {
 			serv = "https";
 		} else {
-			Debug(diag, "%s: %s: Unsupported protocol", __func__, url);
+			errno = EPROTONOSUPPORT;
+			Debug(diag, "%s: %s: %s", __func__, url, strerrno());
 			goto abort;
 		}
 	}
@@ -197,7 +202,9 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 	// 応答の1行目を受信。
 	response = net_gets(ws->net);
 	if (response == NULL) {
-		Debug(diag, "%s: No WebSocket response header", __func__);
+		Debug(diag, "%s: Unexpected EOF while reading response header",
+			__func__);
+		rv = 0;
 		goto abort;
 	}
 
@@ -220,6 +227,7 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 	const char *recvbuf = string_get(response);
 	if (strncmp(recvbuf, "HTTP/1.1", 8) != 0) {
 		Debug(diag, "%s: No HTTP/1.1 response?", __func__);
+		errno = EPROTO;
 		goto abort;
 	}
 
@@ -232,12 +240,13 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 	int rescode = atoi(p);
 	if (rescode != 101) {
 		Debug(diag, "%s: Upgrading failed by %u", __func__, rescode);
+		rv = rescode;
 		goto abort;
 	}
 
 	// XXX Sec-WebSocket-Accept のチェックとか。
 
-	rv = 0;
+	rv = rescode;
  abort:
 	string_free(response);
 	string_free(hdr);
