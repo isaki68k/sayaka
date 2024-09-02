@@ -121,7 +121,6 @@ enum {
 	OPT_nsfw,
 	OPT_play,
 	OPT_progress,
-	OPT_record,
 	OPT_show_cw,
 	OPT_show_image,
 	OPT_timeout_image,
@@ -155,7 +154,7 @@ static const struct option longopts[] = {
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
 	{ "play",			required_argument,	NULL,	OPT_play },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
-	{ "record",			required_argument,	NULL,	OPT_record },
+	{ "record",			required_argument,	NULL,	'r' },
 	{ "xxx-server",		required_argument,	NULL,	's' },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
@@ -407,7 +406,7 @@ main(int ac, char *av[])
 			opt_progress = true;
 			break;
 
-		 case OPT_record:
+		 case 'r':
 			opt_record_file = optarg;
 			break;
 
