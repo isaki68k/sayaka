@@ -152,41 +152,41 @@ image_get_preferred_size(
 {
 	// 条件を丸めていく
 	switch (axis) {
-	 case ResizeAxis_Both:
-	 case ResizeAxis_ScaleDownBoth:
+	 case RESIZE_AXIS_BOTH:
+	 case RESIZE_AXIS_SCALEDOWN_BOTH:
 		if (request_width == 0) {
-			axis = ResizeAxis_Height;
+			axis = RESIZE_AXIS_HEIGHT;
 		} else if (request_height == 0) {
-			axis = ResizeAxis_Width;
+			axis = RESIZE_AXIS_WIDTH;
 		} else {
-			axis = ResizeAxis_Both;
+			axis = RESIZE_AXIS_BOTH;
 		}
 		break;
 
-	 case ResizeAxis_Long:
-	 case ResizeAxis_ScaleDownLong:
+	 case RESIZE_AXIS_LONG:
+	 case RESIZE_AXIS_SCALEDOWN_LONG:
 		if (current_width >= current_height) {
-			axis = ResizeAxis_Width;
+			axis = RESIZE_AXIS_WIDTH;
 		} else {
-			axis = ResizeAxis_Height;
+			axis = RESIZE_AXIS_HEIGHT;
 		}
 		break;
 
-	 case ResizeAxis_Short:
-	 case ResizeAxis_ScaleDownShort:
+	 case RESIZE_AXIS_SHORT:
+	 case RESIZE_AXIS_SCALEDOWN_SHORT:
 		if (current_width <= current_height) {
-			axis = ResizeAxis_Width;
+			axis = RESIZE_AXIS_WIDTH;
 		} else {
-			axis = ResizeAxis_Height;
+			axis = RESIZE_AXIS_HEIGHT;
 		}
 		break;
 
-	 case ResizeAxis_ScaleDownWidth:
-		axis = ResizeAxis_Width;
+	 case RESIZE_AXIS_SCALEDOWN_WIDTH:
+		axis = RESIZE_AXIS_WIDTH;
 		break;
 
-	 case ResizeAxis_ScaleDownHeight:
-		axis = ResizeAxis_Height;
+	 case RESIZE_AXIS_SCALEDOWN_HEIGHT:
+		axis = RESIZE_AXIS_HEIGHT;
 		break;
 
 	 default:
@@ -201,7 +201,7 @@ image_get_preferred_size(
 	}
 
 	// 縮小のみ指示。
-	if ((axis & ResizeAxis_ScaleDownBit)) {
+	if ((axis & RESIZE_AXIS_SCALEDOWN_BIT)) {
 		if (request_width > current_width) {
 			request_width = current_width;
 		}
@@ -214,17 +214,17 @@ image_get_preferred_size(
 	uint width;
 	uint height;
 	switch (axis) {
-	 case ResizeAxis_Both:
+	 case RESIZE_AXIS_BOTH:
 		width  = request_width;
 		height = request_height;
 		break;
 
-	 case ResizeAxis_Width:
+	 case RESIZE_AXIS_WIDTH:
 		width  = request_width;
 		height = current_height * width / current_width;
 		break;
 
-	 case ResizeAxis_Height:
+	 case RESIZE_AXIS_HEIGHT:
 		height = request_height;
 		width  = current_width * height / current_height;
 		break;
@@ -936,16 +936,16 @@ resizeaxis_tostr(ResizeAxis axis)
 		ResizeAxis value;
 		const char *name;
 	} table[] = {
-		{ ResizeAxis_Both,				"Both" },
-		{ ResizeAxis_Width,				"Width" },
-		{ ResizeAxis_Height,			"Height" },
-		{ ResizeAxis_Long,				"Long" },
-		{ ResizeAxis_Short,				"Short" },
-		{ ResizeAxis_ScaleDownBoth,		"ScaleDownBoth" },
-		{ ResizeAxis_ScaleDownWidth,	"ScaleDownWidth" },
-		{ ResizeAxis_ScaleDownHeight,	"ScaleDownHeight" },
-		{ ResizeAxis_ScaleDownLong,		"ScaleDownLong" },
-		{ ResizeAxis_ScaleDownShort,	"ScaleDownShort" },
+		{ RESIZE_AXIS_BOTH,				"Both" },
+		{ RESIZE_AXIS_WIDTH,			"Width" },
+		{ RESIZE_AXIS_HEIGHT,			"Height" },
+		{ RESIZE_AXIS_LONG,				"Long" },
+		{ RESIZE_AXIS_SHORT,			"Short" },
+		{ RESIZE_AXIS_SCALEDOWN_BOTH,	"ScaleDownBoth" },
+		{ RESIZE_AXIS_SCALEDOWN_WIDTH,	"ScaleDownWidth" },
+		{ RESIZE_AXIS_SCALEDOWN_HEIGHT,	"ScaleDownHeight" },
+		{ RESIZE_AXIS_SCALEDOWN_LONG,	"ScaleDownLong" },
+		{ RESIZE_AXIS_SCALEDOWN_SHORT,	"ScaleDownShort" },
 	};
 
 	for (int i = 0; i < countof(table); i++) {

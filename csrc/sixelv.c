@@ -137,21 +137,21 @@ static const struct optmap map_reductor_method[] = {
 };
 
 static const struct optmap map_resize_axis[] = {
-	{ "both",				ResizeAxis_Both },
-	{ "width",				ResizeAxis_Width },
-	{ "height",				ResizeAxis_Height },
-	{ "long",				ResizeAxis_Long },
-	{ "short",				ResizeAxis_Short },
-	{ "scaledown-both",		ResizeAxis_ScaleDownBoth },
-	{ "sdboth",				ResizeAxis_ScaleDownBoth },
-	{ "scaledown-width",	ResizeAxis_ScaleDownWidth },
-	{ "sdwidth",			ResizeAxis_ScaleDownWidth },
-	{ "scaledown-height",	ResizeAxis_ScaleDownHeight },
-	{ "sdheight",			ResizeAxis_ScaleDownHeight },
-	{ "scaledown-long",		ResizeAxis_ScaleDownLong },
-	{ "sdlong",				ResizeAxis_ScaleDownLong },
-	{ "scaledown-short",	ResizeAxis_ScaleDownShort },
-	{ "sdshort",			ResizeAxis_ScaleDownShort },
+	{ "both",				RESIZE_AXIS_BOTH },
+	{ "width",				RESIZE_AXIS_WIDTH },
+	{ "height",				RESIZE_AXIS_HEIGHT },
+	{ "long",				RESIZE_AXIS_LONG },
+	{ "short",				RESIZE_AXIS_SHORT },
+	{ "scaledown-both",		RESIZE_AXIS_SCALEDOWN_BOTH },
+	{ "sdboth",				RESIZE_AXIS_SCALEDOWN_BOTH },
+	{ "scaledown-width",	RESIZE_AXIS_SCALEDOWN_WIDTH },
+	{ "sdwidth",			RESIZE_AXIS_SCALEDOWN_WIDTH },
+	{ "scaledown-height",	RESIZE_AXIS_SCALEDOWN_HEIGHT },
+	{ "sdheight",			RESIZE_AXIS_SCALEDOWN_HEIGHT },
+	{ "scaledown-long",		RESIZE_AXIS_SCALEDOWN_LONG },
+	{ "sdlong",				RESIZE_AXIS_SCALEDOWN_LONG },
+	{ "scaledown-short",	RESIZE_AXIS_SCALEDOWN_SHORT },
+	{ "sdshort",			RESIZE_AXIS_SCALEDOWN_SHORT },
 	{ NULL },
 };
 
@@ -178,7 +178,7 @@ main(int ac, char *av[])
 	image_opt_init(&imageopt);
 	net_opt_init(&netopt);
 	ignore_error = false;
-	opt_resize_axis = ResizeAxis_Both;
+	opt_resize_axis = RESIZE_AXIS_BOTH;
 	output_filename = NULL;
 	output_format = OutputFormat_SIXEL;
 

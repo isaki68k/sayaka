@@ -701,7 +701,7 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 
 		// いい感じにサイズを決定。
 		image_get_preferred_size(srcimg->width, srcimg->height,
-			ResizeAxis_ScaleDownLong, width, height,
+			RESIZE_AXIS_SCALEDOWN_LONG, width, height,
 			&dst_width, &dst_height);
 	}
 

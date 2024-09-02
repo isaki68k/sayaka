@@ -40,70 +40,66 @@ typedef union ColorRGB_ ColorRGB;
 
 // リサイズの基準軸。
 typedef enum {
-	// 幅が ResizeWidth になり、
-	// 高さが ResizeHeight になるようにリサイズする。
-	// ResizeWidth == 0 のときは Height と同じ動作をする。
-	// ResizeHeight == 0 のときは Width と同じ動作をする。
-	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
-	ResizeAxis_Both = 0,
+	// 幅が width になり、高さが height になるようにリサイズする。
+	// width == 0 のときは HEIGHT と同じ動作をする。
+	// height == 0 のときは WIDTH と同じ動作をする。
+	// width と height の両方が 0 のときは原寸大。
+	RESIZE_AXIS_BOTH = 0,
 
-	// 幅が ResizeWidth になるように縦横比を保持してリサイズする。
-	// ResizeWidth == 0 のときは原寸大。
-	ResizeAxis_Width,
+	// 幅が width になるように縦横比を保持してリサイズする。
+	// width == 0 のときは原寸大。
+	RESIZE_AXIS_WIDTH,
 
-	// 高さが ResizeHeight になるように縦横比を保持してリサイズする。
-	// ResizeHeight == 0 のときは原寸大。
-	ResizeAxis_Height,
+	// 高さが height になるように縦横比を保持してリサイズする。
+	// height == 0 のときは原寸大。
+	RESIZE_AXIS_HEIGHT,
 
 	// 長辺優先リサイズ。
-	// 原寸 Width >= Height のときは Width と同じ動作をする。
-	// 原寸 Width < Height のときは Height と同じ動作をする。
+	// 原寸 width >= height のときは WIDTH と同じ動作をする。
+	// 原寸 width < height のときは HEIGHT と同じ動作をする。
 	// 例:
-	// 長辺を特定のサイズにしたい場合は、ResizeWidth と ResizeHeight に
-	// 同じ値を設定する。
-	ResizeAxis_Long,
+	// 長辺を特定のサイズにしたい場合は width と height に同じ値を設定する。
+	RESIZE_AXIS_LONG,
 
 	// 短辺優先リサイズ。
-	// 原寸 Width <= Height のときは Width と同じ動作をする。
-	// 原寸 Width > Height のときは Height と同じ動作をする。
-	ResizeAxis_Short,
+	// 原寸 width <= height のときは WIDTH と同じ動作をする。
+	// 原寸 width > height のときは HEIGHT と同じ動作をする。
+	RESIZE_AXIS_SHORT,
 
-	// 縮小のみの Both。
-	// 幅が ResizeWidth より大きいときは ResizeWidth になり、
-	// 高さが ResizeHeight より大きいときは ResizeHeight になるように
+	// 縮小のみの BOTH。
+	// 幅が width より大きいときは width になり、
+	// 高さが height より大きいときは height になるようにリサイズする。
+	// width == 0 のときは SCALEDOWN_HEIGHT と同じ動作をする。
+	// height == 0 のときは SCALEDOWN_WIDTH と同じ動作をする。
+	// width と height の両方が 0 のときは原寸大。
+	RESIZE_AXIS_SCALEDOWN_BOTH = 8,
+
+	// 縮小のみの WIDTH。
+	// 幅が width より大きいときは width になるように縦横比を保持して
 	// リサイズする。
-	// ResizeWidth == 0 のときは ScaleDownHeight と同じ動作をする。
-	// ResizeHeight == 0 のときは ScaleDownWidth と同じ動作をする。
-	// ResizeWidth と ResizeHeight の両方が 0 のときは原寸大。
-	ResizeAxis_ScaleDownBoth = 8,
+	// width == 0 のときは原寸大。
+	RESIZE_AXIS_SCALEDOWN_WIDTH,
 
-	// 縮小のみの Width。
-	// 幅が ResizeWidth より大きいときは ResizeWidth になるように
-	// 縦横比を保持してリサイズする。
-	// ResizeWidth == 0 のときは原寸大。
-	ResizeAxis_ScaleDownWidth,
-
-	// 縮小のみの Height。
-	// 幅が ResizeHeight より大きいときは ResizeHeight になるように
-	// 縦横比を保持してリサイズする。
-	// ResizeHeight == 0 のときは原寸大。
-	ResizeAxis_ScaleDownHeight,
+	// 縮小のみの HEIGHT。
+	// 幅が height より大きいときは height になるように縦横比を保持して
+	// リサイズする。
+	// height == 0 のときは原寸大。
+	RESIZE_AXIS_SCALEDOWN_HEIGHT,
 
 	// 縮小のみの長辺優先リサイズ。
-	// 原寸 Width >= Height のときは ScaleDownWidth と同じ動作をする。
-	// 原寸 Width < Height のときは ScaleDownHeight と同じ動作をする。
+	// 原寸 width >= height のときは SCALEDOWN_WIDTH と同じ動作をする。
+	// 原寸 width < height のときは SCALEDOWN_HEIGHT と同じ動作をする。
 	// 例:
-	// 長辺を特定のサイズ以下にしたい場合は、ResizeWidth と ResizeHeight に
-	// 同じ値を設定する。
-	ResizeAxis_ScaleDownLong,
+	// 長辺を特定のサイズ以下にしたい場合は width と height に同じ値を設定する。
+	RESIZE_AXIS_SCALEDOWN_LONG,
 
 	// 縮小のみの短辺優先リサイズ。
-	// 原寸 Width <= Height のときは ScaleDownWidth と同じ動作をする。
-	// 原寸 Width > Height のときは ScaleDownHeight と同じ動作をする。
-	ResizeAxis_ScaleDownShort,
+	// 原寸 width <= height のときは SCALEDOWN_WIDTH と同じ動作をする。
+	// 原寸 width > height のときは SCALEDOWN_HEIGHT と同じ動作をする。
+	RESIZE_AXIS_SCALEDOWN_SHORT,
 
-	// ScaleDown* を判定するためのビットマスク。内部で使用。
-	ResizeAxis_ScaleDownBit = 0x08,
+	// SCALEDOWN* を判定するためのビットマスク。内部で使用。
+	RESIZE_AXIS_SCALEDOWN_BIT = 0x08,
 } ResizeAxis;
 
 // 減色&リサイズ方法。
