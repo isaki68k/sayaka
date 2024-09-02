@@ -150,7 +150,19 @@ image_get_preferred_size(
 	uint *preferred_width,		// 求めた幅を格納する先
 	uint *preferred_height)		// 求めた高さを格納する先
 {
+#if !defined(SIXELV)
+	assert(axis == RESIZE_AXIS_SCALEDOWN_LONG);
+#endif
+
+	if (request_width < 1) {
+		request_width = current_width;
+	}
+	if (request_height < 1) {
+		request_height = current_height;
+	}
+
 	// 条件を丸めていく
+#if defined(SIXELV)
 	switch (axis) {
 	 case RESIZE_AXIS_BOTH:
 	 case RESIZE_AXIS_SCALEDOWN_BOTH:
@@ -165,11 +177,13 @@ image_get_preferred_size(
 
 	 case RESIZE_AXIS_LONG:
 	 case RESIZE_AXIS_SCALEDOWN_LONG:
+#endif
 		if (current_width >= current_height) {
 			axis = RESIZE_AXIS_WIDTH;
 		} else {
 			axis = RESIZE_AXIS_HEIGHT;
 		}
+#if defined(SIXELV)
 		break;
 
 	 case RESIZE_AXIS_SHORT:
@@ -193,15 +207,10 @@ image_get_preferred_size(
 		__unreachable();
 	}
 
-	if (request_width < 1) {
-		request_width = current_width;
-	}
-	if (request_height < 1) {
-		request_height = current_height;
-	}
-
 	// 縮小のみ指示。
-	if ((axis & RESIZE_AXIS_SCALEDOWN_BIT)) {
+	if ((axis & RESIZE_AXIS_SCALEDOWN_BIT))
+#endif
+	{
 		if (request_width > current_width) {
 			request_width = current_width;
 		}
@@ -214,10 +223,12 @@ image_get_preferred_size(
 	uint width;
 	uint height;
 	switch (axis) {
+#if defined(SIXELV)
 	 case RESIZE_AXIS_BOTH:
 		width  = request_width;
 		height = request_height;
 		break;
+#endif
 
 	 case RESIZE_AXIS_WIDTH:
 		width  = request_width;
