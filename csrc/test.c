@@ -135,6 +135,38 @@ test_decode_isotime(void)
 }
 
 static void
+test_json_unescape(void)
+{
+	printf("%s\n", __func__);
+
+	struct {
+		const char *src;
+		const char *exp;
+	} table[] = {
+		// src		expected
+		{ "",		"" },
+		{ "abc",	"abc" },
+		{ "\\\"\\\\" "\\/\\b\\f\\n\\r\\t",	"\"\\/\b\f\n\r\t" },
+		{ "\\a",	"\\a" },	// どうなる?
+		{ "\\u004a",	"J" },
+		{ "\\u004A",	"J" },
+		{ "\\u004aB",	"JB" },
+		{ "\\u3042\\u3044",	"あい" },
+	};
+	for (uint i = 0; i < countof(table); i++) {
+		const char *src = table[i].src;
+		const char *exp = table[i].exp;
+
+		string *act = json_unescape(src);
+		if (act == NULL) {
+			fail("%s: expects %s but NULL", src, exp);
+		} else if (strcmp(exp, string_get(act)) != 0) {
+			fail("%s: expects %s but %s", src, exp, string_get(act));
+		}
+	}
+}
+
+static void
 test_stou32def(void)
 {
 	printf("%s\n", __func__);
@@ -360,6 +392,7 @@ main(int ac, char *av[])
 {
 	test_chomp();
 	test_decode_isotime();
+	test_json_unescape();
 	test_stou32def();
 	test_stox32def();
 	test_string_rtrim_inplace();

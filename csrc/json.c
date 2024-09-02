@@ -430,6 +430,91 @@ json_equal_cstr(const json *js, int idx, const char *s2)
 	return (strcmp(s1, s2) == 0);
 }
 
+// JSON の文字列のエスケープを取り除く。
+string *
+json_unescape(const char *src)
+{
+	// 最長で元文字列と同じ長さのはず?
+	string *dst = string_alloc(strlen(src) + 1);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	char c;
+	bool escape = false;
+	for (int i = 0; (c = src[i]) != '\0'; i++) {
+		if (escape == false) {
+			if (c == '\\') {
+				escape = true;
+			} else {
+				string_append_char(dst, c);
+			}
+		} else {
+			switch (c) {
+			 case '\"':
+				string_append_char(dst, '"');
+				break;
+			 case '\\':
+				string_append_char(dst, '\\');
+				break;
+			 case '/':
+				string_append_char(dst, '/');
+				break;
+			 case 'b':
+				string_append_char(dst, '\b');
+				break;
+			 case 'f':
+				string_append_char(dst, '\f');
+				break;
+			 case 'n':
+				string_append_char(dst, '\n');
+				break;
+			 case 'r':
+				string_append_char(dst, '\r');
+				break;
+			 case 't':
+				string_append_char(dst, '\t');
+				break;
+			 case 'u':	// \uXXXX
+			 {
+				char hex[5];
+				uint j;
+				// 4文字コピーして一旦ゼロ終端文字列を作る。
+				// "\u01234" は '\u+0123' と '4' という2文字なので
+				// 元文字列中で任意長の16進数文字列を変換する方法は使えない。
+				memset(hex, 0, sizeof(hex));
+				for (j = 0; j < 4; j++) {
+					hex[j] = src[i + 1 + j];
+					if (hex[j] == '\0') {
+						goto default_case;
+					}
+				}
+				i += j;
+
+				char *end;
+				uint32 code = stox32def(hex, -1, &end);
+				if ((int32)code < 0 || (end - hex) != 4) {
+					goto default_case;
+				}
+				char utf8[8];
+				uint ulen = uchar_to_utf8(utf8, code);
+				utf8[ulen] = '\0';
+				string_append_cstr(dst, utf8);
+				break;
+			 }
+			 default:
+			 default_case:
+				string_append_char(dst, '\\');
+				string_append_char(dst, c);
+				break;
+			}
+			escape = false;
+		}
+	}
+
+	return dst;
+}
+
 // js[idx] の値を int で返す。
 // NUMBER 型でないか、int で表現できない場合は 0 を返す。
 // 小数点以下は切り捨てて整数にする。

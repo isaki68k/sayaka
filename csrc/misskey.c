@@ -46,7 +46,6 @@ static void misskey_show_icon(const json *, int, const string *);
 static bool misskey_show_photo(const json *, int, int);
 static void misskey_print_filetype(const json *, int, const char *);
 static void make_cache_filename(char *, uint, const char *);
-static string *string_unescape_c(const char *);
 static ustring *misskey_display_text(const json *, int, const char *);
 static bool unichar_submatch(const unichar *, const char *);
 static int  unichar_ncasecmp(const unichar *, const unichar *);
@@ -430,7 +429,7 @@ misskey_show_note(const json *js, int inote)
 	// いた場合にはこっちを再エスケープするはずだった)。
 
 	const char *c_text = json_get_cstr(js, itext);
-	string *text = string_unescape_c(c_text);
+	string *text = json_unescape(c_text);
 	if (__predict_false(text == NULL)) {
 		text = string_from_cstr("");
 	}
@@ -440,7 +439,7 @@ misskey_show_note(const json *js, int inote)
 	int icw = json_obj_find(js, inote, "cw");
 	if (icw >= 0 && json_is_str(js, icw)) {
 		const char *c_cw = json_get_cstr(js, icw);
-		cw = string_unescape_c(c_cw);
+		cw = json_unescape(c_cw);
 	} else {
 		cw = NULL;
 	}
@@ -562,14 +561,14 @@ misskey_show_announcement(const json *js, int inote)
 	const char *text  = json_obj_find_cstr(js, inote, "text");
 	ustring_clear(line);
 	if (title && title[0]) {
-		string *unescape_title = string_unescape_c(title);
+		string *unescape_title = json_unescape(title);
 		ustring_append_utf8(line, string_get(unescape_title));
 		ustring_append_unichar(line, '\n');
 		ustring_append_unichar(line, '\n');
 		string_free(unescape_title);
 	}
 	if (text && text[0]) {
-		string *unescape_text = string_unescape_c(text);
+		string *unescape_text = json_unescape(text);
 		ustring_append_utf8(line, string_get(unescape_text));
 		string_free(unescape_text);
 	}
@@ -790,54 +789,6 @@ make_cache_filename(char *filename, uint bufsize, const char *url)
 			*p = '_';
 		}
 	}
-}
-
-// src 中の "\\n" などのエスケープされた文字を "\n" に戻す。
-static string *
-string_unescape_c(const char *src)
-{
-	// 最長で元文字列と同じ長さのはず?
-	string *dst = string_alloc(strlen(src) + 1);
-	if (dst == NULL) {
-		return NULL;
-	}
-
-	char c;
-	bool escape = false;
-	for (int i = 0; (c = src[i]) != '\0'; i++) {
-		if (escape == false) {
-			if (c == '\\') {
-				escape = true;
-			} else {
-				string_append_char(dst, c);
-			}
-		} else {
-			switch (c) {
-			 case 'n':
-				string_append_char(dst, '\n');
-				break;
-			 case 'r':
-				string_append_char(dst, '\r');
-				break;
-			 case 't':
-				string_append_char(dst, '\t');
-				break;
-			 case '\\':
-				string_append_char(dst, '\\');
-				break;
-			 case '\"':
-				string_append_char(dst, '"');
-				break;
-			 default:
-				string_append_char(dst, '\\');
-				string_append_char(dst, c);
-				break;
-			}
-			escape = false;
-		}
-	}
-
-	return dst;
 }
 
 // 本文を表示用に整形。
@@ -1111,7 +1062,7 @@ misskey_format_poll(const json *js, int ipoll)
 		JSON_ARRAY_FOR(ichoice, js, ichoices) {
 			bool voted = json_obj_find_bool(js, ichoice, "isVoted");
 			const char *c_text = json_obj_find_cstr(js, ichoice, "text");
-			string *text = string_unescape_c(c_text);
+			string *text = json_unescape(c_text);
 			int votes = json_obj_find_int(js, ichoice, "votes");
 
 			string_append_printf(s, " [%c] %s : %u\n",

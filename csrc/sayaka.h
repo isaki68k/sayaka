@@ -80,6 +80,7 @@ extern bool json_is_null(const json *, int);
 extern uint json_get_len(const json *, int);
 extern uint json_get_size(const json *, int);
 extern const char *json_get_cstr(const json *, int);
+extern string *json_unescape(const char *);
 extern int  json_get_int(const json *, int);
 extern int  json_obj_first(const json *, int, int *, int);
 extern int  json_obj_next(const json *, int, int);
@@ -180,6 +181,7 @@ extern void ustring_tolower_inplace(ustring *);
 extern string *ustring_to_utf8(const ustring *);
 extern string *ustring_to_string(const ustring *);
 extern void ustring_dump(const ustring *, const char *);
+extern uint uchar_to_utf8(char *, unichar);
 
 // wsclient.c
 extern wsclient *wsclient_create(const diag *);

@@ -45,7 +45,6 @@
 static string *utf8_to_outcode(const string *);
 #endif
 static unichar uchar_from_utf8(const char **);
-static uint uchar_to_utf8(char *, unichar);
 
 // 出力文字コードが UTF-8 以外 (iconv による変換が必要) なら true。
 static bool use_iconv;
@@ -394,7 +393,7 @@ uchar_from_utf8(const char **srcp)
 // Unicode コードポイント code を UTF-8 に変換して dst に書き出す。
 // dst は '\0' 終端しない。
 // 戻り値は書き出したバイト数。
-static uint
+uint
 uchar_to_utf8(char *dst, unichar code)
 {
 	if (code < 0x80) {
