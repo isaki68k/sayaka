@@ -211,6 +211,8 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 		rv = 0;
 		goto abort;
 	}
+	string_rtrim_inplace(response);
+	Trace(diag, "--> |%s|", string_get(response));
 
 	// 残りの行は今のところ使ってないので読み捨てる。
 	string *recvhdr;
