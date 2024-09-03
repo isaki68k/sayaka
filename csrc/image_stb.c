@@ -53,7 +53,6 @@ _Pragma("GCC diagnostic ignored \"-Wcast-qual\"")
 _Pragma("GCC diagnostic ignored \"-Wunused-but-set-variable\"")
 #endif
 
-// I use the stb_image as public domain.
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
 #include "stb/stb_image.h"
