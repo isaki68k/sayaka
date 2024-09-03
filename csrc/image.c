@@ -929,8 +929,6 @@ finder_fixed256(image_reductor_handle *ir, ColorRGB c)
 	return (R << 5) | (G << 2) | B;
 }
 
-#undef RGB
-
 
 #if defined(SIXELV)
 
