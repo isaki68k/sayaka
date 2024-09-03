@@ -500,51 +500,82 @@ main(int ac, char *av[])
 static void
 version(void)
 {
-	fprintf(stderr, "sayaka (csrc)\n");
+	fprintf(stderr, "sayaka (csrc) - Misskey stream client\n");
 }
 
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [<options...>]\n", getprogname());
+	fprintf(stderr, "usage: %s <command> [<options...>]\n", getprogname());
+	fprintf(stderr,
+" <command>\n"
+"  --xxx-home     : Home timeline mode (needs --xxx-server and --xxx-token)\n"
+"  --xxx-local    : Local timeline mode (needs --xxx-server)\n"
+"  --play=<file|->: Playback mode\n"
+" <options>\n"
+"  --xxx-server=<host> : Set misskey server\n"
+"  --xxx-token=<file>  : Set misskey access token file\n"
+"  -c <colormode>      : 256,16,8,2,1 and gray[2-256] (default:256)\n"
+"  --show-cw           : Open CW(Contents Warning) part\n"
+"  -r,--record=<file>  : Record JSON to <file>\n"
+"  --nsfw=<show|blur|alt|hide> : How to show NSFW contents (default:blur)\n"
+"  --show-image=<yes|no|auto>  : Whether to show image or not (default:auto)\n"
+"  --help-all          : More details\n"
+	);
 }
 
 static void
 help_all(void)
 {
-	fprintf(stderr, "usage: %s [<options>...]\n", getprogname());
+	fprintf(stderr, "usage: %s <command> [<options>...]\n", getprogname());
 	fprintf(stderr,
-"  -c,--color=<color> : Specify color mode (default: 256)\n"
-"     1        : Monochrome image, and disable all text color sequences\n"
-"     2        : Monochrome (2-level grayscale) image\n"
-"     8        : Fixed RGB 8 colors\n"
-"     16       : Fixed ANSI compatible 16 colors\n"
+" <command>\n"
+"  --xxx-home     : Home timeline mode (needs --xxx-server and --xxx-token)\n"
+"  --xxx-local    : Local timeline mode (needs --xxx-server)\n"
+"  -p,--play=<file|->: Playback mode ('-' means stdin)\n"
+" <options>\n"
+"  -c,--color=<colormode> : Set color mode (default: 256)\n"
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
-"     gray[<n>]: (2..256) shades of grayscale. 256 if <n> is ommitted.\n"
-"                'gray2' is a synonym for '2'.\n"
-"  --ciphers=<ciphers>\n"
-"  --dark/--light\n"
+"     16       : Fixed ANSI compatible 16 colors\n"
+"     8        : Fixed RGB 8 colors\n"
+"     2        : Monochrome image, but use text bold sequence\n"
+"     1        : Monochrome image, and disable any text color sequences\n"
+"     gray[<n>]: (2..256) shades of grayscale. If <n> is omitted, 256 is used\n"
+"                'gray2' is a synonym for '2'\n"
+"  --ciphers=<ciphers>    : \"RSA\" can only be specified\n"
+"  --dark / --light       : Assume background color (default:auto detect)\n"
+"  --eaw-a=<1|2>          : Width of Unicode EAW Anbiguous char (default:2)\n"
+"  --eaw-n=<1|2>          : Width of Unicode EAW Neutral char   (defualt:1)\n"
+"  --euc-jp / --jis       : Set output charset\n"
+"  --font=<W>x<H>         : Set font size (Normally autodetected)\n"
+"  --help-all             : This help\n"
+"  --ipv4 / --ipv6        : Connect only IPv4/v6 for both stream and images\n"
+"  --mathalpha            : Use alternate character for some MathAlpha chars\n"
+"  --misskey              : Set misskey mode (No other choices at this point)\n"
+"  --max-image-cols=<n>   : Set max number of images per line\n"
+"                           0 means much as possible (default:0)\n"
+"  --no-conbine           : Don't combine Unicode combined characters\n"
+"  --nsfw=<mode>          : How to show NSFW images (default:blur)\n"
+"     show     : Show image as is\n"
+"     blur     : Show blurred image\n"
+"     alt      : Hide image but display only filetype\n"
+"     hide     : Hide this note itself if the note has NSFW contents\n"
+"  --progress             : Show startup progress (for slow machines)\n"
+"  -r,--record=<file>     : Record JSON to <file>\n"
+"  --xxx-server=<host>    : Set misskey server\n"
+"  --show-cw              : Open CW(Contents Warning) part\n"
+"  --show-image=<mode>    : Whether to show image or not (default:auto)\n"
+"     yes      : Force output SIXEL image even if terminal doesn't support\n"
+"     no       : Don't output SIXEL image (--no-image can be used)\n"
+"     auto     : Auto detect\n"
+"  --timeout-image=<msec> : Set connection timeout for image (default:3000)\n"
+"  --xxx-token=<file>     : Set misskey access token file\n"
+"  -v,--version\n"
+"  --debug-format=<0..2>\n"
 "  --debug-image=<0..2>\n"
 "  --debug-json=<0..2>\n"
 "  --debug-net=<0..2>\n"
 "  --debug-term=<0..2>\n"
-"  --eaw-a=<1|2> / --eaw-n=<1|2>\n"
-"  --euc-jp/--jis\n"
-"  --font=<W>x<H>\n"
-"  --help-all  : This help.\n"
-"  --ipv4 / --ipv6\n"
-"  -l,--local=<server>\n"
-"  --mathalpha\n"
-"  --max-image-cols=<n>\n"
-"  --misskey\n"
-"  --no-conbine\n"
-"  --nsfw=<mode>\n"
-"  -p,--play=<filename|->\n"
-"  --progress\n"
-"  --record=<filename>\n"
-"  --show-cw\n"
-"  --show-image=<mode>\n"
-"  -v,--version\n"
 	);
 }
 
