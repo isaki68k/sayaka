@@ -119,7 +119,6 @@ enum {
 	OPT_no_combine,
 	OPT_no_image,	// backward compatibility
 	OPT_nsfw,
-	OPT_play,
 	OPT_progress,
 	OPT_show_cw,
 	OPT_show_image,
@@ -152,7 +151,7 @@ static const struct option longopts[] = {
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
-	{ "play",			required_argument,	NULL,	OPT_play },
+	{ "play",			required_argument,	NULL,	'p' },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	'r' },
 	{ "xxx-server",		required_argument,	NULL,	's' },
@@ -217,7 +216,7 @@ main(int ac, char *av[])
 
 	netopt_image.timeout_msec = 3000;
 
-	while ((c = getopt_long(ac, av, "c:hlr:s:t:v", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:hlp:r:s:t:v", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
 		 {
@@ -395,8 +394,7 @@ main(int ac, char *av[])
 			}
 			break;
 
-		 case OPT_play:
-		 {
+		 case 'p':
 			if (strcmp(optarg, "-") == 0) {
 				playfile = NULL;
 			} else {
@@ -404,7 +402,6 @@ main(int ac, char *av[])
 			}
 			cmd = CMD_PLAY;
 			break;
-		 }
 
 		 case OPT_progress:
 			opt_progress = true;
@@ -537,7 +534,7 @@ help_all(void)
 "  --misskey\n"
 "  --no-conbine\n"
 "  --nsfw=<mode>\n"
-"  --play=<filename|->\n"
+"  -p,--play=<filename|->\n"
 "  --progress\n"
 "  --record=<filename>\n"
 "  --show-cw\n"
