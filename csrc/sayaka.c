@@ -476,6 +476,10 @@ main(int ac, char *av[])
 		init_screen();
 
 		if (cmd == CMD_STREAM) {
+			if (server == NULL) {
+				errx(1, "server must be specified");
+			}
+
 			const char *token = NULL;
 			if (token_file) {
 				token = get_token(token_file);
