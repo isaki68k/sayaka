@@ -108,6 +108,7 @@ enum {
 	OPT_eaw_n,
 	OPT_euc_jp,
 	OPT_font,
+	OPT_help,
 	OPT_help_all,
 	OPT_ipv4,
 	OPT_ipv6,
@@ -138,6 +139,7 @@ static const struct option longopts[] = {
 	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "font",			required_argument,	NULL,	OPT_font },
+	{ "help",			no_argument,		NULL,	OPT_help },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ "xxx-home",		no_argument,		NULL,	'h' },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
@@ -334,6 +336,8 @@ main(int ac, char *av[])
 			is_home = true;
 			break;
 
+		 // OPT_help は default:
+
 		 case OPT_help_all:
 			help_all();
 			exit(0);
@@ -448,6 +452,7 @@ main(int ac, char *av[])
 			version();
 			exit(0);
 
+		 case OPT_help:
 		 default:
 			usage();
 			exit(0);
