@@ -155,8 +155,18 @@ image_get_preferred_size(
 #endif
 
 	// 条件を丸めていく
-#if defined(SIXELV)
 	switch (axis) {
+	 default:
+	 case RESIZE_AXIS_LONG:
+	 case RESIZE_AXIS_SCALEDOWN_LONG:
+		if (current_width >= current_height) {
+			axis = RESIZE_AXIS_WIDTH;
+		} else {
+			axis = RESIZE_AXIS_HEIGHT;
+		}
+		break;
+
+#if defined(SIXELV)
 	 case RESIZE_AXIS_BOTH:
 	 case RESIZE_AXIS_SCALEDOWN_BOTH:
 		if (request_width == 0) {
@@ -166,17 +176,6 @@ image_get_preferred_size(
 		} else {
 			axis = RESIZE_AXIS_BOTH;
 		}
-		break;
-
-	 case RESIZE_AXIS_LONG:
-	 case RESIZE_AXIS_SCALEDOWN_LONG:
-#endif
-		if (current_width >= current_height) {
-			axis = RESIZE_AXIS_WIDTH;
-		} else {
-			axis = RESIZE_AXIS_HEIGHT;
-		}
-#if defined(SIXELV)
 		break;
 
 	 case RESIZE_AXIS_SHORT:
@@ -195,11 +194,8 @@ image_get_preferred_size(
 	 case RESIZE_AXIS_SCALEDOWN_HEIGHT:
 		axis = RESIZE_AXIS_HEIGHT;
 		break;
-
-	 default:
-		__unreachable();
-	}
 #endif
+	}
 
 	if (request_width < 1) {
 		request_width = current_width;
@@ -207,7 +203,6 @@ image_get_preferred_size(
 	if (request_height < 1) {
 		request_height = current_height;
 	}
-
 
 	// 縮小のみ指示。
 #if defined(SIXELV)
@@ -226,13 +221,6 @@ image_get_preferred_size(
 	uint width;
 	uint height;
 	switch (axis) {
-#if defined(SIXELV)
-	 case RESIZE_AXIS_BOTH:
-		width  = request_width;
-		height = request_height;
-		break;
-#endif
-
 	 case RESIZE_AXIS_WIDTH:
 		width  = request_width;
 		height = current_height * width / current_width;
@@ -242,6 +230,13 @@ image_get_preferred_size(
 		height = request_height;
 		width  = current_width * height / current_height;
 		break;
+
+#if defined(SIXELV)
+	 case RESIZE_AXIS_BOTH:
+		width  = request_width;
+		height = request_height;
+		break;
+#endif
 
 	 default:
 		__unreachable();
