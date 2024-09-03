@@ -648,17 +648,16 @@ image_reduct_highquality(image_reductor_handle *ir,
 			if (0) {
 			}
 
-#if defined(SIXELV)
 			switch (opt->diffuse) {
+			 default:
 			 case DIFFUSE_FS:
-#endif
 				// Floyd Steinberg Method
 				set_err(errbuf[0], x + 1, &col, 112);
 				set_err(errbuf[1], x - 1, &col, 48);
 				set_err(errbuf[1], x    , &col, 80);
 				set_err(errbuf[1], x + 1, &col, 16);
-#if defined(SIXELV)
 				break;
+#if defined(SIXELV)
 			 case DIFFUSE_ATKINSON:
 				// Atkinson
 				set_err(errbuf[0], x + 1, &col, 32);
@@ -724,8 +723,8 @@ image_reduct_highquality(image_reductor_handle *ir,
 				errbuf[1][x].b   = saturate_adderr(errbuf[1][x].b,   col.b);
 				errbuf[1][x+1].g = saturate_adderr(errbuf[1][x+1].g, col.g);
 				break;
-			}
 #endif
+			}
 		}
 
 		// 誤差バッファをローテート。
