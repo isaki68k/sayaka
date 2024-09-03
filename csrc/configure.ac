@@ -307,7 +307,7 @@ case "${with_openssl}" in
 	if test x"${has_openssl}" \!= x"yes"; then
 		AC_MSG_FAILURE(
 			[--with-openssl is specified but openssl not found.
-	On Ubuntu, sudo apt install openssl(?)])
+	On Ubuntu, sudo apt install openssl])
 	fi
 	;;
 esac
