@@ -63,6 +63,7 @@ static void mkdir_if(const char *);
 static void progress(const char *);
 static void init_screen(void);
 static void invalidate_cache(void);
+static const char *get_token(const char *);
 static void signal_handler(int);
 static void sigwinch(bool);
 
@@ -470,19 +471,10 @@ main(int ac, char *av[])
 		init_screen();
 
 		if (cmd == CMD_STREAM_HOME || cmd == CMD_STREAM_LOCAL) {
-			char token[64];
-			memset(token, 0, sizeof(token));
+			const char *token = NULL;
 			if (token_file) {
-				FILE *fp = fopen(token_file, "r");
-				if (fp == NULL) {
-					err(1, "%s", token_file);
-				}
-				if (fgets(token, sizeof(token), fp)) {
-					chomp(token);
-				}
-				fclose(fp);
-			}
-			if (token[0] == '\0' && cmd == CMD_STREAM_HOME) {
+				token = get_token(token_file);
+			} else if (cmd == CMD_STREAM_HOME) {
 				errx(1, "Home timeline requires your access token");
 			}
 
@@ -493,7 +485,7 @@ main(int ac, char *av[])
 
 			cmd_misskey_stream(local_server,
 				(cmd == CMD_STREAM_HOME),
-				token[0] ? token : NULL);
+				token);
 		} else {
 			cmd_misskey_play(playfile);
 		}
@@ -737,6 +729,39 @@ invalidate_cache(void)
 	if (system(cmd) < 0) {
 		warn("system(find photo)");
 	}
+}
+
+// filename からトークンを取得して strdup したものを返す。
+// 失敗するとその場でエラー終了する。
+static const char *
+get_token(const char *filename)
+{
+	char buf[64];
+	FILE *fp;
+	const char *token;
+
+	assert(filename);
+
+	memset(buf, 0, sizeof(buf));
+	fp = fopen(filename, "r");
+	if (fp == NULL) {
+		err(1, "%s", filename);
+	}
+	// 1行目だけ。
+	if (fgets(buf, sizeof(buf), fp)) {
+		chomp(buf);
+	}
+	fclose(fp);
+
+	if (buf[0] == '\0') {
+		errx(1, "%s: No token found", filename);
+	}
+
+	token = strdup(buf);
+	if (token == NULL) {
+		err(1, "%s: strdup", __func__);
+	}
+	return token;
 }
 
 static void
