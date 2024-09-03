@@ -215,7 +215,7 @@ main(int ac, char *av[])
 
 	netopt_image.timeout_msec = 3000;
 
-	while ((c = getopt_long(ac, av, "c:hls:t:v", longopts, NULL)) != -1) {
+	while ((c = getopt_long(ac, av, "c:hlr:s:t:v", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
 		 {
