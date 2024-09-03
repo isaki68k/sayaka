@@ -341,7 +341,7 @@ image_read_pstream(pstream *ps, const diag *diag)
 }
 
 // src 画像を (dst_width, dst_height) にリサイズしながら同時に
-// colormode (& graycount) に減色した新しい image を作成して返す。
+// colormode に減色した新しい image を作成して返す。
 image *
 image_reduct(
 	const image *src,			// 元画像
