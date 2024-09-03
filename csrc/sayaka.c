@@ -47,8 +47,7 @@ enum {
 
 enum {
 	CMD_NONE = 0,
-	CMD_STREAM_HOME,
-	CMD_STREAM_LOCAL,
+	CMD_STREAM,
 	CMD_PLAY,
 };
 
@@ -187,8 +186,9 @@ main(int ac, char *av[])
 	int c;
 	uint cmd;
 	const char *token_file;
-	const char *local_server;
+	const char *server;
 	const char *playfile;
+	bool is_home;
 
 	diag_format = diag_alloc();
 	diag_image = diag_alloc();
@@ -211,8 +211,9 @@ main(int ac, char *av[])
 	opt_progress = false;
 	opt_show_image = -1;
 	token_file = NULL;
-	local_server = NULL;
+	server = NULL;
 	playfile = NULL;
+	is_home = false;
 
 	netopt_image.timeout_msec = 3000;
 
@@ -330,7 +331,8 @@ main(int ac, char *av[])
 		 }
 
 		 case 'h':
-			cmd = CMD_STREAM_HOME;
+			cmd = CMD_STREAM;
+			is_home = true;
 			break;
 
 		 case OPT_help_all:
@@ -352,7 +354,8 @@ main(int ac, char *av[])
 			break;
 
 		 case 'l':
-			cmd = CMD_STREAM_LOCAL;
+			cmd = CMD_STREAM;
+			is_home = false;
 			break;
 
 		 case OPT_light:
@@ -412,7 +415,7 @@ main(int ac, char *av[])
 			break;
 
 		 case 's':
-			local_server = optarg;
+			server = optarg;
 			break;
 
 		 case OPT_show_cw:
@@ -466,15 +469,15 @@ main(int ac, char *av[])
 		err(1, "init failed");
 	}
 
-	if (cmd == CMD_STREAM_HOME || cmd == CMD_STREAM_LOCAL || cmd == CMD_PLAY) {
+	if (cmd == CMD_STREAM || cmd == CMD_PLAY) {
 		// 表示系の初期化。
 		init_screen();
 
-		if (cmd == CMD_STREAM_HOME || cmd == CMD_STREAM_LOCAL) {
+		if (cmd == CMD_STREAM) {
 			const char *token = NULL;
 			if (token_file) {
 				token = get_token(token_file);
-			} else if (cmd == CMD_STREAM_HOME) {
+			} else if (is_home) {
 				errx(1, "Home timeline requires your access token");
 			}
 
@@ -483,9 +486,7 @@ main(int ac, char *av[])
 			invalidate_cache();
 			progress("done\n");
 
-			cmd_misskey_stream(local_server,
-				(cmd == CMD_STREAM_HOME),
-				token);
+			cmd_misskey_stream(server, is_home, token);
 		} else {
 			cmd_misskey_play(playfile);
 		}
