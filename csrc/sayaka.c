@@ -477,8 +477,9 @@ main(int ac, char *av[])
 				if (fp == NULL) {
 					err(1, "%s", token_file);
 				}
-				fgets(token, sizeof(token), fp);
-				chomp(token);
+				if (fgets(token, sizeof(token), fp)) {
+					chomp(token);
+				}
 				fclose(fp);
 			}
 			if (token[0] == '\0' && cmd == CMD_STREAM_HOME) {
