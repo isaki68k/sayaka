@@ -154,13 +154,6 @@ image_get_preferred_size(
 	assert(axis == RESIZE_AXIS_SCALEDOWN_LONG);
 #endif
 
-	if (request_width < 1) {
-		request_width = current_width;
-	}
-	if (request_height < 1) {
-		request_height = current_height;
-	}
-
 	// 条件を丸めていく
 #if defined(SIXELV)
 	switch (axis) {
@@ -206,8 +199,18 @@ image_get_preferred_size(
 	 default:
 		__unreachable();
 	}
+#endif
+
+	if (request_width < 1) {
+		request_width = current_width;
+	}
+	if (request_height < 1) {
+		request_height = current_height;
+	}
+
 
 	// 縮小のみ指示。
+#if defined(SIXELV)
 	if ((axis & RESIZE_AXIS_SCALEDOWN_BIT))
 #endif
 	{
