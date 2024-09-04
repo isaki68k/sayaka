@@ -6,12 +6,6 @@
 #ifndef sayaka_config_h
 #define sayaka_config_h
 
-#undef HAVE_ENDIAN_H
-#undef HAVE_BSD_BSD_H
-#undef HAVE_SYS_ENDIAN_H
-#undef HAVE_SYS_SYSCTL_H
-#undef HAVE_SYS_TTYCOM_H
-
 #undef HAVE___ATTRIBUTE_FORMAT
 #undef HAVE___BUILTIN_BSWAP16
 #undef HAVE___BUILTIN_BSWAP32
@@ -20,6 +14,12 @@
 #undef HAVE___BUILTIN_EXPECT
 #undef HAVE___BUILTIN_UNREACHABLE
 
+#undef HAVE_BSD_BSD_H
+#undef HAVE_ENDIAN_H
+#undef HAVE_SYS_ENDIAN_H
+#undef HAVE_SYS_SYSCTL_H
+#undef HAVE_SYS_TTYCOM_H
+
 #undef HAVE_ARC4RANDOM
 #undef HAVE_ARC4RANDOM_BUF
 
@@ -27,7 +27,6 @@
 #undef  ICONV_HAS_CONST_SRC
 #undef HAVE_LIBPNG
 #undef HAVE_LIBWEBP
-#undef HAVE_MBEDTLS
 #undef HAVE_OPENSSL
 
 #endif // !sayaka_config_h
