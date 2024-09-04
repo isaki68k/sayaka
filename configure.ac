@@ -5,7 +5,7 @@
 
 AC_PREREQ([2.71])
 AC_INIT([sayaka],[ ],[])
-AC_CONFIG_SRCDIR([./csrc/sayaka.c])
+AC_CONFIG_SRCDIR([./src/sayaka.c])
 AC_CONFIG_AUX_DIR([scripts])
 
 # Checks for programs.
@@ -409,6 +409,6 @@ fi
 CFLAGS=[`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 LIBS=[`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 
-AC_CONFIG_HEADERS([csrc/config.h])
-AC_CONFIG_FILES([csrc/Makefile.cfg])
+AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_FILES([src/Makefile.cfg])
 AC_OUTPUT

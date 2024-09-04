@@ -605,7 +605,7 @@ PACKAGE_STRING='sayaka'
 PACKAGE_BUGREPORT=''
 PACKAGE_URL=''
 
-ac_unique_file="./csrc/sayaka.c"
+ac_unique_file="./src/sayaka.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stddef.h>
@@ -4753,9 +4753,9 @@ fi
 CFLAGS=`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
 LIBS=`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
 
-ac_config_headers="$ac_config_headers csrc/config.h"
+ac_config_headers="$ac_config_headers src/config.h"
 
-ac_config_files="$ac_config_files csrc/Makefile.cfg"
+ac_config_files="$ac_config_files src/Makefile.cfg"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5444,8 +5444,8 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "csrc/config.h") CONFIG_HEADERS="$CONFIG_HEADERS csrc/config.h" ;;
-    "csrc/Makefile.cfg") CONFIG_FILES="$CONFIG_FILES csrc/Makefile.cfg" ;;
+    "src/config.h") CONFIG_HEADERS="$CONFIG_HEADERS src/config.h" ;;
+    "src/Makefile.cfg") CONFIG_FILES="$CONFIG_FILES src/Makefile.cfg" ;;
 
   *) as_fn_error $? "invalid argument: '$ac_config_target'" "$LINENO" 5;;
   esac

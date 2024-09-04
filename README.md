@@ -52,9 +52,9 @@ Misskey クライアント sayaka ちゃん version 3.8.0 (2024/09/xx)
 % make -DRELEASE sayaka
 ```
 
-`make install` はないので、出来上がった `csrc/sayaka` (実行ファイル) をパスの通ったところにインストールするとかしてください。
+`make install` はないので、出来上がった `src/sayaka` (実行ファイル) をパスの通ったところにインストールするとかしてください。
 ちなみに `make -DRELEASE all` すると、画像ファイルを SIXEL に変換して表示する
-`sixelv` というビューアも `csrc/` の下に出来ます (sayaka の実行には不要です)。
+`sixelv` というビューアも `src/` の下に出来ます (sayaka の実行には不要です)。
 
 
 使い方

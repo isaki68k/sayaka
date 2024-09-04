@@ -13,7 +13,7 @@ sayaka ちゃんをビルドする際にターゲットを all にすると作�
 % make -DRELEASE all
 ```
 
-`make install` はないので、出来上がった `csrc/sixelv` (実行ファイル)
+`make install` はないので、出来上がった `src/sixelv` (実行ファイル)
 をパスの通ったところにインストールするとかしてください。
 
 サポートしている画像形式
