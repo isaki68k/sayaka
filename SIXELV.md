@@ -1,4 +1,4 @@
-sixelv - SIXEL 画像ビューア
+SIXEL 画像ビューア sixelv version 3.8.0 (2024/09/04)
 ===
 
 SIXEL 画像ビューアです。
