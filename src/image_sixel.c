@@ -84,9 +84,8 @@ image_sixel_write(FILE *fp, const image *img,
 		gettimeofday(&end, NULL);
 		fflush(fp);
 		timersub(&end, &start, &result);
-		uint ms = (uint)(result.tv_sec * 1000) + (uint)(result.tv_usec / 1000);
-		uint us = (uint)(result.tv_usec % 1000);
-		diag_print(diag, "%s: total %u.%03u msec", __func__, ms, us);
+		float cvt = result.tv_sec + (float)result.tv_usec / 1000000;
+		diag_print(diag, "%s: convert+write %4.1f msec", __func__, cvt * 1000);
 	}
 
 	return true;

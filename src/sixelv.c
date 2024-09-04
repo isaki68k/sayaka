@@ -38,6 +38,7 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #define SIXELV_VERSION "3.8.0 (2024/09/04)"
 
@@ -466,6 +467,10 @@ do_file(const char *infile)
 	const char *infilename;	// 表示用
 	uint dst_width;
 	uint dst_height;
+	struct timeval load_start;
+	struct timeval load_end;
+	struct timeval reduct_start;
+	struct timeval reduct_end;
 
 	infilename = infile;
 	if (infile == NULL) {
@@ -521,6 +526,8 @@ do_file(const char *infile)
 			goto abort;
 		}
 	}
+
+	gettimeofday(&load_start, NULL);
 
 	// 読み込み。
 	srcimg = image_read_pstream(pstream, diag_image);
@@ -596,6 +603,8 @@ do_file(const char *infile)
 		}
 	}
 
+	gettimeofday(&load_end, NULL);
+
 	if (srcimg == NULL) {
 		if (errno == 0) {
 			warnx("%s: Unknown image format", infilename);
@@ -610,11 +619,25 @@ do_file(const char *infile)
 		srcimg->width, srcimg->height, dst_width, dst_height,
 		reductorcolor_tostr(imageopt.color));
 
+	gettimeofday(&reduct_start, NULL);
+
 	// 減色 & リサイズ。
 	resimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
 	if (resimg == NULL) {
 		warnx("reductor failed");
 		goto abort;
+	}
+
+	gettimeofday(&reduct_end, NULL);
+	if (diag_get_level(diag_image) >= 1) {
+		struct timeval load_res;
+		struct timeval reduct_res;
+		timersub(&load_end, &load_start, &load_res);
+		timersub(&reduct_end, &reduct_start, &reduct_res);
+		float ltime = load_res.tv_sec   + (float)load_res.tv_usec / 1000000;
+		float rtime = reduct_res.tv_sec + (float)reduct_res.tv_usec / 1000000;
+		diag_print(diag_image, "Load %4.1f msec, Reduct %4.1f msec",
+			ltime * 1000, rtime * 1000);
 	}
 
 	// 出力先をオープン。
