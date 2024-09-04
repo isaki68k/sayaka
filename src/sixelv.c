@@ -39,6 +39,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#define SIXELV_VERSION "3.8.0 (2024/09/04)"
+
 typedef enum {
 	OutputFormat_SIXEL,
 	OutputFormat_BMP,
@@ -376,7 +378,7 @@ version(void)
 {
 	string *info = image_get_loaderinfo();
 
-	printf("%s - SIXEL viewer\n", getprogname());
+	printf("sixelv %s - SIXEL viewer\n", SIXELV_VERSION);
 	printf(" Supported loader: %s\n", string_get(info));
 
 	string_free(info);

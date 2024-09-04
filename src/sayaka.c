@@ -40,6 +40,8 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
+#define SAYAKA_VERSION "3.8.0 (2024/09/04)"
+
 enum {
 	DEFAULT_FONT_WIDTH	= 7,
 	DEFAULT_FONT_HEIGHT = 14,
@@ -504,7 +506,7 @@ main(int ac, char *av[])
 static void
 version(void)
 {
-	fprintf(stderr, "sayaka (csrc) - Misskey stream client\n");
+	fprintf(stderr, "sayaka %s - Misskey stream client\n", SAYAKA_VERSION);
 }
 
 static void
