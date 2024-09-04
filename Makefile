@@ -1,5 +1,6 @@
-all clean depend sayaka sixelv test:
-	(cd src; $(MAKE) $@)
+all sayaka sixelv clean depend:
+	(cd csrc; ${MAKE} $@)
 
 distclean:	clean
-	rm -f config.status Makefile.cfg config.h config.log
+	rm -f config.status config.log
+	(cd csrc; ${MAKE} $@)

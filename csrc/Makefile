@@ -117,6 +117,10 @@ wsclient:	libcommon.a libsayaka.a wsclient.c
 clean:
 	rm -f ${PROGS} eaw_gen *.o *.a *.core
 
+.PHONY: distclean
+distclean:
+	rm -f Makefile.cfg config.h
+
 .PHONY:	depend
 depend:	${SRCS_all:.c=.d} image.o.sayaka.d image.o.sixelv.d
 	cat ${.ALLSRC} > .depends

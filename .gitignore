@@ -3,10 +3,10 @@
 *.o
 .depends
 .gitignore
-Makefile.cfg
-config.h
 config.log
 config.status
+csrc/Makefile.cfg
+csrc/config.h
 csrc/eaw_gen
 csrc/dump
 csrc/httpclient
