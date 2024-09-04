@@ -42,6 +42,12 @@
 #define STBI_NO_PNG
 #endif
 
+// 普段見掛けないし、そうでなくても Misskey は基本 Webp なので使わない。
+#define STBI_NO_HDR
+#define STBI_NO_PIC
+#define STBI_NO_PSD
+#define STBI_NO_TGA
+
 // stb is too dirty against strict warnings...
 #if defined(__clang__)
 _Pragma("clang diagnostic push")
