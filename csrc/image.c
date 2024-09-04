@@ -1000,12 +1000,9 @@ reductorcolor_tostr(ReductorColor color)
 		const char *name;
 	} table[] = {
 		{ ReductorColor_Gray,		"Gray" },
-		{ ReductorColor_GrayMean,	"GrayMean" },
 		{ ReductorColor_Fixed8,		"Fixed8" },
-		{ ReductorColor_X68k,		"X68k" },
 		{ ReductorColor_ANSI16,		"ANSI16" },
 		{ ReductorColor_Fixed256,	"Fixed256" },
-		{ ReductorColor_Fixed256I,	"Fixed256I" },
 	};
 	static char buf[16];
 	uint type = (uint)color & ReductorColor_MASK;

@@ -124,12 +124,9 @@ typedef enum {
 // Gray、GrayMean では bit15-8 の 8ビットに「階調-1」(1-255) を格納する。
 typedef enum {
 	ReductorColor_Gray,		// グレイスケール
-	ReductorColor_GrayMean,	// グレイスケール()
 	ReductorColor_Fixed8,	// RGB 8色
-	ReductorColor_X68k,		// X68030?
 	ReductorColor_ANSI16,	// ANSI 16色 (といっても色合いが全員違う?)
 	ReductorColor_Fixed256,	// 固定 256 色
-	ReductorColor_Fixed256I,// ?
 
 	// 下位8ビットが色モード
 	ReductorColor_MASK = 0xff,
