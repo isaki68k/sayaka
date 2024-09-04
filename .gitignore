@@ -15,6 +15,3 @@ csrc/sixelv
 csrc/terminal
 csrc/test
 csrc/wsclient
-src/sayaka
-src/sixelv
-src/test
