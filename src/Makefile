@@ -119,7 +119,7 @@ clean:
 
 .PHONY: distclean
 distclean:
-	rm -f Makefile.cfg config.h
+	rm -f Makefile.cfg config.h .depends
 
 .PHONY:	depend
 depend:	${SRCS_all:.c=.d} image.o.sayaka.d image.o.sixelv.d
