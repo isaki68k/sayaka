@@ -109,14 +109,14 @@ void
 cmd_misskey_stream(const char *server, bool home, const char *token)
 {
 	const diag *diag = diag_net;
-	char url[strlen(server) + strlen(token) + 32];
+	string *url;
 
 	misskey_init();
 
-	snprintf(url, sizeof(url), "wss://%s/streaming", server);
+	url = string_init();
+	string_append_printf(url, "wss://%s/streaming", server);
 	if (token) {
-		strlcat(url, "?i=", sizeof(url));
-		strlcat(url, token, sizeof(url));
+		string_append_printf(url, "?i=%s", token);
 	}
 
 	printf("Ready...");
@@ -152,7 +152,7 @@ cmd_misskey_stream(const char *server, bool home, const char *token)
 		wsclient_init(ws, misskey_recv_cb);
 
 		// 応答コード 101 が成功。
-		int code = wsclient_connect(ws, url, &netopt_main);
+		int code = wsclient_connect(ws, string_get(url), &netopt_main);
 		if (code != 101) {
 			if (code == -2) {
 				warnx("SSL not compiled");
@@ -204,6 +204,7 @@ cmd_misskey_stream(const char *server, bool home, const char *token)
 	}
 
 	misskey_cleanup();
+	string_free(url);
 }
 
 // Misskey Streaming の接続後メインループ。定期的に切れるようだ。
