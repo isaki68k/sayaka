@@ -811,10 +811,9 @@ signal_handler(int signo)
 		if (in_sixel) {
 			printf(CAN ESC "\\");
 			fflush(stdout);
-		} else {
-			exit(0);
 		}
-		break;
+		printf("\n");
+		exit(0);
 
 	 case SIGWINCH:
 		sigwinch(false);
