@@ -56,16 +56,16 @@ static int terminal_query(const char *, char *, uint);
 static void terminal_dump(char *, const char *, uint);
 static int parse_bgcolor(char *);
 
-// 端末が SIXEL をサポートしていれば true を返す。
+// 端末が SIXEL をサポートしていれば 1 を返す。
 // 出力先が端末であること (isatty(3)) は呼び出し側で調べておくこと。
-bool
+int
 terminal_support_sixel(void)
 {
 	char result[64];
 	char *p;
 	char *e;
 	int n;
-	bool support = false;
+	int support = 0;
 
 	// 問い合わせ。
 	const char *query = ESC "[c";
@@ -89,7 +89,7 @@ terminal_support_sixel(void)
 		}
 
 		if (strcmp(p, "4") == 0) {
-			support = true;
+			support = 1;
 		}
 	}
 

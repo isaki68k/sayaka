@@ -160,7 +160,7 @@ extern string *format_time(time_t);
 
 // terminal.c
 extern int  terminal_get_bgtheme(void);
-extern bool terminal_support_sixel(void);
+extern int  terminal_support_sixel(void);
 
 // ustring.c
 extern bool init_codeset(const char *);
