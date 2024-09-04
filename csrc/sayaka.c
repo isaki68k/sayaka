@@ -141,12 +141,12 @@ static const struct option longopts[] = {
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "help",			no_argument,		NULL,	OPT_help },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
-	{ "xxx-home",		no_argument,		NULL,	'h' },
+	{ "home",			no_argument,		NULL,	'h' },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "light",			no_argument,		NULL,	OPT_light },
-	{ "xxx-local",		required_argument,	NULL,	'l' },
+	{ "local",			required_argument,	NULL,	'l' },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
 	{ "misskey",		no_argument,		NULL,	OPT_misskey },
@@ -156,11 +156,11 @@ static const struct option longopts[] = {
 	{ "play",			required_argument,	NULL,	'p' },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	'r' },
-	{ "xxx-server",		required_argument,	NULL,	's' },
+	{ "server",			required_argument,	NULL,	's' },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
-	{ "xxx-token",		required_argument,	NULL,	't' },
+	{ "token",			required_argument,	NULL,	't' },
 	{ NULL },
 };
 
@@ -513,17 +513,17 @@ usage(void)
 	fprintf(stderr, "usage: %s <command> [<options...>]\n", getprogname());
 	fprintf(stderr,
 " <command>\n"
-"  --xxx-home     : Home timeline mode (needs --xxx-server and --xxx-token)\n"
-"  --xxx-local    : Local timeline mode (needs --xxx-server)\n"
-"  --play=<file|->: Playback mode\n"
+"  -h,--home           : Home timeline mode (needs --server and --token)\n"
+"  -l,--local          : Local timeline mode (needs --server)\n"
+"  -p,--play=<file|->  : Playback mode\n"
 " <options>\n"
-"  --xxx-server=<host> : Set misskey server\n"
-"  --xxx-token=<file>  : Set misskey access token file\n"
-"  -c <colormode>      : 256,16,8,2,1 and gray[2-256] (default:256)\n"
+"  -s,--server=<host>  : Set misskey server\n"
+"  -t,--token=<file>   : Set misskey access token file\n"
+"  -c,--color=<color>  : 256,16,8,2,1 and gray[2-256] (default:256)\n"
 "  --show-cw           : Open CW(Contents Warning) part\n"
-"  -r,--record=<file>  : Record JSON to <file>\n"
 "  --nsfw=<show|blur|alt|hide> : How to show NSFW contents (default:blur)\n"
 "  --show-image=<yes|no|auto>  : Whether to show image or not (default:auto)\n"
+"  -r,--record=<file>  : Record JSON to <file>\n"
 "  --help-all          : More details\n"
 	);
 }
@@ -534,9 +534,9 @@ help_all(void)
 	fprintf(stderr, "usage: %s <command> [<options>...]\n", getprogname());
 	fprintf(stderr,
 " <command>\n"
-"  --xxx-home     : Home timeline mode (needs --xxx-server and --xxx-token)\n"
-"  --xxx-local    : Local timeline mode (needs --xxx-server)\n"
-"  -p,--play=<file|->: Playback mode ('-' means stdin)\n"
+"  -h,--home              : Home timeline mode (needs --server and --token)\n"
+"  -l,--local             : Local timeline mode (needs --server)\n"
+"  -p,--play=<file|->     : Playback mode ('-' means stdin)\n"
 " <options>\n"
 "  -c,--color=<colormode> : Set color mode (default: 256)\n"
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
@@ -566,14 +566,14 @@ help_all(void)
 "     hide     : Hide this note itself if the note has NSFW contents\n"
 "  --progress             : Show startup progress (for slow machines)\n"
 "  -r,--record=<file>     : Record JSON to <file>\n"
-"  --xxx-server=<host>    : Set misskey server\n"
+"  -s,--server=<host>     : Set misskey server\n"
 "  --show-cw              : Open CW(Contents Warning) part\n"
 "  --show-image=<mode>    : Whether to show image or not (default:auto)\n"
 "     yes      : Force output SIXEL image even if terminal doesn't support\n"
 "     no       : Don't output SIXEL image (--no-image can be used)\n"
 "     auto     : Auto detect\n"
 "  --timeout-image=<msec> : Set connection timeout for image (default:3000)\n"
-"  --xxx-token=<file>     : Set misskey access token file\n"
+"  -t,--token=<file>      : Set misskey access token file\n"
 "  -v,--version\n"
 "  --debug-format=<0..2>\n"
 "  --debug-image=<0..2>\n"
