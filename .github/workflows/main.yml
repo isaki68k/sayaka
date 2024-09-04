@@ -25,11 +25,10 @@ jobs:
           ubuntu*|debian*)
             apt update
             apt upgrade -y
-            apt install -y build-essential pkg-config bmake libbsd-dev libwslay-dev libwebp-dev libmbedtls-dev libssl-dev
-            apt install -y libgif-dev libjpeg-dev libpng-dev
+            apt install -y build-essential pkg-config bmake libbsd-dev libwebp-dev libssl-dev
             ;;
           archlinux*)
-            pacman -Syyu --noconfirm base-devel bmake libbsd libwslay libwebp mbedtls2 openssl giflib libjpeg-turbo libpng
+            pacman -Syyu --noconfirm base-devel bmake libbsd libwebp openssl
             ;;
           esac
 
@@ -40,27 +39,9 @@ jobs:
 
       - name: configure and make
         run: |
-          case "${{ matrix.container }}" in
-          archlinux*)
-            # mbedtls2 files are installed in separate dirs
-            export PKG_CONFIG_PATH=/usr/lib/mbedtls2/pkgconfig
-            ;;
-          esac
           echo build with \"configure\"
           bmake distclean
           sh configure ${CONFIGURE_ARGS}
-          bmake -DRELEASE
-          echo build with \"configure --without-stb-image\"
-          bmake distclean
-          sh configure ${CONFIGURE_ARGS} --without-stb-image
-          bmake -DRELEASE
-          echo build with \"configure --without-mbedtls\"
-          bmake distclean
-          sh configure ${CONFIGURE_ARGS} --without-mbedtls
-          bmake -DRELEASE
-          echo build with \"configure --enable-twitter\"
-          bmake distclean
-          sh configure ${CONFIGURE_ARGS} --enable-twitter
           bmake -DRELEASE
 
   build-netbsd:
@@ -78,25 +59,12 @@ jobs:
           prepare: |
             uname -a
             pkg_add pkgconf
-            pkg_add libwebp mbedtls wslay
-            pkg_add giflib jpeg png
+            pkg_add libwebp
 
           run: |
             echo build with \"configure\"
             make distclean
             sh configure
-            make -DRELEASE
-            echo build with \"configure --without-stb-image\"
-            make distclean
-            sh configure --without-stb-image
-            make -DRELEASE
-            echo build with \"configure --without-mbedtls\"
-            make distclean
-            sh configure --without-mbedtls
-            make -DRELEASE
-            echo build with \"configure --enable-twitter\"
-            make distclean
-            sh configure --enable-twitter
             make -DRELEASE
 
   build-openbsd:
@@ -113,25 +81,12 @@ jobs:
           prepare: |
             uname -a
             pkg_add pkgconf
-            pkg_add libwebp mbedtls wslay
-            pkg_add giflib jpeg png
+            pkg_add libwebp
 
           run: |
             echo build with \"configure\"
             make distclean
             sh configure
-            make -DRELEASE
-            echo build with \"configure --without-stb-image\"
-            make distclean
-            sh configure --without-stb-image
-            make -DRELEASE
-            echo build with \"configure --without-mbedtls\"
-            make distclean
-            sh configure --without-mbedtls
-            make -DRELEASE
-            echo build with \"configure --enable-twitter\"
-            make distclean
-            sh configure --enable-twitter
             make -DRELEASE
 
   build-freesd:
@@ -148,24 +103,11 @@ jobs:
           prepare: |
             uname -a
             pkg install -y pkgconf
-            pkg install -y webp mbedtls wslay
-            pkg install -y giflib jpeg-turbo png
+            pkg install -y webp
 
           run: |
             set -e
             echo build with \"configure\"
             make distclean
             sh configure
-            make -DRELEASE
-            echo build with \"configure --without-stb-image\"
-            make distclean
-            sh configure --without-stb-image
-            make -DRELEASE
-            echo build with \"configure --without-mbedtls\"
-            make distclean
-            sh configure --without-mbedtls
-            make -DRELEASE
-            echo build with \"configure --enable-twitter\"
-            make distclean
-            sh configure --enable-twitter
             make -DRELEASE
