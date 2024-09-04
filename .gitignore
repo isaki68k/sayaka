@@ -1,10 +1,10 @@
 *.json
 *.a
 *.o
-.depends
 .gitignore
 config.log
 config.status
+src/.depends
 src/Makefile.cfg
 src/config.h
 src/eaw_gen
