@@ -105,7 +105,6 @@ typedef enum {
 // 減色&リサイズ方法。
 typedef enum {
 	REDUCT_SIMPLE,			// 単純一致法
-	REDUCT_FAST,			// 速度優先法
 	REDUCT_HIGH_QUALITY,	// 二次元誤差分散法
 } ReductorMethod;
 
@@ -194,7 +193,6 @@ extern image *image_reduct(const image *, uint, uint, const image_opt *,
 	const diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
-extern const char *reductormethod_tostr(ReductorMethod);
 extern const char *reductordiffuse_tostr(ReductorDiffuse);
 extern const char *reductorcolor_tostr(ReductorColor);
 

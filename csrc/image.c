@@ -406,25 +406,20 @@ image_reduct(
 	}
 
 #if defined(SIXELV)
-	switch (opt->method) {
-	 case REDUCT_SIMPLE:
+	if (opt->method == REDUCT_SIMPLE) {
 		image_reduct_simple(ir, dst, src, diag);
-		break;
 
-	 case REDUCT_HIGH_QUALITY:
+	} else if (opt->method != REDUCT_HIGH_QUALITY) {
+		Debug(diag, "%s: Unknown method %u", __func__, opt->method);
+		goto abort;
+
+	} else
 #endif
+	{
 		if (image_reduct_highquality(ir, dst, src, opt, diag) == false) {
 			goto abort;
 		}
-#if defined(SIXELV)
-		break;
-
-	 default:
-		Debug(diag, "%s: Unsupported method %s", __func__,
-			reductormethod_tostr(opt->method));
-		goto abort;
 	}
-#endif
 
 	// 成功したので、使ったパレットを image にコピー。
 	// 動的に確保したやつはそのまま所有権を移す感じ。
@@ -962,31 +957,6 @@ resizeaxis_tostr(ResizeAxis axis)
 
 	static char buf[16];
 	snprintf(buf, sizeof(buf), "%u", (uint)axis);
-	return buf;
-}
-
-// ReductorMethod を文字列にする。
-// (内部バッファを使う可能性があるため同時に2回呼ばないこと)
-const char *
-reductormethod_tostr(ReductorMethod method)
-{
-	static const struct {
-		ReductorMethod value;
-		const char *name;
-	} table[] = {
-		{ REDUCT_SIMPLE,		"Simple" },
-		{ REDUCT_FAST,			"Fast" },
-		{ REDUCT_HIGH_QUALITY,	"High" },
-	};
-
-	for (int i = 0; i < countof(table); i++) {
-		if (method == table[i].value) {
-			return table[i].name;
-		}
-	}
-
-	static char buf[16];
-	snprintf(buf, sizeof(buf), "%u", (uint)method);
 	return buf;
 }
 
