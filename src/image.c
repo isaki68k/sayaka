@@ -340,6 +340,46 @@ image_read_pstream(pstream *ps, const diag *diag)
 	return NULL;
 }
 
+// 入力画像を 16bit 内部形式に変換した新しい画像を返す。
+image *
+image_convert_to16(const image *src)
+{
+	image *dst = image_create(src->width, src->height, 2);
+	if (dst == NULL) {
+		return NULL;
+	}
+	const uint8 *s8 = src->buf;
+	uint16 *d16 = (uint16 *)dst->buf;
+	uint count = src->width * src->height;
+
+	if (src->bytepp == 3) {
+		for (uint i = 0; i < count; i++) {
+			uint r, g, b, v;
+			r = (*s8++) >> 3;
+			g = (*s8++) >> 3;
+			b = (*s8++) >> 3;
+			v = (r << 10) | (g << 5) | b;
+			*d16++ = v;
+		}
+	} else if (src->bytepp == 4) {
+		for (uint i = 0; i < count; i++) {
+			uint r, g, b, a, v;
+			r = (*s8++) >> 3;
+			g = (*s8++) >> 3;
+			b = (*s8++) >> 3;
+			a = (*s8++);
+			v = (r << 10) | (g << 5) | b;
+			// A(不透明度)が半分以下なら透明(0x8000)とする。
+			if (a < 0x80) {
+				v |= 0x8000;
+			}
+			*d16++ = v;
+		}
+	}
+
+	return dst;
+}
+
 // src 画像を (dst_width, dst_height) にリサイズしながら同時に
 // colormode に減色した新しい image を作成して返す。
 image *
@@ -357,7 +397,7 @@ image_reduct(
 	memset(ir, 0, sizeof(*ir));
 	ir->gain = opt->gain;
 
-	dst = image_create(dst_width, dst_height, 1);
+	dst = image_create(dst_width, dst_height, 2);
 	if (dst == NULL) {
 		return NULL;
 	}
@@ -540,11 +580,10 @@ static bool
 image_reduct_highquality(image_reductor_handle *ir,
 	image *dstimg, const image *srcimg, const image_opt *opt, const diag *diag)
 {
-	uint8 *d = dstimg->buf;
-	const uint8 *src = srcimg->buf;
+	uint16 *d = (uint16 *)dstimg->buf;
+	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint dstwidth  = dstimg->width;
 	uint dstheight = dstimg->height;
-	uint srcstride = image_get_stride(srcimg);
 	Rational ry;
 	Rational rx;
 	Rational ystep;
@@ -573,8 +612,6 @@ image_reduct_highquality(image_reductor_handle *ir,
 		errbuf[i] = errbuf_mem + errbuf_left + errbuf_width * i;
 	}
 
-	// alpha チャンネルは今はサポートしていない。
-
 	for (uint y = 0; y < dstheight; y++) {
 		uint sy0 = ry.I;
 		rational_add(&ry, &ystep);
@@ -595,12 +632,15 @@ image_reduct_highquality(image_reductor_handle *ir,
 
 			// 画素の平均を求める。
 			ColorRGBint32 col = { };
+			uint a = 0;
 			for (uint sy = sy0; sy < sy1; sy++) {
-				const uint8 *s = &src[sy * srcstride + sx0 * 3];
+				const uint16 *s = &src[sy * srcimg->width + sx0];
 				for (uint sx = sx0; sx < sx1; sx++) {
-					col.r += *s++;
-					col.g += *s++;
-					col.b += *s++;
+					uint16 v = *s++;
+					a     +=  (v >> 15);
+					col.r += ((v >> 10) & 0x1f) << 3;
+					col.g += ((v >>  5) & 0x1f) << 3;
+					col.b += ( v        & 0x1f) << 3;
 				}
 			}
 			uint area = (sy1 - sy0) * (sx1 - sx0);
@@ -628,7 +668,12 @@ image_reduct_highquality(image_reductor_handle *ir,
 			c8.b = saturate_uint8(col.b);
 
 			uint colorcode = ir->finder(ir, c8);
-			*d++ = colorcode;
+			uint16 v = colorcode;
+			// 半分以上が透明なら透明ということにする。
+			if (a > area / 2) {
+				v |= 0x8000;
+			}
+			*d++ = v;
 
 			col.r -= ir->palette[colorcode].r;
 			col.g -= ir->palette[colorcode].g;

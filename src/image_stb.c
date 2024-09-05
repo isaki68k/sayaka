@@ -89,14 +89,21 @@ image_stb_read(FILE *fp, const diag *diag)
 	int height;
 	int nch;
 
-	data = stbi_load_from_file(fp, &width, &height, &nch, 3);
+	// A があれば ARGB で、なければ RGB で読み込む。
+	if (stbi_info_from_file(fp, &width, &height, &nch) == 0) {
+		return NULL;
+	}
+	if (nch != 3 && nch != 4) {
+		nch = 3;
+	}
+	data = stbi_load_from_file(fp, &width, &height, &nch, nch);
 	if (data == NULL) {
 		return NULL;
 	}
 
-	img = image_create(width, height, 3);
+	img = image_create(width, height, nch);
 	if (img != NULL) {
-		memcpy(img->buf, data, width * height * 3);
+		memcpy(img->buf, data, width * height * nch);
 	}
 
 	stbi_image_free(data);

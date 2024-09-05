@@ -154,6 +154,7 @@ sixel_postamble(FILE *fp)
 static bool
 sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 {
+	const uint16 *imgbuf16 = (const uint16 *)img->buf;
 	uint w = img->width;
 	uint h = img->height;
 	uint palcnt = img->palette_count;
@@ -162,6 +163,8 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 	string *linebuf = NULL;
 	char cbuf[16];
 	bool rv = false;
+
+	assert(img->bytepp == 2);
 
 	// カラー番号ごとの、X 座標の min, max を計算する。
 	// 16bit なので画像サイズの上限は 65535 x 65535。
@@ -180,7 +183,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 	for (uint y = 0; y < h; y += 6) {
 		string_clear(linebuf);
 
-		const uint8 *src = &img->buf[y * w];
+		const uint16 *src = &imgbuf16[y * w];
 
 		memset(min_x, 0xff, mlen);	// fill as -1
 		memset(max_x, 0x00, mlen);	// fill as 0
@@ -194,7 +197,10 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 		// 各カラーの X 座標範囲を計算する。
 		for (uint dy = 0; dy < max_dy; dy++) {
 			for (uint x = 0; x < w; x++) {
-				uint8 idx = *src++;
+				uint16 idx = *src++;
+				if ((int16)idx < 0) {
+					continue;
+				}
 				if (min_x[idx] < 0 || min_x[idx] > x) {
 					min_x[idx] = x;
 				}
@@ -244,7 +250,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 				for (uint x = min_x[min_color]; x <= max_x[min_color]; x++) {
 					uint8 t = 0;
 					for (uint dy = 0; dy < max_dy; dy++) {
-						uint8 idx = img->buf[(y + dy) * w + x];
+						uint16 idx = imgbuf16[(y + dy) * w + x];
 						if (idx == min_color) {
 							t |= 1U << dy;
 						}

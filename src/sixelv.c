@@ -461,6 +461,7 @@ do_file(const char *infile)
 	httpclient *http = NULL;
 	pstream *pstream = NULL;
 	image *srcimg = NULL;
+	image *hcimg = NULL;
 	image *resimg = NULL;
 	int ifd = -1;
 	FILE *ifp = NULL;
@@ -469,6 +470,7 @@ do_file(const char *infile)
 	uint dst_height;
 	struct timeval load_start;
 	struct timeval load_end;
+	struct timeval cvt_start;
 	struct timeval reduct_start;
 	struct timeval reduct_end;
 
@@ -619,10 +621,15 @@ do_file(const char *infile)
 		srcimg->width, srcimg->height, dst_width, dst_height,
 		reductorcolor_tostr(imageopt.color));
 
+	gettimeofday(&cvt_start, NULL);
+	hcimg = image_convert_to16(srcimg);
+	if (hcimg == NULL) {
+	}
+
 	gettimeofday(&reduct_start, NULL);
 
 	// 減色 & リサイズ。
-	resimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
+	resimg = image_reduct(hcimg, dst_width, dst_height, &imageopt, diag_image);
 	if (resimg == NULL) {
 		warnx("reductor failed");
 		goto abort;
@@ -631,13 +638,17 @@ do_file(const char *infile)
 	gettimeofday(&reduct_end, NULL);
 	if (diag_get_level(diag_image) >= 1) {
 		struct timeval load_res;
+		struct timeval cvt_res;
 		struct timeval reduct_res;
 		timersub(&load_end, &load_start, &load_res);
+		timersub(&reduct_start, &cvt_start, &cvt_res);
 		timersub(&reduct_end, &reduct_start, &reduct_res);
 		float ltime = load_res.tv_sec   + (float)load_res.tv_usec / 1000000;
+		float ctime = cvt_res.tv_sec    + (float)cvt_res.tv_usec / 1000000;
 		float rtime = reduct_res.tv_sec + (float)reduct_res.tv_usec / 1000000;
-		diag_print(diag_image, "Load %4.1f msec, Reduct %4.1f msec",
-			ltime * 1000, rtime * 1000);
+		diag_print(diag_image,
+			"Load %4.1f msec, Convert %4.1f msec, Reduct %4.1f msec",
+			ltime * 1000, ctime * 1000, rtime * 1000);
 	}
 
 	// 出力先をオープン。
@@ -671,6 +682,7 @@ do_file(const char *infile)
 	ofp = NULL;
 
 	image_free(resimg);
+	image_free(hcimg);
 	image_free(srcimg);
 
 	if (pstream) {
