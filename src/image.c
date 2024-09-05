@@ -347,7 +347,7 @@ image_read_pstream(pstream *ps, const diag *diag)
 	if (ok < 0) {
 		Debug(diag, "%s: no decoders available", __func__);
 	} else {
-		Debug(diag, "%s: unsupported image format", __func__);
+		Trace(diag, "%s: unsupported image format", __func__);
 	}
 
 	errno = 0;
