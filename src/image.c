@@ -99,10 +99,10 @@ image_opt_init(image_opt *opt)
 	opt->suppress_palette = false;
 }
 
-// width_ x height_ x channels_ の image を作成する。
+// width_ x height_ x bytepp_ の image を作成する。
 // (バッファは未初期化)
 image *
-image_create(uint width_, uint height_, uint channels_)
+image_create(uint width_, uint height_, uint bytepp_)
 {
 	image *img = calloc(1, sizeof(*img));
 	if (img == NULL) {
@@ -111,7 +111,7 @@ image_create(uint width_, uint height_, uint channels_)
 
 	img->width = width_;
 	img->height = height_;
-	img->channels = channels_;
+	img->bytepp = bytepp_;
 	img->buf = malloc(image_get_stride(img) * img->height);
 	if (img->buf == NULL) {
 		free(img);
@@ -136,7 +136,7 @@ image_free(image *img)
 uint
 image_get_stride(const image *img)
 {
-	return img->width * img->channels;
+	return img->width * img->bytepp;
 }
 
 // いい感じにリサイズした時の幅と高さを求める。

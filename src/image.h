@@ -144,16 +144,16 @@ typedef struct image_
 {
 	// buf はラスターパディングなし。
 	// ストライドを足しやすいように uint8 のポインタにしておく。
-	// channels==1 ならインデックス。
-	// channels==3 なら R, G, B 順。
-	// channels==4 なら R, G, B, A 順。
+	// bytepp == 1 ならインデックスカラー。
+	// bytepp == 3 なら RGB  (メモリ上 R, G, B の順)。
+	// bytepp == 4 なら RGBA (メモリ上 R, G, B, A の順)。
 	uint8 *buf;
 
 	uint width;		// ピクセル幅
 	uint height;	// ピクセル高さ
-	uint channels;	// 1ピクセルあたりのチャンネル数
+	uint bytepp;	// byte per pixel、1ピクセルあたりのバイト数
 
-	// インデックスカラー(channels==1) の場合に使用したパレット。
+	// インデックスカラー(bytepp==1) の場合に使用したパレット。
 	// インデックスカラーでない場合は参照しないこと。
 	const ColorRGB *palette;
 

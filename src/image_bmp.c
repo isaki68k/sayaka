@@ -70,17 +70,17 @@ image_bmp_write(FILE *fp, const image *srcimg, const diag *diag)
 	uint32 datasize;
 	bool rv = false;
 
-	if (srcimg->channels == 1) {
+	if (srcimg->bytepp == 1) {
 		// インデックスカラーを RGB に戻す。
 		img = image_coloring(srcimg);
 		if (img == NULL) {
 			Debug(diag, "%s: image_coloring failed: %s", __func__, strerrno());
 			return false;
 		}
-	} else if (srcimg->channels == 3) {
+	} else if (srcimg->bytepp == 3) {
 		img = UNCONST(srcimg);
 	} else {
-		Debug(diag, "%s: Unsupported channels: %u", __func__, srcimg->channels);
+		Debug(diag, "%s: Unsupported channels: %u", __func__, srcimg->bytepp);
 		return false;
 	}
 
@@ -151,7 +151,7 @@ image_coloring(const image *srcimg)
 {
 	image *dstimg;
 
-	assert(srcimg->channels == 1);
+	assert(srcimg->bytepp == 1);
 	assert(srcimg->palette != NULL);
 
 	dstimg = image_create(srcimg->width, srcimg->height, 3);
