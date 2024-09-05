@@ -51,10 +51,7 @@ _Pragma("GCC diagnostic pop")
 
 #define INCBUFSIZE	(4000)
 
-#define TRANSBG		(0xe1)	// ?
-
 static bool read_all(uint8 **, size_t *, FILE *, uint32, const diag *diag);
-static void image_webp_rgba2rgb(uint8 *, const uint8 *, uint, uint, uint, uint);
 static bool image_webp_loadinc(image *, FILE *, WebPIDecoder *,
 	const diag *diag);
 
@@ -183,9 +180,6 @@ image_webp_read(FILE *fp, const diag *diag)
 			formatstr);
 	}
 
-	// 出力画像サイズが決まったのでここで確保。
-	img = image_create(width, height, IMAGE_FMT_RGB24);
-
 	if (config.input.has_animation) {
 		// アニメーションは処理が全然別。要 -lwebpdemux。
 		Debug(diag, "%s: Use frame decoder", __func__);
@@ -194,8 +188,9 @@ image_webp_read(FILE *fp, const diag *diag)
 		WebPAnimDecoderOptions opt;
 		WebPData data;
 		uint8 *outbuf;
-		int stride;
 		int timestamp;
+
+		img = image_create(width, height, IMAGE_FMT_ARGB32);
 
 		// ファイル全体を読み込む。
 		if (read_all(&filebuf, &filelen, fp, filesize, diag) == false) {
@@ -224,9 +219,7 @@ image_webp_read(FILE *fp, const diag *diag)
 			goto abort_anime;
 		}
 
-		// RGB に変換。
-		stride = width * 4;
-		image_webp_rgba2rgb(img->buf, outbuf, width, height, stride, TRANSBG);
+		memcpy(img->buf, outbuf, image_get_stride(img) * height);
 		success = true;
 
  abort_anime:
@@ -237,6 +230,8 @@ image_webp_read(FILE *fp, const diag *diag)
 	} else if (config.input.has_alpha) {
 		// アルファチャンネルがあるとインクリメンタル処理できないっぽい?
 		Debug(diag, "%s: use RGBA decoder", __func__);
+
+		img = image_create(width, height, IMAGE_FMT_ARGB32);
 
 		// ファイル全体を読み込む。
 		if (read_all(&filebuf, &filelen, fp, filesize, diag) == false) {
@@ -257,9 +252,7 @@ image_webp_read(FILE *fp, const diag *diag)
 			goto abort_alpha;
 		}
 
-		// RGB に変換。
-		image_webp_rgba2rgb(img->buf, config.output.u.RGBA.rgba,
-			width, height, outstride, TRANSBG);
+		memcpy(img->buf, config.output.u.RGBA.rgba, outbufsize);
 		success = true;
  abort_alpha:
 		WebPFreeDecBuffer(&config.output);
@@ -267,6 +260,8 @@ image_webp_read(FILE *fp, const diag *diag)
 	} else {
 		// インクリメンタル処理が出来る。
 		Debug(diag, "%s: use incremental RGB decoder", __func__);
+
+		img = image_create(width, height, IMAGE_FMT_RGB24);
 
 		WebPIDecoder *idec = WebPINewDecoder(NULL);
 		if (idec == NULL) {
@@ -328,26 +323,6 @@ read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
 	}
 
 	return true;
-}
-
-#define Grad(fg, bg, alpha)	\
-	(((fg) * (alpha) / 255) + ((bg) * (255 - (alpha)) / 255))
-
-// WebP の RGBA を RGB に変換する。
-static void
-image_webp_rgba2rgb(uint8 *d, const uint8 *src,
-	uint width, uint height, uint srcstride, uint bgcolor)
-{
-	for (uint y = 0; y < height; y++) {
-		const uint8 *s = src + y * srcstride;
-		for (uint x = 0; x < width; x++) {
-			uint alpha = s[3];
-			*d++ = Grad(s[0], bgcolor, alpha);	// R
-			*d++ = Grad(s[1], bgcolor, alpha);	// G
-			*d++ = Grad(s[2], bgcolor, alpha);	// B
-			s += 4;
-		}
-	}
 }
 
 // インクリメンタル処理が出来る場合。
