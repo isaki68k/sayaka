@@ -111,6 +111,9 @@ image_blurhash_read(FILE *fp, int bw, int bh, const diag *diag)
 		return NULL;
 	}
 
+	Debug(diag, "Blurhash: Component=(%u, %u) Size=(%u, %u)",
+		compx, compy, width, height);
+
 	img = image_create(width, height, IMAGE_FMT_RGB24);
 	if (img == NULL) {
 		goto abort;
