@@ -70,7 +70,7 @@ image_bmp_write(FILE *fp, const image *srcimg, const diag *diag)
 	uint32 datasize;
 	bool rv = false;
 
-	if (srcimg->format == IMAGE_FMT_AIDX16) {	// XXX 未対応
+	if (srcimg->format == IMAGE_FMT_AIDX16) {
 		// インデックスカラーを RGB に戻す。
 		img = image_coloring(srcimg);
 		if (img == NULL) {
@@ -145,13 +145,14 @@ image_bmp_write(FILE *fp, const image *srcimg, const diag *diag)
 	return rv;
 }
 
-// インデックスカラーの srcimg をパレットで着色した画像を返す。
+// AIDX16 形式の srcimg をパレットで着色した画像を返す。
+// 透過色は #000000 (黒) になる。
 static image *
 image_coloring(const image *srcimg)
 {
 	image *dstimg;
 
-	assert(srcimg->format == IMAGE_FMT_AIDX16);	// XXX 未対応
+	assert(srcimg->format == IMAGE_FMT_AIDX16);
 	assert(srcimg->palette != NULL);
 
 	dstimg = image_create(srcimg->width, srcimg->height, IMAGE_FMT_RGB24);
@@ -159,7 +160,7 @@ image_coloring(const image *srcimg)
 		return NULL;
 	}
 
-	const uint8 *s = srcimg->buf;
+	const uint16 *s = (const uint16 *)srcimg->buf;
 	uint8 *d = dstimg->buf;
 	for (uint y = 0, yend = srcimg->height; y < yend; y++) {
 		for (uint x = 0, xend = srcimg->width; x < xend; x++) {
