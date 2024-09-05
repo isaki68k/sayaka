@@ -113,7 +113,7 @@ image_png_read(FILE *fp, const diag *diag)
 	// Alpha 無視。
 	png_set_strip_alpha(png);
 
-	img = image_create(width, height, 3);
+	img = image_create(width, height, IMAGE_FMT_RGB24);
 
 	// スキャンラインメモリのポインタ配列。
 	lines = malloc(sizeof(char *) * height);

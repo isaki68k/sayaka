@@ -184,7 +184,7 @@ image_webp_read(FILE *fp, const diag *diag)
 	}
 
 	// 出力画像サイズが決まったのでここで確保。
-	img = image_create(width, height, 3);
+	img = image_create(width, height, IMAGE_FMT_RGB24);
 
 	if (config.input.has_animation) {
 		// アニメーションは処理が全然別。要 -lwebpdemux。

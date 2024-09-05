@@ -140,20 +140,25 @@ typedef enum {
 #define RGBToU32(r, g, b)	((uint32)(((r) << 24) | ((g) << 16) | ((b) << 8)))
 #endif
 
+// 画像の形式
+enum {
+	IMAGE_FMT_ARGB16,	// 内部形式。ARGB 1:5:5:5
+	IMAGE_FMT_AIDX16,	// 内部形式。bit15 が A、下位8ビットがインデックス
+	IMAGE_FMT_RGB24,	// RGB  (メモリ上 R, G, B の順)
+	IMAGE_FMT_ARGB32,	// RGBA (メモリ上 R, G, B, A の順)
+};
+
 typedef struct image_
 {
 	// buf はラスターパディングなし。
 	// ストライドを足しやすいように uint8 のポインタにしておく。
-	// bytepp == 1 ならインデックスカラー。
-	// bytepp == 3 なら RGB  (メモリ上 R, G, B の順)。
-	// bytepp == 4 なら RGBA (メモリ上 R, G, B, A の順)。
 	uint8 *buf;
 
 	uint width;		// ピクセル幅
 	uint height;	// ピクセル高さ
-	uint bytepp;	// byte per pixel、1ピクセルあたりのバイト数
+	uint format;	// 形式 (IMAGE_FMT_*)
 
-	// インデックスカラー(bytepp==1) の場合に使用したパレット。
+	// インデックスカラーの場合に使用したパレット。
 	// インデックスカラーでない場合は参照しないこと。
 	const ColorRGB *palette;
 
@@ -182,6 +187,7 @@ typedef struct image_opt_ {
 extern void image_opt_init(image_opt *);
 extern image *image_read_pstream(pstream *, const diag *);
 extern void image_free(image *);
+extern uint image_get_bytepp(const image *);
 extern uint image_get_stride(const image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,
 	uint, uint, uint *, uint *);

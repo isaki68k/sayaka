@@ -164,7 +164,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 	char cbuf[16];
 	bool rv = false;
 
-	assert(img->bytepp == 2);
+	assert(img->format == IMAGE_FMT_AIDX16);
 
 	// カラー番号ごとの、X 座標の min, max を計算する。
 	// 16bit なので画像サイズの上限は 65535 x 65535。

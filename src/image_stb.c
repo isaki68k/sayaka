@@ -88,6 +88,7 @@ image_stb_read(FILE *fp, const diag *diag)
 	int width;
 	int height;
 	int nch;
+	uint fmt;
 
 	// A があれば ARGB で、なければ RGB で読み込む。
 	if (stbi_info_from_file(fp, &width, &height, &nch) == 0) {
@@ -101,7 +102,13 @@ image_stb_read(FILE *fp, const diag *diag)
 		return NULL;
 	}
 
-	img = image_create(width, height, nch);
+	if (nch == 3) {
+		fmt = IMAGE_FMT_RGB24;
+	} else {
+		fmt = IMAGE_FMT_ARGB32;
+	}
+
+	img = image_create(width, height, fmt);
 	if (img != NULL) {
 		memcpy(img->buf, data, width * height * nch);
 	}

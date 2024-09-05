@@ -99,10 +99,10 @@ image_opt_init(image_opt *opt)
 	opt->suppress_palette = false;
 }
 
-// width_ x height_ x bytepp_ の image を作成する。
+// width_ x height_ で形式が format_ の image を作成する。
 // (バッファは未初期化)
 image *
-image_create(uint width_, uint height_, uint bytepp_)
+image_create(uint width_, uint height_, uint format_)
 {
 	image *img = calloc(1, sizeof(*img));
 	if (img == NULL) {
@@ -111,7 +111,7 @@ image_create(uint width_, uint height_, uint bytepp_)
 
 	img->width = width_;
 	img->height = height_;
-	img->bytepp = bytepp_;
+	img->format = format_;
 	img->buf = malloc(image_get_stride(img) * img->height);
 	if (img->buf == NULL) {
 		free(img);
@@ -132,11 +132,25 @@ image_free(image *img)
 	}
 }
 
+// 1ピクセルあたりのバイト数を返す。
+uint
+image_get_bytepp(const image *img)
+{
+	switch (img->format) {
+	 case IMAGE_FMT_ARGB16:	return 2;
+	 case IMAGE_FMT_AIDX16:	return 2;
+	 case IMAGE_FMT_RGB24:	return 3;
+	 case IMAGE_FMT_ARGB32:	return 4;
+	 default:
+		assert(0);
+	}
+}
+
 // ストライドを返す。
 uint
 image_get_stride(const image *img)
 {
-	return img->width * img->bytepp;
+	return img->width * image_get_bytepp(img);
 }
 
 // いい感じにリサイズした時の幅と高さを求める。
@@ -344,7 +358,7 @@ image_read_pstream(pstream *ps, const diag *diag)
 image *
 image_convert_to16(const image *src)
 {
-	image *dst = image_create(src->width, src->height, 2);
+	image *dst = image_create(src->width, src->height, IMAGE_FMT_ARGB16);
 	if (dst == NULL) {
 		return NULL;
 	}
@@ -352,7 +366,7 @@ image_convert_to16(const image *src)
 	uint16 *d16 = (uint16 *)dst->buf;
 	uint count = src->width * src->height;
 
-	if (src->bytepp == 3) {
+	if (src->format == IMAGE_FMT_RGB24) {
 		for (uint i = 0; i < count; i++) {
 			uint r, g, b, v;
 			r = (*s8++) >> 3;
@@ -361,7 +375,7 @@ image_convert_to16(const image *src)
 			v = (r << 10) | (g << 5) | b;
 			*d16++ = v;
 		}
-	} else if (src->bytepp == 4) {
+	} else if (src->format == IMAGE_FMT_ARGB32) {
 		for (uint i = 0; i < count; i++) {
 			uint r, g, b, a, v;
 			r = (*s8++) >> 3;
@@ -397,7 +411,7 @@ image_reduct(
 	memset(ir, 0, sizeof(*ir));
 	ir->gain = opt->gain;
 
-	dst = image_create(dst_width, dst_height, 2);
+	dst = image_create(dst_width, dst_height, IMAGE_FMT_AIDX16);
 	if (dst == NULL) {
 		return NULL;
 	}
