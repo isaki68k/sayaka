@@ -125,6 +125,7 @@ enum {
 	OPT_progress,
 	OPT_show_cw,
 	OPT_show_image,
+	OPT_sixel_or,
 	OPT_timeout_image,
 };
 
@@ -161,6 +162,7 @@ static const struct option longopts[] = {
 	{ "server",			required_argument,	NULL,	's' },
 	{ "show-cw",		no_argument,		NULL,	OPT_show_cw },
 	{ "show-image",		required_argument,	NULL,	OPT_show_image },
+	{ "sixel-or",		no_argument,		NULL,	OPT_sixel_or },
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
 	{ "token",			required_argument,	NULL,	't' },
 	{ NULL },
@@ -438,6 +440,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_sixel_or:
+			imageopt.output_ormode = true;
+			break;
+
 		 case 't':
 			token_file = optarg;
 			break;
@@ -569,6 +575,7 @@ help_all(void)
 "  --progress             : Show startup progress (for slow machines)\n"
 "  -r,--record=<file>     : Record JSON to <file>\n"
 "  -s,--server=<host>     : Set misskey server\n"
+"  --sixel-or             : Output SIXEL by OR-mode\n"
 "  --show-cw              : Open CW(Contents Warning) part\n"
 "  --show-image=<mode>    : Whether to show image or not (default:auto)\n"
 "     yes      : Force output SIXEL image even if terminal doesn't support\n"
