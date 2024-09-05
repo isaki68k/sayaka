@@ -539,11 +539,10 @@ static void
 image_reduct_simple(image_reductor_handle *ir,
 	image *dstimg, const image *srcimg, const diag *diag)
 {
-	uint8 *d = dstimg->buf;
-	const uint8 *src = srcimg->buf;
+	uint16 *d = (uint16 *)dstimg->buf;
+	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint dstwidth  = dstimg->width;
 	uint dstheight = dstimg->height;
-	uint srcstride = image_get_stride(srcimg);
 	Rational ry;
 	Rational rx;
 	Rational ystep;
@@ -561,15 +560,19 @@ image_reduct_simple(image_reductor_handle *ir,
 
 		rx.I = 0;
 		rx.N = 0;
-		const uint8 *s0 = &src[ry.I * srcstride];
+		const uint16 *s0 = &src[ry.I * srcimg->width];
 		for (uint x = 0; x < dstwidth; x++) {
-			const uint8 *s = s0 + rx.I * 3;
+			const uint16 *s = s0 + rx.I;
 			rational_add(&rx, &xstep);
 
 			ColorRGBint32 c;
-			c.r = *s++;
-			c.g = *s++;
-			c.b = *s++;
+			int a;
+			uint16 v = *s++;
+			a   =   (v >> 15);
+			c.r = ((v >> 10) & 0x1f) << 3;
+			c.g = ((v >>  5) & 0x1f) << 3;
+			c.b = ( v        & 0x1f) << 3;
+
 			if (ir->gain != 256) {
 				c.r = (uint32)c.r * ir->gain / 256;
 				c.g = (uint32)c.g * ir->gain / 256;
@@ -583,6 +586,9 @@ image_reduct_simple(image_reductor_handle *ir,
 			c8.g = saturate_uint8(c.g);
 			c8.b = saturate_uint8(c.b);
 			uint colorcode = ir->finder(ir, c8);
+			if (a) {
+				colorcode |= 0x8000;
+			}
 			*d++ = colorcode;
 		}
 	}
