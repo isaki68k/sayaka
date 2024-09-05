@@ -80,9 +80,9 @@ enum {
 	OPT_help_all,
 	OPT_ipv4,
 	OPT_ipv6,
-	OPT_ormode,
 	OPT_output_format,
 	OPT_resize_axis,
+	OPT_sixel_or,
 	OPT_suppress_palette,
 	OPT_version,
 	OPT_width,
@@ -104,10 +104,10 @@ static const struct option longopts[] = {
 	{ "ignore-error",	no_argument,		NULL,	'i' },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
-	{ "ormode",			no_argument,		NULL,	OPT_ormode },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "reduction",		required_argument,	NULL,	'r' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
+	{ "sixel-or",		no_argument,		NULL,	OPT_sixel_or },
 	{ "suppress-palette", no_argument,		NULL,	OPT_suppress_palette },
 	{ "version",		no_argument,		NULL,	'v' },
 	{ "width",			required_argument,	NULL,	'w' },
@@ -292,10 +292,6 @@ main(int ac, char *av[])
 			}
 			break;
 
-		 case OPT_ormode:
-			imageopt.output_ormode = true;
-			break;
-
 		 case 'o':
 			if (strcmp(optarg, "-") == 0) {
 				output_filename = NULL;
@@ -316,6 +312,10 @@ main(int ac, char *av[])
 			if ((int)opt_resize_axis < 0) {
 				errx(1, "Invalid resize axis '%s'", optarg);
 			}
+			break;
+
+		 case OPT_sixel_or:
+			imageopt.output_ormode = true;
 			break;
 
 		 case OPT_suppress_palette:
@@ -399,7 +399,7 @@ usage(void)
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
 "  -d <diffusion>                        --resize-axis=<axis>\n"
 "  --gain=<gain>                         --blurhash-nearest\n"
-"  --ormode                              --suppress-palette\n"
+"  --sixel-or                            --suppress-palette\n"
 "  -i, --ignore-error                    --ciphers=<ciphers>\n"
 "  --help-all                            --debug-image=<0..2>\n"
 "  --debug-net=<0..2>                    --debug-sixel=<0..2>\n"
@@ -439,7 +439,7 @@ help_all(void)
 "  --gain=<gain> : Output gain between 0.0 and 2.0 (default:1.0)\n"
 "  -O, --output-format=<fmt> : bmp or sixel (default: sixel)\n"
 "  -o <filename> : Output filename, '-' means stdout (default: -)\n"
-"  --ormode    : Output SIXEL by OR-mode\n"
+"  --sixel-or    : Output SIXEL by OR-mode\n"
 "  --suppress-palette : Suppress output of SIXEL palette definition\n"
 "  --ciphers <ciphers> : Only \"RSA\" can be specified for now\n"
 "  -i, --ignore-error\n"
