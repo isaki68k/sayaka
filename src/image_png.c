@@ -33,7 +33,6 @@
 #include <png.h>
 
 static const char *colortype2str(int type);
-static void png_read_cb(png_structp png, png_bytep data, png_size_t length);
 
 bool
 image_png_match(FILE *fp, const diag *diag)
@@ -85,8 +84,7 @@ image_png_read(FILE *fp, const diag *diag)
 		goto abort;
 	}
 
-	// コールバック設定。
-	png_set_read_fn(png, fp, png_read_cb);
+	png_init_io(png, fp);
 
 	// ヘッダを読み込む。
 	png_read_info(png, info);
@@ -151,20 +149,5 @@ colortype2str(int type)
 	 default:
 		snprintf(buf, sizeof(buf), "%d(?)", type);
 		return buf;
-	}
-}
-
-// コールバック。
-static void
-png_read_cb(png_structp png, png_bytep data, png_size_t length)
-{
-	FILE *fp = (FILE *)png_get_io_ptr(png);
-
-	size_t total = 0;
-	while (total < length) {
-		size_t r = fread((char *)data + total, 1, length - total, fp);
-		if (r < 1)
-			break;
-		total += r;
 	}
 }
