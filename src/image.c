@@ -81,8 +81,8 @@ static void image_reduct_simple(image_reductor_handle *,
 static bool image_reduct_highquality(image_reductor_handle *,
 	image *, const image *, const image_opt *, const diag *diag);
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
-static uint8 saturate_uint8(int);
-static int16 saturate_adderr(int16, int);
+static inline uint8 saturate_uint8(int);
+static inline int16 saturate_adderr(int16, int);
 
 static const ColorRGB palette_fixed8[];
 static const ColorRGB palette_ansi16[];
@@ -805,7 +805,7 @@ set_err(ColorRGBint16 *eb, int x, const ColorRGBint32 *col, int ratio)
 	eb[x].b = saturate_adderr(eb[x].b, col->b * ratio / 256);
 }
 
-static uint8
+static inline uint8
 saturate_uint8(int val)
 {
 	if (val < 0) {
@@ -817,7 +817,7 @@ saturate_uint8(int val)
 	return (uint8)val;
 }
 
-static int16
+static inline int16
 saturate_adderr(int16 a, int b)
 {
 	int16 val = a + b;
