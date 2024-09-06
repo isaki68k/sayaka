@@ -318,7 +318,7 @@ static uint
 mylog2(uint n)
 {
 #if defined(HAVE___BUILTIN_CLZ)
-	return 32 - __builtin_clz(n);
+	return 31 - __builtin_clz(n);
 #else
 	for (uint i = 0; i < 8; i++) {
 		if (n <= (1U << i)) {
