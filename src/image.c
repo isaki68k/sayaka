@@ -95,7 +95,7 @@ void
 image_opt_init(image_opt *opt)
 {
 	opt->method  = REDUCT_HIGH_QUALITY;
-	opt->diffuse = DIFFUSE_FSS;
+	opt->diffuse = DIFFUSE_SFL;
 	opt->color   = ReductorColor_Fixed256;
 	opt->gain    = 256;
 	opt->output_ormode = false;
@@ -707,14 +707,14 @@ image_reduct_highquality(image_reductor_handle *ir,
 			}
 
 			switch (opt->diffuse) {
-			 case DIFFUSE_FSS:
+			 case DIFFUSE_SFL:
 			 default:
-				// Floyd Steinberg Method のシフト近似版。
+				// Sierra Filter Lite
 				set_err_asr(errbuf[0], x + 1, &col, 1);
-				set_err_asr(errbuf[1], x - 1, &col, 3);
+				set_err_asr(errbuf[1], x - 1, &col, 2);
 				set_err_asr(errbuf[1], x    , &col, 2);
-				set_err_asr(errbuf[1], x + 1, &col, 4);
 				break;
+
 #if defined(SIXELV)
 			 case DIFFUSE_FS:
 				// Floyd Steinberg Method

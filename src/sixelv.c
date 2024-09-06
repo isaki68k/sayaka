@@ -121,8 +121,8 @@ static const struct optmap map_output_format[] = {
 };
 
 static const struct optmap map_diffuse[] = {
+	{ "sfl",		DIFFUSE_SFL },
 	{ "fs",			DIFFUSE_FS },
-	{ "fss",		DIFFUSE_FSS },
 	{ "atkinson",	DIFFUSE_ATKINSON },
 	{ "jajuni",		DIFFUSE_JAJUNI },
 	{ "stucki",		DIFFUSE_STUCKI },
@@ -427,8 +427,9 @@ help_all(void)
 "     scaledown-{both,width,height,long,short} or (sd*)\n"
 "  -r,--reduction=<method> : Specify reduction method (default: high)\n"
 "     none, simple : No diffusion\n"
-"     high         : Use 2D Diffusion (default diffusion: fs)\n"
+"     high         : Use 2D Diffusion (default diffusion: sfl)\n"
 "  -d,--diffusion=<diffusion> : Specify diffusion algorithm\n"
+"     sfl      : Sierra Filter Lite\n"
 "     fs       : Floyd Steinberg\n"
 "     atkinson : Atkinson\n"
 "     jajuni   : Jarvis, Judice, Ninke\n"

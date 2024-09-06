@@ -110,8 +110,8 @@ typedef enum {
 
 // 誤差拡散アルゴリズム
 typedef enum {
+	DIFFUSE_SFL,		// Sierra Filter Lite
 	DIFFUSE_FS,			// Floyd Steinberg
-	DIFFUSE_FSS,		// Floyd Steinberg (shift 近似)
 	DIFFUSE_ATKINSON,	// Atkinson
 	DIFFUSE_JAJUNI,		// Jarvis, Judice, Ninke
 	DIFFUSE_STUCKI,		// Stucki
