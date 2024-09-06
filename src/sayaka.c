@@ -546,7 +546,7 @@ help_all(void)
 "  -l,--local             : Local timeline mode (needs --server)\n"
 "  -p,--play=<file|->     : Playback mode ('-' means stdin)\n"
 " <options>\n"
-"  -c,--color=<colormode> : Set color mode (default: 256)\n"
+"  -c,--color=<colormode> : Set color mode (default:256)\n"
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
 "     16       : Fixed ANSI compatible 16 colors\n"
 "     8        : Fixed RGB 8 colors\n"
