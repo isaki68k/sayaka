@@ -122,6 +122,7 @@ static const struct optmap map_output_format[] = {
 
 static const struct optmap map_diffuse[] = {
 	{ "fs",			DIFFUSE_FS },
+	{ "fss",		DIFFUSE_FSS },
 	{ "atkinson",	DIFFUSE_ATKINSON },
 	{ "jajuni",		DIFFUSE_JAJUNI },
 	{ "stucki",		DIFFUSE_STUCKI },

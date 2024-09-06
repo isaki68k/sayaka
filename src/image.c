@@ -80,7 +80,10 @@ static void image_reduct_simple(image_reductor_handle *,
 #endif
 static bool image_reduct_highquality(image_reductor_handle *,
 	image *, const image *, const image_opt *, const diag *diag);
+#if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
+#endif
+static void set_err_asr(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
 static inline uint8 saturate_uint8(int);
 static inline int16 saturate_adderr(int16, int);
 
@@ -92,7 +95,7 @@ void
 image_opt_init(image_opt *opt)
 {
 	opt->method  = REDUCT_HIGH_QUALITY;
-	opt->diffuse = DIFFUSE_FS;
+	opt->diffuse = DIFFUSE_FSS;
 	opt->color   = ReductorColor_Fixed256;
 	opt->gain    = 256;
 	opt->output_ormode = false;
@@ -704,7 +707,15 @@ image_reduct_highquality(image_reductor_handle *ir,
 			}
 
 			switch (opt->diffuse) {
+			 case DIFFUSE_FSS:
 			 default:
+				// Floyd Steinberg Method のシフト近似版。
+				set_err_asr(errbuf[0], x + 1, &col, 1);
+				set_err_asr(errbuf[1], x - 1, &col, 3);
+				set_err_asr(errbuf[1], x    , &col, 2);
+				set_err_asr(errbuf[1], x + 1, &col, 4);
+				break;
+#if defined(SIXELV)
 			 case DIFFUSE_FS:
 				// Floyd Steinberg Method
 				set_err(errbuf[0], x + 1, &col, 112);
@@ -712,7 +723,6 @@ image_reduct_highquality(image_reductor_handle *ir,
 				set_err(errbuf[1], x    , &col, 80);
 				set_err(errbuf[1], x + 1, &col, 16);
 				break;
-#if defined(SIXELV)
 			 case DIFFUSE_ATKINSON:
 				// Atkinson
 				set_err(errbuf[0], x + 1, &col, 32);
@@ -796,6 +806,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 	return true;
 }
 
+#if defined(SIXELV)
 // eb[x] += col * ratio / 256;
 static void
 set_err(ColorRGBint16 *eb, int x, const ColorRGBint32 *col, int ratio)
@@ -803,6 +814,17 @@ set_err(ColorRGBint16 *eb, int x, const ColorRGBint32 *col, int ratio)
 	eb[x].r = saturate_adderr(eb[x].r, col->r * ratio / 256);
 	eb[x].g = saturate_adderr(eb[x].g, col->g * ratio / 256);
 	eb[x].b = saturate_adderr(eb[x].b, col->b * ratio / 256);
+}
+#endif
+
+// eb[x] += col >> shift
+// シフト演算だけにしたもの。
+static void
+set_err_asr(ColorRGBint16 *eb, int x, const ColorRGBint32 *col, int shift)
+{
+	eb[x].r = saturate_adderr(eb[x].r, col->r >> shift);
+	eb[x].g = saturate_adderr(eb[x].g, col->g >> shift);
+	eb[x].b = saturate_adderr(eb[x].b, col->b >> shift);
 }
 
 static inline uint8
