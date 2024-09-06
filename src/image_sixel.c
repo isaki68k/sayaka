@@ -94,14 +94,28 @@ image_sixel_write(FILE *fp, const image *img,
 static bool
 sixel_preamble(FILE *fp, const image *img, const image_opt *opt)
 {
+	// ヘッダは
+	//
+	//  +0 +1 +2 +3 +4    +5 +6 +7 +8  +9 +10 +11 +12
+	//  ESC P  7  ; <mode> ;  q  " <Ph> ; <Pv>  ; <Width> ; <Height>
+	//
+	// で、<mode> は通常 1、OR モードなら 5。
+	// Ph,Pv は 1。
+	static const char head[] = ESC "P7;1;q\"1;1;";
 	char buf[40];
+	char *p;
 
-	snprintf(buf, sizeof(buf), ESC "P7;%u;q\"1;1;%u;%u",
-		opt->output_ormode ? 5U : 1U,
-		img->width,
-		img->height);
+	memcpy(buf, head, strlen(head));
+	if (opt->output_ormode) {
+		buf[4] = '5';
+	}
+	p = buf + strlen(head);
+	p += PUTD(p, img->width, sizeof(buf) - (p - buf));
+	*p++ = ';';
+	p += PUTD(p, img->height, sizeof(buf) - (p - buf));
+	*p = '\0';
 
-	if (fwrite(buf, strlen(buf), 1, fp) < 1) {
+	if (fwrite(buf, p - buf, 1, fp) < 1) {
 		return false;
 	}
 
@@ -113,7 +127,7 @@ sixel_preamble(FILE *fp, const image *img, const image_opt *opt)
 			uint r = col->r * 100 / 255;
 			uint g = col->g * 100 / 255;
 			uint b = col->b * 100 / 255;
-			char *p = buf;
+			p = buf;
 
 			*p++ = '#';
 			p += PUTD(p, i, sizeof(buf) - (p - buf));	// palette num
