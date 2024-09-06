@@ -1061,6 +1061,8 @@ reductordiffuse_tostr(ReductorDiffuse diffuse)
 		ReductorDiffuse value;
 		const char *name;
 	} table[] = {
+		{ DIFFUSE_NONE,		"NONE" },
+		{ DIFFUSE_SFL,		"SFL" },
 		{ DIFFUSE_FS,		"FS" },
 		{ DIFFUSE_ATKINSON,	"ATKINSON" },
 		{ DIFFUSE_JAJUNI,	"JAJUNI" },
