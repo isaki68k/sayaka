@@ -38,7 +38,8 @@ static bool sixel_preamble(FILE *, const image *, const image_opt *);
 static bool sixel_postamble(FILE *);
 static bool sixel_convert_normal(FILE *, const image *, const diag *);
 static bool sixel_convert_ormode(FILE *, const image *, const diag *);
-static void sixel_ormode_h6(string *, uint8 *, const uint8 *, uint, uint, uint);
+static void sixel_ormode_h6(string *, uint8 *, const uint16 *, uint, uint,
+	uint);
 static void sixel_repunit(string *, uint, uint8);
 
 // SIXEL 中断シーケンスを出力する。
@@ -333,7 +334,7 @@ mylog2(uint n)
 static bool
 sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 {
-	const uint8 *src = img->buf;
+	const uint16 *src = (const uint16 *)img->buf;
 	uint w = img->width;
 	uint h = img->height;
 	uint palcnt = img->palette_count;
@@ -379,7 +380,7 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 
 // sixelbuf は毎回同じサイズなので呼び出し元で一度だけ確保しておく。
 static void
-sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint8 *src,
+sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 	uint width, uint height, uint nplane)
 {
 	uint8 *buf;
@@ -387,7 +388,10 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint8 *src,
 	// y = 0 のケースで初期化も同時に実行する。
 	buf = sixelbuf;
 	for (uint x = 0; x < width; x++) {
-		uint8 cc = *src++;
+		uint16 cc = *src++;
+		if ((int16)cc < 0) {
+			cc = 0;
+		}
 		for (uint i = 0; i < nplane; i++) {
 			*buf++ = (cc & 1) << 0;
 			cc >>= 1;
@@ -398,7 +402,10 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint8 *src,
 	for (uint y = 1; y < height; y++) {
 		buf = sixelbuf;
 		for (uint x = 0; x < width; x++) {
-			uint8 cc = *src++;
+			uint16 cc = *src++;
+			if ((int16)cc < 0) {
+				cc = 0;
+			}
 			for (uint i = 0; i < nplane; i++) {
 				*buf |= (cc & 1) << y;
 				buf++;
