@@ -867,10 +867,11 @@ finder_gray(image_reductor_handle *ir, ColorRGB c)
 }
 
 // c をグレー (NTSC 輝度) に変換する。
+// I = (R * 0.299) + (G * 0.587) + (B * 0.114)
 static void
 colorcvt_gray(image_reductor_handle *ir, ColorRGBint32 *c)
 {
-	int I = (c->r * 76 + c->g * 153 + c->b * 26) / 255;
+	int I = (c->r * 76 + c->g * 150 + c->b * 29) / 255;
 	c->r = I;
 	c->g = I;
 	c->b = I;
