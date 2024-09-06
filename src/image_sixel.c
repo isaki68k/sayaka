@@ -403,8 +403,9 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 		buf = sixelbuf;
 		for (uint x = 0; x < width; x++) {
 			uint16 cc = *src++;
-			if ((int16)cc < 0) {
-				cc = 0;
+			if ((int16)cc <= 0) {
+				buf += nplane;
+				continue;
 			}
 			for (uint i = 0; i < nplane; i++) {
 				*buf |= (cc & 1) << y;
