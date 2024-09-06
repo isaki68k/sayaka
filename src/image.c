@@ -565,7 +565,7 @@ image_reduct_simple(image_reductor_handle *ir,
 			ColorRGBint32 c;
 			int a;
 			uint16 v = *s++;
-			a   =   (v >> 15);
+			a   =  (v >> 15);
 			c.r = ((v >> 10) & 0x1f) << 3;
 			c.g = ((v >>  5) & 0x1f) << 3;
 			c.b = ( v        & 0x1f) << 3;
