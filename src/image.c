@@ -83,7 +83,8 @@ static bool image_reduct_highquality(image_reductor_handle *,
 #if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
 #endif
-static void set_err_asr(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
+static inline void set_err_asr(ColorRGBint16 *, int, const ColorRGBint32 *,
+	int);
 static inline uint8 saturate_uint8(int);
 static inline int16 saturate_adderr(int16, int);
 
@@ -819,7 +820,7 @@ set_err(ColorRGBint16 *eb, int x, const ColorRGBint32 *col, int ratio)
 
 // eb[x] += col >> shift
 // シフト演算だけにしたもの。
-static void
+static inline void
 set_err_asr(ColorRGBint16 *eb, int x, const ColorRGBint32 *col, int shift)
 {
 	eb[x].r = saturate_adderr(eb[x].r, col->r >> shift);
