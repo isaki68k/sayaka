@@ -108,6 +108,9 @@ image_png_read(FILE *fp, const diag *diag)
 		}
 		png_set_gray_to_rgb(png);
 	}
+	if (bitdepth > 8) {
+		png_set_strip_16(png);
+	}
 
 	uint fmt;
 	if ((color_type & PNG_COLOR_MASK_ALPHA) == 0) {
