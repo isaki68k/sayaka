@@ -871,7 +871,7 @@ finder_gray(image_reductor_handle *ir, ColorRGB c)
 static void
 colorcvt_gray(image_reductor_handle *ir, ColorRGBint32 *c)
 {
-	int I = (c->r * 76 + c->g * 150 + c->b * 29) / 255;
+	int I = (c->r * 77 + c->g * 150 + c->b * 29) / 256;
 	c->r = I;
 	c->g = I;
 	c->b = I;
