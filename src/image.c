@@ -556,14 +556,11 @@ image_reduct_simple(image_reductor_handle *ir,
 	rational_init(&xstep, 0, srcimg->width, dstwidth);
 
 	for (uint y = 0; y < dstheight; y++) {
-		rational_add(&ry, &ystep);
-
 		rx.I = 0;
 		rx.N = 0;
 		const uint16 *s0 = &src[ry.I * srcimg->width];
 		for (uint x = 0; x < dstwidth; x++) {
 			const uint16 *s = s0 + rx.I;
-			rational_add(&rx, &xstep);
 
 			ColorRGBint32 c;
 			int a;
@@ -590,7 +587,10 @@ image_reduct_simple(image_reductor_handle *ir,
 				colorcode |= 0x8000;
 			}
 			*d++ = colorcode;
+
+			rational_add(&rx, &xstep);
 		}
+		rational_add(&ry, &ystep);
 	}
 }
 #endif
