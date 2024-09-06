@@ -108,10 +108,14 @@ image_png_read(FILE *fp, const diag *diag)
 		}
 		png_set_gray_to_rgb(png);
 	}
-	// Alpha 無視。
-	png_set_strip_alpha(png);
 
-	img = image_create(width, height, IMAGE_FMT_RGB24);
+	uint fmt;
+	if ((color_type & PNG_COLOR_MASK_ALPHA) == 0) {
+		fmt = IMAGE_FMT_RGB24;
+	} else {
+		fmt = IMAGE_FMT_ARGB32;
+	}
+	img = image_create(width, height, fmt);
 
 	// スキャンラインメモリのポインタ配列。
 	lines = malloc(sizeof(char *) * height);
