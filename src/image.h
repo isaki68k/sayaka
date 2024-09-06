@@ -110,6 +110,7 @@ typedef enum {
 
 // 誤差拡散アルゴリズム
 typedef enum {
+	DIFFUSE_NONE,		// No Diffusion
 	DIFFUSE_SFL,		// Sierra Filter Lite
 	DIFFUSE_FS,			// Floyd Steinberg
 	DIFFUSE_ATKINSON,	// Atkinson

@@ -717,6 +717,9 @@ image_reduct_highquality(image_reductor_handle *ir,
 				break;
 
 #if defined(SIXELV)
+			 case DIFFUSE_NONE:
+				// 比較用の何もしないモード
+				break;
 			 case DIFFUSE_FS:
 				// Floyd Steinberg Method
 				set_err(errbuf[0], x + 1, &col, 112);
