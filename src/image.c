@@ -76,12 +76,12 @@ static ColorRGB *image_alloc_fixed256_palette(void);
 
 #if defined(SIXELV)
 static void image_reduct_simple(image_reductor_handle *,
-	image *, const image *, const diag *diag);
+	image *, const image *, const diag *);
 #endif
 static bool image_reduct_highquality(image_reductor_handle *,
-	image *, const image *, const image_opt *, const diag *diag);
+	image *, const image *, const image_opt *, const diag *);
 #if defined(SIXELV)
-static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *col, int);
+static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *, int);
 #endif
 static inline void set_err_asr(ColorRGBint16 *, int, const ColorRGBint32 *,
 	int);
