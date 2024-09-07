@@ -58,33 +58,50 @@ static bool image_webp_loadinc(image *, FILE *, WebPIDecoder *,
 bool
 image_webp_match(FILE *fp, const diag *diag)
 {
+#define HDRBUFSIZE 128
 	VP8StatusCode r = VP8_STATUS_BITSTREAM_ERROR;
-	uint8 *buf = NULL;
-	size_t len = 0;
+	uint8 stackbuf[HDRBUFSIZE];
+	uint8 *buf;
+	size_t len;
+	WebPBitstreamFeatures features;
 
-	do {
-		size_t bufsize = len + 64;
-		uint8 *newbuf = realloc(buf, bufsize);
-		if (newbuf == NULL) {
-			Debug(diag, "%s: realloc failed: %s", __func__, strerrno());
-			break;
-		}
-		buf = newbuf;
+	buf = stackbuf;
+	len = fread(stackbuf, 1, sizeof(stackbuf), fp);
+	if (__predict_false(len == 0)) {
+		goto done;
+	}
 
-		size_t n = fread(buf + len, 1, bufsize - len, fp);
-		if (n == 0) {
-			break;
-		}
-		len += n;
+	// フォーマットは WebPGetFeatures() で判定できる。
+	// データが足りなければ VP8_STATUS_NOT_ENOUGH_DATA が返ってくる。
+	r = WebPGetFeatures(buf, len, &features);
+	if (__predict_false(r == VP8_STATUS_NOT_ENOUGH_DATA)) {
+		// 足りなければバッファを増やしながら試す。
+		// (現状起きたことはない)
+		buf = NULL;
+		do {
+			size_t bufsize = len + HDRBUFSIZE;
+			uint8 *newbuf = realloc(buf, bufsize);
+			if (newbuf == NULL) {
+				Debug(diag, "%s: realloc failed: %s", __func__, strerrno());
+				break;
+			}
+			if (buf == NULL) {
+				memcpy(newbuf, stackbuf, len);
+			}
+			buf = newbuf;
 
-		// フォーマットは WebPGetFeatures() で判定できる。
-		// データが足りなければ VP8_STATUS_NOT_ENOUGH_DATA が返ってくる。
-		WebPBitstreamFeatures features;
-		r = WebPGetFeatures(buf, len, &features);
-	} while (r == VP8_STATUS_NOT_ENOUGH_DATA);
+			size_t n = fread(buf + len, 1, bufsize - len, fp);
+			if (n == 0) {
+				break;
+			}
+			len += n;
 
-	free(buf);
+			r = WebPGetFeatures(buf, len, &features);
+		} while (r == VP8_STATUS_NOT_ENOUGH_DATA);
+		free(buf);
+	}
 
+ done:
 	if (r == VP8_STATUS_BITSTREAM_ERROR) {
 		// Webp ではない。
 		return false;
