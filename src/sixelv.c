@@ -62,6 +62,7 @@ static bool opt_blurhash_nearest;	// Blurhash を最近傍補間する
 static ResizeAxis opt_resize_axis;
 static uint opt_width;
 static uint opt_height;
+static bool opt_profile;			// プロファイル
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
 static image_opt imageopt;
@@ -81,6 +82,7 @@ enum {
 	OPT_ipv4,
 	OPT_ipv6,
 	OPT_output_format,
+	OPT_profile,
 	OPT_resize_axis,
 	OPT_sixel_or,
 	OPT_suppress_palette,
@@ -105,6 +107,7 @@ static const struct option longopts[] = {
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "output-format",	required_argument,	NULL,	'O' },
+	{ "profile",		no_argument,		NULL,	OPT_profile },
 	{ "reduction",		required_argument,	NULL,	'r' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
 	{ "sixel-or",		no_argument,		NULL,	OPT_sixel_or },
@@ -302,6 +305,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_profile:
+			opt_profile = true;
+			break;
+
 		 case 'r':
 			imageopt.method = parse_optmap(map_reductor_method, optarg);
 			if ((int)imageopt.method < 0) {
@@ -478,6 +485,8 @@ do_file(const char *infile)
 	struct timeval cvt_start;
 	struct timeval reduct_start;
 	struct timeval reduct_end;
+	struct timeval sixel_start;
+	struct timeval sixel_end;
 
 	infilename = infile;
 	if (infile == NULL) {
@@ -641,20 +650,6 @@ do_file(const char *infile)
 	}
 
 	gettimeofday(&reduct_end, NULL);
-	if (diag_get_level(diag_image) >= 1) {
-		struct timeval load_res;
-		struct timeval cvt_res;
-		struct timeval reduct_res;
-		timersub(&load_end, &load_start, &load_res);
-		timersub(&reduct_start, &cvt_start, &cvt_res);
-		timersub(&reduct_end, &reduct_start, &reduct_res);
-		float ltime = load_res.tv_sec   + (float)load_res.tv_usec / 1000000;
-		float ctime = cvt_res.tv_sec    + (float)cvt_res.tv_usec / 1000000;
-		float rtime = reduct_res.tv_sec + (float)reduct_res.tv_usec / 1000000;
-		diag_print(diag_image,
-			"Load %4.1f msec, Convert %4.1f msec, Reduct %4.1f msec",
-			ltime * 1000, ctime * 1000, rtime * 1000);
-	}
 
 	// 出力先をオープン。
 	if (output_filename == NULL) {
@@ -667,6 +662,8 @@ do_file(const char *infile)
 		}
 	}
 
+	gettimeofday(&sixel_start, NULL);
+
 	// 書き出し。
 	if (output_format == OutputFormat_SIXEL) {
 		image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
@@ -676,6 +673,28 @@ do_file(const char *infile)
 		}
 	}
 	fflush(ofp);
+
+	gettimeofday(&sixel_end, NULL);
+
+	if (opt_profile) {
+		struct timeval load_res;
+		struct timeval cvt_res;
+		struct timeval reduct_res;
+		struct timeval sixel_res;
+		timersub(&load_end, &load_start, &load_res);
+		timersub(&reduct_start, &cvt_start, &cvt_res);
+		timersub(&reduct_end, &reduct_start, &reduct_res);
+		timersub(&sixel_end, &sixel_start, &sixel_res);
+		float ltime = load_res.tv_sec   + (float)load_res.tv_usec / 1000000;
+		float ctime = cvt_res.tv_sec    + (float)cvt_res.tv_usec / 1000000;
+		float rtime = reduct_res.tv_sec + (float)reduct_res.tv_usec / 1000000;
+		float stime = sixel_res.tv_sec  + (float)sixel_res.tv_usec / 1000000;
+		diag_print(diag_image,
+			"Load(+IO) %4.1f, Cvt %4.1f, Reduct %4.1f, %s(+IO) %4.1f msec",
+			ltime * 1000, ctime * 1000, rtime * 1000,
+			(output_format == OutputFormat_SIXEL ? "SIXEL" : "Write"),
+			stime * 1000);
+	}
 
 	rv = true;
  abort:

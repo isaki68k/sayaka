@@ -32,7 +32,6 @@
 #include "common.h"
 #include "image_priv.h"
 #include <string.h>
-#include <sys/time.h>
 
 static bool sixel_preamble(FILE *, const image *, const image_opt *);
 static bool sixel_postamble(FILE *);
@@ -56,12 +55,8 @@ bool
 image_sixel_write(FILE *fp, const image *img,
 	const image_opt *opt, const diag *diag)
 {
-	struct timeval start, end, result;
-
 	Debug(diag, "%s: source image (%u, %u) %u colors", __func__,
 		img->width, img->height, img->palette_count);
-
-	gettimeofday(&start, NULL);
 
 	if (sixel_preamble(fp, img, opt) == false) {
 		return false;
@@ -79,14 +74,6 @@ image_sixel_write(FILE *fp, const image *img,
 
 	if (sixel_postamble(fp) == false) {
 		return false;
-	}
-
-	if (diag_get_level(diag) >= 1) {
-		gettimeofday(&end, NULL);
-		fflush(fp);
-		timersub(&end, &start, &result);
-		float cvt = result.tv_sec + (float)result.tv_usec / 1000000;
-		diag_print(diag, "%s: convert+write %4.1f msec", __func__, cvt * 1000);
 	}
 
 	return true;
