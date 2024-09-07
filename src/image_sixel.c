@@ -41,7 +41,24 @@ static void sixel_ormode_h6(string *, uint8 *, const uint16 *, uint, uint,
 	uint);
 static void sixel_repunit(string *, uint, uint8);
 
-static uint64 deptable[256];
+static const uint32 deptable[16] = {
+	0x00000000,
+	0x00000001,
+	0x00000100,
+	0x00000101,
+	0x00010000,
+	0x00010001,
+	0x00010100,
+	0x00010101,
+	0x01000000,
+	0x01000001,
+	0x01000100,
+	0x01000101,
+	0x01010000,
+	0x01010001,
+	0x01010100,
+	0x01010101,
+};
 
 // SIXEL 中断シーケンスを出力する。
 void
@@ -330,19 +347,6 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 	int y;
 	bool rv = true;
 
-	// 変換テーブルを作成。最初に1回だけ必要。
-	// グローバル変数はゼロ初期化なので [0] 以外で初期化済みかどうか分かる。
-	if (deptable[1] == 0) {
-		for (uint i = 0; i < 256; i++) {
-			uint64 res = 0;
-			for (int bit = 0; bit < 8; bit++) {
-				int n = bit * 8;
-				res |= (uint64)((i >> bit) & 1) << n;
-			}
-			deptable[i] = res;
-		}
-	}
-
 	// パレットのビット数。(0 は来ないはず)
 	uint nplane = mylog2(palcnt);
 	linebuf = string_alloc((w + 5) * nplane);
@@ -433,18 +437,34 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 
 	buf = sixelbuf;
 	for (uint x = 0; x < width; x++) {
-		uint64 data = 0;
+		uint32 data0 = 0;
+		uint32 data1 = 0;
 		for (uint y = 0; y < height; y++) {
 			uint16 cc = src[width * y];
 			if ((int16)cc > 0) {
-				data |= deptable[cc & 0xff] << y;
+				data0 |= deptable[cc & 0xf] << y;
+				if (__predict_false(nplane > 4)) {
+					data1 |= deptable[cc >> 4] << y;
+				}
 			}
 		}
 		src++;
 
-		for (uint i = 0; i < nplane; i++) {
-			*buf++ = data & 0xff;
-			data >>= 8;
+		if (__predict_true(nplane <= 4)) {
+			for (uint i = 0; i < nplane; i++) {
+				*buf++ = data0 & 0xff;
+				data0 >>= 8;
+			}
+		} else {
+			uint i = 0;
+			for (; i < 4; i++) {
+				*buf++ = data0 & 0xff;
+				data0 >>= 8;
+			}
+			for (; i < nplane; i++) {
+				*buf++ = data1 & 0xff;
+				data1 >>= 8;
+			}
 		}
 	}
 #endif
