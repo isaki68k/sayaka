@@ -150,8 +150,6 @@ sixel_postamble(FILE *fp)
 
 #define ADDCHAR(s, ch)	string_append_char(s, ch)
 
-#define REPUNIT(s, n, ptn)	sixel_repunit(s, n, ptn)
-
 // SIXEL 従来モードで出力。
 static bool
 sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
@@ -242,7 +240,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 				// 相対 X シーク処理。
 				int space = min_x[min_color] - (mx + 1);
 				if (space > 0) {
-					REPUNIT(linebuf, space, 0);
+					sixel_repunit(linebuf, space, 0);
 				}
 
 				// パターンが変わったら、それまでのパターンを出していく
@@ -260,7 +258,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 
 					if (prev_t != t) {
 						if (n > 0) {
-							REPUNIT(linebuf, n, prev_t);
+							sixel_repunit(linebuf, n, prev_t);
 						}
 						prev_t = t;
 						n = 1;
@@ -270,7 +268,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 				}
 				// 最後のパターン。
 				if (prev_t != 0 && n > 0) {
-					REPUNIT(linebuf, n, prev_t);
+					sixel_repunit(linebuf, n, prev_t);
 				}
 
 				// X 位置を更新。
