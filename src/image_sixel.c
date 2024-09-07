@@ -447,7 +447,7 @@ sixel_repunit(string *s, uint n, uint8 ptn)
 		char buf[16];
 		char *p = buf;
 		*p++ = '!';
-		p += PUTD(p, n,   sizeof(buf) - (p - buf));
+		p += PUTD(p, n, sizeof(buf) - (p - buf));
 		*p++ = ptn;
 		string_append_mem(s, buf, (p - buf));
 	} else {
