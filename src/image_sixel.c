@@ -325,7 +325,7 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 	uint palcnt = img->palette_count;
 	string *linebuf = NULL;
 	uint8 *sixelbuf = NULL;
-	uint y;
+	int y;
 	bool rv = true;
 
 	// パレットのビット数。(0 は来ないはず)
@@ -341,7 +341,7 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 	}
 
 	// 6ラスターずつ。
-	for (y = 0; y < h - 6; y += 6) {
+	for (y = 0; y < (int)h - 6; y += 6) {
 		sixel_ormode_h6(linebuf, sixelbuf, src, w, 6, nplane);
 		if (fwrite(string_get(linebuf), string_len(linebuf), 1, fp) < 1) {
 			goto done;
