@@ -41,6 +41,8 @@ static void sixel_ormode_h6(string *, uint8 *, const uint16 *, uint, uint,
 	uint);
 static void sixel_repunit(string *, uint, uint8);
 
+static uint64 deptable[256];
+
 // SIXEL 中断シーケンスを出力する。
 void
 image_sixel_abort(FILE *fp)
@@ -328,6 +330,19 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 	int y;
 	bool rv = true;
 
+	// 変換テーブルを作成。最初に1回だけ必要。
+	// グローバル変数はゼロ初期化なので [0] 以外で初期化済みかどうか分かる。
+	if (deptable[1] == 0) {
+		for (uint i = 0; i < 256; i++) {
+			uint64 res = 0;
+			for (int bit = 0; bit < 8; bit++) {
+				int n = bit * 8;
+				res |= (uint64)((i >> bit) & 1) << n;
+			}
+			deptable[i] = res;
+		}
+	}
+
 	// パレットのビット数。(0 は来ないはず)
 	uint nplane = mylog2(palcnt);
 	linebuf = string_alloc((w + 5) * nplane);
@@ -370,6 +385,15 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 {
 	uint8 *buf;
 
+	// sixelbuf は画素を以下の順に並び替えたもの。(nplane=4 の場合)
+	// [0] Y=0..5, X=0, Plane=0
+	// [1] Y=0..5, X=0, Plane=1
+	// [2] Y=0..5, X=0, Plane=2
+	// [3] Y=0..5, X=0, Plane=3
+	// [4] Y=0..5, X=1, Plane=0
+	// :
+
+#if 0
 	// y = 0 のケースで初期化も同時に実行する。
 	buf = sixelbuf;
 	for (uint x = 0; x < width; x++) {
@@ -399,6 +423,31 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 			}
 		}
 	}
+#else
+	// 縦 6 ピクセルとプレーン(最大8)の水平垂直変換。
+	//       bn      b2   b1   b0            b5   b4   b3   b2   b1   b0
+	// [0] Y0Pn … Y0P2 Y0P1 Y0P0      [0] Y5P0 Y4P0 Y3P0 Y2P0 Y1P0 Y0P0
+	// [1] Y1Pn … Y1P2 Y1P1 Y1P0  ==> [1] Y5P1 Y4P1 Y3P1 Y2P1 Y1P1 Y0P1
+	//  :                               :
+	// [5] Y5Pn … Y5P2 Y5P1 Y5P0      [n] Y5Pn Y4Pn Y3Pn Y2Pn Y1Pn Y0Pn
+
+	buf = sixelbuf;
+	for (uint x = 0; x < width; x++) {
+		uint64 data = 0;
+		for (uint y = 0; y < height; y++) {
+			uint16 cc = src[width * y];
+			if ((int16)cc > 0) {
+				data |= deptable[cc & 0xff] << y;
+			}
+		}
+		src++;
+
+		for (uint i = 0; i < nplane; i++) {
+			*buf++ = data & 0xff;
+			data >>= 8;
+		}
+	}
+#endif
 
 	// 各プレーンデータを SIXEL に変換。
 	for (uint i = 0; i < nplane; i++) {
