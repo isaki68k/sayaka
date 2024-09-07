@@ -43,8 +43,8 @@
 #define SIXELV_VERSION "3.8.0 (2024/09/04)"
 
 typedef enum {
-	OutputFormat_SIXEL,
-	OutputFormat_BMP,
+	OUTPUT_FORMAT_SIXEL,
+	OUTPUT_FORMAT_BMP,
 } OutputFormat;
 
 static void version(void);
@@ -118,8 +118,8 @@ static const struct option longopts[] = {
 };
 
 static const struct optmap map_output_format[] = {
-	{ "bmp",		OutputFormat_BMP },
-	{ "sixel",		OutputFormat_SIXEL },
+	{ "bmp",		OUTPUT_FORMAT_BMP },
+	{ "sixel",		OUTPUT_FORMAT_SIXEL },
 	{ NULL },
 };
 
@@ -188,7 +188,7 @@ main(int ac, char *av[])
 	ignore_error = false;
 	opt_resize_axis = RESIZE_AXIS_BOTH;
 	output_filename = NULL;
-	output_format = OutputFormat_SIXEL;
+	output_format = OUTPUT_FORMAT_SIXEL;
 
 	while ((c = getopt_long(ac, av, "c:d:h:iO:o:r:vw:",
 					longopts, NULL)) != -1)
@@ -362,7 +362,7 @@ main(int ac, char *av[])
 			"-o <output_filename> cannot be used with multiple input file.");
 	}
 
-	if (output_format == OutputFormat_SIXEL) {
+	if (output_format == OUTPUT_FORMAT_SIXEL) {
 		signal(SIGINT, signal_handler);
 	}
 
@@ -665,7 +665,7 @@ do_file(const char *infile)
 	gettimeofday(&sixel_start, NULL);
 
 	// 書き出し。
-	if (output_format == OutputFormat_SIXEL) {
+	if (output_format == OUTPUT_FORMAT_SIXEL) {
 		image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
 	} else {
 		if (image_bmp_write(ofp, resimg, diag_image) == false) {
@@ -692,7 +692,7 @@ do_file(const char *infile)
 		diag_print(diag_image,
 			"Load(+IO) %4.1f, Cvt %4.1f, Reduct %4.1f, %s(+IO) %4.1f msec",
 			ltime * 1000, ctime * 1000, rtime * 1000,
-			(output_format == OutputFormat_SIXEL ? "SIXEL" : "Write"),
+			(output_format == OUTPUT_FORMAT_SIXEL ? "SIXEL" : "Write"),
 			stime * 1000);
 	}
 
