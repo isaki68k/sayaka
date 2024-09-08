@@ -707,6 +707,9 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 			&dst_width, &dst_height);
 	}
 
+	// 内部形式に変換。
+	image_convert_to16(srcimg);
+
 	memcpy(&localopt, &imageopt, sizeof(localopt));
 	if (shade) {
 		localopt.gain = (uint)(0.7 * 256);
