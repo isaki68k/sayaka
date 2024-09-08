@@ -187,7 +187,7 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 	hdr = string_init();
 	string_append_printf(hdr, "GET %s HTTP/1.1\r\n", pqf);
 	string_append_printf(hdr, "Host: %s\r\n", host);
-	string_append_printf(hdr, "User-Agent: sayaka/c\r\n");
+	string_append_printf(hdr, "User-Agent: %s/%s\r\n", progname, progver);
 	string_append_cstr(hdr,
 		"Upgrade: websocket\r\n"
 		"Connection: Upgrade\r\n"
@@ -493,6 +493,9 @@ ws_decode_len(const uint8 *src, uint *lenp)
 #include <signal.h>
 
 static struct net_opt opt;
+
+const char progname[] = "wsclient";
+const char progver[]  = "0.0";
 
 static int
 testhttp(const diag *diag, int ac, char *av[])

@@ -40,7 +40,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define SIXELV_VERSION "3.8.0 (2024/09/04)"
+#define SIXELV_VERSION "3.8.0"
+#define SIXELV_RELDATE "2024/09/04"
 
 typedef enum {
 	OUTPUT_FORMAT_SIXEL,
@@ -67,6 +68,9 @@ static const char *output_filename;	// 出力ファイル名。NULL なら stdou
 static OutputFormat output_format;	// 出力形式
 static image_opt imageopt;
 static struct net_opt netopt;
+
+const char progname[] = "sixelv";
+const char progver[]  = SIXELV_VERSION;
 
 enum {
 	OPT__start = 0x7f,
@@ -388,7 +392,7 @@ version(void)
 {
 	string *info = image_get_loaderinfo();
 
-	printf("sixelv %s - SIXEL viewer\n", SIXELV_VERSION);
+	printf("%s %s (%s) - SIXEL viewer\n", progname, progver, SIXELV_RELDATE);
 	printf(" Supported loader: %s\n", string_get(info));
 
 	string_free(info);
@@ -398,7 +402,7 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
+		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
 	fprintf(stderr,
 "  -c <color>      : Color mode. 2, 8, 16, 256 or gray[2..256] (default:256)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
@@ -419,7 +423,7 @@ static void
 help_all(void)
 {
 	fprintf(stderr,
-		"usage: %s [<options...>] [-|<file|url...>]\n", getprogname());
+		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
 	fprintf(stderr,
 "  -c,--color=<colormode> : Set color mode (default:256)\n"
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"

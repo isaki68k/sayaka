@@ -139,7 +139,7 @@ httpclient_connect(httpclient *http, const char *urlstr,
 		string_append_printf(hdr, "GET %s HTTP/1.1\r\n", pqf);
 		string_append_printf(hdr, "Host: %s\r\n", host);
 		string_append_cstr(hdr,   "Connection: close\r\n");
-		string_append_printf(hdr, "User-Agent: sayaka/c\r\n");
+		string_append_printf(hdr, "User-Agent: %s/%s\r\n", progname, progver);
 		string_append_cstr(hdr,   "\r\n");
 		if (__predict_false(diag_get_level(diag) >= 2)) {
 			diag_http_header(http->diag, hdr);	// デバッグ表示
@@ -511,6 +511,9 @@ read_chunk(httpclient *http)
 
 #include <err.h>
 #include <signal.h>
+
+const char progname[] = "httpclient";
+const char progver[]  = "0.0";
 
 static int
 testhttp(const diag *diag, int ac, char *av[])

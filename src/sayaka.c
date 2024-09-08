@@ -40,7 +40,8 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
-#define SAYAKA_VERSION "3.8.0 (2024/09/04)"
+#define SAYAKA_VERSION "3.8.0"
+#define SAYAKA_RELDATE "2024/09/04"
 
 enum {
 	DEFAULT_FONT_WIDTH	= 7,
@@ -67,6 +68,9 @@ static void invalidate_cache(void);
 static const char *get_token(const char *);
 static void signal_handler(int);
 static void sigwinch(bool);
+
+const char progname[] = "sayaka";
+const char progver[]  = SAYAKA_VERSION;
 
 static const char *basedir;
 const char *cachedir;
@@ -512,13 +516,14 @@ main(int ac, char *av[])
 static void
 version(void)
 {
-	fprintf(stderr, "sayaka %s - Misskey stream client\n", SAYAKA_VERSION);
+	printf("%s %s (%s) - Misskey stream client\n",
+		progname, progver, SAYAKA_RELDATE);
 }
 
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s <command> [<options...>]\n", getprogname());
+	fprintf(stderr, "usage: %s <command> [<options...>]\n", progname);
 	fprintf(stderr,
 " <command>\n"
 "  -h,--home           : Home timeline mode (needs --server and --token)\n"
@@ -539,7 +544,7 @@ usage(void)
 static void
 help_all(void)
 {
-	fprintf(stderr, "usage: %s <command> [<options>...]\n", getprogname());
+	fprintf(stderr, "usage: %s <command> [<options>...]\n", progname);
 	fprintf(stderr,
 " <command>\n"
 "  -h,--home              : Home timeline mode (needs --server and --token)\n"

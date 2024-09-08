@@ -174,4 +174,8 @@ extern uint putd(char *, uint);
 #define PUTD(buf, n, bufsize)	putd(buf, n)
 #endif
 
+// main
+extern const char progname[];
+extern const char progver[];
+
 #endif // !sayaka_common_h
