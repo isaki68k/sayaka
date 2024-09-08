@@ -145,6 +145,7 @@ extern struct net_opt netopt_main;
 extern int opt_bgtheme;
 extern const char *opt_codeset;
 extern uint opt_nsfw;
+extern bool opt_overwrite_cache;
 extern const char *opt_record_file;
 extern bool opt_show_cw;
 extern int  opt_show_image;

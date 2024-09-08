@@ -95,6 +95,7 @@ const char *opt_codeset;			// 出力文字コード (NULL なら UTF-8)
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
 uint opt_nsfw;						// NSFW コンテンツの表示方法
+bool opt_overwrite_cache;			// キャッシュファイルを更新する
 static bool opt_progress;
 const char *opt_record_file;		// 録画ファイル名 (NULL なら録画しない)
 bool opt_show_cw;					// CW を表示するか。
@@ -126,6 +127,7 @@ enum {
 	OPT_no_combine,
 	OPT_no_image,	// backward compatibility
 	OPT_nsfw,
+	OPT_overwrite_cache,
 	OPT_progress,
 	OPT_show_cw,
 	OPT_show_image,
@@ -160,6 +162,7 @@ static const struct option longopts[] = {
 	{ "no-combine",		no_argument,		NULL,	OPT_no_combine },
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
+	{ "overwrite-cache",no_argument,		NULL,	OPT_overwrite_cache },
 	{ "play",			required_argument,	NULL,	'p' },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	'r' },
@@ -406,6 +409,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_overwrite_cache:
+			opt_overwrite_cache = true;
+			break;
+
 		 case 'p':
 			if (strcmp(optarg, "-") == 0) {
 				playfile = NULL;
@@ -577,6 +584,7 @@ help_all(void)
 "     blur     : Show blurred image\n"
 "     alt      : Hide image but display only filetype\n"
 "     hide     : Hide this note itself if the note has NSFW contents\n"
+"  --overwrite-cache      : Don't use cache file and overwrite it by new one\n"
 "  --progress             : Show startup progress (for slow machines)\n"
 "  -r,--record=<file>     : Record JSON to <file>\n"
 "  -s,--server=<host>     : Set misskey server\n"

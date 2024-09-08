@@ -497,8 +497,13 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 
 	snprintf(cache_filename, sizeof(cache_filename),
 		"%s/%s.sixel", cachedir, img_file);
+	Debug(diag_image, "cachefile=|%s|", cache_filename);
 
-	fp = fopen(cache_filename, "r");
+	if (opt_overwrite_cache) {
+		fp = NULL;
+	} else {
+		fp = fopen(cache_filename, "r");
+	}
 	if (fp == NULL) {
 		// キャッシュファイルがないので、画像を取得してキャッシュに保存。
 
