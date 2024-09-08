@@ -358,19 +358,15 @@ image_read_pstream(pstream *ps, const diag *diag)
 	return NULL;
 }
 
-// 入力画像を 16bit 内部形式に変換した新しい画像を返す。
-image *
-image_convert_to16(const image *src)
+// 入力画像を 16bit 内部形式にインプレース変換する。
+void
+image_convert_to16(image *img)
 {
-	image *dst = image_create(src->width, src->height, IMAGE_FMT_ARGB16);
-	if (dst == NULL) {
-		return NULL;
-	}
-	const uint8 *s8 = src->buf;
-	uint16 *d16 = (uint16 *)dst->buf;
-	uint count = src->width * src->height;
+	const uint8 *s8 = img->buf;
+	uint16 *d16 = (uint16 *)img->buf;
+	uint count = img->width * img->height;
 
-	if (src->format == IMAGE_FMT_RGB24) {
+	if (img->format == IMAGE_FMT_RGB24) {
 		for (uint i = 0; i < count; i++) {
 			uint r, g, b, v;
 			r = (*s8++) >> 3;
@@ -379,7 +375,7 @@ image_convert_to16(const image *src)
 			v = (r << 10) | (g << 5) | b;
 			*d16++ = v;
 		}
-	} else if (src->format == IMAGE_FMT_ARGB32) {
+	} else if (img->format == IMAGE_FMT_ARGB32) {
 		for (uint i = 0; i < count; i++) {
 			uint r, g, b, a, v;
 			r = (*s8++) >> 3;
@@ -395,7 +391,7 @@ image_convert_to16(const image *src)
 		}
 	}
 
-	return dst;
+	img->format = IMAGE_FMT_ARGB16;
 }
 
 // src 画像を (dst_width, dst_height) にリサイズしながら同時に

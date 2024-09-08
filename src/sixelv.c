@@ -473,7 +473,6 @@ do_file(const char *infile)
 	httpclient *http = NULL;
 	pstream *pstream = NULL;
 	image *srcimg = NULL;
-	image *hcimg = NULL;
 	image *resimg = NULL;
 	int ifd = -1;
 	FILE *ifp = NULL;
@@ -636,14 +635,11 @@ do_file(const char *infile)
 		reductorcolor_tostr(imageopt.color));
 
 	gettimeofday(&cvt_start, NULL);
-	hcimg = image_convert_to16(srcimg);
-	if (hcimg == NULL) {
-	}
-
+	image_convert_to16(srcimg);
 	gettimeofday(&reduct_start, NULL);
 
 	// 減色 & リサイズ。
-	resimg = image_reduct(hcimg, dst_width, dst_height, &imageopt, diag_image);
+	resimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
 	if (resimg == NULL) {
 		warnx("reductor failed");
 		goto abort;
@@ -706,7 +702,6 @@ do_file(const char *infile)
 	ofp = NULL;
 
 	image_free(resimg);
-	image_free(hcimg);
 	image_free(srcimg);
 
 	if (pstream) {

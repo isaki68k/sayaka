@@ -194,7 +194,7 @@ extern uint image_get_stride(const image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,
 	uint, uint, uint *, uint *);
 extern string *image_get_loaderinfo(void);
-extern image *image_convert_to16(const image *);
+extern void image_convert_to16(image *);
 extern image *image_reduct(const image *, uint, uint, const image_opt *,
 	const diag *);
 
