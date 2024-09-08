@@ -436,26 +436,35 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 	// [5] Y5Pn … Y5P2 Y5P1 Y5P0      [n] Y5Pn Y4Pn Y3Pn Y2Pn Y1Pn Y0Pn
 
 	buf = sixelbuf;
-	for (uint x = 0; x < width; x++) {
-		uint32 data0 = 0;
-		uint32 data1 = 0;
-		for (uint y = 0; y < height; y++) {
-			uint16 cc = src[width * y];
-			if ((int16)cc > 0) {
-				data0 |= deptable[cc & 0xf] << y;
-				if (__predict_false(nplane > 4)) {
-					data1 |= deptable[cc >> 4] << y;
+	if (nplane <= 4) {
+		for (uint x = 0; x < width; x++) {
+			uint32 data0 = 0;
+			for (uint y = 0; y < height; y++) {
+				uint16 cc = src[width * y];
+				if ((int16)cc > 0) {
+					data0 |= deptable[cc] << y;
 				}
 			}
-		}
-		src++;
+			src++;
 
-		if (__predict_true(nplane <= 4)) {
 			for (uint i = 0; i < nplane; i++) {
 				*buf++ = data0 & 0xff;
 				data0 >>= 8;
 			}
-		} else {
+		}
+	} else {
+		for (uint x = 0; x < width; x++) {
+			uint32 data0 = 0;
+			uint32 data1 = 0;
+			for (uint y = 0; y < height; y++) {
+				uint16 cc = src[width * y];
+				if ((int16)cc > 0) {
+					data0 |= deptable[cc & 0xf] << y;
+					data1 |= deptable[cc >> 4] << y;
+				}
+			}
+			src++;
+
 			uint i = 0;
 			for (; i < 4; i++) {
 				*buf++ = data0 & 0xff;
