@@ -31,6 +31,7 @@
 #include "sayaka.h"
 #include <errno.h>
 #include <string.h>
+#include <sys/select.h>
 
 enum {
 	// フレームの +0バイト目 (の下位4ビット)
@@ -69,7 +70,8 @@ typedef struct wsclient_ {
 	const diag *diag;
 } wsclient;
 
-static void wsclient_send_pong(wsclient *);
+static inline void wsclient_send_ping(wsclient *);
+static inline void wsclient_send_pong(wsclient *);
 static int  wsclient_send(wsclient *, uint8, const void *, uint);
 static uint ws_encode_len(uint8 *, uint);
 static uint ws_decode_len(const uint8 *, uint *);
@@ -269,6 +271,9 @@ int
 wsclient_process(wsclient *ws)
 {
 	const diag *diag = ws->diag;
+	fd_set rfds;
+	struct timeval timeout;
+	int fd;
 	int rv = 1;
 	int r;
 
@@ -284,7 +289,23 @@ wsclient_process(wsclient *ws)
 		ws->bufsize = newsize;
 	}
 
-	// ブロッキング。
+	// キープアライブのため一定時間だけ受信を待つ。
+	fd = net_get_fd(ws->net);
+	FD_ZERO(&rfds);
+	FD_SET(fd, &rfds);
+	timeout.tv_sec = 30;
+	timeout.tv_usec = 0;
+	r = select(fd + 1, &rfds, NULL, NULL, &timeout);
+	if (r < 0) {
+		Debug(diag, "%s: select failed: %s", __func__, strerrno());
+		return -1;
+	}
+	if (r == 0) {
+		// 何も起きなかったので PING を投げる。
+		wsclient_send_ping(ws);
+		return 1;
+	}
+
 	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
 	if (r == 0) {
 		Debug(diag, "%s: EOF", __func__);
@@ -326,8 +347,11 @@ wsclient_process(wsclient *ws)
 	// opcode ごとの処理。
 	// バイナリフレームは未対応。
 	if (opcode == WS_OPCODE_PING) {
-		Debug(diag, "%s: PING len=%u", __func__, datalen);
+		Debug(diag, "%s: PING len=%u recved", __func__, datalen);
 		wsclient_send_pong(ws);
+		rv = 1;
+	} else if (opcode == WS_OPCODE_PONG) {
+		Debug(diag, "%s: PONG len=%u recved", __func__, datalen);
 		rv = 1;
 	} else if (opcode == WS_OPCODE_CLOSE) {
 		Debug(diag, "%s: CLOSE", __func__);
@@ -376,11 +400,20 @@ wsclient_send_text(wsclient *ws, const char *buf)
 	return wsclient_send(ws, WS_OPCODE_TEXT, buf, strlen(buf));
 }
 
+// PING を送信する。
+static inline void
+wsclient_send_ping(wsclient *ws)
+{
+	wsclient_send(ws, WS_OPCODE_PING, NULL, 0);
+	Debug(ws->diag, "%s", __func__);
+}
+
 // PONG 応答を送信する。
-static void
+static inline void
 wsclient_send_pong(wsclient *ws)
 {
 	wsclient_send(ws, WS_OPCODE_PONG, NULL, 0);
+	Debug(ws->diag, "%s", __func__);
 }
 
 // WebSocket フレームを送信する。
