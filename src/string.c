@@ -52,7 +52,8 @@ string_from_cstr(const char *cstr)
 	return s;
 }
 
-// mem から memlen バイトのゼロ終端していない文字列を返す。
+// mem から memlen バイトのゼロ終端していない領域から
+// ゼロ終端文字列を作って返す。
 string *
 string_from_mem(const void *mem, uint memlen)
 {
@@ -180,7 +181,8 @@ string_append_cstr(string *s, const char *cstr)
 	s->len += strlen(cstr);
 }
 
-// s の末尾に mem から memlen バイトのゼロ終端していない文字列を追加する。
+// mem から memlen バイトのゼロ終端していない領域を s の末尾に追加して
+// ゼロ終端する。
 void
 string_append_mem(string *s, const void *mem, uint memlen)
 {
