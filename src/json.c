@@ -498,8 +498,7 @@ json_unescape(const char *src)
 				}
 				char utf8[8];
 				uint ulen = uchar_to_utf8(utf8, code);
-				utf8[ulen] = '\0';
-				string_append_cstr(dst, utf8);
+				string_append_mem(dst, utf8, ulen);
 				break;
 			 }
 			 default:
