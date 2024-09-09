@@ -409,6 +409,6 @@ fi
 CFLAGS=[`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 LIBS=[`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 
-AC_CONFIG_HEADERS([src/config.h])
-AC_CONFIG_FILES([src/Makefile.cfg])
+AC_CONFIG_HEADERS([${srcdir}/src/config.h])
+AC_CONFIG_FILES([${srcdir}/src/Makefile.cfg])
 AC_OUTPUT
