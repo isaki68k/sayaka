@@ -49,6 +49,7 @@ static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static int  misskey_show_note(const json *, int);
 static int  misskey_show_announcement(const json *, int);
+static int  misskey_show_notification(const json *, int);
 static void misskey_show_icon(const json *, int, const string *);
 static bool misskey_show_photo(const json *, int, int);
 static void misskey_print_filetype(const json *, int, const char *);
@@ -221,16 +222,26 @@ cmd_misskey_stream(const char *server, bool home, const char *token)
 static bool
 misskey_stream(wsclient *ws, bool home)
 {
-	// コマンド送信。
 	char cmd[128];
+
+	// コマンド送信。
 	snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
 		"\"channel\":\"%s\",\"id\":\"sayaka-%08x\"}}",
 		home ? "homeTimeline" : "localTimeline",
 		rnd_get32());
-
 	if (wsclient_send_text(ws, cmd) < 0) {
 		warn("%s: Sending command failed", __func__);
 		return false;
+	}
+
+	if (home) {
+		snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
+			"\"channel\":\"%s\",\"id\":\"sayaka-%08x\"}}",
+			"main", rnd_get32());
+		if (wsclient_send_text(ws, cmd) < 0) {
+			warn("%s: Sending command failed", __func__);
+			return false;
+		}
 	}
 
 	// あとは受信。メッセージが出来ると misskey_recv_cb() が呼ばれる。
@@ -286,56 +297,118 @@ misskey_message(string *jsonstr)
 
 	// ストリームから来る JSON は以下のような構造。
 	// {
-	//   "type":"channel",
-	//   "body":{
+	//   "type":"channel", "body":{
 	//     "id":"ストリーム開始時に指定した ID",
-	//     "type":"note",
-	//     "body":{ ノート本体 }
+	//     "type":"note", "body":{ ノート本体 }
 	//   }
 	// }
 	// {
-	//   "type":"emojiUpdated",
-	//   "body":{ }
+	//   "type":"emojiUpdated", "body":{ }
 	// }
 	// {
-	//   "type":"announcementCreated",
-	//   "body":{
+	//   "type":"announcementCreated", "body":{
 	//     "announcement": { }
 	//   }
 	// } とかいうのも来たりする。
 	//
+	// main ストリームに流れてくるのはこの形式。
+	// 通知 (リアクションは通知でしか来ない):
+	//   "type":"channel", "body":{
+	//     "id":"ストリーム開始時に指定した ID",
+	//     "type":"notification", "body":{ }
+	//
+	//     "type":"unreadNotification", "body":{ }
+	//     "type":"readAll*", "body":null
+	//     "type":"driveFileCreated", "body":{ }
+	//     "type":"renote", "body":{ }				// リノート (通知とは別)
+	//     "type":"followed","body":{ ユーザ情報 }	// フォロー (通知とは別)
+	//
 	// ストリームじゃないところで取得したノートを流し込んでも
 	// そのまま見えると嬉しいので、皮をむいたやつを次ステージに渡す。
 
+	indent_depth = 0;
 	int id = 0;
-	for (;;) {
-		const char *typestr = json_obj_find_cstr(js, id, "type");
-		int bodyid = json_obj_find_obj(js, id, "body");
-		if (typestr != NULL && bodyid >= 0) {
-			if (strcmp(typestr, "channel") == 0 ||
-				strcmp(typestr, "note") == 0 ||
-				strcmp(typestr, "announcementCreated") == 0)
-			{
-				// "body" の下へ。
-				id = bodyid;
-			} else if (strncmp(typestr, "emoji", 5) == 0) {
-				// emoji{Added,Deleted} とかは無視でいい。
-				return;
-			} else {
-				// 知らないタイプは無視。
-				warnx("Unknown message type \"%s\"", typestr);
-				return;
+	const char *type = NULL;
+	int crlf;
+	// トップ階層。
+	{
+		int itype = json_obj_find(js, id, "type");
+		type = json_get_cstr(js, itype);
+		int ibody = json_obj_find_obj(js, id, "body");
+		if (__predict_false(itype < 0 || ibody < 0)) {
+			goto unknown;
+		}
+		if (strcmp(type, "channel") == 0) {
+			// 下の階層へ。
+			id = ibody;
+		} else if (strcmp(type, "announcementCreated") == 0) {
+			// アナウンス文。
+			int iann = json_obj_find_obj(js, ibody, "announcement");
+			if (iann >= 0) {
+				crlf = misskey_show_announcement(js, iann);
+				goto done;
 			}
+			goto unknown;
+		} else if (strncmp(type, "emoji", 5) == 0) {
+			// emoji 追加等の通知は無視。
+			return;
 		} else {
-			// ここが本文っぽい。
-			break;
+			goto unknown;
 		}
 	}
 
-	indent_depth = 0;
-	int crlf = misskey_show_note(js, id);
+	// 2階層目。
+	// "type":"channel" の "body" の下の階層。
+	{
+		int itype = json_obj_find(js, id, "type");
+		if (__predict_false(itype < 0)) {
+			goto unknown;
+		}
+		int ibody = json_obj_find_obj(js, id, "body");
+		type = json_get_cstr(js, itype);
+		if (strcmp(type, "note") == 0) {
+			crlf = misskey_show_note(js, ibody);
+			goto done;
+
+		} else if (strcmp(type, "notification") == 0) {
+			crlf = misskey_show_notification(js, ibody);
+			goto done;
+
+		} else if (strcmp(type, "mention") == 0 ||
+		           strcmp(type, "renote") == 0 ||
+		           strcmp(type, "reply") == 0 ||
+		           strcmp(type, "unfollow") == 0 ||
+		           strcmp(type, "follow") == 0 ||
+		           strcmp(type, "followed") == 0 ||
+		           strncmp(type, "read", 4) == 0 ||
+		           strncmp(type, "emoji", 5) == 0 ||
+		           strncmp(type, "drive", 5) == 0 ||
+		           strncmp(type, "unread", 6) == 0)
+		{
+			Debug(diag_format, "ignore %s", type);
+printf("ignore %s\n", type);
+			return;
+		} else {
+			goto unknown;
+		}
+	}
+
+ done:
 	if (crlf > 0) {
 		printf("\n");
+	}
+	return;
+
+ unknown:
+	if (id == 0) {
+		if (type == NULL || type[0] == '\0') {
+			printf("No message type?\n");
+		} else {
+			printf("Unknown message type /%s\n", type);
+		}
+	} else {
+		const char *ptype = json_obj_find_cstr(js, 0, "type");
+		printf("Unknown message type /%s/%s\n", ptype, type);
 	}
 }
 
@@ -355,16 +428,7 @@ misskey_show_note(const json *js, int inote)
 
 	// acl
 
-	// 録画?
-	// 階層変わるのはどうする?
-
 	// NG ワード
-
-	// アナウンスなら別処理。
-	int iann = json_obj_find_obj(js, inote, "announcement");
-	if (iann >= 0) {
-		return misskey_show_announcement(js, iann);
-	}
 
 	// text は null も "" も等価?。
 	// cw は cw:null なら CW なし、cw:"" なら前半パート無言で [CW] 開始、
@@ -634,6 +698,107 @@ misskey_show_announcement(const json *js, int inote)
 
 	ustring_free(line);
 	return 1;
+}
+
+// notification を処理する。
+// ibody は "type":"notification", "body":{ } の部分。
+static int
+misskey_show_notification(const json *js, int ibody)
+{
+	// "type":"notification", "body":{
+	// {
+	//   "type":"reaction",
+	//   "createdAt":"",
+	//   "user":{ },
+	//   "note":{ },
+	//   "reaction":"..."
+	// }
+	// {
+	//   "type":"renote",
+	//   "createdAt":"",
+	//   "user":{ },
+	//   "note":{ },
+	// }
+	// {
+	//   "type":"followed",
+	//   "user":{ },
+	// }
+
+	int itype = json_obj_find(js, ibody, "type");
+	if (itype < 0) {
+		printf("notification but has no type?\n");
+		return 0;
+	}
+	const char *type = json_get_cstr(js, itype);
+	if (strcmp(type, "mention") == 0 ||
+		strcmp(type, "renote") == 0)
+	{
+		// これらは無視でよい。ノートのほうにも来るので。
+		return 0;
+	}
+	if (strcmp(type, "reaction") == 0) {
+		// リアクション通知。
+		int inote = json_obj_find_obj(js, ibody, "note");
+		if (inote < 0) {
+			printf("notification/reaction but has no note?\n");
+			return 0;
+		}
+		misskey_show_note(js, inote);
+
+		string *time = misskey_format_time(js, ibody);
+		misskey_user *user = misskey_get_user(js, ibody);
+		const char *reaction = json_obj_find_cstr(js, ibody, "reaction");
+
+		string *s = string_init();
+		string_append_cstr(s, string_get(time));
+		string_append_char(s, ' ');
+		string_append_cstr(s, reaction);
+		string_append_cstr(s, " from ");
+		string_append_cstr(s, string_get(user->name));
+		string_append_char(s, ' ');
+		string_append_cstr(s, string_get(user->id));
+		if (user->instance) {
+			string_append_char(s, ' ');
+			string_append_cstr(s, string_get(user->instance));
+		}
+		ustring *u = ustring_alloc(64);
+		ustring_append_utf8_color(u, string_get(s), COLOR_REACTION);
+		iprint(u);
+		printf("\n");
+		ustring_free(u);
+		misskey_free_user(user);
+		string_free(time);
+		return 1;
+	}
+	if (strcmp(type, "follow") == 0) {
+		// フォローされた通知。
+		// フォローされたは "channel/followed" だが、
+		// その通知は "channel/notification/follow" (followed でない) らしい。
+		string *time = misskey_format_time(js, ibody);
+		misskey_user *user = misskey_get_user(js, ibody);
+
+		ustring *u = ustring_alloc(128);
+		ustring_append_utf8_color(u, string_get(time), COLOR_TIME);
+		ustring_append_unichar(u, ' ');
+		ustring_append_ascii(u, "Followed by ");
+		ustring_append_utf8_color(u, string_get(user->name), COLOR_USERNAME);
+		ustring_append_unichar(u, ' ');
+		ustring_append_utf8_color(u, string_get(user->id), COLOR_USERID);
+		if (user->instance) {
+			ustring_append_unichar(u, ' ');
+			ustring_append_utf8_color(u, string_get(user->instance),
+				COLOR_USERNAME);
+		}
+		iprint(u);
+		printf("\n");
+		ustring_free(u);
+		misskey_free_user(user);
+		string_free(time);
+		return 1;
+	}
+
+	printf("Unknown notification type \"%s\"\n", type);
+	return 0;
 }
 
 // アイコン表示。
