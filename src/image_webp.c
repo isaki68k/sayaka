@@ -49,7 +49,7 @@ _Pragma("clang diagnostic pop")
 _Pragma("GCC diagnostic pop")
 #endif
 
-#define INCBUFSIZE	(4000)
+#define INCBUFSIZE	(1024)
 
 static bool read_all(uint8 **, size_t *, FILE *, uint32, const diag *diag);
 static bool image_webp_loadinc(image *, FILE *, WebPIDecoder *,
