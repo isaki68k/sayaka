@@ -36,6 +36,13 @@
 #include <time.h>
 #include <unistd.h>
 
+// ユーザ名。毎回このセットが必要なので。
+typedef struct misskey_user_ {
+	string *name;		// "name"、こっちは表示名 (NULL でない)
+	string *id;			// "username"、アカウント名っぽい方 (NULL でない)
+	string *instance;	// "instance/name"、インスタンス名 (なければ NULL)
+} misskey_user;
+
 static bool misskey_init(void);
 static bool misskey_stream(wsclient *, bool);
 static void misskey_recv_cb(const string *);
@@ -54,7 +61,8 @@ static string *misskey_format_time(const json *, int);
 static string *misskey_format_renote_count(const json *, int);
 static string *misskey_format_reaction_count(const json *, int);
 static string *misskey_format_renote_owner(const json *, int);
-static string *misskey_get_user(const json *, int, string *, string *);
+static misskey_user *misskey_get_user(const json *, int);
+static void misskey_free_user(misskey_user *);
 
 static json *global_js;
 
@@ -420,16 +428,14 @@ misskey_show_note(const json *js, int inote)
 
 	// 1行目は名前、アカウント名など。
 	int iuser = json_obj_find_obj(js, inote, "user");
-	string *name = string_alloc(64);
-	string *userid = string_alloc(64);
-	string *instance = misskey_get_user(js, inote, name, userid);
+	misskey_user *user = misskey_get_user(js, inote);
 	ustring *headline = ustring_alloc(64);
-	ustring_append_utf8_color(headline, string_get(name), COLOR_USERNAME);
+	ustring_append_utf8_color(headline, string_get(user->name), COLOR_USERNAME);
 	ustring_append_unichar(headline, ' ');
-	ustring_append_utf8_color(headline, string_get(userid), COLOR_USERID);
-	if (instance) {
+	ustring_append_utf8_color(headline, string_get(user->id), COLOR_USERID);
+	if (user->instance) {
 		ustring_append_unichar(headline, ' ');
-		ustring_append_utf8_color(headline, string_get(instance),
+		ustring_append_utf8_color(headline, string_get(user->instance),
 			COLOR_USERNAME);
 	}
 
@@ -494,7 +500,7 @@ misskey_show_note(const json *js, int inote)
 		ustring_free(ubtm);
 	}
 
-	misskey_show_icon(js, iuser, userid);
+	misskey_show_icon(js, iuser, user->id);
 
 	iprint(headline);
 	printf("\n");
@@ -562,9 +568,7 @@ misskey_show_note(const json *js, int inote)
 	string_free(cw);
 	string_free(text);
 	ustring_free(headline);
-	string_free(instance);
-	string_free(userid);
-	string_free(name);
+	misskey_free_user(user);
 	return 1;
 }
 
@@ -1171,36 +1175,34 @@ misskey_format_renote_owner(const json *js, int inote)
 {
 	string *s = string_init();
 	string *rn_time = misskey_format_time(js, inote);
-	string *rn_name = string_alloc(64);
-	string *rn_userid = string_alloc(64);
-	string *rn_instance = misskey_get_user(js, inote, rn_name, rn_userid);
+	misskey_user *rn_user = misskey_get_user(js, inote);
 
 	string_append_cstr(s, string_get(rn_time));
 	string_append_char(s, ' ');
-	string_append_cstr(s, string_get(rn_name));
+	string_append_cstr(s, string_get(rn_user->name));
 	string_append_char(s, ' ');
-	string_append_cstr(s, string_get(rn_userid));
-	if (rn_instance) {
+	string_append_cstr(s, string_get(rn_user->id));
+	if (rn_user->instance) {
 		string_append_char(s, ' ');
-		string_append_cstr(s, string_get(rn_instance));
+		string_append_cstr(s, string_get(rn_user->instance));
 	}
 	string_append_cstr(s, " renoted");
 
 	string_free(rn_time);
-	string_free(rn_name);
-	string_free(rn_userid);
-	string_free(rn_instance);
+	misskey_free_user(rn_user);
 	return s;
 }
 
 // ノートのユーザ情報を返す。
-// 戻り値はインスタンス名で、なければ NULL を返す。
-// name と userid にはユーザ名とアカウント名を入れて返す
-// (実際には呼び出し元が空で用意しているところに追加する)。
-static string *
-misskey_get_user(const json *js, int inote, string *name, string *userid)
+static misskey_user *
+misskey_get_user(const json *js, int inote)
 {
-	string *instance = NULL;
+	misskey_user *user = calloc(1, sizeof(*user));
+	if (user == NULL) {
+		return NULL;
+	}
+	user->name = string_init();
+	user->id   = string_init();
 
 	int iuser = json_obj_find_obj(js, inote, "user");
 	if (iuser >= 0) {
@@ -1212,19 +1214,19 @@ misskey_get_user(const json *js, int inote, string *name, string *userid)
 		if (c_name && c_name[0] != '\0') {
 			// XXX テキスト中に制御文字が含まれてたらとかはまた後で考える。
 			string *tmp = json_unescape(c_name);
-			string_append_cstr(name, string_get(tmp));
+			string_append_cstr(user->name, string_get(tmp));
 			string_free(tmp);
 		} else {
 			// こっちは ID っぽいやつなのでおかしな文字はいないはず。
-			string_append_cstr(name, c_username);
+			string_append_cstr(user->name, c_username);
 		}
 
 		// @アカウント名 [ @外部ホスト名 ]
-		string_append_char(userid, '@');
-		string_append_cstr(userid, c_username);
+		string_append_char(user->id, '@');
+		string_append_cstr(user->id, c_username);
 		if (c_host) {
-			string_append_char(userid, '@');
-			string_append_cstr(userid, c_host);
+			string_append_char(user->id, '@');
+			string_append_cstr(user->id, c_host);
 		}
 
 		// インスタンス名
@@ -1232,10 +1234,20 @@ misskey_get_user(const json *js, int inote, string *name, string *userid)
 		if (iinstance >= 0) {
 			const char *c_instname = json_obj_find_cstr(js, iinstance, "name");
 			if (c_instname && c_instname[0] != '\0') {
-				instance = json_unescape(c_instname);
+				user->instance = json_unescape(c_instname);
 			}
 		}
 	}
 
-	return instance;
+	return user;
+}
+
+static void
+misskey_free_user(misskey_user *user)
+{
+	if (user) {
+		string_free(user->name);
+		string_free(user->id);
+		string_free(user->instance);
+	}
 }
