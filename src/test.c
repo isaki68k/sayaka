@@ -167,6 +167,51 @@ test_json_unescape(void)
 }
 
 static void
+test_putd(void)
+{
+	printf("%s\n", __func__);
+
+	struct {
+		uint src;
+		const char *exp;
+	} table[] = {
+#define ENTRY(n)	{ n, #n }
+		ENTRY(0),
+		ENTRY(1),
+		ENTRY(9),
+		ENTRY(10),
+		ENTRY(19),
+		ENTRY(99),
+		ENTRY(100),
+		ENTRY(199),
+		ENTRY(200),
+		ENTRY(256),
+		ENTRY(299),
+		ENTRY(300),
+		ENTRY(999),
+		ENTRY(1000),
+		ENTRY(9999),
+		ENTRY(10000),
+		ENTRY(99999),
+		ENTRY(4294967295),
+#undef ENTRY
+	};
+	for (uint i = 0; i < countof(table); i++) {
+		char buf[16];
+		uint n;
+		uint src = table[i].src;
+		const char *exp = table[i].exp;
+
+		memset(buf, 0xff, sizeof(buf));
+		n = PUTD(buf, src, sizeof(buf));
+		buf[n] = '\0';
+		if (strcmp(exp, buf) != 0) {
+			fail("%u: expects \"%s\" but \"%s\"", src, exp, buf);
+		}
+	}
+}
+
+static void
 test_stou32def(void)
 {
 	printf("%s\n", __func__);
@@ -393,6 +438,7 @@ main(int ac, char *av[])
 	test_chomp();
 	test_decode_isotime();
 	test_json_unescape();
+	test_putd();
 	test_stou32def();
 	test_stox32def();
 	test_string_rtrim_inplace();
