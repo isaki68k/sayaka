@@ -37,9 +37,9 @@ static bool sixel_preamble(FILE *, const image *, const image_opt *);
 static bool sixel_postamble(FILE *);
 static bool sixel_convert_normal(FILE *, const image *, const diag *);
 static bool sixel_convert_ormode(FILE *, const image *, const diag *);
-static void sixel_ormode_h6(string *, uint8 *, const uint16 *, uint, uint,
+static uint sixel_ormode_h6(char *, uint8 *, const uint16 *, uint, uint,
 	uint);
-static void sixel_repunit(string *, uint, uint8);
+static uint sixel_repunit(char *, uint, uint8);
 
 static const uint32 deptable[16] = {
 	0x00000000,
@@ -179,8 +179,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 	uint palcnt = img->palette_count;
 	int16 *min_x = NULL;
 	int16 *max_x = NULL;
-	string *linebuf = NULL;
-	char cbuf[16];
+	char *linebuf = NULL;
 	bool rv = false;
 
 	assert(img->format == IMAGE_FMT_AIDX16);
@@ -194,14 +193,19 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 		goto abort;
 	}
 
-	linebuf = string_alloc(256);
+	// 1行(縦6ピクセル x 全色ではなく、一回の '$'(LF) まで) の最長を求める。
+	// 1行で最大 cs = MIN(palcnt, width) 回色を変えることが出来るので
+	// 色セレクタ "#nnn" が cs 回、
+	// パターンは一切連続しなかったとして width ピクセル分、
+	// がもっとも分が悪いケースのはず。ゼロ終端は不要。
+	uint cs = MIN(palcnt, w);
+	uint bufsize = cs * 4 + w + 1/*$*/;
+	linebuf = malloc(bufsize);
 	if (linebuf == NULL) {
 		goto abort;
 	}
 
 	for (uint y = 0; y < h; y += 6) {
-		string_clear(linebuf);
-
 		const uint16 *src = &imgbuf16[y * w];
 
 		memset(min_x, 0xff, mlen);	// fill as -1
@@ -232,6 +236,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 		for (;;) {
 			// 出力するべきカラーがなくなるまでのループ。
 			int16 mx = -1;
+			char *d = linebuf;
 
 			for (;;) {
 				// 1行の出力で出力できるカラーのループ。
@@ -252,14 +257,13 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 				}
 
 				// SIXEL に色コードを出力。
-				cbuf[0] = '#';
-				uint clen = PUTD(cbuf + 1, min_color, sizeof(cbuf) - 1);
-				string_append_mem(linebuf, cbuf, clen + 1);
+				*d++ = '#';
+				d += PUTD(d, min_color, bufsize - (d - linebuf));
 
 				// 相対 X シーク処理。
 				int space = min_x[min_color] - (mx + 1);
 				if (space > 0) {
-					sixel_repunit(linebuf, space, 0);
+					d += sixel_repunit(d, space, 0);
 				}
 
 				// パターンが変わったら、それまでのパターンを出していく
@@ -277,7 +281,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 
 					if (prev_t != t) {
 						if (n > 0) {
-							sixel_repunit(linebuf, n, prev_t);
+							d += sixel_repunit(d, n, prev_t);
 						}
 						prev_t = t;
 						n = 1;
@@ -287,7 +291,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 				}
 				// 最後のパターン。
 				if (prev_t != 0 && n > 0) {
-					sixel_repunit(linebuf, n, prev_t);
+					d += sixel_repunit(d, n, prev_t);
 				}
 
 				// X 位置を更新。
@@ -296,7 +300,10 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 				min_x[min_color] = -1;
 			}
 
-			ADDCHAR(linebuf, '$');
+			*d++ = '$';
+			if (fwrite(linebuf, d - linebuf, 1, fp) < 1) {
+				goto abort;
+			}
 
 			// 最後までやったら抜ける。
 			if (mx == -1) {
@@ -304,16 +311,14 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 			}
 		}
 
-		ADDCHAR(linebuf, '-');
-
-		if (fwrite(string_get(linebuf), string_len(linebuf), 1, fp) < 1) {
+		if (fputc('-', fp) < 0) {
 			goto abort;
 		}
 	}
 
 	rv = true;
  abort:
-	string_free(linebuf);
+	free(linebuf);
 	free(min_x);
 	free(max_x);
 	return rv;
@@ -342,14 +347,18 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 	uint w = img->width;
 	uint h = img->height;
 	uint palcnt = img->palette_count;
-	string *linebuf = NULL;
+	char *linebuf = NULL;
 	uint8 *sixelbuf = NULL;
 	int y;
+	int len;
 	bool rv = true;
 
 	// パレットのビット数。(0 は来ないはず)
 	uint nplane = mylog2(palcnt);
-	linebuf = string_alloc((w + 5) * nplane);
+
+	// 1行は "#n" <pattern*width> "$" (n は1桁、ゼロ終端不要) なので、
+	// パターンが一切連続しなくても絶対溢れないはず。
+	linebuf = malloc((w + 3) * nplane);
 	if (linebuf == NULL) {
 		goto done;
 	}
@@ -361,32 +370,33 @@ sixel_convert_ormode(FILE *fp, const image *img, const diag *diag)
 
 	// 6ラスターずつ。
 	for (y = 0; y < (int)h - 6; y += 6) {
-		sixel_ormode_h6(linebuf, sixelbuf, src, w, 6, nplane);
-		if (fwrite(string_get(linebuf), string_len(linebuf), 1, fp) < 1) {
+		len = sixel_ormode_h6(linebuf, sixelbuf, src, w, 6, nplane);
+		if (fwrite(linebuf, len, 1, fp) < 1) {
 			goto done;
 		}
-		string_clear(linebuf);
 		src += w * 6;
 	}
 
 	// 最終 SIXEL 行。
-	sixel_ormode_h6(linebuf, sixelbuf, src, w, h - y, nplane);
-	if (fwrite(string_get(linebuf), string_len(linebuf), 1, fp) < 1) {
+	len = sixel_ormode_h6(linebuf, sixelbuf, src, w, h - y, nplane);
+	if (fwrite(linebuf, len, 1, fp) < 1) {
 		goto done;
 	}
 
 	rv = true;
  done:
 	free(sixelbuf);
-	string_free(linebuf);
+	free(linebuf);
 	return rv;
 }
 
+// 戻り値は dst に書き込んだバイト数。
 // sixelbuf は毎回同じサイズなので呼び出し元で一度だけ確保しておく。
-static void
-sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
+static uint
+sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 	uint width, uint height, uint nplane)
 {
+	char *d = dst;
 	uint8 *buf;
 
 	// sixelbuf は画素を以下の順に並び替えたもの。(nplane=4 の場合)
@@ -482,10 +492,8 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 	for (uint i = 0; i < nplane; i++) {
 		buf = &sixelbuf[i];
 
-		char numbuf[12];
-		numbuf[0] = '#';
-		uint nlen = PUTD(numbuf + 1, (1U << i), sizeof(numbuf) - 1);
-		string_append_mem(dst, numbuf, nlen + 1);
+		*d++ = '#';
+		d += PUTD(d, (1U << i), 10/*適当*/);
 
 		// [0]
 		uint rept = 1;
@@ -497,38 +505,50 @@ sixel_ormode_h6(string *dst, uint8 *sixelbuf, const uint16 *src,
 			if (ptn == *buf) {
 				rept++;
 			} else {
-				sixel_repunit(dst, rept, ptn);
+				d += sixel_repunit(d, rept, ptn);
 				rept = 1;
 				ptn = *buf;
 			}
 		}
 		// 末尾の 0 パターンは出力しなくていい。
 		if (ptn != 0) {
-			sixel_repunit(dst, rept, ptn);
+			d += sixel_repunit(d, rept, ptn);
 		}
-		string_append_char(dst, '$');
+		*d++ = '$';
 	}
 
 	// 復帰を改行に書き換える。
-	char *p = string_get_buf(dst);
-	p[string_len(dst) - 1] = '-';
+	d--;
+	*d++ = '-';
+
+	return d - dst;
 }
 
-static void
-sixel_repunit(string *s, uint n, uint8 ptn)
+// ptn が n 個連続する場合のデータを出力する。
+// 出力したバイト数を返す。
+static uint
+sixel_repunit(char *dst, uint n, uint8 ptn)
 {
+	char *d = dst;
 	ptn += 0x3f;
 
-	if (n >= 4) {
-		char buf[16];
-		char *p = buf;
-		*p++ = '!';
-		p += PUTD(p, n, sizeof(buf) - (p - buf));
-		*p++ = ptn;
-		string_append_mem(s, buf, (p - buf));
-	} else {
-		uint32 buf;
-		buf = (ptn << 24) | (ptn << 16) | (ptn << 8) | ptn;
-		string_append_mem(s, (const char *)&buf, n);
+	switch (n) {
+	 default:
+		*d++ = '!';
+		d += PUTD(d, n, 10/*適当*/);
+		*d++ = ptn;
+		break;
+	 case 3:
+		*d++ = ptn;
+		// FALLTHROUGH
+	 case 2:
+		*d++ = ptn;
+		// FALLTHROUGH
+	 case 1:
+		*d++ = ptn;
+		// FALLTHROUGH
+	 case 0:
+		break;
 	}
+	return d - dst;
 }
