@@ -449,6 +449,65 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 			}
 		}
 	}
+#elif 0
+	{
+		buf = sixelbuf;
+		const uint32 mul  = 0x00204081;
+		const uint32 mask = 0x01010101;
+
+		if (nplane <= 4) {
+			for (uint x = 0; x < width; x++) {
+				const uint16 *pcc = &src[width * height];
+				src++;
+				uint32 data0 = 0;
+				for (uint16 y = height; y > 0; y--) {
+					pcc -= width;
+					uint16 cc = *pcc;
+
+					data0 *= 2;
+					if ((int16)cc >= 0) {
+						uint32 t = (cc * mul) & mask;
+						data0 |= t;
+					}
+				}
+				for (uint i = 0; i < nplane; i++) {
+					*buf++ = data0 & 0xff;
+					data0 >>= 8;
+				}
+			}
+		} else {
+			for (uint x = 0; x < width; x++) {
+				const uint16 *pcc = &src[width * height];
+				uint32 data0 = 0;
+				uint32 data1 = 0;
+				for (uint16 y = height; y > 0; y--) {
+					pcc -= width;
+					uint16 cc = *pcc;
+
+					data0 *= 2;
+					data1 *= 2;
+					if ((int16)cc >= 0) {
+						uint8 c8 = cc;
+						uint32 t0 = ((c8 & 0xf) * mul) & mask;
+						data0 |= t0;
+						uint32 t1 = ((c8 >> 4) * mul) & mask;
+						data1 |= t1;
+					}
+				}
+				src++;
+				uint i = 0;
+				for (; i < 4; i++) {
+					*buf++ = data0 & 0xff;
+					data0 >>= 8;
+				}
+				for (; i < nplane; i++) {
+					*buf++ = data1 & 0xff;
+					data1 >>= 8;
+				}
+			}
+		}
+	}
+
 #else
 	// 縦 6 ピクセルとプレーン(最大8)の水平垂直変換。
 	//       bn      b2   b1   b0            b5   b4   b3   b2   b1   b0
