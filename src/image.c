@@ -389,6 +389,9 @@ image_convert_to16(image *img)
 			}
 			*d16++ = v;
 		}
+
+		// 実際にあるかどうかは調べてない。
+		img->has_alpha = true;
 	}
 
 	img->format = IMAGE_FMT_ARGB16;
@@ -415,6 +418,7 @@ image_reduct(
 	if (dst == NULL) {
 		return NULL;
 	}
+	dst->has_alpha = src->has_alpha;
 
 	// 減色モードからパレットオペレーションを用意。
 	switch (opt->color & ReductorColor_MASK) {

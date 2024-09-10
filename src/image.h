@@ -160,6 +160,11 @@ typedef struct image_
 	uint height;	// ピクセル高さ
 	uint format;	// 形式 (IMAGE_FMT_*)
 
+	// この画像が透過ピクセルを持つ場合 true。
+	// アルファチャンネルを持つ画像形式かではなく透過ピクセルを持つ画像か。
+	// ただし実際に全数調査するか、入力形式から推定するだけかはある。
+	bool has_alpha;
+
 	// インデックスカラーの場合に使用したパレット。
 	// インデックスカラーでない場合は参照しないこと。
 	const ColorRGB *palette;

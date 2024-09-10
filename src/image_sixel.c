@@ -74,14 +74,26 @@ bool
 image_sixel_write(FILE *fp, const image *img,
 	const image_opt *opt, const diag *diag)
 {
+	image_opt localopt;
+
 	Debug(diag, "%s: source image (%u, %u) %u colors", __func__,
 		img->width, img->height, img->palette_count);
 
-	if (sixel_preamble(fp, img, opt) == false) {
+	// OR モードは原理上透過画像を扱えないので、
+	// 強制的に通常モードで処理する。
+	memcpy(&localopt, opt, sizeof(localopt));
+	if (img->has_alpha) {
+		localopt.output_ormode = false;
+		Debug(diag,
+			"%s: Fallback to normal mode (ORmode can't handle transparent)",
+			__func__);
+	}
+
+	if (sixel_preamble(fp, img, &localopt) == false) {
 		return false;
 	}
 
-	if (opt->output_ormode) {
+	if (localopt.output_ormode) {
 		if (sixel_convert_ormode(fp, img, diag) == false) {
 			return false;
 		}
