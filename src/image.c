@@ -613,6 +613,11 @@ image_reduct_highquality(image_reductor_handle *ir,
 	Rational ystep;
 	Rational xstep;
 
+#if !defined(SIXELV)
+	// sayaka では選択出来ないようにしてある。
+	assert(opt->diffuse == DIFFUSE_SFL);
+#endif
+
 	// 水平、垂直ともピクセルを平均。
 	// 真に高品質にするには補間法を適用するべきだがそこまではしない。
 
