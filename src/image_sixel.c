@@ -185,7 +185,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 
 	assert(img->format == IMAGE_FMT_AIDX16);
 
-	// カラー番号ごとの、X 座標の min, max を計算する。
+	// カラー番号ごとの、X 座標の最小最大(最も左と右の位置)を覚えておくため。
 	// 16bit なので画像サイズの上限は 65535 x 65535。
 	uint mlen = sizeof(uint16) * palcnt;
 	min_x = malloc(mlen);
@@ -216,15 +216,15 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 		// 各カラーの X 座標範囲を計算する。
 		for (uint dy = 0; dy < max_dy; dy++) {
 			for (uint x = 0; x < w; x++) {
-				uint16 idx = *src++;
-				if ((int16)idx < 0) {
+				uint16 cc = *src++;
+				if ((int16)cc < 0) {
 					continue;
 				}
-				if (min_x[idx] < 0 || min_x[idx] > x) {
-					min_x[idx] = x;
+				if (min_x[cc] < 0 || min_x[cc] > x) {
+					min_x[cc] = x;
 				}
-				if (max_x[idx] < x) {
-					max_x[idx] = x;
+				if (max_x[cc] < x) {
+					max_x[cc] = x;
 				}
 			}
 		}
