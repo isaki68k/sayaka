@@ -1343,7 +1343,7 @@ misskey_format_renote_owner(const json *js, int inote)
 	misskey_user *rn_user = misskey_get_user(js, inote);
 
 	string_append_cstr(s, string_get(rn_time));
-	string_append_char(s, ' ');
+	string_append_cstr(s, " Renoted by ");
 	string_append_cstr(s, string_get(rn_user->name));
 	string_append_char(s, ' ');
 	string_append_cstr(s, string_get(rn_user->id));
@@ -1351,7 +1351,6 @@ misskey_format_renote_owner(const json *js, int inote)
 		string_append_char(s, ' ');
 		string_append_cstr(s, string_get(rn_user->instance));
 	}
-	string_append_cstr(s, " renoted");
 
 	string_free(rn_time);
 	misskey_free_user(rn_user);
