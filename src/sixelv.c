@@ -80,6 +80,7 @@ const char progver[]  = SIXELV_VERSION;
 enum {
 	OPT__start = 0x7f,
 	OPT_blurhash_nearest,
+	OPT_cdm,
 	OPT_ciphers,
 	OPT_debug_image,
 	OPT_debug_net,
@@ -104,6 +105,7 @@ static const struct option longopts[] = {
 	{ "bn",				no_argument,		NULL,	OPT_blurhash_nearest },
 	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
 	{ "color",			required_argument,	NULL,	'c' },
+	{ "cdm",			required_argument,	NULL,	OPT_cdm },
 	{ "debug-image",	required_argument,	NULL,	OPT_debug_image },
 	{ "debug-net",		required_argument,	NULL,	OPT_debug_net },
 	{ "debug-sixel",	required_argument,	NULL,	OPT_debug_sixel },
@@ -231,6 +233,10 @@ main(int ac, char *av[])
 			}
 			break;
 		 }
+
+		 case OPT_cdm:
+			imageopt.cdm = stou32def(optarg, 0, NULL);
+			break;
 
 		 case OPT_ciphers:
 			// 今のところ "RSA" (大文字) しか指定できない。
@@ -456,6 +462,7 @@ help_all(void)
 "     3        : 3-pixels (right, down, rightdown)\n"
 "     none     : No diffution\n"
 "  --bn,--blurhash-nearest\n"
+"  --cdm=<0..256>         : Differential Color Diffusion Attenuator\n"
 "  --gain=<gain>          : Set output gain between 0.0 and 2.0 (default:1.0)\n"
 "  --help-all             : This help\n"
 "  -O,--output-format=<fmt> : bmp or sixel (default:sixel)\n"

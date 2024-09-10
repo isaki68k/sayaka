@@ -98,6 +98,7 @@ image_opt_init(image_opt *opt)
 	opt->method  = REDUCT_HIGH_QUALITY;
 	opt->diffuse = DIFFUSE_SFL;
 	opt->color   = ReductorColor_Fixed256;
+	opt->cdm     = 0;
 	opt->gain    = 256;
 	opt->output_ormode = false;
 	opt->suppress_palette = false;
@@ -612,6 +613,8 @@ image_reduct_highquality(image_reductor_handle *ir,
 	Rational rx;
 	Rational ystep;
 	Rational xstep;
+	ColorRGBint32 cp;
+	uint cdm = 256;
 
 #if !defined(SIXELV)
 	// sayaka では選択出来ないようにしてある。
@@ -640,6 +643,8 @@ image_reduct_highquality(image_reductor_handle *ir,
 	for (int i = 0; i < errbuf_count; i++) {
 		errbuf[i] = errbuf_mem + errbuf_left + errbuf_width * i;
 	}
+
+	memset(&cp, 0, sizeof(cp));
 
 	for (uint y = 0; y < dstheight; y++) {
 		uint sy0 = ry.I;
@@ -683,6 +688,18 @@ image_reduct_highquality(image_reductor_handle *ir,
 				col.b = (uint32)col.b * ir->gain / 256;
 			}
 
+			if (opt->cdm != 0) {
+				cdm /= 2;
+				cdm = MAX(cdm, abs(col.r - cp.r));
+				cdm = MAX(cdm, abs(col.g - cp.g));
+				cdm = MAX(cdm, abs(col.b - cp.b));
+				cdm += opt->cdm;
+				if (cdm > 256) {
+					cdm = 256;
+				}
+				cp = col;
+			}
+
 			col.r += errbuf[0][x].r;
 			col.g += errbuf[0][x].g;
 			col.b += errbuf[0][x].b;
@@ -710,6 +727,12 @@ image_reduct_highquality(image_reductor_handle *ir,
 
 			// ランダムノイズを加える。
 			if (0) {
+			}
+
+			if (cdm != 256) {
+				col.r = col.r * cdm / 256;
+				col.g = col.g * cdm / 256;
+				col.b = col.b * cdm / 256;
 			}
 
 			switch (opt->diffuse) {

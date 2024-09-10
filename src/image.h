@@ -182,6 +182,11 @@ typedef struct image_opt_ {
 	ReductorDiffuse diffuse;
 	ReductorColor color;
 
+	// 誤差の減衰率(?)。0 .. 256 で指定する。
+	// 256以上は 256 と同じ効果となる。
+	// 0 は機能オフ。
+	uint cdm;
+
 	// 出力ゲイン。0 .. 512 で指定する。256 が 1.0倍。
 	uint gain;
 
