@@ -69,6 +69,11 @@ static OutputFormat output_format;	// 出力形式
 static image_opt imageopt;
 static struct net_opt netopt;
 
+#define PROF(tv)	do {		\
+	if (opt_profile)			\
+		gettimeofday(tv, NULL);	\
+} while (0)
+
 const char progname[] = "sixelv";
 const char progver[]  = SIXELV_VERSION;
 
@@ -546,7 +551,7 @@ do_file(const char *infile)
 		}
 	}
 
-	gettimeofday(&load_start, NULL);
+	PROF(&load_start);
 
 	// 読み込み。
 	srcimg = image_read_pstream(pstream, diag_image);
@@ -622,7 +627,7 @@ do_file(const char *infile)
 		}
 	}
 
-	gettimeofday(&load_end, NULL);
+	PROF(&load_end);
 
 	if (srcimg == NULL) {
 		if (errno == 0) {
@@ -638,9 +643,9 @@ do_file(const char *infile)
 		srcimg->width, srcimg->height, dst_width, dst_height,
 		reductorcolor_tostr(imageopt.color));
 
-	gettimeofday(&cvt_start, NULL);
+	PROF(&cvt_start);
 	image_convert_to16(srcimg);
-	gettimeofday(&reduct_start, NULL);
+	PROF(&reduct_start);
 
 	// 減色 & リサイズ。
 	resimg = image_reduct(srcimg, dst_width, dst_height, &imageopt, diag_image);
@@ -649,7 +654,7 @@ do_file(const char *infile)
 		goto abort;
 	}
 
-	gettimeofday(&reduct_end, NULL);
+	PROF(&reduct_end);
 
 	// 出力先をオープン。
 	if (output_filename == NULL) {
@@ -662,7 +667,7 @@ do_file(const char *infile)
 		}
 	}
 
-	gettimeofday(&sixel_start, NULL);
+	PROF(&sixel_start);
 
 	// 書き出し。
 	if (output_format == OUTPUT_FORMAT_SIXEL) {
@@ -674,7 +679,7 @@ do_file(const char *infile)
 	}
 	fflush(ofp);
 
-	gettimeofday(&sixel_end, NULL);
+	PROF(&sixel_end);
 
 	if (opt_profile) {
 		struct timeval load_res;
