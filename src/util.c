@@ -33,6 +33,12 @@
 #include <stdint.h>
 #include <string.h>
 
+//#define PUTD_SUBR
+
+#if defined(PUTD_SUBR)
+static uint putd_subr(char *, uint);
+#endif
+
 // strerror(errno) は Debug() 等のマクロ内から呼ぶことが多いのに
 // clang だと errno が再帰展開になるとかで怒られるので、回避のため。
 const char *
@@ -191,10 +197,16 @@ putd(char *dst, uint n)
 		} else {
 			// OpenBSD では sprintf() 使うとリンカでワーニングが出る。
 			// がそもそもここは本題ではない。
+#if defined(PUTD_SUBR)
+			return putd_subr(dst, n);
+#else
+
 #if defined(__OpenBSD__)
 			return snprintf((char *)dst, dstsize, "%u", n);
 #else
 			return sprintf((char*)dst, "%u", n);
+#endif
+
 #endif
 		}
 		uint8 bcd = decimal_to_bcd[m];
@@ -203,3 +215,85 @@ putd(char *dst, uint n)
 		return 3;
 	}
 }
+
+#if defined(PUTD_SUBR)
+static uint
+putd_subr(char *dst, uint n)
+{
+	static const uint32 t[] = {
+		1,
+		10,
+		100,
+		1000,
+		10000,
+		100000,
+		1000000,
+		10000000,
+		100000000,
+		1000000000,
+	};
+
+	uint len;
+	uint i = countof(t) - 1;
+
+	for (; i > 0; --i) {
+		if (n >= t[i]) break;
+	}
+	len = i + 1;
+
+	for (; i > 0; --i) {
+		char d = '0';
+		uint32 m = t[i];
+#if 1
+		if (n >= m) {
+			m *= 4;
+			for (char j = 4; j > 0; --j) {
+				if (n >= m) {
+					n -= m;
+					d += j;
+				}
+				m -= t[i];
+			}
+		}
+		*dst++ = d;
+#else
+		if (n >= m) {
+			d += n / m;
+			n = n % m;
+		}
+		*dst++ = d;
+#endif
+	}
+	*dst++ = n + '0';
+
+	return len;
+}
+#endif
+
+
+#if 0
+
+uint
+putd(char *dst, uint n)
+{
+	if (n < 10) {
+		dst[0] = n + '0';
+		return 1;
+	}
+	if (n < 100) {
+		static const uint8 d[] = { 0, 0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 8, 9 };
+		uint8 H = d[n >> 3];
+		uint8 L = n - H * 10;
+		if (L >= 10) {
+			H++;
+			L -= 10;
+		}
+		dst[0] = H + '0';
+		dst[1] = L + '0';
+		return 2;
+	}
+
+	return putd_subr(dst, n);
+}
+
+#endif
