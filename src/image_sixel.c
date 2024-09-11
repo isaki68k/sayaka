@@ -41,25 +41,6 @@ static uint sixel_ormode_h6(char *, uint8 *, const uint16 *, uint, uint,
 	uint);
 static uint sixel_repunit(char *, uint, uint8);
 
-static const uint32 deptable[16] = {
-	0x00000000,
-	0x00000001,
-	0x00000100,
-	0x00000101,
-	0x00010000,
-	0x00010001,
-	0x00010100,
-	0x00010101,
-	0x01000000,
-	0x01000001,
-	0x01000100,
-	0x01000101,
-	0x01010000,
-	0x01010001,
-	0x01010100,
-	0x01010101,
-};
-
 // SIXEL 中断シーケンスを出力する。
 void
 image_sixel_abort(FILE *fp)
@@ -419,115 +400,31 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 	// [4] Y=0..5, X=1, Plane=0
 	// :
 
-#if 0
-	// y = 0 のケースで初期化も同時に実行する。
-	buf = sixelbuf;
-	for (uint x = 0; x < width; x++) {
-		uint16 cc = *src++;
-		if ((int16)cc < 0) {
-			cc = 0;
-		}
-		for (uint i = 0; i < nplane; i++) {
-			*buf++ = (cc & 1) << 0;
-			cc >>= 1;
-		}
-	}
-
-	// y >= 1 は重ねていく。
-	for (uint y = 1; y < height; y++) {
-		buf = sixelbuf;
-		for (uint x = 0; x < width; x++) {
-			uint16 cc = *src++;
-			if ((int16)cc <= 0) {
-				buf += nplane;
-				continue;
-			}
-			for (uint i = 0; i < nplane; i++) {
-				*buf |= (cc & 1) << y;
-				buf++;
-				cc >>= 1;
-			}
-		}
-	}
-#elif 0
-	{
-		buf = sixelbuf;
-		const uint32 mul  = 0x00204081;
-		const uint32 mask = 0x01010101;
-
-		if (nplane <= 4) {
-			for (uint x = 0; x < width; x++) {
-				const uint16 *pcc = &src[width * height];
-				src++;
-				uint32 data0 = 0;
-				for (uint16 y = height; y > 0; y--) {
-					pcc -= width;
-					uint16 cc = *pcc;
-
-					data0 *= 2;
-					if ((int16)cc >= 0) {
-						uint32 t = (cc * mul) & mask;
-						data0 |= t;
-					}
-				}
-				for (uint i = 0; i < nplane; i++) {
-					*buf++ = data0 & 0xff;
-					data0 >>= 8;
-				}
-			}
-		} else {
-			for (uint x = 0; x < width; x++) {
-				const uint16 *pcc = &src[width * height];
-				uint32 data0 = 0;
-				uint32 data1 = 0;
-				for (uint16 y = height; y > 0; y--) {
-					pcc -= width;
-					uint16 cc = *pcc;
-
-					data0 *= 2;
-					data1 *= 2;
-					if ((int16)cc >= 0) {
-						uint8 c8 = cc;
-						uint32 t0 = ((c8 & 0xf) * mul) & mask;
-						data0 |= t0;
-						uint32 t1 = ((c8 >> 4) * mul) & mask;
-						data1 |= t1;
-					}
-				}
-				src++;
-				uint i = 0;
-				for (; i < 4; i++) {
-					*buf++ = data0 & 0xff;
-					data0 >>= 8;
-				}
-				for (; i < nplane; i++) {
-					*buf++ = data1 & 0xff;
-					data1 >>= 8;
-				}
-			}
-		}
-	}
-
-#else
 	// 縦 6 ピクセルとプレーン(最大8)の水平垂直変換。
 	//       bn      b2   b1   b0            b5   b4   b3   b2   b1   b0
 	// [0] Y0Pn … Y0P2 Y0P1 Y0P0      [0] Y5P0 Y4P0 Y3P0 Y2P0 Y1P0 Y0P0
 	// [1] Y1Pn … Y1P2 Y1P1 Y1P0  ==> [1] Y5P1 Y4P1 Y3P1 Y2P1 Y1P1 Y0P1
 	//  :                               :
 	// [5] Y5Pn … Y5P2 Y5P1 Y5P0      [n] Y5Pn Y4Pn Y3Pn Y2Pn Y1Pn Y0Pn
-
 	buf = sixelbuf;
+	const uint32 mul  = 0x00204081;
+	const uint32 mask = 0x01010101;
+
 	if (nplane <= 4) {
 		for (uint x = 0; x < width; x++) {
+			const uint16 *pcc = &src[width * height];
 			uint32 data0 = 0;
-			for (uint y = 0; y < height; y++) {
-				uint16 cc = src[width * y];
-				if ((int16)cc > 0) {
-					data0 |= deptable[cc] << y;
+			for (uint16 y = height; y > 0; y--) {
+				pcc -= width;
+				uint16 cc = *pcc;
+
+				data0 *= 2;
+				if ((int16)cc >= 0) {
+					uint32 t = (cc * mul) & mask;
+					data0 |= t;
 				}
 			}
 			src++;
-
 			for (uint i = 0; i < nplane; i++) {
 				*buf++ = data0 & 0xff;
 				data0 >>= 8;
@@ -535,17 +432,24 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 		}
 	} else {
 		for (uint x = 0; x < width; x++) {
+			const uint16 *pcc = &src[width * height];
 			uint32 data0 = 0;
 			uint32 data1 = 0;
-			for (uint y = 0; y < height; y++) {
-				uint16 cc = src[width * y];
-				if ((int16)cc > 0) {
-					data0 |= deptable[cc & 0xf] << y;
-					data1 |= deptable[cc >> 4] << y;
+			for (uint16 y = height; y > 0; y--) {
+				pcc -= width;
+				uint16 cc = *pcc;
+
+				data0 *= 2;
+				data1 *= 2;
+				if ((int16)cc >= 0) {
+					uint8 c8 = cc;
+					uint32 t0 = ((c8 & 0xf) * mul) & mask;
+					data0 |= t0;
+					uint32 t1 = ((c8 >> 4) * mul) & mask;
+					data1 |= t1;
 				}
 			}
 			src++;
-
 			uint i = 0;
 			for (; i < 4; i++) {
 				*buf++ = data0 & 0xff;
@@ -557,7 +461,6 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 			}
 		}
 	}
-#endif
 
 	// 各プレーンデータを SIXEL に変換。
 	for (uint i = 0; i < nplane; i++) {
