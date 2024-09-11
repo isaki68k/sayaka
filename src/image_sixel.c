@@ -407,24 +407,23 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 	//  :                               :
 	// [5] Y5Pn … Y5P2 Y5P1 Y5P0      [n] Y5Pn Y4Pn Y3Pn Y2Pn Y1Pn Y0Pn
 	buf = sixelbuf;
-	const uint32 mul  = 0x00204081;
-	const uint32 mask = 0x01010101;
+	static const uint32 mul  = 0x00204081;
+	static const uint32 mask = 0x01010101;
 
 	if (nplane <= 4) {
 		for (uint x = 0; x < width; x++) {
-			const uint16 *pcc = &src[width * height];
+			const uint16 *s = &src[width * height];
+			src++;
 			uint32 data0 = 0;
 			for (uint16 y = height; y > 0; y--) {
-				pcc -= width;
-				uint16 cc = *pcc;
+				s -= width;
+				uint16 cc = *s;
 
 				data0 *= 2;
 				if ((int16)cc >= 0) {
-					uint32 t = (cc * mul) & mask;
-					data0 |= t;
+					data0 |= (cc * mul) & mask;
 				}
 			}
-			src++;
 			for (uint i = 0; i < nplane; i++) {
 				*buf++ = data0 & 0xff;
 				data0 >>= 8;
@@ -432,24 +431,22 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 		}
 	} else {
 		for (uint x = 0; x < width; x++) {
-			const uint16 *pcc = &src[width * height];
+			const uint16 *s = &src[width * height];
+			src++;
 			uint32 data0 = 0;
 			uint32 data1 = 0;
 			for (uint16 y = height; y > 0; y--) {
-				pcc -= width;
-				uint16 cc = *pcc;
+				s -= width;
+				uint16 cc = *s;
 
 				data0 *= 2;
 				data1 *= 2;
 				if ((int16)cc >= 0) {
 					uint8 c8 = cc;
-					uint32 t0 = ((c8 & 0xf) * mul) & mask;
-					data0 |= t0;
-					uint32 t1 = ((c8 >> 4) * mul) & mask;
-					data1 |= t1;
+					data0 |= ((c8 & 0xf) * mul) & mask;
+					data1 |= ((c8 >> 4)  * mul) & mask;
 				}
 			}
-			src++;
 			uint i = 0;
 			for (; i < 4; i++) {
 				*buf++ = data0 & 0xff;
