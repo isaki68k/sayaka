@@ -120,22 +120,26 @@ static const uint8 mathalpha_table[1024] = {
  '4','5','6','7','8','9','0','1','2','3','4','5','6','7','8','9', // U+1d7f0
 };
 
+// src が英数字(と一部のギリシア文字)の飾り文字類なら対応する文字の
+// 全角文字コードを返す。src が飾り文字類でなければ 0 を返す。
 unichar
 conv_mathalpha(unichar src)
 {
-	src -= 0x1d400;
-	assert(src < (0x1d800 - 0x1d400));
+	if (__predict_false(0x1d400 <= src && src <= 0x1d7ff)) {
+		src -= 0x1d400;
+		unichar dst = mathalpha_table[src];
+		if (__predict_false(dst == ' ')) {
+			// 変換先がない。
+			return 0;
+		}
+		if (__predict_true(dst < 0x80)) {
+			// 全角英数字は ASCII と並び順が同じ。
+			return 0xff00 + (dst - ' ');
+		} else {
+			// ギリシア文字は対応が簡単なやつだけ。
+			return 0x300 + dst;
+		}
+	}
 
-	unichar dst = mathalpha_table[src];
-	if (__predict_false(dst == ' ')) {
-		// 変換先がなければ元のまま
-		return src;
-	}
-	if (__predict_true(dst < 0x80)) {
-		// 全角英数字は ASCII と並び順が同じ
-		return 0xff00 + (dst - ' ');
-	} else {
-		// ギリシア文字は対応が簡単なやつだけ
-		return 0x300 + dst;
-	}
+	return 0;
 }

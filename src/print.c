@@ -260,12 +260,14 @@ iprint(const ustring *src)
 		}
 
 		// Mathematical Alphanumeric Symbols を全角英数字に変換
-		if (__predict_false(opt_mathalpha) &&
-			__predict_false(0x1d400 <= uni && uni <= 0x1d7ff))
-		{
-			// Mathematical Alphanumeric Symbols を全角英数字に変換
-			ustring_append_unichar(utext, conv_mathalpha(uni));
-			continue;
+		if (__predict_false(opt_mathalpha)) {
+			// 変換先があればここで追加。
+			unichar altchar = conv_mathalpha(uni);
+			if (__predict_false(altchar != 0)) {
+				ustring_append_unichar(utext, altchar);
+				continue;
+			}
+			// FALLTHROUGH
 		}
 
 		// --no-combine なら Combining Enclosing * (U+20DD-U+20E4) の前に
