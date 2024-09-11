@@ -730,12 +730,6 @@ misskey_show_notification(const json *js, int ibody)
 		return 0;
 	}
 	const char *type = json_get_cstr(js, itype);
-	if (strcmp(type, "mention") == 0 ||
-		strcmp(type, "renote") == 0)
-	{
-		// これらは無視でよい。ノートのほうにも来るので。
-		return 0;
-	}
 	if (strcmp(type, "reaction") == 0) {
 		// リアクション通知。
 		int inote = json_obj_find_obj(js, ibody, "note");
@@ -795,6 +789,17 @@ misskey_show_notification(const json *js, int ibody)
 		misskey_free_user(user);
 		string_free(time);
 		return 1;
+	}
+	if (strcmp(type, "mention") == 0 ||
+		strcmp(type, "renote") == 0)
+	{
+		// これらは無視でよい。ノートのほうにも来るので。
+		return 0;
+	}
+	if (strcmp(type, "followRequestAccepted") == 0)
+	{
+		// いる?
+		return 0;
 	}
 
 	printf("Unknown notification type \"%s\"\n", type);
