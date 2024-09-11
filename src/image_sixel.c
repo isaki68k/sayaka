@@ -411,6 +411,7 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 	static const uint32 mask = 0x01010101;
 
 	if (nplane <= 4) {
+		// こっちは 32bit アーキテクチャを主ターゲットにする。
 		for (uint x = 0; x < width; x++) {
 			const uint16 *s = &src[width * height];
 			src++;
@@ -430,31 +431,25 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 			}
 		}
 	} else {
+		// こっちは 64bit アーキテクチャを主ターゲットにする。
 		for (uint x = 0; x < width; x++) {
 			const uint16 *s = &src[width * height];
 			src++;
-			uint32 data0 = 0;
-			uint32 data1 = 0;
+			uint64 data = 0;
 			for (uint16 y = height; y > 0; y--) {
 				s -= width;
 				uint16 cc = *s;
 
-				data0 *= 2;
-				data1 *= 2;
+				data *= 2;
 				if ((int16)cc >= 0) {
-					uint8 c8 = cc;
-					data0 |= ((c8 & 0xf) * mul) & mask;
-					data1 |= ((c8 >> 4)  * mul) & mask;
+					data |= ((cc & 0xf) * mul) & mask;
+					uint32 tmp = ((cc >> 4) * mul) & mask;
+					data |= (uint64)tmp << 32;
 				}
 			}
-			uint i = 0;
-			for (; i < 4; i++) {
-				*buf++ = data0 & 0xff;
-				data0 >>= 8;
-			}
-			for (; i < nplane; i++) {
-				*buf++ = data1 & 0xff;
-				data1 >>= 8;
+			for (uint i = 0; i < nplane; i++) {
+				*buf++ = data & 0xff;
+				data >>= 8;
 			}
 		}
 	}
