@@ -41,12 +41,7 @@
 #include <sys/sysctl.h>
 #endif
 
-// ざっくり遅マシン判定
-#if defined(__hppa__)	|| \
-    defined(__m68k__)	|| \
-    defined(__sh3__)	|| \
-    (defined(__sparc__) && !defined(__sparc64__))	|| \
-    defined(__vax__)
+#if defined(SLOW_ARCH)
 #define TIMEOUT (10 * 1000 * 1000)	// [usec]
 #else
 #define TIMEOUT       (500 * 1000)	// [usec]
