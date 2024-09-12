@@ -175,7 +175,6 @@ putd(char *dst, uint n)
 #endif
 {
 	// 小さい数優先で、255 までを高速に出力できればそれでいい。
-	uint m;
 
 	if (__predict_true(n < 10)) {
 		dst[0] = n + '0';
@@ -188,14 +187,14 @@ putd(char *dst, uint n)
 	} else {
 		if (__predict_true(n < 200)) {
 			dst[0] = '1';
-			m = n - 100;
+			n -= 100;
 		} else if (__predict_true(n < 300)) {
 			dst[0] = '2';
-			m = n - 200;
+			n -= 200;
 		} else {
 			return putd_subr(dst, n);
 		}
-		uint8 bcd = decimal_to_bcd[m];
+		uint8 bcd = decimal_to_bcd[n];
 		dst[1] = (bcd >> 4)  + '0';
 		dst[2] = (bcd & 0xf) + '0';
 		return 3;
