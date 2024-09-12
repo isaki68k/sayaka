@@ -33,7 +33,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static uint putd_subr(char *, uint);
+static uint putd(char *, uint);
 
 // strerror(errno) は Debug() 等のマクロ内から呼ぶことが多いのに
 // clang だと errno が再帰展開になるとかで怒られるので、回避のため。
@@ -168,7 +168,7 @@ static const uint8 decimal_to_bcd[] = {
 // n の頻度は 1桁:2桁:3桁以上 で、ざっくり 4:4:2 とかそのくらい。
 // 3桁の内訳は 100-199:200-299:300-999 でざっくり 6:3:1 くらい。
 uint
-putd(char *dst, uint n)
+putd_fast(char *dst, uint n)
 {
 	// 小さい数優先で、255 までを高速に出力できればそれでいい。
 
@@ -188,7 +188,7 @@ putd(char *dst, uint n)
 			dst[0] = '2';
 			n -= 200;
 		} else {
-			return putd_subr(dst, n);
+			return putd(dst, n);
 		}
 		uint8 bcd = decimal_to_bcd[n];
 		dst[1] = (bcd >> 4)  + '0';
@@ -197,8 +197,10 @@ putd(char *dst, uint n)
 	}
 }
 
+// 符号なし整数 n を文字列にして dst に出力する。
+// 戻り値は 出力した文字数。dst はゼロ終端しない。
 static uint
-putd_subr(char *dst, uint n)
+putd(char *dst, uint n)
 {
 	static const uint32 t[] = {
 		1,
