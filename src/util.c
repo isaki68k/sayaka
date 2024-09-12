@@ -259,10 +259,8 @@ putd_subr(char *dst, uint n)
 		}
 		*dst++ = d;
 #else
-		if (n >= m) {
-			d += n / m;
-			n = n % m;
-		}
+		d += n / m;
+		n = n % m;
 		*dst++ = d;
 #endif
 	}
