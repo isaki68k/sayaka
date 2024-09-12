@@ -237,7 +237,9 @@ putd_subr(char *dst, uint n)
 	uint i = countof(t) - 1;
 
 	for (; i > 0; --i) {
-		if (n >= t[i]) break;
+		if (n >= t[i]) {
+			break;
+		}
 	}
 	len = i + 1;
 
