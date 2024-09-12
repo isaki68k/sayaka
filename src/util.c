@@ -278,11 +278,11 @@ putd_subr(char *dst, uint n)
 uint
 putd(char *dst, uint n)
 {
-	if (n < 10) {
+	if (__predict_true(n < 10)) {
 		dst[0] = n + '0';
 		return 1;
 	}
-	if (n < 100) {
+	if (__predict_true(n < 100)) {
 		static const uint8 d[] = { 0, 0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 8, 9 };
 		uint8 H = d[n >> 3];
 		uint8 L = n - H * 10;
