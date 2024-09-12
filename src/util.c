@@ -33,11 +33,7 @@
 #include <stdint.h>
 #include <string.h>
 
-//#define PUTD_SUBR
-
-#if defined(PUTD_SUBR)
 static uint putd_subr(char *, uint);
-#endif
 
 // strerror(errno) は Debug() 等のマクロ内から呼ぶことが多いのに
 // clang だと errno が再帰展開になるとかで怒られるので、回避のため。
@@ -169,6 +165,8 @@ static const uint8 decimal_to_bcd[] = {
 // 戻り値は 出力した文字数。dst はゼロ終端しない。
 // つまり int len = putd(buf, n); buf[len] = '\0'; が
 // sprintf(dst, "%u", n) と等価になる。
+// n の頻度は 1桁:2桁:3桁以上 で、ざっくり 4:4:2 とかそのくらい。
+// 3桁の内訳は 100-199:200-299:300-999 でざっくり 6:3:1 くらい。
 uint
 #if defined(__OpenBSD__)
 putd(char *dst, uint n, uint dstsize)
@@ -195,19 +193,7 @@ putd(char *dst, uint n)
 			dst[0] = '2';
 			m = n - 200;
 		} else {
-			// OpenBSD では sprintf() 使うとリンカでワーニングが出る。
-			// がそもそもここは本題ではない。
-#if defined(PUTD_SUBR)
 			return putd_subr(dst, n);
-#else
-
-#if defined(__OpenBSD__)
-			return snprintf((char *)dst, dstsize, "%u", n);
-#else
-			return sprintf((char*)dst, "%u", n);
-#endif
-
-#endif
 		}
 		uint8 bcd = decimal_to_bcd[m];
 		dst[1] = (bcd >> 4)  + '0';
@@ -216,7 +202,6 @@ putd(char *dst, uint n)
 	}
 }
 
-#if defined(PUTD_SUBR)
 static uint
 putd_subr(char *dst, uint n)
 {
@@ -246,54 +231,11 @@ putd_subr(char *dst, uint n)
 	for (; i > 0; --i) {
 		char d = '0';
 		uint32 m = t[i];
-#if 1
-		if (n >= m) {
-			m *= 4;
-			for (char j = 4; j > 0; --j) {
-				if (n >= m) {
-					n -= m;
-					d += j;
-				}
-				m -= t[i];
-			}
-		}
-		*dst++ = d;
-#else
 		d += n / m;
 		n = n % m;
 		*dst++ = d;
-#endif
 	}
 	*dst++ = n + '0';
 
 	return len;
 }
-#endif
-
-
-#if 0
-
-uint
-putd(char *dst, uint n)
-{
-	if (__predict_true(n < 10)) {
-		dst[0] = n + '0';
-		return 1;
-	}
-	if (__predict_true(n < 100)) {
-		static const uint8 d[] = { 0, 0, 1, 2, 3, 4, 4, 5, 6, 7, 8, 8, 9 };
-		uint8 H = d[n >> 3];
-		uint8 L = n - H * 10;
-		if (L >= 10) {
-			H++;
-			L -= 10;
-		}
-		dst[0] = H + '0';
-		dst[1] = L + '0';
-		return 2;
-	}
-
-	return putd_subr(dst, n);
-}
-
-#endif
