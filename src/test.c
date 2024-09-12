@@ -27,14 +27,27 @@
 #include "sayaka.h"
 #include <err.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/time.h>
 
 #define fail(fmt...)	do {	\
 	printf("%s: ", __func__);	\
 	printf(fmt);	\
 	printf("\n");	\
 } while(0)
+
+static int signaled;
+
+static void
+signal_handler(int signo)
+{
+	if (signo == SIGALRM) {
+		signaled = 1;
+	}
+}
 
 // src の C 文字列をエスケープした文字列を返す。
 static string *
@@ -213,6 +226,84 @@ test_putd(void)
 			fail("%u: expects \"%s\" but \"%s\"", src, exp, buf);
 		}
 	}
+}
+
+// perf_putd 用の疑似乱数。シードが同じなので毎回同じ数列。
+static uint32
+xorshift(void)
+{
+	static uint32 seed = 1;
+	static uint32 y;
+
+	y = seed;
+	y ^= y << 13;
+	y ^= y >> 17;
+	y ^= y << 15;
+	seed = y;
+
+	return y;
+}
+
+static void
+perf_putd(void)
+{
+	static const int SEC = 2;
+	struct timeval start, end, result;
+	uint32 count = 0;
+	uint sum = 0;
+
+	printf("%s ", __func__);
+	fflush(stdout);
+
+	// 1桁:2桁:100-199:200-299:300-999:4桁以上 を 200:200:60:30:8:2 とする。
+	static const uint NUM = 500;
+	uint16 *data = malloc(NUM * sizeof(uint16));
+	{
+		int i = 0;
+		for (; i < 200; i++) {	// 1桁
+			data[i] = xorshift() % 10;
+		}
+		for (; i < 400; i++) {	// 2桁
+			data[i] = (xorshift() % 90) + 10;
+		}
+		for (; i < 460; i++) {	// 100-199
+			data[i] = (xorshift() % 100) + 100;
+		}
+		for (; i < 490; i++) {	// 200-299
+			data[i] = (xorshift() % 100) + 200;
+		}
+		for (; i < 498; i++) {	// 300-999
+			data[i] = (xorshift() % 700) + 300;
+		}
+		for (; i < 500; i++) {	// 4桁以上
+			data[i] = xorshift();
+		}
+	}
+
+	signal(SIGALRM, signal_handler);
+	gettimeofday(&start, NULL);
+	alarm(SEC);
+	// data を何セット回せるか。
+	while (signaled == 0) {
+		char buf[16];
+		for (uint j = 0; j < NUM; j++) {
+			uint n = PUTD(buf, data[j], sizeof(buf));
+			sum += n;
+		}
+		count++;
+	}
+	(void)sum;
+	gettimeofday(&end, NULL);
+	timersub(&end, &start, &result);
+
+	double us = ((double)result.tv_sec * 1e6 + result.tv_usec ) / count;
+#if defined(SLOW_ARCH)
+	printf("count=%u, %.3f msec\n", count, us / 1000);
+#else
+	printf("count=%u, %.3f usec\n", count, us);
+#endif
+
+	free(data);
 }
 
 static void
@@ -439,6 +530,22 @@ test_urlinfo_parse(void)
 int
 main(int ac, char *av[])
 {
+	int c;
+
+	while ((c = getopt(ac, av, "p:")) != -1) {
+		switch (c) {
+		 case 'p':
+			if (strcmp(optarg, "putd") == 0) {
+				perf_putd();
+			} else {
+				err(1, "usage: -p <perf-testname>");
+			}
+			return 0;
+		 default:
+			err(1, "usage: [-p <testname>]");
+		}
+	}
+
 	test_chomp();
 	test_decode_isotime();
 	test_json_unescape();
