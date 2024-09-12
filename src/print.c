@@ -58,7 +58,7 @@
 extern image_opt imageopt;
 
 static void make_esc(char *, const char *);
-static inline void make_indent(char *, uint, int);
+static inline void make_indent(char *, int);
 static uint get_eaw_width(unichar c);
 static bool fetch_image(FILE *, const char *, uint, uint, bool);
 
@@ -207,14 +207,14 @@ ustring_append_utf8_color(ustring *u, const char *str, uint color)
 // CSI."0C" は0文字でなく1文字になってしまうし、インデント階層が 0 かどうかは
 // 呼び出し側で簡単に分かるし何もしなくていいので、呼び出し側で弾くこと。
 static inline void
-make_indent(char *buf, uint bufsize, int depth)
+make_indent(char *buf, int depth)
 {
 	char *p = buf;
 
 	int left = indent_cols * depth;
 	*p++ = ESCchar;
 	*p++ = '[';
-	p += PUTD(p, left, bufsize - (p - buf));
+	p += PUTD(p, left);
 	*p++ = 'C';
 	*p = '\0';
 }
@@ -225,7 +225,7 @@ void
 print_indent(uint depth)
 {
 	char buf[12];
-	make_indent(buf, sizeof(buf), depth);
+	make_indent(buf, depth);
 	fputs(buf, stdout);
 }
 
@@ -338,7 +338,7 @@ iprint(const ustring *src)
 
 	// インデント階層
 	char indent[12];
-	make_indent(indent, sizeof(indent), indent_depth + 1);
+	make_indent(indent, indent_depth + 1);
 	ustring_append_ascii(utext2, indent);
 
 	if (__predict_false(screen_cols == 0)) {

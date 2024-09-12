@@ -110,9 +110,9 @@ sixel_preamble(FILE *fp, const image *img, const image_opt *opt)
 		buf[4] = '5';
 	}
 	p = buf + strlen(head);
-	p += PUTD(p, img->width, sizeof(buf) - (p - buf));
+	p += PUTD(p, img->width);
 	*p++ = ';';
-	p += PUTD(p, img->height, sizeof(buf) - (p - buf));
+	p += PUTD(p, img->height);
 	*p = '\0';
 
 	if (fwrite(buf, p - buf, 1, fp) < 1) {
@@ -130,15 +130,15 @@ sixel_preamble(FILE *fp, const image *img, const image_opt *opt)
 			p = buf;
 
 			*p++ = '#';
-			p += PUTD(p, i, sizeof(buf) - (p - buf));	// palette num
+			p += PUTD(p, i);	// palette num
 			*p++ = ';';
 			*p++ = '2';		// RGB
 			*p++ = ';';
-			p += PUTD(p, r, sizeof(buf) - (p - buf));
+			p += PUTD(p, r);
 			*p++ = ';';
-			p += PUTD(p, g, sizeof(buf) - (p - buf));
+			p += PUTD(p, g);
 			*p++ = ';';
-			p += PUTD(p, b, sizeof(buf) - (p - buf));
+			p += PUTD(p, b);
 			*p = '\0';
 
 			if (fwrite(buf, strlen(buf), 1, fp) < 1) {
@@ -251,7 +251,7 @@ sixel_convert_normal(FILE *fp, const image *img, const diag *diag)
 
 				// SIXEL に色コードを出力。
 				*d++ = '#';
-				d += PUTD(d, min_color, bufsize - (d - linebuf));
+				d += PUTD(d, min_color);
 
 				// 相対 X シーク処理。
 				int space = min_x[min_color] - (mx + 1);
@@ -459,7 +459,7 @@ sixel_ormode_h6(char *dst, uint8 *sixelbuf, const uint16 *src,
 		buf = &sixelbuf[i];
 
 		*d++ = '#';
-		d += PUTD(d, (1U << i), 10/*適当*/);
+		d += PUTD(d, (1U << i));
 
 		// [0]
 		uint rept = 1;
@@ -501,7 +501,7 @@ sixel_repunit(char *dst, uint n, uint8 ptn)
 	switch (n) {
 	 default:
 		*d++ = '!';
-		d += PUTD(d, n, 10/*適当*/);
+		d += PUTD(d, n);
 		*d++ = ptn;
 		break;
 	 case 3:

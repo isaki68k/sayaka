@@ -220,7 +220,7 @@ test_putd(void)
 		const char *exp = table[i].exp;
 
 		memset(buf, 0xff, sizeof(buf));
-		n = PUTD(buf, src, sizeof(buf));
+		n = PUTD(buf, src);
 		buf[n] = '\0';
 		if (strcmp(exp, buf) != 0) {
 			fail("%u: expects \"%s\" but \"%s\"", src, exp, buf);
@@ -287,7 +287,7 @@ perf_putd(void)
 	while (signaled == 0) {
 		char buf[16];
 		for (uint j = 0; j < NUM; j++) {
-			uint n = PUTD(buf, data[j], sizeof(buf));
+			uint n = PUTD(buf, data[j]);
 			sum += n;
 		}
 		count++;
