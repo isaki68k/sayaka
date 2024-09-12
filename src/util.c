@@ -168,11 +168,7 @@ static const uint8 decimal_to_bcd[] = {
 // n の頻度は 1桁:2桁:3桁以上 で、ざっくり 4:4:2 とかそのくらい。
 // 3桁の内訳は 100-199:200-299:300-999 でざっくり 6:3:1 くらい。
 uint
-#if defined(__OpenBSD__)
-putd(char *dst, uint n, uint dstsize)
-#else
 putd(char *dst, uint n)
-#endif
 {
 	// 小さい数優先で、255 までを高速に出力できればそれでいい。
 

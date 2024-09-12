@@ -166,13 +166,8 @@ extern void chomp(char *);
 extern int  parse_optmap(const struct optmap *, const char *);
 extern uint32 stou32def(const char *, uint32, char **);
 extern uint32 stox32def(const char *, uint32, char **);
-#if defined(__OpenBSD__)
-extern uint putd(char *, uint, uint);
-#define PUTD(buf, n, bufsize)	putd(buf, n, bufsize)
-#else
 extern uint putd(char *, uint);
 #define PUTD(buf, n, bufsize)	putd(buf, n)
-#endif
 
 // main
 extern const char progname[];
