@@ -167,7 +167,16 @@ extern int  parse_optmap(const struct optmap *, const char *);
 extern uint32 stou32def(const char *, uint32, char **);
 extern uint32 stox32def(const char *, uint32, char **);
 extern uint putd_fast(char *, uint);
-#define PUTD(buf, n)	putd_fast(buf, n)
+static inline uint putd_inline(char *dst, uint n)
+{
+	if (__predict_true(n < 10)) {
+		dst[0] = n + '0';
+		return 1;
+	} else {
+		return putd_fast(dst, n);
+	}
+}
+#define PUTD(buf, n)	putd_inline(buf, n)
 
 // main
 extern const char progname[];
