@@ -39,7 +39,7 @@
 	printf("\n");	\
 } while(0)
 
-static int signaled;
+static volatile int signaled;
 
 static void
 signal_handler(int signo)
