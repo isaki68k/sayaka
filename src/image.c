@@ -927,7 +927,8 @@ finder_gray(image_reductor_handle *ir, ColorRGB c)
 static void
 colorcvt_gray(ColorRGBint32 *c)
 {
-	int I = (c->r * 77 + c->g * 150 + c->b * 29) / 256;
+	// 元々この係数の厳密性はそんなにないので高速化のため雑に近似。
+	int I = (c->r * 5 + c->g * 9 + c->b * 2) / 16;
 	c->r = I;
 	c->g = I;
 	c->b = I;
