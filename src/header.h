@@ -107,7 +107,6 @@ typedef int64_t		int64;
 #else
 #define ICONV(cd, s, slen, d, dlen)	iconv((cd), UNCONST(s), (slen), (d), (dlen))
 #endif
-#endif // !sayaka_header_h
 
 // ざっくり遅マシン判定。
 #if defined(__hppa__)	|| \
@@ -117,3 +116,5 @@ typedef int64_t		int64;
     defined(__vax__)
 #define SLOW_ARCH
 #endif
+
+#endif // !sayaka_header_h
