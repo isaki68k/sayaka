@@ -235,8 +235,14 @@ main(int ac, char *av[])
 		 }
 
 		 case OPT_cdm:
-			imageopt.cdm = stou32def(optarg, 0, NULL);
+		 {
+			float f = atof(optarg);
+			if (f < 0 || f > 1) {
+				errx(1, "Invalid value: %s", optarg);
+			}
+			imageopt.cdm = (uint)(f * 256);
 			break;
+		 }
 
 		 case OPT_ciphers:
 			// 今のところ "RSA" (大文字) しか指定できない。
@@ -462,7 +468,8 @@ help_all(void)
 "     3        : 3-pixels (right, down, rightdown)\n"
 "     none     : No diffution\n"
 "  --bn,--blurhash-nearest\n"
-"  --cdm=<0..256>         : Differential Color Diffusion Attenuator\n"
+"  --cdm=<value>          : Differential Color Diffusion Attenuator,\n"
+"                           between 0.0 and 1.0 (default:1.0)\n"
 "  --gain=<gain>          : Set output gain between 0.0 and 2.0 (default:1.0)\n"
 "  --help-all             : This help\n"
 "  -O,--output-format=<fmt> : bmp or sixel (default:sixel)\n"
