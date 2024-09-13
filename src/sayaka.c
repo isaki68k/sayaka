@@ -241,12 +241,15 @@ main(int ac, char *av[])
 			if (strcmp(optarg, "1") == 0) {
 				colormode = 1;
 				imageopt.color = ReductorColor_GrayLevel(2);
+				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "2") == 0) {
 				colormode = 2;
 				imageopt.color = ReductorColor_GrayLevel(2);
+				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "8") == 0) {
 				colormode = 8;
 				imageopt.color = ReductorColor_Fixed8;
+				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "16") == 0) {
 				colormode = 16;
 				imageopt.color = ReductorColor_ANSI16;
