@@ -70,7 +70,7 @@ static uint finder_gray(image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(image_reductor_handle *, ColorRGB);
 static uint finder_ansi16(image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(image_reductor_handle *, ColorRGB);
-static void colorcvt_gray(image_reductor_handle *, ColorRGBint32 *);
+static void colorcvt_gray(ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 
@@ -581,7 +581,7 @@ image_reduct_simple(image_reductor_handle *ir,
 				c.b = (uint32)c.b * ir->gain / 256;
 			}
 			if (ir->is_gray) {
-				colorcvt_gray(ir, &c);
+				colorcvt_gray(&c);
 			}
 			ColorRGB c8;
 			c8.r = saturate_uint8(c.r);
@@ -705,7 +705,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 			col.b += errbuf[0][x].b;
 
 			if (ir->is_gray) {
-				colorcvt_gray(ir, &col);
+				colorcvt_gray(&col);
 			}
 
 			ColorRGB c8;
@@ -923,7 +923,7 @@ finder_gray(image_reductor_handle *ir, ColorRGB c)
 // c をグレー (NTSC 輝度) に変換する。
 // I = (R * 0.299) + (G * 0.587) + (B * 0.114)
 static void
-colorcvt_gray(image_reductor_handle *ir, ColorRGBint32 *c)
+colorcvt_gray(ColorRGBint32 *c)
 {
 	int I = (c->r * 77 + c->g * 150 + c->b * 29) / 256;
 	c->r = I;
