@@ -946,10 +946,29 @@ static const ColorRGB palette_fixed8[] = {
 static uint
 finder_fixed8(image_reductor_handle *ir, ColorRGB c)
 {
+#if defined(__m68k__)
+	// $RRGGBB00 の各最上位ビットを下位3ビット %BGR にする。
+	uint32 dst = 0;
+	__asm(
+		"	add.w	%1,%1	;\n"	// B -> X
+		"	addx.l	%0,%0	;\n"
+		"	swap	%1		;\n"
+		"	add.b	%1,%1	;\n"	// G -> X
+		"	addx.l	%0,%0	;\n"
+		"	add.w	%1,%1	;\n"	// R -> X
+		"	addx.l	%0,%0	;\n"
+		: /* Output */
+			"+d" (dst)
+		: /* Input */
+			"d" (c.u32)
+	);
+	return dst;
+#else
 	uint R = ((uint8)c.r >= 128);
 	uint G = ((uint8)c.g >= 128);
 	uint B = ((uint8)c.b >= 128);
 	return R | (G << 1) | (B << 2);
+#endif
 }
 
 // ANSI 固定 16 色。
