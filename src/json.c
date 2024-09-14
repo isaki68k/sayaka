@@ -38,7 +38,7 @@
 #define TOKEN_SIZE_INIT	(500)	// 初期トークン数
 #define TOKEN_SIZE_INC	(100)	// 1回の増分
 
-typedef struct json_
+struct json
 {
 	// 入力文字列 (の先頭)。
 	// 入力時は C の文字列だが、jsmn_parser() で語句に分解した後
@@ -54,11 +54,11 @@ typedef struct json_
 	jsmn_parser parser;
 
 	const struct diag *diag;
-} json;
+};
 
-static int  json_dump_r(const json *, int, uint, const char *);
-static const char *json_get_cstr_prim(const json *, int);
-static bool json_equal_cstr(const json *, int, const char *);
+static int  json_dump_r(const struct json *, int, uint, const char *);
+static const char *json_get_cstr_prim(const struct json *, int);
+static bool json_equal_cstr(const struct json *, int, const char *);
 
 static inline bool
 tok_is_obj(const jsmntok_t *t)
@@ -86,10 +86,10 @@ tok_is_prim(const jsmntok_t *t)
 
 
 // json を生成する。
-json *
+struct json *
 json_create(const struct diag *diag)
 {
-	json *js = calloc(1, sizeof(*js));
+	struct json *js = calloc(1, sizeof(*js));
 	if (js == NULL) {
 		return NULL;
 	}
@@ -112,7 +112,7 @@ json_create(const struct diag *diag)
 
 // json を解放する。
 void
-json_destroy(json *js)
+json_destroy(struct json *js)
 {
 	if (js) {
 		free(js->token);
@@ -124,7 +124,7 @@ json_destroy(json *js)
 // 成功すれば要素数を返す。
 // -1 .. -3 は jsmn のエラー。
 int
-json_parse(json *js, string *str)
+json_parse(struct json *js, string *str)
 {
 	int n;
 
@@ -175,7 +175,7 @@ json_parse(json *js, string *str)
 
 // jsmn トークンのダンプを表示する。
 void
-json_jsmndump(const json *js)
+json_jsmndump(const struct json *js)
 {
 	const char *cstr = js->cstr;
 
@@ -208,7 +208,7 @@ json_jsmndump(const json *js)
 
 // JSON のダンプを表示する。
 void
-json_dump(const json *js, int root)
+json_dump(const struct json *js, int root)
 {
 	for (int id = root; id < js->tokenlen; ) {
 		id = json_dump_r(js, id, 0, "\n");
@@ -219,7 +219,7 @@ json_dump(const json *js, int root)
 
 // TODO: もうちょっとちゃんとする
 static int
-json_dump_r(const json *js, int id, uint depth, const char *term)
+json_dump_r(const struct json *js, int id, uint depth, const char *term)
 {
 	const char *cstr = js->cstr;
 	jsmntok_t *t = &js->token[id];
@@ -285,28 +285,28 @@ json_dump_r(const json *js, int id, uint depth, const char *term)
 
 // js[idx] がオブジェクト { .. } なら true を返す。
 bool
-json_is_obj(const json *js, int idx)
+json_is_obj(const struct json *js, int idx)
 {
 	return tok_is_obj(&js->token[idx]);
 }
 
 // js[idx] が配列 [ .. ] なら true を返す。
 bool
-json_is_array(const json *js, int idx)
+json_is_array(const struct json *js, int idx)
 {
 	return tok_is_array(&js->token[idx]);
 }
 
 // js[idx] が文字列なら true を返す。
 bool
-json_is_str(const json *js, int idx)
+json_is_str(const struct json *js, int idx)
 {
 	return tok_is_str(&js->token[idx]);
 }
 
 // js[idx] が数値型なら true を返す。
 bool
-json_is_num(const json *js, int idx)
+json_is_num(const struct json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -321,7 +321,7 @@ json_is_num(const json *js, int idx)
 
 // js[idx] がブール型なら true を返す。
 bool
-json_is_bool(const json *js, int idx)
+json_is_bool(const struct json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -336,7 +336,7 @@ json_is_bool(const json *js, int idx)
 
 // js[idx] がブール型で true なら true を返す。
 bool
-json_is_true(const json *js, int idx)
+json_is_true(const struct json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -351,7 +351,7 @@ json_is_true(const json *js, int idx)
 
 // js[idx] が null 型なら true を返す。
 bool
-json_is_null(const json *js, int idx)
+json_is_null(const struct json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -366,7 +366,7 @@ json_is_null(const json *js, int idx)
 // プリミティブ型でも動作はするがそれぞれ固定値が得られるだけで意味はない。
 // オブジェクト型、配列型では要素数を返したりはしないので使わないこと。
 uint
-json_get_len(const json *js, int idx)
+json_get_len(const struct json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -376,7 +376,7 @@ json_get_len(const json *js, int idx)
 // js[idx] の子要素数 (オブジェクトならペア数、配列なら要素数) を返す。
 // オブジェクト型、配列型で使う。他での動作は不定。
 uint
-json_get_size(const json *js, int idx)
+json_get_size(const struct json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -387,7 +387,7 @@ json_get_size(const json *js, int idx)
 // STRING、NUMBER の他、プリミティブ型でもそのまま文字列を返す。
 // そのため STRING の "null" もプリミティブの null もどちらも "null" になる。
 static const char *
-json_get_cstr_prim(const json *js, int idx)
+json_get_cstr_prim(const struct json *js, int idx)
 {
 	jsmntok_t *t = &js->token[idx];
 
@@ -401,7 +401,7 @@ json_get_cstr_prim(const json *js, int idx)
 // これは仕様として意図したものではないので使わないこと。
 // オブジェクト型、配列型に対しての動作は不定。
 const char *
-json_get_cstr(const json *js, int idx)
+json_get_cstr(const struct json *js, int idx)
 {
 	if (json_is_null(js, idx) == false) {
 		return json_get_cstr_prim(js, idx);
@@ -417,7 +417,7 @@ json_get_cstr(const json *js, int idx)
 // これは仕様として意図したものではないので使わないこと。
 // オブジェクト型、配列型に対しての動作は不定。
 static bool
-json_equal_cstr(const json *js, int idx, const char *s2)
+json_equal_cstr(const struct json *js, int idx, const char *s2)
 {
 	const char *s1;
 
@@ -518,7 +518,7 @@ json_unescape(const char *src)
 // NUMBER 型でないか、int で表現できない場合は 0 を返す。
 // 小数点以下は切り捨てて整数にする。
 int
-json_get_int(const json *js, int idx)
+json_get_int(const struct json *js, int idx)
 {
 	int val = 0;
 	if (json_is_num(js, idx)) {
@@ -534,7 +534,7 @@ json_get_int(const json *js, int idx)
 // オブジェクトまたは配列が空なら戻り値 -1 を返す。
 // JSON_OBJ_FOR マクロで使用する。
 int
-json_obj_first(const json *js, int idx, int *nump, int type)
+json_obj_first(const struct json *js, int idx, int *nump, int type)
 {
 	if (__predict_true(js->token[idx].type == type)) {
 		int num = json_get_size(js, idx);
@@ -551,7 +551,7 @@ json_obj_first(const json *js, int idx, int *nump, int type)
 // 見付からなければ -1 を返す。
 // JSON_OBJ_FOR, JSON_ARRAY_FOR マクロで使用する。
 int
-json_obj_next(const json *js, int keyidx, int parentidx)
+json_obj_next(const struct json *js, int keyidx, int parentidx)
 {
 	// オブジェクトに限定するなら keyidx + 2 が最短の次のキー位置だが、
 	// +1 にしておくと配列でも同じ関数が使い回せる。
@@ -567,7 +567,7 @@ json_obj_next(const json *js, int keyidx, int parentidx)
 // 返されるのは key に対応する値のインデックス。
 // 見付からなければ -1 を返す。
 int
-json_obj_find(const json *js, int idx, const char *target)
+json_obj_find(const struct json *js, int idx, const char *target)
 {
 	JSON_OBJ_FOR(ikey, js, idx) {
 		if (json_is_str(js, ikey) && json_equal_cstr(js, ikey, target)) {
@@ -581,7 +581,7 @@ json_obj_find(const json *js, int idx, const char *target)
 // オブジェクト型である idx から key に対応する BOOL の値を返す。
 // key が見付からないか値が BOOL 型でなければ false を返す。
 bool
-json_obj_find_bool(const json *js, int idx, const char *key)
+json_obj_find_bool(const struct json *js, int idx, const char *key)
 {
 	int validx = json_obj_find(js, idx, key);
 	if (validx >= 0) {
@@ -593,7 +593,7 @@ json_obj_find_bool(const json *js, int idx, const char *key)
 // オブジェクト型である idx から key に対応する数値の値を int で返す。
 // key が見付からないか値が数値型でないか int で表現できなければ 0 を返す。
 int
-json_obj_find_int(const json *js, int idx, const char *key)
+json_obj_find_int(const struct json *js, int idx, const char *key)
 {
 	int validx = json_obj_find(js, idx, key);
 	if (validx >= 0) {
@@ -605,7 +605,7 @@ json_obj_find_int(const json *js, int idx, const char *key)
 // オブジェクト型である idx からキーが key である子オブジェクトの
 // インデックスを返す。キーが見付からないかオブジェクトでなければ -1 を返す。
 int
-json_obj_find_obj(const json *js, int idx, const char *key)
+json_obj_find_obj(const struct json *js, int idx, const char *key)
 {
 	int validx = json_obj_find(js, idx, key);
 	if (validx >= 0 && __predict_true(json_is_obj(js, validx))) {
@@ -617,7 +617,7 @@ json_obj_find_obj(const json *js, int idx, const char *key)
 // オブジェクト型である idx から key に対応する文字列の値を返す。
 // key が見付からないか値が文字列でなければ NULL を返す。
 const char *
-json_obj_find_cstr(const json *js, int idx, const char *key)
+json_obj_find_cstr(const struct json *js, int idx, const char *key)
 {
 	int validx = json_obj_find(js, idx, key);
 	if (validx >= 0 && __predict_true(json_is_str(js, validx))) {

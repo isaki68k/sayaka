@@ -43,7 +43,7 @@ dump(FILE *fp)
 	string *line;
 
 	while ((line = string_fgets(fp)) != NULL) {
-		json *js = json_create(&dummy);
+		struct json *js = json_create(&dummy);
 		json_parse(js, line);
 		if (opt_j) {
 			json_jsmndump(js);

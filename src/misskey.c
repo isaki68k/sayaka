@@ -47,25 +47,25 @@ static bool misskey_init(void);
 static bool misskey_stream(struct wsclient *, bool);
 static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
-static int  misskey_show_note(const json *, int);
-static int  misskey_show_announcement(const json *, int);
-static int  misskey_show_notification(const json *, int);
-static void misskey_show_icon(const json *, int, const string *);
-static bool misskey_show_photo(const json *, int, int);
-static void misskey_print_filetype(const json *, int, const char *);
+static int  misskey_show_note(const struct json *, int);
+static int  misskey_show_announcement(const struct json *, int);
+static int  misskey_show_notification(const struct json *, int);
+static void misskey_show_icon(const struct json *, int, const string *);
+static bool misskey_show_photo(const struct json *, int, int);
+static void misskey_print_filetype(const struct json *, int, const char *);
 static void make_cache_filename(char *, uint, const char *);
-static ustring *misskey_display_text(const json *, int, const char *);
+static ustring *misskey_display_text(const struct json *, int, const char *);
 static bool unichar_submatch(const unichar *, const char *);
 static int  unichar_ncasecmp(const unichar *, const unichar *);
-static string *misskey_format_poll(const json *, int);
-static string *misskey_format_time(const json *, int);
-static string *misskey_format_renote_count(const json *, int);
-static string *misskey_format_reaction_count(const json *, int);
-static string *misskey_format_renote_owner(const json *, int);
-static misskey_user *misskey_get_user(const json *, int);
+static string *misskey_format_poll(const struct json *, int);
+static string *misskey_format_time(const struct json *, int);
+static string *misskey_format_renote_count(const struct json *, int);
+static string *misskey_format_reaction_count(const struct json *, int);
+static string *misskey_format_renote_owner(const struct json *, int);
+static misskey_user *misskey_get_user(const struct json *, int);
 static void misskey_free_user(misskey_user *);
 
-static json *global_js;
+static struct json *global_js;
 
 // サーバ接続とローカル再生との共通の初期化。
 static bool
@@ -282,7 +282,7 @@ misskey_recv_cb(const string *msg)
 static void
 misskey_message(string *jsonstr)
 {
-	json *js = global_js;
+	struct json *js = global_js;
 
 	int n = json_parse(js, jsonstr);
 	if (__predict_false(n < 0)) {
@@ -419,7 +419,7 @@ printf("ignore %s\n", type);
 // -1 なら (NG や NSFW 等で) ノートを表示しなかったので、
 //   この親もリノート行の出力は不要。その後の改行も不要。
 static int
-misskey_show_note(const json *js, int inote)
+misskey_show_note(const struct json *js, int inote)
 {
 	if (__predict_false(diag_get_level(diag_format) >= 2)) {
 		json_dump(js, inote);
@@ -638,7 +638,7 @@ misskey_show_note(const json *js, int inote)
 
 // アナウンス文を処理する。構造が全然違う。
 static int
-misskey_show_announcement(const json *js, int inote)
+misskey_show_announcement(const struct json *js, int inote)
 {
 	ustring *line = ustring_alloc(16);
 
@@ -703,7 +703,7 @@ misskey_show_announcement(const json *js, int inote)
 // notification を処理する。
 // ibody は "type":"notification", "body":{ } の部分。
 static int
-misskey_show_notification(const json *js, int ibody)
+misskey_show_notification(const struct json *js, int ibody)
 {
 	// "type":"notification", "body":{
 	// {
@@ -808,7 +808,7 @@ misskey_show_notification(const json *js, int ibody)
 
 // アイコン表示。
 static void
-misskey_show_icon(const json *js, int iuser, const string *userid)
+misskey_show_icon(const struct json *js, int iuser, const string *userid)
 {
 	const struct diag *diag = diag_image;
 
@@ -886,7 +886,7 @@ misskey_show_icon(const json *js, int iuser, const string *userid)
 //   "url" : "...",
 // }
 static bool
-misskey_show_photo(const json *js, int ifile, int index)
+misskey_show_photo(const struct json *js, int ifile, int index)
 {
 	char img_file[PATH_MAX];
 	char urlbuf[256];
@@ -959,7 +959,7 @@ misskey_show_photo(const json *js, int ifile, int index)
 
 // 改行してファイルタイプだけを出力する。
 static void
-misskey_print_filetype(const json *js, int ifile, const char *msg)
+misskey_print_filetype(const struct json *js, int ifile, const char *msg)
 {
 	image_count = 0;
 	image_max_rows = 0;
@@ -991,7 +991,7 @@ make_cache_filename(char *filename, uint bufsize, const char *url)
 
 // 本文を表示用に整形。
 static ustring *
-misskey_display_text(const json *js, int inote, const char *text)
+misskey_display_text(const struct json *js, int inote, const char *text)
 {
 	const struct diag *diag = diag_format;
 	ustring *src = ustring_from_utf8(text);
@@ -1237,7 +1237,7 @@ unichar_ncasecmp(const unichar *u1, const unichar *u2)
 
 // 投票を表示用に整形して返す。
 static string *
-misskey_format_poll(const json *js, int ipoll)
+misskey_format_poll(const struct json *js, int ipoll)
 {
 	// "poll" : {
 	//   "choices" : [ { choice1, choice2 } ],
@@ -1278,7 +1278,7 @@ misskey_format_poll(const json *js, int ipoll)
 
 // note オブジェクトから表示用時刻文字列を取得。
 static string *
-misskey_format_time(const json *js, int inote)
+misskey_format_time(const struct json *js, int inote)
 {
 	int icreatedAt = json_obj_find(js, inote, "createdAt");
 	if (__predict_true(icreatedAt >= 0 && json_is_str(js, icreatedAt))) {
@@ -1292,7 +1292,7 @@ misskey_format_time(const json *js, int inote)
 
 // リノート数を表示用に整形して返す。
 static string *
-misskey_format_renote_count(const json *js, int inote)
+misskey_format_renote_count(const struct json *js, int inote)
 {
 	string *s;
 	uint rncnt = 0;
@@ -1314,7 +1314,7 @@ misskey_format_renote_count(const json *js, int inote)
 
 // リアクション数を表示用に整形して返す。
 static string *
-misskey_format_reaction_count(const json *js, int inote)
+misskey_format_reaction_count(const struct json *js, int inote)
 {
 	string *s;
 	uint cnt = 0;
@@ -1341,7 +1341,7 @@ misskey_format_reaction_count(const json *js, int inote)
 
 // リノート元通知を表示用に整形して返す。
 static string *
-misskey_format_renote_owner(const json *js, int inote)
+misskey_format_renote_owner(const struct json *js, int inote)
 {
 	string *s = string_init();
 	string *rn_time = misskey_format_time(js, inote);
@@ -1364,7 +1364,7 @@ misskey_format_renote_owner(const json *js, int inote)
 
 // ノートのユーザ情報を返す。
 static misskey_user *
-misskey_get_user(const json *js, int inote)
+misskey_get_user(const struct json *js, int inote)
 {
 	misskey_user *user = calloc(1, sizeof(*user));
 	if (user == NULL) {

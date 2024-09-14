@@ -57,37 +57,37 @@ enum {
 
 typedef uint32 unichar;
 
-typedef struct json_ json;
+struct json;
 typedef struct ustring_ ustring;
 
 // eaw_data.c
 extern const uint8 eaw2width_packed[0x8000];
 
 // json.c
-extern json *json_create(const struct diag *);
-extern void json_destroy(json *);
-extern int  json_parse(json *, string *);
-extern void json_jsmndump(const json *);
-extern void json_dump(const json *, int);
-extern bool json_is_obj(const json *, int);
-extern bool json_is_array(const json *, int);
-extern bool json_is_str(const json *, int);
-extern bool json_is_num(const json *, int);
-extern bool json_is_bool(const json *, int);
-extern bool json_is_true(const json *, int);
-extern bool json_is_null(const json *, int);
-extern uint json_get_len(const json *, int);
-extern uint json_get_size(const json *, int);
-extern const char *json_get_cstr(const json *, int);
+extern struct json *json_create(const struct diag *);
+extern void json_destroy(struct json *);
+extern int  json_parse(struct json *, string *);
+extern void json_jsmndump(const struct json *);
+extern void json_dump(const struct json *, int);
+extern bool json_is_obj(const struct json *, int);
+extern bool json_is_array(const struct json *, int);
+extern bool json_is_str(const struct json *, int);
+extern bool json_is_num(const struct json *, int);
+extern bool json_is_bool(const struct json *, int);
+extern bool json_is_true(const struct json *, int);
+extern bool json_is_null(const struct json *, int);
+extern uint json_get_len(const struct json *, int);
+extern uint json_get_size(const struct json *, int);
+extern const char *json_get_cstr(const struct json *, int);
 extern string *json_unescape(const char *);
-extern int  json_get_int(const json *, int);
-extern int  json_obj_first(const json *, int, int *, int);
-extern int  json_obj_next(const json *, int, int);
-extern int  json_obj_find(const json *, int, const char *);
-extern bool json_obj_find_bool(const json *, int, const char *);
-extern int  json_obj_find_int(const json *, int, const char *);
-extern int  json_obj_find_obj(const json *, int, const char *);
-extern const char *json_obj_find_cstr(const json *, int, const char *);
+extern int  json_get_int(const struct json *, int);
+extern int  json_obj_first(const struct json *, int, int *, int);
+extern int  json_obj_next(const struct json *, int, int);
+extern int  json_obj_find(const struct json *, int, const char *);
+extern bool json_obj_find_bool(const struct json *, int, const char *);
+extern int  json_obj_find_int(const struct json *, int, const char *);
+extern int  json_obj_find_obj(const struct json *, int, const char *);
+extern const char *json_obj_find_cstr(const struct json *, int, const char *);
 
 #define JSON_FOR(var, js, parentidx, type)							\
 	for (int num_, i_ = 0, parent_ = (parentidx),					\
