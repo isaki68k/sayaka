@@ -148,7 +148,7 @@ enum {
 	IMAGE_FMT_ARGB32,	// RGBA (メモリ上 R, G, B, A の順)
 };
 
-typedef struct image_
+struct image
 {
 	// buf はラスターパディングなし。
 	// ストライドを足しやすいように uint8 のポインタにしておく。
@@ -172,7 +172,7 @@ typedef struct image_
 
 	// 動的に作成したパレットはここで所有する。
 	ColorRGB *palette_buf;
-} image;
+};
 
 typedef struct image_opt_ {
 	// 減色
@@ -195,27 +195,27 @@ typedef struct image_opt_ {
 
 // image.c
 extern void image_opt_init(image_opt *);
-extern image *image_read_pstream(struct pstream *, const struct diag *);
-extern void image_free(image *);
-extern uint image_get_bytepp(const image *);
-extern uint image_get_stride(const image *);
+extern struct image *image_read_pstream(struct pstream *, const struct diag *);
+extern void image_free(struct image *);
+extern uint image_get_bytepp(const struct image *);
+extern uint image_get_stride(const struct image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,
 	uint, uint, uint *, uint *);
 extern string *image_get_loaderinfo(void);
-extern void image_convert_to16(image *);
-extern image *image_reduct(const image *, uint, uint, const image_opt *,
-	const struct diag *);
+extern void image_convert_to16(struct image *);
+extern struct image *image_reduct(const struct image *, uint, uint,
+	const image_opt *, const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductordiffuse_tostr(ReductorDiffuse);
 extern const char *reductorcolor_tostr(ReductorColor);
 
 // image_blurhash.c
-extern image *image_blurhash_read(FILE *, int, int, const struct diag *);
+extern struct image *image_blurhash_read(FILE *, int, int, const struct diag *);
 
 // image_sixel.c
 extern void image_sixel_abort(FILE *);
-extern bool image_sixel_write(FILE *, const image *, const image_opt *,
+extern bool image_sixel_write(FILE *, const struct image *, const image_opt *,
 	const struct diag *);
 
 #endif // !sayaka_image_h

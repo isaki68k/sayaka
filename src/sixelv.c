@@ -495,8 +495,8 @@ do_file(const char *infile)
 	bool rv = false;
 	struct httpclient *http = NULL;
 	struct pstream *pstream = NULL;
-	image *srcimg = NULL;
-	image *resimg = NULL;
+	struct image *srcimg = NULL;
+	struct image *resimg = NULL;
 	int ifd = -1;
 	FILE *ifp = NULL;
 	const char *infilename;	// 表示用

@@ -76,10 +76,11 @@ static ColorRGB *image_alloc_fixed256_palette(void);
 
 #if defined(SIXELV)
 static void image_reduct_simple(image_reductor_handle *,
-	image *, const image *, const struct diag *);
+	struct image *, const struct image *, const struct diag *);
 #endif
 static bool image_reduct_highquality(image_reductor_handle *,
-	image *, const image *, const image_opt *, const struct diag *);
+	struct image *, const struct image *, const image_opt *,
+	const struct diag *);
 #if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *, int);
 #endif
@@ -106,10 +107,10 @@ image_opt_init(image_opt *opt)
 
 // width_ x height_ で形式が format_ の image を作成する。
 // (バッファは未初期化)
-image *
+struct image *
 image_create(uint width_, uint height_, uint format_)
 {
-	image *img = calloc(1, sizeof(*img));
+	struct image *img = calloc(1, sizeof(*img));
 	if (img == NULL) {
 		return NULL;
 	}
@@ -128,7 +129,7 @@ image_create(uint width_, uint height_, uint format_)
 
 // image を解放する。NULL なら何もしない。
 void
-image_free(image *img)
+image_free(struct image *img)
 {
 	if (img != NULL) {
 		free(img->buf);
@@ -139,7 +140,7 @@ image_free(image *img)
 
 // 1ピクセルあたりのバイト数を返す。
 uint
-image_get_bytepp(const image *img)
+image_get_bytepp(const struct image *img)
 {
 	switch (img->format) {
 	 case IMAGE_FMT_ARGB16:	return 2;
@@ -153,7 +154,7 @@ image_get_bytepp(const image *img)
 
 // ストライドを返す。
 uint
-image_get_stride(const image *img)
+image_get_stride(const struct image *img)
 {
 	return img->width * image_get_bytepp(img);
 }
@@ -301,7 +302,7 @@ image_get_loaderinfo(void)
 // 読み込めなければ errno をセットして NULL を返す。
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかったことを示す。
 // ここでは Blurhash は扱わない。
-image *
+struct image *
 image_read_pstream(struct pstream *ps, const struct diag *diag)
 {
 	int ok = -1;
@@ -343,7 +344,7 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
 				return NULL;
 			}
-			image *img = loader[i].read(fp, diag);
+			struct image *img = loader[i].read(fp, diag);
 			fclose(fp);
 			return img;
 		}
@@ -361,7 +362,7 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 
 // 入力画像を 16bit 内部形式にインプレース変換する。
 void
-image_convert_to16(image *img)
+image_convert_to16(struct image *img)
 {
 	const uint8 *s8 = img->buf;
 	uint16 *d16 = (uint16 *)img->buf;
@@ -400,15 +401,15 @@ image_convert_to16(image *img)
 
 // src 画像を (dst_width, dst_height) にリサイズしながら同時に
 // colormode に減色した新しい image を作成して返す。
-image *
+struct image *
 image_reduct(
-	const image *src,			// 元画像
+	const struct image *src,	// 元画像
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
 	const image_opt *opt,		// パラメータ
 	const struct diag *diag)
 {
-	image *dst;
+	struct image *dst;
 	image_reductor_handle irbuf, *ir;
 
 	ir = &irbuf;
@@ -542,7 +543,7 @@ rational_add(Rational *sr, const Rational *x)
 // 単純間引き
 static void
 image_reduct_simple(image_reductor_handle *ir,
-	image *dstimg, const image *srcimg, const struct diag *diag)
+	struct image *dstimg, const struct image *srcimg, const struct diag *diag)
 {
 	uint16 *d = (uint16 *)dstimg->buf;
 	const uint16 *src = (const uint16 *)srcimg->buf;
@@ -603,7 +604,7 @@ image_reduct_simple(image_reductor_handle *ir,
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
 image_reduct_highquality(image_reductor_handle *ir,
-	image *dstimg, const image *srcimg, const image_opt *opt,
+	struct image *dstimg, const struct image *srcimg, const image_opt *opt,
 	const struct diag *diag)
 {
 	uint16 *d = (uint16 *)dstimg->buf;

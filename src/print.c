@@ -632,8 +632,8 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 	struct httpclient *http = NULL;
 	struct pstream *pstream = NULL;
 	FILE *ifp = NULL;
-	image *srcimg = NULL;
-	image *dstimg = NULL;
+	struct image *srcimg = NULL;
+	struct image *dstimg = NULL;
 	image_opt localopt;
 	bool rv = false;
 

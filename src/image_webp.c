@@ -52,7 +52,7 @@ _Pragma("GCC diagnostic pop")
 #define INCBUFSIZE	(1024)
 
 static bool read_all(uint8 **, size_t *, FILE *, uint32, const struct diag *);
-static bool image_webp_loadinc(image *, FILE *, WebPIDecoder *,
+static bool image_webp_loadinc(struct image *, FILE *, WebPIDecoder *,
 	const struct diag *);
 
 bool
@@ -73,13 +73,13 @@ image_webp_match(FILE *fp, const struct diag *diag)
 	return true;
 }
 
-image *
+struct image *
 image_webp_read(FILE *fp, const struct diag *diag)
 {
 	uint8 *filebuf = NULL;
 	size_t filecap = 0;
 	size_t filelen = 0;
-	image *img = NULL;
+	struct image *img = NULL;
 	WebPDecoderConfig config;
 	VP8StatusCode r;
 	size_t n;
@@ -302,7 +302,7 @@ read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
 
 // インクリメンタル処理が出来る場合。
 static bool
-image_webp_loadinc(image *img, FILE *fp, WebPIDecoder *idec,
+image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 	const struct diag *diag)
 {
 	uint8 buf[INCBUFSIZE];

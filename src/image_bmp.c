@@ -55,13 +55,13 @@ typedef struct __packed {
 	uint32 biCirImportant;
 } BITMAPINFOHEADER;
 
-static image *image_coloring(const image *);
+static struct image *image_coloring(const struct image *);
 
 // image を BMP 形式で fp に出力する。
 bool
-image_bmp_write(FILE *fp, const image *srcimg, const struct diag *diag)
+image_bmp_write(FILE *fp, const struct image *srcimg, const struct diag *diag)
 {
-	image *img;
+	struct image *img;
 	BITMAPFILEHEADER hdr;
 	BITMAPINFOHEADER info;
 	uint32 istride;	// 入力ストライド
@@ -147,10 +147,10 @@ image_bmp_write(FILE *fp, const image *srcimg, const struct diag *diag)
 
 // AIDX16 形式の srcimg をパレットで着色した画像を返す。
 // 透過色は #000000 (黒) になる。
-static image *
-image_coloring(const image *srcimg)
+static struct image *
+image_coloring(const struct image *srcimg)
 {
-	image *dstimg;
+	struct image *dstimg;
 
 	assert(srcimg->format == IMAGE_FMT_AIDX16);
 	assert(srcimg->palette != NULL);

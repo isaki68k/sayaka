@@ -60,7 +60,7 @@ static const uint8 table_base83[0x60];
 // bw, bh は出力サイズ指定。指定方法は2通りあり、
 // 正数ならそのままピクセルサイズ、
 // 負数なら (符号を取り除いて) コンポーネントの倍率を示す。0 は不正。
-image *
+struct image *
 image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 {
 	char src[BUFSIZE];
@@ -68,7 +68,7 @@ image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 	uint height;
 	float maxvalue;
 	struct colorf *v;
-	image *img = NULL;
+	struct image *img = NULL;
 	struct colorf *values = NULL;
 	float *bases_x = NULL;
 	float *bases_y = NULL;

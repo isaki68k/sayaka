@@ -53,7 +53,7 @@ image_png_match(FILE *fp, const struct diag *diag)
 	return true;
 }
 
-image *
+struct image *
 image_png_read(FILE *fp, const struct diag *diag)
 {
 	png_structp png;
@@ -66,7 +66,7 @@ image_png_read(FILE *fp, const struct diag *diag)
 	int compression_type;
 	int filter_type;
 	uint8 **lines;
-	image *img;
+	struct image *img;
 
 	png = png_create_read_struct(PNG_LIBPNG_VER_STRING,
 		NULL, NULL, NULL);
