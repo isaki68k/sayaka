@@ -665,7 +665,8 @@ image_reduct_highquality(image_reductor_handle *ir,
 			}
 
 			// 画素の平均を求める。
-			ColorRGBint32 col = { };
+			ColorRGBint32 col;
+			memset(&col, 0, sizeof(col));
 			uint a = 0;
 			for (uint sy = sy0; sy < sy1; sy++) {
 				const uint16 *s = &src[sy * srcimg->width + sx0];
