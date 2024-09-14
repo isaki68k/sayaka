@@ -67,7 +67,7 @@ typedef struct wsclient_ {
 	// テキストが 1フレーム受信できた時に呼ばれる。
 	void (*callback)(const string *);
 
-	const diag *diag;
+	const struct diag *diag;
 } wsclient;
 
 static inline void wsclient_send_ping(wsclient *);
@@ -79,7 +79,7 @@ static uint ws_decode_len(const uint8 *, uint *);
 // wsclient コンテキストを生成する。
 // 失敗すれば errno をセットし NULL を返す。
 wsclient *
-wsclient_create(const diag *diag)
+wsclient_create(const struct diag *diag)
 {
 	wsclient *ws;
 
@@ -137,7 +137,7 @@ wsclient_init(wsclient *ws, void (*callback)(const string *))
 int
 wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 {
-	const diag *diag = ws->diag;
+	const struct diag *diag = ws->diag;
 	string *key = NULL;
 	string *hdr = NULL;
 	string *response = NULL;
@@ -270,7 +270,7 @@ wsclient_connect(wsclient *ws, const char *url, const struct net_opt *opt)
 int
 wsclient_process(wsclient *ws)
 {
-	const diag *diag = ws->diag;
+	const struct diag *diag = ws->diag;
 	fd_set rfds;
 	struct timeval timeout;
 	int fd;
@@ -531,7 +531,7 @@ const char progname[] = "wsclient";
 const char progver[]  = "0.0";
 
 static int
-testhttp(const diag *diag, int ac, char *av[])
+testhttp(const struct diag *diag, int ac, char *av[])
 {
 	struct net *net;
 	const char *host;
@@ -592,7 +592,7 @@ cat_callback(const string *s)
 
 // WebSocket エコークライアント…にしたいが、今のところ1往復のみ。
 static int
-testwsecho(const diag *diag, int ac, char *av[])
+testwsecho(const struct diag *diag, int ac, char *av[])
 {
 	wsclient *ws = wsclient_create(diag);
 	wsclient_init(ws, cat_callback);
@@ -632,7 +632,7 @@ testwsecho(const diag *diag, int ac, char *av[])
 }
 
 static int
-testmisskey(const diag *diag, int ac, char *av[])
+testmisskey(const struct diag *diag, int ac, char *av[])
 {
 	wsclient *ws = wsclient_create(diag);
 	wsclient_init(ws, cat_callback);
@@ -672,7 +672,7 @@ testmisskey(const diag *diag, int ac, char *av[])
 int
 main(int ac, char *av[])
 {
-	diag *diag = diag_alloc();
+	struct diag *diag = diag_alloc();
 	diag_set_level(diag, 2);
 
 	net_opt_init(&opt);

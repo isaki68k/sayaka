@@ -59,7 +59,7 @@ static image *image_coloring(const image *);
 
 // image を BMP 形式で fp に出力する。
 bool
-image_bmp_write(FILE *fp, const image *srcimg, const diag *diag)
+image_bmp_write(FILE *fp, const image *srcimg, const struct diag *diag)
 {
 	image *img;
 	BITMAPFILEHEADER hdr;

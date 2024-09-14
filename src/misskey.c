@@ -117,7 +117,7 @@ cmd_misskey_play(const char *infile)
 void
 cmd_misskey_stream(const char *server, bool home, const char *token)
 {
-	const diag *diag = diag_net;
+	const struct diag *diag = diag_net;
 	string *url;
 
 	misskey_init();
@@ -810,7 +810,7 @@ misskey_show_notification(const json *js, int ibody)
 static void
 misskey_show_icon(const json *js, int iuser, const string *userid)
 {
-	const diag *diag = diag_image;
+	const struct diag *diag = diag_image;
 
 	if (diag_get_level(diag) == 0) {
 		// 改行x3 + カーソル上移動x3 を行ってあらかじめスクロールを
@@ -993,7 +993,7 @@ make_cache_filename(char *filename, uint bufsize, const char *url)
 static ustring *
 misskey_display_text(const json *js, int inote, const char *text)
 {
-	const diag *diag = diag_format;
+	const struct diag *diag = diag_format;
 	ustring *src = ustring_from_utf8(text);
 	ustring *dst = ustring_alloc(strlen(text));
 

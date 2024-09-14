@@ -63,7 +63,7 @@ struct net {
 	SSL *ssl;
 #endif
 
-	const diag *diag;
+	const struct diag *diag;
 
 	// 行単位受信用の受信バッファ。
 	// バッファにあればこちらから優先して読み出す。
@@ -279,7 +279,7 @@ net_opt_init(struct net_opt *opt)
 
 // net コンテキストを作成する。
 struct net *
-net_create(const diag *diag)
+net_create(const struct diag *diag)
 {
 	struct net *net = calloc(1, sizeof(*net));
 
@@ -360,7 +360,7 @@ string *
 net_gets(struct net *net)
 {
 	assert(net);
-	const diag *diag = net->diag;
+	const struct diag *diag = net->diag;
 
 	Verbose(diag, "%s: begin", __func__);
 	string *s = string_init();
@@ -525,7 +525,7 @@ tls_connect(struct net *net, const char *host, const char *serv,
 	const struct net_opt *opt)
 {
 	struct timeval start, end, res;
-	const diag *diag = net->diag;
+	const struct diag *diag = net->diag;
 	int r;
 
 	static bool initialized = false;
@@ -618,7 +618,7 @@ tls_connect(struct net *net, const char *host, const char *serv,
 static int
 tls_read(struct net *net, void *dst, int dstsize)
 {
-	const diag *diag = net->diag;
+	const struct diag *diag = net->diag;
 	ssize_t r;
 
 	Verbose(diag, "%s (dstsize=%u)", __func__, dstsize);
@@ -638,7 +638,7 @@ tls_read(struct net *net, void *dst, int dstsize)
 static int
 tls_write(struct net *net, const void *src, int srcsize)
 {
-	const diag *diag = net->diag;
+	const struct diag *diag = net->diag;
 	ssize_t r;
 
 	Verbose(diag, "%s (srcsize=%u)", __func__, srcsize);

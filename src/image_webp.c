@@ -51,12 +51,12 @@ _Pragma("GCC diagnostic pop")
 
 #define INCBUFSIZE	(1024)
 
-static bool read_all(uint8 **, size_t *, FILE *, uint32, const diag *diag);
+static bool read_all(uint8 **, size_t *, FILE *, uint32, const struct diag *);
 static bool image_webp_loadinc(image *, FILE *, WebPIDecoder *,
-	const diag *diag);
+	const struct diag *);
 
 bool
-image_webp_match(FILE *fp, const diag *diag)
+image_webp_match(FILE *fp, const struct diag *diag)
 {
 	uint32 buf[3];
 
@@ -74,7 +74,7 @@ image_webp_match(FILE *fp, const diag *diag)
 }
 
 image *
-image_webp_read(FILE *fp, const diag *diag)
+image_webp_read(FILE *fp, const struct diag *diag)
 {
 	uint8 *filebuf = NULL;
 	size_t filecap = 0;
@@ -272,7 +272,7 @@ image_webp_read(FILE *fp, const diag *diag)
 // 成功すれば、buf と buflen を更新し true を返す。
 static bool
 read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
-	const diag *diag)
+	const struct diag *diag)
 {
 	uint8 *buf = *bufp;
 	size_t len = *buflenp;
@@ -302,7 +302,8 @@ read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
 
 // インクリメンタル処理が出来る場合。
 static bool
-image_webp_loadinc(image *img, FILE *fp, WebPIDecoder *idec, const diag *diag)
+image_webp_loadinc(image *img, FILE *fp, WebPIDecoder *idec,
+	const struct diag *diag)
 {
 	uint8 buf[INCBUFSIZE];
 	int status;

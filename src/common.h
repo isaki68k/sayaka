@@ -55,11 +55,11 @@
 		diag_print(diag_, fmt);	\
 } while (0)
 
-typedef struct diag_
+struct diag
 {
 	int level;
 	bool timestamp;
-} diag;
+};
 struct net;
 typedef struct pstream_ pstream;
 typedef struct string_ string;
@@ -93,26 +93,26 @@ struct urlinfo {
 };
 
 // diag.c
-static inline int diag_get_level(const diag *diag)
+static inline int diag_get_level(const struct diag *diag)
 {
 	return diag->level;
 }
-extern diag *diag_alloc(void);
-extern void diag_free(diag *);
-extern void diag_set_level(diag *, int);
-extern void diag_set_timestamp(diag *, bool);
-extern void diag_print(const diag *, const char *, ...)
+extern struct diag *diag_alloc(void);
+extern void diag_free(struct diag *);
+extern void diag_set_level(struct diag *, int);
+extern void diag_set_timestamp(struct diag *, bool);
+extern void diag_print(const struct diag *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
 // httpclient.c
 typedef struct httpclient_ httpclient;
-extern httpclient *httpclient_create(const diag *);
+extern httpclient *httpclient_create(const struct diag *);
 extern void httpclient_destroy(httpclient *);
 extern int  httpclient_connect(httpclient *, const char *,
 	const struct net_opt *);
 extern const char *httpclient_get_resmsg(const httpclient *);
 extern FILE *httpclient_fopen(httpclient *);
-extern void diag_http_header(const diag *, const string *);
+extern void diag_http_header(const struct diag *, const string *);
 
 // net.c
 extern struct urlinfo *urlinfo_parse(const char *);
@@ -120,7 +120,7 @@ extern void urlinfo_free(struct urlinfo *);
 extern void urlinfo_update_path(struct urlinfo *, const struct urlinfo *);
 extern string *urlinfo_to_string(const struct urlinfo *);
 extern void net_opt_init(struct net_opt *);
-extern struct net *net_create(const diag *);
+extern struct net *net_create(const struct diag *);
 extern void net_destroy(struct net *);
 extern int  net_connect(struct net *, const char *, const char *, const char *,
 	const struct net_opt *);

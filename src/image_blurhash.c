@@ -61,7 +61,7 @@ static const uint8 table_base83[0x60];
 // 正数ならそのままピクセルサイズ、
 // 負数なら (符号を取り除いて) コンポーネントの倍率を示す。0 は不正。
 image *
-image_blurhash_read(FILE *fp, int bw, int bh, const diag *diag)
+image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 {
 	char src[BUFSIZE];
 	uint width;

@@ -54,9 +54,9 @@ static void help_all(void);
 static bool do_file(const char *filename);
 static void signal_handler(int);
 
-static diag *diag_image;
-static diag *diag_net;
-static diag *diag_sixel;
+static struct diag *diag_image;
+static struct diag *diag_net;
+static struct diag *diag_sixel;
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static FILE *ofp;					// 出力中のストリーム
 static bool opt_blurhash_nearest;	// Blurhash を最近傍補間する

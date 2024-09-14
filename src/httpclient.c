@@ -57,7 +57,7 @@ typedef struct httpclient_ {
 	uint chunk_len;		// 現在のバッファの有効長
 	uint chunk_pos;		// 現在位置
 
-	const diag *diag;
+	const struct diag *diag;
 } httpclient;
 
 static int  do_connect(httpclient *, const struct net_opt *);
@@ -69,7 +69,7 @@ static int  http_chunk_read_cb(void *, char *, int);
 static int  read_chunk(httpclient *);
 
 httpclient *
-httpclient_create(const diag *diag)
+httpclient_create(const struct diag *diag)
 {
 	httpclient *http;
 
@@ -110,7 +110,7 @@ int
 httpclient_connect(httpclient *http, const char *urlstr,
 	const struct net_opt *opt)
 {
-	const diag *diag = http->diag;
+	const struct diag *diag = http->diag;
 
 	http->url = urlinfo_parse(urlstr);
 	if (http->url == NULL) {
@@ -194,7 +194,7 @@ httpclient_connect(httpclient *http, const char *urlstr,
 static int
 do_connect(httpclient *http, const struct net_opt *opt)
 {
-	const diag *diag = http->diag;
+	const struct diag *diag = http->diag;
 
 	const char *scheme = string_get(http->url->scheme);
 	const char *host = string_get(http->url->host);
@@ -225,7 +225,7 @@ do_connect(httpclient *http, const struct net_opt *opt)
 // 送信ヘッダをデバッグ表示する。
 // ログレベルが有効な場合のみ呼ぶこと。
 void
-diag_http_header(const diag *diag, const string *hdr)
+diag_http_header(const struct diag *diag, const string *hdr)
 {
 	char buf[1024];
 
@@ -258,7 +258,7 @@ diag_http_header(const diag *diag, const string *hdr)
 static int
 recv_header(httpclient *http)
 {
-	const diag *diag = http->diag;
+	const struct diag *diag = http->diag;
 
 	// 応答の1行目を受信。
 	http->resline = net_gets(http->net);
@@ -396,7 +396,7 @@ static int
 http_chunk_read_cb(void *arg, char *dst, int dstsize)
 {
 	httpclient *http = (httpclient *)arg;
-	const diag *diag = http->diag;
+	const struct diag *diag = http->diag;
 
 	Verbose(diag, "%s(%d)", __func__, dstsize);
 
@@ -424,7 +424,7 @@ http_chunk_read_cb(void *arg, char *dst, int dstsize)
 static int
 read_chunk(httpclient *http)
 {
-	const diag *diag = http->diag;
+	const struct diag *diag = http->diag;
 	int chunklen = -1;
 
 	// 先頭行はチャンク長 + CRLF。
@@ -516,7 +516,7 @@ const char progname[] = "httpclient";
 const char progver[]  = "0.0";
 
 static int
-testhttp(const diag *diag, int ac, char *av[])
+testhttp(const struct diag *diag, int ac, char *av[])
 {
 	httpclient *http;
 	const char *url;
@@ -548,7 +548,7 @@ testhttp(const diag *diag, int ac, char *av[])
 int
 main(int ac, char *av[])
 {
-	diag *diag = diag_alloc();
+	struct diag *diag = diag_alloc();
 	diag_set_level(diag, 2);
 
 	signal(SIGPIPE, SIG_IGN);

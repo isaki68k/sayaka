@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
-static diag dummy;
+static struct diag dummy;
 static bool opt_j;
 
 static void

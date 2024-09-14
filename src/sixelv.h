@@ -32,6 +32,6 @@
 typedef struct image_ image;
 
 // image_bmp.c
-extern bool image_bmp_write(FILE *, const image *, const diag *);
+extern bool image_bmp_write(FILE *, const image *, const struct diag *);
 
 #endif // !sayaka_sixelv_h

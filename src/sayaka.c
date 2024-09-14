@@ -76,11 +76,11 @@ static const char *basedir;
 const char *cachedir;
 uint colormode;						// テキストの色数(モード)
 char colorname[16];					// キャッシュファイルに使う色名
-diag *diag_format;
-diag *diag_image;
-diag *diag_json;
-diag *diag_net;
-diag *diag_term;
+struct diag *diag_format;
+struct diag *diag_image;
+struct diag *diag_json;
+struct diag *diag_net;
+struct diag *diag_term;
 uint fontwidth;						// 使用するフォント幅   (ドット数)
 uint fontheight;					// 使用するフォント高さ (ドット数)
 uint iconsize;						// アイコンの大きさ (正方形、ドット数)

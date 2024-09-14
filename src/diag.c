@@ -37,16 +37,16 @@
 #include <sys/time.h>
 
 // 新しい diag を確保して返す。
-diag *
+struct diag *
 diag_alloc(void)
 {
-	diag *diag = calloc(1, sizeof(*diag));
+	struct diag *diag = calloc(1, sizeof(*diag));
 	return diag;
 }
 
 // diag を解放する。NULL なら何もしない。
 void
-diag_free(diag *diag)
+diag_free(struct diag *diag)
 {
 	if (diag != NULL) {
 		free(diag);
@@ -55,7 +55,7 @@ diag_free(diag *diag)
 
 // デバッグレベルを lv に設定する。
 void
-diag_set_level(diag *diag, int level_)
+diag_set_level(struct diag *diag, int level_)
 {
 	assert(diag);
 
@@ -64,7 +64,7 @@ diag_set_level(diag *diag, int level_)
 
 // タイムスタンプを有効にする。
 void
-diag_set_timestamp(diag *diag, bool enable)
+diag_set_timestamp(struct diag *diag, bool enable)
 {
 	assert(diag);
 
@@ -73,7 +73,7 @@ diag_set_timestamp(diag *diag, bool enable)
 
 // メッセージ出力 (改行はこちらで付加する)。
 void
-diag_print(const diag *diag, const char *fmt, ...)
+diag_print(const struct diag *diag, const char *fmt, ...)
 {
 	va_list ap;
 

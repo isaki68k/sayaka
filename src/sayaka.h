@@ -65,7 +65,7 @@ typedef struct wsclient_ wsclient;
 extern const uint8 eaw2width_packed[0x8000];
 
 // json.c
-extern json *json_create(const diag *);
+extern json *json_create(const struct diag *);
 extern void json_destroy(json *);
 extern int  json_parse(json *, string *);
 extern void json_jsmndump(const json *);
@@ -129,11 +129,11 @@ extern bool show_image(const char *, const char *, uint, uint, bool, int);
 extern const char *cachedir;
 extern uint colormode;
 extern char colorname[];
-extern diag *diag_format;
-extern diag *diag_image;
-extern diag *diag_json;
-extern diag *diag_net;
-extern diag *diag_term;
+extern struct diag *diag_format;
+extern struct diag *diag_image;
+extern struct diag *diag_json;
+extern struct diag *diag_net;
+extern struct diag *diag_term;
 extern uint fontwidth;
 extern uint fontheight;
 extern uint iconsize;
@@ -185,7 +185,7 @@ extern void ustring_dump(const ustring *, const char *);
 extern uint uchar_to_utf8(char *, unichar);
 
 // wsclient.c
-extern wsclient *wsclient_create(const diag *);
+extern wsclient *wsclient_create(const struct diag *);
 extern void wsclient_destroy(wsclient *);
 extern void wsclient_init(wsclient *, void (*)(const string *));
 extern int  wsclient_connect(wsclient *, const char *, const struct net_opt *);

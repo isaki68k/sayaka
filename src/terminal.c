@@ -269,7 +269,7 @@ terminal_dump(char *dst, const char *src, uint dstsize)
 #if defined(TEST)
 #include <err.h>
 
-diag *diag_term;
+struct diag *diag_term;
 
 int
 main(int ac, char *av[])

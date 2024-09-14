@@ -33,7 +33,6 @@
 
 #include "header.h"
 
-typedef struct diag_ diag;
 typedef struct pstream_ pstream;
 typedef struct string_ string;
 typedef union ColorRGB_ ColorRGB;
@@ -197,7 +196,7 @@ typedef struct image_opt_ {
 
 // image.c
 extern void image_opt_init(image_opt *);
-extern image *image_read_pstream(pstream *, const diag *);
+extern image *image_read_pstream(pstream *, const struct diag *);
 extern void image_free(image *);
 extern uint image_get_bytepp(const image *);
 extern uint image_get_stride(const image *);
@@ -206,18 +205,18 @@ extern void image_get_preferred_size(uint, uint, ResizeAxis,
 extern string *image_get_loaderinfo(void);
 extern void image_convert_to16(image *);
 extern image *image_reduct(const image *, uint, uint, const image_opt *,
-	const diag *);
+	const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductordiffuse_tostr(ReductorDiffuse);
 extern const char *reductorcolor_tostr(ReductorColor);
 
 // image_blurhash.c
-extern image *image_blurhash_read(FILE *, int, int, const diag *);
+extern image *image_blurhash_read(FILE *, int, int, const struct diag *);
 
 // image_sixel.c
 extern void image_sixel_abort(FILE *);
 extern bool image_sixel_write(FILE *, const image *, const image_opt *,
-	const diag *);
+	const struct diag *);
 
 #endif // !sayaka_image_h
