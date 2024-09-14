@@ -31,12 +31,6 @@
 #define XCAT_HELPER(x,y) x##y
 #define XCAT(x,y) XCAT_HELPER(x,y)
 
-typedef struct XCAT(xstring,_) {
-	xchar *buf;		// len == 0 の時 buf を触らないこと。
-	uint len;		// 文字列の長さ ('\0' の位置)
-	uint capacity;	// 確保してあるバイト数
-} xstring;
-
 // 空の文字列を確保して返す。
 xstring *
 XCAT(xstring,_init)(void)

@@ -55,13 +55,13 @@
 		diag_print(diag_, fmt);	\
 } while (0)
 
+struct net;
+
 struct diag
 {
 	int level;
 	bool timestamp;
 };
-struct net;
-typedef struct string_ string;
 
 struct net_opt {
 	// 接続に使用するプロトコル。
@@ -81,6 +81,14 @@ struct optmap {
 	const char *name;
 	int value;
 };
+
+// 文字列型。sayaka.h の ustring と揃えること。
+struct string_ {
+	char *buf;		// len == 0 の時 buf を触らないこと。
+	uint len;		// 文字列の長さ ('\0' の位置)
+	uint capacity;	// 確保してあるバイト数
+};
+typedef struct string_ string;
 
 struct urlinfo {
 	string *scheme;

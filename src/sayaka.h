@@ -58,6 +58,13 @@ enum {
 typedef uint32 unichar;
 
 struct json;
+
+// Unicode 文字列型。common.h の string と揃えること。
+struct ustring_ {
+	unichar *buf;	// len == 0 の時 buf を触らないこと。
+	uint len;		// 文字列の長さ ('\0' の位置)
+	uint capacity;	// 確保してあるバイト数
+};
 typedef struct ustring_ ustring;
 
 // eaw_data.c
