@@ -59,7 +59,6 @@ typedef uint32 unichar;
 
 typedef struct json_ json;
 typedef struct ustring_ ustring;
-typedef struct wsclient_ wsclient;
 
 // eaw_data.c
 extern const uint8 eaw2width_packed[0x8000];
@@ -185,11 +184,12 @@ extern void ustring_dump(const ustring *, const char *);
 extern uint uchar_to_utf8(char *, unichar);
 
 // wsclient.c
-extern wsclient *wsclient_create(const struct diag *);
-extern void wsclient_destroy(wsclient *);
-extern void wsclient_init(wsclient *, void (*)(const string *));
-extern int  wsclient_connect(wsclient *, const char *, const struct net_opt *);
-extern int  wsclient_process(wsclient *);
-extern ssize_t wsclient_send_text(wsclient *, const char *);
+extern struct wsclient *wsclient_create(const struct diag *);
+extern void wsclient_destroy(struct wsclient *);
+extern void wsclient_init(struct wsclient *, void (*)(const string *));
+extern int  wsclient_connect(struct wsclient *, const char *,
+	const struct net_opt *);
+extern int  wsclient_process(struct wsclient *);
+extern ssize_t wsclient_send_text(struct wsclient *, const char *);
 
 #endif // !sayaka_harada_h

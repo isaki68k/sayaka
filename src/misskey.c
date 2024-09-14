@@ -44,7 +44,7 @@ typedef struct misskey_user_ {
 } misskey_user;
 
 static bool misskey_init(void);
-static bool misskey_stream(wsclient *, bool);
+static bool misskey_stream(struct wsclient *, bool);
 static void misskey_recv_cb(const string *);
 static void misskey_message(string *);
 static int  misskey_show_note(const json *, int);
@@ -152,7 +152,7 @@ cmd_misskey_stream(const char *server, bool home, const char *token)
 			fflush(stdout);
 		}
 
-		wsclient *ws = wsclient_create(diag);
+		struct wsclient *ws = wsclient_create(diag);
 		if (ws == NULL) {
 			warn("%s: wsclient_create failed", __func__);
 			break;
@@ -220,7 +220,7 @@ cmd_misskey_stream(const char *server, bool home, const char *token)
 // 相手からの Connection Close なら true を返す。
 // エラー (おそらく復旧不可能)なら false を返す。
 static bool
-misskey_stream(wsclient *ws, bool home)
+misskey_stream(struct wsclient *ws, bool home)
 {
 	char cmd[128];
 
