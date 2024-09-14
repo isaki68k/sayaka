@@ -33,7 +33,6 @@
 
 #include "header.h"
 
-typedef struct pstream_ pstream;
 typedef struct string_ string;
 typedef union ColorRGB_ ColorRGB;
 
@@ -196,7 +195,7 @@ typedef struct image_opt_ {
 
 // image.c
 extern void image_opt_init(image_opt *);
-extern image *image_read_pstream(pstream *, const struct diag *);
+extern image *image_read_pstream(struct pstream *, const struct diag *);
 extern void image_free(image *);
 extern uint image_get_bytepp(const image *);
 extern uint image_get_stride(const image *);

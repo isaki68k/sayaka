@@ -61,7 +61,6 @@ struct diag
 	bool timestamp;
 };
 struct net;
-typedef struct pstream_ pstream;
 typedef struct string_ string;
 
 struct net_opt {
@@ -131,11 +130,11 @@ extern void net_close(struct net *);
 extern int  net_get_fd(const struct net *);
 
 // pstream.c
-extern pstream *pstream_init_fp(FILE *);
-extern pstream *pstream_init_fd(int);
-extern void pstream_cleanup(pstream *);
-extern FILE *pstream_open_for_peek(pstream *);
-extern FILE *pstream_open_for_read(pstream *);
+extern struct pstream *pstream_init_fp(FILE *);
+extern struct pstream *pstream_init_fd(int);
+extern void pstream_cleanup(struct pstream *);
+extern FILE *pstream_open_for_peek(struct pstream *);
+extern FILE *pstream_open_for_read(struct pstream *);
 
 // string.c
 extern string *string_init(void);

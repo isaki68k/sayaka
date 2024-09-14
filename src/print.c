@@ -630,7 +630,7 @@ static bool
 fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 {
 	struct httpclient *http = NULL;
-	pstream *pstream = NULL;
+	struct pstream *pstream = NULL;
 	FILE *ifp = NULL;
 	image *srcimg = NULL;
 	image *dstimg = NULL;

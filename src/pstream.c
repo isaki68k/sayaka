@@ -63,7 +63,7 @@
 #define DEBUG(fmt...)	/**/
 #endif
 
-typedef struct pstream_ {
+struct pstream {
 	// 入力となるストリームかディスクリプタ。
 	// ifp != NULL なら ifp が有効。ifp == NULL なら ifd が有効。
 	// いずれも所有しない。
@@ -76,19 +76,19 @@ typedef struct pstream_ {
 	uint bufsize;		// 確保してあるバッファサイズ
 	uint peeklen;		// ピークバッファに読み込んである長さ
 	bool done;			// EOF に到達した
-} pstream;
+};
 
-static pstream *pstream_init_common(void);
+static struct pstream *pstream_init_common(void);
 static int pstream_peek_cb(void *, char *, int);
 static int pstream_read_cb(void *, char *, int);
 static off_t pstream_seek_cb(void *, off_t, int);
-static ssize_t psread(pstream *, void *, size_t);
-static off_t psseek(pstream *, off_t);
+static ssize_t psread(struct pstream *, void *, size_t);
+static off_t psseek(struct pstream *, off_t);
 
-static pstream *
+static struct pstream *
 pstream_init_common(void)
 {
-	pstream *ps = calloc(1, sizeof(*ps));
+	struct pstream *ps = calloc(1, sizeof(*ps));
 	if (ps == NULL) {
 		return NULL;
 	}
@@ -97,10 +97,10 @@ pstream_init_common(void)
 }
 
 // fd からストリームコンテキストを作成する。
-pstream *
+struct pstream *
 pstream_init_fd(int fd)
 {
-	pstream *ps = pstream_init_common();
+	struct pstream *ps = pstream_init_common();
 	if (ps == NULL) {
 		return NULL;
 	}
@@ -111,10 +111,10 @@ pstream_init_fd(int fd)
 }
 
 // fp からストリームコンテキストを作成する。
-pstream *
+struct pstream *
 pstream_init_fp(FILE *ifp)
 {
-	pstream *ps = pstream_init_common();
+	struct pstream *ps = pstream_init_common();
 	if (ps == NULL) {
 		return NULL;
 	}
@@ -127,7 +127,7 @@ pstream_init_fp(FILE *ifp)
 // ストリームコンテキストを解放する。
 // ps が NULL なら何もしない。
 void
-pstream_cleanup(pstream *ps)
+pstream_cleanup(struct pstream *ps)
 {
 	if (ps) {
 		free(ps->peekbuf);
@@ -141,7 +141,7 @@ pstream_cleanup(pstream *ps)
 // 失敗すれば errno をセットして NULL を返す。
 // read、seek、close が可能。close は何も閉じない。
 FILE *
-pstream_open_for_peek(pstream *ps)
+pstream_open_for_peek(struct pstream *ps)
 {
 	FILE *fp = funopen(ps,
 		pstream_peek_cb,
@@ -156,7 +156,7 @@ pstream_open_for_peek(pstream *ps)
 // read、close のみ可能。
 // クローズでディスクリプタをクローズする。(ps は解放しない)
 FILE *
-pstream_open_for_read(pstream *ps)
+pstream_open_for_read(struct pstream *ps)
 {
 	FILE *fp = funopen(ps,
 		pstream_read_cb,
@@ -179,7 +179,7 @@ pstream_open_for_read(pstream *ps)
 static int
 pstream_peek_cb(void *cookie, char *dst, int dstsize)
 {
-	pstream *ps = (pstream *)cookie;
+	struct pstream *ps = (struct pstream *)cookie;
 
 	DEBUG("called(dstsize=%u)", dstsize);
 	while (ps->pos == ps->peeklen) {
@@ -231,7 +231,7 @@ pstream_peek_cb(void *cookie, char *dst, int dstsize)
 static int
 pstream_read_cb(void *cookie, char *dst, int dstsize)
 {
-	pstream *ps = (pstream *)cookie;
+	struct pstream *ps = (struct pstream *)cookie;
 
 	DEBUG("called(dstsize=%d)", dstsize);
 
@@ -257,7 +257,7 @@ pstream_read_cb(void *cookie, char *dst, int dstsize)
 static off_t
 pstream_seek_cb(void *cookie, off_t offset, int whence)
 {
-	pstream *ps = (pstream *)cookie;
+	struct pstream *ps = (struct pstream *)cookie;
 	uint newpos;
 
 	DEBUG("called(offset=%jd, %s)", (intmax_t)offset,
@@ -312,7 +312,7 @@ pstream_seek_cb(void *cookie, off_t offset, int whence)
 
 // pstream に対する read。read(2) 互換。
 static ssize_t
-psread(pstream *ps, void *dst, size_t len)
+psread(struct pstream *ps, void *dst, size_t len)
 {
 	ssize_t n;
 
@@ -339,7 +339,7 @@ psread(pstream *ps, void *dst, size_t len)
 // 戻り値は off_t の現在位置。
 // エラーなら errno をセットして (off_t)-1 を返す。
 static off_t
-psseek(pstream *ps, off_t offset)
+psseek(struct pstream *ps, off_t offset)
 {
 	off_t newoff;
 
