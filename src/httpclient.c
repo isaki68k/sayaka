@@ -36,7 +36,7 @@
 #include <bsd/stdio.h>
 #endif
 
-typedef struct httpclient_ {
+struct httpclient {
 	struct net *net;
 
 	// 接続中の URL
@@ -58,20 +58,20 @@ typedef struct httpclient_ {
 	uint chunk_pos;		// 現在位置
 
 	const struct diag *diag;
-} httpclient;
+};
 
-static int  do_connect(httpclient *, const struct net_opt *);
-static int  recv_header(httpclient *);
-static const char *find_recvhdr(const httpclient *, const char *);
-static void clear_recvhdr(httpclient *);
+static int  do_connect(struct httpclient *, const struct net_opt *);
+static int  recv_header(struct httpclient *);
+static const char *find_recvhdr(const struct httpclient *, const char *);
+static void clear_recvhdr(struct httpclient *);
 static int  http_net_read_cb(void *, char *, int);
 static int  http_chunk_read_cb(void *, char *, int);
-static int  read_chunk(httpclient *);
+static int  read_chunk(struct httpclient *);
 
-httpclient *
+struct httpclient *
 httpclient_create(const struct diag *diag)
 {
-	httpclient *http;
+	struct httpclient *http;
 
 	http = calloc(1, sizeof(*http));
 	if (http == NULL) {
@@ -90,7 +90,7 @@ httpclient_create(const struct diag *diag)
 }
 
 void
-httpclient_destroy(httpclient *http)
+httpclient_destroy(struct httpclient *http)
 {
 	if (http) {
 		string_free(http->resline);
@@ -107,7 +107,7 @@ httpclient_destroy(httpclient *http)
 // HTTPS なのに SSL ライブラリがない場合は -2 を返す。
 // 400 以上なら HTTP のエラーコード。
 int
-httpclient_connect(httpclient *http, const char *urlstr,
+httpclient_connect(struct httpclient *http, const char *urlstr,
 	const struct net_opt *opt)
 {
 	const struct diag *diag = http->diag;
@@ -192,7 +192,7 @@ httpclient_connect(httpclient *http, const char *urlstr,
 // 失敗すれば errno をセットして -1 を返す。
 // SSL 接続なのに SSL ライブラリが有効でない時は -2 を返す。
 static int
-do_connect(httpclient *http, const struct net_opt *opt)
+do_connect(struct httpclient *http, const struct net_opt *opt)
 {
 	const struct diag *diag = http->diag;
 
@@ -256,7 +256,7 @@ diag_http_header(const struct diag *diag, const string *hdr)
 // 戻り値は HTTP 応答コード。
 // エラーなら -1 を返す。
 static int
-recv_header(httpclient *http)
+recv_header(struct httpclient *http)
 {
 	const struct diag *diag = http->diag;
 
@@ -322,7 +322,7 @@ recv_header(httpclient *http)
 // 戻り値は http->recvhdr 内を指しているので解放不要。
 // 見付からなければ NULL を返す。
 static const char *
-find_recvhdr(const httpclient *http, const char *key)
+find_recvhdr(const struct httpclient *http, const char *key)
 {
 	uint keylen = strlen(key);
 
@@ -340,7 +340,7 @@ find_recvhdr(const httpclient *http, const char *key)
 
 // 受信ヘッダをクリアする。
 static void
-clear_recvhdr(httpclient *http)
+clear_recvhdr(struct httpclient *http)
 {
 	for (uint i = 0; i < http->recvhdr_num; i++) {
 		string_free(http->recvhdr[i]);
@@ -352,7 +352,7 @@ clear_recvhdr(httpclient *http)
 // HTTP 応答のメッセージ部分を返す。
 // 接続していないなどでメッセージがなければ NULL を返す。
 const char *
-httpclient_get_resmsg(const httpclient *http)
+httpclient_get_resmsg(const struct httpclient *http)
 {
 	return http->resmsg;
 }
@@ -361,7 +361,7 @@ httpclient_get_resmsg(const httpclient *http)
 // httpclient_connect() が成功した場合のみ有効。
 // 受け取った fp は fclose() すること。
 FILE *
-httpclient_fopen(httpclient *http)
+httpclient_fopen(struct httpclient *http)
 {
 	FILE *fp;
 
@@ -395,7 +395,7 @@ http_net_read_cb(void *arg, char *dst, int dstsize)
 static int
 http_chunk_read_cb(void *arg, char *dst, int dstsize)
 {
-	httpclient *http = (httpclient *)arg;
+	struct httpclient *http = (struct httpclient *)arg;
 	const struct diag *diag = http->diag;
 
 	Verbose(diag, "%s(%d)", __func__, dstsize);
@@ -422,7 +422,7 @@ http_chunk_read_cb(void *arg, char *dst, int dstsize)
 // 成功すれば読み込んだバイト数を返す。
 // 失敗すれば errno をセットして -1 を返す。
 static int
-read_chunk(httpclient *http)
+read_chunk(struct httpclient *http)
 {
 	const struct diag *diag = http->diag;
 	int chunklen = -1;
@@ -518,7 +518,7 @@ const char progver[]  = "0.0";
 static int
 testhttp(const struct diag *diag, int ac, char *av[])
 {
-	httpclient *http;
+	struct httpclient *http;
 	const char *url;
 
 	url = av[2];

@@ -629,7 +629,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 static bool
 fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 {
-	httpclient *http = NULL;
+	struct httpclient *http = NULL;
 	pstream *pstream = NULL;
 	FILE *ifp = NULL;
 	image *srcimg = NULL;

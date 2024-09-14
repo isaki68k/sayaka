@@ -105,13 +105,12 @@ extern void diag_print(const struct diag *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
 // httpclient.c
-typedef struct httpclient_ httpclient;
-extern httpclient *httpclient_create(const struct diag *);
-extern void httpclient_destroy(httpclient *);
-extern int  httpclient_connect(httpclient *, const char *,
+extern struct httpclient *httpclient_create(const struct diag *);
+extern void httpclient_destroy(struct httpclient *);
+extern int  httpclient_connect(struct httpclient *, const char *,
 	const struct net_opt *);
-extern const char *httpclient_get_resmsg(const httpclient *);
-extern FILE *httpclient_fopen(httpclient *);
+extern const char *httpclient_get_resmsg(const struct httpclient *);
+extern FILE *httpclient_fopen(struct httpclient *);
 extern void diag_http_header(const struct diag *, const string *);
 
 // net.c

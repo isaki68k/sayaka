@@ -493,7 +493,7 @@ static bool
 do_file(const char *infile)
 {
 	bool rv = false;
-	httpclient *http = NULL;
+	struct httpclient *http = NULL;
 	pstream *pstream = NULL;
 	image *srcimg = NULL;
 	image *resimg = NULL;
