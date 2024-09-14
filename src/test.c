@@ -78,7 +78,7 @@ string_escape_c(const char *src)
 }
 
 static void
-test_chomp()
+test_chomp(void)
 {
 	printf("%s\n", __func__);
 

@@ -86,7 +86,7 @@ static ssize_t psread(pstream *, void *, size_t);
 static off_t psseek(pstream *, off_t);
 
 static pstream *
-pstream_init_common()
+pstream_init_common(void)
 {
 	pstream *ps = calloc(1, sizeof(*ps));
 	if (ps == NULL) {

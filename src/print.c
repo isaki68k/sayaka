@@ -77,7 +77,7 @@ static char color2esc[COLOR_MAX][C2EBUFSIZE];
 
 // 色関係の初期化。
 void
-init_color()
+init_color(void)
 {
 	char url[C2EBUFSIZE];
 	const char *c_blue = NULL;
