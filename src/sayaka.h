@@ -175,8 +175,6 @@ extern ustring *ustring_init(void);
 extern ustring *ustring_alloc(uint);
 extern bool ustring_realloc(ustring *, uint);
 extern void ustring_free(ustring *);
-extern void ustring_clear(ustring *);
-extern uint ustring_len(const ustring *);
 extern ustring *ustring_from_utf8(const char *);
 extern const unichar *ustring_get(const ustring *);
 extern unichar ustring_at(const ustring *, int);
@@ -189,6 +187,14 @@ extern string *ustring_to_utf8(const ustring *);
 extern string *ustring_to_string(const ustring *);
 extern void ustring_dump(const ustring *, const char *);
 extern uint uchar_to_utf8(char *, unichar);
+static inline uint ustring_len(const ustring *u) {
+	assert(u);
+	return u->len;
+}
+static inline void ustring_clear(ustring *u) {
+	assert(u);
+	u->len = 0;
+}
 
 // wsclient.c
 extern struct wsclient *wsclient_create(const struct diag *);

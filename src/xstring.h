@@ -88,19 +88,3 @@ XCAT(xstring,_free)(xstring *x)
 		free(x);
 	}
 }
-
-// 文字列を空にする。容量は変わらない。
-void
-XCAT(xstring,_clear)(xstring *x)
-{
-	assert(x);
-	x->len = 0;
-}
-
-// x の文字列の長さを返す。
-uint
-XCAT(xstring,_len)(const xstring *x)
-{
-	assert(x);
-	return x->len;
-}

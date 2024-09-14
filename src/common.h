@@ -155,16 +155,22 @@ extern bool string_realloc(string *, uint);
 extern void string_free(string *);
 extern const char *string_get(const string *);
 extern char *string_get_buf(const string *);
-extern uint string_len(const string *);
 extern bool string_equal(const string *, const string *);
 extern bool string_equal_cstr(const string *, const char *);
-extern void string_clear(string *);
 extern void string_append_char(string *, char);
 extern void string_append_cstr(string *, const char *);
 extern void string_append_mem(string *, const void *, uint);
 extern void string_append_printf(string *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 extern void string_rtrim_inplace(string *);
+static inline uint string_len(const string *s) {
+	assert(s);
+	return s->len;
+}
+static inline void string_clear(string *s) {
+	assert(s);
+	s->len = 0;
+}
 
 // util.c
 extern const char *strerrno(void);
