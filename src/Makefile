@@ -121,7 +121,7 @@ clean:
 	rm -f ${PROGS} eaw_gen *.o *.a *.core
 
 .PHONY: distclean
-distclean:
+distclean:	clean
 	rm -f Makefile.cfg config.h .depends
 
 .PHONY:	depend
