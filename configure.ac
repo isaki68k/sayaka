@@ -58,9 +58,6 @@ AC_DEFUN([CHECK_BUILTIN_FUNC], [
 	])
 	CFLAGS="${old_CFLAGS}"
 ])
-CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
-CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
-CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
 CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(1)])
 CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(1, 1)])
 CHECK_BUILTIN_FUNC(__builtin_unreachable, [__builtin_unreachable()])
