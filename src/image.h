@@ -33,8 +33,6 @@
 
 #include "common.h"
 
-typedef union ColorRGB_ ColorRGB;
-
 // リサイズの基準軸。
 typedef enum {
 	// 幅が width になり、高さが height になるようにリサイズする。
@@ -146,6 +144,16 @@ enum {
 	IMAGE_FMT_RGB24,	// RGB  (メモリ上 R, G, B の順)
 	IMAGE_FMT_ARGB32,	// RGBA (メモリ上 R, G, B, A の順)
 };
+
+typedef union ColorRGB_ {
+	uint32 u32;
+	struct {
+		uint8 r;
+		uint8 g;
+		uint8 b;
+		uint8 a;
+	};
+} ColorRGB;
 
 struct image
 {

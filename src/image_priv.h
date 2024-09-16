@@ -43,16 +43,6 @@
 #define USE_LIBWEBP
 #endif
 
-typedef union ColorRGB_ {
-	uint32 u32;
-	struct {
-		uint8 r;
-		uint8 g;
-		uint8 b;
-		uint8 a;
-	};
-} ColorRGB;
-
 // image.c
 extern struct image *image_create(uint, uint, uint);
 
