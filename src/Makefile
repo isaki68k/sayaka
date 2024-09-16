@@ -15,6 +15,9 @@ CFLAGS+=	-I..
 
 CFLAGS.image.o.sayaka.c	=
 CFLAGS.image.o.sixelv.c	= -DSIXELV
+.if !defined(HAVE___THREAD)
+CFLAGS.image_stb.c	= -DSTBI_NO_THREAD_LOCALS
+.endif
 
 #PROFOPT=	-g -fsanitize=leak # gcc
 CFLAGS+=	${PROFOPT}

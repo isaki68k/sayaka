@@ -185,6 +185,19 @@ CFLAGS="${old_CFLAGS}"
 
 # Checks for typedefs, structures, and compiler characteristics.
 
+AC_MSG_CHECKING([for __thread])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+		#include <stdlib.h>
+	], [
+		static __thread int a;
+	])], [
+		AC_MSG_RESULT(yes)
+		AC_SUBST([DEFINE___THREAD], [HAVE___THREAD=yes])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+
 # Checks for library functions.
 
 AC_CHECK_FUNCS([arc4random])
