@@ -67,7 +67,7 @@ sixelv [<options>...] [-|<file|url...>]
 	デフォルトは `high` です。
 	* `simple`/`none` … 最近傍(Nearest Neighbor) 法です。
 	* `high` … 誤差拡散法です。
-* `-d,--diffusion=<diffusion` … `-r high` の時の誤差拡散アルゴリズムを指定します。デフォルトは `fs` です。
+* `-d,--diffusion=<diffusion>` … `-r high` の時の誤差拡散アルゴリズムを指定します。デフォルトは `fs` です。
 	* `fs` … Floyd Steinberg
 	* `atkinson` … Atkinson
 	* `jajuni` … Jarvis, Judice, Ninke
