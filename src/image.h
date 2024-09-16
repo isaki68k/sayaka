@@ -31,9 +31,8 @@
 #ifndef sayaka_image_h
 #define sayaka_image_h
 
-#include "header.h"
+#include "common.h"
 
-typedef struct string_ string;
 typedef union ColorRGB_ ColorRGB;
 
 // リサイズの基準軸。
