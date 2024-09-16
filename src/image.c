@@ -33,8 +33,7 @@
 #include <errno.h>
 #include <string.h>
 
-typedef struct image_reductor_handle_ image_reductor_handle;
-
+struct image_reductor_handle_;
 typedef uint (*finder_t)(struct image_reductor_handle_ *, ColorRGB);
 
 typedef struct {
