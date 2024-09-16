@@ -3812,17 +3812,22 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
 
+# コンパイラの組み込み関数
+# $1=func, $2=expr
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap16" >&5
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap16" >&5
 printf %s "checking for __builtin_bswap16... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
 main (void)
 {
 
-		return __builtin_bswap16(0);
+		__builtin_bswap16(0)
 
   ;
   return 0;
@@ -3833,7 +3838,8 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		printf "%s\n" "#define HAVE___BUILTIN_BSWAP16 1" >>confdefs.h
+		eval "N=`echo -n __builtin_bswap16 | tr 'a-z' 'A-Z'`"
+		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
 
 
 else case e in #(
@@ -3844,17 +3850,21 @@ printf "%s\n" "no" >&6; }
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CFLAGS="${old_CFLAGS}"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap32" >&5
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap32" >&5
 printf %s "checking for __builtin_bswap32... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
 main (void)
 {
 
-		return __builtin_bswap32(0);
+		__builtin_bswap32(0)
 
   ;
   return 0;
@@ -3865,7 +3875,8 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		printf "%s\n" "#define HAVE___BUILTIN_BSWAP32 1" >>confdefs.h
+		eval "N=`echo -n __builtin_bswap32 | tr 'a-z' 'A-Z'`"
+		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
 
 
 else case e in #(
@@ -3876,17 +3887,21 @@ printf "%s\n" "no" >&6; }
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CFLAGS="${old_CFLAGS}"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap64" >&5
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_bswap64" >&5
 printf %s "checking for __builtin_bswap64... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
 main (void)
 {
 
-		return __builtin_bswap64(0);
+		__builtin_bswap64(0)
 
   ;
   return 0;
@@ -3897,7 +3912,8 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		printf "%s\n" "#define HAVE___BUILTIN_BSWAP64 1" >>confdefs.h
+		eval "N=`echo -n __builtin_bswap64 | tr 'a-z' 'A-Z'`"
+		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
 
 
 else case e in #(
@@ -3908,17 +3924,21 @@ printf "%s\n" "no" >&6; }
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CFLAGS="${old_CFLAGS}"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_clz" >&5
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_clz" >&5
 printf %s "checking for __builtin_clz... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
 main (void)
 {
 
-		__builtin_clz(1);
+		__builtin_clz(1)
 
   ;
   return 0;
@@ -3929,7 +3949,8 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		printf "%s\n" "#define HAVE___BUILTIN_CLZ 1" >>confdefs.h
+		eval "N=`echo -n __builtin_clz | tr 'a-z' 'A-Z'`"
+		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
 
 
 else case e in #(
@@ -3940,17 +3961,21 @@ printf "%s\n" "no" >&6; }
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CFLAGS="${old_CFLAGS}"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_expect" >&5
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_expect" >&5
 printf %s "checking for __builtin_expect... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
 main (void)
 {
 
-		if (__builtin_expect(1, 1)) return 0;
+		__builtin_expect(1, 1)
 
   ;
   return 0;
@@ -3961,7 +3986,8 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		printf "%s\n" "#define HAVE___BUILTIN_EXPECT 1" >>confdefs.h
+		eval "N=`echo -n __builtin_expect | tr 'a-z' 'A-Z'`"
+		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
 
 
 else case e in #(
@@ -3972,17 +3998,21 @@ printf "%s\n" "no" >&6; }
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CFLAGS="${old_CFLAGS}"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_unreachable" >&5
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_unreachable" >&5
 printf %s "checking for __builtin_unreachable... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 int
 main (void)
 {
 
-		__builtin_unreachable();
+		__builtin_unreachable()
 
   ;
   return 0;
@@ -3993,7 +4023,8 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		printf "%s\n" "#define HAVE___BUILTIN_UNREACHABLE 1" >>confdefs.h
+		eval "N=`echo -n __builtin_unreachable | tr 'a-z' 'A-Z'`"
+		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
 
 
 else case e in #(
@@ -4004,6 +4035,8 @@ printf "%s\n" "no" >&6; }
 esac
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+	CFLAGS="${old_CFLAGS}"
+
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __attribute__((__format__))" >&5
 printf %s "checking for __attribute__((__format__))... " >&6; }

@@ -41,66 +41,29 @@ ADD_CC_WARN_IF(-Wstring-conversion)
 ADD_CC_WARN_IF(-Wtype-limits)
 AC_SUBST([WARNFLAGS])
 
-
-AC_MSG_CHECKING(for __builtin_bswap16)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-		return __builtin_bswap16(0);
-	]])],[
+# コンパイラの組み込み関数
+# $1=func, $2=expr
+AC_DEFUN([CHECK_BUILTIN_FUNC], [
+	AC_MSG_CHECKING([for $1])
+	old_CFLAGS="${CFLAGS}"
+	CFLAGS="${CFLAGS} -Werror"
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [
+		$2
+	])], [
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE___BUILTIN_BSWAP16)
-	],[
+		eval "N=`echo -n $1 | tr '[a-z]' '[A-Z]'`"
+		AC_DEFINE(HAVE_$N)
+	], [
 		AC_MSG_RESULT(no)
 	])
-
-AC_MSG_CHECKING(for __builtin_bswap32)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-		return __builtin_bswap32(0);
-	]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE___BUILTIN_BSWAP32)
-	],[
-		AC_MSG_RESULT(no)
-	])
-
-AC_MSG_CHECKING(for __builtin_bswap64)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-		return __builtin_bswap64(0);
-	]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE___BUILTIN_BSWAP64)
-	],[
-		AC_MSG_RESULT(no)
-	])
-
-AC_MSG_CHECKING(for __builtin_clz)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-		__builtin_clz(1);
-	]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE___BUILTIN_CLZ)
-	],[
-		AC_MSG_RESULT(no)
-	])
-
-AC_MSG_CHECKING(for __builtin_expect)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-		if (__builtin_expect(1, 1)) return 0;
-	]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE___BUILTIN_EXPECT)
-	],[
-		AC_MSG_RESULT(no)
-	])
-
-AC_MSG_CHECKING(for __builtin_unreachable)
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[
-		__builtin_unreachable();
-	]])],[
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE___BUILTIN_UNREACHABLE)
-	],[
-		AC_MSG_RESULT(no)
-	])
+	CFLAGS="${old_CFLAGS}"
+])
+CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
+CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
+CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
+CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(1)])
+CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(1, 1)])
+CHECK_BUILTIN_FUNC(__builtin_unreachable, [__builtin_unreachable()])
 
 AC_MSG_CHECKING(for __attribute__((__format__)))
 old_CFLAGS="${CFLAGS}"
