@@ -7,9 +7,6 @@
 #define sayaka_config_h
 
 #undef HAVE___ATTRIBUTE_FORMAT
-#undef HAVE___BUILTIN_BSWAP16
-#undef HAVE___BUILTIN_BSWAP32
-#undef HAVE___BUILTIN_BSWAP64
 #undef HAVE___BUILTIN_CLZ
 #undef HAVE___BUILTIN_EXPECT
 #undef HAVE___BUILTIN_UNREACHABLE
