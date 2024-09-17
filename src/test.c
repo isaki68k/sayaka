@@ -176,6 +176,7 @@ test_json_unescape(void)
 		} else if (strcmp(exp, string_get(act)) != 0) {
 			fail("%s: expects %s but %s", src, exp, string_get(act));
 		}
+		string_free(act);
 	}
 }
 
