@@ -96,6 +96,8 @@ base64_encode(const void *vsrc, uint srclen)
 	const uint8 *src = (const uint8 *)vsrc;
 	uint dstlen = ((srclen + 2) / 3) * 4;
 	string *dst = string_alloc(dstlen + 1);
+	char *d0 = string_get_buf(dst);
+	char *d = d0;
 	uint i;
 
 	uint packed = (srclen / 3) * 3;
@@ -105,10 +107,10 @@ base64_encode(const void *vsrc, uint srclen)
 		uint8 a1 = src[i++];
 		uint8 a2 = src[i++];
 
-		string_append_char(dst, enc[a0 >> 2]);
-		string_append_char(dst, enc[((a0 & 0x03) << 4) | (a1 >> 4)]);
-		string_append_char(dst, enc[((a1 & 0x0f) << 2) | (a2 >> 6)]);
-		string_append_char(dst, enc[a2 & 0x3f]);
+		*d++ = enc[a0 >> 2];
+		*d++ = enc[((a0 & 0x03) << 4) | (a1 >> 4)];
+		*d++ = enc[((a1 & 0x0f) << 2) | (a2 >> 6)];
+		*d++ = enc[a2 & 0x3f];
 	}
 
 	// 残りは 0, 1, 2 バイト。
@@ -116,21 +118,28 @@ base64_encode(const void *vsrc, uint srclen)
 	if (remain == 1) {
 		uint8 a0 = src[i];
 
-		string_append_char(dst, enc[a0 >> 2]);
-		string_append_char(dst, enc[((a0 & 0x03) << 4)]);
+		*d++ = enc[a0 >> 2];
+		*d++ = enc[((a0 & 0x03) << 4)];
 	} else if (remain == 2) {
 		uint8 a0 = src[i++];
 		uint8 a1 = src[i];
 
-		string_append_char(dst, enc[a0 >> 2]);
-		string_append_char(dst, enc[((a0 & 0x03) << 4) | (a1 >> 4)]);
-		string_append_char(dst, enc[((a1 & 0x0f) << 2)]);
+		*d++ = enc[a0 >> 2];
+		*d++ = enc[((a0 & 0x03) << 4) | (a1 >> 4)];
+		*d++ = enc[((a1 & 0x0f) << 2)];
 	}
 
 	// パディング。
-	while ((string_len(dst) % 4) != 0) {
-		string_append_char(dst, '=');
+	switch ((d - d0) % 4) {
+	 case 2:
+		*d++ = '=';	// FALLTHROUGH
+	 case 3:
+		*d++ = '=';	// FALLTHROUGH
+	 default:
+		break;
 	}
+	*d = '\0';
+	dst->len = (d - d0);
 
 	return dst;
 }
