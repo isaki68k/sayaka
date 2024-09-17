@@ -3814,7 +3814,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
 # コンパイラの組み込み関数
-# $1=func, $2=expr
+# $1=func, $2=FUNC, $3=expr
 
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __builtin_clz" >&5
@@ -3839,8 +3839,7 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		eval "N=`echo -n __builtin_clz | tr 'a-z' 'A-Z'`"
-		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
+		printf "%s\n" "#define HAVE___BUILTIN_CLZ 1" >>confdefs.h
 
 
 else case e in #(
@@ -3876,8 +3875,7 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		eval "N=`echo -n __builtin_expect | tr 'a-z' 'A-Z'`"
-		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
+		printf "%s\n" "#define HAVE___BUILTIN_EXPECT 1" >>confdefs.h
 
 
 else case e in #(
@@ -3913,8 +3911,7 @@ then :
 
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
-		eval "N=`echo -n __builtin_unreachable | tr 'a-z' 'A-Z'`"
-		printf "%s\n" "#define HAVE_\$N 1" >>confdefs.h
+		printf "%s\n" "#define HAVE___BUILTIN_UNREACHABLE 1" >>confdefs.h
 
 
 else case e in #(

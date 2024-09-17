@@ -42,25 +42,27 @@ ADD_CC_WARN_IF(-Wtype-limits)
 AC_SUBST([WARNFLAGS])
 
 # コンパイラの組み込み関数
-# $1=func, $2=expr
+# $1=func, $2=FUNC, $3=expr
 AC_DEFUN([CHECK_BUILTIN_FUNC], [
 	AC_MSG_CHECKING([for $1])
 	old_CFLAGS="${CFLAGS}"
 	CFLAGS="${CFLAGS} -Werror"
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [
-		$2
+		$3
 	])], [
 		AC_MSG_RESULT(yes)
-		eval "N=`echo -n $1 | tr '[a-z]' '[A-Z]'`"
-		AC_DEFINE(HAVE_$N)
+		AC_DEFINE([HAVE_$2])
 	], [
 		AC_MSG_RESULT(no)
 	])
 	CFLAGS="${old_CFLAGS}"
 ])
-CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(1)])
-CHECK_BUILTIN_FUNC(__builtin_expect, [__builtin_expect(1, 1)])
-CHECK_BUILTIN_FUNC(__builtin_unreachable, [__builtin_unreachable()])
+CHECK_BUILTIN_FUNC(__builtin_clz, __BUILTIN_CLZ,
+	[__builtin_clz(1)])
+CHECK_BUILTIN_FUNC(__builtin_expect, __BUILTIN_EXPECT,
+	[__builtin_expect(1, 1)])
+CHECK_BUILTIN_FUNC(__builtin_unreachable, __BUILTIN_UNREACHABLE,
+	[__builtin_unreachable()])
 
 AC_MSG_CHECKING(for __attribute__((__format__)))
 old_CFLAGS="${CFLAGS}"
