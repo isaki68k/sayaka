@@ -55,7 +55,9 @@ SRCS_all=	${SRCS_common}	\
 		${SRCS_sayaka}	\
 		${SRCS_sixelv}	\
 		sayaka.c	\
-		sixelv.c
+		sixelv.c	\
+		dump.c	\
+		test.c	\
 
 LIBS+=	-lm
 
@@ -100,14 +102,14 @@ eaw_gen:	eaw_gen.c
 
 .endif
 
-dump:	libcommon.a libsayaka.a dump.c
-	${CC} ${CFLAGS} ${LDFLAGS} -o $@ dump.c libsayaka.a libcommon.a ${LIBS}
+dump:	libcommon.a libsayaka.a dump.o
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ dump.o libsayaka.a libcommon.a ${LIBS}
 
 httpclient:	libcommon.a httpclient.c
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ httpclient.c libcommon.a ${LIBS}
 
-test:	libcommon.a libsayaka.a test.c
-	${CC} ${CFLAGS} ${LDFLAGS} -o $@ test.c libsayaka.a libcommon.a ${LIBS}
+test:	libcommon.a libsayaka.a test.o
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ test.o libsayaka.a libcommon.a ${LIBS}
 
 terminal:	libcommon.a terminal.c
 	${CC} ${CFLAGS} ${LDFLAGS} -DTEST -o $@ terminal.c libcommon.a ${LIBS}
