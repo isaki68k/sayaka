@@ -78,6 +78,37 @@ string_escape_c(const char *src)
 }
 
 static void
+test_base64_encode(void)
+{
+	printf("%s\n", __func__);
+
+	struct {
+		const char *src;
+		const char *exp;
+	} table[] = {
+		{ "ABCDEFG",				"QUJDREVGRw==" },
+		{ "\x14\xfb\x9c\x03\xd9\x7e",	"FPucA9l+" },
+		{ "\x14\xfb\x9c\x03\xd9",		"FPucA9k=" },
+		{ "\x14\xfb\x9c\x03",			"FPucAw==" },
+	};
+	for (uint i = 0; i < countof(table); i++) {
+		const char *src = table[i].src;
+		const char *exp = table[i].exp;
+		string *src_esc = string_escape_c(src);
+
+		string *act = base64_encode(src, strlen(src));
+		if (act == NULL) {
+			fail("%s: expects %s but NULL", string_get(src_esc), exp);
+		} else if (strcmp(exp, string_get(act)) != 0) {
+			fail("%s: expects %s but %s", string_get(src_esc),
+				exp, string_get(act));
+		}
+		string_free(act);
+		string_free(src_esc);
+	}
+}
+
+static void
 test_chomp(void)
 {
 	printf("%s\n", __func__);
@@ -549,6 +580,7 @@ main(int ac, char *av[])
 		}
 	}
 
+	test_base64_encode();
 	test_chomp();
 	test_decode_isotime();
 	test_json_unescape();
