@@ -791,9 +791,11 @@ misskey_show_notification(const struct json *js, int ibody)
 		return 1;
 	}
 	if (strcmp(type, "mention") == 0 ||
-		strcmp(type, "renote") == 0)
+		strcmp(type, "renote") == 0 ||
+		strcmp(type, "reply") == 0)
 	{
-		// これらは無視でよい。ノートのほうにも来るので。
+		// もうちょっと場合分けが必要かも。
+		Debug(diag_format, "ignore notification/%s", type);
 		return 0;
 	}
 	if (strcmp(type, "followRequestAccepted") == 0)
