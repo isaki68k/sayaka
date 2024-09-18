@@ -327,20 +327,20 @@ misskey_message(string *jsonstr)
 	// そのまま見えると嬉しいので、皮をむいたやつを次ステージに渡す。
 
 	indent_depth = 0;
-	int id = 0;
+	int iobj = 0;
 	const char *type = NULL;
 	int crlf;
 	// トップ階層。
 	{
-		int itype = json_obj_find(js, id, "type");
+		int itype = json_obj_find(js, iobj, "type");
 		type = json_get_cstr(js, itype);
-		int ibody = json_obj_find_obj(js, id, "body");
+		int ibody = json_obj_find_obj(js, iobj, "body");
 		if (__predict_false(itype < 0 || ibody < 0)) {
 			goto unknown;
 		}
 		if (strcmp(type, "channel") == 0) {
 			// 下の階層へ。
-			id = ibody;
+			iobj = ibody;
 		} else if (strcmp(type, "announcementCreated") == 0) {
 			// アナウンス文。
 			int iann = json_obj_find_obj(js, ibody, "announcement");
@@ -360,11 +360,11 @@ misskey_message(string *jsonstr)
 	// 2階層目。
 	// "type":"channel" の "body" の下の階層。
 	{
-		int itype = json_obj_find(js, id, "type");
+		int itype = json_obj_find(js, iobj, "type");
 		if (__predict_false(itype < 0)) {
 			goto unknown;
 		}
-		int ibody = json_obj_find_obj(js, id, "body");
+		int ibody = json_obj_find_obj(js, iobj, "body");
 		type = json_get_cstr(js, itype);
 		if (strcmp(type, "note") == 0) {
 			crlf = misskey_show_note(js, ibody);
@@ -400,7 +400,7 @@ printf("ignore %s\n", type);
 	return;
 
  unknown:
-	if (id == 0) {
+	if (iobj == 0) {
 		if (type == NULL || type[0] == '\0') {
 			printf("No message type?\n");
 		} else {
