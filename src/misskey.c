@@ -131,6 +131,9 @@ cmd_misskey_stream(const char *server, bool home, const char *token)
 	printf("Ready...");
 	fflush(stdout);
 
+	static const uint16 retry_wait[] = {
+		1, 3, 10, 30, 60, 180, 600, 1800
+	};
 	// -1 は初回。0 は EOF による正常リトライ。
 	int retry_count = -1;
 	for (;;) {
@@ -204,12 +207,11 @@ cmd_misskey_stream(const char *server, bool home, const char *token)
 		}
 		if (status == RETRY) {
 			retry_count++;
-			if (retry_count >= 5) {
-				warnx("Gave up reconnecting.");
-				break;
+			if (retry_count / 2 >= countof(retry_wait)) {
+				retry_count--;
 			}
 		}
-		sleep(1);
+		sleep(retry_wait[retry_count / 2]);
 	}
 
 	misskey_cleanup();
