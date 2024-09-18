@@ -387,7 +387,6 @@ misskey_message(string *jsonstr)
 		           strncmp(type, "unread", 6) == 0)
 		{
 			Debug(diag_format, "ignore %s", type);
-printf("ignore %s\n", type);
 			return;
 		} else {
 			goto unknown;
