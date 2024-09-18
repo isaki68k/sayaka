@@ -226,8 +226,9 @@ misskey_stream(struct wsclient *ws, bool home)
 
 	// コマンド送信。
 	snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
-		"\"channel\":\"%s\",\"id\":\"sayaka-%08x\"}}",
+		"\"channel\":\"%s\",\"id\":\"%s-sayaka%08x\"}}",
 		home ? "homeTimeline" : "localTimeline",
+		home ? "htl" : "ltl",
 		rnd_get32());
 	if (wsclient_send_text(ws, cmd) < 0) {
 		warn("%s: Sending command failed", __func__);
@@ -236,8 +237,8 @@ misskey_stream(struct wsclient *ws, bool home)
 
 	if (home) {
 		snprintf(cmd, sizeof(cmd), "{\"type\":\"connect\",\"body\":{"
-			"\"channel\":\"%s\",\"id\":\"sayaka-%08x\"}}",
-			"main", rnd_get32());
+			"\"channel\":\"%s\",\"id\":\"%s-sayaka%08x\"}}",
+			"main", "main", rnd_get32());
 		if (wsclient_send_text(ws, cmd) < 0) {
 			warn("%s: Sending command failed", __func__);
 			return false;
