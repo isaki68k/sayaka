@@ -272,8 +272,9 @@ int
 wsclient_process(struct wsclient *ws)
 {
 	const struct diag *diag = ws->diag;
-	fd_set rfds;
 	struct timeval timeout;
+	struct timeval now;
+	struct timeval end;
 	int fd;
 	int rv = 1;
 	int r;
@@ -292,19 +293,36 @@ wsclient_process(struct wsclient *ws)
 
 	// キープアライブのため一定時間だけ受信を待つ。
 	fd = net_get_fd(ws->net);
-	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
 	timeout.tv_sec = 30;
 	timeout.tv_usec = 0;
-	r = select(fd + 1, &rfds, NULL, NULL, &timeout);
-	if (r < 0) {
-		Debug(diag, "%s: select failed: %s", __func__, strerrno());
-		return -1;
-	}
-	if (r == 0) {
-		// 何も起きなかったので PING を投げる。
-		wsclient_send_ping(ws);
-		return 1;
+	gettimeofday(&now, NULL);
+	timeradd(&now, &timeout, &end);
+	for (;;) {
+		fd_set rfds;
+		FD_ZERO(&rfds);
+		FD_SET(fd, &rfds);
+
+		gettimeofday(&now, NULL);
+		if (((end.tv_sec != now.tv_sec)
+			? (end.tv_sec - now.tv_sec) : (end.tv_usec - now.tv_usec)) <= 0)
+		{
+			// 一定時間何も起きなかったので PING を投げる。
+			wsclient_send_ping(ws);
+			return 1;
+		}
+
+		timersub(&end, &now, &timeout);
+		r = select(fd + 1, &rfds, NULL, NULL, &timeout);
+		if (r < 0) {
+			if (errno == EINTR) {
+				continue;
+			}
+			Debug(diag, "%s: select failed: %s", __func__, strerrno());
+			return -1;
+		}
+		if (r > 0) {
+			break;
+		}
 	}
 
 	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
