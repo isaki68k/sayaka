@@ -999,7 +999,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 	ustring *src = ustring_from_utf8(text);
 	ustring *dst = ustring_alloc(strlen(text));
 
-	if (__predict_false(diag_get_level(diag) >= 1)) {
+	if (__predict_false(diag_get_level(diag) >= 2)) {
 		ustring_dump(src, "display_text src");
 	}
 
@@ -1032,7 +1032,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 			}
 		}
 	}
-	if (diag_get_level(diag) >= 1) {
+	if (diag_get_level(diag) >= 2) {
 		diag_print(diag, "tagcount=%u", tagcount);
 		for (uint i = 0; i < tagcount; i++) {
 			printf("tags[%u] ", i);
@@ -1134,7 +1134,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 				// tags は正規化によって何が起きてるか分からないので、
 				// posend のほうを信じる。
 				uint end = MIN(pos + len, (int)posend);
-				Debug(diag, "tag[%d] found at pos=%u len=%u end=%u",
+				Trace(diag, "tag[%d] found at pos=%u len=%u end=%u",
 					i, pos, len, end);
 				for (; pos < end; pos++) {
 					ustring_append_unichar(dst, srcarray[pos]);
@@ -1185,7 +1185,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 	free(tags);
 	ustring_free(src);
 
-	if (__predict_false(diag_get_level(diag) >= 1)) {
+	if (__predict_false(diag_get_level(diag) >= 2)) {
 		ustring_dump(dst, "dst");
 	}
 	return dst;
