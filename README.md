@@ -40,7 +40,7 @@ Misskey クライアント sayaka ちゃん version 3.8.0 (2024/09/04)
 	OpenBSD ports なら `converters/libiconv` です。
 * OpenSSL
 	… *BSD なら OS 標準です。
-	Ubuntu ならたぶん `openssl` です。
+	Ubuntu なら `libssl-dev` です。
 
 
 インストール方法
