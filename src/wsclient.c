@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/select.h>
+#include <sys/time.h>
 
 enum {
 	// フレームの +0バイト目 (の下位4ビット)
