@@ -517,8 +517,10 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 		}
 
 		if (fetch_image(fp, img_url, width, height, shade) == false) {
-			fprintf(stderr, "%s: fetch_image failed: %s\n", __func__,
-				strerrno());
+			if (errno != 0) {
+				fprintf(stderr, "%s: fetch_image failed: %s\n", __func__,
+					strerrno());
+			}
 			goto abort;
 		}
 
