@@ -500,6 +500,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 	snprintf(cache_filename, sizeof(cache_filename),
 		"%s/%s.sixel", cachedir, img_file);
 	Debug(diag_image, "cachefile=|%s|", cache_filename);
+	Trace(diag_image, "img_url=|%s|", img_url);
 
 	if (opt_overwrite_cache) {
 		fp = NULL;
