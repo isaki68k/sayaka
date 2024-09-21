@@ -973,6 +973,12 @@ misskey_print_filetype(const struct json *js, int ifile, const char *msg)
 	if (type == NULL) {
 		type = "no filetype?";
 	}
+	if (strncasecmp(type, "image/", 6) == 0) {
+		// 画像は (image/jpeg) みたいなのを (image) だけに削る。
+		// (image/jpeg) といってても実際には webp (元画像が jpeg) なので
+		// もはや image/* 以上の有効な意味を持っていない。
+		type = "image";
+	}
 	printf("\r");
 	print_indent(indent_depth + 1);
 	printf("(%s)%s\n", type, msg);
