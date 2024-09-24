@@ -248,7 +248,7 @@ image_webp_read(FILE *fp, const struct diag *diag)
 		// 全域読み終えていたら 0、そうでなければ SUSPENDED になるはず。
 		int status = WebPIAppend(idec, filebuf, filelen);
 		if (status != 0 && status != VP8_STATUS_SUSPENDED) {
-			Debug(diag, "%s: WebPIAppend(first) failed", __func__);
+			Debug(diag, "%s: WebPIAppend(first) failed: %d", __func__, status);
 			goto abort_inc;
 		}
 
@@ -322,7 +322,7 @@ image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 	} while (status == VP8_STATUS_SUSPENDED);
 
 	if (status != VP8_STATUS_OK) {
-		Debug(diag, "%s: Decode failed %d", __func__, (int)status);
+		Debug(diag, "%s: Decode failed %d", __func__, status);
 		return false;
 	}
 
