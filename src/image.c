@@ -70,6 +70,7 @@ static uint finder_fixed8(image_reductor_handle *, ColorRGB);
 static uint finder_ansi16(image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(image_reductor_handle *, ColorRGB);
 static uint finder_xterm256(image_reductor_handle *, ColorRGB);
+static inline uint8 finder_xterm256_channel(uint8);
 static void colorcvt_gray(ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
@@ -1085,14 +1086,14 @@ image_alloc_xterm256_palette(void)
 	if (pal == NULL) {
 		return NULL;
 	}
-	// ANSI16
+	// ANSI16 色。
 	memcpy(pal, palette_ansi16, sizeof(palette_ansi16));
 
-	// 216色 (6x6x6)
+	// 216色 (6x6x6)。
 	for (i = 0; i < 216; i++) {
 		ColorRGB c;
 
-/* レベル: 00, 5f, 87, af, d7, ff */
+		// レベルは 00, 5f, 87, af, d7, ff で、00 だけ直線上にない。
 		c.r = ((i / (6*6)) % 6);
 		c.r = c.r == 0 ? 0 : c.r * 0x28 + 0x37;
 		c.g = ((i / (6)  ) % 6);
@@ -1102,7 +1103,7 @@ image_alloc_xterm256_palette(void)
 		pal[i + 16] = c;
 	}
 
-	// グレー24色
+	// グレー24色。
 	for (i = 0; i < 24; i++) {
 		ColorRGB c;
 		c.r = c.g = c.b = 8 + i * 10;
@@ -1112,12 +1113,12 @@ image_alloc_xterm256_palette(void)
 	return pal;
 }
 
-// 0 .. 5 を返す。
+// xterm256色の1チャンネル分、0 .. 5 を返す。
 static inline uint8
 finder_xterm256_channel(uint8 c)
 {
-/* レベル: 00, 5f, 87, af, d7, ff */
-/* しきい:   2f, 73, 9b, bc, eb   */
+	// レベル: 00, 5f, 87, af, d7, ff
+	// しきい:   2f, 73, 9b, bc, eb
 
 	if (c < 0x73) {
 		if (c < 0x2f) {
@@ -1135,8 +1136,6 @@ finder_xterm256_channel(uint8 c)
 static uint
 finder_xterm256(image_reductor_handle *ir, ColorRGB c)
 {
-/* レベル: 00, 5f, 87, af, d7, ff */
-/* しきい:   2f, 73, 9b, bc, eb   */
 	return 16
 		+ finder_xterm256_channel(c.r) * 36
 		+ finder_xterm256_channel(c.g) * 6
