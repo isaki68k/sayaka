@@ -124,6 +124,7 @@ typedef enum {
 	ReductorColor_Fixed8,	// RGB 8色
 	ReductorColor_ANSI16,	// ANSI 16色 (といっても色合いが全員違う?)
 	ReductorColor_Fixed256,	// 固定 256 色
+	ReductorColor_XTERM256,	// xterm 互換固定 256 色
 
 	// 下位8ビットが色モード
 	ReductorColor_MASK = 0xff,

@@ -69,9 +69,11 @@ static uint finder_gray(image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(image_reductor_handle *, ColorRGB);
 static uint finder_ansi16(image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(image_reductor_handle *, ColorRGB);
+static uint finder_xterm256(image_reductor_handle *, ColorRGB);
 static void colorcvt_gray(ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
+static ColorRGB *image_alloc_xterm256_palette(void);
 
 #if defined(SIXELV)
 static void image_reduct_simple(image_reductor_handle *,
@@ -457,6 +459,16 @@ image_reduct(
 		ir->palette = ir->palette_buf;
 		ir->palette_count = 256;
 		ir->finder = finder_fixed256;
+		break;
+
+	 case ReductorColor_XTERM256:
+		ir->palette_buf = image_alloc_xterm256_palette();
+		if (ir->palette_buf == NULL) {
+			goto abort;
+		}
+		ir->palette = ir->palette_buf;
+		ir->palette_count = 256;
+		ir->finder = finder_xterm256;
 		break;
 
 	 default:
@@ -1063,6 +1075,74 @@ finder_fixed256(image_reductor_handle *ir, ColorRGB c)
 	return (R << 5) | (G << 2) | B;
 }
 
+// xterm 互換の固定 256 色パレットを作成して返す。
+static ColorRGB *
+image_alloc_xterm256_palette(void)
+{
+	ColorRGB *pal = malloc(sizeof(ColorRGB) * 256);
+	int i;
+
+	if (pal == NULL) {
+		return NULL;
+	}
+	// ANSI16
+	memcpy(pal, palette_ansi16, sizeof(palette_ansi16));
+
+	// 216色 (6x6x6)
+	for (i = 0; i < 216; i++) {
+		ColorRGB c;
+
+/* レベル: 00, 5f, 87, af, d7, ff */
+		c.r = ((i / (6*6)) % 6);
+		c.r = c.r == 0 ? 0 : c.r * 0x28 + 0x37;
+		c.g = ((i / (6)  ) % 6);
+		c.g = c.g == 0 ? 0 : c.g * 0x28 + 0x37;
+		c.b = ((i        ) % 6);
+		c.b = c.b == 0 ? 0 : c.b * 0x28 + 0x37;
+		pal[i + 16] = c;
+	}
+
+	// グレー24色
+	for (i = 0; i < 24; i++) {
+		ColorRGB c;
+		c.r = c.g = c.b = 8 + i * 10;
+		pal[i + 16 + 216] = c;
+	}
+
+	return pal;
+}
+
+// 0 .. 5 を返す。
+static inline uint8
+finder_xterm256_channel(uint8 c)
+{
+/* レベル: 00, 5f, 87, af, d7, ff */
+/* しきい:   2f, 73, 9b, bc, eb   */
+
+	if (c < 0x73) {
+		if (c < 0x2f) {
+			c = 0;
+		} else {
+			c = 1;
+		}
+	} else {
+		c = 2 + (c - 0x73) / 0x28;
+	}
+	return c;
+}
+
+// xterm 互換 256 色で c に最も近いパレット番号を返す。
+static uint
+finder_xterm256(image_reductor_handle *ir, ColorRGB c)
+{
+/* レベル: 00, 5f, 87, af, d7, ff */
+/* しきい:   2f, 73, 9b, bc, eb   */
+	return 16
+		+ finder_xterm256_channel(c.r) * 36
+		+ finder_xterm256_channel(c.g) * 6
+		+ finder_xterm256_channel(c.b) * 1;
+}
+
 
 #if defined(SIXELV)
 
@@ -1147,6 +1227,7 @@ reductorcolor_tostr(ReductorColor color)
 		{ ReductorColor_Fixed8,		"Fixed8" },
 		{ ReductorColor_ANSI16,		"ANSI16" },
 		{ ReductorColor_Fixed256,	"Fixed256" },
+		{ ReductorColor_XTERM256,	"xterm256" },
 	};
 	static char buf[16];
 	uint type = (uint)color & ReductorColor_MASK;
