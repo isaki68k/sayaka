@@ -1223,23 +1223,22 @@ colorformat_tostr(ColorFormat color)
 		const char *name;
 	} table[] = {
 		{ COLOR_FMT_GRAY,		"Gray" },
-		{ COLOR_FMT_8_RGB,		"Fixed8" },
-		{ COLOR_FMT_16_VGA,		"VGA16" },
-		{ COLOR_FMT_256_RGB332,	"Fixed256" },
-		{ COLOR_FMT_256_XTERM,	"xterm256" },
+		{ COLOR_FMT_8_RGB,		"8(RGB)" },
+		{ COLOR_FMT_16_VGA,		"16(ANSI VGA)" },
+		{ COLOR_FMT_256_RGB332,	"256(RGB332)" },
+		{ COLOR_FMT_256_XTERM,	"256(xterm)" },
 	};
 	static char buf[16];
 	uint type = (uint)color & COLOR_FMT_MASK;
-	uint num = (uint)color >> 8;
 
 	for (int i = 0; i < countof(table); i++) {
-		if (type == table[i].value) {
-			// 今のところ Gray は必ず num > 0 なのでこれだけで区別できる
-			if (num == 0) {
-				return table[i].name;
-			} else {
+		if (table[i].value == type) {
+			if (type == COLOR_FMT_GRAY) {
+				uint num = GET_COLOR_COUNT(color);
 				snprintf(buf, sizeof(buf), "%s%u", table[i].name, num);
 				return buf;
+			} else {
+				return table[i].name;
 			}
 		}
 	}
