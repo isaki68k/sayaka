@@ -67,7 +67,7 @@ typedef struct image_reductor_handle_
 
 static uint finder_gray(image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(image_reductor_handle *, ColorRGB);
-static uint finder_ansi16(image_reductor_handle *, ColorRGB);
+static uint finder_vga16(image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(image_reductor_handle *, ColorRGB);
 static uint finder_xterm256(image_reductor_handle *, ColorRGB);
 static inline uint8 finder_xterm256_channel(uint8);
@@ -92,7 +92,7 @@ static inline uint8 saturate_uint8(int);
 static inline int16 saturate_adderr(int16, int);
 
 static const ColorRGB palette_fixed8[];
-static const ColorRGB palette_ansi16[];
+static const ColorRGB palette_vga16[];
 
 // opt を初期化する。
 void
@@ -447,8 +447,8 @@ image_reduct(
 		break;
 
 	 case COLOR_FMT_16_VGA:
-		ir->finder  = finder_ansi16;
-		ir->palette = palette_ansi16;
+		ir->finder  = finder_vga16;
+		ir->palette = palette_vga16;
 		ir->palette_count = 16;
 		break;
 
@@ -987,10 +987,10 @@ finder_fixed8(image_reductor_handle *ir, ColorRGB c)
 #endif
 }
 
-// ANSI 固定 16 色。
-// Standard VGA colors を基準とし、
+// VGA 固定 16 色。
+// ANSI16 の Standard VGA colors を基準とし、
 // ただしパレット4 を Brown ではなく Yellow になるようにしてある。
-static const ColorRGB palette_ansi16[] = {
+static const ColorRGB palette_vga16[] = {
 	{ RGBToU32(  0,   0,   0) },
 	{ RGBToU32(170,   0,   0) },
 	{ RGBToU32(  0, 170,   0) },
@@ -1009,9 +1009,9 @@ static const ColorRGB palette_ansi16[] = {
 	{ RGBToU32(255, 255, 255) },
 };
 
-// 色 c を ANSI 固定 16 色パレットへ変換する。
+// 色 c を VGA 固定 16 色パレットへ変換する。
 static uint
-finder_ansi16(image_reductor_handle *ir, ColorRGB c)
+finder_vga16(image_reductor_handle *ir, ColorRGB c)
 {
 	uint R;
 	uint G;
@@ -1087,7 +1087,7 @@ image_alloc_xterm256_palette(void)
 		return NULL;
 	}
 	// ANSI16 色。
-	memcpy(pal, palette_ansi16, sizeof(palette_ansi16));
+	memcpy(pal, palette_vga16, sizeof(palette_vga16));
 
 	// 216色 (6x6x6)。
 	for (i = 0; i < 216; i++) {
@@ -1224,7 +1224,7 @@ colorformat_tostr(ColorFormat color)
 	} table[] = {
 		{ COLOR_FMT_GRAY,		"Gray" },
 		{ COLOR_FMT_8_RGB,		"Fixed8" },
-		{ COLOR_FMT_16_VGA,		"ANSI16" },
+		{ COLOR_FMT_16_VGA,		"VGA16" },
 		{ COLOR_FMT_256_RGB332,	"Fixed256" },
 		{ COLOR_FMT_256_XTERM,	"xterm256" },
 	};
