@@ -696,11 +696,7 @@ init_screen(void)
 	// 端末の背景色を調べる。
 	// 判定できなければ背景色白をデフォルトにしておく。
 	// モノクロモードなら不要。
-	if (opt_bgtheme == BG_AUTO && is_tty &&
-		(imageopt.color == COLOR_FMT_8_RGB ||
-		 imageopt.color == COLOR_FMT_16_VGA ||
-		 imageopt.color == COLOR_FMT_256_RGB332))
-	{
+	if (opt_bgtheme == BG_AUTO && is_tty && colormode > 2) {
 		progress("Checking background color...");
 		opt_bgtheme = terminal_get_bgtheme();
 		switch (opt_bgtheme) {
