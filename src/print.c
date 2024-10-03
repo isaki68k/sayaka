@@ -162,7 +162,7 @@ style_begin(uint style)
 const char *
 style_end(uint style)
 {
-	// 開始シーケンスが定義されていれば返す
+	// 開始シーケンスが定義されていれば返す。
 	if (style2esc[style][0] != '\0') {
 		return ESC "[0m";
 	}
@@ -248,7 +248,7 @@ iprint(const ustring *src)
 	for (uint i = 0; i < srclen; i++) {
 		unichar uni = s[i];
 
-		// Private Use Area (外字) をコードポイント形式(?)にする
+		// Private Use Area (外字) をコードポイント形式(?)にする。
 		if (__predict_false((  0xe000 <= uni && uni <=   0xf8ff))	// BMP
 		 || __predict_false(( 0xf0000 <= uni && uni <=  0xffffd))	// 第15面
 		 || __predict_false((0x100000 <= uni && uni <= 0x10fffd))) 	// 第16面
@@ -259,7 +259,7 @@ iprint(const ustring *src)
 			continue;
 		}
 
-		// Mathematical Alphanumeric Symbols を全角英数字に変換
+		// Mathematical Alphanumeric Symbols を全角英数字に変換。
 		if (__predict_false(opt_mathalpha)) {
 			// 変換先があればここで追加。
 			unichar altchar = conv_mathalpha(uni);
@@ -283,7 +283,7 @@ iprint(const ustring *src)
 		}
 
 		if (__predict_false(opt_codeset)) {
-			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング
+			// JIS/EUC-JP(/Shift-JIS) に変換する場合のマッピング。
 			// 本当は変換先がこれらの時だけのほうがいいだろうけど。
 
 			// 全角チルダ(U+FF5E) -> 波ダッシュ(U+301C)
@@ -305,7 +305,7 @@ iprint(const ustring *src)
 			}
 
 			// NetBSD/x68k なら半角カナは表示できる。
-			// XXX 正確には JIS という訳ではないのだがとりあえず
+			// XXX 正確には JIS という訳ではないのだがとりあえず。
 			if (strcmp(opt_codeset, "iso-2022-jp") == 0) {
 				if (__predict_false(0xff61 <= uni && uni < 0xffa0)) {
 					ustring_append_ascii(utext, ESC "(I");
@@ -316,7 +316,7 @@ iprint(const ustring *src)
 			}
 
 #if 0
-			// 変換先に対応する文字がなければゲタ'〓'(U+3013)にする
+			// 変換先に対応する文字がなければゲタ'〓'(U+3013)にする。
 			if (__predict_false(uchar_is_convertible(uni) == false)) {
 				ustring_append_unichar(utext, 0x3013);
 				continue;
@@ -336,16 +336,16 @@ iprint(const ustring *src)
 	// Stage2: インデントつけていく。
 	ustring *utext2 = ustring_alloc(ustring_len(utext) + 32);
 
-	// インデント階層
+	// インデント階層。
 	char indent[12];
 	make_indent(indent, indent_depth + 1);
 	ustring_append_ascii(utext2, indent);
 
 	if (__predict_false(screen_cols == 0)) {
-		// 桁数が分からない場合は何もしない
+		// 桁数が分からない場合は何もしない。
 		ustring_append(utext2, utext);
 	} else {
-		// 1文字ずつ文字幅を数えながら出力用に整形していく
+		// 1文字ずつ文字幅を数えながら出力用に整形していく。
 		uint in_escape = 0;
 		uint left = indent_cols * (indent_depth + 1);
 		uint x = left;
@@ -359,7 +359,7 @@ iprint(const ustring *src)
 				ustring_append_unichar(utext2, uni);
 				switch (in_escape) {
 				 case 1:
-					// ESC 直後の文字で二手に分かれる
+					// ESC 直後の文字で二手に分かれる。
 					if (uni == '[') {
 						in_escape = 2;
 					} else {
@@ -367,13 +367,13 @@ iprint(const ustring *src)
 					}
 					break;
 				 case 2:
-					// ESC [ 以降 'm' まで
+					// ESC [ 以降 'm' まで。
 					if (uni == 'm') {
 						in_escape = 0;
 					}
 					break;
 				 case 3:
-					// ESC ( の次の1文字だけ
+					// ESC ( の次の1文字だけ。
 					in_escape = 0;
 					break;
 				}
@@ -386,7 +386,7 @@ iprint(const ustring *src)
 					ustring_append_ascii(utext2, indent);
 					x = left;
 				} else {
-					// 文字幅を取得
+					// 文字幅を取得。
 					uint width = get_eaw_width(uni);
 					if (width == 1) {
 						ustring_append_unichar(utext2, uni);
@@ -409,7 +409,7 @@ iprint(const ustring *src)
 				}
 			}
 
-			// デバッグ用
+			// デバッグ用。
 			if (0) {
 				printf("[%d] U+%04x, x = %u", i, uni, x);
 				if (uni == ESCchar) {
@@ -536,7 +536,7 @@ show_image(const char *img_file, const char *img_url, uint width, uint height,
 			cache_filename, n);
 		goto abort;
 	}
-	// 先頭から少しのところに '"' <Pan> ';' <Pad> ';' <Ph> ';' <Pv>
+	// 先頭から少しのところに '"' <Pan> ';' <Pad> ';' <Ph> ';' <Pv>。
 	// Search '"'
 	for (i = 0; i < n && buf[i] != '\x22'; i++)
 		;
