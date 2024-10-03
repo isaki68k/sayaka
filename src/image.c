@@ -69,12 +69,16 @@ static uint finder_gray(image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(image_reductor_handle *, ColorRGB);
 static uint finder_vga16(image_reductor_handle *, ColorRGB);
 static uint finder_fixed256(image_reductor_handle *, ColorRGB);
+#if defined(SIXELV)
 static uint finder_xterm256(image_reductor_handle *, ColorRGB);
 static inline uint8 finder_xterm256_channel(uint8);
+#endif
 static void colorcvt_gray(ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
+#if defined(SIXELV)
 static ColorRGB *image_alloc_xterm256_palette(void);
+#endif
 
 #if defined(SIXELV)
 static void image_reduct_simple(image_reductor_handle *,
@@ -462,6 +466,7 @@ image_reduct(
 		ir->finder = finder_fixed256;
 		break;
 
+#if defined(SIXELV)
 	 case COLOR_FMT_256_XTERM:
 		ir->palette_buf = image_alloc_xterm256_palette();
 		if (ir->palette_buf == NULL) {
@@ -471,6 +476,7 @@ image_reduct(
 		ir->palette_count = 256;
 		ir->finder = finder_xterm256;
 		break;
+#endif
 
 	 default:
 		Debug(diag, "%s: Unsupported color 0x%x", __func__, opt->color);
@@ -1076,6 +1082,8 @@ finder_fixed256(image_reductor_handle *ir, ColorRGB c)
 	return (R << 5) | (G << 2) | B;
 }
 
+#if defined(SIXELV)
+
 // xterm 互換の固定 256 色パレットを作成して返す。
 static ColorRGB *
 image_alloc_xterm256_palette(void)
@@ -1142,8 +1150,6 @@ finder_xterm256(image_reductor_handle *ir, ColorRGB c)
 		+ finder_xterm256_channel(c.b) * 1;
 }
 
-
-#if defined(SIXELV)
 
 //
 // enum のデバッグ表示用

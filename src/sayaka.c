@@ -256,9 +256,6 @@ main(int ac, char *av[])
 			} else if (strcmp(optarg, "256") == 0) {
 				colormode = 256;
 				imageopt.color = COLOR_FMT_256_RGB332;
-			} else if (strcmp(optarg, "xterm256") == 0) {
-				colormode = 256;
-				imageopt.color = COLOR_FMT_256_XTERM;
 			} else if (strcmp(optarg, "gray") == 0 ||
 			           strcmp(optarg, "grey") == 0) {
 				colormode = 2;
@@ -566,7 +563,6 @@ help_all(void)
 " <options>\n"
 "  -c,--color=<colormode> : Set color mode (default:256)\n"
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
-"     xterm256 : Fixed 256 colors (xterm-256 compatible palette)\n"
 "     16       : Fixed ANSI compatible 16 colors\n"
 "     8        : Fixed RGB 8 colors\n"
 "     2        : Monochrome image, but use text bold sequence\n"
