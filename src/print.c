@@ -72,14 +72,14 @@ uint opt_eaw_n;					// Neutral 文字の文字幅
 bool opt_mathalpha;				// Mathematical AlphaNumeric を全角英数字に変換
 bool opt_nocombine;				// Combining Enclosing Keycap を合成しない
 
-#define C2EBUFSIZE	(16)
-static char color2esc[COLOR_MAX][C2EBUFSIZE];
+#define S2EBUFSIZE	(16)
+static char style2esc[STYLE_MAX][S2EBUFSIZE];
 
 // 色関係の初期化。
 void
 init_color(void)
 {
-	char url[C2EBUFSIZE];
+	char url[S2EBUFSIZE];
 	const char *c_blue = NULL;
 	const char *c_username = NULL;
 	const char *c_renote = NULL;
@@ -134,50 +134,50 @@ init_color(void)
 		c_gray = "90";
 	}
 
-	make_esc(color2esc[COLOR_USERNAME],	c_username);
-	make_esc(color2esc[COLOR_USERID],	c_blue);
-	make_esc(color2esc[COLOR_TIME],		c_gray);
-	make_esc(color2esc[COLOR_RENOTE],	c_renote);
-	make_esc(color2esc[COLOR_REACTION],	c_react);
-	make_esc(color2esc[COLOR_URL],		url);
-	make_esc(color2esc[COLOR_TAG],		c_blue);
+	make_esc(style2esc[STYLE_USERNAME],	c_username);
+	make_esc(style2esc[STYLE_USERID],	c_blue);
+	make_esc(style2esc[STYLE_TIME],		c_gray);
+	make_esc(style2esc[STYLE_RENOTE],	c_renote);
+	make_esc(style2esc[STYLE_REACTION],	c_react);
+	make_esc(style2esc[STYLE_URL],		url);
+	make_esc(style2esc[STYLE_TAG],		c_blue);
 }
 
 static void
-make_esc(char *dst, const char *color)
+make_esc(char *dst, const char *style)
 {
-	if (color != NULL && color[0] != '\0') {
-		snprintf(dst, C2EBUFSIZE, ESC "[%sm", color);
+	if (style != NULL && style[0] != '\0') {
+		snprintf(dst, S2EBUFSIZE, ESC "[%sm", style);
 	}
 }
 
-// color の開始シーケンスを返す。
+// style の開始シーケンスを返す。
 const char *
-color_begin(uint color)
+style_begin(uint style)
 {
-	return color2esc[color];
+	return style2esc[style];
 }
 
-// color の終了シーケンスを返す。
+// style の終了シーケンスを返す。
 const char *
-color_end(uint color)
+style_end(uint style)
 {
 	// 開始シーケンスが定義されていれば返す
-	if (color2esc[color][0] != '\0') {
+	if (style2esc[style][0] != '\0') {
 		return ESC "[0m";
 	}
 	return "";
 }
 
-// ustring の u の末尾に color で着色した ASCII 文字列 str を追加する。
+// ustring の u の末尾に style を適用した ASCII 文字列 str を追加する。
 void
-ustring_append_ascii_color(ustring *u, const char *str, uint color)
+ustring_append_ascii_style(ustring *u, const char *str, uint style)
 {
 	if (str[0] != '\0') {
-		bool has_esc = (color2esc[color][0] != '\0');
+		bool has_esc = (style2esc[style][0] != '\0');
 
 		if (has_esc) {
-			ustring_append_ascii(u, color2esc[color]);
+			ustring_append_ascii(u, style2esc[style]);
 		}
 		ustring_append_ascii(u, str);
 		if (has_esc) {
@@ -186,15 +186,15 @@ ustring_append_ascii_color(ustring *u, const char *str, uint color)
 	}
 }
 
-// ustring の u の末尾に color で着色した UTF-8 文字列 str を追加する。
+// ustring の u の末尾に style を適用した UTF-8 文字列 str を追加する。
 void
-ustring_append_utf8_color(ustring *u, const char *str, uint color)
+ustring_append_utf8_style(ustring *u, const char *str, uint style)
 {
 	if (str[0] != '\0') {
-		bool has_esc = (color2esc[color][0] != '\0');
+		bool has_esc = (style2esc[style][0] != '\0');
 
 		if (has_esc) {
-			ustring_append_ascii(u, color2esc[color]);
+			ustring_append_ascii(u, style2esc[style]);
 		}
 		ustring_append_utf8(u, str);
 		if (has_esc) {

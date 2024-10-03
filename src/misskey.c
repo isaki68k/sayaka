@@ -465,8 +465,8 @@ misskey_show_note(const struct json *js, int inote)
 			// リノート元。
 			ustring *rnline = ustring_alloc(64);
 			string *rnowner = misskey_format_renote_owner(js, inote);
-			ustring_append_utf8_color(rnline, string_get(rnowner),
-				COLOR_RENOTE);
+			ustring_append_utf8_style(rnline, string_get(rnowner),
+				STYLE_RENOTE);
 			iprint(rnline);
 			printf("\n");
 			string_free(rnowner);
@@ -496,13 +496,13 @@ misskey_show_note(const struct json *js, int inote)
 	int iuser = json_obj_find_obj(js, inote, "user");
 	misskey_user *user = misskey_get_user(js, inote);
 	ustring *headline = ustring_alloc(64);
-	ustring_append_utf8_color(headline, string_get(user->name), COLOR_USERNAME);
+	ustring_append_utf8_style(headline, string_get(user->name), STYLE_USERNAME);
 	ustring_append_unichar(headline, ' ');
-	ustring_append_utf8_color(headline, string_get(user->id), COLOR_USERID);
+	ustring_append_utf8_style(headline, string_get(user->id), STYLE_USERID);
 	if (user->instance) {
 		ustring_append_unichar(headline, ' ');
-		ustring_append_utf8_color(headline, string_get(user->instance),
-			COLOR_USERNAME);
+		ustring_append_utf8_style(headline, string_get(user->instance),
+			STYLE_USERNAME);
 	}
 
 	// 本文。
@@ -619,9 +619,9 @@ misskey_show_note(const struct json *js, int inote)
 	string *reactmsg = misskey_format_reaction_count(js, inote);
 
 	ustring *footline = ustring_alloc(64);
-	ustring_append_ascii_color(footline, string_get(time), COLOR_TIME);
-	ustring_append_ascii_color(footline, string_get(rnmsg), COLOR_RENOTE);
-	ustring_append_ascii_color(footline, string_get(reactmsg), COLOR_REACTION);
+	ustring_append_ascii_style(footline, string_get(time), STYLE_TIME);
+	ustring_append_ascii_style(footline, string_get(rnmsg), STYLE_RENOTE);
+	ustring_append_ascii_style(footline, string_get(reactmsg), STYLE_REACTION);
 
 	iprint(footline);
 	printf("\n");
@@ -647,7 +647,7 @@ misskey_show_announcement(const struct json *js, int inote)
 	// "icon":"info" はどうしたらいいんだ…。
 	printf(" *\r");
 
-	ustring_append_ascii_color(line, "announcement", COLOR_USERNAME);
+	ustring_append_ascii_style(line, "announcement", STYLE_USERNAME);
 	iprint(line);
 	printf("\n");
 
@@ -692,7 +692,7 @@ misskey_show_announcement(const struct json *js, int inote)
 		time_t unixtime = decode_isotime(at);
 		string *time = format_time(unixtime);
 		ustring_clear(line);
-		ustring_append_ascii_color(line, string_get(time), COLOR_TIME);
+		ustring_append_ascii_style(line, string_get(time), STYLE_TIME);
 		iprint(line);
 		printf("\n");
 		string_free(time);
@@ -758,7 +758,7 @@ misskey_show_notification(const struct json *js, int ibody)
 			string_append_cstr(s, string_get(user->instance));
 		}
 		ustring *u = ustring_alloc(64);
-		ustring_append_utf8_color(u, string_get(s), COLOR_REACTION);
+		ustring_append_utf8_style(u, string_get(s), STYLE_REACTION);
 		iprint(u);
 		printf("\n");
 		ustring_free(u);
@@ -774,16 +774,16 @@ misskey_show_notification(const struct json *js, int ibody)
 		misskey_user *user = misskey_get_user(js, ibody);
 
 		ustring *u = ustring_alloc(128);
-		ustring_append_utf8_color(u, string_get(time), COLOR_TIME);
+		ustring_append_utf8_style(u, string_get(time), STYLE_TIME);
 		ustring_append_unichar(u, ' ');
 		ustring_append_ascii(u, "Followed by ");
-		ustring_append_utf8_color(u, string_get(user->name), COLOR_USERNAME);
+		ustring_append_utf8_style(u, string_get(user->name), STYLE_USERNAME);
 		ustring_append_unichar(u, ' ');
-		ustring_append_utf8_color(u, string_get(user->id), COLOR_USERID);
+		ustring_append_utf8_style(u, string_get(user->id), STYLE_USERID);
 		if (user->instance) {
 			ustring_append_unichar(u, ' ');
-			ustring_append_utf8_color(u, string_get(user->instance),
-				COLOR_USERNAME);
+			ustring_append_utf8_style(u, string_get(user->instance),
+				STYLE_USERNAME);
 		}
 		iprint(u);
 		printf("\n");
@@ -1108,7 +1108,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 			bool next_is_ment1 =
 				(nc != 0 && nc < 0x80 && strchr(ment1chars, nc) != NULL);
 			if (prev_is_ment2 == false && next_is_ment1 == true) {
-				ustring_append_ascii(dst, color_begin(COLOR_USERID));
+				ustring_append_ascii(dst, style_begin(STYLE_USERID));
 				ustring_append_unichar(dst, c);
 				ustring_append_unichar(dst, nc);
 				// 2文字目以降はホスト名も来る可能性がある。
@@ -1120,7 +1120,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 						break;
 					}
 				}
-				ustring_append_ascii(dst, color_end(COLOR_USERID));
+				ustring_append_ascii(dst, style_end(STYLE_USERID));
 				continue;
 			}
 
@@ -1135,7 +1135,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 			}
 			if (i != tagcount) {
 				// 一致したらタグ。'#' 文字自身も含めてコピーする。
-				ustring_append_ascii(dst, color_begin(COLOR_TAG));
+				ustring_append_ascii(dst, style_begin(STYLE_TAG));
 				ustring_append_unichar(dst, c);
 				pos++;
 				uint len = ustring_len(tags[i]);
@@ -1147,7 +1147,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 				for (; pos < end; pos++) {
 					ustring_append_unichar(dst, srcarray[pos]);
 				}
-				ustring_append_ascii(dst, color_end(COLOR_TAG));
+				ustring_append_ascii(dst, style_end(STYLE_TAG));
 				continue;
 			}
 
@@ -1157,7 +1157,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 		{
 			// URL
 			int url_in_paren = 0;
-			ustring_append_ascii(dst, color_begin(COLOR_URL));
+			ustring_append_ascii(dst, style_begin(STYLE_URL));
 			for (; pos < posend; pos++) {
 				// URL に使える文字集合がよく分からない。
 				// 括弧 "(",")" は、開き括弧なしで閉じ括弧が来ると URL 終了。
@@ -1178,7 +1178,7 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 					break;
 				}
 			}
-			ustring_append_ascii(dst, color_end(COLOR_URL));
+			ustring_append_ascii(dst, style_end(STYLE_URL));
 			continue;
 		}
 

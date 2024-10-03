@@ -37,15 +37,15 @@ enum {
 };
 
 enum {
-	COLOR_USERNAME,
-	COLOR_USERID,
-	COLOR_TIME,
-	COLOR_RENOTE,
-	COLOR_REACTION,
-	COLOR_URL,
-	COLOR_TAG,
+	STYLE_USERNAME,
+	STYLE_USERID,
+	STYLE_TIME,
+	STYLE_RENOTE,
+	STYLE_REACTION,
+	STYLE_URL,
+	STYLE_TAG,
 
-	COLOR_MAX,
+	STYLE_MAX,
 };
 
 enum {
@@ -123,10 +123,10 @@ extern uint opt_eaw_n;
 extern bool opt_mathalpha;
 extern bool opt_nocombine;
 extern void init_color(void);
-extern const char *color_begin(uint);
-extern const char *color_end(uint);
-extern void ustring_append_ascii_color(ustring *, const char *, uint);
-extern void ustring_append_utf8_color(ustring *, const char *, uint);
+extern const char *style_begin(uint);
+extern const char *style_end(uint);
+extern void ustring_append_ascii_style(ustring *, const char *, uint);
+extern void ustring_append_utf8_style(ustring *, const char *, uint);
 extern void print_indent(uint);
 extern void iprint(const ustring *);
 extern bool show_image(const char *, const char *, uint, uint, bool, int);
