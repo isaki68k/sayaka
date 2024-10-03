@@ -240,35 +240,35 @@ main(int ac, char *av[])
 			int n;
 			if (strcmp(optarg, "1") == 0) {
 				colormode = 1;
-				imageopt.color = ReductorColor_GrayLevel(2);
+				imageopt.color = MAKE_COLOR_FMT_GRAY(2);
 				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "2") == 0) {
 				colormode = 2;
-				imageopt.color = ReductorColor_GrayLevel(2);
+				imageopt.color = MAKE_COLOR_FMT_GRAY(2);
 				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "8") == 0) {
 				colormode = 8;
-				imageopt.color = ReductorColor_Fixed8;
+				imageopt.color = COLOR_FMT_8_RGB;
 				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "16") == 0) {
 				colormode = 16;
-				imageopt.color = ReductorColor_ANSI16;
+				imageopt.color = COLOR_FMT_16_VGA;
 			} else if (strcmp(optarg, "256") == 0) {
 				colormode = 256;
-				imageopt.color = ReductorColor_Fixed256;
+				imageopt.color = COLOR_FMT_256_RGB332;
 			} else if (strcmp(optarg, "xterm256") == 0) {
 				colormode = 256;
-				imageopt.color = ReductorColor_XTERM256;
+				imageopt.color = COLOR_FMT_256_XTERM;
 			} else if (strcmp(optarg, "gray") == 0 ||
 			           strcmp(optarg, "grey") == 0) {
 				colormode = 2;
-				imageopt.color = ReductorColor_GrayLevel(256);
+				imageopt.color = MAKE_COLOR_FMT_GRAY(256);
 			} else if ((strncmp(optarg, "gray", 4) == 0 ||
 			            strncmp(optarg, "grey", 4) == 0   ) &&
 			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
 			           (2 <= n && n <= 256)) {
 				colormode = 2;
-				imageopt.color = ReductorColor_GrayLevel(n);
+				imageopt.color = MAKE_COLOR_FMT_GRAY(n);
 			} else {
 				errx(1, "%s: invalid color mode", optarg);
 			}
@@ -697,9 +697,9 @@ init_screen(void)
 	// 判定できなければ背景色白をデフォルトにしておく。
 	// モノクロモードなら不要。
 	if (opt_bgtheme == BG_AUTO && is_tty &&
-		(imageopt.color == ReductorColor_Fixed8 ||
-		 imageopt.color == ReductorColor_ANSI16 ||
-		 imageopt.color == ReductorColor_Fixed256 ))
+		(imageopt.color == COLOR_FMT_8_RGB ||
+		 imageopt.color == COLOR_FMT_16_VGA ||
+		 imageopt.color == COLOR_FMT_256_RGB332))
 	{
 		progress("Checking background color...");
 		opt_bgtheme = terminal_get_bgtheme();
@@ -747,10 +747,10 @@ init_screen(void)
 	init_color();
 
 	// キャッシュファイル用の色モード名。
-	switch (imageopt.color & ReductorColor_MASK) {
-	 case ReductorColor_Gray:
+	switch (imageopt.color & COLOR_FMT_MASK) {
+	 case COLOR_FMT_GRAY:
 	 {
-		uint grayscale = (imageopt.color >> 8) + 1;
+		uint grayscale = GET_COLOR_COUNT(imageopt.color);
 		if (grayscale == 2) {
 			strlcpy(colorname, "2", sizeof(colorname));
 		} else {
@@ -758,13 +758,13 @@ init_screen(void)
 		}
 		break;
 	 }
-	 case ReductorColor_Fixed8:
+	 case COLOR_FMT_8_RGB:
 		strlcpy(colorname, "8", sizeof(colorname));
 		break;
-	 case ReductorColor_ANSI16:
+	 case COLOR_FMT_16_VGA:
 		strlcpy(colorname, "16", sizeof(colorname));
 		break;
-	 case ReductorColor_Fixed256:
+	 case COLOR_FMT_256_RGB332:
 		strlcpy(colorname, "256", sizeof(colorname));
 		break;
 	 default:

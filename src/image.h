@@ -120,17 +120,20 @@ typedef enum {
 // 色モードは下位8ビットが enum。
 // Gray、GrayMean では bit15-8 の 8ビットに「階調-1」(1-255) を格納する。
 typedef enum {
-	ReductorColor_Gray,		// グレイスケール
-	ReductorColor_Fixed8,	// RGB 8色
-	ReductorColor_ANSI16,	// ANSI 16色 (といっても色合いが全員違う?)
-	ReductorColor_Fixed256,	// 固定 256 色
-	ReductorColor_XTERM256,	// xterm 互換固定 256 色
+	COLOR_FMT_GRAY,			// グレイスケール
+	COLOR_FMT_8_RGB,		// RGB 8色
+	COLOR_FMT_16_VGA,		// ANSI 16色 (VGA)
+	COLOR_FMT_256_RGB332,	// 固定 256 色 (MSX SCREEN8 互換)
+	COLOR_FMT_256_XTERM,	// 固定 256 色 (xterm 互換)
 
 	// 下位8ビットが色モード
-	ReductorColor_MASK = 0xff,
-} ReductorColor;
-#define ReductorColor_GrayLevel(n)	\
-	(ReductorColor_Gray | (((unsigned int)n - 1) << 8))
+	COLOR_FMT_MASK = 0xff,
+} ColorFormat;
+
+#define MAKE_COLOR_FMT_GRAY(n)	\
+	(COLOR_FMT_GRAY | (((uint)(n) - 1) << 8))
+
+#define GET_COLOR_COUNT(fmt)	((((uint)(fmt)) >> 8) + 1)
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define RGBToU32(r, g, b)	((uint32)(((r) <<  0) | ((g) << 8) | ((b) << 16)))
@@ -186,7 +189,7 @@ typedef struct image_opt_ {
 	// 減色
 	ReductorMethod method;
 	ReductorDiffuse diffuse;
-	ReductorColor color;
+	ColorFormat color;
 
 	// 誤差の減衰率(?)。0 .. 256 で指定する。
 	// 256以上は 256 と同じ効果となる。
@@ -216,7 +219,7 @@ extern struct image *image_reduct(const struct image *, uint, uint,
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductordiffuse_tostr(ReductorDiffuse);
-extern const char *reductorcolor_tostr(ReductorColor);
+extern const char *colorformat_tostr(ColorFormat);
 
 // image_blurhash.c
 extern struct image *image_blurhash_read(FILE *, int, int, const struct diag *);

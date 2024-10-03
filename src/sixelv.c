@@ -213,23 +213,23 @@ main(int ac, char *av[])
 		 {
 			int n;
 			if (strcmp(optarg, "2") == 0) {
-				imageopt.color = ReductorColor_GrayLevel(2);
+				imageopt.color = MAKE_COLOR_FMT_GRAY(2);
 			} else if (strcmp(optarg, "8") == 0) {
-				imageopt.color = ReductorColor_Fixed8;
+				imageopt.color = COLOR_FMT_8_RGB;
 			} else if (strcmp(optarg, "16") == 0) {
-				imageopt.color = ReductorColor_ANSI16;
+				imageopt.color = COLOR_FMT_16_VGA;
 			} else if (strcmp(optarg, "256") == 0) {
-				imageopt.color = ReductorColor_Fixed256;
+				imageopt.color = COLOR_FMT_256_RGB332;
 			} else if (strcmp(optarg, "xterm256") == 0) {
-				imageopt.color = ReductorColor_XTERM256;
+				imageopt.color = COLOR_FMT_256_XTERM;
 			} else if (strcmp(optarg, "gray") == 0 ||
 			           strcmp(optarg, "grey") == 0) {
-				imageopt.color = ReductorColor_GrayLevel(256);
+				imageopt.color = MAKE_COLOR_FMT_GRAY(256);
 			} else if ((strncmp(optarg, "gray", 4) == 0 ||
 			            strncmp(optarg, "grey", 4) == 0   ) &&
 			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
 			           (2 <= n && n <= 256)) {
-				imageopt.color = ReductorColor_GrayLevel(n);
+				imageopt.color = MAKE_COLOR_FMT_GRAY(n);
 			} else {
 				errx(1, "%s: invalid color mode", optarg);
 			}
@@ -658,7 +658,7 @@ do_file(const char *infile)
 	Debug(diag_image,
 		"InputSize=(%u, %u) OutputSize=(%u, %u) OutputColor=%s",
 		srcimg->width, srcimg->height, dst_width, dst_height,
-		reductorcolor_tostr(imageopt.color));
+		colorformat_tostr(imageopt.color));
 
 	PROF(&cvt_start);
 	image_convert_to16(srcimg);

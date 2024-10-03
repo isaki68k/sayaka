@@ -100,7 +100,7 @@ image_opt_init(image_opt *opt)
 {
 	opt->method  = REDUCT_HIGH_QUALITY;
 	opt->diffuse = DIFFUSE_SFL;
-	opt->color   = ReductorColor_Fixed256;
+	opt->color   = COLOR_FMT_256_RGB332;
 	opt->cdm     = 0;
 	opt->gain    = 256;
 	opt->output_ormode = false;
@@ -425,10 +425,10 @@ image_reduct(
 	dst->has_alpha = src->has_alpha;
 
 	// 減色モードからパレットオペレーションを用意。
-	switch (opt->color & ReductorColor_MASK) {
-	 case ReductorColor_Gray:
+	switch (opt->color & COLOR_FMT_MASK) {
+	 case COLOR_FMT_GRAY:
 	 {
-		uint graycount = ((uint)opt->color >> 8) + 1;
+		uint graycount = GET_COLOR_COUNT(opt->color);
 		ir->palette_buf = image_alloc_gray_palette(graycount);
 		if (ir->palette_buf == NULL) {
 			goto abort;
@@ -440,19 +440,19 @@ image_reduct(
 		break;
 	 }
 
-	 case ReductorColor_Fixed8:
+	 case COLOR_FMT_8_RGB:
 		ir->finder  = finder_fixed8;
 		ir->palette = palette_fixed8;
 		ir->palette_count = 8;
 		break;
 
-	 case ReductorColor_ANSI16:
+	 case COLOR_FMT_16_VGA:
 		ir->finder  = finder_ansi16;
 		ir->palette = palette_ansi16;
 		ir->palette_count = 16;
 		break;
 
-	 case ReductorColor_Fixed256:
+	 case COLOR_FMT_256_RGB332:
 		ir->palette_buf = image_alloc_fixed256_palette();
 		if (ir->palette_buf == NULL) {
 			goto abort;
@@ -462,7 +462,7 @@ image_reduct(
 		ir->finder = finder_fixed256;
 		break;
 
-	 case ReductorColor_XTERM256:
+	 case COLOR_FMT_256_XTERM:
 		ir->palette_buf = image_alloc_xterm256_palette();
 		if (ir->palette_buf == NULL) {
 			goto abort;
@@ -1213,23 +1213,23 @@ reductordiffuse_tostr(ReductorDiffuse diffuse)
 	return buf;
 }
 
-// ReductorColor を文字列にする。
+// ColorFormat を文字列にする。
 // (内部バッファを使う可能性があるため同時に2回呼ばないこと)
 const char *
-reductorcolor_tostr(ReductorColor color)
+colorformat_tostr(ColorFormat color)
 {
 	static const struct {
-		ReductorColor value;
+		ColorFormat value;
 		const char *name;
 	} table[] = {
-		{ ReductorColor_Gray,		"Gray" },
-		{ ReductorColor_Fixed8,		"Fixed8" },
-		{ ReductorColor_ANSI16,		"ANSI16" },
-		{ ReductorColor_Fixed256,	"Fixed256" },
-		{ ReductorColor_XTERM256,	"xterm256" },
+		{ COLOR_FMT_GRAY,		"Gray" },
+		{ COLOR_FMT_8_RGB,		"Fixed8" },
+		{ COLOR_FMT_16_VGA,		"ANSI16" },
+		{ COLOR_FMT_256_RGB332,	"Fixed256" },
+		{ COLOR_FMT_256_XTERM,	"xterm256" },
 	};
 	static char buf[16];
-	uint type = (uint)color & ReductorColor_MASK;
+	uint type = (uint)color & COLOR_FMT_MASK;
 	uint num = (uint)color >> 8;
 
 	for (int i = 0; i < countof(table); i++) {
