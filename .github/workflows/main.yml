@@ -68,7 +68,7 @@ jobs:
             make -DRELEASE
 
   build-openbsd:
-    name: "build-openbsd (OpenBSD/amd64 7.5 with ports)"
+    name: "build-openbsd (OpenBSD/amd64 7.6 with ports)"
     runs-on: ubuntu-latest
 
     steps:
@@ -76,7 +76,7 @@ jobs:
       - name: Install packages and run configure and make (on the OpenBSD VM)
         uses: vmactions/openbsd-vm@v1
         with:
-          release: "7.5"
+          release: "7.6"
           copyback: false
           prepare: |
             uname -a
@@ -90,7 +90,7 @@ jobs:
             make -DRELEASE
 
   build-freesd:
-    name: "build-freebsd (FreeBSD/amd64 14.0 with ports)"
+    name: "build-freebsd (FreeBSD/amd64 14.2 with ports)"
     runs-on: ubuntu-latest
 
     steps:
@@ -98,7 +98,7 @@ jobs:
       - name: Install packages and run configure and make (on the FreeBSD VM)
         uses: vmactions/freebsd-vm@v1
         with:
-          release: "14.0"
+          release: "14.2"
           copyback: false
           prepare: |
             uname -a
