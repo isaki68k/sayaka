@@ -57,6 +57,7 @@ static void signal_handler(int);
 static struct diag *diag_image;
 static struct diag *diag_net;
 static struct diag *diag_sixel;
+static bool show_filename;			// 画像の前にファイル名を表示
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static FILE *ofp;					// 出力中のストリーム
 static bool opt_blurhash_nearest;	// Blurhash を最近傍補間する
@@ -123,7 +124,7 @@ static const struct option longopts[] = {
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
 	{ "sixel-or",		no_argument,		NULL,	OPT_sixel_or },
 	{ "suppress-palette", no_argument,		NULL,	OPT_suppress_palette },
-	{ "version",		no_argument,		NULL,	'v' },
+	{ "version",		no_argument,		NULL,	OPT_version },
 	{ "width",			required_argument,	NULL,	'w' },
 	{ NULL },
 };
@@ -355,6 +356,10 @@ main(int ac, char *av[])
 			break;
 
 		 case 'v':
+			show_filename = true;
+			break;
+
+		 case OPT_version:
 			version();
 			exit(0);
 
@@ -396,6 +401,9 @@ main(int ac, char *av[])
 			infilename = NULL;
 		} else {
 			infilename = av[i];
+			if (show_filename) {
+				printf("%s\n", infilename);
+			}
 		}
 		if (do_file(infilename) == false && ignore_error == false) {
 			rv = 1;
@@ -429,6 +437,7 @@ usage(void)
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
+"  -v              : Show input filename\n"
 "  -d <diffusion>                        --resize-axis=<axis>\n"
 "  --gain=<gain>                         --blurhash-nearest\n"
 "  --sixel-or                            --suppress-palette\n"
@@ -482,7 +491,8 @@ help_all(void)
 "  --ciphers <ciphers>    : \"RSA\" can only be specified\n"
 "  --ipv4 / --ipv6        : Connect only IPv4/v6\n"
 "  -i,--ignore-error\n"
-"  -v,--version\n"
+"  -v                     : Show input filename\n"
+"  --version\n"
 "  --debug-image=<0..2>\n"
 "  --debug-net  =<0..2>\n"
 "  --debug-sixel=<0..2>\n"
