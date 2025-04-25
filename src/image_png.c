@@ -65,6 +65,7 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 	int interlace_type;
 	int compression_type;
 	int filter_type;
+	int channels;
 	uint stride;
 	uint8 **lines;
 	struct image *img;
@@ -96,27 +97,46 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 	png_read_info(png, info);
 	png_get_IHDR(png, info, &width, &height, &bitdepth,
 		&color_type, &interlace_type, &compression_type, &filter_type);
-	Debug(diag, "%s: IHDR width=%d height=%d bitdepth=%d",
-		__func__, width, height, bitdepth);
-	Debug(diag, "%s: IHDR colortype=%s interlace=%d compress=%d filter=%d",
-		__func__,
-		colortype2str(color_type), interlace_type,
-		compression_type, filter_type);
+	Debug(diag,
+		"%s: IHDR width=%d height=%d interlace=%d compress=%d filter=%d",
+		__func__, width, height, interlace_type, compression_type, filter_type);
+	Debug(diag, "%s: IHDR colortype=%s bitdepth=%d%s",
+		__func__, colortype2str(color_type), bitdepth,
+		png_get_valid(png, info, PNG_INFO_tRNS) ? " tRNS" : "");
 
 	// color_type によっていろいろ設定が必要。
-	// see libpng(4)
+	// see libpng(4) だけどなんだこれ…。
+	//
+	// Idx(<8)--------+
+	// Gray(<8)---+   |   Gray        RGB         PaletteRGB GrayAl  RGBA
+	//     FROM  01  31   0  0T  0O   2  2T  2O   3  3T  3O  4A  4O  6A  6O
+	//     TO
+	//      2    C   P   C   C   C   +  (.)  .   C  (-) (-)(CB)(CB) (B) (B)
+	//     6A   (CA)(PA)(CA) C   C  (A)  T  tT  (PA) P   P   C  CBA  +   BA
+
 	if (color_type == PNG_COLOR_TYPE_PALETTE) {
 		png_set_palette_to_rgb(png);
-	}
-	if ((color_type & PNG_COLOR_MASK_COLOR) == 0) {
+	} else if (color_type == PNG_COLOR_TYPE_GRAY) {
 		if (bitdepth < 8) {
 			png_set_expand_gray_1_2_4_to_8(png);
 		}
 		png_set_gray_to_rgb(png);
 	}
+	if (png_get_valid(png, info, PNG_INFO_tRNS)) {
+		png_set_tRNS_to_alpha(png);
+	}
 	if (bitdepth > 8) {
 		png_set_strip_16(png);
 	}
+
+	// 状態を更新してからチャンネル数を取得。bitdepth は 8 のはず?
+	png_read_update_info(png, info);
+	color_type = png_get_color_type(png, info);
+	bitdepth = png_get_bit_depth(png, info);
+	channels = png_get_channels(png, info);
+
+	Debug(diag, "%s: Filt colortype=%s bitdepth=%d",
+		__func__, colortype2str(color_type), bitdepth);
 
 	// スキャンラインメモリのポインタ配列。
 	lines = malloc(sizeof(char *) * height);
@@ -125,7 +145,7 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 	}
 
 	uint fmt;
-	if ((color_type & PNG_COLOR_MASK_ALPHA) == 0) {
+	if (channels == 3) {
 		fmt = IMAGE_FMT_RGB24;
 	} else {
 		fmt = IMAGE_FMT_ARGB32;
