@@ -185,6 +185,13 @@ struct image
 	ColorRGB *palette_buf;
 };
 
+// image_read() に対するサイズヒント。
+typedef struct image_read_hint_ {
+	ResizeAxis axis;
+	uint width;
+	uint height;
+} image_read_hint;
+
 typedef struct image_opt_ {
 	// 減色
 	ReductorMethod method;
@@ -206,7 +213,8 @@ typedef struct image_opt_ {
 
 // image.c
 extern void image_opt_init(image_opt *);
-extern struct image *image_read_pstream(struct pstream *, const struct diag *);
+extern struct image *image_read_pstream(struct pstream *, const struct diag *,
+	const image_read_hint *);
 extern void image_free(struct image *);
 extern uint image_get_bytepp(const struct image *);
 extern uint image_get_stride(const struct image *);

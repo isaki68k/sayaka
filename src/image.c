@@ -308,11 +308,14 @@ image_get_loaderinfo(void)
 }
 
 // pstream から画像を読み込んで image を作成して返す。
+// axis, width, height はリサイズ用のヒントで、これを使うかどうかは
+// 画像ローダによる (今の所 jpeg のみ)。
 // 読み込めなければ errno をセットして NULL を返す。
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかったことを示す。
 // ここでは Blurhash は扱わない。
 struct image *
-image_read_pstream(struct pstream *ps, const struct diag *diag)
+image_read_pstream(struct pstream *ps, const struct diag *diag,
+	const image_read_hint *hint)
 {
 	int ok = -1;
 	FILE *pfp;
@@ -356,7 +359,7 @@ image_read_pstream(struct pstream *ps, const struct diag *diag)
 				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
 				return NULL;
 			}
-			struct image *img = loader[i].read(fp, diag);
+			struct image *img = loader[i].read(fp, diag, hint);
 			fclose(fp);
 			return img;
 		}

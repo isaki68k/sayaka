@@ -513,6 +513,7 @@ do_file(const char *infile)
 	int ifd = -1;
 	FILE *ifp = NULL;
 	const char *infilename;	// 表示用
+	image_read_hint hint;
 	uint dst_width;
 	uint dst_height;
 	struct timeval load_start;
@@ -581,7 +582,13 @@ do_file(const char *infile)
 	PROF(&load_start);
 
 	// 読み込み。
-	srcimg = image_read_pstream(pstream, diag_image);
+	// (この hint は libjpeg の scaling hint のことで、これをもとに
+	// 1/8 とかで読み込んだものが srcimg->{width,height} になる)
+	memset(&hint, 0, sizeof(hint));
+	hint.axis   = opt_resize_axis;
+	hint.width  = opt_width;
+	hint.height = opt_height;
+	srcimg = image_read_pstream(pstream, diag_image, &hint);
 	if (srcimg) {
 		// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
 		image_get_preferred_size(srcimg->width, srcimg->height,

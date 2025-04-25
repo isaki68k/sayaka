@@ -702,7 +702,12 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 		}
 
 		// 画像読み込み。
-		srcimg = image_read_pstream(pstream, diag_image);
+		image_read_hint hint;
+		memset(&hint, 0, sizeof(hint));
+		hint.axis   = RESIZE_AXIS_SCALEDOWN_LONG;
+		hint.width  = width;
+		hint.height = height;
+		srcimg = image_read_pstream(pstream, diag_image, &hint);
 		if (srcimg == NULL) {
 			if (errno != 0) {
 				Debug(diag_image, "%s: image_read_pstream failed: %s",

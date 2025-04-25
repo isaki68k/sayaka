@@ -54,7 +54,7 @@ image_jpeg_match(FILE *fp, const struct diag *diag)
 }
 
 struct image *
-image_jpeg_read(FILE *fp, const struct diag *diag)
+image_jpeg_read(FILE *fp, const struct diag *diag, const image_read_hint *hint)
 {
 	struct jpeg_decompress_struct jinfo;
 	struct jpeg_error_mgr jerr;
@@ -75,6 +75,31 @@ image_jpeg_read(FILE *fp, const struct diag *diag)
 	jpeg_read_header(&jinfo, (boolean)true);
 	width  = jinfo.image_width;
 	height = jinfo.image_height;
+
+	// 必要なら縮小スケールを計算。
+	if (hint->width != 0 || hint->height != 0) {
+		uint pref_width;
+		uint pref_height;
+		image_get_preferred_size(width, height,
+			hint->axis, hint->width, hint->height,
+			&pref_width, &pref_height);
+
+		// 有効なスケールは 1, 2, 4, 8 らしい。
+		uint scale;
+		for (scale = 3; scale > 0; scale--) {
+			if (pref_width  < (width  >> scale)
+			 && pref_height < (height >> scale)) {
+				break;
+			}
+		}
+
+		Debug(diag, "OrigSize=(%u, %u) scale=1/%u", width, height, 1U << scale);
+
+		jinfo.scale_num = 1;
+		jinfo.scale_denom = 1U << scale;
+		width  >>= scale;
+		height >>= scale;
+	}
 
 	img = image_create(width, height, IMAGE_FMT_RGB24);
 	stride = image_get_stride(img);
