@@ -65,8 +65,12 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 	int interlace_type;
 	int compression_type;
 	int filter_type;
+	uint stride;
 	uint8 **lines;
 	struct image *img;
+
+	lines = NULL;
+	img = NULL;
 
 	png = png_create_read_struct(PNG_LIBPNG_VER_STRING,
 		NULL, NULL, NULL);
@@ -76,12 +80,14 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 
 	info = png_create_info_struct(png);
 	if (__predict_false(info == NULL)) {
-		goto abort;
+		goto done;
 	}
 
 	// libpng 内のエラーからは大域ジャンプで戻ってくるらしい…
 	if (setjmp(png_jmpbuf(png))) {
-		goto abort;
+		image_free(img);
+		img = NULL;
+		goto done;
 	}
 
 	png_init_io(png, fp);
@@ -112,6 +118,12 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 		png_set_strip_16(png);
 	}
 
+	// スキャンラインメモリのポインタ配列。
+	lines = malloc(sizeof(char *) * height);
+	if (lines == NULL) {
+		goto done;
+	}
+
 	uint fmt;
 	if ((color_type & PNG_COLOR_MASK_ALPHA) == 0) {
 		fmt = IMAGE_FMT_RGB24;
@@ -119,21 +131,21 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 		fmt = IMAGE_FMT_ARGB32;
 	}
 	img = image_create(width, height, fmt);
+	if (img == NULL) {
+		goto done;
+	}
 
-	// スキャンラインメモリのポインタ配列。
-	lines = malloc(sizeof(char *) * height);
+	stride = image_get_stride(img);
 	for (int y = 0; y < height; y++) {
-		lines[y] = img->buf + y * image_get_stride(img);
+		lines[y] = img->buf + y * stride;
 	}
 
 	png_read_image(png, lines);
 	png_read_end(png, info);
+ done:
 	free(lines);
+	png_destroy_read_struct(&png, &info, NULL);
 	return img;
-
- abort:
-	png_destroy_read_struct(&png, &info, (png_infopp)NULL);
-	return NULL;
 }
 
 // PNG の color type のデバッグ表示用。
