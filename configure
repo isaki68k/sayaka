@@ -1342,8 +1342,9 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-libjpeg          Use libjpeg for JPEG instead of stb_image
-                          (default:yes)
+  --with-libjpeg=(auto|yes|no)
+                          Use libjpeg for JPEG instead of stb_image
+                          (default:auto)
   --with-libpng           Use libpng for PNG instead of stb_image (default:no)
   --with-libwebp          Use libwebp (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
@@ -4328,7 +4329,10 @@ See 'config.log' for more details" "$LINENO" 5; }
 	;;
 esac
 
-# libjpeg はデフォルトで使用する。stb_image で扱えない JPEG があるため。
+# libjpeg はデフォルトを auto にする。
+# --with-libjpeg=auto なら、libjpeg があれば使い、なければ stb_image を使う。
+# --with-libjpeg=yes  なら、libjpeg がなければエラー。
+# --with-libjpeg=no (--without-libjpeg) なら、stb_image を使う。
 
 # Check whether --with-libjpeg was given.
 if test ${with_libjpeg+y}
@@ -4336,6 +4340,9 @@ then :
   withval=$with_libjpeg;
 fi
 
+if test -z "${with_libjpeg}"; then
+	with_libjpeg=auto
+fi
 case ${with_libjpeg} in
  no)
 	;;
@@ -4364,10 +4371,12 @@ printf "%s\n" "no" >&6; }
 
 
 	if test x"${has_libjpeg}" \!= x"yes"; then
-		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+		if test x"${with_libjpeg}" = x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
-as_fn_error $? "--with-libjpeg is specified but libjpeg not found.
+as_fn_error $? "--with-libjpeg(=yes) is specified but libjpeg not found.
 See 'config.log' for more details" "$LINENO" 5; }
+		fi
 	fi
 	;;
 esac
