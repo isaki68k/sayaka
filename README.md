@@ -1,4 +1,4 @@
-Misskey クライアント sayaka ちゃん version 3.8.1 (2024/09/21)
+Misskey クライアント sayaka ちゃん version 3.8.1+ (2025/04/25)
 ======
 
 ターミナルに特化した Misskey ストリームクライアントです。
@@ -46,6 +46,17 @@ Misskey クライアント sayaka ちゃん version 3.8.1 (2024/09/21)
 * BSD make (not GNU make)
 * pkg-config
 	… pkgsrc なら `devel/pkgconf`、Ubuntu なら `pkg-config` です。
+* libjpeg
+	… pkgsrc および OpenBSD ports なら `graphics/libjpeg`、
+	Ubuntu なら `libjpeg8-dev` です。
+	デフォルト(`--with-libjpeg=auto`)では libjpeg が見付かれば使用し、
+	見付からなければ内蔵の stb_image でデコードします
+	(この場合デコード出来ないファイル形式があります)。
+* libpng
+	… pkgsrc および OpenBSD ports なら `graphics/png`、
+	Ubuntu なら `libpng-dev` です。
+	デフォルト(`--with-libpng=auto`)では libpng が見付かれば使用し、
+	見付からなければ内蔵の stb_image でデコードします。
 * libwebp
 	… pkgsrc および OpenBSD ports なら `graphics/libwebp`、
 	Ubuntu なら `libwebp-dev` です。
