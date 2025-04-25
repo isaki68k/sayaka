@@ -25,7 +25,7 @@ jobs:
           ubuntu*|debian*)
             apt update
             apt upgrade -y
-            apt install -y build-essential pkg-config bmake libbsd-dev libjpeg8-dev libwebp-dev libssl-dev
+            apt install -y build-essential pkg-config bmake libbsd-dev libwebp-dev libssl-dev
             ;;
           archlinux*)
             pacman -Syyu --noconfirm base-devel bmake libbsd libwebp openssl
