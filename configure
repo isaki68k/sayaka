@@ -1345,7 +1345,9 @@ Optional Packages:
   --with-libjpeg=(auto|yes|no)
                           Use libjpeg for JPEG instead of stb_image
                           (default:auto)
-  --with-libpng           Use libpng for PNG instead of stb_image (default:no)
+  --with-libpng=(auto|yes|no)
+                          Use libpng for PNG instead of stb_image
+                          (default:auto)
   --with-libwebp          Use libwebp (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
   --with-iconv            Use iconv to convert output charset (default:yes)
@@ -4381,9 +4383,10 @@ See 'config.log' for more details" "$LINENO" 5; }
 	;;
 esac
 
-# libpng はデフォルト使用しない。
-# --with-libpng が指定されたら、なければエラー終了する。
-
+# libpng はデフォルトを auto にする。
+# --with-libpng=auto なら、libpng があれば使い、なければ stb_image を使う。
+# --with-libpng=yes  なら、libpng がなければエラー。
+# --with-libpng=no (--without-libpng) なら、stb_image を使う。
 
 # Check whether --with-libpng was given.
 if test ${with_libpng+y}
@@ -4391,8 +4394,13 @@ then :
   withval=$with_libpng;
 fi
 
+if test -z "${with_libpng}"; then
+	with_libpng=auto
+fi
 case ${with_libpng} in
- yes)
+ no)
+	;;
+ *)
 
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libpng" >&5
 printf %s "checking for libpng... " >&6; }
@@ -4417,13 +4425,13 @@ printf "%s\n" "no" >&6; }
 
 
 	if test x"${has_libpng}" \!= x"yes"; then
-		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+		if test x"${with_libpng}" = x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
-as_fn_error $? "--with-libpng is specified but libpng not found.
+as_fn_error $? "--with-libpng(=yes) is specified but libpng not found.
 See 'config.log' for more details" "$LINENO" 5; }
+		fi
 	fi
-	;;
- *)
 	;;
 esac
 

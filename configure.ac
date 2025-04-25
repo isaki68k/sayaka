@@ -252,21 +252,28 @@ case ${with_libjpeg} in
 	;;
 esac
 
-# libpng はデフォルト使用しない。
-# --with-libpng が指定されたら、なければエラー終了する。
-
+# libpng はデフォルトを auto にする。
+# --with-libpng=auto なら、libpng があれば使い、なければ stb_image を使う。
+# --with-libpng=yes  なら、libpng がなければエラー。
+# --with-libpng=no (--without-libpng) なら、stb_image を使う。
 AC_ARG_WITH([libpng],
-	AS_HELP_STRING([--with-libpng],
-		[Use libpng for PNG instead of stb_image (default:no)]))
+	AS_HELP_STRING([--with-libpng=(auto|yes|no)],
+		[Use libpng for PNG instead of stb_image (default:auto)]))
+if test -z "${with_libpng}"; then
+	with_libpng=auto
+fi
 case ${with_libpng} in
- yes)
+ no)
+	;;
+ *)
 	CHECK_PKG([libpng], [LIBPNG])
 
 	if test x"${has_libpng}" \!= x"yes"; then
-		AC_MSG_FAILURE([--with-libpng is specified but libpng not found.])
+		if test x"${with_libpng}" = x"yes"; then
+			AC_MSG_FAILURE(
+				[--with-libpng(=yes) is specified but libpng not found.])
+		fi
 	fi
-	;;
- *)
 	;;
 esac
 
