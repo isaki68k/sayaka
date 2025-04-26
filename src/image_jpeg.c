@@ -75,6 +75,8 @@ image_jpeg_read(FILE *fp, const struct diag *diag, const image_read_hint *hint)
 	jpeg_read_header(&jinfo, (boolean)true);
 	width  = jinfo.image_width;
 	height = jinfo.image_height;
+	Debug(diag, "%s: color_space=%u num_components=%u", __func__,
+		jinfo.jpeg_color_space, jinfo.num_components);
 
 	// 必要なら縮小スケールを計算。
 	if (hint->width != 0 || hint->height != 0) {
@@ -95,17 +97,20 @@ image_jpeg_read(FILE *fp, const struct diag *diag, const image_read_hint *hint)
 
 		Debug(diag, "OrigSize=(%u, %u) scale=1/%u", width, height, 1U << scale);
 
+		// スケールを指定。
 		jinfo.scale_num = 1;
 		jinfo.scale_denom = 1U << scale;
-		width  >>= scale;
-		height >>= scale;
 	}
+
+	jpeg_start_decompress(&jinfo);
+	// 端数対応のため、向こうが計算した幅と高さを再取得。
+	width  = jinfo.output_width;
+	height = jinfo.output_height;
 
 	img = image_create(width, height, IMAGE_FMT_RGB24);
 	stride = image_get_stride(img);
 
 	// データの読み込み。
-	jpeg_start_decompress(&jinfo);
 	lineptr = img->buf;
 	for (uint y = 0; y < height; y++) {
 		jpeg_read_scanlines(&jinfo, &lineptr, 1);
