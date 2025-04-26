@@ -80,6 +80,10 @@
 #define UNCONST(p)	((void *)(uintptr_t)(const void *)(p))
 #endif
 
+#ifndef UNVOLATILE
+#define UNVOLATILE(p)	((void *)(uintptr_t)(volatile void *)(p))
+#endif
+
 #ifndef countof
 #define countof(x)	(sizeof(x) / sizeof(x[0]))
 #endif
