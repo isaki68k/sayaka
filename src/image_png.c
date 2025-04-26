@@ -56,8 +56,8 @@ image_png_match(FILE *fp, const struct diag *diag)
 struct image *
 image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 {
-	png_structp png;
-	png_infop info;
+	volatile png_structp png;
+	volatile png_infop info;
 	png_uint_32 width;
 	png_uint_32 height;
 	int bitdepth;
@@ -67,8 +67,8 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 	int filter_type;
 	int channels;
 	uint stride;
-	uint8 **lines;
-	struct image *img;
+	volatile uint8 **lines;
+	volatile struct image *img;
 
 	lines = NULL;
 	img = NULL;
@@ -86,7 +86,7 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 
 	// libpng 内のエラーからは大域ジャンプで戻ってくるらしい…
 	if (setjmp(png_jmpbuf(png))) {
-		image_free(img);
+		image_free(UNVOLATILE(img));
 		img = NULL;
 		goto done;
 	}
@@ -155,17 +155,17 @@ image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
 		goto done;
 	}
 
-	stride = image_get_stride(img);
+	stride = image_get_stride(UNVOLATILE(img));
 	for (int y = 0; y < height; y++) {
 		lines[y] = img->buf + y * stride;
 	}
 
-	png_read_image(png, lines);
+	png_read_image(png, UNVOLATILE(lines));
 	png_read_end(png, info);
  done:
 	free(lines);
-	png_destroy_read_struct(&png, &info, NULL);
-	return img;
+	png_destroy_read_struct(UNVOLATILE(&png), UNVOLATILE(&info), NULL);
+	return UNVOLATILE(img);
 }
 
 // PNG の color type のデバッグ表示用。
