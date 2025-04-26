@@ -33,6 +33,8 @@
 #include <string.h>
 #include <jpeglib.h>
 
+static const char *colorspace2str(J_COLOR_SPACE);
+
 bool
 image_jpeg_match(FILE *fp, const struct diag *diag)
 {
@@ -75,8 +77,8 @@ image_jpeg_read(FILE *fp, const struct diag *diag, const image_read_hint *hint)
 	jpeg_read_header(&jinfo, (boolean)true);
 	width  = jinfo.image_width;
 	height = jinfo.image_height;
-	Debug(diag, "%s: color_space=%u num_components=%u", __func__,
-		jinfo.jpeg_color_space, jinfo.num_components);
+	Debug(diag, "%s: color_space=%s num_components=%u", __func__,
+		colorspace2str(jinfo.jpeg_color_space), jinfo.num_components);
 
 	// 必要なら縮小スケールを計算。
 	if (hint->width != 0 || hint->height != 0) {
@@ -121,4 +123,27 @@ image_jpeg_read(FILE *fp, const struct diag *diag, const image_read_hint *hint)
 	jpeg_destroy_decompress(&jinfo);
 
 	return img;
+}
+
+// JPEG の color_space のデバッグ表示用。
+static const char *
+colorspace2str(J_COLOR_SPACE c)
+{
+	static const char * const names[] = {
+		"Unknown",
+		"Grayscale",
+		"RGB",
+		"YCbCr",
+		"CMYK",
+		"YCCK",
+		"BG_RGB",
+		"BG_YCC",
+	};
+
+	if (c >= countof(names)) {
+		static char buf[16];
+		snprintf(buf, sizeof(buf), "%d(?)", c);
+		return buf;
+	}
+	return names[c];
 }
