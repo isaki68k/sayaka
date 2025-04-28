@@ -125,6 +125,9 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		jinfo.scale_denom = 1U << scale;
 	}
 
+	// 出力を RGB に。
+	jinfo.out_color_space = JCS_RGB;
+
 	jpeg_start_decompress(UNVOLATILE(&jinfo));
 	// 端数対応のため、向こうが計算した幅と高さを再取得。
 	width  = jinfo.output_width;
