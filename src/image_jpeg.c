@@ -56,7 +56,7 @@ image_jpeg_match(FILE *fp, const struct diag *diag)
 }
 
 struct image *
-image_jpeg_read(FILE *fp, const struct diag *diag, const image_read_hint *hint)
+image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
 	struct jpeg_decompress_struct jinfo;
 	struct jpeg_error_mgr jerr;

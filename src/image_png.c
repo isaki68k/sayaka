@@ -54,7 +54,7 @@ image_png_match(FILE *fp, const struct diag *diag)
 }
 
 struct image *
-image_png_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
+image_png_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 {
 	volatile png_structp png;
 	volatile png_infop info;

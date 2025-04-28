@@ -81,7 +81,7 @@ image_stb_match(FILE *fp, const struct diag *diag)
 }
 
 struct image *
-image_stb_read(FILE *fp, const struct diag *diag, const image_read_hint *dummy)
+image_stb_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 {
 	struct image *img;
 	stbi_uc *data;

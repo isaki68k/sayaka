@@ -359,7 +359,7 @@ image_read_pstream(struct pstream *ps, const struct diag *diag,
 				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
 				return NULL;
 			}
-			struct image *img = loader[i].read(fp, diag, hint);
+			struct image *img = loader[i].read(fp, hint, diag);
 			fclose(fp);
 			return img;
 		}

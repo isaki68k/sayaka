@@ -51,12 +51,12 @@ extern struct image *image_create(uint, uint, uint);
 
 // image_*.c
 typedef bool (*image_match_t)(FILE *, const struct diag *);
-typedef struct image *(*image_read_t)(FILE *, const struct diag *,
-	const image_read_hint *);
+typedef struct image *(*image_read_t)(FILE *, const image_read_hint *,
+	const struct diag *);
 #define IMAGE_HANDLER(name)	\
 	extern bool image_##name##_match(FILE *, const struct diag *);	\
-	extern struct image *image_##name##_read(FILE *, const struct diag *,	\
-		const image_read_hint *)
+	extern struct image *image_##name##_read(FILE *,	\
+		const image_read_hint *, const struct diag *)
 
 IMAGE_HANDLER(jpeg);
 IMAGE_HANDLER(png);
