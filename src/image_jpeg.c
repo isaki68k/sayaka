@@ -91,8 +91,8 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		// 有効なスケールは 1, 2, 4, 8 らしい。
 		uint scale;
 		for (scale = 3; scale > 0; scale--) {
-			if (pref_width  < (width  >> scale)
-			 && pref_height < (height >> scale)) {
+			if (pref_width  <= (width  >> scale)
+			 && pref_height <= (height >> scale)) {
 				break;
 			}
 		}
