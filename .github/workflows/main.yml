@@ -68,7 +68,7 @@ jobs:
             make -DRELEASE
 
   build-openbsd:
-    name: "build-openbsd (OpenBSD/amd64 7.6 with ports)"
+    name: "build-openbsd (OpenBSD/amd64 7.7 with ports)"
     runs-on: ubuntu-latest
 
     steps:
@@ -76,7 +76,7 @@ jobs:
       - name: Install packages and run configure and make (on the OpenBSD VM)
         uses: vmactions/openbsd-vm@v1
         with:
-          release: "7.6"
+          release: "7.7"
           copyback: false
           prepare: |
             uname -a
