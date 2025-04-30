@@ -30,10 +30,20 @@
 
 #include "common.h"
 #include "image_priv.h"
+#include <err.h>
+#include <setjmp.h>
 #include <string.h>
 #include <jpeglib.h>
 
+struct my_jpeg_error_mgr {
+	struct jpeg_error_mgr mgr;
+	jmp_buf jmp;
+};
+
+static void my_error_exit(j_common_ptr);
 static const char *colorspace2str(J_COLOR_SPACE);
+
+static char my_msgbuf[JMSG_LENGTH_MAX];
 
 bool
 image_jpeg_match(FILE *fp, const struct diag *diag)
@@ -58,23 +68,34 @@ image_jpeg_match(FILE *fp, const struct diag *diag)
 struct image *
 image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
-	struct jpeg_decompress_struct jinfo;
-	struct jpeg_error_mgr jerr;
-	struct image *img;
+	volatile struct jpeg_decompress_struct jinfo;
+	struct my_jpeg_error_mgr jerr;
+	volatile struct image *img;
 	uint8 *lineptr;
 	uint width;
 	uint height;
 	uint stride;
 
-	memset(&jinfo, 0, sizeof(jinfo));
+	memset(UNVOLATILE(&jinfo), 0, sizeof(jinfo));
 	memset(&jerr, 0, sizeof(jerr));
-	jinfo.err = jpeg_std_error(&jerr);
+	img = NULL;
 
-	jpeg_create_decompress(&jinfo);
-	jpeg_stdio_src(&jinfo, fp);
+	jinfo.err = jpeg_std_error(&jerr.mgr);
+	jerr.mgr.error_exit = my_error_exit;
+
+	// libjpeg 内でエラーが起きたら大域ジャンプで戻ってくる…。
+	if (setjmp(jerr.jmp)) {
+		warnx("libjpeg: %s", my_msgbuf);
+		free(UNVOLATILE(img));
+		img = NULL;
+		goto done;
+	}
+
+	jpeg_create_decompress(UNVOLATILE(&jinfo));
+	jpeg_stdio_src(UNVOLATILE(&jinfo), fp);
 
 	// ヘッダの読み込み。
-	jpeg_read_header(&jinfo, (boolean)true);
+	jpeg_read_header(UNVOLATILE(&jinfo), (boolean)true);
 	width  = jinfo.image_width;
 	height = jinfo.image_height;
 	Debug(diag, "%s: color_space=%s num_components=%u", __func__,
@@ -104,25 +125,33 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		jinfo.scale_denom = 1U << scale;
 	}
 
-	jpeg_start_decompress(&jinfo);
+	jpeg_start_decompress(UNVOLATILE(&jinfo));
 	// 端数対応のため、向こうが計算した幅と高さを再取得。
 	width  = jinfo.output_width;
 	height = jinfo.output_height;
 
 	img = image_create(width, height, IMAGE_FMT_RGB24);
-	stride = image_get_stride(img);
+	stride = image_get_stride(UNVOLATILE(img));
 
 	// データの読み込み。
 	lineptr = img->buf;
 	for (uint y = 0; y < height; y++) {
-		jpeg_read_scanlines(&jinfo, &lineptr, 1);
+		jpeg_read_scanlines(UNVOLATILE(&jinfo), &lineptr, 1);
 		lineptr += stride;
 	}
 
-	jpeg_finish_decompress(&jinfo);
-	jpeg_destroy_decompress(&jinfo);
+	jpeg_finish_decompress(UNVOLATILE(&jinfo));
+ done:
+	jpeg_destroy_decompress(UNVOLATILE(&jinfo));
+	return UNVOLATILE(img);
+}
 
-	return img;
+static void
+my_error_exit(j_common_ptr jinfo)
+{
+	struct my_jpeg_error_mgr *err = (struct my_jpeg_error_mgr *)jinfo->err;
+	(*jinfo->err->format_message)(jinfo, my_msgbuf);
+	longjmp(err->jmp, 1);
 }
 
 // JPEG の color_space のデバッグ表示用。
