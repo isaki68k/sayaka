@@ -58,7 +58,6 @@ image_jpeg_match(FILE *fp, const struct diag *diag)
 
 	// マジックを確認。
 	if (magic[0] != 0xff || magic[1] != 0xd8) {
-		Debug(diag, "%s: Bad magic", __func__);
 		return false;
 	}
 

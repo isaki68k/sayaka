@@ -61,6 +61,7 @@ image_webp_match(FILE *fp, const struct diag *diag)
 
 	uint len = fread(buf, sizeof(buf), 1, fp);
 	if (__predict_false(len == 0)) {
+		Debug(diag, "%s: fread failed: %s", __func__, strerrno());
 		return false;
 	}
 	if (be32toh(buf[0]) != (('R' << 24) | ('I' << 16) | ('F' << 8) | 'F')) {
