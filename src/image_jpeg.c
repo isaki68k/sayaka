@@ -74,6 +74,8 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	uint width;
 	uint height;
 	uint stride;
+	uint color_space;
+	int scale;
 
 	memset(UNVOLATILE(&jinfo), 0, sizeof(jinfo));
 	memset(&jerr, 0, sizeof(jerr));
@@ -97,10 +99,31 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	jpeg_read_header(UNVOLATILE(&jinfo), (boolean)true);
 	width  = jinfo.image_width;
 	height = jinfo.image_height;
+	color_space =jinfo.jpeg_color_space;
 	Debug(diag, "%s: color_space=%s num_components=%u", __func__,
-		colorspace2str(jinfo.jpeg_color_space), jinfo.num_components);
+		colorspace2str(color_space), jinfo.num_components);
+
+	// 出力形式を選択。
+	switch (color_space) {
+	 case JCS_GRAYSCALE:
+	 case JCS_RGB:
+	 case JCS_YCbCr:
+		// RGB として取り出せる。
+		jinfo.out_color_space = JCS_RGB;
+		break;
+
+	 case JCS_YCCK:
+	 case JCS_CMYK:
+		// 一旦 CMYK として取り出す。
+		jinfo.out_color_space=JCS_CMYK;
+		break;
+
+	 default:
+		break;
+	}
 
 	// 必要なら縮小スケールを計算。
+	scale = -1;
 	if (hint->width != 0 || hint->height != 0) {
 		uint pref_width;
 		uint pref_height;
@@ -109,7 +132,6 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			&pref_width, &pref_height);
 
 		// 有効なスケールは 1, 2, 4, 8 らしい。
-		uint scale;
 		for (scale = 3; scale > 0; scale--) {
 			if (pref_width  <= (width  >> scale)
 			 && pref_height <= (height >> scale)) {
@@ -117,17 +139,20 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			}
 		}
 
-		Debug(diag, "OrigSize=(%u, %u) scale=1/%u", width, height, 1U << scale);
-
 		// スケールを指定。
 		jinfo.scale_num = 1;
 		jinfo.scale_denom = 1U << scale;
 	}
 
-	// 出力を RGB に。
-	jinfo.out_color_space = JCS_RGB;
-
 	jpeg_start_decompress(UNVOLATILE(&jinfo));
+	if (jinfo.out_color_space != color_space) {
+		Debug(diag, "%s: filtered color_space=%s", __func__,
+			colorspace2str(jinfo.out_color_space));
+	}
+	if (scale >= 0) {
+		Debug(diag, "OrigSize=(%u, %u) scale=1/%u", width, height, 1U << scale);
+	}
+
 	// 端数対応のため、向こうが計算した幅と高さを再取得。
 	width  = jinfo.output_width;
 	height = jinfo.output_height;
@@ -137,9 +162,37 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 	// データの読み込み。
 	lineptr = img->buf;
-	for (uint y = 0; y < height; y++) {
-		jpeg_read_scanlines(UNVOLATILE(&jinfo), &lineptr, 1);
-		lineptr += stride;
+	switch (jinfo.out_color_space) {
+	 default:	// とりあえず適当なところへ落ちておく。
+	 case JCS_RGB:
+		// 直接 RGB で読み出せる。
+		for (uint y = 0; y < height; y++) {
+			jpeg_read_scanlines(UNVOLATILE(&jinfo), &lineptr, 1);
+			lineptr += stride;
+		}
+		break;
+
+	 case JCS_CMYK:	// ?
+	 case JCS_YCCK:
+	 {
+		// 一旦 CMYK で取り出して変換する。
+		uint8 cmykbuf[width * 4];
+		for (uint y = 0; y < height; y++) {
+			uint8 *bufp = cmykbuf;
+			jpeg_read_scanlines(UNVOLATILE(&jinfo), &bufp, 1);
+			// CMYK -> RGB
+			for (uint x = 0; x < width; x++) {
+				uint C = *bufp++;
+				uint M = *bufp++;
+				uint Y = *bufp++;
+				uint K = *bufp++;
+				*lineptr++ = (255 - C) * (255 - K) / 255;
+				*lineptr++ = (255 - M) * (255 - K) / 255;
+				*lineptr++ = (255 - Y) * (255 - K) / 255;
+			}
+		}
+		break;
+	 }
 	}
 
 	jpeg_finish_decompress(UNVOLATILE(&jinfo));
