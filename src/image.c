@@ -30,7 +30,6 @@
 
 #include "common.h"
 #include "image_priv.h"
-#include <errno.h>
 #include <string.h>
 
 struct image_reductor_handle_;
@@ -307,31 +306,11 @@ image_get_loaderinfo(void)
 	return s;
 }
 
-// pstream から画像を読み込んで image を作成して返す。
-// axis, width, height はリサイズ用のヒントで、これを使うかどうかは
-// 画像ローダによる (今の所 jpeg のみ)。
-// 読み込めなければ errno をセットして NULL を返す。
-// 戻り値 NULL で errno = 0 なら画像形式を認識できなかったことを示す。
-// ここでは Blurhash は扱わない。
-struct image *
-image_read_pstream(struct pstream *ps, const image_read_hint *hint,
-	const struct diag *diag)
-{
-	int ok = -1;
-	FILE *pfp;
-	FILE *fp;
-
-	pfp = pstream_open_for_peek(ps);
-	if (pfp == NULL) {
-		Debug(diag, "pstream_open_for_peek() failed");
-		return NULL;
-	}
-
-	static const struct {
-		image_match_t match;
-		image_read_t  read;
-		const char *name;
-	} loader[] = {
+static const struct {
+	image_match_t match;
+	image_read_t  read;
+	const char *name;
+} loader[] = {
 #define ENTRY(name)	{ image_##name##_match, image_##name##_read, #name }
 #if defined(USE_LIBWEBP)
 		ENTRY(webp),
@@ -346,33 +325,66 @@ image_read_pstream(struct pstream *ps, const image_read_hint *hint,
 		ENTRY(stb),
 #endif
 #undef ENTRY
-	};
+};
+
+// pstream の画像形式を判定する。
+// 判定出来れば、image_read() に渡すための非負のインデックスを返す。
+// 判定出来なければ -1 を返す。
+// ここでは Blurhash は扱わない。
+int
+image_match(struct pstream *ps, const struct diag *diag)
+{
+	FILE *fp;
+	int idx = -1;
+
+	fp = pstream_open_for_peek(ps);
+	if (fp == NULL) {
+		Debug(diag, "pstream_open_for_peek() failed");
+		return -1;
+	}
+
+	if (countof(loader) == 0) {
+		Debug(diag, "%s: no decoders available", __func__);
+		goto done;
+	}
+
 	for (uint i = 0; i < countof(loader); i++) {
-		ok = loader[i].match(pfp, diag);
+		int ok = loader[i].match(fp, diag);
 		Trace(diag, "Checking %-4s.. %s",
 			loader[i].name, (ok ? "matched" : "no"));
-		fseek(pfp, 0, SEEK_SET);
+		fseek(fp, 0, SEEK_SET);
 		if (ok) {
-			fclose(pfp);
-			fp = pstream_open_for_read(ps);
-			if (fp == NULL) {
-				Debug(diag, "%s: pstream_open_for_read() failed", __func__);
-				return NULL;
-			}
-			struct image *img = loader[i].read(fp, hint, diag);
-			fclose(fp);
-			return img;
+			idx = i;
+			goto done;
 		}
 	}
+	Trace(diag, "%s: unsupported image format", __func__);
 
-	if (ok < 0) {
-		Debug(diag, "%s: no decoders available", __func__);
-	} else {
-		Trace(diag, "%s: unsupported image format", __func__);
+ done:
+	fclose(fp);
+	return idx;
+}
+
+// pstream から画像を読み込んで image を作成して返す。
+// idx は image_match() で返された非負の値を指定すること。
+// axis, width, height はリサイズ用のヒントで、これを使うかどうかは
+// 画像ローダによる (今の所 jpeg のみ)。
+// デコードに失敗すると NULL を返す。
+struct image *
+image_read(struct pstream *ps, int idx, const image_read_hint *hint,
+	const struct diag *diag)
+{
+	FILE *fp;
+
+	fp = pstream_open_for_read(ps);
+	if (fp == NULL) {
+		Debug(diag, "%s: pstream_open_for_read() failed", __func__);
+		return NULL;
 	}
+	struct image *img = loader[idx].read(fp, hint, diag);
+	fclose(fp);
 
-	errno = 0;
-	return NULL;
+	return img;
 }
 
 // 入力画像を 16bit 内部形式にインプレース変換する。

@@ -701,18 +701,21 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 			goto abort;
 		}
 
+		// 画像形式判定。
+		int loader_idx = image_match(pstream, diag_image);
+		if (loader_idx < 0) {
+			goto abort;
+		}
+
 		// 画像読み込み。
 		image_read_hint hint;
 		memset(&hint, 0, sizeof(hint));
 		hint.axis   = RESIZE_AXIS_SCALEDOWN_LONG;
 		hint.width  = width;
 		hint.height = height;
-		srcimg = image_read_pstream(pstream, &hint, diag_image);
+		srcimg = image_read(pstream, loader_idx, &hint, diag_image);
 		if (srcimg == NULL) {
-			if (errno != 0) {
-				Debug(diag_image, "%s: image_read_pstream failed: %s",
-					__func__, strerrno());
-			}
+			Debug(diag_image, "%s: image_read failed", __func__);
 			goto abort;
 		}
 

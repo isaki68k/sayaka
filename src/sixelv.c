@@ -32,7 +32,6 @@
 #include "sixelv.h"
 #include "image.h"
 #include <err.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
@@ -582,32 +581,33 @@ do_file(const char *infile)
 
 	PROF(&load_start);
 
-	// 読み込み。
-	// (この hint は libjpeg の scaling hint のことで、これをもとに
-	// 1/8 とかで読み込んだものが srcimg->{width,height} になる)
-	memset(&hint, 0, sizeof(hint));
-	hint.axis   = opt_resize_axis;
-	hint.width  = opt_width;
-	hint.height = opt_height;
-	srcimg = image_read_pstream(pstream, &hint, diag_image);
-	if (srcimg) {
-		// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
-		image_get_preferred_size(srcimg->width, srcimg->height,
-			opt_resize_axis, opt_width, opt_height,
-			&dst_width, &dst_height);
+	// 画像形式判定。
+	int loader_idx = image_match(pstream, diag_image);
+
+	if (loader_idx >= 0) {
+		// 読み込み。
+		// (この hint は libjpeg の scaling hint のことで、これをもとに
+		// 1/8 とかで読み込んだものが srcimg->{width,height} になる)
+		memset(&hint, 0, sizeof(hint));
+		hint.axis   = opt_resize_axis;
+		hint.width  = opt_width;
+		hint.height = opt_height;
+		srcimg = image_read(pstream, loader_idx, &hint, diag_image);
+		if (srcimg) {
+			// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
+			image_get_preferred_size(srcimg->width, srcimg->height,
+				opt_resize_axis, opt_width, opt_height,
+				&dst_width, &dst_height);
+		}
 	} else {
-		// 読み込めなければ Blurhash を試す。
+		// どの画像形式でもなさそうなら Blurhash を試す。
 		srcimg = read_blurhash(pstream, &dst_width, &dst_height);
 	}
 
 	PROF(&load_end);
 
 	if (srcimg == NULL) {
-		if (errno == 0) {
-			warnx("%s: Unknown image format", infilename);
-		} else {
-			warn("%s: image_read_pstream() failed", infilename);
-		}
+		warnx("%s: Unknown image format", infilename);
 		goto abort;
 	}
 
