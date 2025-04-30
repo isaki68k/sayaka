@@ -276,56 +276,43 @@ image_get_preferred_size(
 	}
 }
 
+// サポートしているローダ。
+static const struct {
+	image_match_t match;
+	image_read_t  read;
+	const char *libname;	// image_get_loaderinfo() で表示する名前
+	const char *name;		// マクロ展開用とデバッグログとかで使う短縮名
+} loader[] = {
+#define ENTRY(name, libname)	\
+	{ image_##name##_match, image_##name##_read, #libname, #name }
+#if defined(USE_LIBWEBP)
+	ENTRY(webp, libweb),
+#endif
+#if defined(USE_LIBJPEG)
+	ENTRY(jpeg, libjpeg),
+#endif
+#if defined(USE_LIBPNG)
+	ENTRY(png, libpng),
+#endif
+#if defined(USE_STB_IMAGE)
+	ENTRY(stb, stb_image),
+#endif
+#undef ENTRY
+};
+
 // サポートしているローダを string で返す。表示用。
 string *
 image_get_loaderinfo(void)
 {
-	string *s = string_init();
+	string *s = string_from_cstr("blurhash");
 
-#define ADD(name)	do {	\
-	if (string_len(s) != 0)	\
-		string_append_cstr(s, ", ");	\
-	string_append_cstr(s, name);	\
-} while (0)
-
-	// ここはアルファベット順。
-	ADD("blurhash");
-#if defined(USE_LIBJPEG)
-	ADD("libjpeg");
-#endif
-#if defined(USE_LIBPNG)
-	ADD("libpng");
-#endif
-#if defined(USE_LIBWEBP)
-	ADD("libwebp");
-#endif
-#if defined(USE_STB_IMAGE)
-	ADD("stb_image");
-#endif
+	for (uint i = 0; i < countof(loader); i++) {
+		string_append_cstr(s, ", ");
+		string_append_cstr(s, loader[i].libname);
+	}
 
 	return s;
 }
-
-static const struct {
-	image_match_t match;
-	image_read_t  read;
-	const char *name;
-} loader[] = {
-#define ENTRY(name)	{ image_##name##_match, image_##name##_read, #name }
-#if defined(USE_LIBWEBP)
-		ENTRY(webp),
-#endif
-#if defined(USE_LIBJPEG)
-		ENTRY(jpeg),
-#endif
-#if defined(USE_LIBPNG)
-		ENTRY(png),
-#endif
-#if defined(USE_STB_IMAGE)
-		ENTRY(stb),
-#endif
-#undef ENTRY
-};
 
 // pstream の画像形式を判定する。
 // 判定出来れば、image_read() に渡すための非負のインデックスを返す。
