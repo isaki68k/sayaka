@@ -588,7 +588,7 @@ do_file(const char *infile)
 	hint.axis   = opt_resize_axis;
 	hint.width  = opt_width;
 	hint.height = opt_height;
-	srcimg = image_read_pstream(pstream, diag_image, &hint);
+	srcimg = image_read_pstream(pstream, &hint, diag_image);
 	if (srcimg) {
 		// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
 		image_get_preferred_size(srcimg->width, srcimg->height,

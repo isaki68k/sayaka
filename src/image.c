@@ -314,8 +314,8 @@ image_get_loaderinfo(void)
 // 戻り値 NULL で errno = 0 なら画像形式を認識できなかったことを示す。
 // ここでは Blurhash は扱わない。
 struct image *
-image_read_pstream(struct pstream *ps, const struct diag *diag,
-	const image_read_hint *hint)
+image_read_pstream(struct pstream *ps, const image_read_hint *hint,
+	const struct diag *diag)
 {
 	int ok = -1;
 	FILE *pfp;

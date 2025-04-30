@@ -707,7 +707,7 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 		hint.axis   = RESIZE_AXIS_SCALEDOWN_LONG;
 		hint.width  = width;
 		hint.height = height;
-		srcimg = image_read_pstream(pstream, diag_image, &hint);
+		srcimg = image_read_pstream(pstream, &hint, diag_image);
 		if (srcimg == NULL) {
 			if (errno != 0) {
 				Debug(diag_image, "%s: image_read_pstream failed: %s",

@@ -213,8 +213,8 @@ typedef struct image_opt_ {
 
 // image.c
 extern void image_opt_init(image_opt *);
-extern struct image *image_read_pstream(struct pstream *, const struct diag *,
-	const image_read_hint *);
+extern struct image *image_read_pstream(struct pstream *,
+	const image_read_hint *, const struct diag *);
 extern void image_free(struct image *);
 extern uint image_get_bytepp(const struct image *);
 extern uint image_get_stride(const struct image *);
