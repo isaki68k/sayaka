@@ -52,6 +52,7 @@ static void version(void);
 static void usage(void);
 static void help_all(void);
 static bool do_file(const char *filename);
+static struct image *read_blurhash(struct pstream *, uint *, uint *);
 static void signal_handler(int);
 
 static struct diag *diag_image;
@@ -596,69 +597,7 @@ do_file(const char *infile)
 			&dst_width, &dst_height);
 	} else {
 		// 読み込めなければ Blurhash を試す。
-
-		// 先に生成する画像サイズを決定してローダに渡す必要がある。
-		// -w,-h	--bn
-		// なし		なし		: 20倍で生成、等倍にリサイズ。
-		// あり		なし		: WxH で生成、等倍にリサイズ。
-		// なし		あり		: 1倍で生成、 20倍にリサイズ。
-		// あり		あり		: 1倍で生成、 WxH にリサイズ。
-
-		int bw;
-		int bh;
-		if (opt_blurhash_nearest) {
-			bw = -1;
-			bh = -1;
-		} else {
-			if (opt_width == 0 && opt_height == 0) {
-				// -w, -h ともに指定されなければ勝手に縦横 20倍とする。
-				bw = -20;
-				bh = -20;
-			} else if (opt_width > 0 && opt_height > 0) {
-				// 両方指定されたらそのサイズ。
-				bw = opt_width;
-				bh = opt_height;
-			} else {
-				// -w か -h 片方しか指定されなかった場合、どのみち
-				// オリジナルのアスペクト比も不明なので 1:1 とするしかない。
-				if (opt_width > 0) {
-					bw = opt_width;
-				} else {
-					bw = opt_height;
-				}
-				bh = bw;
-			}
-		}
-
-		FILE *fp = pstream_open_for_read(pstream);
-		if (fp) {
-			srcimg = image_blurhash_read(fp, bw, bh, diag_image);
-			fclose(fp);
-		}
-
-		if (srcimg) {
-			// リサイズ後のサイズを決定。
-			if (opt_blurhash_nearest) {
-				if (opt_width == 0 && opt_height == 0) {
-					dst_width  = srcimg->width * 20;
-					dst_height = srcimg->height * 20;
-				} else if (opt_width > 0 && opt_height > 0) {
-					dst_width  = opt_width;
-					dst_height = opt_height;
-				} else {
-					if (opt_width > 0) {
-						dst_width = opt_width;
-					} else {
-						dst_width = opt_height;
-					}
-					dst_height = dst_width;
-				}
-			} else {
-				// 等倍にリサイズ。
-				dst_width  = srcimg->width;
-				dst_height = srcimg->height;
-			}
-		}
+		srcimg = read_blurhash(pstream, &dst_width, &dst_height);
 	}
 
 	PROF(&load_end);
@@ -760,6 +699,88 @@ do_file(const char *infile)
 		httpclient_destroy(http);
 	}
 	return rv;
+}
+
+// pstream から Blurhash 画像を読み込んで返す。
+// その際画像とコマンドラインオプションから求めた表示画像サイズを
+// dst_width, dst_height に返す。
+static struct image *
+read_blurhash(struct pstream *pstream, uint *dst_width, uint *dst_height)
+{
+	FILE *fp;
+	struct image *srcimg;
+	int bw;
+	int bh;
+	uint width;
+	uint height;
+
+	// 先に生成する画像サイズを決定してローダに渡す必要がある。
+	// -w,-h	--bn
+	// なし		なし		: 20倍で生成、等倍にリサイズ。
+	// あり		なし		: WxH で生成、等倍にリサイズ。
+	// なし		あり		: 1倍で生成、 20倍にリサイズ。
+	// あり		あり		: 1倍で生成、 WxH にリサイズ。
+
+	if (opt_blurhash_nearest) {
+		bw = -1;
+		bh = -1;
+	} else {
+		if (opt_width == 0 && opt_height == 0) {
+			// -w, -h ともに指定されなければ勝手に縦横 20倍とする。
+			bw = -20;
+			bh = -20;
+		} else if (opt_width > 0 && opt_height > 0) {
+			// 両方指定されたらそのサイズ。
+			bw = opt_width;
+			bh = opt_height;
+		} else {
+			// -w か -h 片方しか指定されなかった場合、どのみち
+			// オリジナルのアスペクト比も不明なので 1:1 とするしかない。
+			if (opt_width > 0) {
+				bw = opt_width;
+			} else {
+				bw = opt_height;
+			}
+			bh = bw;
+		}
+	}
+
+	srcimg = NULL;
+
+	fp = pstream_open_for_read(pstream);
+	if (fp == NULL) {
+		return NULL;
+	}
+
+	srcimg = image_blurhash_read(fp, bw, bh, diag_image);
+	fclose(fp);
+
+	if (srcimg) {
+		// リサイズ後のサイズを決定。
+		if (opt_blurhash_nearest) {
+			if (opt_width == 0 && opt_height == 0) {
+				width  = srcimg->width * 20;
+				height = srcimg->height * 20;
+			} else if (opt_width > 0 && opt_height > 0) {
+				width  = opt_width;
+				height = opt_height;
+			} else {
+				if (opt_width > 0) {
+					width = opt_width;
+				} else {
+					width = opt_height;
+				}
+				height = width;
+			}
+		} else {
+			// 等倍にリサイズ。
+			width  = srcimg->width;
+			height = srcimg->height;
+		}
+		*dst_width  = width;
+		*dst_height = height;
+	}
+	return srcimg;
 }
 
 static void
