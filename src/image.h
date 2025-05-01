@@ -209,6 +209,7 @@ typedef struct image_opt_ {
 	// SIXEL 出力
 	bool output_ormode;
 	bool suppress_palette;
+	uint background_p2;
 } image_opt;
 
 // image.c

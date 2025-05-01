@@ -101,7 +101,7 @@ sixel_preamble(FILE *fp, const struct image *img, const image_opt *opt)
 	//  +0 +1 +2 +3 +4    +5 +6 +7 +8  +9 +10 +11 +12
 	//  ESC P  7  ; <mode> ;  q  " <Ph> ; <Pv>  ; <Width> ; <Height>
 	//
-	// で、<mode> は通常 1、OR モードなら 5。
+	// で、<mode> は OR モードなら 5、そうでなければデフォルト 1。
 	// Ph,Pv は 1。
 	static const char head[] = ESC "P7;1;q\"1;1;";
 	char buf[40];
@@ -110,6 +110,8 @@ sixel_preamble(FILE *fp, const struct image *img, const image_opt *opt)
 	memcpy(buf, head, strlen(head));
 	if (opt->output_ormode) {
 		buf[4] = '5';
+	} else {
+		buf[4] = '0' + opt->background_p2;
 	}
 	p = buf + strlen(head);
 	p += PUTD(p, img->width);

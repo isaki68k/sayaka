@@ -128,6 +128,7 @@ enum {
 	OPT_no_image,	// backward compatibility
 	OPT_nsfw,
 	OPT_overwrite_cache,
+	OPT_p2,
 	OPT_progress,
 	OPT_show_cw,
 	OPT_show_image,
@@ -163,6 +164,7 @@ static const struct option longopts[] = {
 	{ "no-image",		no_argument,		NULL,	OPT_no_image },
 	{ "nsfw",			required_argument,	NULL,	OPT_nsfw },
 	{ "overwrite-cache",no_argument,		NULL,	OPT_overwrite_cache },
+	{ "p2",				required_argument,	NULL,	OPT_p2 },
 	{ "play",			required_argument,	NULL,	'p' },
 	{ "progress",		no_argument,		NULL,	OPT_progress },
 	{ "record",			required_argument,	NULL,	'r' },
@@ -423,6 +425,13 @@ main(int ac, char *av[])
 				playfile = optarg;
 			}
 			cmd = CMD_PLAY;
+			break;
+
+		 case OPT_p2:
+			imageopt.background_p2 = stou32def(optarg, 0, NULL);
+			if (imageopt.background_p2 > 2) {
+				errx(1, "valid p2 ranges 0..2");
+			}
 			break;
 
 		 case OPT_progress:
