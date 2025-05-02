@@ -150,7 +150,8 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			colorspace2str(jinfo.out_color_space));
 	}
 	if (scale >= 0) {
-		Debug(diag, "OrigSize=(%u, %u) scale=1/%u", width, height, 1U << scale);
+		Debug(diag, "%s: OrigSize=(%u, %u) scale=1/%u", __func__,
+			width, height, 1U << scale);
 	}
 
 	// 端数対応のため、向こうが計算した幅と高さを再取得。
