@@ -35,6 +35,10 @@
 #include <string.h>
 #include <jpeglib.h>
 
+#if !defined(JPEG_APP2)
+#define JPEG_APP2	(JPEG_APP0 + 2)
+#endif
+
 struct my_jpeg_error_mgr {
 	struct jpeg_error_mgr mgr;
 	jmp_buf jmp;
@@ -95,6 +99,8 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	jpeg_create_decompress(UNVOLATILE(&jinfo));
 	jpeg_stdio_src(UNVOLATILE(&jinfo), fp);
 
+	jpeg_save_markers(UNVOLATILE(&jinfo), JPEG_APP2, 0xffff);
+
 	// ヘッダの読み込み。
 	jpeg_read_header(UNVOLATILE(&jinfo), (boolean)true);
 	width  = jinfo.image_width;
@@ -102,6 +108,20 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	color_space =jinfo.jpeg_color_space;
 	Debug(diag, "%s: color_space=%s num_components=%u", __func__,
 		colorspace2str(color_space), jinfo.num_components);
+
+	// とりあえず ICC Profile があるかどうかだけ表示。
+	if (__predict_false(diag_get_level(diag) >= 1)) {
+		jpeg_saved_marker_ptr m;
+		uint icc_total = 0;
+		for (m = jinfo.marker_list; m; m = m->next) {
+			if (m->marker == JPEG_APP2) {
+				icc_total += m->data_length;
+			}
+		}
+		if (icc_total > 0) {
+			diag_print(diag, "%s: ICC profile exists (Not supported)", __func__);
+		}
+	}
 
 	// 出力形式を選択。
 	switch (color_space) {
