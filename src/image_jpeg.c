@@ -112,8 +112,8 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		jinfo.out_color_space = JCS_RGB;
 		break;
 
-	 case JCS_YCCK:
 	 case JCS_CMYK:
+	 case JCS_YCCK:
 		// 一旦 CMYK として取り出す。
 		jinfo.out_color_space=JCS_CMYK;
 		break;
@@ -173,23 +173,26 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		}
 		break;
 
-	 case JCS_CMYK:	// ?
-	 case JCS_YCCK:
+	 case JCS_CMYK:
 	 {
 		// 一旦 CMYK で取り出して変換する。
 		uint8 cmykbuf[width * 4];
 		for (uint y = 0; y < height; y++) {
 			uint8 *bufp = cmykbuf;
 			jpeg_read_scanlines(UNVOLATILE(&jinfo), &bufp, 1);
-			// CMYK -> RGB
+			// CMYK -> RGB 変換。本来(?)の式は
+			//  R = (255 - C) * (255 - K) / 255
+			//  G = (255 - M) * (255 - K) / 255
+			//  B = (255 - Y) * (255 - K) / 255
+			// だが libjpeg の返す CMYK は反転済みらしい…。issue#53
 			for (uint x = 0; x < width; x++) {
 				uint C = *bufp++;
 				uint M = *bufp++;
 				uint Y = *bufp++;
 				uint K = *bufp++;
-				*lineptr++ = (255 - C) * (255 - K) / 255;
-				*lineptr++ = (255 - M) * (255 - K) / 255;
-				*lineptr++ = (255 - Y) * (255 - K) / 255;
+				*lineptr++ = (C * K + 127) / 255;
+				*lineptr++ = (M * K + 127) / 255;
+				*lineptr++ = (Y * K + 127) / 255;
 			}
 		}
 		break;
