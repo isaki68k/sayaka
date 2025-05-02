@@ -793,7 +793,7 @@ invalidate_cache(void)
 
 	// 写真は2日分くらいか。
 	snprintf(cmd, sizeof(cmd),
-		"find %s -name http\\* -type f -atime +2 -exec rm {} +", cachedir);
+		"find %s -name file\\* -type f -atime +2 -exec rm {} +", cachedir);
 	if (system(cmd) < 0) {
 		warn("system(find photo)");
 	}
