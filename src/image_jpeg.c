@@ -35,15 +35,15 @@
 #include <string.h>
 #include <jpeglib.h>
 
-#if !defined(JPEG_APP2)
-#define JPEG_APP2	(JPEG_APP0 + 2)
-#endif
+#define JPEG_APP(n)	(JPEG_APP0 + (n))
 
 struct my_jpeg_error_mgr {
 	struct jpeg_error_mgr mgr;
 	jmp_buf jmp;
 };
 
+static void print_marker(jpeg_saved_marker_ptr, const char *,
+	const struct diag *);
 static void my_error_exit(j_common_ptr);
 static const char *colorspace2str(J_COLOR_SPACE);
 
@@ -99,7 +99,12 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	jpeg_create_decompress(UNVOLATILE(&jinfo));
 	jpeg_stdio_src(UNVOLATILE(&jinfo), fp);
 
-	jpeg_save_markers(UNVOLATILE(&jinfo), JPEG_APP2, 0xffff);
+	if (__predict_false(diag_get_level(diag) >= 1)) {
+		// マーカーを調査。デバッグ表示用。
+		for (uint i = 2; i < 16; i++) {
+			jpeg_save_markers(UNVOLATILE(&jinfo), JPEG_APP(i), 0xffff);
+		}
+	}
 
 	// ヘッダの読み込み。
 	jpeg_read_header(UNVOLATILE(&jinfo), (boolean)true);
@@ -109,18 +114,9 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	Debug(diag, "%s: color_space=%s num_components=%u", __func__,
 		colorspace2str(color_space), jinfo.num_components);
 
-	// とりあえず ICC Profile があるかどうかだけ表示。
 	if (__predict_false(diag_get_level(diag) >= 1)) {
-		jpeg_saved_marker_ptr m;
-		uint icc_total = 0;
-		for (m = jinfo.marker_list; m; m = m->next) {
-			if (m->marker == JPEG_APP2) {
-				icc_total += m->data_length;
-			}
-		}
-		if (icc_total > 0) {
-			diag_print(diag, "%s: ICC profile exists (Not supported)", __func__);
-		}
+		// 一部のマーカーを表示。
+		print_marker(jinfo.marker_list, __func__, diag);
 	}
 
 	// 出力形式を選択。
@@ -223,6 +219,40 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
  done:
 	jpeg_destroy_decompress(UNVOLATILE(&jinfo));
 	return UNVOLATILE(img);
+}
+
+// 一部のマーカーが存在していることだけ表示。
+static void
+print_marker(jpeg_saved_marker_ptr marker_list,
+	const char *fn, const struct diag *diag)
+{
+	jpeg_saved_marker_ptr m;
+	bool has_icc_profile = false;
+	bool has_adobe = false;
+
+	for (m = marker_list; m; m = m->next) {
+		switch (m->marker) {
+		 case JPEG_APP(2):
+			if (m->data_length > 11 && memcmp(m->data, "ICC_PROFILE", 11) == 0) {
+				has_icc_profile = true;
+			}
+			break;
+		 case JPEG_APP(14):
+			if (m->data_length > 5 && memcmp(m->data, "Adobe", 5) == 0) {
+				has_adobe = true;
+			}
+			break;
+		 default:
+			break;
+		}
+	}
+
+	if (has_icc_profile) {
+		diag_print(diag, "%s: ICC Profile found (Not supported)", fn);
+	}
+	if (has_adobe) {
+		diag_print(diag, "%s: APP14\"Adobe\" found (Not supported)", fn);
+	}
 }
 
 static void
