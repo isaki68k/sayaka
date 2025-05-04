@@ -277,7 +277,7 @@ image_get_preferred_size(
 	}
 }
 
-// サポートしているローダ。
+// サポートしているローダ。処理順に並べること。
 static const struct {
 	image_match_t match;
 	image_read_t  read;
@@ -294,6 +294,9 @@ static const struct {
 #endif
 #if defined(USE_LIBPNG)
 	ENTRY(png, libpng),
+#endif
+#if defined(USE_GIFLIB)
+	ENTRY(gif, giflib),
 #endif
 #if defined(USE_STB_IMAGE)
 	ENTRY(stb, stb_image),

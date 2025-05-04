@@ -36,6 +36,9 @@
 // テストなどで一時的に無効にしたい場合のため。
 #define USE_BLURHASH
 #define USE_STB_IMAGE
+#if defined(HAVE_GIFLIB)
+#define USE_GIFLIB
+#endif
 #if defined(HAVE_LIBJPEG)
 #define USE_LIBJPEG
 #endif
@@ -58,6 +61,7 @@ typedef struct image *(*image_read_t)(FILE *, const image_read_hint *,
 	extern struct image *image_##name##_read(FILE *,	\
 		const image_read_hint *, const struct diag *)
 
+IMAGE_HANDLER(gif);
 IMAGE_HANDLER(jpeg);
 IMAGE_HANDLER(png);
 IMAGE_HANDLER(stb);

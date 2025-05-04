@@ -32,7 +32,7 @@
 #include "image_priv.h"
 
 // 外部ライブラリでサポートしているフォーマットを除く。
-#if defined(USE_LIBGIF)
+#if defined(USE_GIFLIB)
 #define STBI_NO_GIF
 #endif
 #if defined(USE_LIBJPEG)

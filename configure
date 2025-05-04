@@ -647,6 +647,7 @@ DEFINE_OPENSSL
 DEFINE_LIBWEBP
 DEFINE_LIBPNG
 DEFINE_LIBJPEG
+DEFINE_GIFLIB
 PKG_CONFIG
 DEFINE___THREAD
 WARNFLAGS
@@ -707,6 +708,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_giflib
 with_libjpeg
 with_libpng
 with_libwebp
@@ -1342,6 +1344,9 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-giflib=(auto|yes|no)
+                          Use giflib for GIF instead of stb_image
+                          (default:auto)
   --with-libjpeg=(auto|yes|no)
                           Use libjpeg for JPEG instead of stb_image
                           (default:auto)
@@ -1628,6 +1633,50 @@ printf "%s\n" "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_func
+
+# ac_fn_c_try_run LINENO
+# ----------------------
+# Try to run conftest.$ac_ext, and return whether this succeeded. Assumes that
+# executables *can* be run.
+ac_fn_c_try_run ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+printf "%s\n" "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && { ac_try='./conftest$ac_exeext'
+  { { case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+printf "%s\n" "$ac_try_echo"; } >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; }
+then :
+  ac_retval=0
+else case e in #(
+  e) printf "%s\n" "$as_me: program exited with status $ac_status" >&5
+       printf "%s\n" "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+       ac_retval=$ac_status ;;
+esac
+fi
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_run
 ac_configure_args_raw=
 for ac_arg
 do
@@ -4328,6 +4377,122 @@ See 'config.log' for more details" "$LINENO" 5; }
 	PKG_CONFIG=:
 	;;
  *)
+	;;
+esac
+
+# giflib
+
+# Check whether --with-giflib was given.
+if test ${with_giflib+y}
+then :
+  withval=$with_giflib;
+fi
+
+if test -z "${with_giflib}"; then
+	with_giflib=auto
+fi
+case ${with_giflib} in
+ no)
+	;;
+ *)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for giflib" >&5
+printf %s "checking for giflib... " >&6; }
+	has_giflib=no
+	old_CFLAGS=${CFLAGS}
+	old_LIBS=${LIBS}
+	for path in ${PATHS}; do
+		case ${path} in
+		 none)
+			LIBS="${old_LIBS} -lgif"
+			;;
+		 *)
+			CFLAGS="${old_CFLAGS} -I${path}/include"
+			LIBS="${old_LIBS} -L${path}/lib -lgif"
+			;;
+		esac
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			#include <gif_lib.h>
+
+int
+main (void)
+{
+
+			DGifOpen(NULL, NULL, NULL);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+			has_giflib=yes
+			break
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+	done
+
+	if test x"${has_giflib}" = x"yes"; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_GIFLIB 1" >>confdefs.h
+
+		DEFINE_GIFLIB=HAVE_GIFLIB=yes
+
+
+				{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether giflib requires -Wl,-R" >&5
+printf %s "checking whether giflib requires -Wl,-R... " >&6; }
+		if test "$cross_compiling" = yes
+then :
+  { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See 'config.log' for more details" "$LINENO" 5; }
+else case e in #(
+  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			int main() {
+				return 0;
+			}
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"
+then :
+
+						{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+else case e in #(
+  e)
+			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+			LIBS="${old_LIBS} -L${path}/lib -Wl,-R,${path}/lib -lgif"
+		 ;;
+esac
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+esac
+fi
+
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		CFLAGS="${old_CFLAGS}"
+		LIBS="${old_LIBS}"
+
+		if test x"${with_giflib}" = x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "--with-giflib(=yes) is specified but giflib not found.
+See 'config.log' for more details" "$LINENO" 5; }
+		fi
+	fi
 	;;
 esac
 

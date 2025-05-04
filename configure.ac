@@ -227,6 +227,73 @@ case "${PKG_CONFIG}" in
 	;;
 esac
 
+# giflib
+AC_ARG_WITH([giflib],
+	AS_HELP_STRING([--with-giflib=(auto|yes|no)],
+		[Use giflib for GIF instead of stb_image (default:auto)]))
+if test -z "${with_giflib}"; then
+	with_giflib=auto
+fi
+case ${with_giflib} in
+ no)
+	;;
+ *)
+	AC_MSG_CHECKING([for giflib])
+	has_giflib=no
+	old_CFLAGS=${CFLAGS}
+	old_LIBS=${LIBS}
+	for path in ${PATHS}; do
+		case ${path} in
+		 none)
+			LIBS="${old_LIBS} -lgif"
+			;;
+		 *)
+			CFLAGS="${old_CFLAGS} -I${path}/include"
+			LIBS="${old_LIBS} -L${path}/lib -lgif"
+			;;
+		esac
+		AC_LINK_IFELSE([AC_LANG_PROGRAM([
+			#include <gif_lib.h>
+		], [
+			DGifOpen(NULL, NULL, NULL);
+		])], [
+			has_giflib=yes
+			break
+		], [
+		])
+	done
+
+	if test x"${has_giflib}" = x"yes"; then
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE_GIFLIB])
+		AC_SUBST([DEFINE_GIFLIB], [HAVE_GIFLIB=yes])
+
+		dnl リンクできれば -Wl,-R が必要か調べる。
+		AC_MSG_CHECKING([whether giflib requires -Wl,-R])
+		AC_RUN_IFELSE([AC_LANG_SOURCE([[
+			int main() {
+				return 0;
+			}
+		]])], [
+			dnl 実行できれば追加しなくていい。
+			AC_MSG_RESULT([no])
+		], [
+			AC_MSG_RESULT([yes])
+			LIBS="${old_LIBS} -L${path}/lib -Wl,-R,${path}/lib -lgif"
+		])
+	else
+		AC_MSG_RESULT([no])
+		CFLAGS="${old_CFLAGS}"
+		LIBS="${old_LIBS}"
+
+		if test x"${with_giflib}" = x"yes"; then
+			AC_MSG_FAILURE(
+				[--with-giflib(=yes) is specified but giflib not found.])
+		fi
+	fi
+	;;
+esac
+
 # libjpeg はデフォルトを auto にする。
 # --with-libjpeg=auto なら、libjpeg があれば使い、なければ stb_image を使う。
 # --with-libjpeg=yes  なら、libjpeg がなければエラー。
