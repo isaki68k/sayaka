@@ -107,8 +107,8 @@ image_opt_init(image_opt *opt)
 	opt->cdm     = 0;
 	opt->gain    = 256;
 	opt->output_ormode = false;
+	opt->output_transbg = false;
 	opt->suppress_palette = false;
-	opt->background_p2 = 1;
 }
 
 // width_ x height_ で形式が format_ の image を作成する。

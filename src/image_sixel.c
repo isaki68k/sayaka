@@ -101,17 +101,19 @@ sixel_preamble(FILE *fp, const struct image *img, const image_opt *opt)
 	//  +0 +1 +2 +3 +4    +5 +6 +7 +8  +9 +10 +11 +12
 	//  ESC P  7  ; <mode> ;  q  " <Ph> ; <Pv>  ; <Width> ; <Height>
 	//
-	// で、<mode> は OR モードなら 5、そうでなければデフォルト 1。
+	// <mode> は 0 (背景を塗る) か 1(背景を透過)。
+	// デフォルトは 0 で --sixel-transbg で 1 に出来る。
+	// OR モードなら独自拡張の 5。OR モードには背景透過という概念はない。
 	// Ph,Pv は 1。
-	static const char head[] = ESC "P7;1;q\"1;1;";
+	static const char head[] = ESC "P7;0;q\"1;1;";
 	char buf[40];
 	char *p;
 
 	memcpy(buf, head, strlen(head));
 	if (opt->output_ormode) {
 		buf[4] = '5';
-	} else {
-		buf[4] = '0' + opt->background_p2;
+	} else if (opt->output_transbg) {
+		buf[4] = '0';
 	}
 	p = buf + strlen(head);
 	p += PUTD(p, img->width);

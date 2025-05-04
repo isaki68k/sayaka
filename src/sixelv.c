@@ -93,10 +93,10 @@ enum {
 	OPT_ipv4,
 	OPT_ipv6,
 	OPT_output_format,
-	OPT_p2,
 	OPT_profile,
 	OPT_resize_axis,
 	OPT_sixel_or,
+	OPT_sixel_transbg,
 	OPT_suppress_palette,
 	OPT_version,
 	OPT_width,
@@ -120,11 +120,11 @@ static const struct option longopts[] = {
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "output-format",	required_argument,	NULL,	'O' },
-	{ "p2",				required_argument,	NULL,	OPT_p2 },
 	{ "profile",		no_argument,		NULL,	OPT_profile },
 	{ "reduction",		required_argument,	NULL,	'r' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
 	{ "sixel-or",		no_argument,		NULL,	OPT_sixel_or },
+	{ "sixel-transbg",	no_argument,		NULL,	OPT_sixel_transbg },
 	{ "suppress-palette", no_argument,		NULL,	OPT_suppress_palette },
 	{ "version",		no_argument,		NULL,	OPT_version },
 	{ "width",			required_argument,	NULL,	'w' },
@@ -331,13 +331,6 @@ main(int ac, char *av[])
 			}
 			break;
 
-		 case OPT_p2:
-			imageopt.background_p2 = stou32def(optarg, 0, NULL);
-			if (imageopt.background_p2 > 2) {
-				errx(1, "valid p2 ranges 0..2");
-			}
-			break;
-
 		 case OPT_profile:
 			opt_profile = true;
 			break;
@@ -358,6 +351,10 @@ main(int ac, char *av[])
 
 		 case OPT_sixel_or:
 			imageopt.output_ormode = true;
+			break;
+
+		 case OPT_sixel_transbg:
+			imageopt.output_transbg = true;
 			break;
 
 		 case OPT_suppress_palette:
@@ -454,6 +451,7 @@ usage(void)
 		"--gain=<gain>",
 		"--blurhash-nearest",
 		"--sixel-or",
+		"--sixel-transbg",
 		"--suppress-palette",
 		"--ignore-error",
 		"--ciphers=<ciphers>",
@@ -508,6 +506,7 @@ help_all(void)
 "  -O,--output-format=<fmt> : bmp or sixel (default:sixel)\n"
 "  -o <filename>          : Output filename, '-' means stdout (default:-)\n"
 "  --sixel-or             : Output SIXEL by OR-mode\n"
+"  --sixel-transbg        : Make SIXEL background transparent\n"
 "  --suppress-palette     : Suppress output of SIXEL palette definition\n"
 "  --ciphers <ciphers>    : \"RSA\" can only be specified\n"
 "  --ipv4 / --ipv6        : Connect only IPv4/v6\n"
