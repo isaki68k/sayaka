@@ -123,7 +123,7 @@ wsclient:	libcommon.a libsayaka.a wsclient.c
 
 .PHONY:	clean
 clean:
-	rm -f ${PROGS} eaw_gen *.o *.a *.core
+	rm -f ${PROGS} eaw_gen *.o *.a *.d *.core
 
 .PHONY: distclean
 distclean:	clean
