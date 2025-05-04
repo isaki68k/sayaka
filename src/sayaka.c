@@ -668,7 +668,7 @@ mkdir_if(const char *dirname)
 		if (r < 0) {
 			err(1, "%s: mkdir %s", __func__, dirname);
 		}
-		printf("%s: create %s\n", __func__, dirname);
+		warnx("create %s", dirname);
 	}
 }
 
