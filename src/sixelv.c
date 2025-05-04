@@ -446,14 +446,26 @@ usage(void)
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
-"  -v              : Show input filename\n"
-"  -d <diffusion>                        --resize-axis=<axis>\n"
-"  --gain=<gain>                         --blurhash-nearest\n"
-"  --sixel-or                            --suppress-palette\n"
-"  --ignore-error                        --ciphers=<ciphers>\n"
-"  --help-all                            --debug-image=<0..2>\n"
-"  --debug-net=<0..2>                    --debug-sixel=<0..2>\n"
-	);
+"  -v              : Show input filename\n");
+
+	static const char * const opts[] = {
+		"-d <diffusion>",
+		"--resize-axis=<axis>",
+		"--gain=<gain>",
+		"--blurhash-nearest",
+		"--sixel-or",
+		"--suppress-palette",
+		"--ignore-error",
+		"--ciphers=<ciphers>",
+		"--help-all",
+		"--debug-image=<0..2>",
+		"--debug-net=<0..2>",
+		"--debug-sixel=<0..2>",
+		"", // 偶数パディング
+	};
+	for (uint i = 0; i < countof(opts) / 2; i++) {
+		fprintf(stderr, "  %-39s%s\n", opts[i * 2], opts[i * 2 + 1]);
+	}
 }
 
 static void
