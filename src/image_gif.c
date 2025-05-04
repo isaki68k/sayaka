@@ -65,8 +65,10 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 	const SavedImage *src;
 	const GifImageDesc *desc;
 	const ColorMapObject *cmap;
+	GraphicsControlBlock gcb;
 	struct image *img;
 	int errcode;
+	int transparent_color;
 
 	img = NULL;
 
@@ -84,27 +86,48 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		goto done;
 	}
 
-	img = image_create(gif->SWidth, gif->SHeight, IMAGE_FMT_RGB24);
+	// 静止画でもアニメーション画像でも1枚目しか見ない。
+	const int idx = 0;
+
+	// 透過色を取り出す。使用してなければ -1。
+	DGifSavedExtensionToGCB(gif, idx, &gcb);
+	transparent_color = gcb.TransparentColor;
+
+	// カラーマップを取り出す。
+	src = &gif->SavedImages[idx];
+	desc = &src->ImageDesc;
+	cmap = desc->ColorMap ?: gif->SColorMap;
+
+	img = image_create(gif->SWidth, gif->SHeight,
+		((transparent_color < 0) ? IMAGE_FMT_RGB24 : IMAGE_FMT_ARGB32));
 	if (img == NULL) {
 		warnx("%s: image_create failed: %s", __func__, strerrno());
 		goto done;
 	}
 
-	// 静止画でもアニメーション画像でも1枚目しか見ない。
-	src = &gif->SavedImages[0];
-	desc = &src->ImageDesc;
-	cmap = desc->ColorMap ?: gif->SColorMap;
-
 	// RasterBits[] に width x height のカラーコードが並んでいる。
 	const GifByteType *s = src->RasterBits;
 	uint8 *d = img->buf;
-	for (uint y = 0; y < desc->Height; y++) {
-		for (uint x = 0; x < desc->Width; x++) {
-			uint cc = *s++;
-			GifColorType rgb = cmap->Colors[cc];
-			*d++ = rgb.Red;
-			*d++ = rgb.Green;
-			*d++ = rgb.Blue;
+	if (transparent_color < 0) {
+		for (uint y = 0; y < desc->Height; y++) {
+			for (uint x = 0; x < desc->Width; x++) {
+				uint cc = *s++;
+				GifColorType rgb = cmap->Colors[cc];
+				*d++ = rgb.Red;
+				*d++ = rgb.Green;
+				*d++ = rgb.Blue;
+			}
+		}
+	} else {
+		for (uint y = 0; y < desc->Height; y++) {
+			for (uint x = 0; x < desc->Width; x++) {
+				uint cc = *s++;
+				GifColorType rgb = cmap->Colors[cc];
+				*d++ = rgb.Red;
+				*d++ = rgb.Green;
+				*d++ = rgb.Blue;
+				*d++ = (cc == transparent_color) ? 0 : 0xff;
+			}
 		}
 	}
 
