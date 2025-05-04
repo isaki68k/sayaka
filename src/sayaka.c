@@ -30,6 +30,7 @@
 
 #include "sayaka.h"
 #include "image.h"
+#include "ngword.h"
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
@@ -64,6 +65,7 @@ static bool init(void);
 static void mkdir_if(const char *);
 static void progress(const char *);
 static void init_screen(void);
+static void init_ngword(void);
 static void invalidate_cache(void);
 static const char *get_token(const char *);
 static void signal_handler(int);
@@ -90,6 +92,7 @@ uint indent_cols;					// インデント1階層の桁数
 bool in_sixel;						// SIXEL 出力中か。
 struct net_opt netopt_image;		// 画像ダウンロード用ネットワークオプション
 struct net_opt netopt_main;			// メインストリーム用ネットワークオプション
+struct ngwords *ngwords;			// NG ワード集
 int opt_bgtheme;					// -1:自動判別 0:Dark 1:Light
 const char *opt_codeset;			// 出力文字コード (NULL なら UTF-8)
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
@@ -494,7 +497,7 @@ main(int ac, char *av[])
 	}
 
 	if (cmd == CMD_STREAM || cmd == CMD_PLAY) {
-		// 表示系の初期化。
+		init_ngword();
 		init_screen();
 
 		if (cmd == CMD_STREAM) {
@@ -620,9 +623,9 @@ init(void)
 	}
 
 	// パスを用意。
-	snprintf(buf, sizeof(buf), "%s/.sayaka/", home);
+	snprintf(buf, sizeof(buf), "%s/.sayaka", home);
 	basedir = strdup(buf);
-	strlcat(buf, "cache", sizeof(buf));
+	strlcat(buf, "/cache", sizeof(buf));
 	cachedir = strdup(buf);
 	if (basedir == NULL || cachedir == NULL) {
 		return false;
@@ -680,6 +683,16 @@ progress(const char *msg)
 		fputs(msg, stdout);
 		fflush(stdout);
 	}
+}
+
+// NG ワードの初期化。
+static void
+init_ngword(void)
+{
+	char filename[PATH_MAX];
+
+	snprintf(filename, sizeof(filename), "%s/ngword.json", basedir);
+	ngwords = ngword_read_file(filename, diag_format/*?*/);
 }
 
 // 表示周りの初期化。

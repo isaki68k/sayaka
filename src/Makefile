@@ -49,6 +49,7 @@ SRCS_sayaka+=	eaw_data.c
 SRCS_sayaka+=	json.c
 SRCS_sayaka+=	mathalpha.c
 SRCS_sayaka+=	misskey.c
+SRCS_sayaka+=	ngword.c
 SRCS_sayaka+=	print.c
 SRCS_sayaka+=	subr.c
 SRCS_sayaka+=	terminal.c

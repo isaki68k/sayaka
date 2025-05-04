@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2023-2024 Tetsuya Isaki
+ * Copyright (C) 2023-2025 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,6 +29,7 @@
 //
 
 #include "sayaka.h"
+#include "ngword.h"
 #include <err.h>
 #include <limits.h>
 #include <stdio.h>
@@ -64,6 +65,8 @@ static string *misskey_format_reaction_count(const struct json *, int);
 static string *misskey_format_renote_owner(const struct json *, int);
 static misskey_user *misskey_get_user(const struct json *, int);
 static void misskey_free_user(misskey_user *);
+static int misskey_ngword_match_text(const string *, const misskey_user *);
+static int misskey_show_ng(int, const struct json *, int, const misskey_user *);
 
 static struct json *global_js;
 
@@ -430,8 +433,6 @@ misskey_show_note(const struct json *js, int inote)
 
 	// acl
 
-	// NG ワード
-
 	// text は null も "" も等価?。
 	// cw は cw:null なら CW なし、cw:"" なら前半パート無言で [CW] 開始、
 	// のような気がする。
@@ -548,6 +549,19 @@ misskey_show_note(const struct json *js, int inote)
 			bottom = text;
 		}
 	}
+
+	// 本文の NG ワード判定。
+	int ngid = misskey_ngword_match_text(top, user);
+	if (ngid >= 0) {
+		return misskey_show_ng(ngid, js, inote, user);
+	}
+	if (bottom) {
+		ngid = misskey_ngword_match_text(bottom, user);
+		if (ngid >= 0) {
+			return misskey_show_ng(ngid, js, inote, user);
+		}
+	}
+	// XXX 表示が始まる前に投票文の NG ワードも判定しないといけない。
 
 	ustring *textline = ustring_alloc(256);
 
@@ -1429,4 +1443,81 @@ misskey_free_user(misskey_user *user)
 		string_free(user->id);
 		string_free(user->instance);
 	}
+}
+
+// text を NG ワード集と比較する。
+// マッチすれば NG ワードのインデックスを返す。
+// マッチしなければ -1 を返す。
+static int
+misskey_ngword_match_text(const string *text, const misskey_user *user)
+{
+	int i;
+
+	for (i = 0; i < ngwords->count; i++) {
+		struct ngword *ng = &ngwords->item[i];
+
+		// ユーザ指定がなければ、常に判定に進む。
+		// ユーザ指定があれば、ユーザが一致した時だけ判定に進む。
+		if (ng->ng_user && string_equal(ng->ng_user, user->id) == false) {
+			continue;
+		}
+
+		switch (ng->ng_type) {
+		 case NG_TEXT:	// 単純一致
+			if (strstr(string_get(text), string_get(ng->ng_text))) {
+				return i;
+			}
+			break;
+		 case NG_REGEX:	// 正規表現
+			if (regexec(&ng->ng_regex, string_get(text), 0, NULL, 0) == 0) {
+				return i;
+			}
+			break;
+		 default:
+			break;
+		}
+	}
+
+	return -1;
+}
+
+// NG 用の表示を行う。
+// 戻り値は、この呼び出し元からさらに戻ってリノート等も表示しないための -1。
+// そうすると改行も表示されなくなるのでここで追加。XXX 直したほうがいい
+static int
+misskey_show_ng(int ngid, const struct json *js, int inote,
+	const misskey_user *user)
+{
+	// ユーザ名が長いことが多いので、NG ワードは時刻の後ろに回すか…。
+
+	ustring *headline = ustring_alloc(64);
+	ustring *footline = ustring_alloc(64);
+
+	ustring_append_utf8_style(headline, string_get(user->name), STYLE_TIME);
+	ustring_append_unichar(headline, ' ');
+	ustring_append_utf8_style(headline, string_get(user->id), STYLE_TIME);
+	if (user->instance) {
+		ustring_append_unichar(headline, ' ');
+		ustring_append_utf8_style(headline, string_get(user->instance),
+			STYLE_TIME);
+	}
+
+
+	string *time = misskey_format_time(js, inote);
+	const string *ngtext = ngwords->item[ngid].ng_text;
+	ustring_append_ascii_style(footline, string_get(time), STYLE_TIME);
+	ustring_append_unichar(footline, ' ');
+	ustring_append_utf8_style(footline, string_get(ngtext), STYLE_NG);
+
+	iprint(headline);
+	printf("\n");
+	iprint(footline);
+	printf("\n");
+
+	printf("\n");
+
+	string_free(time);
+	ustring_free(headline);
+	ustring_free(footline);
+	return -1;
 }

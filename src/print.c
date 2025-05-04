@@ -80,6 +80,7 @@ void
 init_color(void)
 {
 	char url[S2EBUFSIZE];
+	char ng[S2EBUFSIZE];
 	const char *c_blue = NULL;
 	const char *c_username = NULL;
 	const char *c_renote = NULL;
@@ -87,6 +88,7 @@ init_color(void)
 	const char *c_gray = NULL;
 
 	url[0] = '\0';
+	ng[0] = '\0';
 
 	if (colormode == 1) {
 		// -c 1 なら一切エスケープシーケンスを使わない。
@@ -132,6 +134,9 @@ init_color(void)
 
 		// mlterm では 90 がグレー、97 は白。
 		c_gray = "90";
+
+		// NG。
+		snprintf(ng, sizeof(ng), "%s;%s", STRIKE, c_gray);
 	}
 
 	make_esc(style2esc[STYLE_USERNAME],	c_username);
@@ -141,6 +146,7 @@ init_color(void)
 	make_esc(style2esc[STYLE_REACTION],	c_react);
 	make_esc(style2esc[STYLE_URL],		url);
 	make_esc(style2esc[STYLE_TAG],		c_blue);
+	make_esc(style2esc[STYLE_NG],		ng);
 }
 
 static void

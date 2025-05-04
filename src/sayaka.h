@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2014-2024 Tetsuya Isaki
+ * Copyright (C) 2014-2025 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,6 +44,7 @@ enum {
 	STYLE_REACTION,
 	STYLE_URL,
 	STYLE_TAG,
+	STYLE_NG,
 
 	STYLE_MAX,
 };
@@ -58,6 +59,7 @@ enum {
 typedef uint32 unichar;
 
 struct json;
+struct ngwords;
 
 // Unicode 文字列型。common.h の string と揃えること。
 struct ustring_ {
@@ -148,6 +150,7 @@ extern uint indent_cols;
 extern bool in_sixel;
 extern struct net_opt netopt_image;
 extern struct net_opt netopt_main;
+extern struct ngwords *ngwords;
 extern int opt_bgtheme;
 extern const char *opt_codeset;
 extern uint opt_nsfw;
