@@ -113,7 +113,7 @@ sixel_preamble(FILE *fp, const struct image *img, const image_opt *opt)
 	if (opt->output_ormode) {
 		buf[4] = '5';
 	} else if (opt->output_transbg) {
-		buf[4] = '0';
+		buf[4] = '1';
 	}
 	p = buf + strlen(head);
 	p += PUTD(p, img->width);
