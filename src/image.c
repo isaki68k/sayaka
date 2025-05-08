@@ -277,45 +277,90 @@ image_get_preferred_size(
 	}
 }
 
+// ローダごとにサポートしているファイル形式をビットマップフラグにしたもの。
+#define LOADERMAP_gif	(1U << IMAGE_LOADER_GIF)
+#define LOADERMAP_jpeg	(1U << IMAGE_LOADER_JPEG)
+#define LOADERMAP_png	(1U << IMAGE_LOADER_PNG)
+#define LOADERMAP_webp	(1U << IMAGE_LOADER_WEBP)
+#define LOADERMAP_stb	((1U << IMAGE_LOADER_BMP)	| \
+						 (1U << IMAGE_LOADER_GIF)	| \
+						 (1U << IMAGE_LOADER_JPEG)	| \
+						 (1U << IMAGE_LOADER_PNG)	| \
+						 (1U << IMAGE_LOADER_PNM))
+
 // サポートしているローダ。処理順に並べること。
 static const struct {
 	image_match_t match;
 	image_read_t  read;
 	const char *libname;	// image_get_loaderinfo() で表示する名前
 	const char *name;		// マクロ展開用とデバッグログとかで使う短縮名
+	uint32 supported;		// このローダがサポートしている画像形式
 } loader[] = {
-#define ENTRY(name, libname)	\
-	{ image_##name##_match, image_##name##_read, #libname, #name }
+#define ENTRY(name, libname, map)	\
+	{ image_##name##_match, image_##name##_read, \
+	  #libname, #name, map }
 #if defined(USE_LIBWEBP)
-	ENTRY(webp, libwebp),
+	ENTRY(webp, libwebp, LOADERMAP_webp),
 #endif
 #if defined(USE_LIBJPEG)
-	ENTRY(jpeg, libjpeg),
+	ENTRY(jpeg, libjpeg, LOADERMAP_jpeg),
 #endif
 #if defined(USE_LIBPNG)
-	ENTRY(png, libpng),
+	ENTRY(png, libpng, LOADERMAP_png),
 #endif
 #if defined(USE_GIFLIB)
-	ENTRY(gif, giflib),
+	ENTRY(gif, giflib, LOADERMAP_gif),
 #endif
 #if defined(USE_STB_IMAGE)
-	ENTRY(stb, stb_image),
+	ENTRY(stb, stb_image, LOADERMAP_stb),
 #endif
 #undef ENTRY
 };
 
-// サポートしているローダを string で返す。表示用。
-string *
+// サポートしているローダの一覧を返す。
+// 戻り値は char * の配列で、{ name1, loader1, name2, loader2, ... }
+// のように IMAGE_LOADER_* の画像形式とそのローダ名がペアで並んでおり、
+// NULL で終端。
+// 戻り値は使い終わったら free() すること。
+char **
 image_get_loaderinfo(void)
 {
-	string *s = string_from_cstr("blurhash");
+	static const char *names[] = { IMAGE_LOADER_NAMES };
+	char **dst;
+	char **d;
 
-	for (uint i = 0; i < countof(loader); i++) {
-		string_append_cstr(s, ", ");
-		string_append_cstr(s, loader[i].libname);
+	dst = calloc(IMAGE_LOADER_MAX * 2 + 1, sizeof(char *));
+	if (dst == NULL) {
+		return NULL;
+	}
+	d = dst;
+
+	for (uint n = 0; n < IMAGE_LOADER_MAX; n++) {
+		*d++ = UNCONST(names[n]);
+
+		uint32 filetype = (1U << n);
+		int i;
+		for (i = 0; i < countof(loader); i++) {
+			if ((loader[i].supported & filetype)) {
+				break;
+			}
+		}
+		if (i < countof(loader)) {
+			*d++ = UNCONST(loader[i].libname);
+		} else {
+			// Blurhash は loader[] テーブルには出てこないので手動処理。
+			if (n == IMAGE_LOADER_BLURHASH) {
+				*d++ = "builtin";
+			} else {
+				*d++ = "(no loader available)";
+			}
+		}
 	}
 
-	return s;
+	// 終端は1つ。
+	*d = NULL;
+
+	return dst;
 }
 
 // pstream の画像形式を判定する。

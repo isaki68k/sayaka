@@ -48,6 +48,7 @@ typedef enum {
 } OutputFormat;
 
 static void version(void);
+static void list(void);
 static void usage(void);
 static void help_all(void);
 static bool do_file(const char *filename);
@@ -92,6 +93,7 @@ enum {
 	OPT_help_all,
 	OPT_ipv4,
 	OPT_ipv6,
+	OPT_list,
 	OPT_output_format,
 	OPT_profile,
 	OPT_resize_axis,
@@ -119,6 +121,7 @@ static const struct option longopts[] = {
 	{ "ignore-error",	no_argument,		NULL,	'i' },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
+	{ "list",			no_argument,		NULL,	OPT_list },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "profile",		no_argument,		NULL,	OPT_profile },
 	{ "reduction",		required_argument,	NULL,	'r' },
@@ -316,6 +319,10 @@ main(int ac, char *av[])
 			netopt.address_family = 6;
 			break;
 
+		 case OPT_list:
+			list();
+			exit(0);
+
 		 case 'O':
 			output_format = parse_optmap(map_output_format, optarg);
 			if ((int)output_format < 0) {
@@ -423,12 +430,17 @@ main(int ac, char *av[])
 static void
 version(void)
 {
-	string *info = image_get_loaderinfo();
-
 	printf("%s %s (%s) - SIXEL viewer\n", progname, progver, SIXELV_RELDATE);
-	printf(" Supported loader: %s\n", string_get(info));
+}
 
-	string_free(info);
+static void
+list(void)
+{
+	char **names = image_get_loaderinfo();
+	for (uint i = 0; names[i] != NULL; i += 2) {
+		printf("%-8s %s\n", names[i], names[i + 1]);
+	}
+	free(names);
 }
 
 static void

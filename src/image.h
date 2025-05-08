@@ -159,6 +159,27 @@ typedef union ColorRGB_ {
 	};
 } ColorRGB;
 
+// 読み込みをサポートしている画像形式。
+enum {
+	IMAGE_LOADER_BLURHASH = 0,
+	IMAGE_LOADER_BMP,
+	IMAGE_LOADER_GIF,
+	IMAGE_LOADER_JPEG,
+	IMAGE_LOADER_PNG,
+	IMAGE_LOADER_PNM,
+	IMAGE_LOADER_WEBP,
+	IMAGE_LOADER_MAX,
+};
+// IMAGE_LOADER_* に対応する名前。
+#define IMAGE_LOADER_NAMES \
+	"Blurhash",	\
+	"bmp",	\
+	"gif",	\
+	"jpeg",	\
+	"png",	\
+	"pnm",	\
+	"webp"
+
 struct image
 {
 	// buf はラスターパディングなし。
@@ -222,7 +243,7 @@ extern uint image_get_bytepp(const struct image *);
 extern uint image_get_stride(const struct image *);
 extern void image_get_preferred_size(uint, uint, ResizeAxis,
 	uint, uint, uint *, uint *);
-extern string *image_get_loaderinfo(void);
+extern char **image_get_loaderinfo(void);
 extern void image_convert_to16(struct image *);
 extern struct image *image_reduct(const struct image *, uint, uint,
 	const image_opt *, const struct diag *);
