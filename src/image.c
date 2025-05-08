@@ -287,7 +287,7 @@ static const struct {
 #define ENTRY(name, libname)	\
 	{ image_##name##_match, image_##name##_read, #libname, #name }
 #if defined(USE_LIBWEBP)
-	ENTRY(webp, libweb),
+	ENTRY(webp, libwebp),
 #endif
 #if defined(USE_LIBJPEG)
 	ENTRY(jpeg, libjpeg),
