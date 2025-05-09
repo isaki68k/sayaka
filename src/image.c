@@ -336,8 +336,6 @@ image_get_loaderinfo(void)
 	d = dst;
 
 	for (uint n = 0; n < IMAGE_LOADER_MAX; n++) {
-		*d++ = UNCONST(names[n]);
-
 		uint32 filetype = (1U << n);
 		int i;
 		for (i = 0; i < countof(loader); i++) {
@@ -345,16 +343,17 @@ image_get_loaderinfo(void)
 				break;
 			}
 		}
+		const char *lib = NULL;
 		if (i < countof(loader)) {
-			*d++ = UNCONST(loader[i].libname);
-		} else {
+			lib = UNCONST(loader[i].libname);
+		} else if (n == IMAGE_LOADER_BLURHASH) {
 			// Blurhash は loader[] テーブルには出てこないので手動処理。
-			if (n == IMAGE_LOADER_BLURHASH) {
-				*d++ = "builtin";
-			} else {
-				*d++ = "(no loader available)";
-			}
+			lib = "builtin";
+		} else {
+			continue;
 		}
+		*d++ = UNCONST(names[n]);
+		*d++ = UNCONST(lib);
 	}
 
 	// 終端は1つ。
