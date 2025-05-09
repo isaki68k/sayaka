@@ -172,7 +172,7 @@ enum {
 };
 // IMAGE_LOADER_* に対応する名前。
 #define IMAGE_LOADER_NAMES \
-	"Blurhash",	\
+	"blurhash",	\
 	"bmp",	\
 	"gif",	\
 	"jpeg",	\
