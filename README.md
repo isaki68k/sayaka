@@ -46,17 +46,18 @@ Misskey クライアント sayaka ちゃん version 3.8.1+ (2025/04/25)
 * BSD make (not GNU make)
 * pkg-config
 	… pkgsrc なら `devel/pkgconf`、Ubuntu なら `pkg-config` です。
+* giflib
+	… pkgsrc および OpenBSD ports なら `graphics/giflib` です。
+	Ubuntu なら `libgif-dev` です。
+	なくてもビルド可能です。
 * libjpeg
 	… pkgsrc および OpenBSD ports なら `graphics/libjpeg`、
 	Ubuntu なら `libjpeg8-dev` です。
-	デフォルト(`--with-libjpeg=auto`)では libjpeg が見付かれば使用し、
-	見付からなければ内蔵の stb_image でデコードします
-	(この場合デコード出来ないファイル形式があります)。
+	なくてもビルド可能です。
 * libpng
 	… pkgsrc および OpenBSD ports なら `graphics/png`、
 	Ubuntu なら `libpng-dev` です。
-	デフォルト(`--with-libpng=auto`)では libpng が見付かれば使用し、
-	見付からなければ内蔵の stb_image でデコードします。
+	なくてもビルド可能です。
 * libwebp
 	… pkgsrc および OpenBSD ports なら `graphics/libwebp`、
 	Ubuntu なら `libwebp-dev` です。
@@ -73,9 +74,28 @@ Misskey クライアント sayaka ちゃん version 3.8.1+ (2025/04/25)
 ビルドは以下のようにします。
 
 ```
-% ./configure
+% ./configure [<options>]
 % make -DRELEASE sayaka
 ```
+
+configure のオプションは次のものがあります。
+* `--with-giflib=(auto|yes|no)` …
+	`auto` なら giflib が見付かれば使用し、見付からなければ内蔵の
+	stb_image でデコードします。`no` なら stb_image を使用します。
+	デフォルトは `auto` です。
+* `--with-libjpeg=(auto|yes|no)` …
+	`auto` なら libjpeg が見付かれば使用し、見付からなければ内蔵の
+	stb_image でデコードします。`no` なら stb_image を使用します。
+	デフォルトは `auto` です。
+	stb_image を使う場合デコードできない形式があります。
+* `--with-libpng=(auto|yes|no)` …
+	`auto` なら libpng が見付かれば使用し、見付からなければ内蔵の
+	stb_image でデコードします。`no` なら stb_image を使用します。
+	デフォルトは `auto` です。
+* `--with-iconv=(yes|no)` …
+	`sixelv` のみビルドするなら `no` にすることは可能です。
+* `--with-openssl=(yes|no)` …
+	`sixelv` をローカルのファイルでだけ使うなら `no` にすることは可能です。
 
 `make install` はないので、出来上がった `src/sayaka` (実行ファイル) をパスの通ったところにインストールするとかしてください。
 ちなみに `make -DRELEASE all` すると、画像ファイルを SIXEL に変換して表示する
