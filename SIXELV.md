@@ -1,4 +1,4 @@
-SIXEL 端末用画像ビューア sixelv version 3.8.1 (2024/09/21)
+SIXEL 端末用画像ビューア sixelv version 3.8.2 (2025/05/17)
 ===
 
 SIXEL 対応端末で動作する画像ビューアです。

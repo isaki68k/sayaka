@@ -39,8 +39,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define SIXELV_VERSION "3.8.1"
-#define SIXELV_RELDATE "2024/09/21"
+#define SIXELV_VERSION "3.8.2"
+#define SIXELV_RELDATE "2025/05/17"
 
 typedef enum {
 	OUTPUT_FORMAT_SIXEL,

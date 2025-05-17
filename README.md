@@ -1,4 +1,4 @@
-Misskey クライアント sayaka ちゃん version 3.8.1+ (2025/04/25)
+Misskey クライアント sayaka ちゃん version 3.8.2 (2025/05/17)
 ======
 
 ターミナルに特化した Misskey ストリームクライアントです。
