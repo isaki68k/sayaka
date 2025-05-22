@@ -54,6 +54,8 @@ image_ascii_write(FILE *fp, const struct image *img, const struct diag *diag)
 					fprintf(fp, "\x1b[m");
 				} else if (cc < 8) {
 					fprintf(fp, "\x1b[4%um", cc);
+				} else if (cc < 16) {
+					fprintf(fp, "\x1b[10%um", cc - 8);
 				} else {
 					fprintf(fp, "\x1b[48;5;%um", cc);
 				}
