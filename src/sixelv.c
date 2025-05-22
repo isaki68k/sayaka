@@ -456,7 +456,7 @@ usage(void)
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
-"  -O <fmt>        : Output format, bmp or sixel (default: sixel)\n"
+"  -O <fmt>        : Output format, ascii, bmp or sixel (default: sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
 "  -v              : Show input filename\n");
 
@@ -519,7 +519,7 @@ help_all(void)
 "  --gain=<gain>          : Set output gain between 0.0 and 2.0 (default:1.0)\n"
 "  --help-all             : This help\n"
 "  --list                 : Show supported filetype and decoder list\n"
-"  -O,--output-format=<fmt> : bmp or sixel (default:sixel)\n"
+"  -O,--output-format=<fmt> : ascii, bmp or sixel (default:sixel)\n"
 "  -o <filename>          : Output filename, '-' means stdout (default:-)\n"
 "  --sixel-or             : Output SIXEL by OR-mode\n"
 "  --sixel-transbg        : Make SIXEL background transparent\n"
