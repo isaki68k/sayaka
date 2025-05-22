@@ -70,7 +70,7 @@ static uint opt_height;
 static bool opt_profile;			// プロファイル
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
-static image_opt imageopt;
+static struct image_opt imageopt;
 static struct net_opt netopt;
 
 #define PROF(tv)	do {		\

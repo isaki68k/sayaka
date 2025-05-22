@@ -55,7 +55,7 @@
 #define BG_ISLIGHT()	(opt_bgtheme != BG_DARK) // 姑息な最適化
 
 // ヘッダの依存関係を減らすため。
-extern image_opt imageopt;
+extern struct image_opt imageopt;
 
 static void make_esc(char *, const char *);
 static inline void make_indent(char *, int);
@@ -637,7 +637,7 @@ fetch_image(FILE *ofp, const char *img_url, uint width, uint height, bool shade)
 	FILE *ifp = NULL;
 	struct image *srcimg = NULL;
 	struct image *dstimg = NULL;
-	image_opt localopt;
+	struct image_opt localopt;
 	bool rv = false;
 
 	// dst_{width,height} は

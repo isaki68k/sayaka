@@ -55,7 +55,7 @@ enum {
 };
 
 // ヘッダの依存関係を減らすため。
-extern image_opt imageopt;
+extern struct image_opt imageopt;
 
 static void version(void);
 static void usage(void);
@@ -84,7 +84,7 @@ struct diag *diag_term;
 uint fontwidth;						// 使用するフォント幅   (ドット数)
 uint fontheight;					// 使用するフォント高さ (ドット数)
 uint iconsize;						// アイコンの大きさ (正方形、ドット数)
-image_opt imageopt;					// 画像関係のオプション
+struct image_opt imageopt;			// 画像関係のオプション
 uint imagesize;						// 画像の大きさ
 uint indent_cols;					// インデント1階層の桁数
 bool in_sixel;						// SIXEL 出力中か。

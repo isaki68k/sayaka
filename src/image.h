@@ -213,7 +213,7 @@ typedef struct image_read_hint_ {
 	uint height;
 } image_read_hint;
 
-typedef struct image_opt_ {
+struct image_opt {
 	// 減色
 	ReductorMethod method;
 	ReductorDiffuse diffuse;
@@ -231,10 +231,10 @@ typedef struct image_opt_ {
 	bool output_ormode;
 	bool output_transbg;
 	bool suppress_palette;
-} image_opt;
+};
 
 // image.c
-extern void image_opt_init(image_opt *);
+extern void image_opt_init(struct image_opt *);
 extern int  image_match(struct pstream *, const struct diag *);
 extern struct image *image_read(struct pstream *, int,
 	const image_read_hint *, const struct diag *);
@@ -246,7 +246,7 @@ extern void image_get_preferred_size(uint, uint, ResizeAxis,
 extern char **image_get_loaderinfo(void);
 extern void image_convert_to16(struct image *);
 extern struct image *image_reduct(const struct image *, uint, uint,
-	const image_opt *, const struct diag *);
+	const struct image_opt *, const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);
 extern const char *reductordiffuse_tostr(ReductorDiffuse);
@@ -257,7 +257,7 @@ extern struct image *image_blurhash_read(FILE *, int, int, const struct diag *);
 
 // image_sixel.c
 extern void image_sixel_abort(FILE *);
-extern bool image_sixel_write(FILE *, const struct image *, const image_opt *,
-	const struct diag *);
+extern bool image_sixel_write(FILE *, const struct image *,
+	const struct image_opt *, const struct diag *);
 
 #endif // !sayaka_image_h

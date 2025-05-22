@@ -33,7 +33,8 @@
 #include "image_priv.h"
 #include <string.h>
 
-static bool sixel_preamble(FILE *, const struct image *, const image_opt *);
+static bool sixel_preamble(FILE *, const struct image *,
+	const struct image_opt *);
 static bool sixel_postamble(FILE *);
 static bool sixel_convert_normal(FILE *, const struct image *,
 	const struct diag *);
@@ -55,9 +56,9 @@ image_sixel_abort(FILE *fp)
 // (呼び出し後にフラッシュすること)
 bool
 image_sixel_write(FILE *fp, const struct image *img,
-	const image_opt *opt, const struct diag *diag)
+	const struct image_opt *opt, const struct diag *diag)
 {
-	image_opt localopt;
+	struct image_opt localopt;
 
 	Debug(diag, "%s: source image (%u, %u) %u colors", __func__,
 		img->width, img->height, img->palette_count);
@@ -94,7 +95,7 @@ image_sixel_write(FILE *fp, const struct image *img,
 }
 
 static bool
-sixel_preamble(FILE *fp, const struct image *img, const image_opt *opt)
+sixel_preamble(FILE *fp, const struct image *img, const struct image_opt *opt)
 {
 	// ヘッダは
 	//

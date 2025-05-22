@@ -84,7 +84,7 @@ static void image_reduct_simple(image_reductor_handle *,
 	struct image *, const struct image *, const struct diag *);
 #endif
 static bool image_reduct_highquality(image_reductor_handle *,
-	struct image *, const struct image *, const image_opt *,
+	struct image *, const struct image *, const struct image_opt *,
 	const struct diag *);
 #if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *, int);
@@ -99,7 +99,7 @@ static const ColorRGB palette_vga16[];
 
 // opt を初期化する。
 void
-image_opt_init(image_opt *opt)
+image_opt_init(struct image_opt *opt)
 {
 	opt->method  = REDUCT_HIGH_QUALITY;
 	opt->diffuse = DIFFUSE_SFL;
@@ -468,7 +468,7 @@ image_reduct(
 	const struct image *src,	// 元画像
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
-	const image_opt *opt,		// パラメータ
+	const struct image_opt *opt,	// パラメータ
 	const struct diag *diag)
 {
 	struct image *dst;
@@ -678,8 +678,8 @@ image_reduct_simple(image_reductor_handle *ir,
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
 image_reduct_highquality(image_reductor_handle *ir,
-	struct image *dstimg, const struct image *srcimg, const image_opt *opt,
-	const struct diag *diag)
+	struct image *dstimg, const struct image *srcimg,
+	const struct image_opt *opt, const struct diag *diag)
 {
 	uint16 *d = (uint16 *)dstimg->buf;
 	const uint16 *src = (const uint16 *)srcimg->buf;
