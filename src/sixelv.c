@@ -617,9 +617,8 @@ do_file(const char *infile)
 		}
 	}
 
-	// ゼロでない適当な初期値。
-	font_width = 7;
-	font_height = 14;
+	font_width = 0;
+	font_height = 0;
 
 	// 出力先をオープン。
 	if (output_filename == NULL) {
@@ -647,6 +646,13 @@ do_file(const char *infile)
 			warn("fopen(%s) failed", output_filename);
 			goto abort;
 		}
+	}
+
+	if (font_width == 0) {
+		font_width = 7;
+	}
+	if (font_height == 0) {
+		font_height = 14;
 	}
 
 	PROF(&load_start);
