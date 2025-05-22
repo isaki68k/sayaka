@@ -55,6 +55,7 @@ SRCS_sayaka+=	terminal.c
 SRCS_sayaka+=	ustring.c
 SRCS_sayaka+=	wsclient.c
 
+SRCS_sixelv+=	image_ascii.c
 SRCS_sixelv+=	image_bmp.c
 
 SRCS_all=	${SRCS_common}	\

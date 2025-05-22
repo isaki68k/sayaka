@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2024 Tetsuya Isaki
+ * Copyright (C) 2025 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,18 +24,45 @@
  * SUCH DAMAGE.
  */
 
-#ifndef sayaka_sixelv_h
-#define sayaka_sixelv_h
+//
+// ASCII アート書き出し
+//
 
-#include "common.h"
+#include "image_priv.h"
+#include "sixelv.h"
+#include <err.h>
 
-struct image;
+// image を ASCII モザイクで fp に出力する。
+// srcimg は桁数x行数 [ピクセル] の画像になっている。
+bool
+image_ascii_write(FILE *fp, const struct image *img, const struct diag *diag)
+{
+	assert(img->format == IMAGE_FMT_AIDX16);
 
-// image_ascii.c
-extern bool image_ascii_write(FILE *, const struct image *,
-	const struct diag *);
+	// 背景色を指定しながら空白を表示。
+	const int16 *buf = (const int16 *)img->buf;
+	for (uint y = 0; y < img->height; y++) {
+		int16 prev = -1;
+		for (uint x = 0; x < img->width; x++) {
+			int16 cc = *buf++;
+			if (cc < 0) {
+				cc = -1;
+			}
+			if (cc != prev) {
+				if (cc < 0) {
+					// 透過なら一旦色を解除して空白だけを出力。
+					fprintf(fp, "\x1b[m");
+				} else if (cc < 8) {
+					fprintf(fp, "\x1b[4%um", cc);
+				} else {
+					fprintf(fp, "\x1b[48;5;%um", cc);
+				}
+				prev = cc;
+			}
+			fputc(' ', fp);
+		}
+		fprintf(fp, "\x1b[m\n");
+	}
 
-// image_bmp.c
-extern bool image_bmp_write(FILE *, const struct image *, const struct diag *);
-
-#endif // !sayaka_sixelv_h
+	return true;
+}

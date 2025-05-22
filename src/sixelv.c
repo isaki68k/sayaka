@@ -37,6 +37,7 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include <sys/time.h>
 
 #define SIXELV_VERSION "3.8.2"
@@ -45,6 +46,7 @@
 typedef enum {
 	OUTPUT_FORMAT_SIXEL,
 	OUTPUT_FORMAT_BMP,
+	OUTPUT_FORMAT_ASCII,
 } OutputFormat;
 
 static void version(void);
@@ -135,6 +137,7 @@ static const struct option longopts[] = {
 };
 
 static const struct optmap map_output_format[] = {
+	{ "ascii",		OUTPUT_FORMAT_ASCII },
 	{ "bmp",		OUTPUT_FORMAT_BMP },
 	{ "sixel",		OUTPUT_FORMAT_SIXEL },
 	{ NULL },
@@ -549,6 +552,8 @@ do_file(const char *infile)
 	image_read_hint hint;
 	uint dst_width;
 	uint dst_height;
+	uint font_width;
+	uint font_height;
 	struct timeval load_start;
 	struct timeval load_end;
 	struct timeval cvt_start;
@@ -612,6 +617,38 @@ do_file(const char *infile)
 		}
 	}
 
+	// ゼロでない適当な初期値。
+	font_width = 7;
+	font_height = 14;
+
+	// 出力先をオープン。
+	if (output_filename == NULL) {
+		ofp = stdout;
+
+		if (output_format == OUTPUT_FORMAT_ASCII) {
+			// 出力形式が ASCII ならここでフォントサイズを取得する。
+			struct winsize ws;
+			int r = ioctl(fileno(ofp), TIOCGWINSZ, &ws);
+			if (r != 0) {
+				warn("TIOCGWINSZ failed");
+				return false;
+			}
+
+			if (ws.ws_col != 0) {
+				font_width = ws.ws_xpixel / ws.ws_col;
+			}
+			if (ws.ws_row != 0) {
+				font_height = ws.ws_ypixel / ws.ws_row;
+			}
+		}
+	} else {
+		ofp = fopen(output_filename, "w");
+		if (ofp == NULL) {
+			warn("fopen(%s) failed", output_filename);
+			goto abort;
+		}
+	}
+
 	PROF(&load_start);
 
 	// 画像形式判定。
@@ -619,8 +656,9 @@ do_file(const char *infile)
 
 	if (loader_idx >= 0) {
 		// 読み込み。
-		// (この hint は libjpeg の scaling hint のことで、これをもとに
-		// 1/8 とかで読み込んだものが srcimg->{width,height} になる)
+		// この hint は libjpeg の scaling hint のことで、これをもとに
+		// 1/8 とかで読み込んだものが srcimg->{width,height} になる。
+		// ASCII の時には hint サイズも加工したほうが効率はいいがとりあえず。
 		memset(&hint, 0, sizeof(hint));
 		hint.axis   = opt_resize_axis;
 		hint.width  = opt_width;
@@ -644,6 +682,12 @@ do_file(const char *infile)
 		goto abort;
 	}
 
+	if (output_format == OUTPUT_FORMAT_ASCII) {
+		// ここでピクセルサイズを桁数行数に変更。
+		dst_width  = howmany(dst_width, font_width);
+		dst_height = howmany(dst_height, font_height);
+	}
+
 	Debug(diag_image,
 		"InputSize=(%u, %u) OutputSize=(%u, %u) OutputColor=%s",
 		srcimg->width, srcimg->height, dst_width, dst_height,
@@ -662,26 +706,23 @@ do_file(const char *infile)
 
 	PROF(&reduct_end);
 
-	// 出力先をオープン。
-	if (output_filename == NULL) {
-		ofp = stdout;
-	} else {
-		ofp = fopen(output_filename, "w");
-		if (ofp == NULL) {
-			warn("fopen(%s) failed", output_filename);
-			goto abort;
-		}
-	}
-
 	PROF(&sixel_start);
 
 	// 書き出し。
-	if (output_format == OUTPUT_FORMAT_SIXEL) {
+	switch (output_format) {
+	 case OUTPUT_FORMAT_SIXEL:
 		image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
-	} else {
+		break;
+	 case OUTPUT_FORMAT_BMP:
 		if (image_bmp_write(ofp, resimg, diag_image) == false) {
 			goto abort;
 		}
+		break;
+	 case OUTPUT_FORMAT_ASCII:
+		if (image_ascii_write(ofp, resimg, diag_image) == false) {
+			goto abort;
+		}
+		break;
 	}
 	fflush(ofp);
 
@@ -709,15 +750,15 @@ do_file(const char *infile)
 
 	rv = true;
  abort:
+	image_free(resimg);
+	image_free(srcimg);
+
 	if (output_filename != NULL) {
 		if (ofp) {
 			fclose(ofp);
 		}
 	}
 	ofp = NULL;
-
-	image_free(resimg);
-	image_free(srcimg);
 
 	if (pstream) {
 		pstream_cleanup(pstream);
