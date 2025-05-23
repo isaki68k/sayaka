@@ -60,6 +60,8 @@ static void signal_handler(int);
 static struct diag *diag_image;
 static struct diag *diag_net;
 static struct diag *diag_sixel;
+static uint fontwidth;				// フォント幅 (ドット数)
+static uint fontheight;				// フォント高さ (ドット数)
 static bool show_filename;			// 画像の前にファイル名を表示
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static FILE *ofp;					// 出力中のストリーム
@@ -406,6 +408,31 @@ main(int ac, char *av[])
 			"-o <output_filename> cannot be used with multiple input file.");
 	}
 
+	// 出力形式が ASCII でフォントサイズ未指定ならここでフォントサイズを取得。
+	// 出力先が端末でなければ適当な値を代入する。
+	if (output_format == OUTPUT_FORMAT_ASCII &&
+			(fontwidth == 0 || fontheight == 0))
+	{
+		struct winsize ws;
+		int r = ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+		if (r == 0) {
+			if (ws.ws_col != 0) {
+				fontwidth = ws.ws_xpixel / ws.ws_col;
+			}
+			if (ws.ws_row != 0) {
+				fontheight = ws.ws_ypixel / ws.ws_row;
+			}
+		}
+
+		// 取得できなければ適当な値を入れておく。
+		if (fontwidth == 0) {
+			fontwidth = 7;
+		}
+		if (fontheight == 0) {
+			fontheight = 14;
+		}
+	}
+
 	if (output_format == OUTPUT_FORMAT_SIXEL) {
 		signal(SIGINT, signal_handler);
 	}
@@ -552,8 +579,6 @@ do_file(const char *infile)
 	image_read_hint hint;
 	uint dst_width;
 	uint dst_height;
-	uint font_width;
-	uint font_height;
 	struct timeval load_start;
 	struct timeval load_end;
 	struct timeval cvt_start;
@@ -617,44 +642,6 @@ do_file(const char *infile)
 		}
 	}
 
-	font_width = 0;
-	font_height = 0;
-
-	// 出力先をオープン。
-	if (output_filename == NULL) {
-		ofp = stdout;
-
-		if (output_format == OUTPUT_FORMAT_ASCII) {
-			// 出力形式が ASCII ならここでフォントサイズを取得する。
-			struct winsize ws;
-			int r = ioctl(fileno(ofp), TIOCGWINSZ, &ws);
-			if (r != 0) {
-				warn("TIOCGWINSZ failed");
-				return false;
-			}
-
-			if (ws.ws_col != 0) {
-				font_width = ws.ws_xpixel / ws.ws_col;
-			}
-			if (ws.ws_row != 0) {
-				font_height = ws.ws_ypixel / ws.ws_row;
-			}
-		}
-	} else {
-		ofp = fopen(output_filename, "w");
-		if (ofp == NULL) {
-			warn("fopen(%s) failed", output_filename);
-			goto abort;
-		}
-	}
-
-	if (font_width == 0) {
-		font_width = 7;
-	}
-	if (font_height == 0) {
-		font_height = 14;
-	}
-
 	PROF(&load_start);
 
 	// 画像形式判定。
@@ -690,8 +677,8 @@ do_file(const char *infile)
 
 	if (output_format == OUTPUT_FORMAT_ASCII) {
 		// ここでピクセルサイズを桁数行数に変更。
-		dst_width  = howmany(dst_width, font_width);
-		dst_height = howmany(dst_height, font_height);
+		dst_width  = howmany(dst_width, fontwidth);
+		dst_height = howmany(dst_height, fontheight);
 	}
 
 	Debug(diag_image,
@@ -711,6 +698,17 @@ do_file(const char *infile)
 	}
 
 	PROF(&reduct_end);
+
+	// 出力先をオープン。
+	if (output_filename == NULL) {
+		ofp = stdout;
+	} else {
+		ofp = fopen(output_filename, "w");
+		if (ofp == NULL) {
+			warn("fopen(%s) failed", output_filename);
+			goto abort;
+		}
+	}
 
 	PROF(&sixel_start);
 
@@ -756,15 +754,15 @@ do_file(const char *infile)
 
 	rv = true;
  abort:
-	image_free(resimg);
-	image_free(srcimg);
-
 	if (output_filename != NULL) {
 		if (ofp) {
 			fclose(ofp);
 		}
 	}
 	ofp = NULL;
+
+	image_free(resimg);
+	image_free(srcimg);
 
 	if (pstream) {
 		pstream_cleanup(pstream);
