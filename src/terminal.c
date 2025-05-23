@@ -47,9 +47,9 @@
 #define TIMEOUT       (500 * 1000)	// [usec]
 #endif
 
+static uint32 parse_termcolor(char *);
 static int terminal_query(const char *, char *, uint);
 static void terminal_dump(char *, const char *, uint);
-static int parse_bgcolor(char *);
 
 // 端末が SIXEL をサポートしていれば 1 を返す。
 // 出力先が端末であること (isatty(3)) は呼び出し側で調べておくこと。
@@ -93,40 +93,35 @@ terminal_support_sixel(void)
 	return support;
 }
 
-// 端末の背景色を調べる。
-// 黒に近ければ 0、白に近ければ 1、取得できなければ -1 を返す。
+// 端末の背景色を $00RRGGBB 形式で返す。取得できなければ -1 を返す。
 // 出力先が端末であること (isatty(3)) は呼び出し側で調べておくこと。
-int
-terminal_get_bgtheme(void)
+uint32
+terminal_get_bgcolor(void)
 {
 	char result[64];
 	int n;
-	int bgcolor = -1;
+	uint32 c;
 
 	// 問い合わせ。
 	const char *query = ESC "]11;?" ESC "\\";
 	n = terminal_query(query, result, sizeof(result));
 	if (n < 1) {
-		goto done;
+		return -1;
 	}
 
-	bgcolor = parse_bgcolor(result);
- done:
-	Debug(diag_term, "%s: %s", __func__,
-		(bgcolor == -1 ? "terminal doesn't support the query." :
-		(bgcolor == 0 ? "looks dark" :
-		(bgcolor == 1 ? "looks light" : "?"))));
-	return bgcolor;
+	c = parse_termcolor(result);
+	Debug(diag_term, "%s: %08x", __func__, c);
+	return c;
 }
 
-// 端末の背景色応答行から、背景色を調べる。
-// 黒に近ければ 0、白に近ければ 1、取得できなければ -1 を返す。
+// 端末の色応答行から、色コードを $00RRGGBB で返す。
+// 失敗すれば (uint32)-1 を返す。
 // result は破壊する。
-static int
-parse_bgcolor(char *result)
+static uint32
+parse_termcolor(char *result)
 {
-	int ri, gi, bi;
-	int rn, gn, bn;
+	uint ri, gi, bi;
+	uint rn, gn, bn;
 	char *p;
 	char *e;
 
@@ -145,7 +140,7 @@ parse_bgcolor(char *result)
 	// R
 	p += 4;
 	ri = stox32def(p, -1, &e);
-	if (ri < 0 || *e != '/') {
+	if ((int)ri < 0 || *e != '/') {
 		return -1;
 	}
 	rn = e - p;
@@ -153,7 +148,7 @@ parse_bgcolor(char *result)
 	// G
 	p = e + 1;
 	gi = stox32def(p, -1, &e);
-	if (gi < 0 || *e != '/') {
+	if ((int)gi < 0 || *e != '/') {
 		return -1;
 	}
 	gn = e - p;
@@ -161,21 +156,16 @@ parse_bgcolor(char *result)
 	// B
 	p = e + 1;
 	bi = stox32def(p, -1, &e);
-	if (bi < 0) {
+	if ((int)bi < 0) {
 		return -1;
 	}
 	bn = e - p;
 
-	float r = (float)ri / (1U << (rn * 4));
-	float g = (float)gi / (1U << (gn * 4));
-	float b = (float)bi / (1U << (bn * 4));
-	// グレースケールで、黒に近ければ 0、白に近ければ 1 を返す。
-	// 厳密に言えばどの式を使うかとかガンマ補正とかいろいろあるけど、
-	// ここは前景色と背景色が常用に耐えるレベルで明るさに違いがあるはずで、
-	// その背景色の明暗だけ分かればいいはずなので、細かいことは気にしない。
-	float I = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
-	// 四捨五入。
-	return (int)(I + 0.5);
+	uint32 r = (ri << 4) >> ((rn - 1) * 4);
+	uint32 g = (gi << 4) >> ((gn - 1) * 4);
+	uint32 b = (bi << 4) >> ((bn - 1) * 4);
+
+	return (r << 16) | (g << 8) | b;
 }
 
 // 端末に問い合わせて応答を受け取る。
@@ -283,7 +273,7 @@ main(int ac, char *av[])
 			exit(0);
 		}
 		if (strcmp(av[1], "bg") == 0) {
-			terminal_get_bgtheme();
+			terminal_get_bgcolor();
 			exit(0);
 		}
 	}

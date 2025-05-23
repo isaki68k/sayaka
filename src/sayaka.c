@@ -694,20 +694,25 @@ init_screen(void)
 	// モノクロモードなら不要。
 	if (opt_bgtheme == BG_AUTO && is_tty && colormode > 2) {
 		progress("Checking background color...");
-		opt_bgtheme = terminal_get_bgtheme();
-		switch (opt_bgtheme) {
-		 case BG_LIGHT:
-			progress("light\n");
-			break;
-		 case BG_DARK:
-			progress("dark\n");
-			break;
-		 default:
+		uint32 c = terminal_get_bgcolor();
+		if ((int32)c < 0) {
 			progress("done\n");
 			warnx("Terminal doesn't support contol sequence; "
 				"assume --light");
 			opt_bgtheme = BG_LIGHT;
-			break;
+		} else {
+			float r = (float)((c >> 16) & 0xff) / 255;
+			float g = (float)((c >>  8) & 0xff) / 255;
+			float b = (float)( c        & 0xff) / 255;
+			// グレースケールで、黒に近ければ 0、白に近ければ 1 にする。
+			// ここは背景色の明暗だけ分かればいいので細かいことは気にしない。
+			float I = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+			opt_bgtheme = (int)(I + 0.5);
+			if (opt_bgtheme == BG_LIGHT) {
+				progress("light\n");
+			} else {
+				progress("dark\n");
+			}
 		}
 	}
 

@@ -166,7 +166,7 @@ extern time_t decode_isotime(const char *);
 extern string *format_time(time_t);
 
 // terminal.c
-extern int  terminal_get_bgtheme(void);
+extern uint32 terminal_get_bgcolor(void);
 extern int  terminal_support_sixel(void);
 
 // ustring.c
