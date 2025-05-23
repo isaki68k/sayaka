@@ -118,7 +118,7 @@ typedef enum {
 } ReductorDiffuse;
 
 // 色モードは下位8ビットが enum。
-// Gray、GrayMean では bit15-8 の 8ビットに「階調-1」(1-255) を格納する。
+// Gray では bit15-8 の 8ビットに「階調-1」(1-255) を格納する。
 typedef enum {
 	COLOR_FMT_GRAY,			// グレイスケール
 	COLOR_FMT_8_RGB,		// RGB 8色
