@@ -153,7 +153,7 @@ pstream_open_for_peek(struct pstream *ps)
 
 // ストリームコンテキストから、直接読み込む FILE* を返す。
 // 失敗すれば errno をセットして NULL を返す。
-// read、close のみ可能。
+// read、seek、close が可能。
 // クローズでディスクリプタをクローズする。(ps は解放しない)
 FILE *
 pstream_open_for_read(struct pstream *ps)
