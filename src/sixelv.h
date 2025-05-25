@@ -30,10 +30,11 @@
 #include "common.h"
 
 struct image;
+struct image_opt;
 
 // image_ascii.c
 extern bool image_ascii_write(FILE *, const struct image *,
-	const struct diag *);
+	const struct image_opt *, const struct diag *);
 
 // image_bmp.c
 extern bool image_bmp_write(FILE *, const struct image *, const struct diag *);

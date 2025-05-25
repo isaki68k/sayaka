@@ -723,7 +723,7 @@ do_file(const char *infile)
 		}
 		break;
 	 case OUTPUT_FORMAT_ASCII:
-		if (image_ascii_write(ofp, resimg, diag_image) == false) {
+		if (image_ascii_write(ofp, resimg, &imageopt, diag_image) == false) {
 			goto abort;
 		}
 		break;

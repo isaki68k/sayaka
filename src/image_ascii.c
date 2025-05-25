@@ -35,7 +35,8 @@
 // image を ASCII モザイクで fp に出力する。
 // srcimg は桁数x行数 [ピクセル] の画像になっている。
 bool
-image_ascii_write(FILE *fp, const struct image *img, const struct diag *diag)
+image_ascii_write(FILE *fp, const struct image *img,
+	const struct image_opt *opt, const struct diag *diag)
 {
 	assert(img->format == IMAGE_FMT_AIDX16);
 
@@ -52,12 +53,17 @@ image_ascii_write(FILE *fp, const struct image *img, const struct diag *diag)
 				if (cc < 0) {
 					// 透過なら一旦色を解除して空白だけを出力。
 					fprintf(fp, "\x1b[m");
-				} else if (cc < 8) {
-					fprintf(fp, "\x1b[4%um", cc);
-				} else if (cc < 16) {
-					fprintf(fp, "\x1b[10%um", cc - 8);
+				} else if (opt->color == COLOR_FMT_256_XTERM) {
+					// xterm256 ならカラーコードそのままのはず。
+					if (__predict_false(cc < 8)) {
+						fprintf(fp, "\x1b[4%um", cc);
+					} else {
+						fprintf(fp, "\x1b[48;5;%um", cc);
+					}
 				} else {
-					fprintf(fp, "\x1b[48;5;%um", cc);
+					// 他はすべて R/G/B 指定。
+					ColorRGB c = img->palette[cc];
+					fprintf(fp, "\x1b[48;2;%u;%u;%um", c.r, c.g, c.b);
 				}
 				prev = cc;
 			}
