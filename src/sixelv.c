@@ -686,6 +686,12 @@ do_file(const char *infile)
 		srcimg->width, srcimg->height, dst_width, dst_height,
 		colorformat_tostr(imageopt.color));
 
+	if (dst_width == 0 || dst_height == 0) {
+		warnx("%s: Output size (%u, %u) is too small",
+			infilename, dst_width, dst_height);
+		goto abort;
+	}
+
 	PROF(&cvt_start);
 	image_convert_to16(srcimg);
 	PROF(&reduct_start);
