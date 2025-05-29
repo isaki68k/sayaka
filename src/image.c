@@ -32,6 +32,22 @@
 #include "image_priv.h"
 #include <string.h>
 
+#define IMAGE_PROFILE
+
+#if defined(IMAGE_PROFILE)
+#include <sys/time.h>
+#define PROF(x)	gettimeofday(&x, NULL);
+#define PROF_RESULT(msg, x)	do {	\
+	struct timeval x##_res;	\
+	timersub(&x##_end, &x##_start, &x##_res);	\
+	printf("%-12s %u.%06u sec\n", msg,	\
+		(uint)x##_res.tv_sec, (uint)x##_res.tv_usec);	\
+} while (0)
+#else
+#define PROF(x)	/**/
+#define PROF_RESULT(msg, x)	/**/
+#endif
+
 struct image_reductor_handle_;
 typedef uint (*finder_t)(struct image_reductor_handle_ *, ColorRGB);
 
@@ -71,12 +87,15 @@ static uint finder_fixed256(image_reductor_handle *, ColorRGB);
 #if defined(SIXELV)
 static uint finder_xterm256(image_reductor_handle *, ColorRGB);
 static inline uint8 finder_xterm256_channel(uint8);
+static uint finder_adaptive256(image_reductor_handle *, ColorRGB);
 #endif
 static void colorcvt_gray(ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 #if defined(SIXELV)
 static ColorRGB *image_alloc_xterm256_palette(void);
+static bool image_calc_adaptive256_palette(image_reductor_handle *,
+	const struct image *);
 #endif
 
 #if defined(SIXELV)
@@ -532,6 +551,16 @@ image_reduct(
 		ir->palette_count = 256;
 		ir->finder = finder_xterm256;
 		break;
+
+	 case COLOR_FMT_256_ADAPTIVE:
+		ir->palette_buf = calloc(256, sizeof(ColorRGB));
+		if (ir->palette_buf == NULL) {
+			goto abort;
+		}
+		ir->palette = ir->palette_buf;
+		ir->palette_count = 256;	// このあと変更する。
+		ir->finder = finder_adaptive256;
+		break;
 #endif
 
 	 default:
@@ -691,10 +720,24 @@ image_reduct_highquality(image_reductor_handle *ir,
 	Rational xstep;
 	ColorRGBint32 cp;
 	uint cdm = 256;
+#if defined(IMAGE_PROFILE)
+	struct timeval finder_start, finder_end, res;
+	struct timeval finder_total;
+	memset(&finder_total, 0, sizeof(finder_total));
+#endif
 
 #if !defined(SIXELV)
 	// sayaka では選択出来ないようにしてある。
 	assert(opt->diffuse == DIFFUSE_SFL);
+#endif
+
+#if defined(SIXELV)
+	// 適応パレットならここでパレットを作成。
+	if ((opt->color & COLOR_FMT_MASK) == COLOR_FMT_256_ADAPTIVE) {
+		if (image_calc_adaptive256_palette(ir, srcimg) == false) {
+			return false;
+		}
+	}
 #endif
 
 	// 水平、垂直ともピクセルを平均。
@@ -790,7 +833,13 @@ image_reduct_highquality(image_reductor_handle *ir,
 			c8.g = saturate_uint8(col.g);
 			c8.b = saturate_uint8(col.b);
 
+			PROF(finder_start);
 			uint colorcode = ir->finder(ir, c8);
+			PROF(finder_end);
+#if defined(IMAGE_PROFILE)
+			timersub(&finder_end, &finder_start, &res);
+			timeradd(&finder_total, &res, &finder_total);
+#endif
 			uint16 v = colorcode;
 			// 半分以上が透明なら透明ということにする。
 			if (a > area / 2) {
@@ -910,6 +959,11 @@ image_reduct_highquality(image_reductor_handle *ir,
 		// errbuf[y] には左マージンがあるのを考慮する。
 		memset(errbuf[errbuf_count - 1] - errbuf_left, 0, errbuf_len);
 	}
+
+#if defined(IMAGE_PROFILE)
+	printf("find color   %u.%06u sec\n",
+		(uint)finder_total.tv_sec, (uint)finder_total.tv_usec);
+#endif
 
 	free(errbuf_mem);
 	return true;
@@ -1212,6 +1266,283 @@ finder_xterm256(image_reductor_handle *ir, ColorRGB c)
 		+ finder_xterm256_channel(c.b) * 1;
 }
 
+//
+// 適応 256 色パレット。
+//
+
+struct octree {
+	uint32 count;	// ピクセル数
+	uint32 r;		// R 合計
+	uint32 g;		// G 合計
+	uint32 b;		// B 合計
+	uint32 level;	// 階層 (root = 0)
+	struct octree *children; // [8]
+};
+
+// { r5, g5, b5 } の色を追加する。
+// r5, g5, b5 は下位 5 ビットのみ有効。
+static void
+octree_add(struct octree *node, uint level,
+	uint32 r5, uint32 g5, uint32 b5, uint32 count)
+{
+	if (level == 5) {
+		// リーフに来たらデータを置く。
+		node->count += count;
+		node->r += (r5 << 3) * count;
+		node->g += (g5 << 3) * count;
+		node->b += (b5 << 3) * count;
+	} else {
+		if (node->children == NULL) {
+			node->children = calloc(8, sizeof(struct octree));
+			for (uint i = 0; i < 8; i++) {
+				node->level = level + 1;
+			}
+		}
+
+		uint32 mask = 0x10 >> level;
+		uint32 nr = (r5 & mask) >> (4 - level);
+		uint32 ng = (g5 & mask) >> (4 - level);
+		uint32 nb = (b5 & mask) >> (4 - level);
+		uint32 n = (nr << 2) | (ng << 1) | nb;
+		octree_add(&node->children[n], level + 1, r5, g5, b5, count);
+	}
+}
+
+// node 以下のリーフの数を数える。
+static uint
+octree_count_leaf(const struct octree *node)
+{
+	if (node->children) {
+		uint nleaf = 0;
+		for (uint i = 0; i < 8; i++) {
+			nleaf += octree_count_leaf(&node->children[i]);
+		}
+		return nleaf;
+	} else {
+		return (node->count != 0) ? 1 : 0;
+	}
+}
+
+// node 以下で count が最小である、リーフ直上のノードを返す。
+// *min は in/out パラメータで、初期 min を渡す。
+// min より最小のものが見付かれば *min を更新してそのノードを返す。
+// 見付からなければ *min を更新せず NULL を返す。
+static struct octree *
+octree_find_minnode(struct octree *node, uint32 *min)
+{
+	if (node->children == NULL) {
+		// リーフ。ここには来ないはず。
+		return NULL;
+	}
+
+	// 子ノードのいずれかが孫を持つか。
+	bool has_grandchild = false;
+	for (uint i = 0; i < 8; i++) {
+		if (node->children[i].children) {
+			has_grandchild = true;
+			break;
+		}
+	}
+
+	if (has_grandchild) {
+		// 自分はまだ中間ノード。
+		struct octree *minnode = NULL;
+		for (uint i = 0; i < 8; i++) {
+			struct octree *n = octree_find_minnode(&node->children[i], min);
+			if (n) {
+				minnode = n;
+			}
+		}
+		return minnode;
+	} else {
+		// 自分の子がリーフのノード。
+		uint32 count = 0;
+		for (uint i = 0; i < 8; i++) {
+			count += node->children[i].count;
+		}
+		if (count < *min) {
+			*min = count;
+			return node;
+		} else {
+			return NULL;
+		}
+	}
+}
+
+// このノードのリーフをマージする。
+// リーフ直上のノードで行うこと。
+static void
+octree_merge_leaves(struct octree *node)
+{
+	uint32 count = 0;
+	uint32 r = 0;
+	uint32 g = 0;
+	uint32 b = 0;
+
+	for (uint i = 0; i < 8; i++) {
+		count += node->children[i].count;
+		r += node->children[i].r;
+		g += node->children[i].g;
+		b += node->children[i].b;
+	}
+	node->count = count;
+	node->r = r;
+	node->g = g;
+	node->b = b;
+	free(node->children);
+	node->children = NULL;
+}
+
+// node 以下のリーフをパレットに登録していく。
+// idxp はインデックスへのポインタ。
+static void
+octree_set_palette(ColorRGB *pal, uint *idxp, const struct octree *node)
+{
+	if (node->children) {
+		for (uint i = 0; i < 8; i++) {
+			octree_set_palette(pal, idxp, &node->children[i]);
+		}
+	} else {
+		if (node->count != 0) {
+			uint idx = *idxp;
+			pal[idx].r = node->r / node->count;
+			pal[idx].g = node->g / node->count;
+			pal[idx].b = node->b / node->count;
+			idx++;
+			*idxp = idx;
+		}
+	}
+}
+
+// node の子を解放する。node 自身はこの親が解放すること。
+static void
+octree_free(struct octree *node)
+{
+	if (node->children) {
+		for (uint i = 0; i < 8; i++) {
+			octree_free(&node->children[i]);
+		}
+		free(node->children);
+		node->children = NULL;
+	}
+}
+
+// srcimg から適応 256 色パレットを作成。
+static bool
+image_calc_adaptive256_palette(image_reductor_handle *ir,
+	const struct image *srcimg)
+{
+	const uint16 *src = (const uint16 *)srcimg->buf;
+	uint32 *colormap;
+	uint32 colorcount = 0;
+	struct octree root;
+#if defined(IMAGE_PROFILE)
+	struct timeval colormap_start, colormap_end;
+	struct timeval octree_start, octree_end;
+	struct timeval merge_start, merge_end;
+#endif
+
+	// src 画像に使われている色を全部取り出す。
+	// この時点で R,G,B 各色5ビットで足切りされていて、合計15ビットしか
+	// ないので、配列の添字にしてダイレクトアクセスする。
+	const uint32 capacity = 32768;
+	colormap = calloc(capacity, sizeof(uint32));
+	if (__predict_false(colormap == NULL)) {
+		return false;
+	}
+	PROF(colormap_start);
+	const uint16 *send = src + srcimg->width * srcimg->height;
+	for (const uint16 *s = src; s < send; ) {
+		uint16 v = *s++;
+		v &= 0x7fff;
+		colormap[v]++;
+	}
+	for (uint i = 0; i < capacity; i++) {
+		if (colormap[i] != 0) {
+			colorcount++;
+		}
+	}
+	PROF(colormap_end);
+	//printf("colorcount=%u/%u\n", colorcount, capacity);
+
+	// octree に配置。
+	PROF(octree_start);
+	memset(&root, 0, sizeof(root));
+	for (uint i = 0; i < capacity; i++) {
+		if (colormap[i] == 0)
+			continue;
+		uint32 count = colormap[i];
+		uint32 r5 = (i >> 10) & 0x1f;
+		uint32 g5 = (i >>  5) & 0x1f;
+		uint32 b5 = (i      ) & 0x1f;
+		octree_add(&root, 0, r5, g5, b5, count);
+	}
+	PROF(octree_end);
+
+	if (0) {
+		for (uint i = 0; i < 8; i++) {
+			printf("[%u] %u\n", i, root.children[i].count);
+			if (root.children) {
+				for (uint j = 0; j < 8; j++) {
+					struct octree *n1 = &root.children[j];
+					printf(" [%u,%u] %u\n", i, j, n1->count);
+					if (n1->children) {
+						for (uint k = 0; k < 8; k++) {
+							struct octree *n2 = &n1->children[k];
+							printf("  [%u,%u,%u] %u\n", i, j, k, n2->count);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 256 色以下になるまで少ない色をマージしていく。
+	PROF(merge_start);
+	uint leaf_count;
+	while ((leaf_count = octree_count_leaf(&root)) > 256) {
+		//printf("leaf_count=%u\n", leaf_count);
+		uint32 min = -1;
+		struct octree *minnode = octree_find_minnode(&root, &min);
+		octree_merge_leaves(minnode);
+	}
+	PROF(merge_end);
+
+	// パレットにセット。
+	uint idx = 0;
+	octree_set_palette(ir->palette_buf, &idx, &root);
+	ir->palette_count = idx;
+
+	PROF_RESULT("colormap",		colormap);
+	PROF_RESULT("octree_add",	octree);
+	PROF_RESULT("octree_merge",	merge);
+
+	free(colormap);
+	octree_free(&root);
+	return true;
+}
+
+// 適応 256 色パレットから c に最も近いパレット番号を返す。
+static uint
+finder_adaptive256(image_reductor_handle *ir, ColorRGB c)
+{
+	uint32 mindist = (uint32)-1;
+	uint minidx = 0;
+
+	const ColorRGB *pal = ir->palette;
+	for (uint i = 0; i < ir->palette_count; i++, pal++) {
+		int32 dr = c.r - pal->r;
+		int32 dg = c.g - pal->g;
+		int32 db = c.b - pal->b;
+		uint32 dist = (dr * dr) + (dg * dg) + (db * db);
+		if (dist < mindist) {
+			mindist = dist;
+			minidx = i;
+		}
+	}
+	return minidx;
+}
+
 
 //
 // enum のデバッグ表示用
@@ -1295,6 +1626,7 @@ colorformat_tostr(ColorFormat color)
 		{ COLOR_FMT_16_VGA,		"16(ANSI VGA)" },
 		{ COLOR_FMT_256_RGB332,	"256(RGB332)" },
 		{ COLOR_FMT_256_XTERM,	"256(xterm)" },
+		{ COLOR_FMT_256_ADAPTIVE, "256(Adaptive)" },
 	};
 	static char buf[16];
 	uint type = (uint)color & COLOR_FMT_MASK;

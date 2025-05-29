@@ -125,6 +125,7 @@ typedef enum {
 	COLOR_FMT_16_VGA,		// ANSI 16色 (VGA)
 	COLOR_FMT_256_RGB332,	// 固定 256 色 (MSX SCREEN8 互換)
 	COLOR_FMT_256_XTERM,	// 固定 256 色 (xterm 互換)
+	COLOR_FMT_256_ADAPTIVE,	// 適応 256 色
 
 	// 下位8ビットが色モード
 	COLOR_FMT_MASK = 0xff,

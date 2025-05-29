@@ -233,6 +233,8 @@ main(int ac, char *av[])
 				imageopt.color = COLOR_FMT_256_RGB332;
 			} else if (strcmp(optarg, "xterm256") == 0) {
 				imageopt.color = COLOR_FMT_256_XTERM;
+			} else if (strcmp(optarg, "adaptive256") == 0) {
+				imageopt.color = COLOR_FMT_256_ADAPTIVE;
 			} else if (strcmp(optarg, "gray") == 0 ||
 			           strcmp(optarg, "grey") == 0) {
 				imageopt.color = MAKE_COLOR_FMT_GRAY(256);
@@ -704,6 +706,10 @@ do_file(const char *infile)
 	}
 
 	PROF(&reduct_end);
+
+	if (imageopt.color == COLOR_FMT_256_ADAPTIVE) {
+		Debug(diag_image, "Adaptive Palette Colors=%u", resimg->palette_count);
+	}
 
 	// 出力先をオープン。
 	if (output_filename == NULL) {
