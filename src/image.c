@@ -691,17 +691,17 @@ image_reduct_simple(image_reductor_handle *ir,
 			col.b = ( v        & 0x1f) << 3;
 
 			if (ir->gain != 256) {
-				col.r = (uint32)col.r * ir->gain / 256;
-				col.g = (uint32)col.g * ir->gain / 256;
-				col.b = (uint32)col.b * ir->gain / 256;
+				col.r = saturate_uint8((uint32)col.r * ir->gain / 256);
+				col.g = saturate_uint8((uint32)col.g * ir->gain / 256);
+				col.b = saturate_uint8((uint32)col.b * ir->gain / 256);
 			}
 			if (ir->is_gray) {
 				colorcvt_gray(&col);
 			}
 			ColorRGB c8;
-			c8.r = saturate_uint8(col.r);
-			c8.g = saturate_uint8(col.g);
-			c8.b = saturate_uint8(col.b);
+			c8.r = col.r;
+			c8.g = col.g;
+			c8.b = col.b;
 			uint colorcode = ir->finder(ir, c8);
 			if (a) {
 				colorcode |= 0x8000;
