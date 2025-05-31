@@ -681,11 +681,9 @@ image_reduct_simple(image_reductor_handle *ir,
 		rx.N = 0;
 		const uint16 *s0 = &src[ry.I * srcimg->width];
 		for (uint x = 0; x < dstwidth; x++) {
-			const uint16 *s = s0 + rx.I;
-
 			ColorRGBint32 col;
 			int a;
-			uint16 v = *s++;
+			uint16 v = s0[rx.I];
 			a     =  (v >> 15);
 			col.r = ((v >> 10) & 0x1f) << 3;
 			col.g = ((v >>  5) & 0x1f) << 3;
