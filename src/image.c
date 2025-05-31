@@ -99,8 +99,9 @@ static bool image_calc_adaptive256_palette(image_reductor_handle *,
 #endif
 
 #if defined(SIXELV)
-static void image_reduct_simple(image_reductor_handle *,
-	struct image *, const struct image *, const struct diag *);
+static bool image_reduct_simple(image_reductor_handle *,
+	struct image *, const struct image *, const struct image_opt *,
+	const struct diag *);
 #endif
 static bool image_reduct_highquality(image_reductor_handle *,
 	struct image *, const struct image *, const struct image_opt *,
@@ -570,7 +571,9 @@ image_reduct(
 
 #if defined(SIXELV)
 	if (opt->method == REDUCT_SIMPLE) {
-		image_reduct_simple(ir, dst, src, diag);
+		if (image_reduct_simple(ir, dst, src, opt, diag) == false) {
+			goto abort;
+		}
 
 	} else if (opt->method != REDUCT_HIGH_QUALITY) {
 		Debug(diag, "%s: Unknown method %u", __func__, opt->method);
@@ -644,9 +647,10 @@ rational_add(Rational *sr, const Rational *x)
 
 #if defined(SIXELV)
 // 単純間引き
-static void
+static bool
 image_reduct_simple(image_reductor_handle *ir,
-	struct image *dstimg, const struct image *srcimg, const struct diag *diag)
+	struct image *dstimg, const struct image *srcimg,
+	const struct image_opt *opt, const struct diag *diag)
 {
 	uint16 *d = (uint16 *)dstimg->buf;
 	const uint16 *src = (const uint16 *)srcimg->buf;
@@ -656,6 +660,13 @@ image_reduct_simple(image_reductor_handle *ir,
 	Rational rx;
 	Rational ystep;
 	Rational xstep;
+
+	// 適応パレットならここでパレットを作成。
+	if ((opt->color & COLOR_FMT_MASK) == COLOR_FMT_256_ADAPTIVE) {
+		if (image_calc_adaptive256_palette(ir, srcimg) == false) {
+			return false;
+		}
+	}
 
 	// 水平、垂直方向ともスキップサンプリング。
 
@@ -701,6 +712,8 @@ image_reduct_simple(image_reductor_handle *ir,
 		}
 		rational_add(&ry, &ystep);
 	}
+
+	return true;
 }
 #endif
 
