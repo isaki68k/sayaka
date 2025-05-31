@@ -682,26 +682,26 @@ image_reduct_simple(image_reductor_handle *ir,
 		for (uint x = 0; x < dstwidth; x++) {
 			const uint16 *s = s0 + rx.I;
 
-			ColorRGBint32 c;
+			ColorRGBint32 col;
 			int a;
 			uint16 v = *s++;
-			a   =  (v >> 15);
-			c.r = ((v >> 10) & 0x1f) << 3;
-			c.g = ((v >>  5) & 0x1f) << 3;
-			c.b = ( v        & 0x1f) << 3;
+			a     =  (v >> 15);
+			col.r = ((v >> 10) & 0x1f) << 3;
+			col.g = ((v >>  5) & 0x1f) << 3;
+			col.b = ( v        & 0x1f) << 3;
 
 			if (ir->gain != 256) {
-				c.r = (uint32)c.r * ir->gain / 256;
-				c.g = (uint32)c.g * ir->gain / 256;
-				c.b = (uint32)c.b * ir->gain / 256;
+				col.r = (uint32)col.r * ir->gain / 256;
+				col.g = (uint32)col.g * ir->gain / 256;
+				col.b = (uint32)col.b * ir->gain / 256;
 			}
 			if (ir->is_gray) {
-				colorcvt_gray(&c);
+				colorcvt_gray(&col);
 			}
 			ColorRGB c8;
-			c8.r = saturate_uint8(c.r);
-			c8.g = saturate_uint8(c.g);
-			c8.b = saturate_uint8(c.b);
+			c8.r = saturate_uint8(col.r);
+			c8.g = saturate_uint8(col.g);
+			c8.b = saturate_uint8(col.b);
 			uint colorcode = ir->finder(ir, c8);
 			if (a) {
 				colorcode |= 0x8000;
