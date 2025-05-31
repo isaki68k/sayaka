@@ -1469,6 +1469,15 @@ image_calc_adaptive256_palette(image_reductor_handle *ir,
 	for (const uint16 *s = src; s < send; ) {
 		uint16 v = *s++;
 		v &= 0x7fff;
+		if (ir->gain >= 0) {
+			uint32 r5 = ((v >> 10) & 0x1f) * ir->gain / 256;
+			uint32 g5 = ((v >>  5) & 0x1f) * ir->gain / 256;
+			uint32 b5 = ( v        & 0x1f) * ir->gain / 256;
+			if (r5 > 31) r5 = 31;
+			if (g5 > 31) g5 = 31;
+			if (b5 > 31) b5 = 31;
+			v = (r5 << 10) | (g5 << 5) | b5;
+		}
 		colormap[v]++;
 	}
 	for (uint i = 0; i < capacity; i++) {
