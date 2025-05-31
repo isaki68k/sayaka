@@ -293,7 +293,10 @@ main(int ac, char *av[])
 			if (f < 0 || f > 2) {
 				errx(1, "invalid gain");
 			}
-			imageopt.gain = (uint)(f * 256);
+			imageopt.gain = (int)(f * 256);
+			if (imageopt.gain == 256) {
+				imageopt.gain = -1;
+			}
 			break;
 		 }
 

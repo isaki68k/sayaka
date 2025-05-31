@@ -67,7 +67,8 @@ typedef struct image_reductor_handle_
 {
 	bool is_gray;
 
-	uint gain;
+	// ゲイン。256 を 1.0 とする。負数なら適用しない (1.0 のまま)。
+	int gain;
 
 	// 色からパレット番号を検索する関数。
 	finder_t finder;
@@ -125,7 +126,7 @@ image_opt_init(struct image_opt *opt)
 	opt->diffuse = DIFFUSE_SFL;
 	opt->color   = COLOR_FMT_256_RGB332;
 	opt->cdm     = 0;
-	opt->gain    = 256;
+	opt->gain    = -1;
 	opt->output_ormode = false;
 	opt->output_transbg = false;
 	opt->suppress_palette = false;
@@ -690,7 +691,7 @@ image_reduct_simple(image_reductor_handle *ir,
 			col.g = ((v >>  5) & 0x1f) << 3;
 			col.b = ( v        & 0x1f) << 3;
 
-			if (ir->gain != 256) {
+			if (ir->gain >= 0) {
 				col.r = saturate_uint8((uint32)col.r * ir->gain / 256);
 				col.g = saturate_uint8((uint32)col.g * ir->gain / 256);
 				col.b = saturate_uint8((uint32)col.b * ir->gain / 256);
@@ -815,7 +816,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 			col.g /= area;
 			col.b /= area;
 
-			if (ir->gain != 256) {
+			if (ir->gain >= 0) {
 				col.r = (uint32)col.r * ir->gain / 256;
 				col.g = (uint32)col.g * ir->gain / 256;
 				col.b = (uint32)col.b * ir->gain / 256;

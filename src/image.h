@@ -226,7 +226,8 @@ struct image_opt {
 	uint cdm;
 
 	// 出力ゲイン。0 .. 512 で指定する。256 が 1.0倍。
-	uint gain;
+	// 負数なら適用しない (1.0 倍と同じ)。
+	int gain;
 
 	// SIXEL 出力
 	bool output_ormode;
