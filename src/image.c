@@ -79,6 +79,10 @@ typedef struct image_reductor_handle_
 
 	// 動的に作成する場合はここがメモリを所有している。
 	ColorRGB *palette_buf;
+
+#if defined(IMAGE_PROFILE)
+	struct timeval finder_total;
+#endif
 } image_reductor_handle;
 
 static uint finder_gray(image_reductor_handle *, ColorRGB);
@@ -588,6 +592,11 @@ image_reduct(
 		}
 	}
 
+#if defined(IMAGE_PROFILE)
+	printf("find color   %u.%06u sec\n",
+		(uint)ir->finder_total.tv_sec, (uint)ir->finder_total.tv_usec);
+#endif
+
 	// 成功したので、使ったパレットを image にコピー。
 	// 動的に確保したやつはそのまま所有権を移す感じ。
 	dst->palette       = ir->palette;
@@ -661,6 +670,9 @@ image_reduct_simple(image_reductor_handle *ir,
 	Rational rx;
 	Rational ystep;
 	Rational xstep;
+#if defined(IMAGE_PROFILE)
+	struct timeval finder_start, finder_end, res;
+#endif
 
 	// 適応パレットならここでパレットを作成。
 	if ((opt->color & COLOR_FMT_MASK) == COLOR_FMT_256_ADAPTIVE) {
@@ -701,7 +713,13 @@ image_reduct_simple(image_reductor_handle *ir,
 			c8.r = col.r;
 			c8.g = col.g;
 			c8.b = col.b;
+			PROF(finder_start);
 			uint colorcode = ir->finder(ir, c8);
+			PROF(finder_end);
+#if defined(IMAGE_PROFILE)
+			timersub(&finder_end, &finder_start, &res);
+			timeradd(&ir->finder_total, &res, &ir->finder_total);
+#endif
 			if (a) {
 				colorcode |= 0x8000;
 			}
@@ -734,8 +752,6 @@ image_reduct_highquality(image_reductor_handle *ir,
 	uint cdm = 256;
 #if defined(IMAGE_PROFILE)
 	struct timeval finder_start, finder_end, res;
-	struct timeval finder_total;
-	memset(&finder_total, 0, sizeof(finder_total));
 #endif
 
 #if !defined(SIXELV)
@@ -850,7 +866,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 			PROF(finder_end);
 #if defined(IMAGE_PROFILE)
 			timersub(&finder_end, &finder_start, &res);
-			timeradd(&finder_total, &res, &finder_total);
+			timeradd(&ir->finder_total, &res, &ir->finder_total);
 #endif
 			uint16 v = colorcode;
 			// 半分以上が透明なら透明ということにする。
@@ -971,11 +987,6 @@ image_reduct_highquality(image_reductor_handle *ir,
 		// errbuf[y] には左マージンがあるのを考慮する。
 		memset(errbuf[errbuf_count - 1] - errbuf_left, 0, errbuf_len);
 	}
-
-#if defined(IMAGE_PROFILE)
-	printf("find color   %u.%06u sec\n",
-		(uint)finder_total.tv_sec, (uint)finder_total.tv_usec);
-#endif
 
 	free(errbuf_mem);
 	return true;
