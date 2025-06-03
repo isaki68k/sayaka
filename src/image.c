@@ -1568,8 +1568,11 @@ finder_adaptive256(image_reductor_handle *ir, ColorRGB c)
 		int32 db = c.b - pal->b;
 		uint32 dist = (dr * dr) + (dg * dg) + (db * db);
 		if (dist < mindist) {
-			mindist = dist;
 			minidx = i;
+			if (__predict_false(dist < 8)) {
+				break;
+			}
+			mindist = dist;
 		}
 	}
 	return minidx;
