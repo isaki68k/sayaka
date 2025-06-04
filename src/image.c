@@ -65,6 +65,10 @@ typedef struct {
 
 typedef struct image_reductor_handle_
 {
+	// 画像
+	struct image *dstimg;
+	const struct image *srcimg;
+
 	bool is_gray;
 
 	// ゲイン。256 を 1.0 とする。負数なら適用しない (1.0 のまま)。
@@ -72,13 +76,6 @@ typedef struct image_reductor_handle_
 
 	// 色からパレット番号を検索する関数。
 	finder_t finder;
-
-	// パレット (palette_buf か固定パレットを指す)
-	const ColorRGB *palette;
-	uint palette_count;
-
-	// 動的に作成する場合はここがメモリを所有している。
-	ColorRGB *palette_buf;
 } image_reductor_handle;
 
 static uint finder_gray(image_reductor_handle *, ColorRGB);
@@ -95,18 +92,15 @@ static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 #if defined(SIXELV)
 static ColorRGB *image_alloc_xterm256_palette(void);
-static bool image_calc_adaptive256_palette(image_reductor_handle *,
-	const struct image *);
+static bool image_calc_adaptive256_palette(image_reductor_handle *);
 #endif
 
 #if defined(SIXELV)
 static bool image_reduct_simple(image_reductor_handle *,
-	struct image *, const struct image *, const struct image_opt *,
-	const struct diag *);
+	const struct image_opt *, const struct diag *);
 #endif
 static bool image_reduct_highquality(image_reductor_handle *,
-	struct image *, const struct image *, const struct image_opt *,
-	const struct diag *);
+	const struct image_opt *, const struct diag *);
 #if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *, int);
 #endif
@@ -505,17 +499,20 @@ image_reduct(
 	}
 	dst->has_alpha = src->has_alpha;
 
+	ir->dstimg = dst;
+	ir->srcimg = src;
+
 	// 減色モードからパレットオペレーションを用意。
 	switch (opt->color & COLOR_FMT_MASK) {
 	 case COLOR_FMT_GRAY:
 	 {
 		uint graycount = GET_COLOR_COUNT(opt->color);
-		ir->palette_buf = image_alloc_gray_palette(graycount);
-		if (ir->palette_buf == NULL) {
+		dst->palette_buf = image_alloc_gray_palette(graycount);
+		if (dst->palette_buf == NULL) {
 			goto abort;
 		}
-		ir->palette = ir->palette_buf;
-		ir->palette_count = graycount;
+		dst->palette = dst->palette_buf;
+		dst->palette_count = graycount;
 		ir->finder = finder_gray;
 		ir->is_gray = true;
 		break;
@@ -523,44 +520,44 @@ image_reduct(
 
 	 case COLOR_FMT_8_RGB:
 		ir->finder  = finder_fixed8;
-		ir->palette = palette_fixed8;
-		ir->palette_count = 8;
+		dst->palette = palette_fixed8;
+		dst->palette_count = 8;
 		break;
 
 	 case COLOR_FMT_16_VGA:
 		ir->finder  = finder_vga16;
-		ir->palette = palette_vga16;
-		ir->palette_count = 16;
+		dst->palette = palette_vga16;
+		dst->palette_count = 16;
 		break;
 
 	 case COLOR_FMT_256_RGB332:
-		ir->palette_buf = image_alloc_fixed256_palette();
-		if (ir->palette_buf == NULL) {
+		dst->palette_buf = image_alloc_fixed256_palette();
+		if (dst->palette_buf == NULL) {
 			goto abort;
 		}
-		ir->palette = ir->palette_buf;
-		ir->palette_count = 256;
+		dst->palette = dst->palette_buf;
+		dst->palette_count = 256;
 		ir->finder = finder_fixed256;
 		break;
 
 #if defined(SIXELV)
 	 case COLOR_FMT_256_XTERM:
-		ir->palette_buf = image_alloc_xterm256_palette();
-		if (ir->palette_buf == NULL) {
+		dst->palette_buf = image_alloc_xterm256_palette();
+		if (dst->palette_buf == NULL) {
 			goto abort;
 		}
-		ir->palette = ir->palette_buf;
-		ir->palette_count = 256;
+		dst->palette = dst->palette_buf;
+		dst->palette_count = 256;
 		ir->finder = finder_xterm256;
 		break;
 
 	 case COLOR_FMT_256_ADAPTIVE:
-		ir->palette_buf = calloc(256, sizeof(ColorRGB));
-		if (ir->palette_buf == NULL) {
+		dst->palette_buf = calloc(256, sizeof(ColorRGB));
+		if (dst->palette_buf == NULL) {
 			goto abort;
 		}
-		ir->palette = ir->palette_buf;
-		ir->palette_count = 256;	// このあと変更する。
+		dst->palette = dst->palette_buf;
+		dst->palette_count = 256;	// このあと変更する。
 		ir->finder = finder_adaptive256;
 		break;
 #endif
@@ -572,7 +569,7 @@ image_reduct(
 
 #if defined(SIXELV)
 	if (opt->method == REDUCT_SIMPLE) {
-		if (image_reduct_simple(ir, dst, src, opt, diag) == false) {
+		if (image_reduct_simple(ir, opt, diag) == false) {
 			goto abort;
 		}
 
@@ -583,21 +580,14 @@ image_reduct(
 	} else
 #endif
 	{
-		if (image_reduct_highquality(ir, dst, src, opt, diag) == false) {
+		if (image_reduct_highquality(ir, opt, diag) == false) {
 			goto abort;
 		}
 	}
 
-	// 成功したので、使ったパレットを image にコピー。
-	// 動的に確保したやつはそのまま所有権を移す感じ。
-	dst->palette       = ir->palette;
-	dst->palette_count = ir->palette_count;
-	dst->palette_buf   = ir->palette_buf;
-
 	return dst;
 
  abort:
-	free(ir->palette_buf);
 	image_free(dst);
 	return NULL;
 }
@@ -650,9 +640,10 @@ rational_add(Rational *sr, const Rational *x)
 // 単純間引き
 static bool
 image_reduct_simple(image_reductor_handle *ir,
-	struct image *dstimg, const struct image *srcimg,
 	const struct image_opt *opt, const struct diag *diag)
 {
+	struct image *dstimg = ir->dstimg;
+	const struct image *srcimg = ir->srcimg;
 	uint16 *d = (uint16 *)dstimg->buf;
 	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint dstwidth  = dstimg->width;
@@ -664,7 +655,7 @@ image_reduct_simple(image_reductor_handle *ir,
 
 	// 適応パレットならここでパレットを作成。
 	if ((opt->color & COLOR_FMT_MASK) == COLOR_FMT_256_ADAPTIVE) {
-		if (image_calc_adaptive256_palette(ir, srcimg) == false) {
+		if (image_calc_adaptive256_palette(ir) == false) {
 			return false;
 		}
 	}
@@ -719,9 +710,10 @@ image_reduct_simple(image_reductor_handle *ir,
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。
 static bool
 image_reduct_highquality(image_reductor_handle *ir,
-	struct image *dstimg, const struct image *srcimg,
 	const struct image_opt *opt, const struct diag *diag)
 {
+	struct image *dstimg = ir->dstimg;
+	const struct image *srcimg = ir->srcimg;
 	uint16 *d = (uint16 *)dstimg->buf;
 	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint dstwidth  = dstimg->width;
@@ -741,7 +733,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 #if defined(SIXELV)
 	// 適応パレットならここでパレットを作成。
 	if ((opt->color & COLOR_FMT_MASK) == COLOR_FMT_256_ADAPTIVE) {
-		if (image_calc_adaptive256_palette(ir, srcimg) == false) {
+		if (image_calc_adaptive256_palette(ir) == false) {
 			return false;
 		}
 	}
@@ -848,9 +840,9 @@ image_reduct_highquality(image_reductor_handle *ir,
 			}
 			*d++ = v;
 
-			col.r -= ir->palette[colorcode].r;
-			col.g -= ir->palette[colorcode].g;
-			col.b -= ir->palette[colorcode].b;
+			col.r -= dstimg->palette[colorcode].r;
+			col.g -= dstimg->palette[colorcode].g;
+			col.b -= dstimg->palette[colorcode].b;
 
 			// ランダムノイズを加える。
 			if (0) {
@@ -1038,7 +1030,7 @@ image_alloc_gray_palette(uint count)
 static uint
 finder_gray(image_reductor_handle *ir, ColorRGB c)
 {
-	uint count = ir->palette_count;
+	uint count = ir->dstimg->palette_count;
 
 	int I = (((uint)c.r) * (count - 1) + (255 / count)) / 255;
 	if (I >= count) {
@@ -1425,9 +1417,10 @@ octree_free(struct octree *node)
 
 // srcimg から適応 256 色パレットを作成。
 static bool
-image_calc_adaptive256_palette(image_reductor_handle *ir,
-	const struct image *srcimg)
+image_calc_adaptive256_palette(image_reductor_handle *ir)
 {
+	struct image *dstimg = ir->dstimg;
+	const struct image *srcimg = ir->srcimg;
 	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint32 *colormap;
 	uint32 colorcount = 0;
@@ -1515,8 +1508,8 @@ image_calc_adaptive256_palette(image_reductor_handle *ir,
 
 	// パレットにセット。
 	uint idx = 0;
-	octree_set_palette(ir->palette_buf, &idx, &root);
-	ir->palette_count = idx;
+	octree_set_palette(dstimg->palette_buf, &idx, &root);
+	dstimg->palette_count = idx;
 
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_add",	octree);
@@ -1531,11 +1524,12 @@ image_calc_adaptive256_palette(image_reductor_handle *ir,
 static uint
 finder_adaptive256(image_reductor_handle *ir, ColorRGB c)
 {
+	const struct image *dstimg = ir->dstimg;
 	uint32 mindist = (uint32)-1;
 	uint minidx = 0;
 
-	const ColorRGB *pal = ir->palette;
-	for (uint i = 0; i < ir->palette_count; i++, pal++) {
+	const ColorRGB *pal = dstimg->palette;
+	for (uint i = 0; i < dstimg->palette_count; i++, pal++) {
 		int32 dr = c.r - pal->r;
 		int32 dg = c.g - pal->g;
 		int32 db = c.b - pal->b;
