@@ -32,7 +32,7 @@
 #include "image_priv.h"
 #include <string.h>
 
-#define IMAGE_PROFILE
+//#define IMAGE_PROFILE
 
 #if defined(IMAGE_PROFILE)
 #include <sys/time.h>
