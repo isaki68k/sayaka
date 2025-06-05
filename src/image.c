@@ -1414,7 +1414,8 @@ finder_linear(image_reductor_handle *ir, ColorRGB c)
 	uint32 mindist = (uint32)-1;
 	uint minidx = 0;
 
-	const ColorRGB *pal = dstimg->palette;
+	// [0] は無効値。[1] から palette_count 個が有効。
+	const ColorRGB *pal = &dstimg->palette[1];
 	for (uint i = 0; i < dstimg->palette_count; i++, pal++) {
 		int32 dr = c.r - pal->r;
 		int32 dg = c.g - pal->g;
@@ -1428,38 +1429,7 @@ finder_linear(image_reductor_handle *ir, ColorRGB c)
 			mindist = dist;
 		}
 	}
-	return minidx;
-}
-
-// colorhash を作成する。
-// RGB555 のすべての色に対してあらかじめ線形探索で最も近い色のパレット番号を
-// 求めておく。力技だけど 37268 色 x 最大256回ループしか (しか?) なく、
-// これは横 256 x 縦 128 の画像の全ピクセルを線形探索で求めるのと同じ。
-// フルカラーが表示できる環境であれば実際この規模の画像は線形探索でも許せる
-// はずだし、何よりこのあとの全画素に対しての色検索が O(1) になる。
-static bool
-octree_make_colorhash(image_reductor_handle *ir)
-{
-	ir->colorhash = malloc(32768);
-	if (ir->colorhash == NULL) {
-		return false;
-	}
-
-	uint i = 0;
-	ColorRGB c;
-	for (uint r5 = 0; r5 < 32; r5++) {
-		c.r = r5 * 8 + 4;
-		for (uint g5 = 0; g5 < 32; g5++) {
-			c.g = g5 * 8 + 4;
-			for (uint b5 = 0; b5 < 32; b5++) {
-				c.b = b5 * 8 + 4;
-				ir->colorhash[i] = finder_linear(ir, c);
-				i++;
-			}
-		}
-	}
-
-	return true;
+	return minidx + 1;
 }
 
 // node の子を解放する。node 自身はこの親が解放すること。
@@ -1556,10 +1526,11 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 		}
 	}
 
-	// 256 色以下になるまで少ない色をマージしていく。
+	// 255 色以下になるまで少ない色をマージしていく。
+	// [0] は無効値として使うので有効なのは最大 255 色。
 	PROF(merge_start);
 	uint leaf_count;
-	while ((leaf_count = octree_count_leaf(&root)) > 256) {
+	while ((leaf_count = octree_count_leaf(&root)) > 255) {
 		//printf("leaf_count=%u\n", leaf_count);
 		uint32 min = -1;
 		struct octree *minnode = octree_find_minnode(&root, &min);
@@ -1567,15 +1538,16 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	}
 	PROF(merge_end);
 
-	// パレットにセット。
-	uint idx = 0;
+	// パレットにセット。パレットは 1 から開始。
+	uint idx = 1;
 	octree_set_palette(dstimg->palette_buf, &idx, &root);
 	dstimg->palette_count = idx;
 
-	// 色ハッシュを求める。
-	PROF(fill_start);
-	octree_make_colorhash(ir);
-	PROF(fill_end);
+	// 色ハッシュ用のバッファ。
+	ir->colorhash = calloc(1, 32768);
+	if (ir->colorhash == NULL) {
+		return false;
+	}
 
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_add",	octree);
@@ -1587,14 +1559,24 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	return true;
 }
 
-// 適応 256 色パレットから c に最も近いパレット番号を返す。
+// 適応パレットから c に最も近いパレット番号を返す。
 static uint
 finder_adaptive256(image_reductor_handle *ir, ColorRGB c)
 {
 	uint32 r5 = c.r >> 3;
 	uint32 g5 = c.g >> 3;
 	uint32 b5 = c.b >> 3;
-	return ir->colorhash[r5 * 32 * 32 + g5 * 32 + b5];
+	uint32 n = r5 * 32 * 32 + g5 * 32 + b5;
+	uint8 cc = ir->colorhash[n];
+	if (__predict_false(cc == 0)) {
+		// まだパレット番号が入ってなければここで引く。
+		c.r = r5 * 8 + 4;
+		c.g = g5 * 8 + 4;
+		c.b = b5 * 8 + 4;
+		cc = finder_linear(ir, c);
+		ir->colorhash[n] = cc;
+	}
+	return cc;
 }
 
 
