@@ -65,7 +65,7 @@ typedef struct {
 
 typedef struct image_reductor_handle_
 {
-	// 画像
+	// 画像 (所有はしていない)
 	struct image *dstimg;
 	const struct image *srcimg;
 
@@ -76,6 +76,9 @@ typedef struct image_reductor_handle_
 
 	// 色からパレット番号を検索する関数。
 	finder_t finder;
+
+	// RGB555 から適応パレットのカラーコードを引くハッシュ。
+	uint8 *colorhash;
 } image_reductor_handle;
 
 static uint finder_gray(image_reductor_handle *, ColorRGB);
@@ -488,6 +491,7 @@ image_reduct(
 {
 	struct image *dst;
 	image_reductor_handle irbuf, *ir;
+	bool ok = false;
 
 	ir = &irbuf;
 	memset(ir, 0, sizeof(*ir));
@@ -569,27 +573,27 @@ image_reduct(
 
 #if defined(SIXELV)
 	if (opt->method == REDUCT_SIMPLE) {
-		if (image_reduct_simple(ir, opt, diag) == false) {
-			goto abort;
-		}
+		ok = image_reduct_simple(ir, opt, diag);
 
 	} else if (opt->method != REDUCT_HIGH_QUALITY) {
 		Debug(diag, "%s: Unknown method %u", __func__, opt->method);
-		goto abort;
+		ok = false;
 
 	} else
 #endif
 	{
-		if (image_reduct_highquality(ir, opt, diag) == false) {
-			goto abort;
-		}
+		ok = image_reduct_highquality(ir, opt, diag);
 	}
 
-	return dst;
-
  abort:
-	image_free(dst);
-	return NULL;
+#if defined(SIXELV)
+	free(ir->colorhash);
+#endif
+	if (!ok) {
+		image_free(dst);
+		dst = NULL;
+	}
+	return dst;
 }
 
 
@@ -1402,6 +1406,62 @@ octree_set_palette(ColorRGB *pal, uint *idxp, const struct octree *node)
 	}
 }
 
+// パレットから c に最も近い色のパレット番号を返す。
+static uint
+finder_linear(image_reductor_handle *ir, ColorRGB c)
+{
+	const struct image *dstimg = ir->dstimg;
+	uint32 mindist = (uint32)-1;
+	uint minidx = 0;
+
+	const ColorRGB *pal = dstimg->palette;
+	for (uint i = 0; i < dstimg->palette_count; i++, pal++) {
+		int32 dr = c.r - pal->r;
+		int32 dg = c.g - pal->g;
+		int32 db = c.b - pal->b;
+		uint32 dist = (dr * dr) + (dg * dg) + (db * db);
+		if (dist < mindist) {
+			minidx = i;
+			if (__predict_false(dist < 8)) {
+				break;
+			}
+			mindist = dist;
+		}
+	}
+	return minidx;
+}
+
+// colorhash を作成する。
+// RGB555 のすべての色に対してあらかじめ線形探索で最も近い色のパレット番号を
+// 求めておく。力技だけど 37268 色 x 最大256回ループしか (しか?) なく、
+// これは横 256 x 縦 128 の画像の全ピクセルを線形探索で求めるのと同じ。
+// フルカラーが表示できる環境であれば実際この規模の画像は線形探索でも許せる
+// はずだし、何よりこのあとの全画素に対しての色検索が O(1) になる。
+static bool
+octree_make_colorhash(image_reductor_handle *ir)
+{
+	ir->colorhash = malloc(32768);
+	if (ir->colorhash == NULL) {
+		return false;
+	}
+
+	uint i = 0;
+	ColorRGB c;
+	for (uint r5 = 0; r5 < 32; r5++) {
+		c.r = r5 * 8 + 4;
+		for (uint g5 = 0; g5 < 32; g5++) {
+			c.g = g5 * 8 + 4;
+			for (uint b5 = 0; b5 < 32; b5++) {
+				c.b = b5 * 8 + 4;
+				ir->colorhash[i] = finder_linear(ir, c);
+				i++;
+			}
+		}
+	}
+
+	return true;
+}
+
 // node の子を解放する。node 自身はこの親が解放すること。
 static void
 octree_free(struct octree *node)
@@ -1429,6 +1489,7 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	struct timeval colormap_start, colormap_end;
 	struct timeval octree_start, octree_end;
 	struct timeval merge_start, merge_end;
+	struct timeval fill_start, fill_end;
 #endif
 
 	// src 画像に使われている色を全部取り出す。
@@ -1511,9 +1572,15 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	octree_set_palette(dstimg->palette_buf, &idx, &root);
 	dstimg->palette_count = idx;
 
+	// 色ハッシュを求める。
+	PROF(fill_start);
+	octree_make_colorhash(ir);
+	PROF(fill_end);
+
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_add",	octree);
 	PROF_RESULT("octree_merge",	merge);
+	PROF_RESULT("octree_fill",	fill);
 
 	free(colormap);
 	octree_free(&root);
@@ -1524,25 +1591,10 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 static uint
 finder_adaptive256(image_reductor_handle *ir, ColorRGB c)
 {
-	const struct image *dstimg = ir->dstimg;
-	uint32 mindist = (uint32)-1;
-	uint minidx = 0;
-
-	const ColorRGB *pal = dstimg->palette;
-	for (uint i = 0; i < dstimg->palette_count; i++, pal++) {
-		int32 dr = c.r - pal->r;
-		int32 dg = c.g - pal->g;
-		int32 db = c.b - pal->b;
-		uint32 dist = (dr * dr) + (dg * dg) + (db * db);
-		if (dist < mindist) {
-			minidx = i;
-			if (__predict_false(dist < 8)) {
-				break;
-			}
-			mindist = dist;
-		}
-	}
-	return minidx;
+	uint32 r5 = c.r >> 3;
+	uint32 g5 = c.g >> 3;
+	uint32 b5 = c.b >> 3;
+	return ir->colorhash[r5 * 32 * 32 + g5 * 32 + b5];
 }
 
 
