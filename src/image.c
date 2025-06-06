@@ -1324,19 +1324,21 @@ octree_count_leaf(const struct octree *node)
 static struct octree *
 octree_find_minnode(struct octree *node, uint32 *min)
 {
-	if (node->children == NULL) {
+	if (__predict_false(node->children == NULL)) {
 		// リーフ。ここには来ないはず。
 		return NULL;
 	}
 
 	// 子ノードのいずれかが孫を持つか。
-	bool has_grandchild = false;
-	for (uint i = 0; i < 8; i++) {
-		if (node->children[i].children) {
-			has_grandchild = true;
-			break;
-		}
-	}
+	bool has_grandchild =
+		(node->children[0].children != NULL) |
+		(node->children[1].children != NULL) |
+		(node->children[2].children != NULL) |
+		(node->children[3].children != NULL) |
+		(node->children[4].children != NULL) |
+		(node->children[5].children != NULL) |
+		(node->children[6].children != NULL) |
+		(node->children[7].children != NULL);
 
 	if (has_grandchild) {
 		// 自分はまだ中間ノード。
