@@ -1222,7 +1222,10 @@ image_alloc_xterm256_palette(void)
 	// グレー24色。
 	for (i = 0; i < 24; i++) {
 		ColorRGB c;
-		c.r = c.g = c.b = 8 + i * 10;
+		uint8 I = 8 + i * 10;
+		c.r = I;
+		c.g = I;
+		c.b = I;
 		pal[i + 16 + 216] = c;
 	}
 
