@@ -1277,9 +1277,11 @@ static void
 octree_add(struct octree *node, uint level,
 	uint32 r5, uint32 g5, uint32 b5, uint32 count)
 {
+	// このノード以下のピクセル数なので、途中にもすべて加算。
+	node->count += count;
+
 	if (level == 5) {
 		// リーフに来たらデータを置く。
-		node->count += count;
 		node->r += (r5 << 3) * count;
 		node->g += (g5 << 3) * count;
 		node->b += (b5 << 3) * count;
@@ -1348,12 +1350,8 @@ octree_find_minnode(struct octree *node, uint32 *min)
 		return minnode;
 	} else {
 		// 自分の子がリーフのノード。
-		uint32 count = 0;
-		for (uint i = 0; i < 8; i++) {
-			count += node->children[i].count;
-		}
-		if (count < *min) {
-			*min = count;
+		if (node->count < *min) {
+			*min = node->count;
 			return node;
 		} else {
 			return NULL;
@@ -1366,18 +1364,16 @@ octree_find_minnode(struct octree *node, uint32 *min)
 static void
 octree_merge_leaves(struct octree *node)
 {
-	uint32 count = 0;
 	uint32 r = 0;
 	uint32 g = 0;
 	uint32 b = 0;
 
 	for (uint i = 0; i < 8; i++) {
-		count += node->children[i].count;
 		r += node->children[i].r;
 		g += node->children[i].g;
 		b += node->children[i].b;
 	}
-	node->count = count;
+	// count は計算済み。
 	node->r = r;
 	node->g = g;
 	node->b = b;
