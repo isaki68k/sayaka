@@ -235,45 +235,30 @@ main(int ac, char *av[])
 	while ((c = getopt_long(ac, av, "c:hlp:r:s:t:v", longopts, NULL)) != -1) {
 		switch (c) {
 		 case 'c':
-		 {
 			// ここは元々色数を指定しているのではなく、色モード指定。
 			// -c 2 は、画像はモノクロで、テキストはボールドのみ飾り付けを行う。
 			// -c 1 は、画像はモノクロで、テキストはボールドも含めて一切の
 			// 飾り付けを行わない (ボールドがつらい端末を救済するため)。
-			int n;
 			if (strcmp(optarg, "1") == 0) {
 				colormode = 1;
 				imageopt.color = MAKE_COLOR_MODE_GRAY(2);
-				imageopt.cdm   = 96;
-			} else if (strcmp(optarg, "2") == 0) {
-				colormode = 2;
-				imageopt.color = MAKE_COLOR_MODE_GRAY(2);
-				imageopt.cdm   = 96;
-			} else if (strcmp(optarg, "8") == 0) {
-				colormode = 8;
-				imageopt.color = COLOR_MODE_8_RGB;
-				imageopt.cdm   = 96;
-			} else if (strcmp(optarg, "16") == 0) {
-				colormode = 16;
-				imageopt.color = COLOR_MODE_16_VGA;
-			} else if (strcmp(optarg, "256") == 0) {
-				colormode = 256;
-				imageopt.color = COLOR_MODE_256_RGB332;
-			} else if (strcmp(optarg, "gray") == 0 ||
-			           strcmp(optarg, "grey") == 0) {
-				colormode = 2;
-				imageopt.color = MAKE_COLOR_MODE_GRAY(256);
-			} else if ((strncmp(optarg, "gray", 4) == 0 ||
-			            strncmp(optarg, "grey", 4) == 0   ) &&
-			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
-			           (2 <= n && n <= 256)) {
-				colormode = 2;
-				imageopt.color = MAKE_COLOR_MODE_GRAY(n);
 			} else {
-				errx(1, "%s: invalid color mode", optarg);
+				imageopt.color = image_parse_color(optarg);
+				if (imageopt.color == COLOR_MODE_NONE) {
+					errx(1, "%s: invalid color mode", optarg);
+				}
+				switch (GET_COLOR_MODE(imageopt.color)) {
+				 case COLOR_MODE_GRAY:			colormode = 2;		break;
+				 case COLOR_MODE_8_RGB:			colormode = 8;		break;
+				 case COLOR_MODE_16_VGA:		colormode = 16;		break;
+				 case COLOR_MODE_256_RGB332:	colormode = 256;	break;
+				}
+			}
+			// 8色以下くらいだと --cdm 0.375 くらいが絶妙。
+			if (colormode <= 8) {
+				imageopt.cdm = 96;
 			}
 			break;
-		 }
 
 		 case OPT_ciphers:
 			// 今のところ "RSA" (大文字) しか指定できない。

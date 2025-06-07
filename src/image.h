@@ -120,6 +120,7 @@ typedef enum {
 // 色モードは下位8ビットが enum。
 // Gray では bit15-8 の 8ビットに「階調-1」(1-255) を格納する。
 typedef enum {
+	COLOR_MODE_NONE,
 	COLOR_MODE_GRAY,			// グレイスケール
 	COLOR_MODE_8_RGB,			// RGB 8色
 	COLOR_MODE_16_VGA,			// ANSI 16色 (VGA)
@@ -238,6 +239,7 @@ struct image_opt {
 
 // image.c
 extern void image_opt_init(struct image_opt *);
+extern ColorMode image_parse_color(const char *);
 extern int  image_match(struct pstream *, const struct diag *);
 extern struct image *image_read(struct pstream *, int,
 	const image_read_hint *, const struct diag *);

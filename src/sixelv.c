@@ -221,33 +221,11 @@ main(int ac, char *av[])
 			break;
 
 		 case 'c':
-		 {
-			int n;
-			if (strcmp(optarg, "2") == 0) {
-				imageopt.color = MAKE_COLOR_MODE_GRAY(2);
-			} else if (strcmp(optarg, "8") == 0) {
-				imageopt.color = COLOR_MODE_8_RGB;
-			} else if (strcmp(optarg, "16") == 0) {
-				imageopt.color = COLOR_MODE_16_VGA;
-			} else if (strcmp(optarg, "256") == 0) {
-				imageopt.color = COLOR_MODE_256_RGB332;
-			} else if (strcmp(optarg, "xterm256") == 0) {
-				imageopt.color = COLOR_MODE_256_XTERM;
-			} else if (strcmp(optarg, "adaptive256") == 0) {
-				imageopt.color = COLOR_MODE_256_ADAPTIVE;
-			} else if (strcmp(optarg, "gray") == 0 ||
-			           strcmp(optarg, "grey") == 0) {
-				imageopt.color = MAKE_COLOR_MODE_GRAY(256);
-			} else if ((strncmp(optarg, "gray", 4) == 0 ||
-			            strncmp(optarg, "grey", 4) == 0   ) &&
-			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
-			           (2 <= n && n <= 256)) {
-				imageopt.color = MAKE_COLOR_MODE_GRAY(n);
-			} else {
+			imageopt.color = image_parse_color(optarg);
+			if (imageopt.color == COLOR_MODE_NONE) {
 				errx(1, "%s: invalid color mode", optarg);
 			}
 			break;
-		 }
 
 		 case OPT_cdm:
 		 {

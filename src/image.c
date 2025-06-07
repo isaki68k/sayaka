@@ -129,6 +129,42 @@ image_opt_init(struct image_opt *opt)
 	opt->suppress_palette = false;
 }
 
+// (引数の) 文字列から ColorMode を返す。
+// エラーなら COLOR_MODE_NONE を返す。
+ColorMode
+image_parse_color(const char *arg)
+{
+	ColorMode color;
+	int n;
+
+	if (strcmp(arg, "2") == 0) {
+		color = MAKE_COLOR_MODE_GRAY(2);
+	} else if (strcmp(arg, "8") == 0) {
+		color = COLOR_MODE_8_RGB;
+	} else if (strcmp(arg, "16") == 0) {
+		color = COLOR_MODE_16_VGA;
+	} else if (strcmp(arg, "256") == 0) {
+		color = COLOR_MODE_256_RGB332;
+#if defined(SIXELV)
+	} else if (strcmp(arg, "xterm256") == 0) {
+		color = COLOR_MODE_256_XTERM;
+	} else if (strcmp(arg, "adaptive256") == 0) {
+		color = COLOR_MODE_256_ADAPTIVE;
+#endif
+	} else if (strcmp(arg, "gray") == 0 ||
+	           strcmp(arg, "grey") == 0) {
+		color = MAKE_COLOR_MODE_GRAY(256);
+	} else if ((strncmp(arg, "gray", 4) == 0 ||
+	            strncmp(arg, "grey", 4) == 0   ) &&
+	           (n = stou32def(arg + 4, -1, NULL)) != (uint32)-1 &&
+	           (2 <= n && n <= 256)) {
+		color = MAKE_COLOR_MODE_GRAY(n);
+	} else {
+		color = COLOR_MODE_NONE;
+	}
+	return color;
+}
+
 // width_ x height_ で形式が format_ の image を作成する。
 // (バッファは未初期化)
 struct image *
