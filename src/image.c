@@ -78,7 +78,7 @@ typedef struct image_reductor_handle_
 	finder_t finder;
 
 	// RGB555 から適応パレットのカラーコードを引くハッシュ。
-	uint8 *colorhash;
+	uint16 *colorhash;
 } image_reductor_handle;
 
 static uint finder_gray(image_reductor_handle *, ColorRGB);
@@ -1414,8 +1414,7 @@ finder_linear(image_reductor_handle *ir, ColorRGB c)
 	uint32 mindist = (uint32)-1;
 	uint minidx = 0;
 
-	// [0] は無効値。[1] から palette_count 個が有効。
-	const ColorRGB *pal = &dstimg->palette[1];
+	const ColorRGB *pal = &dstimg->palette[0];
 	for (uint i = 0; i < dstimg->palette_count; i++, pal++) {
 		int32 dr = c.r - pal->r;
 		int32 dg = c.g - pal->g;
@@ -1429,7 +1428,7 @@ finder_linear(image_reductor_handle *ir, ColorRGB c)
 			mindist = dist;
 		}
 	}
-	return minidx + 1;
+	return minidx;
 }
 
 // node の子を解放する。node 自身はこの親が解放すること。
@@ -1452,23 +1451,28 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	struct image *dstimg = ir->dstimg;
 	const struct image *srcimg = ir->srcimg;
 	const uint16 *src = (const uint16 *)srcimg->buf;
-	uint32 *colormap;
 	uint32 colorcount = 0;
 	struct octree root;
+	bool rv = false;
 #if defined(IMAGE_PROFILE)
 	struct timeval colormap_start, colormap_end;
 	struct timeval octree_start, octree_end;
 	struct timeval merge_start, merge_end;
 #endif
 
+	// この直後で使う colormap は uint16 * 32768。
+	// 一方この関数を終えて reduct 中に使う ir->colorhash も uint16 * 32768 で
+	// 両者は使用期間がかぶらないので、一度確保したのを使い回す。
+	const uint32 capacity = 32768;
+	ir->colorhash = calloc(capacity, sizeof(uint16));
+	if (__predict_false(ir->colorhash == NULL)) {
+		return false;
+	}
+	uint16 *colormap = ir->colorhash;
+
 	// src 画像に使われている色を全部取り出す。
 	// この時点で R,G,B 各色5ビットで足切りされていて、合計15ビットしか
 	// ないので、配列の添字にしてダイレクトアクセスする。
-	const uint32 capacity = 32768;
-	colormap = calloc(capacity, sizeof(uint32));
-	if (__predict_false(colormap == NULL)) {
-		return false;
-	}
 	PROF(colormap_start);
 	const uint16 *send = src + srcimg->width * srcimg->height;
 	for (const uint16 *s = src; s < send; ) {
@@ -1483,7 +1487,13 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 			if (__predict_false(b5 > 31)) b5 = 31;
 			n = (r5 << 10) | (g5 << 5) | b5;
 		}
-		colormap[n]++;
+		// ピクセル数の計数は 0xffff で頭打ちにしておく。
+		// 65536 ピクセル以上の色が 256 色以上ある時には困るかも知れないが。
+		uint16 count = colormap[n];
+		uint16 count1 = count + 1;
+		if (__predict_false(count1 != 0)) {
+			colormap[n] = count1;
+		}
 	}
 	for (uint i = 0; i < capacity; i++) {
 		if (colormap[i] != 0) {
@@ -1527,11 +1537,10 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 		}
 	}
 
-	// 255 色以下になるまで少ない色をマージしていく。
-	// [0] は無効値として使うので有効なのは最大 255 色。
+	// 256 色以下になるまで少ない色をマージしていく。
 	PROF(merge_start);
 	uint leaf_count;
-	while ((leaf_count = octree_count_leaf(&root)) > 255) {
+	while ((leaf_count = octree_count_leaf(&root)) > 256) {
 		//printf("leaf_count=%u\n", leaf_count);
 		uint32 min = -1;
 		struct octree *minnode = octree_find_minnode(&root, &min);
@@ -1539,8 +1548,8 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	}
 	PROF(merge_end);
 
-	// パレットにセット。パレットは 1 から開始。
-	uint idx = 1;
+	// パレットにセット。
+	uint idx = 0;
 	octree_set_palette(dstimg->palette_buf, &idx, &root);
 	dstimg->palette_count = idx;
 
@@ -1548,21 +1557,15 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	PROF_RESULT("octree_add",	octree);
 	PROF_RESULT("octree_merge",	merge);
 
-	free(colormap);
-	octree_free(&root);
+	// colorhash を本当はここで確保するが
+	// 使い終わった colormap とサイズが同じなのでありがたく使い回す。
+	// まだパレット引いてない印の (uint16)-1 で初期化する。
+	memset(ir->colorhash, 0xff, capacity * sizeof(uint16));
 
-	// この後使う色ハッシュ用のバッファ。
-	ir->colorhash = calloc(1, 32768);
-	if (ir->colorhash == NULL) {
-		return false;
-	}
-
-	return true;
-
+	rv = true;
  abort:
-	free(colormap);
 	octree_free(&root);
-	return false;
+	return rv;
 }
 
 // 適応パレットから c に最も近いパレット番号を返す。
@@ -1573,8 +1576,8 @@ finder_adaptive256(image_reductor_handle *ir, ColorRGB c)
 	uint32 g5 = c.g >> 3;
 	uint32 b5 = c.b >> 3;
 	uint32 n = r5 * 32 * 32 + g5 * 32 + b5;
-	uint8 cc = ir->colorhash[n];
-	if (__predict_false(cc == 0)) {
+	uint16 cc = ir->colorhash[n];
+	if (__predict_false((int16)cc < 0)) {
 		// まだパレット番号が入ってなければここで引く。
 		c.r = r5 * 8 + 4;
 		c.g = g5 * 8 + 4;
