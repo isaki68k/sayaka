@@ -1270,7 +1270,6 @@ struct octree {
 	uint32 r;		// R 合計
 	uint32 g;		// G 合計
 	uint32 b;		// B 合計
-	uint32 level;	// 階層 (root = 0)
 	struct octree *children; // [8]
 };
 
@@ -1291,9 +1290,6 @@ octree_add(struct octree *node, uint level,
 	} else {
 		if (node->children == NULL) {
 			node->children = calloc(8, sizeof(struct octree));
-			for (uint i = 0; i < 8; i++) {
-				node->level = level + 1;
-			}
 		}
 
 		uint32 nr = (r5 >> (4 - level)) & 1;
