@@ -224,25 +224,25 @@ main(int ac, char *av[])
 		 {
 			int n;
 			if (strcmp(optarg, "2") == 0) {
-				imageopt.color = MAKE_COLOR_FMT_GRAY(2);
+				imageopt.color = MAKE_COLOR_MODE_GRAY(2);
 			} else if (strcmp(optarg, "8") == 0) {
-				imageopt.color = COLOR_FMT_8_RGB;
+				imageopt.color = COLOR_MODE_8_RGB;
 			} else if (strcmp(optarg, "16") == 0) {
-				imageopt.color = COLOR_FMT_16_VGA;
+				imageopt.color = COLOR_MODE_16_VGA;
 			} else if (strcmp(optarg, "256") == 0) {
-				imageopt.color = COLOR_FMT_256_RGB332;
+				imageopt.color = COLOR_MODE_256_RGB332;
 			} else if (strcmp(optarg, "xterm256") == 0) {
-				imageopt.color = COLOR_FMT_256_XTERM;
+				imageopt.color = COLOR_MODE_256_XTERM;
 			} else if (strcmp(optarg, "adaptive256") == 0) {
-				imageopt.color = COLOR_FMT_256_ADAPTIVE;
+				imageopt.color = COLOR_MODE_256_ADAPTIVE;
 			} else if (strcmp(optarg, "gray") == 0 ||
 			           strcmp(optarg, "grey") == 0) {
-				imageopt.color = MAKE_COLOR_FMT_GRAY(256);
+				imageopt.color = MAKE_COLOR_MODE_GRAY(256);
 			} else if ((strncmp(optarg, "gray", 4) == 0 ||
 			            strncmp(optarg, "grey", 4) == 0   ) &&
 			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
 			           (2 <= n && n <= 256)) {
-				imageopt.color = MAKE_COLOR_FMT_GRAY(n);
+				imageopt.color = MAKE_COLOR_MODE_GRAY(n);
 			} else {
 				errx(1, "%s: invalid color mode", optarg);
 			}
@@ -689,7 +689,7 @@ do_file(const char *infile)
 	Debug(diag_image,
 		"InputSize=(%u, %u) OutputSize=(%u, %u) OutputColor=%s",
 		srcimg->width, srcimg->height, dst_width, dst_height,
-		colorformat_tostr(imageopt.color));
+		colormode_tostr(imageopt.color));
 
 	if (dst_width == 0 || dst_height == 0) {
 		warnx("%s: Output size (%u, %u) is too small",
@@ -710,7 +710,7 @@ do_file(const char *infile)
 
 	PROF(&reduct_end);
 
-	if (imageopt.color == COLOR_FMT_256_ADAPTIVE) {
+	if (GET_COLOR_MODE(imageopt.color) == COLOR_MODE_256_ADAPTIVE) {
 		Debug(diag_image, "Adaptive Palette Colors=%u", resimg->palette_count);
 	}
 

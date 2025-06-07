@@ -121,7 +121,7 @@ image_opt_init(struct image_opt *opt)
 {
 	opt->method  = REDUCT_HIGH_QUALITY;
 	opt->diffuse = DIFFUSE_SFL;
-	opt->color   = COLOR_FMT_256_RGB332;
+	opt->color   = COLOR_MODE_256_RGB332;
 	opt->cdm     = 0;
 	opt->gain    = -1;
 	opt->output_ormode = false;
@@ -507,8 +507,8 @@ image_reduct(
 	ir->srcimg = src;
 
 	// 減色モードからパレットオペレーションを用意。
-	switch (opt->color & COLOR_FMT_MASK) {
-	 case COLOR_FMT_GRAY:
+	switch (GET_COLOR_MODE(opt->color)) {
+	 case COLOR_MODE_GRAY:
 	 {
 		uint graycount = GET_COLOR_COUNT(opt->color);
 		dst->palette_buf = image_alloc_gray_palette(graycount);
@@ -522,19 +522,19 @@ image_reduct(
 		break;
 	 }
 
-	 case COLOR_FMT_8_RGB:
+	 case COLOR_MODE_8_RGB:
 		ir->finder  = finder_fixed8;
 		dst->palette = palette_fixed8;
 		dst->palette_count = 8;
 		break;
 
-	 case COLOR_FMT_16_VGA:
+	 case COLOR_MODE_16_VGA:
 		ir->finder  = finder_vga16;
 		dst->palette = palette_vga16;
 		dst->palette_count = 16;
 		break;
 
-	 case COLOR_FMT_256_RGB332:
+	 case COLOR_MODE_256_RGB332:
 		dst->palette_buf = image_alloc_fixed256_palette();
 		if (dst->palette_buf == NULL) {
 			goto abort;
@@ -545,7 +545,7 @@ image_reduct(
 		break;
 
 #if defined(SIXELV)
-	 case COLOR_FMT_256_XTERM:
+	 case COLOR_MODE_256_XTERM:
 		dst->palette_buf = image_alloc_xterm256_palette();
 		if (dst->palette_buf == NULL) {
 			goto abort;
@@ -555,7 +555,7 @@ image_reduct(
 		ir->finder = finder_xterm256;
 		break;
 
-	 case COLOR_FMT_256_ADAPTIVE:
+	 case COLOR_MODE_256_ADAPTIVE:
 		dst->palette_buf = calloc(256, sizeof(ColorRGB));
 		if (dst->palette_buf == NULL) {
 			goto abort;
@@ -658,7 +658,7 @@ image_reduct_simple(image_reductor_handle *ir,
 	Rational xstep;
 
 	// 適応パレットならここでパレットを作成。
-	if ((opt->color & COLOR_FMT_MASK) == COLOR_FMT_256_ADAPTIVE) {
+	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_256_ADAPTIVE) {
 		if (image_calc_adaptive256_palette(ir) == false) {
 			return false;
 		}
@@ -736,7 +736,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 
 #if defined(SIXELV)
 	// 適応パレットならここでパレットを作成。
-	if ((opt->color & COLOR_FMT_MASK) == COLOR_FMT_256_ADAPTIVE) {
+	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_256_ADAPTIVE) {
 		if (image_calc_adaptive256_palette(ir) == false) {
 			return false;
 		}
@@ -1654,28 +1654,28 @@ reductordiffuse_tostr(ReductorDiffuse diffuse)
 	return buf;
 }
 
-// ColorFormat を文字列にする。
+// ColorMode を文字列にする。
 // (内部バッファを使う可能性があるため同時に2回呼ばないこと)
 const char *
-colorformat_tostr(ColorFormat color)
+colormode_tostr(ColorMode color)
 {
 	static const struct {
-		ColorFormat value;
+		ColorMode mode;
 		const char *name;
 	} table[] = {
-		{ COLOR_FMT_GRAY,		"Gray" },
-		{ COLOR_FMT_8_RGB,		"8(RGB)" },
-		{ COLOR_FMT_16_VGA,		"16(ANSI VGA)" },
-		{ COLOR_FMT_256_RGB332,	"256(RGB332)" },
-		{ COLOR_FMT_256_XTERM,	"256(xterm)" },
-		{ COLOR_FMT_256_ADAPTIVE, "256(Adaptive)" },
+		{ COLOR_MODE_GRAY,			"Gray" },
+		{ COLOR_MODE_8_RGB,			"8(RGB)" },
+		{ COLOR_MODE_16_VGA,		"16(ANSI VGA)" },
+		{ COLOR_MODE_256_RGB332,	"256(RGB332)" },
+		{ COLOR_MODE_256_XTERM,		"256(xterm)" },
+		{ COLOR_MODE_256_ADAPTIVE,	"256(Adaptive)" },
 	};
 	static char buf[16];
-	uint type = (uint)color & COLOR_FMT_MASK;
+	uint colormode = GET_COLOR_MODE(color);
 
 	for (int i = 0; i < countof(table); i++) {
-		if (table[i].value == type) {
-			if (type == COLOR_FMT_GRAY) {
+		if (table[i].mode == colormode) {
+			if (colormode == COLOR_MODE_GRAY) {
 				uint num = GET_COLOR_COUNT(color);
 				snprintf(buf, sizeof(buf), "%s%u", table[i].name, num);
 				return buf;

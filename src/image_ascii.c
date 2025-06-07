@@ -53,7 +53,7 @@ image_ascii_write(FILE *fp, const struct image *img,
 				if (cc < 0) {
 					// 透過なら一旦色を解除して空白だけを出力。
 					fprintf(fp, "\x1b[m");
-				} else if (opt->color == COLOR_FMT_256_XTERM) {
+				} else if (GET_COLOR_MODE(opt->color) == COLOR_MODE_256_XTERM) {
 					// xterm256 ならカラーコードそのままのはず。
 					if (__predict_false(cc < 8)) {
 						fprintf(fp, "\x1b[4%um", cc);

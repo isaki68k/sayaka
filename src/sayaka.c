@@ -243,32 +243,32 @@ main(int ac, char *av[])
 			int n;
 			if (strcmp(optarg, "1") == 0) {
 				colormode = 1;
-				imageopt.color = MAKE_COLOR_FMT_GRAY(2);
+				imageopt.color = MAKE_COLOR_MODE_GRAY(2);
 				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "2") == 0) {
 				colormode = 2;
-				imageopt.color = MAKE_COLOR_FMT_GRAY(2);
+				imageopt.color = MAKE_COLOR_MODE_GRAY(2);
 				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "8") == 0) {
 				colormode = 8;
-				imageopt.color = COLOR_FMT_8_RGB;
+				imageopt.color = COLOR_MODE_8_RGB;
 				imageopt.cdm   = 96;
 			} else if (strcmp(optarg, "16") == 0) {
 				colormode = 16;
-				imageopt.color = COLOR_FMT_16_VGA;
+				imageopt.color = COLOR_MODE_16_VGA;
 			} else if (strcmp(optarg, "256") == 0) {
 				colormode = 256;
-				imageopt.color = COLOR_FMT_256_RGB332;
+				imageopt.color = COLOR_MODE_256_RGB332;
 			} else if (strcmp(optarg, "gray") == 0 ||
 			           strcmp(optarg, "grey") == 0) {
 				colormode = 2;
-				imageopt.color = MAKE_COLOR_FMT_GRAY(256);
+				imageopt.color = MAKE_COLOR_MODE_GRAY(256);
 			} else if ((strncmp(optarg, "gray", 4) == 0 ||
 			            strncmp(optarg, "grey", 4) == 0   ) &&
 			           (n = stou32def(optarg + 4, -1, NULL)) != (uint32)-1 &&
 			           (2 <= n && n <= 256)) {
 				colormode = 2;
-				imageopt.color = MAKE_COLOR_FMT_GRAY(n);
+				imageopt.color = MAKE_COLOR_MODE_GRAY(n);
 			} else {
 				errx(1, "%s: invalid color mode", optarg);
 			}
@@ -757,8 +757,8 @@ init_screen(void)
 	init_color();
 
 	// キャッシュファイル用の色モード名。
-	switch (imageopt.color & COLOR_FMT_MASK) {
-	 case COLOR_FMT_GRAY:
+	switch (GET_COLOR_MODE(imageopt.color)) {
+	 case COLOR_MODE_GRAY:
 	 {
 		uint grayscale = GET_COLOR_COUNT(imageopt.color);
 		if (grayscale == 2) {
@@ -768,13 +768,13 @@ init_screen(void)
 		}
 		break;
 	 }
-	 case COLOR_FMT_8_RGB:
+	 case COLOR_MODE_8_RGB:
 		strlcpy(colorname, "8", sizeof(colorname));
 		break;
-	 case COLOR_FMT_16_VGA:
+	 case COLOR_MODE_16_VGA:
 		strlcpy(colorname, "16", sizeof(colorname));
 		break;
-	 case COLOR_FMT_256_RGB332:
+	 case COLOR_MODE_256_RGB332:
 		strlcpy(colorname, "256", sizeof(colorname));
 		break;
 	 default:
