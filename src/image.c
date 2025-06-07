@@ -1386,24 +1386,24 @@ octree_merge_leaves(struct octree *node)
 }
 
 // node 以下のリーフをパレットに登録していく。
-// idxp はインデックスへのポインタ。
-static void
-octree_set_palette(ColorRGB *pal, uint *idxp, const struct octree *node)
+// n は次のパレット番号。
+// 戻り値も次のパレット番号。
+static uint
+octree_set_palette(ColorRGB *pal, uint n, const struct octree *node)
 {
 	if (node->children) {
 		for (uint i = 0; i < 8; i++) {
-			octree_set_palette(pal, idxp, &node->children[i]);
+			n = octree_set_palette(pal, n, &node->children[i]);
 		}
 	} else {
 		if (node->count != 0) {
-			uint idx = *idxp;
-			pal[idx].r = node->r / node->count;
-			pal[idx].g = node->g / node->count;
-			pal[idx].b = node->b / node->count;
-			idx++;
-			*idxp = idx;
+			pal[n].r = node->r / node->count;
+			pal[n].g = node->g / node->count;
+			pal[n].b = node->b / node->count;
+			n++;
 		}
 	}
+	return n;
 }
 
 // パレットから c に最も近い色のパレット番号を返す。
@@ -1549,9 +1549,8 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	PROF(merge_end);
 
 	// パレットにセット。
-	uint idx = 0;
-	octree_set_palette(dstimg->palette_buf, &idx, &root);
-	dstimg->palette_count = idx;
+	octree_set_palette(dstimg->palette_buf, 0, &root);
+	dstimg->palette_count = leaf_count;
 
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_add",	octree);
