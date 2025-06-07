@@ -1538,18 +1538,19 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	octree_set_palette(dstimg->palette_buf, &idx, &root);
 	dstimg->palette_count = idx;
 
-	// 色ハッシュ用のバッファ。
-	ir->colorhash = calloc(1, 32768);
-	if (ir->colorhash == NULL) {
-		return false;
-	}
-
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_add",	octree);
 	PROF_RESULT("octree_merge",	merge);
 
 	free(colormap);
 	octree_free(&root);
+
+	// この後使う色ハッシュ用のバッファ。
+	ir->colorhash = calloc(1, 32768);
+	if (ir->colorhash == NULL) {
+		return false;
+	}
+
 	return true;
 }
 
