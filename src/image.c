@@ -1275,7 +1275,7 @@ struct octree {
 
 // { r5, g5, b5 } の色を追加する。
 // r5, g5, b5 は下位 5 ビットのみ有効。
-static void
+static bool
 octree_add(struct octree *node, uint level,
 	uint32 r5, uint32 g5, uint32 b5, uint32 count)
 {
@@ -1287,16 +1287,20 @@ octree_add(struct octree *node, uint level,
 		node->r += (r5 << 3) * count;
 		node->g += (g5 << 3) * count;
 		node->b += (b5 << 3) * count;
+		return true;
 	} else {
 		if (node->children == NULL) {
 			node->children = calloc(8, sizeof(struct octree));
+			if (__predict_false(node->children == NULL)) {
+				return false;
+			}
 		}
 
 		uint32 nr = (r5 >> (4 - level)) & 1;
 		uint32 ng = (g5 >> (4 - level)) & 1;
 		uint32 nb = (b5 >> (4 - level)) & 1;
 		uint32 n = (nr << 2) | (ng << 1) | nb;
-		octree_add(&node->children[n], level + 1, r5, g5, b5, count);
+		return octree_add(&node->children[n], level + 1, r5, g5, b5, count);
 	}
 }
 
@@ -1499,7 +1503,9 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 		uint32 r5 = (i >> 10) & 0x1f;
 		uint32 g5 = (i >>  5) & 0x1f;
 		uint32 b5 = (i      ) & 0x1f;
-		octree_add(&root, 0, r5, g5, b5, count);
+		if (__predict_false(octree_add(&root, 0, r5, g5, b5, count) == false)) {
+			goto abort;
+		}
 	}
 	PROF(octree_end);
 
@@ -1552,6 +1558,11 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	}
 
 	return true;
+
+ abort:
+	free(colormap);
+	octree_free(&root);
+	return false;
 }
 
 // 適応パレットから c に最も近いパレット番号を返す。
