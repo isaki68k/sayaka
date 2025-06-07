@@ -134,34 +134,51 @@ image_opt_init(struct image_opt *opt)
 ColorMode
 image_parse_color(const char *arg)
 {
-	ColorMode color;
-	int n;
+	ColorMode color = COLOR_MODE_NONE;
+	int num = -1;
 
-	if (strcmp(arg, "2") == 0) {
-		color = MAKE_COLOR_MODE_GRAY(2);
-	} else if (strcmp(arg, "8") == 0) {
-		color = COLOR_MODE_8_RGB;
-	} else if (strcmp(arg, "16") == 0) {
-		color = COLOR_MODE_16_VGA;
-	} else if (strcmp(arg, "256") == 0) {
-		color = COLOR_MODE_256_RGB332;
-#if defined(SIXELV)
-	} else if (strcmp(arg, "xterm256") == 0) {
-		color = COLOR_MODE_256_XTERM;
-	} else if (strcmp(arg, "adaptive256") == 0) {
-		color = COLOR_MODE_256_ADAPTIVE;
-#endif
-	} else if (strcmp(arg, "gray") == 0 ||
-	           strcmp(arg, "grey") == 0) {
-		color = MAKE_COLOR_MODE_GRAY(256);
-	} else if ((strncmp(arg, "gray", 4) == 0 ||
-	            strncmp(arg, "grey", 4) == 0   ) &&
-	           (n = stou32def(arg + 4, -1, NULL)) != (uint32)-1 &&
-	           (2 <= n && n <= 256)) {
-		color = MAKE_COLOR_MODE_GRAY(n);
-	} else {
-		color = COLOR_MODE_NONE;
+	// 数字とその前とに分ける。正規表現でいうと /(\w*)(\d*)/ みたいな感じ。
+	size_t dp = strcspn(arg, "0123456789");
+	char str[dp + 1];
+	strncpy(str, arg, dp);
+	str[dp] = '\0';
+	if (arg[dp] != '\0') {
+		char *end;
+		num = stou32def(&arg[dp], -1, &end);
+		if (*end != '\0') {
+			goto abort;
+		}
 	}
+
+	if (str[0] == '\0') {
+		// 数字だけの場合。
+		switch (num) {
+		 case 2:	color = MAKE_COLOR_MODE_GRAY(2);	break;
+		 case 8:	color = COLOR_MODE_8_RGB;			break;
+		 case 16:	color = COLOR_MODE_16_VGA;			break;
+		 case 256:	color = COLOR_MODE_256_RGB332;		break;
+		 default:
+			break;
+		}
+	} else {
+		// 文字から始まっている場合。
+#if defined(SIXELV)
+		if (strcmp(arg, "xterm256") == 0) {
+			color = COLOR_MODE_256_XTERM;
+		} else if (strcmp(arg, "adaptive256") == 0) {
+			color = COLOR_MODE_256_ADAPTIVE;
+		} else
+#endif
+		if (strcmp(str, "gray") == 0 || strcmp(str, "grey") == 0) {
+			if (num < 0) {
+				color = MAKE_COLOR_MODE_GRAY(256);
+			} else if (2 <= num && num <= 256) {
+				color = MAKE_COLOR_MODE_GRAY(num);
+			}
+		}
+	}
+
+ abort:
 	return color;
 }
 
