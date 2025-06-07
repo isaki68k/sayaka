@@ -1296,10 +1296,9 @@ octree_add(struct octree *node, uint level,
 			}
 		}
 
-		uint32 mask = 0x10 >> level;
-		uint32 nr = (r5 & mask) >> (4 - level);
-		uint32 ng = (g5 & mask) >> (4 - level);
-		uint32 nb = (b5 & mask) >> (4 - level);
+		uint32 nr = (r5 >> (4 - level)) & 1;
+		uint32 ng = (g5 >> (4 - level)) & 1;
+		uint32 nb = (b5 >> (4 - level)) & 1;
 		uint32 n = (nr << 2) | (ng << 1) | nb;
 		octree_add(&node->children[n], level + 1, r5, g5, b5, count);
 	}
