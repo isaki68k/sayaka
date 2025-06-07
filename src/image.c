@@ -88,14 +88,14 @@ static uint finder_fixed256(image_reductor_handle *, ColorRGB);
 #if defined(SIXELV)
 static uint finder_xterm256(image_reductor_handle *, ColorRGB);
 static inline uint8 finder_xterm256_channel(uint8);
-static uint finder_adaptive256(image_reductor_handle *, ColorRGB);
+static uint finder_adaptive(image_reductor_handle *, ColorRGB);
 #endif
 static void colorcvt_gray(ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 #if defined(SIXELV)
 static ColorRGB *image_alloc_xterm256_palette(void);
-static bool image_calc_adaptive256_palette(image_reductor_handle *);
+static bool image_calc_adaptive_palette(image_reductor_handle *);
 #endif
 
 #if defined(SIXELV)
@@ -165,8 +165,12 @@ image_parse_color(const char *arg)
 #if defined(SIXELV)
 		if (strcmp(arg, "xterm256") == 0) {
 			color = COLOR_MODE_256_XTERM;
-		} else if (strcmp(arg, "adaptive256") == 0) {
-			color = COLOR_MODE_256_ADAPTIVE;
+		} else if (strcmp(str, "adaptive") == 0) {
+			if (num < 0) {
+				color = MAKE_COLOR_MODE_ADAPTIVE(256);
+			} else if (8 <= num && num <= 256) {
+				color = MAKE_COLOR_MODE_ADAPTIVE(num);
+			}
 		} else
 #endif
 		if (strcmp(str, "gray") == 0 || strcmp(str, "grey") == 0) {
@@ -608,15 +612,18 @@ image_reduct(
 		ir->finder = finder_xterm256;
 		break;
 
-	 case COLOR_MODE_256_ADAPTIVE:
-		dst->palette_buf = calloc(256, sizeof(ColorRGB));
+	 case COLOR_MODE_ADAPTIVE:
+	 {
+		uint palcount = GET_COLOR_COUNT(opt->color);
+		dst->palette_buf = calloc(palcount, sizeof(ColorRGB));
 		if (dst->palette_buf == NULL) {
 			goto abort;
 		}
 		dst->palette = dst->palette_buf;
-		dst->palette_count = 256;	// このあと変更する。
-		ir->finder = finder_adaptive256;
+		dst->palette_count = palcount;
+		ir->finder = finder_adaptive;
 		break;
+	 }
 #endif
 
 	 default:
@@ -711,8 +718,8 @@ image_reduct_simple(image_reductor_handle *ir,
 	Rational xstep;
 
 	// 適応パレットならここでパレットを作成。
-	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_256_ADAPTIVE) {
-		if (image_calc_adaptive256_palette(ir) == false) {
+	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
+		if (image_calc_adaptive_palette(ir) == false) {
 			return false;
 		}
 	}
@@ -789,8 +796,8 @@ image_reduct_highquality(image_reductor_handle *ir,
 
 #if defined(SIXELV)
 	// 適応パレットならここでパレットを作成。
-	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_256_ADAPTIVE) {
-		if (image_calc_adaptive256_palette(ir) == false) {
+	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
+		if (image_calc_adaptive_palette(ir) == false) {
 			return false;
 		}
 	}
@@ -1497,9 +1504,9 @@ octree_free(struct octree *node)
 	}
 }
 
-// srcimg から適応 256 色パレットを作成。
+// srcimg から適応パレットを作成。
 static bool
-image_calc_adaptive256_palette(image_reductor_handle *ir)
+image_calc_adaptive_palette(image_reductor_handle *ir)
 {
 	struct image *dstimg = ir->dstimg;
 	const struct image *srcimg = ir->srcimg;
@@ -1590,10 +1597,11 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 		}
 	}
 
-	// 256 色以下になるまで少ない色をマージしていく。
+	// 指定の色数以下になるまで少ない色をマージしていく。
 	PROF(merge_start);
+	uint palette_count = dstimg->palette_count;
 	uint leaf_count;
-	while ((leaf_count = octree_count_leaf(&root)) > 256) {
+	while ((leaf_count = octree_count_leaf(&root)) > palette_count) {
 		//printf("leaf_count=%u\n", leaf_count);
 		uint32 min = -1;
 		struct octree *minnode = octree_find_minnode(&root, &min);
@@ -1622,7 +1630,7 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 
 // 適応パレットから c に最も近いパレット番号を返す。
 static uint
-finder_adaptive256(image_reductor_handle *ir, ColorRGB c)
+finder_adaptive(image_reductor_handle *ir, ColorRGB c)
 {
 	uint32 r5 = c.r >> 3;
 	uint32 g5 = c.g >> 3;
@@ -1723,14 +1731,16 @@ colormode_tostr(ColorMode color)
 		{ COLOR_MODE_16_VGA,		"16(ANSI VGA)" },
 		{ COLOR_MODE_256_RGB332,	"256(RGB332)" },
 		{ COLOR_MODE_256_XTERM,		"256(xterm)" },
-		{ COLOR_MODE_256_ADAPTIVE,	"256(Adaptive)" },
+		{ COLOR_MODE_ADAPTIVE,		"Adaptive" },
 	};
 	static char buf[16];
 	uint colormode = GET_COLOR_MODE(color);
 
 	for (int i = 0; i < countof(table); i++) {
 		if (table[i].mode == colormode) {
-			if (colormode == COLOR_MODE_GRAY) {
+			if (colormode == COLOR_MODE_GRAY ||
+			    colormode == COLOR_MODE_ADAPTIVE)
+			{
 				uint num = GET_COLOR_COUNT(color);
 				snprintf(buf, sizeof(buf), "%s%u", table[i].name, num);
 				return buf;

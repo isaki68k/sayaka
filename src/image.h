@@ -118,7 +118,8 @@ typedef enum {
 } ReductorDiffuse;
 
 // 色モードは下位8ビットが enum。
-// Gray では bit15-8 の 8ビットに「階調-1」(1-255) を格納する。
+// GRAY では bit15-8 の 8ビットに「階調-1」(=1-255) を格納する。
+// ADAPTIVE も同様に「色数-1」(=7-255) を格納する。
 typedef enum {
 	COLOR_MODE_NONE,
 	COLOR_MODE_GRAY,			// グレイスケール
@@ -126,7 +127,7 @@ typedef enum {
 	COLOR_MODE_16_VGA,			// ANSI 16色 (VGA)
 	COLOR_MODE_256_RGB332,		// 固定 256 色 (MSX SCREEN8 互換)
 	COLOR_MODE_256_XTERM,		// 固定 256 色 (xterm 互換)
-	COLOR_MODE_256_ADAPTIVE,	// 適応 256 色
+	COLOR_MODE_ADAPTIVE,		// 適応パレット (8-256 色)
 
 	// 下位8ビットが色モード
 	COLOR_MODE_MASK = 0xff,
@@ -134,6 +135,8 @@ typedef enum {
 
 #define MAKE_COLOR_MODE_GRAY(n)	\
 	(COLOR_MODE_GRAY | (((uint)(n) - 1) << 8))
+#define MAKE_COLOR_MODE_ADAPTIVE(n)	\
+	(COLOR_MODE_ADAPTIVE | (((uint)(n) - 1) << 8))
 
 #define GET_COLOR_MODE(fmt)		((fmt) & COLOR_MODE_MASK)
 #define GET_COLOR_COUNT(fmt)	((((uint)(fmt)) >> 8) + 1)
