@@ -1459,7 +1459,6 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	struct timeval colormap_start, colormap_end;
 	struct timeval octree_start, octree_end;
 	struct timeval merge_start, merge_end;
-	struct timeval fill_start, fill_end;
 #endif
 
 	// src 画像に使われている色を全部取り出す。
@@ -1552,7 +1551,6 @@ image_calc_adaptive256_palette(image_reductor_handle *ir)
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_add",	octree);
 	PROF_RESULT("octree_merge",	merge);
-	PROF_RESULT("octree_fill",	fill);
 
 	free(colormap);
 	octree_free(&root);
