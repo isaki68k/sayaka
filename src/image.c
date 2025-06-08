@@ -1433,17 +1433,24 @@ octree_find_minnode(struct octree *node, uint32 *min)
 
 // このノードのリーフをマージする。
 // リーフ直上のノードで行うこと。
-static void
+// 戻り値はマージによって増減したリーフ数 (なので概ね負数になる)。
+// 子リーフを1〜8個減らすが、自分が新たにリーフになるので +1 される。
+static int
 octree_merge_leaves(struct octree *node)
 {
 	uint32 r = 0;
 	uint32 g = 0;
 	uint32 b = 0;
+	int ndiff = 1;
 
 	for (uint i = 0; i < 8; i++) {
-		r += node->children[i].r;
-		g += node->children[i].g;
-		b += node->children[i].b;
+		struct octree *child = &node->children[i];
+		if (child->count != 0) {
+			ndiff--;
+			r += child->r;
+			g += child->g;
+			b += child->b;
+		}
 	}
 	// count は計算済み。
 	node->r = r;
@@ -1451,6 +1458,8 @@ octree_merge_leaves(struct octree *node)
 	node->b = b;
 	free(node->children);
 	node->children = NULL;
+
+	return ndiff;
 }
 
 // node 以下のリーフをパレットに登録していく。
@@ -1609,12 +1618,12 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	// 指定の色数以下になるまで少ない色をマージしていく。
 	PROF(merge_start);
 	uint palette_count = dstimg->palette_count;
-	uint leaf_count;
-	while ((leaf_count = octree_count_leaf(&root)) > palette_count) {
+	uint leaf_count = octree_count_leaf(&root);
+	while (leaf_count > palette_count) {
 		//printf("leaf_count=%u\n", leaf_count);
 		uint32 min = -1;
 		struct octree *minnode = octree_find_minnode(&root, &min);
-		octree_merge_leaves(minnode);
+		leaf_count += octree_merge_leaves(minnode);
 	}
 	PROF(merge_end);
 
