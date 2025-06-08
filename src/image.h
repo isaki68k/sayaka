@@ -208,6 +208,8 @@ struct image
 	const ColorRGB *palette;
 
 	// パレット数。インデックスカラーでない場合は参照しないこと。
+	// ただし、適応パレットに変換する際の入力画像ならデバッグ表示用に
+	// ここに色数を入れる。
 	uint palette_count;
 
 	// 動的に作成したパレットはここで所有する。
@@ -255,7 +257,7 @@ extern void image_get_preferred_size(uint, uint, ResizeAxis,
 	uint, uint, uint *, uint *);
 extern char **image_get_loaderinfo(void);
 extern void image_convert_to16(struct image *);
-extern struct image *image_reduct(const struct image *, uint, uint,
+extern struct image *image_reduct(struct image *, uint, uint,
 	const struct image_opt *, const struct diag *);
 
 extern const char *resizeaxis_tostr(ResizeAxis);

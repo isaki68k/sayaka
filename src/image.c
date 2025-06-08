@@ -67,7 +67,7 @@ typedef struct image_reductor_handle_
 {
 	// 画像 (所有はしていない)
 	struct image *dstimg;
-	const struct image *srcimg;
+	struct image *srcimg;
 
 	bool is_gray;
 
@@ -542,9 +542,11 @@ image_convert_to16(struct image *img)
 
 // src 画像を (dst_width, dst_height) にリサイズしながら同時に
 // colormode に減色した新しい image を作成して返す。
+// 適応パレット(COLOR_MODE_ADAPTIVE) なら、デバッグ表示用に
+// src->palette_count に色数を書き戻す。
 struct image *
 image_reduct(
-	const struct image *src,	// 元画像
+	struct image *src,			// 元画像
 	uint dst_width,				// リサイズ後の幅
 	uint dst_height,			// リサイズ後の高さ
 	const struct image_opt *opt,	// パラメータ
@@ -1513,7 +1515,7 @@ static bool
 image_calc_adaptive_palette(image_reductor_handle *ir)
 {
 	struct image *dstimg = ir->dstimg;
-	const struct image *srcimg = ir->srcimg;
+	struct image *srcimg = ir->srcimg;
 	const uint16 *src = (const uint16 *)srcimg->buf;
 	struct octree root;
 	bool rv = false;
@@ -1559,15 +1561,14 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 		}
 	}
 	PROF(colormap_end);
-	if (0) {
-		uint colorcount = 0;
-		for (uint i = 0; i < capacity; i++) {
-			if (colormap[i] != 0) {
-				colorcount++;
-			}
+
+	uint colorcount = 0;
+	for (uint i = 0; i < capacity; i++) {
+		if (colormap[i] != 0) {
+			colorcount++;
 		}
-		printf("colorcount=%u/%u\n", colorcount, capacity);
 	}
+	srcimg->palette_count = colorcount;
 
 	// octree に配置。
 	PROF(octree_start);

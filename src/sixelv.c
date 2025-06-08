@@ -691,7 +691,9 @@ do_file(const char *infile)
 	PROF(&reduct_end);
 
 	if (GET_COLOR_MODE(imageopt.color) == COLOR_MODE_ADAPTIVE) {
-		Debug(diag_image, "Adaptive Palette Colors=%u", resimg->palette_count);
+		Debug(diag_image, "AdaptivePalette InputColors=%u/32768 OutputColors=%u",
+			srcimg->palette_count,
+			resimg->palette_count);
 	}
 
 	// 出力先をオープン。
