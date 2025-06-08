@@ -1511,7 +1511,6 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	struct image *dstimg = ir->dstimg;
 	const struct image *srcimg = ir->srcimg;
 	const uint16 *src = (const uint16 *)srcimg->buf;
-	uint32 colorcount = 0;
 	struct octree root;
 	bool rv = false;
 #if defined(IMAGE_PROFILE)
@@ -1555,13 +1554,16 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 			colormap[n] = count1;
 		}
 	}
-	for (uint i = 0; i < capacity; i++) {
-		if (colormap[i] != 0) {
-			colorcount++;
-		}
-	}
 	PROF(colormap_end);
-	//printf("colorcount=%u/%u\n", colorcount, capacity);
+	if (0) {
+		uint colorcount = 0;
+		for (uint i = 0; i < capacity; i++) {
+			if (colormap[i] != 0) {
+				colorcount++;
+			}
+		}
+		printf("colorcount=%u/%u\n", colorcount, capacity);
+	}
 
 	// octree に配置。
 	PROF(octree_start);
