@@ -84,19 +84,19 @@ typedef struct image_reductor_handle_
 static uint finder_gray(image_reductor_handle *, ColorRGB);
 static uint finder_fixed8(image_reductor_handle *, ColorRGB);
 static uint finder_vga16(image_reductor_handle *, ColorRGB);
-static uint finder_fixed256(image_reductor_handle *, ColorRGB);
 #if defined(SIXELV)
+static uint finder_fixed256(image_reductor_handle *, ColorRGB);
 static uint finder_xterm256(image_reductor_handle *, ColorRGB);
 static inline uint8 finder_xterm256_channel(uint8);
-static uint finder_adaptive(image_reductor_handle *, ColorRGB);
 #endif
+static uint finder_adaptive(image_reductor_handle *, ColorRGB);
 static void colorcvt_gray(ColorRGBint32 *);
 static ColorRGB *image_alloc_gray_palette(uint);
-static ColorRGB *image_alloc_fixed256_palette(void);
 #if defined(SIXELV)
+static ColorRGB *image_alloc_fixed256_palette(void);
 static ColorRGB *image_alloc_xterm256_palette(void);
-static bool image_calc_adaptive_palette(image_reductor_handle *);
 #endif
+static bool image_calc_adaptive_palette(image_reductor_handle *);
 
 #if defined(SIXELV)
 static bool image_reduct_simple(image_reductor_handle *,
@@ -121,7 +121,7 @@ image_opt_init(struct image_opt *opt)
 {
 	opt->method  = REDUCT_HIGH_QUALITY;
 	opt->diffuse = DIFFUSE_SFL;
-	opt->color   = COLOR_MODE_256_RGB332;
+	opt->color   = MAKE_COLOR_MODE_ADAPTIVE(256);
 	opt->cdm     = 0;
 	opt->gain    = -1;
 	opt->output_ormode = false;
@@ -153,17 +153,19 @@ image_parse_color(const char *arg)
 	if (str[0] == '\0') {
 		// 数字だけの場合。
 		switch (num) {
-		 case 2:	color = MAKE_COLOR_MODE_GRAY(2);	break;
-		 case 8:	color = COLOR_MODE_8_RGB;			break;
-		 case 16:	color = COLOR_MODE_16_VGA;			break;
-		 case 256:	color = COLOR_MODE_256_RGB332;		break;
+		 case 2:	color = MAKE_COLOR_MODE_GRAY(2);		break;
+		 case 8:	color = COLOR_MODE_8_RGB;				break;
+		 case 16:	color = COLOR_MODE_16_VGA;				break;
+		 case 256:	color = MAKE_COLOR_MODE_ADAPTIVE(256);	break;
 		 default:
 			break;
 		}
 	} else {
 		// 文字から始まっている場合。
 #if defined(SIXELV)
-		if (strcmp(arg, "xterm256") == 0) {
+		if (strcmp(arg, "fixed256") == 0) {
+			color = COLOR_MODE_256_RGB332;
+		} else if (strcmp(arg, "xterm256") == 0) {
 			color = COLOR_MODE_256_XTERM;
 		} else if (strcmp(str, "adaptive") == 0) {
 			if (num < 0) {
@@ -597,27 +599,6 @@ image_reduct(
 		dst->palette_count = 16;
 		break;
 
-	 case COLOR_MODE_256_RGB332:
-		dst->palette_buf = image_alloc_fixed256_palette();
-		if (dst->palette_buf == NULL) {
-			goto abort;
-		}
-		dst->palette = dst->palette_buf;
-		dst->palette_count = 256;
-		ir->finder = finder_fixed256;
-		break;
-
-#if defined(SIXELV)
-	 case COLOR_MODE_256_XTERM:
-		dst->palette_buf = image_alloc_xterm256_palette();
-		if (dst->palette_buf == NULL) {
-			goto abort;
-		}
-		dst->palette = dst->palette_buf;
-		dst->palette_count = 256;
-		ir->finder = finder_xterm256;
-		break;
-
 	 case COLOR_MODE_ADAPTIVE:
 	 {
 		uint palcount = GET_COLOR_COUNT(opt->color);
@@ -630,6 +611,27 @@ image_reduct(
 		ir->finder = finder_adaptive;
 		break;
 	 }
+
+#if defined(SIXELV)
+	 case COLOR_MODE_256_RGB332:
+		dst->palette_buf = image_alloc_fixed256_palette();
+		if (dst->palette_buf == NULL) {
+			goto abort;
+		}
+		dst->palette = dst->palette_buf;
+		dst->palette_count = 256;
+		ir->finder = finder_fixed256;
+		break;
+
+	 case COLOR_MODE_256_XTERM:
+		dst->palette_buf = image_alloc_xterm256_palette();
+		if (dst->palette_buf == NULL) {
+			goto abort;
+		}
+		dst->palette = dst->palette_buf;
+		dst->palette_count = 256;
+		ir->finder = finder_xterm256;
+		break;
 #endif
 
 	 default:
@@ -800,14 +802,12 @@ image_reduct_highquality(image_reductor_handle *ir,
 	assert(opt->diffuse == DIFFUSE_SFL);
 #endif
 
-#if defined(SIXELV)
 	// 適応パレットならここでパレットを作成。
 	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
 		if (image_calc_adaptive_palette(ir) == false) {
 			return false;
 		}
 	}
-#endif
 
 	// 水平、垂直ともピクセルを平均。
 	// 真に高品質にするには補間法を適用するべきだがそこまではしない。
@@ -1227,6 +1227,8 @@ finder_vga16(image_reductor_handle *ir, ColorRGB c)
 	}
 }
 
+#if defined(SIXELV)
+
 // R3,G3,B2 の固定 256 色パレットを作成して返す。
 static ColorRGB *
 image_alloc_fixed256_palette(void)
@@ -1255,8 +1257,6 @@ finder_fixed256(image_reductor_handle *ir, ColorRGB c)
 	uint B = c.b >> 6;
 	return (R << 5) | (G << 2) | B;
 }
-
-#if defined(SIXELV)
 
 // xterm 互換の固定 256 色パレットを作成して返す。
 static ColorRGB *
@@ -1326,6 +1326,8 @@ finder_xterm256(image_reductor_handle *ir, ColorRGB c)
 		+ finder_xterm256_channel(c.g) * 6
 		+ finder_xterm256_channel(c.b) * 1;
 }
+
+#endif // SIXELV
 
 //
 // 適応 256 色パレット。
@@ -1655,6 +1657,7 @@ finder_adaptive(image_reductor_handle *ir, ColorRGB c)
 	return cc;
 }
 
+#if defined(SIXELV)
 
 //
 // enum のデバッグ表示用

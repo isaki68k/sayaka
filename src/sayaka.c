@@ -759,7 +759,7 @@ init_screen(void)
 	 case COLOR_MODE_16_VGA:
 		strlcpy(colorname, "16", sizeof(colorname));
 		break;
-	 case COLOR_MODE_256_RGB332:
+	 case COLOR_MODE_ADAPTIVE:
 		strlcpy(colorname, "256", sizeof(colorname));
 		break;
 	 default:
