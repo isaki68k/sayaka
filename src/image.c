@@ -1090,7 +1090,7 @@ image_alloc_gray_palette(uint count)
 	return pal;
 }
 
-// 256 段階グレースケールになっている c からパレット番号を返す。
+// count 段階グレースケールになっている c からパレット番号を返す。
 static uint
 finder_gray(image_reductor_handle *ir, ColorRGB c)
 {
