@@ -58,6 +58,7 @@ SRCS_sayaka+=	wsclient.c
 
 SRCS_sixelv+=	image_ascii.c
 SRCS_sixelv+=	image_bmp.c
+SRCS_sixelv+=	image_tiff.c
 
 SRCS_all=	${SRCS_common}	\
 		${SRCS_sayaka}	\

@@ -25,6 +25,7 @@
 #undef HAVE_GIFLIB
 #undef HAVE_LIBJPEG
 #undef HAVE_LIBPNG
+#undef HAVE_LIBTIFF
 #undef HAVE_LIBWEBP
 #undef HAVE_OPENSSL
 

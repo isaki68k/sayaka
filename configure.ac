@@ -116,7 +116,7 @@ AC_DEFUN([CHECK_PKG], [
 		AC_MSG_RESULT([yes])
 		AC_DEFINE([HAVE_$2])
 		AC_SUBST([DEFINE_$2], [HAVE_$2=yes])
-		has_$1=yes
+		eval `echo has_$1=yes | sed -e 's/-/_/g'`
 
 		H=`${PKG_CONFIG} --cflags $1`
 		L=`${PKG_CONFIG} --libs $1`
@@ -124,7 +124,7 @@ AC_DEFUN([CHECK_PKG], [
 		LIBS="${LIBS} ${L}"
 	else
 		AC_MSG_RESULT([no])
-		has_$1=no
+		eval `echo has_$1=no | sed -e 's/-/_/g'`
 	fi
 ])
 
@@ -339,6 +339,31 @@ case ${with_libpng} in
 		if test x"${with_libpng}" = x"yes"; then
 			AC_MSG_FAILURE(
 				[--with-libpng(=yes) is specified but libpng not found.])
+		fi
+	fi
+	;;
+esac
+
+# libtiff はデフォルトを auto にする。
+# --with-libtiff=auto なら、libtiff があれば使い、なければ使わない。
+# --with-libtiff=yes  なら、libtiff がなければエラー。
+# --with-libtiff=no (--without-libtiff) ならチェックもしない。
+AC_ARG_WITH([libtiff],
+	AS_HELP_STRING([--with-libtiff=(auto|yes|no)],
+		[Use libtiff for TIFF (default:auto)]))
+if test -z "${with_libtiff}"; then
+	with_libtiff=auto
+fi
+case ${with_libtiff} in
+ no)
+	;;
+ *)
+	CHECK_PKG([libtiff-4], [LIBTIFF])
+
+	if test x"${has_libtiff}" \!= x"yes"; then
+		if test x"${with_libtiff}" = x"yes"; then
+			AC_MSG_FAILURE(
+				[--with-libtiff(=yes) is specified but libtiff not found.])
 		fi
 	fi
 	;;

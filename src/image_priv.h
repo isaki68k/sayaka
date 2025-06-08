@@ -45,6 +45,9 @@
 #if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
 #endif
+#if defined(HAVE_LIBTIFF) && defined(SIXELV)
+#define USE_LIBTIFF
+#endif
 #if defined(HAVE_LIBWEBP)
 #define USE_LIBWEBP
 #endif
@@ -65,6 +68,7 @@ IMAGE_HANDLER(gif);
 IMAGE_HANDLER(jpeg);
 IMAGE_HANDLER(png);
 IMAGE_HANDLER(stb);
+IMAGE_HANDLER(tiff);
 IMAGE_HANDLER(webp);
 
 #undef IMAGE_HANDLER

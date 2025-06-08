@@ -645,6 +645,7 @@ CFLAGS_ICU
 DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_LIBWEBP
+DEFINE_LIBTIFF
 DEFINE_LIBPNG
 DEFINE_LIBJPEG
 DEFINE_GIFLIB
@@ -711,6 +712,7 @@ enable_option_checking
 with_giflib
 with_libjpeg
 with_libpng
+with_libtiff
 with_libwebp
 with_openssl
 with_iconv
@@ -1353,6 +1355,8 @@ Optional Packages:
   --with-libpng=(auto|yes|no)
                           Use libpng for PNG instead of stb_image
                           (default:auto)
+  --with-libtiff=(auto|yes|no)
+                          Use libtiff for TIFF (default:auto)
   --with-libwebp          Use libwebp (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
   --with-iconv            Use iconv to convert output charset (default:yes)
@@ -4524,7 +4528,7 @@ printf "%s\n" "yes" >&6; }
 
 		DEFINE_LIBJPEG=HAVE_LIBJPEG=yes
 
-		has_libjpeg=yes
+		eval `echo has_libjpeg=yes | sed -e 's/-/_/g'`
 
 		H=`${PKG_CONFIG} --cflags libjpeg`
 		L=`${PKG_CONFIG} --libs libjpeg`
@@ -4533,7 +4537,7 @@ printf "%s\n" "yes" >&6; }
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-		has_libjpeg=no
+		eval `echo has_libjpeg=no | sed -e 's/-/_/g'`
 	fi
 
 
@@ -4576,7 +4580,7 @@ printf "%s\n" "yes" >&6; }
 
 		DEFINE_LIBPNG=HAVE_LIBPNG=yes
 
-		has_libpng=yes
+		eval `echo has_libpng=yes | sed -e 's/-/_/g'`
 
 		H=`${PKG_CONFIG} --cflags libpng`
 		L=`${PKG_CONFIG} --libs libpng`
@@ -4585,7 +4589,7 @@ printf "%s\n" "yes" >&6; }
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-		has_libpng=no
+		eval `echo has_libpng=no | sed -e 's/-/_/g'`
 	fi
 
 
@@ -4594,6 +4598,58 @@ printf "%s\n" "no" >&6; }
 			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
 as_fn_error $? "--with-libpng(=yes) is specified but libpng not found.
+See 'config.log' for more details" "$LINENO" 5; }
+		fi
+	fi
+	;;
+esac
+
+# libtiff はデフォルトを auto にする。
+# --with-libtiff=auto なら、libtiff があれば使い、なければ使わない。
+# --with-libtiff=yes  なら、libtiff がなければエラー。
+# --with-libtiff=no (--without-libtiff) ならチェックもしない。
+
+# Check whether --with-libtiff was given.
+if test ${with_libtiff+y}
+then :
+  withval=$with_libtiff;
+fi
+
+if test -z "${with_libtiff}"; then
+	with_libtiff=auto
+fi
+case ${with_libtiff} in
+ no)
+	;;
+ *)
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libtiff-4" >&5
+printf %s "checking for libtiff-4... " >&6; }
+	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libtiff-4; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_LIBTIFF 1" >>confdefs.h
+
+		DEFINE_LIBTIFF=HAVE_LIBTIFF=yes
+
+		eval `echo has_libtiff-4=yes | sed -e 's/-/_/g'`
+
+		H=`${PKG_CONFIG} --cflags libtiff-4`
+		L=`${PKG_CONFIG} --libs libtiff-4`
+		CFLAGS="${CFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		eval `echo has_libtiff-4=no | sed -e 's/-/_/g'`
+	fi
+
+
+	if test x"${has_libtiff}" \!= x"yes"; then
+		if test x"${with_libtiff}" = x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "--with-libtiff(=yes) is specified but libtiff not found.
 See 'config.log' for more details" "$LINENO" 5; }
 		fi
 	fi
@@ -4623,7 +4679,7 @@ printf "%s\n" "yes" >&6; }
 
 		DEFINE_LIBWEBP=HAVE_LIBWEBP=yes
 
-		has_libwebp=yes
+		eval `echo has_libwebp=yes | sed -e 's/-/_/g'`
 
 		H=`${PKG_CONFIG} --cflags libwebp`
 		L=`${PKG_CONFIG} --libs libwebp`
@@ -4632,7 +4688,7 @@ printf "%s\n" "yes" >&6; }
 	else
 		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
-		has_libwebp=no
+		eval `echo has_libwebp=no | sed -e 's/-/_/g'`
 	fi
 
 

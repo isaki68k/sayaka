@@ -173,6 +173,7 @@ enum {
 	IMAGE_LOADER_JPEG,
 	IMAGE_LOADER_PNG,
 	IMAGE_LOADER_PNM,
+	IMAGE_LOADER_TIFF,
 	IMAGE_LOADER_WEBP,
 	IMAGE_LOADER_MAX,
 };
@@ -184,6 +185,7 @@ enum {
 	"jpeg",	\
 	"png",	\
 	"pnm",	\
+	"tiff",	\
 	"webp"
 
 struct image

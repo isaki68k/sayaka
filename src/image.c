@@ -356,6 +356,7 @@ image_get_preferred_size(
 #define LOADERMAP_gif	(1U << IMAGE_LOADER_GIF)
 #define LOADERMAP_jpeg	(1U << IMAGE_LOADER_JPEG)
 #define LOADERMAP_png	(1U << IMAGE_LOADER_PNG)
+#define LOADERMAP_tiff	(1U << IMAGE_LOADER_TIFF)
 #define LOADERMAP_webp	(1U << IMAGE_LOADER_WEBP)
 #define LOADERMAP_stb	((1U << IMAGE_LOADER_BMP)	| \
 						 (1U << IMAGE_LOADER_GIF)	| \
@@ -385,6 +386,9 @@ static const struct {
 #endif
 #if defined(USE_GIFLIB)
 	ENTRY(gif, giflib, LOADERMAP_gif),
+#endif
+#if defined(USE_LIBTIFF) && defined(SIXELV)
+	ENTRY(tiff, libtiff, LOADERMAP_tiff),
 #endif
 #if defined(USE_STB_IMAGE)
 	ENTRY(stb, stb_image, LOADERMAP_stb),
