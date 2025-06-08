@@ -233,7 +233,8 @@ pstream_read_cb(void *cookie, char *dst, int dstsize)
 {
 	struct pstream *ps = (struct pstream *)cookie;
 
-	DEBUG("called(dstsize=%d)", dstsize);
+	DEBUG("called(dstsize=%d) pos=%u peeklen=%u",
+		dstsize, ps->pos, ps->peeklen);
 
 	ssize_t len;
 	if (ps->pos < ps->peeklen) {
