@@ -462,7 +462,8 @@ usage(void)
 	fprintf(stderr,
 		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
 	fprintf(stderr,
-"  -c <color>      : Color mode. 2, 8, 16, 256 or gray[2..256] (default:256)\n"
+"  -c <color>      : Color mode. 2, 8, 16, 256, adaptive[8..256] or gray[2..256]\n"
+"                    (default:256)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
@@ -498,6 +499,7 @@ help_all(void)
 		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
 	fprintf(stderr,
 "  -c,--color=<colormode> : Set color mode (default:256)\n"
+"     adaptive[<n>]: Adaptive palette (n=8..256). If <n> is omitted, 256 is used\n"
 "     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
 "     xterm256 : Fixed 256 colors (xterm compatible palette)\n"
 "     16       : Fixed ANSI compatible 16 colors\n"
