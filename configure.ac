@@ -363,7 +363,8 @@ case ${with_libtiff} in
 	if test x"${has_libtiff}" \!= x"yes"; then
 		if test x"${with_libtiff}" = x"yes"; then
 			AC_MSG_FAILURE(
-				[--with-libtiff(=yes) is specified but libtiff not found.])
+				[--with-libtiff(=yes) is specified but libtiff not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/tiff])
 		fi
 	fi
 	;;
