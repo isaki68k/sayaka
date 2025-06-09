@@ -1341,35 +1341,75 @@ struct octree {
 	struct octree *children; // [8]
 };
 
-// { r5, g5, b5 } の色を追加する。
-// r5, g5, b5 は下位 5 ビットのみ有効。
-static bool
-octree_add(struct octree *node, uint level,
-	uint32 r5, uint32 g5, uint32 b5, uint32 count)
-{
-	// このノード以下のピクセル数なので、途中にもすべて加算。
-	node->count += count;
+static const uint16 tobits[] = {
+	0x0000,	// 0b000000000000000
+	0x1000,	// 0b001000000000000
+	0x0200,	// 0b000001000000000
+	0x1200,	// 0b001001000000000
+	0x0040,	// 0b000000001000000
+	0x1040,	// 0b001000001000000
+	0x0240,	// 0b000001001000000
+	0x1240,	// 0b001001001000000
+	0x0008,	// 0b000000000001000
+	0x1008,	// 0b001000000001000
+	0x0208,	// 0b000001000001000
+	0x1208,	// 0b001001000001000
+	0x0048,	// 0b000000001001000
+	0x1048,	// 0b001000001001000
+	0x0248,	// 0b000001001001000
+	0x1248,	// 0b001001001001000
+	0x0001,	// 0b000000000000001
+	0x1001,	// 0b001000000000001
+	0x0201,	// 0b000001000000001
+	0x1201,	// 0b001001000000001
+	0x0041,	// 0b000000001000001
+	0x1041,	// 0b001000001000001
+	0x0241,	// 0b000001001000001
+	0x1241,	// 0b001001001000001
+	0x0009,	// 0b000000000001001
+	0x1009,	// 0b001000000001001
+	0x0209,	// 0b000001000001001
+	0x1209,	// 0b001001000001001
+	0x0049,	// 0b000000001001001
+	0x1049,	// 0b001000001001001
+	0x0249,	// 0b000001001001001
+	0x1249,	// 0b001001001001001
+};
 
-	if (__predict_false(level == 5)) {
-		// リーフに来たらデータを置く。
-		node->r += (r5 << 3) * count;
-		node->g += (g5 << 3) * count;
-		node->b += (b5 << 3) * count;
-		return true;
-	} else {
-		if (node->children == NULL) {
+// octree に色を配置する。
+// bits は c の R,G,B (の上の 5 ビット) を左右逆にして R,G,B シャッフルした
+// ビット列で、これで下から3ビットずつ取り出すとそのまま octree の各階層の
+// インデックスになる。
+//  14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+// |R3|G3|B3|R4|G4|B4|R5|G5|B5|R6|G6|B6|R7|G7|B7|
+// +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+static bool
+octree_set(struct octree *node, uint32 bits, ColorRGB c, uint32 count)
+{
+	for (uint lv = 0; lv < 5; lv++) {
+		// node->count は自ノード以下のピクセル数なので、途中にもすべて加算。
+		node->count += count;
+
+		if (__predict_false(node->children == NULL)) {
 			node->children = calloc(8, sizeof(struct octree));
 			if (__predict_false(node->children == NULL)) {
 				return false;
 			}
 		}
 
-		uint32 nr = (r5 >> (4 - level)) & 1;
-		uint32 ng = (g5 >> (4 - level)) & 1;
-		uint32 nb = (b5 >> (4 - level)) & 1;
-		uint32 n = (nr << 2) | (ng << 1) | nb;
-		return octree_add(&node->children[n], level + 1, r5, g5, b5, count);
+		node = &node->children[(bits & 7)];
+		bits >>= 3;
 	}
+
+	// リーフにデータを置く。
+	// ここは色ごとに一度ずつしか呼ばないので代入でいい。
+	node->count = count;
+	node->r = c.r * count;
+	node->g = c.g * count;
+	node->b = c.b * count;
+
+	return true;
 }
 
 // node 以下のリーフの数を数える。
@@ -1591,7 +1631,12 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 		uint32 r5 = (i >> 10) & 0x1f;
 		uint32 g5 = (i >>  5) & 0x1f;
 		uint32 b5 = (i      ) & 0x1f;
-		if (__predict_false(octree_add(&root, 0, r5, g5, b5, count) == false)) {
+		uint32 bits = (tobits[r5] << 2) | (tobits[g5] << 1) | tobits[b5];
+		ColorRGB c;
+		c.r = (r5 << 3) + 4;
+		c.g = (g5 << 3) + 4;
+		c.b = (b5 << 3) + 4;
+		if (__predict_false(octree_set(&root, bits, c, count) == false)) {
 			goto abort;
 		}
 	}
@@ -1632,7 +1677,7 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	dstimg->palette_count = leaf_count;
 
 	PROF_RESULT("colormap",		colormap);
-	PROF_RESULT("octree_add",	octree);
+	PROF_RESULT("octree_set",	octree);
 	PROF_RESULT("octree_merge",	merge);
 
 	// colorhash を本当はここで確保するが
