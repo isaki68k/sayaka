@@ -1506,11 +1506,11 @@ octree_merge_leaves(struct octree *node)
 // n は次のパレット番号。
 // 戻り値も次のパレット番号。
 static uint
-octree_set_palette(ColorRGB *pal, uint n, const struct octree *node)
+octree_make_palette(ColorRGB *pal, uint n, const struct octree *node)
 {
 	if (node->children) {
 		for (uint i = 0; i < 8; i++) {
-			n = octree_set_palette(pal, n, &node->children[i]);
+			n = octree_make_palette(pal, n, &node->children[i]);
 		}
 	} else {
 		if (node->count != 0) {
@@ -1673,7 +1673,7 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	PROF(merge_end);
 
 	// パレットにセット。
-	octree_set_palette(dstimg->palette_buf, 0, &root);
+	octree_make_palette(dstimg->palette_buf, 0, &root);
 	dstimg->palette_count = leaf_count;
 
 	PROF_RESULT("colormap",		colormap);
