@@ -1412,21 +1412,6 @@ octree_set(struct octree *node, uint32 bits, ColorRGB c, uint32 count)
 	return true;
 }
 
-// node 以下のリーフの数を数える。
-static uint
-octree_count_leaf(const struct octree *node)
-{
-	if (node->children) {
-		uint nleaf = 0;
-		for (uint i = 0; i < 8; i++) {
-			nleaf += octree_count_leaf(&node->children[i]);
-		}
-		return nleaf;
-	} else {
-		return (node->count != 0) ? 1 : 0;
-	}
-}
-
 // node 以下で count が最小である、リーフ直上のノードを返す。
 // *min は in/out パラメータで、初期 min を渡す。
 // min より最小のものが見付かれば *min を更新してそのノードを返す。
@@ -1567,6 +1552,7 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	struct image *dstimg = ir->dstimg;
 	struct image *srcimg = ir->srcimg;
 	const uint16 *src = (const uint16 *)srcimg->buf;
+	uint palette_count;
 	struct octree root;
 	bool rv = false;
 #if defined(IMAGE_PROFILE)
@@ -1612,21 +1598,15 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	}
 	PROF(colormap_end);
 
-	uint colorcount = 0;
-	for (uint i = 0; i < capacity; i++) {
-		if (colormap[i] != 0) {
-			colorcount++;
-		}
-	}
-	srcimg->palette_count = colorcount;
-
 	// octree に配置。
+	palette_count = 0;
 	PROF(octree_start);
 	memset(&root, 0, sizeof(root));
 	for (uint i = 0; i < capacity; i++) {
-		if (colormap[i] == 0)
-			continue;
 		uint32 count = colormap[i];
+		if (__predict_true(count == 0)) {
+			continue;
+		}
 		uint32 r5 = (i >> 10) & 0x1f;
 		uint32 g5 = (i >>  5) & 0x1f;
 		uint32 b5 = (i      ) & 0x1f;
@@ -1638,8 +1618,10 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 		if (__predict_false(octree_set(&root, bits, c, count) == false)) {
 			goto abort;
 		}
+		palette_count++;
 	}
 	PROF(octree_end);
+	srcimg->palette_count = palette_count;
 
 	if (0) {
 		for (uint i = 0; i < 8; i++) {
@@ -1661,19 +1643,18 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 
 	// 指定の色数以下になるまで少ない色をマージしていく。
 	PROF(merge_start);
-	uint palette_count = dstimg->palette_count;
-	uint leaf_count = octree_count_leaf(&root);
-	while (leaf_count > palette_count) {
-		//printf("leaf_count=%u\n", leaf_count);
+	uint dst_count = dstimg->palette_count;
+	while (palette_count > dst_count) {
+		//printf("palette_count=%u\n", palette_count);
 		uint32 min = -1;
 		struct octree *minnode = octree_find_minnode(&root, &min);
-		leaf_count += octree_merge_leaves(minnode);
+		palette_count += octree_merge_leaves(minnode);
 	}
 	PROF(merge_end);
+	dstimg->palette_count = palette_count;
 
 	// パレットにセット。
 	octree_make_palette(dstimg->palette_buf, 0, &root);
-	dstimg->palette_count = leaf_count;
 
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_set",	octree);
