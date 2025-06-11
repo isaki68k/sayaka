@@ -88,6 +88,10 @@ typedef struct image_reductor_handle_
 
 	// RGB555 から適応パレットのカラーコードを引くハッシュ。
 	uint16 *colorhash;
+
+	// 適応パレット時に使う検索範囲の上下限。
+	int y_lo[8];
+	int y_hi[8];
 } image_reductor_handle;
 
 static uint finder_gray(image_reductor_handle *, ColorRGB);
@@ -123,6 +127,9 @@ static inline int16 saturate_adderr(int16, int);
 
 static const ColorRGB palette_fixed8[];
 static const ColorRGB palette_vga16[];
+#if defined(IMAGE_PROFILE)
+static int y_count[8];
+#endif
 
 // opt を初期化する。
 void
@@ -661,6 +668,13 @@ image_reduct(
 	{
 		ok = image_reduct_highquality(ir, opt, diag);
 	}
+
+#if defined(IMAGE_PROFILE)
+	printf("[lo, hi )  count\n");
+	for (uint i = 0; i < 8; i++) {
+		printf("%3u, %3u = %u\n", ir->y_lo[i], ir->y_hi[i], y_count[i]);
+	}
+#endif
 
  abort:
 #if defined(SIXELV)
@@ -1487,6 +1501,16 @@ octree_merge_leaves(struct octree *node)
 	return ndiff;
 }
 
+// Y (輝度)でソートする。といいつつ Y は .a のところを使っている。
+static int
+cmp_y(const void *a1, const void *a2)
+{
+	const ColorRGB *c1 = a1;
+	const ColorRGB *c2 = a2;
+
+	return c1->a - c2->a;
+}
+
 // node 以下のリーフをパレットに登録していく。
 // n は次のパレット番号。
 // 戻り値も次のパレット番号。
@@ -1499,9 +1523,17 @@ octree_make_palette(ColorRGB *pal, uint n, const struct octree *node)
 		}
 	} else {
 		if (node->count != 0) {
-			pal[n].r = node->r / node->count;
-			pal[n].g = node->g / node->count;
-			pal[n].b = node->b / node->count;
+			uint32 r = node->r / node->count;
+			uint32 g = node->g / node->count;
+			uint32 b = node->b / node->count;
+			// 輝度を計算して A のところに入れておく。
+			// (パレットの .A はパレットとしては使っていない)
+			uint32 y = RGBToY(r, g, b);
+
+			pal[n].r = r;
+			pal[n].g = g;
+			pal[n].b = b;
+			pal[n].a = y;
 			n++;
 		}
 	}
@@ -1512,16 +1544,21 @@ octree_make_palette(ColorRGB *pal, uint n, const struct octree *node)
 static uint
 finder_linear(image_reductor_handle *ir, ColorRGB c)
 {
-	const struct image *dstimg = ir->dstimg;
 	uint32 mindist = (uint32)-1;
 	uint minidx = 0;
 
-	const ColorRGB *pal = &dstimg->palette[0];
-	for (uint i = 0; i < dstimg->palette_count; i++, pal++) {
+	uint32 yh = RGBToY(c.r, c.g, c.b) >> 5;
+
+#if defined(IMAGE_PROFILE)
+	y_count[yh]++;
+#endif
+	for (uint i = ir->y_lo[yh]; i < ir->y_hi[yh]; i++) {
+		const ColorRGB *pal = &ir->dstimg->palette[i];
 		int32 dr = c.r - pal->r;
 		int32 dg = c.g - pal->g;
 		int32 db = c.b - pal->b;
-		uint32 dist = (dr * dr) + (dg * dg) + (db * db);
+		int32 dist = (dr * dr) + (dg * dg) + (db * db);
+
 		if (dist < mindist) {
 			minidx = i;
 			if (__predict_false(dist < 8)) {
@@ -1560,6 +1597,7 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	struct timeval colormap_start, colormap_end;
 	struct timeval octree_start, octree_end;
 	struct timeval merge_start, merge_end;
+	struct timeval make_start, make_end;
 #endif
 
 	// この直後で使う colormap は uint16 * 32768。
@@ -1655,11 +1693,45 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	dstimg->palette_count = palette_count;
 
 	// パレットにセット。
-	octree_make_palette(dstimg->palette_buf, 0, &root);
+	PROF(make_start);
+	ColorRGB *dstpal = dstimg->palette_buf;
+	octree_make_palette(dstpal, 0, &root);
+	// パレットを Y (輝度) でソート。
+	qsort(dstpal, palette_count, sizeof(dstpal[0]), cmp_y);
+	// Y の上位 3 ビット(8通り)に対応する検索範囲を事前に調べておく。
+	// どう見ても明るい色なら暗い方と比較する必要ないよねというくらい。
+	// margin の値は適当。狭いと速いが最も近い色を拾えない可能性がある、
+	// 広いと色は近くなる可能性が上がるが遅くなる。
+	// ただしそもそも RGB のユークリッド距離なので細かい事は気にしない。
+	const int margin = 20;
+	for (uint y = 0; y < 8; y++) {
+		int lo = y * 0x20 - margin;
+		if (lo < 0)
+			lo = 0;
+		int hi = y * 0x20 + (0x20 - 1) + margin;
+		if (hi > 255)
+			hi = 255;
+
+		int i = 0;
+		for (; i < dstimg->palette_count; i++) {
+			if (dstpal[i].a >= lo) {
+				break;
+			}
+		}
+		ir->y_lo[y] = i;
+		for (; i < dstimg->palette_count; i++) {
+			if (dstpal[i].a > hi) {
+				break;
+			}
+		}
+		ir->y_hi[y] = i;
+	}
+	PROF(make_end);
 
 	PROF_RESULT("colormap",		colormap);
 	PROF_RESULT("octree_set",	octree);
 	PROF_RESULT("octree_merge",	merge);
+	PROF_RESULT("octree_make",	make);
 
 	// colorhash を本当はここで確保するが
 	// 使い終わった colormap とサイズが同じなのでありがたく使い回す。
