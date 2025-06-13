@@ -86,12 +86,17 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		goto done;
 	}
 
+	Debug(diag, "%s: frame_count=%u", __func__, gif->ImageCount);
+
 	// 静止画でもアニメーション画像でも1枚目しか見ない。
 	const int idx = 0;
 
 	// 透過色を取り出す。使用してなければ -1。
 	DGifSavedExtensionToGCB(gif, idx, &gcb);
 	transparent_color = gcb.TransparentColor;
+	Debug(diag, "%s: disposal=%u transparent_color=%d delay=%u[msec]",
+		__func__,
+		gcb.DisposalMode, transparent_color, gcb.DelayTime * 10);
 
 	// カラーマップを取り出す。
 	src = &gif->SavedImages[idx];
