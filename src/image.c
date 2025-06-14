@@ -1612,9 +1612,9 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 		uint32 b5 = (i      ) & 0x1f;
 		uint32 bits = (tobits[r5] << 2) | (tobits[g5] << 1) | tobits[b5];
 		ColorRGB c;
-		c.r = (r5 << 3) + 4;
-		c.g = (g5 << 3) + 4;
-		c.b = (b5 << 3) + 4;
+		c.r = (r5 << 3);
+		c.g = (g5 << 3);
+		c.b = (b5 << 3);
 		if (__predict_false(octree_set(&root, bits, c, count) == false)) {
 			goto abort;
 		}
