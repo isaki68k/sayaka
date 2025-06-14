@@ -460,14 +460,14 @@ image_get_loaderinfo(void)
 }
 
 // pstream の画像形式を判定する。
-// 判定出来れば、image_read() に渡すための非負のインデックスを返す。
+// 判定出来れば非負のローダ種別を返す。これは image_read() に渡すのに使う。
 // 判定出来なければ -1 を返す。
 // ここでは Blurhash は扱わない。
 int
 image_match(struct pstream *ps, const struct diag *diag)
 {
 	FILE *fp;
-	int idx = -1;
+	int type = -1;
 
 	fp = pstream_open_for_peek(ps);
 	if (fp == NULL) {
@@ -486,7 +486,7 @@ image_match(struct pstream *ps, const struct diag *diag)
 			loader[i].name, (ok ? "matched" : "no"));
 		fseek(fp, 0, SEEK_SET);
 		if (ok) {
-			idx = i;
+			type = i;
 			goto done;
 		}
 	}
@@ -494,16 +494,16 @@ image_match(struct pstream *ps, const struct diag *diag)
 
  done:
 	fclose(fp);
-	return idx;
+	return type;
 }
 
 // pstream から画像を読み込んで image を作成して返す。
-// idx は image_match() で返された非負の値を指定すること。
+// type は image_match() で返されたローダ種別。
 // axis, width, height はリサイズ用のヒントで、これを使うかどうかは
 // 画像ローダによる (今の所 jpeg のみ)。
 // デコードに失敗すると NULL を返す。
 struct image *
-image_read(struct pstream *ps, int idx, const image_read_hint *hint,
+image_read(struct pstream *ps, int type, const image_read_hint *hint,
 	const struct diag *diag)
 {
 	FILE *fp;
@@ -513,7 +513,7 @@ image_read(struct pstream *ps, int idx, const image_read_hint *hint,
 		Debug(diag, "%s: pstream_open_for_read() failed", __func__);
 		return NULL;
 	}
-	struct image *img = loader[idx].read(fp, hint, diag);
+	struct image *img = loader[type].read(fp, hint, diag);
 	fclose(fp);
 
 	return img;
