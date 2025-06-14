@@ -60,7 +60,7 @@ image_gif_match(FILE *fp, const struct diag *diag)
 }
 
 struct image *
-image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
+image_gif_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
 	GifFileType *gif;
 	const SavedImage *src;
@@ -87,8 +87,7 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		goto done;
 	}
 
-	// 静止画でもアニメーション画像でも1枚目しか見ない。
-	const int idx = 0;
+	int page = hint->page;
 
 	if (diag_get_level(diag) >= 1) {
 		diag_print(diag, "%s: frame_count=%u bgcolor=%d global_colormap=%s",
@@ -99,7 +98,7 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 			desc = &gif->SavedImages[i].ImageDesc;
 			diag_print(diag, "%c[%2u] (%u,%u)-(%ux%u) "
 				"disposal=%s cmap=%s trans=%d delay=%u[msec]",
-				(i == idx ? '*' : ' '), i,
+				(i == page ? '*' : ' '), i,
 				desc->Left, desc->Top, desc->Width, desc->Height,
 				disposal2str(gcb.DisposalMode),
 				(desc->ColorMap != NULL ? "yes" : "no"),
@@ -107,13 +106,17 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 				gcb.DelayTime * 10);
 		}
 	}
+	if (page >= gif->ImageCount) {
+		// 戻っても仕方ないので終了する?
+		errx(1, "%s: No page found: %d", __func__, page);
+	}
 
 	// 透過色を取り出す。使用してなければ -1。
-	DGifSavedExtensionToGCB(gif, idx, &gcb);
+	DGifSavedExtensionToGCB(gif, page, &gcb);
 	transparent_color = gcb.TransparentColor;
 
 	// カラーマップを取り出す。
-	src = &gif->SavedImages[idx];
+	src = &gif->SavedImages[page];
 	desc = &src->ImageDesc;
 	cmap = desc->ColorMap ?: gif->SColorMap;
 

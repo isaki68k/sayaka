@@ -216,11 +216,14 @@ struct image
 	ColorRGB *palette_buf;
 };
 
-// image_read() に対するサイズヒント。
+// image_read() に対するヒント。
 typedef struct image_read_hint_ {
 	ResizeAxis axis;
 	uint width;
 	uint height;
+
+	// 複数枚ある場合のページ(フレーム)番号。0 から始まる。
+	uint page;
 } image_read_hint;
 
 struct image_opt {

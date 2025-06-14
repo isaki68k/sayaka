@@ -69,6 +69,7 @@ static bool opt_blurhash_nearest;	// Blurhash を最近傍補間する
 static ResizeAxis opt_resize_axis;
 static uint opt_width;
 static uint opt_height;
+static int  opt_page;
 static bool opt_profile;			// プロファイル
 static const char *output_filename;	// 出力ファイル名。NULL なら stdout
 static OutputFormat output_format;	// 出力形式
@@ -127,6 +128,7 @@ static const struct option longopts[] = {
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "list",			no_argument,		NULL,	OPT_list },
 	{ "output-format",	required_argument,	NULL,	'O' },
+	{ "page",			required_argument,	NULL,	'p' },
 	{ "profile",		no_argument,		NULL,	OPT_profile },
 	{ "reduction",		required_argument,	NULL,	'r' },
 	{ "resize-axis",	required_argument,	NULL,	OPT_resize_axis },
@@ -212,7 +214,7 @@ main(int ac, char *av[])
 	output_filename = NULL;
 	output_format = OUTPUT_FORMAT_SIXEL;
 
-	while ((c = getopt_long(ac, av, "c:d:h:iO:o:r:vw:",
+	while ((c = getopt_long(ac, av, "c:d:h:iO:o:p:r:vw:",
 					longopts, NULL)) != -1)
 	{
 		switch (c) {
@@ -323,6 +325,13 @@ main(int ac, char *av[])
 				output_filename = NULL;
 			} else {
 				output_filename = optarg;
+			}
+			break;
+
+		 case 'p':
+			opt_page = stou32def(optarg, -1, NULL);
+			if (opt_page == -1) {
+				errx(1, "invalid page: %s", optarg);
 			}
 			break;
 
@@ -641,6 +650,7 @@ do_file(const char *infile)
 		hint.axis   = opt_resize_axis;
 		hint.width  = opt_width;
 		hint.height = opt_height;
+		hint.page   = opt_page;
 		srcimg = image_read(pstream, loader_idx, &hint, diag_image);
 		if (srcimg) {
 			// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
