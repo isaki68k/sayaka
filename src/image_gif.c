@@ -34,6 +34,7 @@
 #include <gif_lib.h>
 
 static int gif_read(GifFileType *, GifByteType *, int);
+static const char *disposal2str(int);
 
 bool
 image_gif_match(FILE *fp, const struct diag *diag)
@@ -86,17 +87,30 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		goto done;
 	}
 
-	Debug(diag, "%s: frame_count=%u", __func__, gif->ImageCount);
-
 	// 静止画でもアニメーション画像でも1枚目しか見ない。
 	const int idx = 0;
+
+	if (diag_get_level(diag) >= 1) {
+		diag_print(diag, "%s: frame_count=%u bgcolor=%d global_colormap=%s",
+			__func__, gif->ImageCount, gif->SBackGroundColor,
+			(gif->SColorMap ? "yes" : "no"));
+		for (uint i = 0; i < gif->ImageCount; i++) {
+			DGifSavedExtensionToGCB(gif, i, &gcb);
+			desc = &gif->SavedImages[i].ImageDesc;
+			diag_print(diag, "%c[%2u] (%u,%u)-(%ux%u) "
+				"disposal=%s cmap=%s trans=%d delay=%u[msec]",
+				(i == idx ? '*' : ' '), i,
+				desc->Left, desc->Top, desc->Width, desc->Height,
+				disposal2str(gcb.DisposalMode),
+				(desc->ColorMap != NULL ? "yes" : "no"),
+				gcb.TransparentColor,
+				gcb.DelayTime * 10);
+		}
+	}
 
 	// 透過色を取り出す。使用してなければ -1。
 	DGifSavedExtensionToGCB(gif, idx, &gcb);
 	transparent_color = gcb.TransparentColor;
-	Debug(diag, "%s: disposal=%u transparent_color=%d delay=%u[msec]",
-		__func__,
-		gcb.DisposalMode, transparent_color, gcb.DelayTime * 10);
 
 	// カラーマップを取り出す。
 	src = &gif->SavedImages[idx];
@@ -155,4 +169,22 @@ gif_read(GifFileType *gf, GifByteType *dst, int length)
 		total += r;
 	}
 	return total;
+}
+
+// Disposal Mode のデバッグ表示用。
+static const char *
+disposal2str(int mode)
+{
+	switch (mode) {
+	 case DISPOSAL_UNSPECIFIED:
+		return "unspecified";
+	 case DISPOSE_DO_NOT:
+		return "no_dispose";
+	 case DISPOSE_BACKGROUND:
+		return "background";
+	 case DISPOSE_PREVIOUS:
+		return "previous";
+	 default:
+		return "?";
+	}
 }
