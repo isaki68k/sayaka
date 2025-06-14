@@ -126,9 +126,11 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 
 	// RasterBits[] に width x height のカラーコードが並んでいる。
 	const GifByteType *s = src->RasterBits;
-	uint8 *d = img->buf;
+	uint32 stride = image_get_stride(img);
+	uint8 *d;
 	if (transparent_color < 0) {
 		for (uint y = 0; y < desc->Height; y++) {
+			d = &img->buf[(desc->Top + y) * stride + desc->Left * 3];
 			for (uint x = 0; x < desc->Width; x++) {
 				uint cc = *s++;
 				GifColorType rgb = cmap->Colors[cc];
@@ -139,6 +141,7 @@ image_gif_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		}
 	} else {
 		for (uint y = 0; y < desc->Height; y++) {
+			d = &img->buf[(desc->Top + y) * stride + desc->Left * 4];
 			for (uint x = 0; x < desc->Width; x++) {
 				uint cc = *s++;
 				GifColorType rgb = cmap->Colors[cc];
