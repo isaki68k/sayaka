@@ -75,9 +75,9 @@ static OutputFormat output_format;	// 出力形式
 static struct image_opt imageopt;
 static struct net_opt netopt;
 
-#define PROF(tv)	do {		\
-	if (opt_profile)			\
-		gettimeofday(tv, NULL);	\
+#define PROF(tv)	do {					\
+	if (opt_profile)						\
+		clock_gettime(CLOCK_MONOTONIC, tv);	\
 } while (0)
 
 const char progname[] = "sixelv";
@@ -564,13 +564,13 @@ do_file(const char *infile)
 	image_read_hint hint;
 	uint dst_width;
 	uint dst_height;
-	struct timeval load_start;
-	struct timeval load_end;
-	struct timeval cvt_start;
-	struct timeval reduct_start;
-	struct timeval reduct_end;
-	struct timeval sixel_start;
-	struct timeval sixel_end;
+	struct timespec load_start;
+	struct timespec load_end;
+	struct timespec cvt_start;
+	struct timespec reduct_start;
+	struct timespec reduct_end;
+	struct timespec sixel_start;
+	struct timespec sixel_end;
 
 	infilename = infile;
 	if (infile == NULL) {
@@ -730,18 +730,18 @@ do_file(const char *infile)
 	PROF(&sixel_end);
 
 	if (opt_profile) {
-		struct timeval load_res;
-		struct timeval cvt_res;
-		struct timeval reduct_res;
-		struct timeval sixel_res;
-		timersub(&load_end, &load_start, &load_res);
-		timersub(&reduct_start, &cvt_start, &cvt_res);
-		timersub(&reduct_end, &reduct_start, &reduct_res);
-		timersub(&sixel_end, &sixel_start, &sixel_res);
-		float ltime = load_res.tv_sec   + (float)load_res.tv_usec / 1000000;
-		float ctime = cvt_res.tv_sec    + (float)cvt_res.tv_usec / 1000000;
-		float rtime = reduct_res.tv_sec + (float)reduct_res.tv_usec / 1000000;
-		float stime = sixel_res.tv_sec  + (float)sixel_res.tv_usec / 1000000;
+		struct timespec load_res;
+		struct timespec cvt_res;
+		struct timespec reduct_res;
+		struct timespec sixel_res;
+		timespecsub(&load_end, &load_start, &load_res);
+		timespecsub(&reduct_start, &cvt_start, &cvt_res);
+		timespecsub(&reduct_end, &reduct_start, &reduct_res);
+		timespecsub(&sixel_end, &sixel_start, &sixel_res);
+		float ltime = load_res.tv_sec   + (float)load_res.tv_nsec / 1e9;
+		float ctime = cvt_res.tv_sec    + (float)cvt_res.tv_nsec / 1e9;
+		float rtime = reduct_res.tv_sec + (float)reduct_res.tv_nsec / 1e9;
+		float stime = sixel_res.tv_sec  + (float)sixel_res.tv_nsec / 1e9;
 		diag_print(diag_image,
 			"Load(+IO) %4.1f, Cvt %4.1f, Reduct %4.1f, %s(+IO) %4.1f msec",
 			ltime * 1000, ctime * 1000, rtime * 1000,

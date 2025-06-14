@@ -42,9 +42,10 @@ rnd_get32(void)
 	static bool initialized = false;
 
 	if (__predict_false(initialized == false)) {
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		srandom(tv.tv_sec ^ tv.tv_usec);
+		struct timespec tv;
+
+		clock_gettime(CLOCK_REALTIME, &tv);
+		srandom(tv.tv_sec ^ tv.tv_nsec);
 		initialized = true;
 	}
 

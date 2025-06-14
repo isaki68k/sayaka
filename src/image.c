@@ -36,12 +36,12 @@
 
 #if defined(IMAGE_PROFILE)
 #include <sys/time.h>
-#define PROF(x)	gettimeofday(&x, NULL);
+#define PROF(x)	clock_gettime(CLOCK_MONOTONIC, &x);
 #define PROF_RESULT(msg, x)	do {	\
-	struct timeval x##_res;	\
-	timersub(&x##_end, &x##_start, &x##_res);	\
+	struct timespec x##_res;	\
+	timespecsub(&x##_end, &x##_start, &x##_res);	\
 	printf("%-12s %u.%06u sec\n", msg,	\
-		(uint)x##_res.tv_sec, (uint)x##_res.tv_usec);	\
+		(uint)x##_res.tv_sec, (uint)(x##_res.tv_nsec / 1000));	\
 } while (0)
 #else
 #define PROF(x)	/**/
@@ -1594,10 +1594,10 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 	struct octree root;
 	bool rv = false;
 #if defined(IMAGE_PROFILE)
-	struct timeval colormap_start, colormap_end;
-	struct timeval octree_start, octree_end;
-	struct timeval merge_start, merge_end;
-	struct timeval make_start, make_end;
+	struct timespec colormap_start, colormap_end;
+	struct timespec octree_start, octree_end;
+	struct timespec merge_start, merge_end;
+	struct timespec make_start, make_end;
 #endif
 
 	// この直後で使う colormap は uint16 * 32768。

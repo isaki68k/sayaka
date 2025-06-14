@@ -80,10 +80,10 @@ diag_print(const struct diag *diag, const char *fmt, ...)
 	assert(diag);
 
 	if (__predict_false(diag->timestamp)) {
-		struct timeval now;
-		gettimeofday(&now, NULL);
+		struct timespec now;
+		clock_gettime(CLOCK_REALTIME, &now);
 		struct tm *tm = localtime(&now.tv_sec);
-		uint ms = now.tv_usec / 1000;
+		uint ms = now.tv_nsec / 1000000;
 		fprintf(stderr, "%02u:%02u:%02u.%03u ",
 			tm->tm_hour, tm->tm_min, tm->tm_sec, ms);
 	}

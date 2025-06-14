@@ -280,7 +280,7 @@ static void
 perf_putd(void)
 {
 	static const int SEC = 2;
-	struct timeval start, end, result;
+	struct timespec start, end, result;
 	uint32 count = 0;
 	uint sum = 0;
 
@@ -313,7 +313,7 @@ perf_putd(void)
 	}
 
 	signal(SIGALRM, signal_handler);
-	gettimeofday(&start, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	alarm(SEC);
 	// data を何セット回せるか。
 	while (signaled == 0) {
@@ -325,10 +325,10 @@ perf_putd(void)
 		count++;
 	}
 	(void)sum;
-	gettimeofday(&end, NULL);
-	timersub(&end, &start, &result);
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	timespecsub(&end, &start, &result);
 
-	double us = ((double)result.tv_sec * 1e6 + result.tv_usec ) / count;
+	double us = ((double)result.tv_sec * 1e6 + result.tv_nsec / 1000 ) / count;
 #if defined(SLOW_ARCH)
 	printf("count=%u, %.3f msec\n", count, us / 1000);
 #else

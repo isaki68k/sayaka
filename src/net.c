@@ -463,17 +463,17 @@ static int
 sock_connect(struct net *net, const char *host, const char *serv,
 	const struct net_opt *opt)
 {
-	struct timeval start, end, res;
+	struct timespec start, end, res;
 
-	gettimeofday(&start, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	net->sock = socket_connect(host, serv, opt);
 	if (net->sock < 0) {
 		return -1;
 	}
-	gettimeofday(&end, NULL);
-	timersub(&end, &start, &res);
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	timespecsub(&end, &start, &res);
 	Debug(net->diag, "Connected (%u msec)",
-		(uint)(res.tv_sec * 1000 + res.tv_usec / 1000));
+		(uint)(res.tv_sec * 1000 + res.tv_nsec / 1000000));
 	return 0;
 }
 
@@ -524,7 +524,7 @@ static int
 tls_connect(struct net *net, const char *host, const char *serv,
 	const struct net_opt *opt)
 {
-	struct timeval start, end, res;
+	struct timespec start, end, res;
 	const struct diag *diag = net->diag;
 	int r;
 
@@ -559,7 +559,7 @@ tls_connect(struct net *net, const char *host, const char *serv,
 		return -1;
 	}
 
-	gettimeofday(&start, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &start);
 
 	net->sock = socket_connect(host, serv, opt);
 	if (net->sock == -1) {
@@ -586,8 +586,8 @@ tls_connect(struct net *net, const char *host, const char *serv,
 
 	// 接続できたらログ。
 	if (__predict_false(diag_get_level(diag) >= 1)) {
-		gettimeofday(&end, NULL);
-		timersub(&end, &start, &res);
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		timespecsub(&end, &start, &res);
 
 		SSL_SESSION *sess = SSL_get_session(net->ssl);
 		int ssl_version = SSL_SESSION_get_protocol_version(sess);
@@ -608,7 +608,7 @@ tls_connect(struct net *net, const char *host, const char *serv,
 		const SSL_CIPHER *ssl_cipher = SSL_SESSION_get0_cipher(sess);
 		const char *cipher_name = SSL_CIPHER_get_name(ssl_cipher);
 
-		uint msec = (uint)(res.tv_sec * 1000 + res.tv_usec / 1000);
+		uint msec = (uint)(res.tv_sec * 1000 + res.tv_nsec / 1000000);
 		diag_print(diag, "Connected %s %s (%u msec)", ver, cipher_name, msec);
 	}
 

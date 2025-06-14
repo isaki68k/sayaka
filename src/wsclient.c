@@ -273,9 +273,9 @@ int
 wsclient_process(struct wsclient *ws)
 {
 	const struct diag *diag = ws->diag;
-	struct timeval timeout;
-	struct timeval now;
-	struct timeval end;
+	struct timespec timeout;
+	struct timespec now;
+	struct timespec end;
 	int fd;
 	int rv = 1;
 	int r;
@@ -295,25 +295,27 @@ wsclient_process(struct wsclient *ws)
 	// キープアライブのため一定時間だけ受信を待つ。
 	fd = net_get_fd(ws->net);
 	timeout.tv_sec = 30;
-	timeout.tv_usec = 0;
-	gettimeofday(&now, NULL);
-	timeradd(&now, &timeout, &end);
+	timeout.tv_nsec = 0;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	timespecadd(&now, &timeout, &end);
 	for (;;) {
+		struct timeval tv;
 		fd_set rfds;
 		FD_ZERO(&rfds);
 		FD_SET(fd, &rfds);
 
-		gettimeofday(&now, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &now);
 		if (((end.tv_sec != now.tv_sec)
-			? (end.tv_sec - now.tv_sec) : (end.tv_usec - now.tv_usec)) <= 0)
+			? (end.tv_sec - now.tv_sec) : (end.tv_nsec - now.tv_nsec)) <= 0)
 		{
 			// 一定時間何も起きなかったので PING を投げる。
 			wsclient_send_ping(ws);
 			return 1;
 		}
 
-		timersub(&end, &now, &timeout);
-		r = select(fd + 1, &rfds, NULL, NULL, &timeout);
+		timespecsub(&end, &now, &timeout);
+		TIMESPEC_TO_TIMEVAL(&tv, &timeout);
+		r = select(fd + 1, &rfds, NULL, NULL, &tv);
 		if (r < 0) {
 			if (errno == EINTR) {
 				continue;
