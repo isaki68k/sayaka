@@ -33,6 +33,8 @@
 #include <err.h>
 #include <gif_lib.h>
 
+static struct image *image_gif_static(GifFileType *, int, const struct diag *);
+static struct image *image_gif_multi(GifFileType *, int, const struct diag *);
 static int gif_read(GifFileType *, GifByteType *, int);
 static const char *disposal2str(int);
 
@@ -63,9 +65,7 @@ struct image *
 image_gif_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
 	GifFileType *gif;
-	const SavedImage *src;
 	const GifImageDesc *desc;
-	const ColorMapObject *cmap;
 	GraphicsControlBlock gcb;
 	struct image *img;
 	int errcode;
@@ -111,53 +111,140 @@ image_gif_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		errx(1, "%s: No page found: %d", __func__, page);
 	}
 
-	// 透過色を取り出す。使用してなければ -1。
+	// このページの透過色を取り出す。使用してなければ -1。
 	DGifSavedExtensionToGCB(gif, page, &gcb);
 	transparent_color = gcb.TransparentColor;
+
+	if (gif->ImageCount == 1 || transparent_color < 0) {
+		img = image_gif_static(gif, page, diag);
+	} else {
+		img = image_gif_multi(gif, page, diag);
+	}
+
+ done:
+	DGifCloseFile(gif, &errcode);
+	return img;
+}
+
+// GIF 画像が1ページだけの構成か、
+// 複数ページ構成であっても指定のページに透過色がない場合。
+static struct image *
+image_gif_static(GifFileType *gif, int page, const struct diag *diag)
+{
+	struct image *img;
+	const SavedImage *src;
+	const GifImageDesc *desc;
+	const ColorMapObject *cmap;
+
+	img = image_create(gif->SWidth, gif->SHeight, IMAGE_FMT_RGB24);
+	if (img == NULL) {
+		warnx("%s: image_create failed: %s", __func__, strerrno());
+		return NULL;
+	}
 
 	// カラーマップを取り出す。
 	src = &gif->SavedImages[page];
 	desc = &src->ImageDesc;
 	cmap = desc->ColorMap ?: gif->SColorMap;
 
-	img = image_create(gif->SWidth, gif->SHeight,
-		((transparent_color < 0) ? IMAGE_FMT_RGB24 : IMAGE_FMT_ARGB32));
-	if (img == NULL) {
-		warnx("%s: image_create failed: %s", __func__, strerrno());
-		goto done;
-	}
-
 	// RasterBits[] に width x height のカラーコードが並んでいる。
 	const GifByteType *s = src->RasterBits;
 	uint32 stride = image_get_stride(img);
-	uint8 *d;
-	if (transparent_color < 0) {
-		for (uint y = 0; y < desc->Height; y++) {
-			d = &img->buf[(desc->Top + y) * stride + desc->Left * 3];
-			for (uint x = 0; x < desc->Width; x++) {
-				uint cc = *s++;
-				GifColorType rgb = cmap->Colors[cc];
-				*d++ = rgb.Red;
-				*d++ = rgb.Green;
-				*d++ = rgb.Blue;
-			}
-		}
-	} else {
-		for (uint y = 0; y < desc->Height; y++) {
-			d = &img->buf[(desc->Top + y) * stride + desc->Left * 4];
-			for (uint x = 0; x < desc->Width; x++) {
-				uint cc = *s++;
-				GifColorType rgb = cmap->Colors[cc];
-				*d++ = rgb.Red;
-				*d++ = rgb.Green;
-				*d++ = rgb.Blue;
-				*d++ = (cc == transparent_color) ? 0 : 0xff;
-			}
+
+	for (uint y = 0; y < desc->Height; y++) {
+		uint8 *d = &img->buf[(desc->Top + y) * stride + desc->Left * 3];
+		for (uint x = 0; x < desc->Width; x++) {
+			uint cc = *s++;
+			GifColorType rgb = cmap->Colors[cc];
+			*d++ = rgb.Red;
+			*d++ = rgb.Green;
+			*d++ = rgb.Blue;
 		}
 	}
 
- done:
-	DGifCloseFile(gif, &errcode);
+	return img;
+}
+
+// GIF 画像が複数ページで構成されているか、
+// あるいは透過色が指定されている場合。
+static struct image *
+image_gif_multi(GifFileType *gif, int target_page, const struct diag *diag)
+{
+	struct image *img;
+	const SavedImage *src;
+	const GifImageDesc *desc;
+	const ColorMapObject *cmap;
+
+	img = image_create(gif->SWidth, gif->SHeight, IMAGE_FMT_ARGB32);
+	if (img == NULL) {
+		warnx("%s: image_create failed: %s", __func__, strerrno());
+		return NULL;
+	}
+
+	for (uint page = 0; page <= target_page; page++) {
+		GraphicsControlBlock gcb;
+
+		DGifSavedExtensionToGCB(gif, page, &gcb);
+		int transparent_color = gcb.TransparentColor;
+
+		// カラーマップを取得。
+		src = &gif->SavedImages[page];
+		desc = &src->ImageDesc;
+		cmap = desc->ColorMap ?: gif->SColorMap;
+
+		uint left   = desc->Left;
+		uint top    = desc->Top;
+		uint width  = desc->Width;
+		uint height = desc->Height;
+
+		uint32 stride = image_get_stride(img);
+		const GifByteType *s = src->RasterBits;
+		for (uint y = 0; y < height; y++) {
+			uint8 *d = &img->buf[(top + y) * stride + left * 4];
+			for (uint x = 0; x < width; x++) {
+				uint cc = *s++;
+				if (cc != transparent_color) {
+					GifColorType rgb = cmap->Colors[cc];
+					*d++ = rgb.Red;
+					*d++ = rgb.Green;
+					*d++ = rgb.Blue;
+					*d++ = 0xff;
+				} else {
+					d += 4;
+				}
+			}
+		}
+
+		if (page == target_page) {
+			break;
+		}
+
+		switch (gcb.DisposalMode) {
+		 case DISPOSE_BACKGROUND:	// この矩形を背景色で塗る。
+		 {
+			// 背景色で塗るとなっているが、
+			// このページの透過色で塗らないと思った動作にならない。どうして?
+			GifColorType rgb = cmap->Colors[transparent_color];
+			for (uint y = 0; y < height; y++) {
+				uint8 *d = &img->buf[(top + y) * stride + left * 4];
+				for (uint x = 0; x < width; x++) {
+					*d++ = rgb.Red;
+					*d++ = rgb.Green;
+					*d++ = rgb.Blue;
+					*d++ = 0;
+				}
+			}
+			break;
+		 }
+
+		 default:
+		 case DISPOSAL_UNSPECIFIED:
+		 case DISPOSE_DO_NOT:		// 何もしない
+		 case DISPOSE_PREVIOUS:		// 前のフレームに戻す (未対応)
+			break;
+		}
+	}
+
 	return img;
 }
 
