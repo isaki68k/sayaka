@@ -1629,7 +1629,7 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 		// 65536 ピクセル以上の色が 256 色以上ある時には困るかも知れないが。
 		uint16 count = colormap[n];
 		uint16 count1 = count + 1;
-		if (__predict_false(count1 != 0)) {
+		if (__predict_true(count1 != 0)) {
 			colormap[n] = count1;
 		}
 	}
