@@ -39,12 +39,20 @@ static tmsize_t tiff_write(thandle_t, void *, tmsize_t);
 static toff_t   tiff_seek(thandle_t, toff_t, int);
 static int      tiff_close(thandle_t);
 static toff_t   tiff_size(thandle_t);
+static void     tiff_null_error_handler(const char *, const char *, va_list);
 static const char *photometric2str(uint16_t);
 
 bool
 image_tiff_match(FILE *fp, const struct diag *diag)
 {
 	TIFF *tiff;
+	TIFFErrorHandler orig_handler;
+	bool matched = false;
+
+	// エラーハンドラを設定。
+	// TIFFClientOpen() は TIFF じゃないファイルだと標準エラー出力に
+	// メッセージを出してしまうので、それを抑制する。
+	orig_handler = TIFFSetErrorHandler(tiff_null_error_handler);
 
 	tiff = TIFFClientOpen("<input>", "rh", fp,
 		tiff_read,
@@ -53,12 +61,13 @@ image_tiff_match(FILE *fp, const struct diag *diag)
 		tiff_close,
 		tiff_size,
 		NULL, NULL);
-	if (tiff == NULL) {
-		return false;
+	if (tiff) {
+		matched = true;
+		TIFFClose(tiff);
 	}
 
-	TIFFClose(tiff);
-	return true;
+	TIFFSetErrorHandler(orig_handler);
+	return matched;
 }
 
 struct image *
@@ -159,6 +168,12 @@ tiff_close(thandle_t arg)
 {
 	// ここでは何もしない。
 	return 0;
+}
+
+// 何もしないエラーハンドラ。
+static void
+tiff_null_error_handler(const char *module, const char * fmt, va_list ap)
+{
 }
 
 // TIFF の PhotoMetric のデバッグ表示用。
