@@ -653,6 +653,10 @@ image_reduct(
 		goto abort;
 	}
 
+#if defined(IMAGE_PROFILE)
+	memset(&y_count, 0, sizeof(y_count));
+#endif
+
 #if defined(SIXELV)
 	if (opt->method == REDUCT_SIMPLE) {
 		ok = image_reduct_simple(ir, opt, diag);
