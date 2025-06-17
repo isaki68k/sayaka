@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 static uint putd(char *, uint);
 
@@ -233,4 +234,16 @@ putd(char *dst, uint n)
 	*dst++ = n + '0';
 
 	return len;
+}
+
+uint64
+timespec_to_usec(const struct timespec *ts)
+{
+	return ts->tv_sec * 1000000 + ts->tv_nsec / 1000;
+}
+
+uint64
+timespec_to_msec(const struct timespec *ts)
+{
+	return ts->tv_sec * 1000 + ts->tv_nsec / 1000000;
 }

@@ -189,6 +189,9 @@ static inline uint putd_inline(char *dst, uint n)
 	}
 }
 #define PUTD(buf, n)	putd_inline(buf, n)
+struct timespec;
+extern uint64 timespec_to_usec(const struct timespec *);
+extern uint64 timespec_to_msec(const struct timespec *);
 
 // main
 extern const char progname[];

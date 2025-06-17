@@ -273,9 +273,10 @@ int
 wsclient_process(struct wsclient *ws)
 {
 	const struct diag *diag = ws->diag;
-	struct timespec timeout;
 	struct timespec now;
-	struct timespec end;
+	uint64 now_usec;
+	uint64 end_usec;
+	uint64 timeout_usec;
 	int fd;
 	int rv = 1;
 	int r;
@@ -294,10 +295,10 @@ wsclient_process(struct wsclient *ws)
 
 	// キープアライブのため一定時間だけ受信を待つ。
 	fd = net_get_fd(ws->net);
-	timeout.tv_sec = 30;
-	timeout.tv_nsec = 0;
+	timeout_usec = 30 * 1000 * 1000;
 	clock_gettime(CLOCK_MONOTONIC, &now);
-	timespecadd(&now, &timeout, &end);
+	now_usec = timespec_to_usec(&now);
+	end_usec = now_usec + timeout_usec;
 	for (;;) {
 		struct timeval tv;
 		fd_set rfds;
@@ -305,16 +306,16 @@ wsclient_process(struct wsclient *ws)
 		FD_SET(fd, &rfds);
 
 		clock_gettime(CLOCK_MONOTONIC, &now);
-		if (((end.tv_sec != now.tv_sec)
-			? (end.tv_sec - now.tv_sec) : (end.tv_nsec - now.tv_nsec)) <= 0)
-		{
+		now_usec = timespec_to_usec(&now);
+		if (now_usec >= end_usec) {
 			// 一定時間何も起きなかったので PING を投げる。
 			wsclient_send_ping(ws);
 			return 1;
 		}
 
-		timespecsub(&end, &now, &timeout);
-		TIMESPEC_TO_TIMEVAL(&tv, &timeout);
+		timeout_usec = end_usec - now_usec;
+		tv.tv_sec  = timeout_usec / 1000000;
+		tv.tv_usec = timeout_usec % 1000000;
 		r = select(fd + 1, &rfds, NULL, NULL, &tv);
 		if (r < 0) {
 			if (errno == EINTR) {

@@ -38,10 +38,8 @@
 #include <sys/time.h>
 #define PROF(x)	clock_gettime(CLOCK_MONOTONIC, &x);
 #define PROF_RESULT(msg, x)	do {	\
-	struct timespec x##_res;	\
-	timespecsub(&x##_end, &x##_start, &x##_res);	\
-	printf("%-12s %u.%06u sec\n", msg,	\
-		(uint)x##_res.tv_sec, (uint)(x##_res.tv_nsec / 1000));	\
+	uint32 x##_us = timespec_to_usec(&x##_end) - timespec_to_usec(&x##_start);\
+	printf("%-12s %u.%06u sec\n", msg, x##_us / 1000000, x##_us % 1000000);	\
 } while (0)
 #else
 #define PROF(x)	/**/

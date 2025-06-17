@@ -731,23 +731,25 @@ do_file(const char *infile)
 	PROF(&sixel_end);
 
 	if (opt_profile) {
-		struct timespec load_res;
-		struct timespec cvt_res;
-		struct timespec reduct_res;
-		struct timespec sixel_res;
-		timespecsub(&load_end, &load_start, &load_res);
-		timespecsub(&reduct_start, &cvt_start, &cvt_res);
-		timespecsub(&reduct_end, &reduct_start, &reduct_res);
-		timespecsub(&sixel_end, &sixel_start, &sixel_res);
-		float ltime = load_res.tv_sec   + (float)load_res.tv_nsec / 1e9;
-		float ctime = cvt_res.tv_sec    + (float)cvt_res.tv_nsec / 1e9;
-		float rtime = reduct_res.tv_sec + (float)reduct_res.tv_nsec / 1e9;
-		float stime = sixel_res.tv_sec  + (float)sixel_res.tv_nsec / 1e9;
+		uint64 load_usec;
+		uint64 cvt_usec;
+		uint64 reduct_usec;
+		uint64 sixel_usec;
+		load_usec = timespec_to_usec(&load_end) - timespec_to_usec(&load_start);
+		cvt_usec = timespec_to_usec(&reduct_end) - timespec_to_usec(&cvt_start);
+		reduct_usec = timespec_to_usec(&reduct_end)
+											- timespec_to_usec(&reduct_start);
+		sixel_usec = timespec_to_usec(&sixel_end)
+											- timespec_to_usec(&sixel_start);
+		float ltime = (float)load_usec   / 1000;
+		float ctime = (float)cvt_usec    / 1000;
+		float rtime = (float)reduct_usec / 1000;
+		float stime = (float)sixel_usec  / 1000;
 		diag_print(diag_image,
 			"Load(+IO) %4.1f, Cvt %4.1f, Reduct %4.1f, %s(+IO) %4.1f msec",
-			ltime * 1000, ctime * 1000, rtime * 1000,
+			ltime, ctime, rtime,
 			(output_format == OUTPUT_FORMAT_SIXEL ? "SIXEL" : "Write"),
-			stime * 1000);
+			stime);
 	}
 
 	rv = true;

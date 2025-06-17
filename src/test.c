@@ -280,7 +280,7 @@ static void
 perf_putd(void)
 {
 	static const int SEC = 2;
-	struct timespec start, end, result;
+	struct timespec start, end;
 	uint32 count = 0;
 	uint sum = 0;
 
@@ -326,9 +326,9 @@ perf_putd(void)
 	}
 	(void)sum;
 	clock_gettime(CLOCK_MONOTONIC, &end);
-	timespecsub(&end, &start, &result);
 
-	double us = ((double)result.tv_sec * 1e6 + result.tv_nsec / 1000 ) / count;
+	uint64 res = timespec_to_usec(&end) - timespec_to_usec(&start);
+	double us = (double)res / count;
 #if defined(SLOW_ARCH)
 	printf("count=%u, %.3f msec\n", count, us / 1000);
 #else
