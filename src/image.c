@@ -35,7 +35,7 @@
 //#define IMAGE_PROFILE
 
 #if defined(IMAGE_PROFILE)
-#include <sys/time.h>
+#include <time.h>
 #define PROF(x)	clock_gettime(CLOCK_MONOTONIC, &x);
 #define PROF_RESULT(msg, x)	do {	\
 	uint32 x##_us = timespec_to_usec(&x##_end) - timespec_to_usec(&x##_start);\

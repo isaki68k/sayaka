@@ -34,7 +34,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <sys/time.h>
 
 // 新しい diag を確保して返す。
 struct diag *

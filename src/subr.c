@@ -30,7 +30,7 @@
 
 #include "sayaka.h"
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
 
 // 32ビットの乱数を返す。
 uint32

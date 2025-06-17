@@ -30,8 +30,8 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
-#include <sys/time.h>
 
 #define fail(fmt...)	do {	\
 	printf("%s: ", __func__);	\

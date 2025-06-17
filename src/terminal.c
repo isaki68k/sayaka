@@ -40,6 +40,7 @@
 #if defined(HAVE_SYS_SYSCTL_H)
 #include <sys/sysctl.h>
 #endif
+#include <sys/time.h>
 
 #if defined(SLOW_ARCH)
 #define TIMEOUT (10 * 1000 * 1000)	// [usec]

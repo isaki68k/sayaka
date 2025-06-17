@@ -36,9 +36,9 @@
 #include <getopt.h>
 #include <signal.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
 
 #define SIXELV_VERSION "3.8.2"
 #define SIXELV_RELDATE "2025/05/17"
