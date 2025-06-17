@@ -971,12 +971,12 @@ image_reduct_highquality(image_reductor_handle *ir,
 				break;
 			 case DIFFUSE_ATKINSON:
 				// Atkinson
-				set_err(errbuf[0], x + 1, &col, 32);
-				set_err(errbuf[0], x + 2, &col, 32);
-				set_err(errbuf[1], x - 1, &col, 32);
-				set_err(errbuf[1], x,     &col, 32);
-				set_err(errbuf[1], x + 1, &col, 32);
-				set_err(errbuf[2], x,     &col, 32);
+				set_err_asr(errbuf[0], x + 1, &col, 3);	// 32
+				set_err_asr(errbuf[0], x + 2, &col, 3);	// 32
+				set_err_asr(errbuf[1], x - 1, &col, 3);	// 32
+				set_err_asr(errbuf[1], x,     &col, 3);	// 32
+				set_err_asr(errbuf[1], x + 1, &col, 3);	// 32
+				set_err_asr(errbuf[2], x,     &col, 3);	// 32
 				break;
 			 case DIFFUSE_JAJUNI:
 				// Jarvis, Judice, Ninke
@@ -1010,13 +1010,13 @@ image_reduct_highquality(image_reductor_handle *ir,
 				break;
 			 case DIFFUSE_BURKES:
 				// Burkes
-				set_err(errbuf[0], x + 1, &col, 64);
-				set_err(errbuf[0], x + 2, &col, 32);
-				set_err(errbuf[1], x - 2, &col, 16);
-				set_err(errbuf[1], x - 1, &col, 32);
-				set_err(errbuf[1], x,     &col, 64);
-				set_err(errbuf[1], x + 1, &col, 32);
-				set_err(errbuf[1], x + 2, &col, 16);
+				set_err_asr(errbuf[0], x + 1, &col, 2);	// 64
+				set_err_asr(errbuf[0], x + 2, &col, 3);	// 32
+				set_err_asr(errbuf[1], x - 2, &col, 4);	// 16
+				set_err_asr(errbuf[1], x - 1, &col, 3);	// 32
+				set_err_asr(errbuf[1], x,     &col, 2);	// 64
+				set_err_asr(errbuf[1], x + 1, &col, 3);	// 32
+				set_err_asr(errbuf[1], x + 2, &col, 4);	// 16
 				break;
 			 case DIFFUSE_2:
 				// (x+1,y), (x,y+1)
