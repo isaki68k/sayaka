@@ -30,6 +30,7 @@
 
 #include "common.h"
 #include "image_priv.h"
+#include <err.h>
 #include <string.h>
 #include <webp/decode.h>
 
@@ -74,7 +75,7 @@ image_webp_match(FILE *fp, const struct diag *diag)
 }
 
 struct image *
-image_webp_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
+image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
 	uint8 *filebuf = NULL;
 	size_t filecap = 0;
@@ -159,6 +160,7 @@ image_webp_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		// アニメーションは処理が全然別。要 -lwebpdemux。
 		Debug(diag, "%s: Use frame decoder", __func__);
 
+		WebPDemuxer *demux = NULL;
 		WebPAnimDecoder *dec = NULL;
 		WebPAnimDecoderOptions opt;
 		WebPData data;
@@ -176,28 +178,45 @@ image_webp_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		opt.color_mode = MODE_RGBA;
 		data.bytes = filebuf;
 		data.size = filelen;
+
+		// ページ数(フレーム数)を取得。
+		demux = WebPDemux(&data);
+		if (demux == NULL) {
+			Debug(diag, "%s: WebPDemux() failed", __func__);
+			goto abort_anime;
+		}
+		uint total_pages = WebPDemuxGetI(demux, WEBP_FF_FRAME_COUNT);
+		Debug(diag, "%s: frame_count=%u", __func__, total_pages);
+		if (hint->page >= total_pages) {
+			// 戻っても仕方ないので終了する?
+			errx(1, "%s: No page found: %u", __func__, hint->page);
+		}
+
 		dec = WebPAnimDecoderNew(&data, &opt);
 		if (dec == NULL) {
 			Debug(diag, "%s: WebpAnimDecoderNew() failed", __func__);
 			goto abort_anime;
 		}
 
-		// 次のフレームがある間ループで回るやつだがここでは最初の1枚だけ。
-		if (WebPAnimDecoderHasMoreFrames(dec) == false) {
-			Debug(diag, "%s: No frames?", __func__);
-			goto abort_anime;
-		}
+		for (uint page = 0; page < total_pages ; page++) {
+			// このフレームをデコード。outbuf にセットされて返ってくるらしい。
+			if (WebPAnimDecoderGetNext(dec, &outbuf, &timestamp) == false) {
+				Debug(diag, "%s: WebpAnimDecoderGetNext() failed", __func__);
+				goto abort_anime;
+			}
 
-		// このフレームをデコード。outbuf にセットされて返ってくるらしい。
-		if (WebPAnimDecoderGetNext(dec, &outbuf, &timestamp) == false) {
-			Debug(diag, "%s: WebpAnimDecoderGetNext() failed", __func__);
-			goto abort_anime;
+			if (page == hint->page) {
+				break;
+			}
 		}
 
 		memcpy(img->buf, outbuf, image_get_stride(img) * height);
 		success = true;
 
  abort_anime:
+		if (demux) {
+			WebPDemuxDelete(demux);
+		}
 		if (dec) {
 			WebPAnimDecoderDelete(dec);
 		}
