@@ -763,6 +763,9 @@ socket_connect(const char *hostname, const char *servname,
 	if (inprogress) {
 		struct timeval tv;
 		struct timeval *tvp;
+		int val;
+		socklen_t vallen = sizeof(val);
+
 		FD_ZERO(&wfds);
 		FD_SET(fd, &wfds);
 		if (__predict_false(opt->timeout_msec == 0)) {
@@ -779,6 +782,14 @@ socket_connect(const char *hostname, const char *servname,
 			if (r == 0) {
 				errno = ETIMEDOUT;
 			}
+			return -1;
+		}
+
+		val = -1;
+		getsockopt(fd, SOL_SOCKET, SO_ERROR, &val, &vallen);
+		if (val != 0) {
+			close(fd);
+			errno = val;
 			return -1;
 		}
 	}
