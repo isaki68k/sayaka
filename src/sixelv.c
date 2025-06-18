@@ -479,6 +479,7 @@ usage(void)
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, ascii, bmp or sixel (default: sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
+"  -p <page>       : Specify the page(frame). (animated GIF/WebP only)\n"
 "  -v              : Show input filename\n");
 
 	static const char * const opts[] = {
@@ -543,6 +544,7 @@ help_all(void)
 "  --list                 : Show supported filetype and decoder list\n"
 "  -O,--output-format=<fmt> : ascii, bmp or sixel (default:sixel)\n"
 "  -o <filename>          : Output filename, '-' means stdout (default:-)\n"
+"  -p,--page=<page>       : Specify the page(frame). (animated GIF/WebP only)\n"
 "  --sixel-or             : Output SIXEL by OR-mode\n"
 "  --sixel-transbg        : Make SIXEL background transparent\n"
 "  --suppress-palette     : Suppress output of SIXEL palette definition\n"
