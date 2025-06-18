@@ -425,6 +425,7 @@ main(int ac, char *av[])
 		}
 	}
 
+	signal(SIGPIPE, SIG_IGN);
 	if (output_format == OUTPUT_FORMAT_SIXEL) {
 		signal(SIGINT, signal_handler);
 	}
