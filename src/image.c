@@ -1715,18 +1715,32 @@ image_calc_adaptive_palette(image_reductor_handle *ir)
 			hi = 255;
 
 		int i = 0;
-		for (; i < dstimg->palette_count; i++) {
+		int ylo;
+		int yhi;
+		for (; i < dstimg->palette_count - 1; i++) {
 			if (dstpal[i].a >= lo) {
 				break;
 			}
 		}
-		ir->y_lo[y] = i;
+		ylo = i;
 		for (; i < dstimg->palette_count; i++) {
 			if (dstpal[i].a > hi) {
 				break;
 			}
 		}
-		ir->y_hi[y] = i;
+		yhi = i;
+
+		// 0 個になった場合。
+		if (ylo == yhi) {
+			if (yhi == dstimg->palette_count) {
+				ylo--;
+			} else {
+				yhi++;
+			}
+		}
+		ir->y_lo[y] = ylo;
+		ir->y_hi[y] = yhi;
+
 	}
 	PROF(make_end);
 
