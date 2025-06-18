@@ -693,13 +693,24 @@ static int
 socket_connect(const char *hostname, const char *servname,
 	const struct net_opt *opt)
 {
+	struct timeval tv;
+	struct timeval *tvp;
+	struct timespec now;
 	struct addrinfo hints;
 	struct addrinfo *ai;
 	struct addrinfo *ailist;
+	uint64 end_usec = 0;
 	fd_set wfds;
-	bool inprogress;
 	int fd;
 	int r;
+
+	if (__predict_false(opt->timeout_msec == 0)) {
+		tvp = NULL;
+	} else {
+		tvp = &tv;
+		clock_gettime(CLOCK_MONOTONIC, &now);
+		end_usec = timespec_to_usec(&now) + (opt->timeout_msec * 1000);
+	}
 
 	memset(&hints, 0, sizeof(hints));
 	switch (opt->address_family) {
@@ -720,9 +731,11 @@ socket_connect(const char *hostname, const char *servname,
 		return -1;
 	}
 
-	inprogress = false;
 	fd = -1;
 	for (ai = ailist; ai != NULL; ai = ai->ai_next) {
+		int val;
+		socklen_t vallen = sizeof(val);
+
 		fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 		if (fd < 0) {
 			continue;
@@ -733,14 +746,40 @@ socket_connect(const char *hostname, const char *servname,
 			goto abort_continue;
 		}
 
+		// ノンブロッキングなので connect() は EINPROGRESS を返す。
 		if (connect(fd, ai->ai_addr, ai->ai_addrlen) == 0) {
 			break;
 		}
-		// ノンブロッキングなので connect() は EINPROGRESS を返す。
-		if (errno == EINPROGRESS) {
-			inprogress = true;
-			break;
+		if (errno != EINPROGRESS) {
+			goto abort_continue;
 		}
+
+		if (tvp != NULL) {
+			clock_gettime(CLOCK_MONOTONIC, &now);
+			uint64 now_usec = timespec_to_usec(&now);
+			if (now_usec >= end_usec) {
+				errno = ETIMEDOUT;
+				return -1;
+			}
+			uint64 timeout_usec = end_usec - now_usec;
+			tv.tv_sec  = timeout_usec / 1000000;
+			tv.tv_usec = timeout_usec % 1000000;
+		}
+		FD_ZERO(&wfds);
+		FD_SET(fd, &wfds);
+		r = select(fd + 1, NULL, &wfds, NULL, tvp);
+		if (r <= 0) {
+			goto abort_continue;
+		}
+
+		val = -1;
+		getsockopt(fd, SOL_SOCKET, SO_ERROR, &val, &vallen);
+		if (val != 0) {
+			goto abort_continue;
+		}
+
+		// ここまで来れば接続成功。
+		break;
 
  abort_continue:
 		close(fd);
@@ -748,51 +787,17 @@ socket_connect(const char *hostname, const char *servname,
 	}
 	freeaddrinfo(ailist);
 
-	// 接続出来なかった。
+	// 一応。
 	if (fd < 0) {
 		return -1;
 	}
 
-	// ここでブロッキングに戻す。
+	// ブロッキングに戻す。
 	if (socket_setblock(fd, true) < 0) {
 		close(fd);
 		return -1;
 	}
 
-	// 接続待ちなら…
-	if (inprogress) {
-		struct timeval tv;
-		struct timeval *tvp;
-		int val;
-		socklen_t vallen = sizeof(val);
-
-		FD_ZERO(&wfds);
-		FD_SET(fd, &wfds);
-		if (__predict_false(opt->timeout_msec == 0)) {
-			tvp = NULL;
-		} else {
-			memset(&tv, 0, sizeof(tv));
-			tv.tv_sec = opt->timeout_msec / 1000;
-			tv.tv_usec = (opt->timeout_msec % 1000) * 1000;
-			tvp = &tv;
-		}
-		r = select(fd + 1, NULL, &wfds, NULL, tvp);
-		if (r <= 0) {
-			close(fd);
-			if (r == 0) {
-				errno = ETIMEDOUT;
-			}
-			return -1;
-		}
-
-		val = -1;
-		getsockopt(fd, SOL_SOCKET, SO_ERROR, &val, &vallen);
-		if (val != 0) {
-			close(fd);
-			errno = val;
-			return -1;
-		}
-	}
 	return fd;
 }
 
