@@ -472,8 +472,8 @@ usage(void)
 	fprintf(stderr,
 		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
 	fprintf(stderr,
-"  -c <color>      : Color mode. 2, 8, 16, 256, adaptive[8..256] or gray[2..256]\n"
-"                    (default:256)\n"
+"  -c <color>      : Color mode. 2, 8, 16, 256, gray[2..256] (default:256)\n"
+"                    (See --help-all for more details)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
@@ -510,14 +510,15 @@ help_all(void)
 		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
 	fprintf(stderr,
 "  -c,--color=<colormode> : Set color mode (default:256)\n"
+"     256          : A synonym for 'adaptive256'\n"
 "     adaptive[<n>]: Adaptive palette (n=8..256). If <n> is omitted, 256 is used\n"
-"     256      : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
-"     xterm256 : Fixed 256 colors (xterm compatible palette)\n"
-"     16       : Fixed ANSI compatible 16 colors\n"
-"     8        : Fixed RGB 8 colors\n"
-"     2        : Monochrome (2-level grayscale)\n"
-"     gray[<n>]: (2..256) shades of grayscale. If <n> is omitted, 256 is used\n"
-"                'gray2' is a synonym for '2'\n"
+"     fixed256     : Fixed 256 colors (MSX SCREEN8 compatible palette)\n"
+"     xterm256     : Fixed 256 colors (xterm compatible palette)\n"
+"     16           : Fixed ANSI compatible 16 colors\n"
+"     8            : Fixed RGB 8 colors\n"
+"     2            : Monochrome (2-level grayscale)\n"
+"     gray[<n>]    : (2..256) shades of grayscale. 'gray2' is a synonym for '2'.\n"
+"                    If <n> is omitted, 256 is used\n"
 "  -w,--width=<width>     : Resize width to <width> pixel\n"
 "  -h,--height=<height>   : Resize height to <height> pixel\n"
 "  --resize-axis=<axis>   : Set an origin axis for resizing (default:both)\n"
