@@ -739,6 +739,10 @@ misskey_show_notification(const struct json *js, int ibody)
 	//   "type":"followed",
 	//   "user":{ },
 	// }
+	// {
+	//   "type":"achievementEarned",
+	//   "achievement":"..."
+	// }
 
 	int itype = json_obj_find(js, ibody, "type");
 	if (itype < 0) {
@@ -805,6 +809,27 @@ misskey_show_notification(const struct json *js, int ibody)
 		printf("\n");
 		ustring_free(u);
 		misskey_free_user(user);
+		string_free(time);
+		return 1;
+	}
+	if (strcmp(type, "achievementEarned") == 0) {
+		const char *achieve = json_obj_find_cstr(js, ibody, "achievement");
+		// 達成時刻というものはないらしいので、体裁的に現在時刻で代用…。
+		time_t now;
+		time(&now);
+		string *time = format_time(now);
+
+		ustring *u = ustring_alloc(128);
+		ustring_append_ascii(u, "Achieved \"");
+		ustring_append_utf8_style(u, achieve, STYLE_USERNAME);
+		ustring_append_unichar(u, '\"');
+		iprint(u);
+		printf("\n");
+		ustring_clear(u);
+		ustring_append_utf8_style(u, string_get(time), STYLE_TIME);
+		iprint(u);
+		printf("\n");
+		ustring_free(u);
 		string_free(time);
 		return 1;
 	}
