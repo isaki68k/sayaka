@@ -791,6 +791,7 @@ misskey_show_notification(const struct json *js, int ibody)
 		string *time = misskey_format_time(js, ibody);
 		misskey_user *user = misskey_get_user(js, ibody);
 
+		printf(" *\r");
 		ustring *u = ustring_alloc(128);
 		ustring_append_ascii(u, "Followed by ");
 		ustring_append_utf8_style(u, string_get(user->name), STYLE_USERNAME);
@@ -819,6 +820,7 @@ misskey_show_notification(const struct json *js, int ibody)
 		time(&now);
 		string *time = format_time(now);
 
+		printf(" *\r");
 		ustring *u = ustring_alloc(128);
 		ustring_append_ascii(u, "Achieved \"");
 		ustring_append_utf8_style(u, achieve, STYLE_USERNAME);
