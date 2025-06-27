@@ -778,9 +778,9 @@ invalidate_cache(void)
 {
 	char cmd[1024];
 
-	// アイコンは1か月分くらいか。
+	// アイコンは1週間分くらいか。
 	snprintf(cmd, sizeof(cmd),
-		"find %s -name icon-\\* -type f -atime +30 -exec rm {} +", cachedir);
+		"find %s -name icon-\\* -type f -atime +7 -exec rm {} +", cachedir);
 	if (system(cmd) < 0) {
 		warn("system(find icon)");
 	}
