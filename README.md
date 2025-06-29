@@ -1,15 +1,25 @@
-Misskey クライアント sayaka ちゃん version 3.8.2 (2025/05/17)
-======
+sayaka ちゃん & sixelv version 3.8.3 (2025/06/29)
+=====
 
-ターミナルに特化した Misskey ストリームクライアントです。
+sayaka ちゃんはターミナルに特化した Misskey ストリームクライアントです。
 
 * ホームタイムライン、ローカルタイムラインの垂れ流しができます。
 * mlterm などの SIXEL 対応ターミナルなら画像も表示できます。
 * X68030/25MHz、メモリ12MB でも快適(?)動作。
-* SIXEL 端末用画像ビューア sixelv についてはこちら→ [SIXELV.md](SIXELV.md)
+
+sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXELV.md](SIXELV.md)
 
 変更点
 ---
+* 3.8.3 (2025/06/29) …
+	256 色を固定パレットから適応パレットに変更
+	(3.8.2 未満で使用した `~/.sayaka/cache/` は削除してください)。
+	アイコンのキャッシュ期間を7日に短縮。
+	実績達成(EarnedAchivement)通知に対応。
+	TIFF に対応 (sixelv のみ)。
+	ascii 出力に対応 (sixelv のみ)。
+	-p オプションを実装 (sixelv のみ)。
+
 * 3.8.2 (2025/05/17) …
 	libjpeg, libpng, giflib に対応。
 	JPEG の YCCK、モノクロなどいくつかの形式に対応 (libjpeg 使用時)。
@@ -17,35 +27,6 @@ Misskey クライアント sayaka ちゃん version 3.8.2 (2025/05/17)
 	webp 画像がロードできない場合があったのを修正。
 	3.8.0 以降一部のキャッシュファイルが削除できていなかったのを修正
 	(すでに残っている分は削除されないので `~/.sayaka/cache/` 以下をすべて消すとかしてください)。
-
-* 3.8.1 (2024/09/21) …
-	リアクション通知、フォロー(された)通知に対応。
-	キープアライブを実装。
-	コネクション切断時のバックオフリトライを実装。
-	透過画像に対応。
-	モノクロおよび 8色画像の視認性を向上。
-	画像処理および SIXEL 出力を高速化。
-	`--overwrite-cache` オプションを実装。
-	`--sixel-or` オプション(旧 `--ormode=on`) を復旧。
-	v3.8.0 以降、`--local` オプションが引数を要求していたのを修正。
-	v3.8.0 以降、縦 6 ピクセル未満の画像が表示できなかったのを修正。
-
-* 3.8.0 (2024/09/04) … C 言語で全面書き直し。
-	Misskey ホームタイムラインをサポート。
-	リノートのネスト構造に対応。
-	モノクロ画像の出力画質を改善。
-	NSFW 画像の見た目を公式に近づける。
-	`--nsfw=alt` を実装。
-	`--color` オプションを調整。
-	`--no-color` は `--color=1` に変更。
-	`--force-sixel` は `--show-image=yes` に変更。
-	`--no-image` は `--show-image=no` に変更。
-	`-4`/`-6` は `--ipv4`/`--ipv6` に変更。
-	`--play` オプションの仕様を変更。
-	`--ormode`、`--palette`、`--x68k` オプションを廃止。
-	Twitter 関連の機能と
-	`--twitter`、`--full-url`、`--protect`、`--record-all` オプションを廃止。
-	mbedTLS サポートは一旦廃止。
 
 
 必要なもの
@@ -66,12 +47,16 @@ Misskey クライアント sayaka ちゃん version 3.8.2 (2025/05/17)
 	… pkgsrc および OpenBSD ports なら `graphics/png`、
 	Ubuntu なら `libpng-dev` です。
 	なくてもビルド可能です。
+* libtiff
+	… pkgsrc および OpenBSD ports なら `graphics/tiff` です。
+	sixelv でのみ必要ですが、なくてもビルド可能です。
 * libwebp
 	… pkgsrc および OpenBSD ports なら `graphics/libwebp`、
 	Ubuntu なら `libwebp-dev` です。
 * iconv
 	… NetBSD なら OS 標準です。
 	OpenBSD ports なら `converters/libiconv` です。
+	sayaka でのみ必要です。
 * OpenSSL
 	… *BSD なら OS 標準です。
 	Ubuntu なら `libssl-dev` です。
@@ -100,6 +85,11 @@ configure のオプションは次のものがあります。
 	`auto` なら libpng が見付かれば使用し、見付からなければ内蔵の
 	stb_image でデコードします。`no` なら stb_image を使用します。
 	デフォルトは `auto` です。
+* `--with-libtiff=(auto|yes|no)` …
+	`auto` なら libtiff が見付かれば使用し、見付からなければ使用しません。
+	デフォルトは `auto` です。
+	TIFF サポートは sixelv のみで、
+	sayaka はこのオプションによらず常に使用しません。
 * `--with-iconv=(yes|no)` …
 	`sixelv` のみビルドするなら `no` にすることは可能です。
 * `--with-openssl=(yes|no)` …
@@ -161,7 +151,7 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 主なコマンドライン引数
 ---
 * `-c,--color=<mode>` … 色モードを指定します。デフォルトは `256` です。
-	* `256` … 固定256色モードです。
+	* `256` … 適応256色モードです。フルカラー端末向けです。
 	* `16` … ANSI 互換の 16色モードです。
 	* `8` … RGB 8色モードです。
 	* `2` … 画像はモノクロで、テキストはユーザ名のみボールドで表示します。
@@ -325,6 +315,35 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 
 更新履歴
 ---
+* 3.8.1 (2024/09/21) …
+	リアクション通知、フォロー(された)通知に対応。
+	キープアライブを実装。
+	コネクション切断時のバックオフリトライを実装。
+	透過画像に対応。
+	モノクロおよび 8色画像の視認性を向上。
+	画像処理および SIXEL 出力を高速化。
+	`--overwrite-cache` オプションを実装。
+	`--sixel-or` オプション(旧 `--ormode=on`) を復旧。
+	v3.8.0 以降、`--local` オプションが引数を要求していたのを修正。
+	v3.8.0 以降、縦 6 ピクセル未満の画像が表示できなかったのを修正。
+
+* 3.8.0 (2024/09/04) … C 言語で全面書き直し。
+	Misskey ホームタイムラインをサポート。
+	リノートのネスト構造に対応。
+	モノクロ画像の出力画質を改善。
+	NSFW 画像の見た目を公式に近づける。
+	`--nsfw=alt` を実装。
+	`--color` オプションを調整。
+	`--no-color` は `--color=1` に変更。
+	`--force-sixel` は `--show-image=yes` に変更。
+	`--no-image` は `--show-image=no` に変更。
+	`-4`/`-6` は `--ipv4`/`--ipv6` に変更。
+	`--play` オプションの仕様を変更。
+	`--ormode`、`--palette`、`--x68k` オプションを廃止。
+	Twitter 関連の機能と
+	`--twitter`、`--full-url`、`--protect`、`--record-all` オプションを廃止。
+	mbedTLS サポートは一旦廃止。
+
 * 3.7.7 (2024/08/05) … OpenSSL 版を `--ciphers` オプションに対応。
 	Ubuntu でのビルドエラーを修正。
 	iconv についてのビルドエラーを修正。
