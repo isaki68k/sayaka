@@ -16,9 +16,6 @@ sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXE
 	(3.8.2 未満で使用した `~/.sayaka/cache/` は削除してください)。
 	アイコンのキャッシュ期間を7日に短縮。
 	実績達成(EarnedAchivement)通知に対応。
-	TIFF に対応 (sixelv のみ)。
-	ascii 出力に対応 (sixelv のみ)。
-	-p オプションを実装 (sixelv のみ)。
 
 * 3.8.2 (2025/05/17) …
 	libjpeg, libpng, giflib に対応。
