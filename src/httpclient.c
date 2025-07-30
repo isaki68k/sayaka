@@ -263,15 +263,32 @@ recv_header(struct httpclient *http)
 	// 応答の1行目を受信。
 	http->resline = net_gets(http->net);
 	if (http->resline == NULL) {
+		Debug(diag, "%s: %s", __func__, strerrno());
+		return -1;
+	}
+	if (string_len(http->resline) == 0) {
 		Debug(diag, "%s: No HTTP response?", __func__);
+		string_free(http->resline);
+		http->resline = NULL;
 		return -1;
 	}
 	string_rtrim_inplace(http->resline);
 	Trace(diag, "--> |%s|", string_get(http->resline));
 
 	// 残りのヘッダを受信。
-	string *recv;
-	while ((recv = net_gets(http->net)) != NULL) {
+	for (;;) {
+		string *recv;
+
+		recv = net_gets(http->net);
+		if (recv == NULL) {
+			Debug(diag, "%s: net_gets failed: %s", __func__, strerrno());
+			return -1;
+		}
+		if (string_len(recv) == 0) {
+			string_free(recv);
+			break;
+		}
+
 		string_rtrim_inplace(recv);
 		Trace(diag, "--> |%s|", string_get(recv));
 		if (string_len(recv) != 0) {
@@ -430,8 +447,13 @@ read_chunk(struct httpclient *http)
 	// 先頭行はチャンク長 + CRLF。
 	string *slen = net_gets(http->net);
 	if (__predict_false(slen == NULL)) {
+		Debug(diag, "%s: %s", __func__, strerrno());
+		return -1;
+	}
+	if (__predict_false(string_len(slen) == 0)) {
 		Debug(diag, "%s: Unexpected EOF while reading chunk length?", __func__);
-		return 0;
+		chunklen = 0;
+		goto done;
 	}
 
 	// チャンク長を取り出す。

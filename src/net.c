@@ -357,6 +357,8 @@ net_connect(struct net *net,
 }
 
 // 1行受信して返す。
+// EOF に到達したらそこまでに受信した文字列を返す (行頭で EOF なら "")。
+// エラーが起きれば errno をセットして NULL を返す。
 string *
 net_gets(struct net *net)
 {
@@ -373,12 +375,12 @@ net_gets(struct net *net)
 			Verbose(diag, "%s: net_read=%d", __func__, n);
 			if (n < 0) {
 				Debug(diag, "%s: net_read failed: %s", __func__, strerrno());
-				return s;
+				string_free(s);
+				return NULL;
 			}
 			if (n == 0) {
 				// EOF
-				string_free(s);
-				return NULL;
+				return s;
 			}
 			net->bufpos = 0;
 			net->buflen = n;

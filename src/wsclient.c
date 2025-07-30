@@ -211,6 +211,11 @@ wsclient_connect(struct wsclient *ws, const char *url,
 	// 応答の1行目を受信。
 	response = net_gets(ws->net);
 	if (response == NULL) {
+		Debug(diag, "%s: %s", __func__, strerrno());
+		rv  = -1;
+		goto abort;
+	}
+	if (string_len(response) == 0) {
 		Debug(diag, "%s: Unexpected EOF while reading response header",
 			__func__);
 		rv = 0;
@@ -220,8 +225,22 @@ wsclient_connect(struct wsclient *ws, const char *url,
 	Trace(diag, "--> |%s|", string_get(response));
 
 	// 残りの行は今のところ使ってないので読み捨てる。
-	string *recvhdr;
-	while ((recvhdr = net_gets(ws->net)) != NULL) {
+	for (;;) {
+		string *recvhdr;
+
+		recvhdr = net_gets(ws->net);
+		if (recvhdr == NULL) {
+			Debug(diag, "%s: %s", __func__, strerrno());
+			rv = -1;
+			goto abort;
+		}
+		if (string_len(recvhdr) == 0) {
+			Debug(diag, "%s: Unexpected EOF while reading header", __func__);
+			string_free(recvhdr);
+			rv = 0;
+			goto abort;
+		}
+
 		string_rtrim_inplace(recvhdr);
 		bool newline = (string_len(recvhdr) == 0);
 		Trace(diag, "--> |%s|", string_get(recvhdr));
@@ -592,7 +611,18 @@ testhttp(const struct diag *diag, int ac, char *av[])
 
 	// HTTP 応答を受信して表示。
 	string *buf;
-	while ((buf = net_gets(net)) != NULL) {
+	for (;;) {
+		buf = net_gets(net);
+		if (buf == NULL) {
+			printf("%s", strerrno());
+			break;
+		}
+		if (string_len(buf) == 0) {
+			printf("Unexpected EOF\n");
+			string_free(buf);
+			break;
+		}
+
 		string_rtrim_inplace(buf);
 		bool end = (string_len(buf) == 0);
 		printf("%s\n", string_get(buf));
