@@ -169,7 +169,7 @@ httpclient_connect(struct httpclient *http, const char *urlstr,
 				}
 				if (diag_get_level(diag) >= 1) {
 					string *u = urlinfo_to_string(http->url);
-					diag_print(diag, "new url |%s|", string_get(u));
+					diag_print(diag, "Redirected url |%s|", string_get(u));
 					string_free(u);
 				}
 				// 内部状態をリセット。
