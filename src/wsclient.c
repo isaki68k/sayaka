@@ -379,7 +379,7 @@ wsclient_process(struct wsclient *ws)
 	// ペイロードを全部読み込めているか。
 	if (ws->buflen - pos < datalen) {
 		// 足りなければ次のフレームを待つ。
-		Debug(diag, "%s: wait more data: filled=%u < datalen=%u", __func__,
+		Trace(diag, "%s: wait more data: filled=%u < datalen=%u", __func__,
 			ws->buflen - pos, datalen);
 		return 1;
 	}
@@ -390,11 +390,11 @@ wsclient_process(struct wsclient *ws)
 	// opcode ごとの処理。
 	// バイナリフレームは未対応。
 	if (opcode == WS_OPCODE_PING) {
-		Debug(diag, "%s: PING len=%u recved", __func__, datalen);
+		Trace(diag, "%s: PING len=%u recved", __func__, datalen);
 		wsclient_send_pong(ws);
 		rv = 1;
 	} else if (opcode == WS_OPCODE_PONG) {
-		Debug(diag, "%s: PONG len=%u recved", __func__, datalen);
+		Trace(diag, "%s: PONG len=%u recved", __func__, datalen);
 		rv = 1;
 	} else if (opcode == WS_OPCODE_CLOSE) {
 		Debug(diag, "%s: CLOSE", __func__);
@@ -448,7 +448,7 @@ static inline void
 wsclient_send_ping(struct wsclient *ws)
 {
 	wsclient_send(ws, WS_OPCODE_PING, NULL, 0);
-	Debug(ws->diag, "%s", __func__);
+	Trace(ws->diag, "%s", __func__);
 }
 
 // PONG 応答を送信する。
@@ -456,7 +456,7 @@ static inline void
 wsclient_send_pong(struct wsclient *ws)
 {
 	wsclient_send(ws, WS_OPCODE_PONG, NULL, 0);
-	Debug(ws->diag, "%s", __func__);
+	Trace(ws->diag, "%s", __func__);
 }
 
 // WebSocket フレームを送信する。
