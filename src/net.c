@@ -546,6 +546,9 @@ tls_connect(struct net *net, const char *host, const char *serv,
 		return -1;
 	}
 
+	// SSL_read/write() の WANT_READ/WRITE を向こうで処理してもらう。
+	SSL_CTX_set_mode(net->ctx, SSL_MODE_AUTO_RETRY);
+
 	if (opt->use_rsa_only) {
 		// RSA 指定なら TLSv1.2 以下を強制する。
 		// (TLSv1.3 ではそもそも RSA128-SHA とかの指定自体が存在しない)
@@ -627,15 +630,23 @@ tls_read(struct net *net, void *dst, int dstsize)
 
 	Verbose(diag, "%s (dstsize=%u)", __func__, dstsize);
 	r = SSL_read(net->ssl, dst, dstsize);
-	if (r < 0) {
-		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
+	if (r <= 0) {
+		// EOF かどうかも get_error で判断するようだ。
+		int error = SSL_get_error(net->ssl, r);
+		if (error == SSL_ERROR_ZERO_RETURN) {
+			r = 0;
+			goto done;
+		}
+		Verbose(diag, "%s r=%zd, SSL_error=%d errno=%d", __func__,
+			r, error, errno);
+		if (error != SSL_ERROR_SYSCALL) {
 			// とりあえず何かにしておく。
 			errno = EIO;
 		}
-		Verbose(diag, "%s r=%zd, errno=%d", __func__, r, errno);
-	} else {
-		Verbose(diag, "%s r=%zd", __func__, r);
+		return -1;
 	}
+ done:
+	Verbose(diag, "%s r=%zd", __func__, r);
 	return r;
 }
 
@@ -647,15 +658,23 @@ tls_write(struct net *net, const void *src, int srcsize)
 
 	Verbose(diag, "%s (srcsize=%u)", __func__, srcsize);
 	r = SSL_write(net->ssl, src, srcsize);
-	if (r < 0) {
-		if (SSL_get_error(net->ssl, r) != SSL_ERROR_SYSCALL) {
+	if (r <= 0) {
+		// EOF かどうかも get_error で判断するようだ。
+		int error = SSL_get_error(net->ssl, r);
+		if (error == SSL_ERROR_ZERO_RETURN) {
+			r = 0;
+			goto done;
+		}
+		Verbose(diag, "%s r=%zd, SSL_error=%d errno=%d", __func__,
+			r, error, errno);
+		if (error != SSL_ERROR_SYSCALL) {
 			// とりあえず何かにしておく。
 			errno = EIO;
 		}
-		Verbose(diag, "%s r=%zd, errno=%d", __func__, r, errno);
-	} else {
-		Verbose(diag, "%s r=%zd", __func__, r);
+		return -1;
 	}
+ done:
+	Verbose(diag, "%s r=%zd", __func__, r);
 	return r;
 }
 
