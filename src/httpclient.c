@@ -78,12 +78,6 @@ httpclient_create(const struct diag *diag)
 		return NULL;
 	}
 
-	http->net = net_create(diag);
-	if (http->net == NULL) {
-		free(http);
-		return NULL;
-	}
-
 	http->diag = diag;
 
 	return http;
@@ -124,6 +118,16 @@ httpclient_connect(struct httpclient *http, const char *urlstr,
 	}
 
 	for (;;) {
+		// net を(再)生成。
+		if (http->net) {
+			net_destroy(http->net);
+		}
+		http->net = net_create(diag);
+		if (http->net == NULL) {
+			Debug(diag, "%s: net_create failed", __func__);
+			return -1;
+		}
+
 		// 接続。
 		int r = do_connect(http, opt);
 		if (r < 0) {
