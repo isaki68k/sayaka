@@ -413,12 +413,15 @@ int
 net_read(struct net *net, void *dst, uint dstsize)
 {
 	assert(net);
+	const struct diag *diag = net->diag;
 
 	// バッファにあれば先に使い切る。
 	if (net->bufpos != net->buflen) {
 		uint copylen = MIN(net->buflen - net->bufpos, dstsize);
 		memcpy(dst, net->buf + net->bufpos, copylen);
 		net->bufpos += copylen;
+		Verbose(diag, "%s: copied=%u, pos=%u/len=%u", __func__,
+			copylen, net->bufpos, net->buflen);
 		return copylen;
 	}
 
