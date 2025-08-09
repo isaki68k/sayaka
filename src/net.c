@@ -51,7 +51,7 @@ struct net {
 		const struct net_opt *);
 	int (*f_read)(struct net *, void *, int);
 	int (*f_write)(struct net *, const void *, int);
-	void (*f_shutdown)(struct net *);
+	void (*f_shutdown_half)(struct net *);
 	void (*f_close)(struct net *);
 
 	// f_connect() が確保したリソースを解放する。
@@ -79,7 +79,7 @@ static int  sock_connect(struct net *, const char *, const char *,
 	const struct net_opt *);
 static int  sock_read(struct net *, void *, int);
 static int  sock_write(struct net *, const void *, int);
-static void sock_shutdown(struct net *);
+static void sock_shutdown_half(struct net *);
 static void sock_close(struct net *);
 #if defined(HAVE_OPENSSL)
 static void tls_cleanup(struct net *);
@@ -87,7 +87,7 @@ static int  tls_connect(struct net *, const char *, const char *,
 	const struct net_opt *);
 static int  tls_read(struct net *, void *, int);
 static int  tls_write(struct net *, const void *, int);
-static void tls_shutdown(struct net *);
+static void tls_shutdown_half(struct net *);
 static void tls_close(struct net *);
 #endif
 static int  socket_connect(const char *, const char *, const struct net_opt *);
@@ -335,7 +335,7 @@ net_connect(struct net *net,
 		net->f_connect = tls_connect;
 		net->f_read    = tls_read;
 		net->f_write   = tls_write;
-		net->f_shutdown= tls_shutdown;
+		net->f_shutdown_half = tls_shutdown_half;
 		net->f_close   = tls_close;
 		net->f_cleanup = tls_cleanup;
 #else
@@ -346,7 +346,7 @@ net_connect(struct net *net,
 		net->f_connect = sock_connect;
 		net->f_read    = sock_read;
 		net->f_write   = sock_write;
-		net->f_shutdown= sock_shutdown;
+		net->f_shutdown_half = sock_shutdown_half;
 		net->f_close   = sock_close;
 		net->f_cleanup = sock_cleanup;
 	}
@@ -439,10 +439,10 @@ net_write(struct net *net, const void *src, uint srcsize)
 
 // 送信方向を shutdown する。
 void
-net_shutdown(struct net *net)
+net_shutdown_half(struct net *net)
 {
 	assert(net);
-	net->f_shutdown(net);
+	net->f_shutdown_half(net);
 }
 
 void
@@ -497,7 +497,7 @@ sock_write(struct net *net, const void *src, int srcsize)
 }
 
 static void
-sock_shutdown(struct net *net)
+sock_shutdown_half(struct net *net)
 {
 	shutdown(net->sock, SHUT_WR);
 }
@@ -679,9 +679,9 @@ tls_write(struct net *net, const void *src, int srcsize)
 }
 
 static void
-tls_shutdown(struct net *net)
+tls_shutdown_half(struct net *net)
 {
-	SSL_shutdown(net->ssl);
+	// SSL に shutdown(SHUT_WR) 相当の動作はないので、何もしない。
 }
 
 static void

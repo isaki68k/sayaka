@@ -133,7 +133,7 @@ extern int  net_connect(struct net *, const char *, const char *, const char *,
 extern string *net_gets(struct net *);
 extern int  net_read(struct net *, void *, uint);
 extern int  net_write(struct net *, const void *, uint);
-extern void net_shutdown(struct net *);
+extern void net_shutdown_half(struct net *);
 extern void net_close(struct net *);
 extern int  net_get_fd(const struct net *);
 

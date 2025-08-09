@@ -186,7 +186,7 @@ httpclient_connect(struct httpclient *http, const char *urlstr,
 		}
 
 		Trace(diag, "%s: connected.", __func__);
-		net_shutdown(http->net);
+		net_shutdown_half(http->net);
 		return 0;
 	}
 }
