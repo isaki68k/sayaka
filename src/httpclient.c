@@ -395,7 +395,7 @@ httpclient_fopen(struct httpclient *http)
 			return NULL;
 		}
 	} else {
-		fp = funopen(http->net, http_net_read_cb, NULL, NULL, NULL);
+		fp = funopen(http, http_net_read_cb, NULL, NULL, NULL);
 		if (fp == NULL) {
 			Debug(http->diag, "%s: funopen(net) failed: %s", __func__,
 				strerrno());
@@ -408,8 +408,8 @@ httpclient_fopen(struct httpclient *http)
 static int
 http_net_read_cb(void *arg, char *dst, int dstsize)
 {
-	struct net *net = (struct net *)arg;
-	int n = net_read(net, dst, dstsize);
+	struct httpclient *http = (struct httpclient *)arg;
+	int n = net_read(http->net, dst, dstsize);
 	return n;
 }
 
