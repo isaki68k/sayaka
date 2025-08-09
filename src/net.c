@@ -688,7 +688,10 @@ static void
 tls_close(struct net *net)
 {
 	if (net->ssl) {
-		SSL_shutdown(net->ssl);
+		int r = SSL_shutdown(net->ssl);
+		if (r == 0) {
+			SSL_shutdown(net->ssl);
+		}
 	}
 	// 元ソケットも閉じる。
 	sock_close(net);
