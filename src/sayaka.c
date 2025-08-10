@@ -175,6 +175,7 @@ static const struct option longopts[] = {
 	{ "sixel-or",		no_argument,		NULL,	OPT_sixel_or },
 	{ "timeout-image",	required_argument,	NULL,	OPT_timeout_image },
 	{ "token",			required_argument,	NULL,	't' },
+	{ "version",		no_argument,		NULL,	'v' },
 	{ NULL },
 };
 
