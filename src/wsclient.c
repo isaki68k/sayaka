@@ -350,6 +350,10 @@ wsclient_process(struct wsclient *ws)
 	}
 
 	r = net_read(ws->net, ws->buf + ws->buflen, ws->bufsize - ws->buflen);
+	if (r < 0) {
+		Debug(diag, "%s: net_read failed: %s", __func__, strerrno());
+		return -1;
+	}
 	if (r == 0) {
 		Debug(diag, "%s: EOF", __func__);
 		return 0;
