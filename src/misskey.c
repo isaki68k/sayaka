@@ -1029,17 +1029,31 @@ misskey_print_filetype(const struct json *js, int ifile, const char *msg)
 
 // 画像 URL からキャッシュファイル名を作成して返す。
 // "file-<color>-<fontheight>-<url>"(.sixel)
+// ただしこの文字列が長すぎる場合は <url> 部分をハッシュに変更。
+// (rsync がファイル名に7文字くらい足したテンポラリファイルを作ろうとするため
+// 元ファイル名が 255 文字ぎりぎりだとエラーになる)
 static void
 make_cache_filename(char *filename, uint bufsize, const char *url)
 {
-	snprintf(filename, bufsize, "file-%s-%u-%s", colorname, fontheight, url);
+	int len;
 
-	// 面倒な文字を置換しておく。
-	for (char *p = filename; *p; p++) {
-		if (strchr(":/()? ", *p)) {
-			*p = '_';
+	len = snprintf(filename, bufsize, "file-%s-%u-%s",
+		colorname, fontheight, url);
+	if (len < 220) {
+		// 面倒な文字を置換しておく。
+		for (char *p = filename; *p; p++) {
+			if (strchr(":/()? ", *p)) {
+				*p = '_';
+			}
 		}
+	} else {
+		// 長い場合はハッシュにする。
+		string *md5 = hash_md5(url);
+		snprintf(filename, bufsize, "file-%s-%u-%s",
+			colorname, fontheight, string_get(md5));
+		string_free(md5);
 	}
+
 }
 
 // 本文を表示用に整形。

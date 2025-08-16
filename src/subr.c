@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2016-2024 Tetsuya Isaki
+ * Copyright (C) 2016-2025 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,6 +31,10 @@
 #include "sayaka.h"
 #include <string.h>
 #include <time.h>
+#if defined(HAVE_OPENSSL)
+#include <openssl/evp.h>
+#include <openssl/md5.h>
+#endif
 
 // 32ビットの乱数を返す。
 uint32
@@ -83,6 +87,34 @@ hash_fnv1a(const char *s)
 		hash *= prime;
 	}
 	return hash;
+}
+
+// 文字列の MD5 ハッシュ文字列を返す。
+string *
+hash_md5(const char *input)
+{
+#if defined(HAVE_OPENSSL)
+	static const char tohex[] = "0123456789abcdef";
+	uint8 hash[MD5_DIGEST_LENGTH];
+	uint hashlen = sizeof(hash);
+	char buf[MD5_DIGEST_LENGTH * 2];
+	EVP_MD_CTX *ctx;
+
+	ctx = EVP_MD_CTX_new();
+	EVP_DigestInit_ex(ctx, EVP_md5(), NULL);
+	EVP_DigestUpdate(ctx, (const unsigned char *)input, strlen(input));
+	EVP_DigestFinal_ex(ctx, hash, &hashlen);
+	EVP_MD_CTX_free(ctx);
+
+	for (uint i = 0; i < sizeof(hash); i++) {
+		buf[i * 2 + 0] = tohex[hash[i] >> 4];
+		buf[i * 2 + 1] = tohex[hash[i] & 0xf];
+	}
+
+	return string_from_mem(buf, sizeof(buf));
+#else
+	return NULL;
+#endif // HAVE_OPENSSL
 }
 
 // BASE64 エンコードした文字列を返す。
