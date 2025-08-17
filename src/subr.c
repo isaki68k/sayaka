@@ -33,7 +33,6 @@
 #include <time.h>
 #if defined(HAVE_OPENSSL)
 #include <openssl/evp.h>
-#include <openssl/md5.h>
 #endif
 
 // 32ビットの乱数を返す。
