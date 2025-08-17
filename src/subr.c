@@ -35,6 +35,12 @@
 #include <openssl/evp.h>
 #endif
 
+// Ununtu では <openssl/md5.h> は非推奨だが MD5_DIGEST_LENGTH は使える。
+// NetBSD では <openssl/md5.h> がないと見えない。うーんこの。
+#ifndef MD5_DIGEST_LENGTH
+#define MD5_DIGEST_LENGTH (16)
+#endif
+
 // 32ビットの乱数を返す。
 uint32
 rnd_get32(void)
