@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        container: [ "ubuntu:latest", "ubuntu:22.04", "debian:12", "debian:11", "archlinux:base" ]
+        container: [ "ubuntu:24.04", "ubuntu:22.04", "debian:13", "debian:12", "archlinux:base" ]
 
     runs-on: ubuntu-latest
 
@@ -68,7 +68,7 @@ jobs:
             make -DRELEASE
 
   build-openbsd:
-    name: "build-openbsd (OpenBSD/amd64 7.7 with ports)"
+    name: "build-openbsd (OpenBSD/amd64 7.8 with ports)"
     runs-on: ubuntu-latest
 
     steps:
@@ -76,7 +76,7 @@ jobs:
       - name: Install packages and run configure and make (on the OpenBSD VM)
         uses: vmactions/openbsd-vm@v1
         with:
-          release: "7.7"
+          release: "7.8"
           copyback: false
           prepare: |
             uname -a
@@ -90,7 +90,7 @@ jobs:
             make -DRELEASE
 
   build-freesd:
-    name: "build-freebsd (FreeBSD/amd64 14.2 with ports)"
+    name: "build-freebsd (FreeBSD/amd64 15.0 with ports)"
     runs-on: ubuntu-latest
 
     steps:
@@ -98,7 +98,7 @@ jobs:
       - name: Install packages and run configure and make (on the FreeBSD VM)
         uses: vmactions/freebsd-vm@v1
         with:
-          release: "14.2"
+          release: "15.0"
           copyback: false
           prepare: |
             uname -a
