@@ -32,6 +32,7 @@
 #define sayaka_common_h
 
 #include "header.h"
+#include "compat_endian.h"
 #include <assert.h>
 #include <stdio.h>
 
