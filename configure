@@ -4992,8 +4992,8 @@ fi
 
 
 # Uniq
-CFLAGS=`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
-LIBS=`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
+CFLAGS=`printf "%s" "${CFLAGS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
+LIBS=`printf "%s" "${LIBS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
 
 ac_config_headers="$ac_config_headers ${srcdir}/src/config.h"
 

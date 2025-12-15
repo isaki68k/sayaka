@@ -506,8 +506,8 @@ fi
 
 
 # Uniq
-CFLAGS=[`echo -n ${CFLAGS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
-LIBS=[`echo -n ${LIBS} | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
+CFLAGS=[`printf "%s" "${CFLAGS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
+LIBS=[`printf "%s" "${LIBS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 
 AC_CONFIG_HEADERS([${srcdir}/src/config.h])
 AC_CONFIG_FILES([${srcdir}/src/Makefile.cfg])
