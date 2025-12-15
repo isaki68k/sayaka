@@ -132,8 +132,10 @@ init_color(void)
 			c_react = BOLD ";" BROWN;
 		}
 
-		// mlterm では 90 がグレー、97 は白。
-		c_gray = "90";
+		// 時刻などの灰色。出せなければ通常色のまま。
+		if (colormode > 8) {
+			c_gray = "90";
+		}
 
 		// NG。
 		snprintf(ng, sizeof(ng), "%s;%s", STRIKE, c_gray);
