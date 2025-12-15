@@ -33,6 +33,12 @@
 #include "image_priv.h"
 #include <string.h>
 
+#ifdef __GNUC__
+#ifndef __packed
+#define __packed __attribute__((__packed__))
+#endif
+#endif
+
 typedef struct __packed {
 	uint8  bfType[2];
 	uint32 bfSize;
