@@ -61,11 +61,11 @@
 #endif
 
 #if !defined(__unreachable)
-#if defined(HAVE___BUILTIN_UNREACHABLE)
-# define __unreachable()	__builtin_unreachable()
-#else
-# define __unreachable()
-#endif
+# if defined(HAVE___BUILTIN_UNREACHABLE)
+#  define __unreachable()	__builtin_unreachable()
+# else
+#  define __unreachable()
+# endif
 #endif
 
 #if !defined(__unused)
