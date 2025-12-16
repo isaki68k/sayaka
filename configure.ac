@@ -194,6 +194,8 @@ PATHS="none /usr/pkg /usr/local"
 # Checks for header files.
 AC_CHECK_HEADERS([bsd/bsd.h])
 AC_CHECK_HEADERS([endian.h])
+AC_CHECK_HEADERS([libkern/OSByteOrder.h])
+AC_CHECK_HEADERS([machine/endian.h])
 AC_CHECK_HEADERS([sys/endian.h])
 AC_CHECK_HEADERS([sys/ttycom.h])
 

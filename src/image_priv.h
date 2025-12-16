@@ -32,6 +32,7 @@
 #define sayaka_image_priv_h
 
 #include "image.h"
+#include "missing_endian.h"
 
 // テストなどで一時的に無効にしたい場合のため。
 #define USE_BLURHASH

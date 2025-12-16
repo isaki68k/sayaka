@@ -4147,6 +4147,20 @@ then :
 
 fi
 
+ac_fn_c_check_header_compile "$LINENO" "libkern/OSByteOrder.h" "ac_cv_header_libkern_OSByteOrder_h" "$ac_includes_default"
+if test "x$ac_cv_header_libkern_OSByteOrder_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBKERN_OSBYTEORDER_H 1" >>confdefs.h
+
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "machine/endian.h" "ac_cv_header_machine_endian_h" "$ac_includes_default"
+if test "x$ac_cv_header_machine_endian_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_MACHINE_ENDIAN_H 1" >>confdefs.h
+
+fi
+
 ac_fn_c_check_header_compile "$LINENO" "sys/endian.h" "ac_cv_header_sys_endian_h" "$ac_includes_default"
 if test "x$ac_cv_header_sys_endian_h" = xyes
 then :
