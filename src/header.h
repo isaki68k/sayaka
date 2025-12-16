@@ -39,6 +39,14 @@
 #include <bsd/bsd.h>
 #endif
 
+#if !defined(__packed)
+# if defined(HAVE___ATTRIBUTE_PACKED)
+#  define __packed	__attribute__((__packed__))
+# else
+#  define __packed
+# endif
+#endif
+
 // FreeBSD の __predict_true/false は定義がいまいちで使えない。
 // __builtin_expect() があることが分かればどの環境でも自前で定義できるので
 // 既存定義は取り消す。

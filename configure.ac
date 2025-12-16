@@ -78,6 +78,19 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 	])
 CFLAGS="${old_CFLAGS}"
 
+AC_MSG_CHECKING(for __attribute__((__packed__)))
+old_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],
+	[
+		struct x { char a; int b; } __attribute__((__packed__));
+	])], [
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___ATTRIBUTE_PACKED])
+	], [
+		AC_MSG_RESULT([no])
+	])
+CFLAGS="${old_CFLAGS}"
 
 # CHECK_HEADER($1=header, $2=HEADER)
 AC_DEFUN([CHECK_HEADER], [

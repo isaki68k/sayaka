@@ -7,6 +7,7 @@
 #define sayaka_config_h
 
 #undef HAVE___ATTRIBUTE_FORMAT
+#undef HAVE___ATTRIBUTE_PACKED
 #undef HAVE___BUILTIN_CLZ
 #undef HAVE___BUILTIN_EXPECT
 #undef HAVE___BUILTIN_UNREACHABLE
