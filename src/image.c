@@ -886,15 +886,16 @@ image_reduct_highquality(image_reductor_handle *ir,
 				for (uint sx = sx0; sx < sx1; sx++) {
 					uint16 v = *s++;
 					a     +=  (v >> 15);
-					col.r += ((v >> 10) & 0x1f) << 3;
-					col.g += ((v >>  5) & 0x1f) << 3;
-					col.b += ( v        & 0x1f) << 3;
+					// 5bitのまま足してループを出たところで8bitにする。
+					col.r += ((v >> 10) & 0x1f);
+					col.g += ((v >>  5) & 0x1f);
+					col.b += ( v        & 0x1f);
 				}
 			}
 			uint area = (sy1 - sy0) * (sx1 - sx0);
-			col.r /= area;
-			col.g /= area;
-			col.b /= area;
+			col.r = (col.r << 3) / area;
+			col.g = (col.g << 3) / area;
+			col.b = (col.b << 3) / area;
 
 			if (ir->gain >= 0) {
 				col.r = (uint32)col.r * ir->gain / 256;
