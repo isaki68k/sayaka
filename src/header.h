@@ -69,7 +69,11 @@
 #endif
 
 #if !defined(__unused)
-#define __unused	__attribute__((unused))
+# if defined(HAVE___ATTRIBUTE_UNUSED)
+#  define __unused	__attribute__((__unused__))
+# else
+#  define __unused
+# endif
 #endif
 
 #define MAX(a, b)	({	\

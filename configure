@@ -4056,6 +4056,41 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 CFLAGS="${old_CFLAGS}"
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __attribute__((__unused__))" >&5
+printf %s "checking for __attribute__((__unused__))... " >&6; }
+old_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -Wall -Werror"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+		int a __attribute__((__unused__));
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE___ATTRIBUTE_UNUSED 1" >>confdefs.h
+
+
+else case e in #(
+  e)
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	 ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+CFLAGS="${old_CFLAGS}"
+
 # CHECK_HEADER($1=header, $2=HEADER)
 
 

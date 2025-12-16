@@ -92,6 +92,20 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],
 	])
 CFLAGS="${old_CFLAGS}"
 
+AC_MSG_CHECKING(for __attribute__((__unused__)))
+old_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -Wall -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],
+	[
+		int a __attribute__((__unused__));
+	])], [
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___ATTRIBUTE_UNUSED])
+	], [
+		AC_MSG_RESULT([no])
+	])
+CFLAGS="${old_CFLAGS}"
+
 # CHECK_HEADER($1=header, $2=HEADER)
 AC_DEFUN([CHECK_HEADER], [
 	AC_MSG_CHECKING([for $1])
