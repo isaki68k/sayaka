@@ -819,7 +819,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 	Rational rx;
 	Rational ystep;
 	Rational xstep;
-	ColorRGBint32 cp;
+	ColorRGBint32 prevcol;
 	uint cdm = 256;
 
 #if !defined(SIXELV)
@@ -857,7 +857,7 @@ image_reduct_highquality(image_reductor_handle *ir,
 		errbuf[i] = errbuf_mem + errbuf_left + errbuf_width * i;
 	}
 
-	memset(&cp, 0, sizeof(cp));
+	memset(&prevcol, 0, sizeof(prevcol));
 
 	for (uint y = 0; y < dstheight; y++) {
 		uint sy0 = ry.I;
@@ -905,14 +905,14 @@ image_reduct_highquality(image_reductor_handle *ir,
 
 			if (opt->cdm != 0) {
 				cdm /= 2;
-				cdm = MAX(cdm, abs(col.r - cp.r));
-				cdm = MAX(cdm, abs(col.g - cp.g));
-				cdm = MAX(cdm, abs(col.b - cp.b));
+				cdm = MAX(cdm, abs(col.r - prevcol.r));
+				cdm = MAX(cdm, abs(col.g - prevcol.g));
+				cdm = MAX(cdm, abs(col.b - prevcol.b));
 				cdm += opt->cdm;
 				if (cdm > 256) {
 					cdm = 256;
 				}
-				cp = col;
+				prevcol = col;
 			}
 
 			col.r += errbuf[0][x].r;
