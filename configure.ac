@@ -234,6 +234,26 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 AC_CHECK_FUNCS([arc4random])
 AC_CHECK_FUNCS([arc4random_buf])
 
+AC_MSG_CHECKING(for htobe16)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+		#if defined(HAVE_ENDIAN_H)
+		#include <endian.h>
+		#endif
+		#if defined(HAVE_SYS_ENDIAN_H)
+		#include <sys/endian.h>
+		#endif
+		#if defined(HAVE_MACHINE_ENDIAN_H)
+		#include <machine/endian.h>
+		#endif
+	], [
+		htobe16(0);
+	])], [
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE_HTOBE16])
+	], [
+		AC_MSG_RESULT([no])
+	])
+
 # libbsd on Linux
 AC_SEARCH_LIBS(getprogname, bsd, has_getprogname=yes, has_getprogname=no)
 if test "x${has_getprogname}" = "xno"; then
