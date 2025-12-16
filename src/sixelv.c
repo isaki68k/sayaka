@@ -469,9 +469,8 @@ list(void)
 static void
 usage(void)
 {
-	fprintf(stderr,
-		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
-	fprintf(stderr,
+	printf("usage: %s [<options...>] [-|<file|url...>]\n", progname);
+	printf(
 "  -c <color>      : Color mode. 2, 8, 16, 256, gray[2..256] (default:256)\n"
 "                    (See --help-all for more details)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
@@ -499,16 +498,15 @@ usage(void)
 		"", // 偶数パディング
 	};
 	for (uint i = 0; i < countof(opts) / 2; i++) {
-		fprintf(stderr, "  %-39s%s\n", opts[i * 2], opts[i * 2 + 1]);
+		printf("  %-39s%s\n", opts[i * 2], opts[i * 2 + 1]);
 	}
 }
 
 static void
 help_all(void)
 {
-	fprintf(stderr,
-		"usage: %s [<options...>] [-|<file|url...>]\n", progname);
-	fprintf(stderr,
+	printf("usage: %s [<options...>] [-|<file|url...>]\n", progname);
+	printf(
 "  -c,--color=<colormode> : Set color mode (default:256)\n"
 "     256          : A synonym for 'adaptive256'\n"
 "     adaptive[<n>]: Adaptive palette (n=8..256). If <n> is omitted, 256 is used\n"

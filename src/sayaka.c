@@ -522,8 +522,8 @@ version(void)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s <command> [<options...>]\n", progname);
-	fprintf(stderr,
+	printf("usage: %s <command> [<options...>]\n", progname);
+	printf(
 " <command>\n"
 "  -h,--home           : Home timeline mode (needs --server and --token)\n"
 "  -l,--local          : Local timeline mode (needs --server)\n"
@@ -543,8 +543,8 @@ usage(void)
 static void
 help_all(void)
 {
-	fprintf(stderr, "usage: %s <command> [<options>...]\n", progname);
-	fprintf(stderr,
+	printf("usage: %s <command> [<options>...]\n", progname);
+	printf(
 " <command>\n"
 "  -h,--home              : Home timeline mode (needs --server and --token)\n"
 "  -l,--local             : Local timeline mode (needs --server)\n"
