@@ -55,6 +55,11 @@
 // 普通に乗算命令を吐くアーキテクチャ/コンパイラなら、どっちでも一緒。
 #define RGBToY(r, g, b) ((5 * (r) + 9 * (g) + 2 * (b)) / 16)
 
+// 誤差分散用。
+#define ERRBUF_LINES	(3)
+#define ERRBUF_LEFT		(2)
+#define ERRBUF_RIGHT	(2)
+
 struct image_reductor_handle_;
 typedef uint (*finder_t)(struct image_reductor_handle_ *, ColorRGB);
 
@@ -80,6 +85,15 @@ typedef struct image_reductor_handle_
 
 	// ゲイン。256 を 1.0 とする。負数なら適用しない (1.0 のまま)。
 	int gain;
+
+	// 誤差分散用バッファ。
+	ColorRGBint16 *errbuf[ERRBUF_LINES];
+	ColorRGBint16 *errbuf_mem;
+	uint errbuf_stride;
+
+	// 減衰。
+	uint cdm;
+	ColorRGBint32 prevcol;
 
 	// 色からパレット番号を検索する関数。
 	finder_t finder;
@@ -107,14 +121,23 @@ static ColorRGB *image_alloc_gray_palette(uint);
 static ColorRGB *image_alloc_fixed256_palette(void);
 static ColorRGB *image_alloc_xterm256_palette(void);
 #endif
-static bool image_calc_adaptive_palette(image_reductor_handle *);
+static bool image_calc_adaptive_palette(image_reductor_handle *,
+	struct image *);
 
 #if defined(SIXELV)
 static bool image_reduct_simple(image_reductor_handle *,
 	const struct image_opt *, const struct diag *);
 #endif
-static bool image_reduct_highquality(image_reductor_handle *,
+static bool image_reduct_highquality_fixed(image_reductor_handle *,
 	const struct image_opt *, const struct diag *);
+static bool image_reduct_highquality_adaptive(image_reductor_handle *,
+	const struct image_opt *, const struct diag *);
+static bool errbuf_init(image_reductor_handle *);
+static void errbuf_rotate(image_reductor_handle *);
+static void errbuf_free(image_reductor_handle *);
+static ColorRGB pixel_mean(image_reductor_handle *, uint, uint, uint, uint);
+static uint16 pixel_filter_hq(image_reductor_handle *, const struct image_opt *,
+	ColorRGB, int);
 #if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *, int);
 #endif
@@ -668,7 +691,11 @@ image_reduct(
 	} else
 #endif
 	{
-		ok = image_reduct_highquality(ir, opt, diag);
+		if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
+			ok = image_reduct_highquality_adaptive(ir, opt, diag);
+		} else {
+			ok = image_reduct_highquality_fixed(ir, opt, diag);
+		}
 	}
 
 #if defined(IMAGE_PROFILE)
@@ -742,7 +769,7 @@ image_reduct_simple(image_reductor_handle *ir,
 	const struct image_opt *opt, const struct diag *diag)
 {
 	struct image *dstimg = ir->dstimg;
-	const struct image *srcimg = ir->srcimg;
+	struct image *srcimg = ir->srcimg;
 	uint16 *d = (uint16 *)dstimg->buf;
 	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint dstwidth  = dstimg->width;
@@ -754,7 +781,7 @@ image_reduct_simple(image_reductor_handle *ir,
 
 	// 適応パレットならここでパレットを作成。
 	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
-		if (image_calc_adaptive_palette(ir) == false) {
+		if (image_calc_adaptive_palette(ir, srcimg) == false) {
 			return false;
 		}
 	}
@@ -806,249 +833,398 @@ image_reduct_simple(image_reductor_handle *ir,
 }
 #endif
 
-// 二次元誤差分散法を使用して、出来る限り高品質に変換する。
+// リサイズ用の初期化マクロ。
+#define RESIZE_INIT(dstwidth_, dstheight_, srcimg_)	\
+	Rational ry;	\
+	Rational rx;	\
+	Rational ystep;	\
+	Rational xstep;	\
+	rational_init(&ry,    0, 0, dstheight_);	\
+	rational_init(&ystep, 0, (srcimg_)->height, dstheight_);	\
+	rational_init(&rx,    0, 0, dstwidth_);	\
+	rational_init(&xstep, 0, (srcimg_)->width, dstwidth_)
+
+// リサイズの X, Y 各方向のループ冒頭の処理。
+#define RESIZE_STEP(S0, S1, RR, STEP)	\
+		uint S0 = (RR).I;	\
+		rational_add(&(RR), &(STEP));	\
+		uint S1 = (RR).I;	\
+		if (S0 == S1) {	\
+			S1 += 1;	\
+		}
+
+// X ループ冒頭のリセット。
+#define RESIZE_RESET_X()	do {	\
+	rx.I = 0;	\
+	rx.N = 0;	\
+} while (0)
+
+// 誤差分散用のバッファを初期化する。
 static bool
-image_reduct_highquality(image_reductor_handle *ir,
+errbuf_init(image_reductor_handle *ir)
+{
+	int errbuf_width = ir->dstimg->width + ERRBUF_LEFT + ERRBUF_RIGHT;
+
+	ir->errbuf_stride = errbuf_width * sizeof(ir->errbuf_mem[0]);
+	ir->errbuf_mem = calloc(ERRBUF_LINES, ir->errbuf_stride);
+	if (ir->errbuf_mem == NULL) {
+		return false;
+	}
+	for (uint i = 0; i < ERRBUF_LINES; i++) {
+		ir->errbuf[i] = ir->errbuf_mem + (errbuf_width * i) + ERRBUF_LEFT;
+	}
+
+	// ついでに減衰用のパラメータもここで初期化。
+	ir->cdm = 256;
+	memset(&ir->prevcol, 0, sizeof(ir->prevcol));
+
+	return true;
+}
+
+// 誤差分散バッファをローテートする。
+static void
+errbuf_rotate(image_reductor_handle *ir)
+{
+	ColorRGBint16 *tmp = ir->errbuf[0];
+	int i;
+
+	for (i = 0; i < ERRBUF_LINES - 1; i++) {
+		ir->errbuf[i] = ir->errbuf[i + 1];
+	}
+	ir->errbuf[i] = tmp;
+	// errbuf[y] には左マージンがあるのを考慮する。
+	memset(ir->errbuf[i] - ERRBUF_LEFT, 0, ir->errbuf_stride);
+}
+
+// ir のうち誤差分散用に確保したリソースを解放する。
+static void
+errbuf_free(image_reductor_handle *ir)
+{
+	if (ir->errbuf_mem) {
+		free(ir->errbuf_mem);
+		ir->errbuf_mem = NULL;
+	}
+}
+
+// 二次元誤差分散法を使用して、出来る限り高品質に変換する。固定パレットの場合。
+static bool
+image_reduct_highquality_fixed(image_reductor_handle *ir,
 	const struct image_opt *opt, const struct diag *diag)
 {
-	struct image *dstimg = ir->dstimg;
 	const struct image *srcimg = ir->srcimg;
-	uint16 *d = (uint16 *)dstimg->buf;
-	const uint16 *src = (const uint16 *)srcimg->buf;
+	struct image *dstimg = ir->dstimg;
 	uint dstwidth  = dstimg->width;
 	uint dstheight = dstimg->height;
-	Rational ry;
-	Rational rx;
-	Rational ystep;
-	Rational xstep;
-	ColorRGBint32 prevcol;
-	uint cdm = 256;
 
 #if !defined(SIXELV)
 	// sayaka では選択出来ないようにしてある。
 	assert(opt->diffuse == DIFFUSE_SFL);
 #endif
 
-	// 適応パレットならここでパレットを作成。
-	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
-		if (image_calc_adaptive_palette(ir) == false) {
-			return false;
-		}
+	if (errbuf_init(ir) == false) {
+		return false;
 	}
+	RESIZE_INIT(dstwidth, dstheight, srcimg);
+	uint16 *d = (uint16 *)dstimg->buf;
+	for (uint y = 0; y < dstheight; y++) {
+		RESIZE_STEP(sy0, sy1, ry, ystep);
+		RESIZE_RESET_X();
+		for (uint x = 0; x < dstwidth; x++) {
+			RESIZE_STEP(sx0, sx1, rx, xstep);
+
+			ColorRGB c8 = pixel_mean(ir, sy0, sy1, sx0, sx1);
+			uint16 v = pixel_filter_hq(ir, opt, c8, x);
+			if (__predict_false(c8.a)) {
+				v |= 0x8000;
+			}
+			*d++ = v;
+		}
+
+		// 誤差バッファをローテート。
+		errbuf_rotate(ir);
+	}
+
+	errbuf_free(ir);
+	return true;
+}
+
+// 二次元誤差分散法を使用して、出来る限り高品質に変換する。適応パレットの場合。
+static bool
+image_reduct_highquality_adaptive(image_reductor_handle *ir,
+	const struct image_opt *opt, const struct diag *diag)
+{
+	struct image *srcimg = ir->srcimg;
+	struct image *dstimg = ir->dstimg;
+	uint dstwidth  = dstimg->width;
+	uint dstheight = dstimg->height;
+	bool rv = false;
+
+#if !defined(SIXELV)
+	// sayaka では選択出来ないようにしてある。
+	assert(opt->diffuse == DIFFUSE_SFL);
+#endif
 
 	// 水平、垂直ともピクセルを平均。
 	// 真に高品質にするには補間法を適用するべきだがそこまではしない。
 
-	rational_init(&ry, 0, 0, dstheight);
-	rational_init(&ystep, 0, srcimg->height, dstheight);
-	rational_init(&rx, 0, 0, dstwidth);
-	rational_init(&xstep, 0, srcimg->width, dstwidth);
-
-	// 誤差バッファ
-	const int errbuf_count = 3;
-	const int errbuf_left  = 2;
-	const int errbuf_right = 2;
-	int errbuf_width = dstwidth + errbuf_left + errbuf_right;
-	int errbuf_len = errbuf_width * sizeof(ColorRGBint16);
-	ColorRGBint16 *errbuf[errbuf_count];
-	ColorRGBint16 *errbuf_mem = calloc(errbuf_count, errbuf_len);
-	if (errbuf_mem == NULL) {
+	// 中間画像(リサイズ後画像)。
+	struct image *tmpimg = image_create(dstwidth, dstheight, IMAGE_FMT_ARGB16);
+	if (tmpimg == NULL) {
 		return false;
 	}
-	for (int i = 0; i < errbuf_count; i++) {
-		errbuf[i] = errbuf_mem + errbuf_left + errbuf_width * i;
+
+	// 1パス目。リサイズしながら減色。
+	RESIZE_INIT(dstwidth, dstheight, srcimg);
+	uint16 *t = (uint16 *)tmpimg->buf;
+	for (uint y = 0; y < dstheight; y++) {
+		RESIZE_STEP(sy0, sy1, ry, ystep);
+		RESIZE_RESET_X();
+		for (uint x = 0; x < dstwidth; x++) {
+			RESIZE_STEP(sx0, sx1, rx, xstep);
+
+			ColorRGB c8 = pixel_mean(ir, sy0, sy1, sx0, sx1);
+			uint16 v;
+			v  = (c8.r >> 3) << 10;
+			v |= (c8.g >> 3) <<  5;
+			v |= (c8.b >> 3);
+			if (__predict_false(c8.a)) {
+				v |= 0x8000;
+			}
+			*t++ = v;
+		}
 	}
 
-	memset(&prevcol, 0, sizeof(prevcol));
+	// tmpimg の色集合に対して適応パレットを用意。
+	if (image_calc_adaptive_palette(ir, tmpimg) == false) {
+		goto abort;
+	}
+	// 入力画像 (リサイズ前) が何色で構成されていたかは動作に必要ないので
+	// 調べておらず、デバッグ表示出来るのはリサイズ後の色数になってしまうが
+	// 仕方ない。
+	srcimg->palette_count = tmpimg->palette_count;
 
+	// 2パス目。
+	// 出力画像サイズと同じサイズの tmpimg にフィルタを適用するだけ。
+	const uint16 *s = (const uint16 *)tmpimg->buf;
+	uint16 *d = (uint16 *)dstimg->buf;
+	if (errbuf_init(ir) == false) {
+		goto abort;
+	}
 	for (uint y = 0; y < dstheight; y++) {
-		uint sy0 = ry.I;
-		rational_add(&ry, &ystep);
-		uint sy1 = ry.I;
-		if (sy0 == sy1) {
-			sy1 += 1;
-		}
-
-		rx.I = 0;
-		rx.N = 0;
 		for (uint x = 0; x < dstwidth; x++) {
-			uint sx0 = rx.I;
-			rational_add(&rx, &xstep);
-			uint sx1 = rx.I;
-			if (sx0 == sx1) {
-				sx1 += 1;
-			}
-
-			// 画素の平均を求める。
-			ColorRGBint32 col;
-			memset(&col, 0, sizeof(col));
-			uint a = 0;
-			for (uint sy = sy0; sy < sy1; sy++) {
-				const uint16 *s = &src[sy * srcimg->width + sx0];
-				for (uint sx = sx0; sx < sx1; sx++) {
-					uint16 v = *s++;
-					a     +=  (v >> 15);
-					// 5bitのまま足してループを出たところで8bitにする。
-					col.r += ((v >> 10) & 0x1f);
-					col.g += ((v >>  5) & 0x1f);
-					col.b += ( v        & 0x1f);
-				}
-			}
-			uint area = (sy1 - sy0) * (sx1 - sx0);
-			col.r = (col.r << 3) / area;
-			col.g = (col.g << 3) / area;
-			col.b = (col.b << 3) / area;
-
-			if (ir->gain >= 0) {
-				col.r = (uint32)col.r * ir->gain / 256;
-				col.g = (uint32)col.g * ir->gain / 256;
-				col.b = (uint32)col.b * ir->gain / 256;
-			}
-
-			if (opt->cdm != 0) {
-				cdm /= 2;
-				cdm = MAX(cdm, abs(col.r - prevcol.r));
-				cdm = MAX(cdm, abs(col.g - prevcol.g));
-				cdm = MAX(cdm, abs(col.b - prevcol.b));
-				cdm += opt->cdm;
-				if (cdm > 256) {
-					cdm = 256;
-				}
-				prevcol = col;
-			}
-
-			col.r += errbuf[0][x].r;
-			col.g += errbuf[0][x].g;
-			col.b += errbuf[0][x].b;
-
-			if (ir->is_gray) {
-				colorcvt_gray(&col);
-			}
+			uint cc = *s++;
 
 			ColorRGB c8;
-			c8.r = saturate_uint8(col.r);
-			c8.g = saturate_uint8(col.g);
-			c8.b = saturate_uint8(col.b);
-
-			uint colorcode = ir->finder(ir, c8);
-			uint16 v = colorcode;
-			// 半分以上が透明なら透明ということにする。
-			if (a > area / 2) {
+			c8.r = ((cc >> 10) & 0x1f) << 3;
+			c8.g = ((cc >>  5) & 0x1f) << 3;
+			c8.b = ( cc        & 0x1f) << 3;
+			uint16 v = pixel_filter_hq(ir, opt, c8, x);
+			if (__predict_false((cc & 0x8000))) {
 				v |= 0x8000;
 			}
 			*d++ = v;
-
-			col.r -= dstimg->palette[colorcode].r;
-			col.g -= dstimg->palette[colorcode].g;
-			col.b -= dstimg->palette[colorcode].b;
-
-			if (cdm != 256) {
-				col.r = col.r * cdm / 256;
-				col.g = col.g * cdm / 256;
-				col.b = col.b * cdm / 256;
-			}
-
-			switch (opt->diffuse) {
-			 case DIFFUSE_SFL:
-			 default:
-				// Sierra Filter Lite
-				set_err_asr(errbuf[0], x + 1, &col, 1);
-				set_err_asr(errbuf[1], x - 1, &col, 2);
-				set_err_asr(errbuf[1], x    , &col, 2);
-				break;
-
-#if defined(SIXELV)
-			 case DIFFUSE_NONE:
-				// 比較用の何もしないモード
-				break;
-			 case DIFFUSE_FS:
-				// Floyd Steinberg Method
-				set_err(errbuf[0], x + 1, &col, 112);
-				set_err(errbuf[1], x - 1, &col, 48);
-				set_err(errbuf[1], x    , &col, 80);
-				set_err(errbuf[1], x + 1, &col, 16);
-				break;
-			 case DIFFUSE_ATKINSON:
-				// Atkinson
-				set_err_asr(errbuf[0], x + 1, &col, 3);	// 32
-				set_err_asr(errbuf[0], x + 2, &col, 3);	// 32
-				set_err_asr(errbuf[1], x - 1, &col, 3);	// 32
-				set_err_asr(errbuf[1], x,     &col, 3);	// 32
-				set_err_asr(errbuf[1], x + 1, &col, 3);	// 32
-				set_err_asr(errbuf[2], x,     &col, 3);	// 32
-				break;
-			 case DIFFUSE_JAJUNI:
-				// Jarvis, Judice, Ninke
-				set_err(errbuf[0], x + 1, &col, 37);
-				set_err(errbuf[0], x + 2, &col, 27);
-				set_err(errbuf[1], x - 2, &col, 16);
-				set_err(errbuf[1], x - 1, &col, 27);
-				set_err(errbuf[1], x,     &col, 37);
-				set_err(errbuf[1], x + 1, &col, 27);
-				set_err(errbuf[1], x + 2, &col, 16);
-				set_err(errbuf[2], x - 2, &col,  5);
-				set_err(errbuf[2], x - 1, &col, 16);
-				set_err(errbuf[2], x,     &col, 27);
-				set_err(errbuf[2], x + 1, &col, 16);
-				set_err(errbuf[2], x + 2, &col,  5);
-				break;
-			 case DIFFUSE_STUCKI:
-				// Stucki
-				set_err(errbuf[0], x + 1, &col, 43);
-				set_err(errbuf[0], x + 2, &col, 21);
-				set_err(errbuf[1], x - 2, &col, 11);
-				set_err(errbuf[1], x - 1, &col, 21);
-				set_err(errbuf[1], x,     &col, 43);
-				set_err(errbuf[1], x + 1, &col, 21);
-				set_err(errbuf[1], x + 2, &col, 11);
-				set_err(errbuf[2], x - 2, &col,  5);
-				set_err(errbuf[2], x - 1, &col, 11);
-				set_err(errbuf[2], x,     &col, 21);
-				set_err(errbuf[2], x + 1, &col, 11);
-				set_err(errbuf[2], x + 2, &col,  5);
-				break;
-			 case DIFFUSE_BURKES:
-				// Burkes
-				set_err_asr(errbuf[0], x + 1, &col, 2);	// 64
-				set_err_asr(errbuf[0], x + 2, &col, 3);	// 32
-				set_err_asr(errbuf[1], x - 2, &col, 4);	// 16
-				set_err_asr(errbuf[1], x - 1, &col, 3);	// 32
-				set_err_asr(errbuf[1], x,     &col, 2);	// 64
-				set_err_asr(errbuf[1], x + 1, &col, 3);	// 32
-				set_err_asr(errbuf[1], x + 2, &col, 4);	// 16
-				break;
-			 case DIFFUSE_2:
-				// (x+1,y), (x,y+1)
-				set_err(errbuf[0], x + 1, &col, 128);
-				set_err(errbuf[1], x,     &col, 128);
-				break;
-			 case DIFFUSE_3:
-				// (x+1,y), (x,y+1), (x+1,y+1)
-				set_err(errbuf[0], x + 1, &col, 102);
-				set_err(errbuf[1], x,     &col, 102);
-				set_err(errbuf[1], x + 1, &col,  51);
-				break;
-			 case DIFFUSE_RGB:
-				errbuf[0][x].r   = saturate_adderr(errbuf[0][x].r,   col.r);
-				errbuf[1][x].b   = saturate_adderr(errbuf[1][x].b,   col.b);
-				errbuf[1][x+1].g = saturate_adderr(errbuf[1][x+1].g, col.g);
-				break;
-#endif
-			}
 		}
 
 		// 誤差バッファをローテート。
-		ColorRGBint16 *tmp = errbuf[0];
-		for (int i = 0; i < errbuf_count - 1; i++) {
-			errbuf[i] = errbuf[i + 1];
-		}
-		errbuf[errbuf_count - 1] = tmp;
-		// errbuf[y] には左マージンがあるのを考慮する。
-		memset(errbuf[errbuf_count - 1] - errbuf_left, 0, errbuf_len);
+		errbuf_rotate(ir);
 	}
 
-	free(errbuf_mem);
-	return true;
+	rv = true;
+	errbuf_free(ir);
+ abort:
+	image_free(tmpimg);
+	return rv;
+}
+
+// src 画像の X = [sx0, sx1)、Y = [sy0, sy1) の画素の平均を求める。
+// 真に高品質にするには補間法を適用するべきだがそこまではしない。
+// ついでにここでゲインも適用して返す。
+static ColorRGB
+pixel_mean(image_reductor_handle *ir, uint sy0, uint sy1, uint sx0, uint sx1)
+{
+	const uint16 *src = (const uint16 *)(ir->srcimg->buf);
+	const uint srcwidth = ir->srcimg->width;
+	ColorRGBint32 col;
+	uint a;
+
+	memset(&col, 0, sizeof(col));
+	a = 0;
+	for (uint sy = sy0; sy < sy1; sy++) {
+		const uint16 *s = &src[sy * srcwidth + sx0];
+		for (uint sx = sx0; sx < sx1; sx++) {
+			uint16 v = *s++;
+			a     +=  (v >> 15);
+			// 5bitのまま足してループを出たところで8bitにする。
+			col.r += ((v >> 10) & 0x1f);
+			col.g += ((v >>  5) & 0x1f);
+			col.b += ( v        & 0x1f);
+		}
+	}
+	uint area = (sy1 - sy0) * (sx1 - sx0);
+	col.r = (col.r << 3) / area;
+	col.g = (col.g << 3) / area;
+	col.b = (col.b << 3) / area;
+
+	if (ir->gain >= 0) {
+		col.r = col.r * ir->gain / 256;
+		col.g = col.g * ir->gain / 256;
+		col.b = col.b * ir->gain / 256;
+	}
+
+	ColorRGB c8;
+	c8.r = col.r;
+	c8.g = col.g;
+	c8.b = col.b;
+	// 過半数が透明なら透明ということにする。
+	c8.a = (a > area / 2) ? 1 : 0;
+
+	return c8;
+}
+
+// いろいろフィルタを適用した結果のカラーコードを返す。
+// c は現在位置の色、x が X 座標(誤差分散で使う)。
+// それ以外のパラメータは ir で維持されている。
+// ここでは透明度 (c.a) は扱わない。
+static uint16
+pixel_filter_hq(image_reductor_handle *ir, const struct image_opt *opt,
+	ColorRGB c, int x)
+{
+	ColorRGBint16 **errbuf = ir->errbuf;
+	ColorRGBint32 col;
+	uint cdm;
+
+	col.r = c.r;
+	col.g = c.g;
+	col.b = c.b;
+
+	cdm = ir->cdm;
+	if (opt->cdm != 0) {
+		cdm /= 2;
+		cdm = MAX(cdm, abs(col.r - ir->prevcol.r));
+		cdm = MAX(cdm, abs(col.g - ir->prevcol.g));
+		cdm = MAX(cdm, abs(col.b - ir->prevcol.b));
+		cdm += opt->cdm;
+		if (cdm > 256) {
+			cdm = 256;
+		}
+		ir->cdm = cdm;
+		ir->prevcol = col;
+	}
+
+	col.r += errbuf[0][x].r;
+	col.g += errbuf[0][x].g;
+	col.b += errbuf[0][x].b;
+
+	if (ir->is_gray) {
+		colorcvt_gray(&col);
+	}
+
+	ColorRGB c8;
+	c8.r = saturate_uint8(col.r);
+	c8.g = saturate_uint8(col.g);
+	c8.b = saturate_uint8(col.b);
+	uint colorcode = ir->finder(ir, c8);
+
+	ColorRGBint32 dif;
+	dif.r = col.r - ir->dstimg->palette[colorcode].r;
+	dif.g = col.g - ir->dstimg->palette[colorcode].g;
+	dif.b = col.b - ir->dstimg->palette[colorcode].b;
+
+	if (cdm != 256) {
+		dif.r = dif.r * cdm / 256;
+		dif.g = dif.g * cdm / 256;
+		dif.b = dif.b * cdm / 256;
+	}
+
+	switch (opt->diffuse) {
+	 case DIFFUSE_SFL:
+	 default:
+		// Sierra Filter Lite
+		set_err_asr(errbuf[0], x + 1, &dif, 1);
+		set_err_asr(errbuf[1], x - 1, &dif, 2);
+		set_err_asr(errbuf[1], x    , &dif, 2);
+		break;
+
+#if defined(SIXELV)
+	 case DIFFUSE_NONE:
+		// 比較用の何もしないモード
+		break;
+	 case DIFFUSE_FS:
+		// Floyd Steinberg Method
+		set_err(errbuf[0], x + 1, &dif, 112);
+		set_err(errbuf[1], x - 1, &dif, 48);
+		set_err(errbuf[1], x    , &dif, 80);
+		set_err(errbuf[1], x + 1, &dif, 16);
+		break;
+	 case DIFFUSE_ATKINSON:
+		// Atkinson
+		set_err_asr(errbuf[0], x + 1, &dif, 3);	// 32
+		set_err_asr(errbuf[0], x + 2, &dif, 3);	// 32
+		set_err_asr(errbuf[1], x - 1, &dif, 3);	// 32
+		set_err_asr(errbuf[1], x,     &dif, 3);	// 32
+		set_err_asr(errbuf[1], x + 1, &dif, 3);	// 32
+		set_err_asr(errbuf[2], x,     &dif, 3);	// 32
+		break;
+	 case DIFFUSE_JAJUNI:
+		// Jarvis, Judice, Ninke
+		set_err(errbuf[0], x + 1, &dif, 37);
+		set_err(errbuf[0], x + 2, &dif, 27);
+		set_err(errbuf[1], x - 2, &dif, 16);
+		set_err(errbuf[1], x - 1, &dif, 27);
+		set_err(errbuf[1], x,     &dif, 37);
+		set_err(errbuf[1], x + 1, &dif, 27);
+		set_err(errbuf[1], x + 2, &dif, 16);
+		set_err(errbuf[2], x - 2, &dif,  5);
+		set_err(errbuf[2], x - 1, &dif, 16);
+		set_err(errbuf[2], x,     &dif, 27);
+		set_err(errbuf[2], x + 1, &dif, 16);
+		set_err(errbuf[2], x + 2, &dif,  5);
+		break;
+	 case DIFFUSE_STUCKI:
+		// Stucki
+		set_err(errbuf[0], x + 1, &dif, 43);
+		set_err(errbuf[0], x + 2, &dif, 21);
+		set_err(errbuf[1], x - 2, &dif, 11);
+		set_err(errbuf[1], x - 1, &dif, 21);
+		set_err(errbuf[1], x,     &dif, 43);
+		set_err(errbuf[1], x + 1, &dif, 21);
+		set_err(errbuf[1], x + 2, &dif, 11);
+		set_err(errbuf[2], x - 2, &dif,  5);
+		set_err(errbuf[2], x - 1, &dif, 11);
+		set_err(errbuf[2], x,     &dif, 21);
+		set_err(errbuf[2], x + 1, &dif, 11);
+		set_err(errbuf[2], x + 2, &dif,  5);
+		break;
+	 case DIFFUSE_BURKES:
+		// Burkes
+		set_err_asr(errbuf[0], x + 1, &dif, 2);	// 64
+		set_err_asr(errbuf[0], x + 2, &dif, 3);	// 32
+		set_err_asr(errbuf[1], x - 2, &dif, 4);	// 16
+		set_err_asr(errbuf[1], x - 1, &dif, 3);	// 32
+		set_err_asr(errbuf[1], x,     &dif, 2);	// 64
+		set_err_asr(errbuf[1], x + 1, &dif, 3);	// 32
+		set_err_asr(errbuf[1], x + 2, &dif, 4);	// 16
+		break;
+	 case DIFFUSE_2:
+		// (x+1,y), (x,y+1)
+		set_err(errbuf[0], x + 1, &dif, 128);
+		set_err(errbuf[1], x,     &dif, 128);
+		break;
+	 case DIFFUSE_3:
+		// (x+1,y), (x,y+1), (x+1,y+1)
+		set_err(errbuf[0], x + 1, &dif, 102);
+		set_err(errbuf[1], x,     &dif, 102);
+		set_err(errbuf[1], x + 1, &dif,  51);
+		break;
+	 case DIFFUSE_RGB:
+		errbuf[0][x].r   = saturate_adderr(errbuf[0][x].r,   dif.r);
+		errbuf[1][x].b   = saturate_adderr(errbuf[1][x].b,   dif.b);
+		errbuf[1][x+1].g = saturate_adderr(errbuf[1][x+1].g, dif.g);
+		break;
+#endif
+	}
+
+	return colorcode;
 }
 
 #if defined(SIXELV)
@@ -1585,11 +1761,11 @@ octree_free(struct octree *node)
 }
 
 // srcimg から適応パレットを作成。
+// srcimg->palette_count にはソース画像に使われてる色数を返す(表示用)。
 static bool
-image_calc_adaptive_palette(image_reductor_handle *ir)
+image_calc_adaptive_palette(image_reductor_handle *ir, struct image *srcimg)
 {
 	struct image *dstimg = ir->dstimg;
-	struct image *srcimg = ir->srcimg;
 	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint palette_count;
 	struct octree root;
