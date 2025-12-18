@@ -940,10 +940,6 @@ image_reduct_highquality(image_reductor_handle *ir,
 			col.g -= dstimg->palette[colorcode].g;
 			col.b -= dstimg->palette[colorcode].b;
 
-			// ランダムノイズを加える。
-			if (0) {
-			}
-
 			if (cdm != 256) {
 				col.r = col.r * cdm / 256;
 				col.g = col.g * cdm / 256;
