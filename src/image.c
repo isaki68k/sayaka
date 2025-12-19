@@ -132,12 +132,12 @@ static bool image_reduct_simple(image_reductor_handle *);
 static bool image_reduct_highquality_fixed(image_reductor_handle *);
 static bool image_reduct_highquality_adaptive(image_reductor_handle *);
 static bool errbuf_init(image_reductor_handle *);
-static inline void errbuf_rotate(image_reductor_handle *) __always_inline;
+static inline __always_inline void errbuf_rotate(image_reductor_handle *);
 static void errbuf_free(image_reductor_handle *);
-static inline ColorRGB pixel_mean(image_reductor_handle *,
-	uint, uint, uint, uint) __always_inline;
-static uint16 pixel_filter_hq(image_reductor_handle *, ColorRGB, int)
-	__always_inline;
+static inline __always_inline ColorRGB pixel_mean(image_reductor_handle *,
+	uint, uint, uint, uint);
+static inline __always_inline uint16 pixel_filter_hq(image_reductor_handle *,
+	ColorRGB, int);
 #if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *, int);
 #endif
@@ -872,7 +872,7 @@ errbuf_init(image_reductor_handle *ir)
 }
 
 // 誤差分散バッファをローテートする。
-static inline void
+static inline __always_inline void
 errbuf_rotate(image_reductor_handle *ir)
 {
 	ColorRGBint16 *tmp = ir->errbuf[0];
@@ -1027,7 +1027,7 @@ image_reduct_highquality_adaptive(image_reductor_handle *ir)
 // src 画像の X = [sx0, sx1)、Y = [sy0, sy1) の画素の平均を求める。
 // 真に高品質にするには補間法を適用するべきだがそこまではしない。
 // ついでにここでゲインも適用して返す。
-static inline ColorRGB
+static inline __always_inline ColorRGB
 pixel_mean(image_reductor_handle *ir, uint sy0, uint sy1, uint sx0, uint sx1)
 {
 	const uint16 *src = (const uint16 *)(ir->srcimg->buf);
@@ -1073,7 +1073,7 @@ pixel_mean(image_reductor_handle *ir, uint sy0, uint sy1, uint sx0, uint sx1)
 // c は現在位置の色、x が X 座標(誤差分散で使う)。
 // それ以外のパラメータは ir で維持されている。
 // ここでは透明度 (c.a) は扱わない。
-static inline uint16
+static inline __always_inline uint16
 pixel_filter_hq(image_reductor_handle *ir, ColorRGB c, int x)
 {
 	ColorRGBint16 **errbuf = ir->errbuf;
