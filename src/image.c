@@ -83,8 +83,8 @@ typedef struct image_reductor_handle_
 
 	bool is_gray;
 
-	// ゲイン。256 を 1.0 とする。負数なら適用しない (1.0 のまま)。
-	int gain;
+	// オプション (所有はしていない)
+	const struct image_opt *opt;
 
 	// 誤差分散用バッファ。
 	ColorRGBint16 *errbuf[ERRBUF_LINES];
@@ -125,20 +125,19 @@ static bool image_calc_adaptive_palette(image_reductor_handle *,
 	struct image *);
 
 #if defined(SIXELV)
-static bool image_reduct_simple(image_reductor_handle *,
-	const struct image_opt *, const struct diag *);
+static bool image_reduct_simple(image_reductor_handle *, const struct diag *);
 #endif
 static bool image_reduct_highquality_fixed(image_reductor_handle *,
-	const struct image_opt *, const struct diag *);
+	const struct diag *);
 static bool image_reduct_highquality_adaptive(image_reductor_handle *,
-	const struct image_opt *, const struct diag *);
+	const struct diag *);
 static bool errbuf_init(image_reductor_handle *);
 static inline void errbuf_rotate(image_reductor_handle *) __always_inline;
 static void errbuf_free(image_reductor_handle *);
 static inline ColorRGB pixel_mean(image_reductor_handle *,
 	uint, uint, uint, uint) __always_inline;
-static uint16 pixel_filter_hq(image_reductor_handle *,
-	const struct image_opt *, ColorRGB, int) __always_inline;
+static uint16 pixel_filter_hq(image_reductor_handle *, ColorRGB, int)
+	__always_inline;
 #if defined(SIXELV)
 static void set_err(ColorRGBint16 *, int, const ColorRGBint32 *, int);
 #endif
@@ -598,7 +597,7 @@ image_reduct(
 
 	ir = &irbuf;
 	memset(ir, 0, sizeof(*ir));
-	ir->gain = opt->gain;
+	ir->opt = opt;
 
 	dst = image_create(dst_width, dst_height, IMAGE_FMT_AIDX16);
 	if (dst == NULL) {
@@ -683,7 +682,7 @@ image_reduct(
 
 #if defined(SIXELV)
 	if (opt->method == REDUCT_SIMPLE) {
-		ok = image_reduct_simple(ir, opt, diag);
+		ok = image_reduct_simple(ir, diag);
 
 	} else if (opt->method != REDUCT_HIGH_QUALITY) {
 		Debug(diag, "%s: Unknown method %u", __func__, opt->method);
@@ -693,9 +692,9 @@ image_reduct(
 #endif
 	{
 		if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
-			ok = image_reduct_highquality_adaptive(ir, opt, diag);
+			ok = image_reduct_highquality_adaptive(ir, diag);
 		} else {
-			ok = image_reduct_highquality_fixed(ir, opt, diag);
+			ok = image_reduct_highquality_fixed(ir, diag);
 		}
 	}
 
@@ -792,8 +791,7 @@ rational_add(Rational *sr, const Rational *x)
 #if defined(SIXELV)
 // 単純間引き
 static bool
-image_reduct_simple(image_reductor_handle *ir,
-	const struct image_opt *opt, const struct diag *diag)
+image_reduct_simple(image_reductor_handle *ir, const struct diag *diag)
 {
 	struct image *dstimg = ir->dstimg;
 	struct image *srcimg = ir->srcimg;
@@ -803,7 +801,7 @@ image_reduct_simple(image_reductor_handle *ir,
 	uint dstheight = dstimg->height;
 
 	// 適応パレットならここでパレットを作成。
-	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
+	if (GET_COLOR_MODE(ir->opt->color) == COLOR_MODE_ADAPTIVE) {
 		if (image_calc_adaptive_palette(ir, srcimg) == false) {
 			return false;
 		}
@@ -823,10 +821,10 @@ image_reduct_simple(image_reductor_handle *ir,
 			col.g = ((v >>  5) & 0x1f) << 3;
 			col.b = ( v        & 0x1f) << 3;
 
-			if (ir->gain >= 0) {
-				col.r = saturate_uint8((uint32)col.r * ir->gain / 256);
-				col.g = saturate_uint8((uint32)col.g * ir->gain / 256);
-				col.b = saturate_uint8((uint32)col.b * ir->gain / 256);
+			if (ir->opt->gain >= 0) {
+				col.r = saturate_uint8((uint32)col.r * ir->opt->gain / 256);
+				col.g = saturate_uint8((uint32)col.g * ir->opt->gain / 256);
+				col.b = saturate_uint8((uint32)col.b * ir->opt->gain / 256);
 			}
 			if (ir->is_gray) {
 				colorcvt_gray(&col);
@@ -900,7 +898,7 @@ errbuf_free(image_reductor_handle *ir)
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。固定パレットの場合。
 static bool
 image_reduct_highquality_fixed(image_reductor_handle *ir,
-	const struct image_opt *opt, const struct diag *diag)
+	const struct diag *diag)
 {
 	const struct image *srcimg = ir->srcimg;
 	struct image *dstimg = ir->dstimg;
@@ -909,7 +907,7 @@ image_reduct_highquality_fixed(image_reductor_handle *ir,
 
 #if !defined(SIXELV)
 	// sayaka では選択出来ないようにしてある。
-	assert(opt->diffuse == DIFFUSE_SFL);
+	assert(ir->opt->diffuse == DIFFUSE_SFL);
 #endif
 
 	if (errbuf_init(ir) == false) {
@@ -924,7 +922,7 @@ image_reduct_highquality_fixed(image_reductor_handle *ir,
 			RESIZE_STEP(sx0, sx1, rx, xstep);
 
 			ColorRGB c8 = pixel_mean(ir, sy0, sy1, sx0, sx1);
-			uint16 v = pixel_filter_hq(ir, opt, c8, x);
+			uint16 v = pixel_filter_hq(ir, c8, x);
 			if (__predict_false(c8.a)) {
 				v |= 0x8000;
 			}
@@ -942,7 +940,7 @@ image_reduct_highquality_fixed(image_reductor_handle *ir,
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。適応パレットの場合。
 static bool
 image_reduct_highquality_adaptive(image_reductor_handle *ir,
-	const struct image_opt *opt, const struct diag *diag)
+	const struct diag *diag)
 {
 	struct image *srcimg = ir->srcimg;
 	struct image *dstimg = ir->dstimg;
@@ -952,7 +950,7 @@ image_reduct_highquality_adaptive(image_reductor_handle *ir,
 
 #if !defined(SIXELV)
 	// sayaka では選択出来ないようにしてある。
-	assert(opt->diffuse == DIFFUSE_SFL);
+	assert(ir->opt->diffuse == DIFFUSE_SFL);
 #endif
 
 	// 水平、垂直ともピクセルを平均。
@@ -1009,7 +1007,7 @@ image_reduct_highquality_adaptive(image_reductor_handle *ir,
 			c8.r = ((cc >> 10) & 0x1f) << 3;
 			c8.g = ((cc >>  5) & 0x1f) << 3;
 			c8.b = ( cc        & 0x1f) << 3;
-			uint16 v = pixel_filter_hq(ir, opt, c8, x);
+			uint16 v = pixel_filter_hq(ir, c8, x);
 			if (__predict_false((cc & 0x8000))) {
 				v |= 0x8000;
 			}
@@ -1056,10 +1054,10 @@ pixel_mean(image_reductor_handle *ir, uint sy0, uint sy1, uint sx0, uint sx1)
 	col.g = (col.g << 3) / area;
 	col.b = (col.b << 3) / area;
 
-	if (ir->gain >= 0) {
-		col.r = col.r * ir->gain / 256;
-		col.g = col.g * ir->gain / 256;
-		col.b = col.b * ir->gain / 256;
+	if (ir->opt->gain >= 0) {
+		col.r = col.r * ir->opt->gain / 256;
+		col.g = col.g * ir->opt->gain / 256;
+		col.b = col.b * ir->opt->gain / 256;
 	}
 
 	ColorRGB c8;
@@ -1077,8 +1075,7 @@ pixel_mean(image_reductor_handle *ir, uint sy0, uint sy1, uint sx0, uint sx1)
 // それ以外のパラメータは ir で維持されている。
 // ここでは透明度 (c.a) は扱わない。
 static inline uint16
-pixel_filter_hq(image_reductor_handle *ir, const struct image_opt *opt,
-	ColorRGB c, int x)
+pixel_filter_hq(image_reductor_handle *ir, ColorRGB c, int x)
 {
 	ColorRGBint16 **errbuf = ir->errbuf;
 	ColorRGBint32 col;
@@ -1089,12 +1086,12 @@ pixel_filter_hq(image_reductor_handle *ir, const struct image_opt *opt,
 	col.b = c.b;
 
 	cdm = ir->cdm;
-	if (opt->cdm != 0) {
+	if (ir->opt->cdm != 0) {
 		cdm /= 2;
 		cdm = MAX(cdm, abs(col.r - ir->prevcol.r));
 		cdm = MAX(cdm, abs(col.g - ir->prevcol.g));
 		cdm = MAX(cdm, abs(col.b - ir->prevcol.b));
-		cdm += opt->cdm;
+		cdm += ir->opt->cdm;
 		if (cdm > 256) {
 			cdm = 256;
 		}
@@ -1127,7 +1124,7 @@ pixel_filter_hq(image_reductor_handle *ir, const struct image_opt *opt,
 		dif.b = dif.b * cdm / 256;
 	}
 
-	switch (opt->diffuse) {
+	switch (ir->opt->diffuse) {
 	 case DIFFUSE_SFL:
 	 default:
 		// Sierra Filter Lite
@@ -1786,10 +1783,10 @@ image_calc_adaptive_palette(image_reductor_handle *ir, struct image *srcimg)
 	for (const uint16 *s = src; s < send; ) {
 		uint16 n = *s++;
 		n &= 0x7fff;
-		if (__predict_false(ir->gain >= 0)) {
-			uint32 r5 = ((n >> 10) & 0x1f) * ir->gain / 256;
-			uint32 g5 = ((n >>  5) & 0x1f) * ir->gain / 256;
-			uint32 b5 = ( n        & 0x1f) * ir->gain / 256;
+		if (__predict_false(ir->opt->gain >= 0)) {
+			uint32 r5 = ((n >> 10) & 0x1f) * ir->opt->gain / 256;
+			uint32 g5 = ((n >>  5) & 0x1f) * ir->opt->gain / 256;
+			uint32 b5 = ( n        & 0x1f) * ir->opt->gain / 256;
 			if (__predict_false(r5 > 31)) r5 = 31;
 			if (__predict_false(g5 > 31)) g5 = 31;
 			if (__predict_false(b5 > 31)) b5 = 31;
