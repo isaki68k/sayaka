@@ -64,6 +64,20 @@ CHECK_BUILTIN_FUNC(__builtin_expect, __BUILTIN_EXPECT,
 CHECK_BUILTIN_FUNC(__builtin_unreachable, __BUILTIN_UNREACHABLE,
 	[__builtin_unreachable()])
 
+AC_MSG_CHECKING(for __attribute__((__always_inline__)))
+old_CFLAGS="${CFLAGS}"
+CFLAGS="${CFLAGS} -Wall -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+		inline int f(int a) __attribute__((__always_inline__));
+		int f(int a) { return a; }
+	], [])],[
+		AC_MSG_RESULT([yes])
+		AC_DEFINE([HAVE___ATTRIBUTE_ALWAYS_INLINE])
+	],[
+		AC_MSG_RESULT([no])
+	])
+CFLAGS="${old_CFLAGS}"
+
 AC_MSG_CHECKING(for __attribute__((__format__)))
 old_CFLAGS="${CFLAGS}"
 CFLAGS="${CFLAGS} -Wall -Werror"

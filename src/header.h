@@ -39,6 +39,14 @@
 #include <bsd/bsd.h>
 #endif
 
+#if !defined(__always_inline)
+# if defined(HAVE___ATTRIBUTE_ALWAYS_INLINE)
+#  define __always_inline	__attribute__((__always_inline__))
+# else
+#  define __always_inline
+# endif
+#endif
+
 #if !defined(__packed)
 # if defined(HAVE___ATTRIBUTE_PACKED)
 #  define __packed	__attribute__((__packed__))
