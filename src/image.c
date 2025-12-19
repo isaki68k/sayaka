@@ -757,6 +757,32 @@ rational_add(Rational *sr, const Rational *x)
 	}
 }
 
+// リサイズ用の初期化マクロ。
+#define RESIZE_INIT(dstwidth_, dstheight_, srcimg_)	\
+	Rational ry;	\
+	Rational rx;	\
+	Rational ystep;	\
+	Rational xstep;	\
+	rational_init(&ry,    0, 0, dstheight_);	\
+	rational_init(&ystep, 0, (srcimg_)->height, dstheight_);	\
+	rational_init(&rx,    0, 0, dstwidth_);	\
+	rational_init(&xstep, 0, (srcimg_)->width, dstwidth_)
+
+// リサイズの X, Y 各方向のループ冒頭の処理。
+#define RESIZE_STEP(S0, S1, RR, STEP)	\
+		uint S0 = (RR).I;	\
+		rational_add(&(RR), &(STEP));	\
+		uint S1 = (RR).I;	\
+		if (S0 == S1) {	\
+			S1 += 1;	\
+		}
+
+// X ループ冒頭のリセット。
+#define RESIZE_RESET_X()	do {	\
+	rx.I = 0;	\
+	rx.N = 0;	\
+} while (0)
+
 
 //
 // 減色 & リサイズ
@@ -774,10 +800,6 @@ image_reduct_simple(image_reductor_handle *ir,
 	const uint16 *src = (const uint16 *)srcimg->buf;
 	uint dstwidth  = dstimg->width;
 	uint dstheight = dstimg->height;
-	Rational ry;
-	Rational rx;
-	Rational ystep;
-	Rational xstep;
 
 	// 適応パレットならここでパレットを作成。
 	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
@@ -787,15 +809,9 @@ image_reduct_simple(image_reductor_handle *ir,
 	}
 
 	// 水平、垂直方向ともスキップサンプリング。
-
-	rational_init(&ry, 0, 0, dstheight);
-	rational_init(&ystep, 0, srcimg->height, dstheight);
-	rational_init(&rx, 0, 0, dstwidth);
-	rational_init(&xstep, 0, srcimg->width, dstwidth);
-
+	RESIZE_INIT(dstwidth, dstheight, srcimg);
 	for (uint y = 0; y < dstheight; y++) {
-		rx.I = 0;
-		rx.N = 0;
+		RESIZE_RESET_X();
 		const uint16 *s0 = &src[ry.I * srcimg->width];
 		for (uint x = 0; x < dstwidth; x++) {
 			ColorRGBint32 col;
@@ -832,32 +848,6 @@ image_reduct_simple(image_reductor_handle *ir,
 	return true;
 }
 #endif
-
-// リサイズ用の初期化マクロ。
-#define RESIZE_INIT(dstwidth_, dstheight_, srcimg_)	\
-	Rational ry;	\
-	Rational rx;	\
-	Rational ystep;	\
-	Rational xstep;	\
-	rational_init(&ry,    0, 0, dstheight_);	\
-	rational_init(&ystep, 0, (srcimg_)->height, dstheight_);	\
-	rational_init(&rx,    0, 0, dstwidth_);	\
-	rational_init(&xstep, 0, (srcimg_)->width, dstwidth_)
-
-// リサイズの X, Y 各方向のループ冒頭の処理。
-#define RESIZE_STEP(S0, S1, RR, STEP)	\
-		uint S0 = (RR).I;	\
-		rational_add(&(RR), &(STEP));	\
-		uint S1 = (RR).I;	\
-		if (S0 == S1) {	\
-			S1 += 1;	\
-		}
-
-// X ループ冒頭のリセット。
-#define RESIZE_RESET_X()	do {	\
-	rx.I = 0;	\
-	rx.N = 0;	\
-} while (0)
 
 // 誤差分散用のバッファを初期化する。
 static bool
