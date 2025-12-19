@@ -672,9 +672,11 @@ image_reduct(
 	}
 
 #if defined(IMAGE_PROFILE)
-	printf("[lo, hi )  count\n");
-	for (uint i = 0; i < 8; i++) {
-		printf("%3u, %3u = %u\n", ir->y_lo[i], ir->y_hi[i], y_count[i]);
+	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
+		printf("[lo, hi )  count\n");
+		for (uint i = 0; i < 8; i++) {
+			printf("%3u, %3u = %u\n", ir->y_lo[i], ir->y_hi[i], y_count[i]);
+		}
 	}
 #endif
 
