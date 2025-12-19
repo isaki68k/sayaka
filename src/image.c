@@ -104,6 +104,8 @@ typedef struct image_reductor_handle_
 	// 適応パレット時に使う検索範囲の上下限。
 	int y_lo[8];
 	int y_hi[8];
+
+	const struct diag *diag;
 } image_reductor_handle;
 
 static uint finder_gray(image_reductor_handle *, ColorRGB);
@@ -125,12 +127,10 @@ static bool image_calc_adaptive_palette(image_reductor_handle *,
 	struct image *);
 
 #if defined(SIXELV)
-static bool image_reduct_simple(image_reductor_handle *, const struct diag *);
+static bool image_reduct_simple(image_reductor_handle *);
 #endif
-static bool image_reduct_highquality_fixed(image_reductor_handle *,
-	const struct diag *);
-static bool image_reduct_highquality_adaptive(image_reductor_handle *,
-	const struct diag *);
+static bool image_reduct_highquality_fixed(image_reductor_handle *);
+static bool image_reduct_highquality_adaptive(image_reductor_handle *);
 static bool errbuf_init(image_reductor_handle *);
 static inline void errbuf_rotate(image_reductor_handle *) __always_inline;
 static void errbuf_free(image_reductor_handle *);
@@ -598,6 +598,7 @@ image_reduct(
 	ir = &irbuf;
 	memset(ir, 0, sizeof(*ir));
 	ir->opt = opt;
+	ir->diag = diag;
 
 	dst = image_create(dst_width, dst_height, IMAGE_FMT_AIDX16);
 	if (dst == NULL) {
@@ -682,7 +683,7 @@ image_reduct(
 
 #if defined(SIXELV)
 	if (opt->method == REDUCT_SIMPLE) {
-		ok = image_reduct_simple(ir, diag);
+		ok = image_reduct_simple(ir);
 
 	} else if (opt->method != REDUCT_HIGH_QUALITY) {
 		Debug(diag, "%s: Unknown method %u", __func__, opt->method);
@@ -692,9 +693,9 @@ image_reduct(
 #endif
 	{
 		if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
-			ok = image_reduct_highquality_adaptive(ir, diag);
+			ok = image_reduct_highquality_adaptive(ir);
 		} else {
-			ok = image_reduct_highquality_fixed(ir, diag);
+			ok = image_reduct_highquality_fixed(ir);
 		}
 	}
 
@@ -791,7 +792,7 @@ rational_add(Rational *sr, const Rational *x)
 #if defined(SIXELV)
 // 単純間引き
 static bool
-image_reduct_simple(image_reductor_handle *ir, const struct diag *diag)
+image_reduct_simple(image_reductor_handle *ir)
 {
 	struct image *dstimg = ir->dstimg;
 	struct image *srcimg = ir->srcimg;
@@ -897,8 +898,7 @@ errbuf_free(image_reductor_handle *ir)
 
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。固定パレットの場合。
 static bool
-image_reduct_highquality_fixed(image_reductor_handle *ir,
-	const struct diag *diag)
+image_reduct_highquality_fixed(image_reductor_handle *ir)
 {
 	const struct image *srcimg = ir->srcimg;
 	struct image *dstimg = ir->dstimg;
@@ -939,8 +939,7 @@ image_reduct_highquality_fixed(image_reductor_handle *ir,
 
 // 二次元誤差分散法を使用して、出来る限り高品質に変換する。適応パレットの場合。
 static bool
-image_reduct_highquality_adaptive(image_reductor_handle *ir,
-	const struct diag *diag)
+image_reduct_highquality_adaptive(image_reductor_handle *ir)
 {
 	struct image *srcimg = ir->srcimg;
 	struct image *dstimg = ir->dstimg;
