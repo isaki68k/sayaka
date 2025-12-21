@@ -692,7 +692,7 @@ image_reduct(
 	} else
 #endif
 	{
-		if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
+		if (IS_COLOR_MODE_ADAPTIVE(opt->color)) {
 			ok = image_reduct_highquality_adaptive(ir);
 		} else {
 			ok = image_reduct_highquality_fixed(ir);
@@ -700,7 +700,7 @@ image_reduct(
 	}
 
 #if defined(IMAGE_PROFILE)
-	if (GET_COLOR_MODE(opt->color) == COLOR_MODE_ADAPTIVE) {
+	if (IS_COLOR_MODE_ADAPTIVE(opt->color)) {
 		printf("[lo, hi )  count\n");
 		for (uint i = 0; i < 8; i++) {
 			printf("%3u, %3u = %u\n", ir->y_lo[i], ir->y_hi[i], y_count[i]);
@@ -802,7 +802,7 @@ image_reduct_simple(image_reductor_handle *ir)
 	uint dstheight = dstimg->height;
 
 	// 適応パレットならここでパレットを作成。
-	if (GET_COLOR_MODE(ir->opt->color) == COLOR_MODE_ADAPTIVE) {
+	if (IS_COLOR_MODE_ADAPTIVE(ir->opt->color)) {
 		if (image_calc_adaptive_palette(ir, srcimg) == false) {
 			return false;
 		}

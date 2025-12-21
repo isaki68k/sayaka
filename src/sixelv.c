@@ -702,7 +702,7 @@ do_file(const char *infile)
 
 	PROF(&reduct_end);
 
-	if (GET_COLOR_MODE(imageopt.color) == COLOR_MODE_ADAPTIVE) {
+	if (IS_COLOR_MODE_ADAPTIVE(imageopt.color)) {
 		Debug(diag_image, "AdaptivePalette InputColors=%u%s OutputColors=%u",
 			srcimg->palette_count,
 			(srcimg->palette_count > 256 ? "/32768" : ""),

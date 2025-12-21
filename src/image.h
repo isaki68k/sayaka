@@ -141,6 +141,9 @@ typedef enum {
 #define GET_COLOR_MODE(fmt)		((fmt) & COLOR_MODE_MASK)
 #define GET_COLOR_COUNT(fmt)	((((uint)(fmt)) >> 8) + 1)
 
+#define IS_COLOR_MODE_ADAPTIVE(fmt)	\
+	(GET_COLOR_MODE(fmt) == COLOR_MODE_ADAPTIVE)
+
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define RGBToU32(r, g, b)	((uint32)(((r) <<  0) | ((g) << 8) | ((b) << 16)))
 #else
