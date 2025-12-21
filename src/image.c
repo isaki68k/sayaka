@@ -104,6 +104,9 @@ typedef struct image_reductor_handle_
 	// 適応パレット時に使う検索範囲の上下限。
 	int y_lo[8];
 	int y_hi[8];
+#if defined(IMAGE_PROFILE)
+	uint y_count[8];	// ここで見つかったピクセル数
+#endif
 
 	const struct diag *diag;
 } image_reductor_handle;
@@ -148,9 +151,6 @@ static inline int16 saturate_adderr(int16, int);
 
 static const ColorRGB palette_fixed8[];
 static const ColorRGB palette_vga16[];
-#if defined(IMAGE_PROFILE)
-static int y_count[8];
-#endif
 
 // opt を初期化する。
 void
@@ -677,10 +677,6 @@ image_reduct(
 		goto abort;
 	}
 
-#if defined(IMAGE_PROFILE)
-	memset(&y_count, 0, sizeof(y_count));
-#endif
-
 #if defined(SIXELV)
 	if (opt->method == REDUCT_SIMPLE) {
 		ok = image_reduct_simple(ir);
@@ -710,7 +706,7 @@ image_reduct(
 		diag_print(diag, "[lo, hi )%s", title);
 		for (uint i = 0; i < 8; i++) {
 #if defined(IMAGE_PROFILE)
-			snprintf(buf, sizeof(buf), " = %u", y_count[i]);
+			snprintf(buf, sizeof(buf), " = %u", ir->y_count[i]);
 #endif
 			diag_print(diag, "%3u, %3u%s", ir->y_lo[i], ir->y_hi[i], buf);
 		}
@@ -1722,7 +1718,7 @@ finder_linear(image_reductor_handle *ir, ColorRGB c)
 	uint32 yh = RGBToY(c.r, c.g, c.b) >> 5;
 
 #if defined(IMAGE_PROFILE)
-	y_count[yh]++;
+	ir->y_count[yh]++;
 #endif
 	for (uint i = ir->y_lo[yh]; i < ir->y_hi[yh]; i++) {
 		const ColorRGB *pal = &ir->dstimg->palette[i];
