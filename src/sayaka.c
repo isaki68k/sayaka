@@ -555,7 +555,7 @@ help_all(void)
 "     16       : Fixed ANSI compatible 16 colors\n"
 "     8        : Fixed RGB 8 colors\n"
 "     2        : Monochrome image, but use text bold sequence\n"
-"     1        : Monochrome image, and disable any text color sequences\n"
+"     1        : Monochrome image, and disable all text color sequences\n"
 "     gray[<n>]: (2..256) shades of grayscale. If <n> is omitted, 256 is used\n"
 "                'gray2' is a synonym for '2'\n"
 "  --ciphers=<ciphers>    : \"RSA\" can only be specified\n"
