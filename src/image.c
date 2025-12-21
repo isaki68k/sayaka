@@ -699,14 +699,22 @@ image_reduct(
 		}
 	}
 
+	if (diag_get_level(diag) >= 2 && IS_COLOR_MODE_ADAPTIVE(opt->color)) {
+		const char *title = "";
+		char buf[16];
 #if defined(IMAGE_PROFILE)
-	if (IS_COLOR_MODE_ADAPTIVE(opt->color)) {
-		printf("[lo, hi )  count\n");
+		title = "  found pixels";
+#else
+		buf[0] = '\0';
+#endif
+		diag_print(diag, "[lo, hi )%s", title);
 		for (uint i = 0; i < 8; i++) {
-			printf("%3u, %3u = %u\n", ir->y_lo[i], ir->y_hi[i], y_count[i]);
+#if defined(IMAGE_PROFILE)
+			snprintf(buf, sizeof(buf), " = %u", y_count[i]);
+#endif
+			diag_print(diag, "%3u, %3u%s", ir->y_lo[i], ir->y_hi[i], buf);
 		}
 	}
-#endif
 
  abort:
 #if defined(SIXELV)
