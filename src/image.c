@@ -127,7 +127,7 @@ static ColorRGB *image_alloc_fixed256_palette(void);
 static ColorRGB *image_alloc_xterm256_palette(void);
 #endif
 static bool image_calc_adaptive_palette(image_reductor_handle *,
-	struct image *);
+	struct image *, int);
 
 #if defined(SIXELV)
 static bool image_reduct_simple(image_reductor_handle *);
@@ -807,7 +807,7 @@ image_reduct_simple(image_reductor_handle *ir)
 
 	// 適応パレットならここでパレットを作成。
 	if (IS_COLOR_MODE_ADAPTIVE(ir->opt->color)) {
-		if (image_calc_adaptive_palette(ir, srcimg) == false) {
+		if (image_calc_adaptive_palette(ir, srcimg, ir->opt->gain) == false) {
 			return false;
 		}
 	}
@@ -987,7 +987,7 @@ image_reduct_highquality_adaptive(image_reductor_handle *ir)
 	}
 
 	// tmpimg の色集合に対して適応パレットを用意。
-	if (image_calc_adaptive_palette(ir, tmpimg) == false) {
+	if (image_calc_adaptive_palette(ir, tmpimg, -1) == false) {
 		goto abort;
 	}
 	// 入力画像 (リサイズ前) が何色で構成されていたかは動作に必要ないので
@@ -1752,9 +1752,13 @@ octree_free(struct octree *node)
 }
 
 // srcimg から適応パレットを作成。
+// gain にはゲインを指定する。
+// o 1パス構成なら色を取り出すここでゲイン調整も行うため。
+// o 2パス構成なら1パス目でゲインは適用されているので負数を指定すること。
 // srcimg->palette_count にはソース画像に使われてる色数を返す(表示用)。
 static bool
-image_calc_adaptive_palette(image_reductor_handle *ir, struct image *srcimg)
+image_calc_adaptive_palette(image_reductor_handle *ir, struct image *srcimg,
+	int gain)
 {
 	struct image *dstimg = ir->dstimg;
 	const uint16 *src = (const uint16 *)srcimg->buf;
@@ -1786,10 +1790,10 @@ image_calc_adaptive_palette(image_reductor_handle *ir, struct image *srcimg)
 	for (const uint16 *s = src; s < send; ) {
 		uint16 n = *s++;
 		n &= 0x7fff;
-		if (__predict_false(ir->opt->gain >= 0)) {
-			uint32 r5 = ((n >> 10) & 0x1f) * ir->opt->gain / 256;
-			uint32 g5 = ((n >>  5) & 0x1f) * ir->opt->gain / 256;
-			uint32 b5 = ( n        & 0x1f) * ir->opt->gain / 256;
+		if (__predict_false(gain >= 0)) {
+			uint32 r5 = ((n >> 10) & 0x1f) * gain / 256;
+			uint32 g5 = ((n >>  5) & 0x1f) * gain / 256;
+			uint32 b5 = ( n        & 0x1f) * gain / 256;
 			if (__predict_false(r5 > 31)) r5 = 31;
 			if (__predict_false(g5 > 31)) g5 = 31;
 			if (__predict_false(b5 > 31)) b5 = 31;
