@@ -97,6 +97,7 @@ int opt_bgtheme;					// -1:自動判別 0:Dark 1:Light
 const char *opt_codeset;			// 出力文字コード (NULL なら UTF-8)
 static uint opt_fontwidth;			// --font 指定の幅   (指定なしなら 0)
 static uint opt_fontheight;			// --font 指定の高さ (指定なしなら 0)
+bool opt_force_blurhash;			// 画像はすべて Blurhash から表示する
 uint opt_nsfw;						// NSFW コンテンツの表示方法
 bool opt_overwrite_cache;			// キャッシュファイルを更新する
 static bool opt_progress;
@@ -118,6 +119,7 @@ enum {
 	OPT_eaw_n,
 	OPT_euc_jp,
 	OPT_font,
+	OPT_force_blurhash,
 	OPT_help,
 	OPT_help_all,
 	OPT_ipv4,
@@ -151,6 +153,7 @@ static const struct option longopts[] = {
 	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "font",			required_argument,	NULL,	OPT_font },
+	{ "force-blurhash",	no_argument,		NULL,	OPT_force_blurhash },
 	{ "help",			no_argument,		NULL,	OPT_help },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
 	{ "home",			no_argument,		NULL,	'h' },
@@ -333,6 +336,10 @@ main(int ac, char *av[])
 			opt_fontheight = (uint)height;
 			break;
 		 }
+
+		 case OPT_force_blurhash:
+			opt_force_blurhash = true;
+			break;
 
 		 case 'h':
 			cmd = CMD_STREAM;
@@ -564,6 +571,7 @@ help_all(void)
 "  --eaw-n=<1|2>          : Width of Unicode EAW Neutral char   (defualt:1)\n"
 "  --euc-jp / --jis       : Set output charset\n"
 "  --font=<W>x<H>         : Set font size (Normally autodetected)\n"
+"  --force-blurhash       : Show blurhash image instead of actual image\n"
 "  --help-all             : This help\n"
 "  --ipv4 / --ipv6        : Connect only IPv4/v6 for both stream and images\n"
 "  --mathalpha            : Use alternate character for some MathAlpha chars\n"

@@ -153,6 +153,7 @@ extern struct net_opt netopt_main;
 extern struct ngwords *ngwords;
 extern int opt_bgtheme;
 extern const char *opt_codeset;
+extern bool opt_force_blurhash;
 extern uint opt_nsfw;
 extern bool opt_overwrite_cache;
 extern const char *opt_record_file;

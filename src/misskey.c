@@ -876,7 +876,7 @@ misskey_show_icon(const struct json *js, int iuser, const string *userid)
 	if (__predict_true(opt_show_image)) {
 		char filename[PATH_MAX];
 		const char *avatar_url = json_obj_find_cstr(js, iuser, "avatarUrl");
-		if (avatar_url && userid) {
+		if (avatar_url && userid && !opt_force_blurhash) {
 			// URL の FNV1 ハッシュをキャッシュのキーにする。
 			// Misskey の画像 URL は長いのと URL がネストした構造を
 			// しているので単純に一部を切り出して使う方法は無理。
@@ -932,6 +932,16 @@ misskey_show_icon(const struct json *js, int iuser, const string *userid)
 //   "type" : "image/jpeg",
 //   "url" : "...",
 // }
+//
+// --show-image 内の組み合わせ:
+// force-	sensi-	nsfw=
+// blurhash  tive	show
+// ------	------	------
+//	*		Y		n		Blurhash (shade)
+//	Y		n		*		Blurhash (no shade)
+//	Y		Y		Y		Blurhash (no shade)
+//	n		n		*		画像表示
+//	n		Y		Y		画像表示
 static bool
 misskey_show_photo(const struct json *js, int ifile, int index)
 {
@@ -941,12 +951,22 @@ misskey_show_photo(const struct json *js, int ifile, int index)
 	const char *img_url;
 	uint width = 0;
 	uint height = 0;
-	bool shade;
+	bool shade = false;
 	bool shown = false;
 
 	if (opt_show_image) {
 		bool isSensitive = json_obj_find_bool(js, ifile, "isSensitive");
-		if (isSensitive && opt_nsfw != NSFW_SHOW) {
+		if ((!isSensitive || opt_nsfw == NSFW_SHOW) && !opt_force_blurhash) {
+			// 元画像を表示。thumbnailUrl を使う。
+			img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
+			if (img_url == NULL || img_url[0] == '\0') {
+				// なければ、ファイルタイプだけでも表示しとく?
+				goto next;
+			}
+			width  = imagesize;
+			height = imagesize;
+		} else {
+			// Blurhash を表示。
 			const char *blurhash = json_obj_find_cstr(js, ifile, "blurhash");
 			if (blurhash == NULL || blurhash[0] == '\0' ||
 				opt_nsfw == NSFW_ALT)
@@ -981,17 +1001,10 @@ misskey_show_photo(const struct json *js, int ifile, int index)
 			}
 			snprintf(urlbuf, sizeof(urlbuf), "blurhash://%s", blurhash);
 			img_url = urlbuf;
-			shade = true;
-		} else {
-			// 元画像を表示。thumbnailUrl を使う。
-			img_url = json_obj_find_cstr(js, ifile, "thumbnailUrl");
-			if (img_url == NULL || img_url[0] == '\0') {
-				// なければ、ファイルタイプだけでも表示しとく?
-				goto next;
+
+			if (isSensitive && opt_nsfw != NSFW_SHOW) {
+				shade = true;
 			}
-			width  = imagesize;
-			height = imagesize;
-			shade = false;
 		}
 		make_cache_filename(img_file, sizeof(img_file), img_url);
 		shown = show_image(img_file, img_url, width, height, shade, index);
