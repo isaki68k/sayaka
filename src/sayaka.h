@@ -183,6 +183,7 @@ extern void ustring_free(ustring *);
 extern ustring *ustring_from_utf8(const char *);
 extern const unichar *ustring_get(const ustring *);
 extern unichar ustring_at(const ustring *, int);
+extern void ustring_set_at(ustring *, int, unichar);
 extern void ustring_append(ustring *, const ustring *);
 extern void ustring_append_unichar(ustring *, unichar);
 extern void ustring_append_ascii(ustring *, const char *);

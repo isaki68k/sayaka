@@ -143,6 +143,17 @@ ustring_at(const ustring *u, int i)
 	return u->buf[i];
 }
 
+// u の i 番目の文字を c に書き換える。
+// i が範囲外なら何もしない。
+void
+ustring_set_at(ustring *u, int i, unichar c)
+{
+	if (i < 0 || i >= u->len) {
+		return;
+	}
+	u->buf[i] = c;
+}
+
 // u を newlen 文字分が追加できるようブロック単位で拡大する。
 #define ustring_expand(u, newlen)	do {	\
 	uint newcap_ = roundup((u)->len + (newlen) + 1, 64);	\
