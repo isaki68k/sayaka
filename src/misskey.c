@@ -1155,13 +1155,43 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 		} else if (c == '$' && ustring_at(src, pos + 1) == '[') {
 			// MFM タグ開始。
 			int e = pos + 2;
-			// タグは全部無視するのでタグ名をスキップ。
-			for (; e < posend && srcarray[e] != ' '; e++)
-				;
-			// 空白の次から ']' の手前までが本文。
-			mfmtag++;
-			pos = e + 1;
-			continue;
+
+			// タグ名は空白(SP)区切りだろうか。
+			if (unichar_submatch(&srcarray[e], "ruby ")) {
+				e += 5;
+				// 次の空白と閉じ括弧を書き換えて、ここから本文扱いに戻す。
+				// "..$[ruby ルビ るび]..."
+				//           ^ e はイマココ
+				// "..$[ruby ルビ(るび)..."
+
+				// 空白が連続しているかも知れないのでスキップ。
+				for (; ustring_at(src, e) == ' '; e++)
+					;
+				pos = e;
+				// 一つ目の "ルビ" をスキップ。
+				for (; e < posend && srcarray[e] != ' '; e++)
+					;
+				// この区切り空白も連続してるかも知れないので一旦スキップ。
+				for (; ustring_at(src, e) == ' '; e++)
+					;
+				// "るび" の手前の空白を括弧に書き換える。
+				if (e < posend) {
+					ustring_set_at(src, e - 1, '(');
+				}
+				// タグ終端までスキップ。ネストには未対応。
+				for (; e < posend && srcarray[e] != ']'; e++)
+					;
+				ustring_set_at(src, e, ')');
+				continue;
+			} else {
+				// 知らないタグなら、タグを無視してコンテンツのみ表示。
+				for (; e < posend && srcarray[e] != ' '; e++)
+					;
+				// 空白の次から ']' の手前までが本文。
+				mfmtag++;
+				pos = e + 1;
+				continue;
+			}
 
 		} else if (c == ']' && mfmtag > 0) {
 			// MFM タグ終端。
