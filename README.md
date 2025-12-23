@@ -45,7 +45,8 @@ sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXE
 	Ubuntu なら `libjpeg8-dev` です。
 	なくてもビルド可能です。
 * libjxl
-	… pkgsrc なら `graphics/libjxl` です。
+	… pkgsrc なら `graphics/libjxl`、
+	Ubuntu なら `libjxl-dev` です。
 	sixelv でのみ必要ですが、なくてもビルド可能です。
 * libpng
 	… pkgsrc および OpenBSD ports なら `graphics/png`、
