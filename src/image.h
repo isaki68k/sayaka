@@ -174,6 +174,7 @@ enum {
 	IMAGE_LOADER_BMP,
 	IMAGE_LOADER_GIF,
 	IMAGE_LOADER_JPEG,
+	IMAGE_LOADER_JXL,
 	IMAGE_LOADER_PNG,
 	IMAGE_LOADER_PNM,
 	IMAGE_LOADER_TIFF,
@@ -186,6 +187,7 @@ enum {
 	"bmp",	\
 	"gif",	\
 	"jpeg",	\
+	"jxl",	\
 	"png",	\
 	"pnm",	\
 	"tiff",	\

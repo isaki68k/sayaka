@@ -43,6 +43,9 @@
 #if defined(HAVE_LIBJPEG)
 #define USE_LIBJPEG
 #endif
+#if defined(HAVE_LIBJXL)
+#define USE_LIBJXL
+#endif
 #if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
 #endif
@@ -67,6 +70,7 @@ typedef struct image *(*image_read_t)(FILE *, const image_read_hint *,
 
 IMAGE_HANDLER(gif);
 IMAGE_HANDLER(jpeg);
+IMAGE_HANDLER(jxl);
 IMAGE_HANDLER(png);
 IMAGE_HANDLER(stb);
 IMAGE_HANDLER(tiff);

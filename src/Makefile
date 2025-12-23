@@ -58,6 +58,9 @@ SRCS_sayaka+=	wsclient.c
 
 SRCS_sixelv+=	image_ascii.c
 SRCS_sixelv+=	image_bmp.c
+.if defined(HAVE_LIBJXL)
+SRCS_sixelv+=	image_jxl.c
+.endif
 .if defined(HAVE_LIBTIFF)
 SRCS_sixelv+=	image_tiff.c
 .endif

@@ -394,6 +394,7 @@ image_get_preferred_size(
 // ローダごとにサポートしているファイル形式をビットマップフラグにしたもの。
 #define LOADERMAP_gif	(1U << IMAGE_LOADER_GIF)
 #define LOADERMAP_jpeg	(1U << IMAGE_LOADER_JPEG)
+#define LOADERMAP_jxl	(1U << IMAGE_LOADER_JXL)
 #define LOADERMAP_png	(1U << IMAGE_LOADER_PNG)
 #define LOADERMAP_tiff	(1U << IMAGE_LOADER_TIFF)
 #define LOADERMAP_webp	(1U << IMAGE_LOADER_WEBP)
@@ -419,6 +420,9 @@ static const struct {
 #endif
 #if defined(USE_LIBJPEG)
 	ENTRY(jpeg, libjpeg, LOADERMAP_jpeg),
+#endif
+#if defined(USE_LIBJXL) && defined(SIXELV)
+	ENTRY(jxl, libjxl, LOADERMAP_jxl),
 #endif
 #if defined(USE_LIBPNG)
 	ENTRY(png, libpng, LOADERMAP_png),

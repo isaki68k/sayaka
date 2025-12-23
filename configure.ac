@@ -382,6 +382,32 @@ case ${with_libjpeg} in
 	;;
 esac
 
+# libjxl はデフォルトを auto にする。
+# --with-libjxl=auto なら、libjxl があれば使い、なければ使わない。
+# --with-libjxl=yes  なら、libjxl がなければエラー。
+# --with-libjxl=no (--without-libjxl) ならチェックもしない。
+AC_ARG_WITH([libjxl],
+	AS_HELP_STRING([--with-libjxl=(auto|yes|no)],
+		[Use libjxl for JPEG XL (default:auto)]))
+if test -z "${with_libjxl}"; then
+	with_libjxl=auto
+fi
+case ${with_libjxl} in
+ no)
+	;;
+ *)
+	CHECK_PKG([libjxl], [LIBJXL])
+
+	if test x"${has_libjxl}" \!= x"yes"; then
+		if test x"${with_libjxl}" = x"yes"; then
+			AC_MSG_FAILURE(
+				[--with-libjxl(=yes) is specified but libjxl not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libjxl])
+		fi
+	fi
+	;;
+esac
+
 # libpng はデフォルトを auto にする。
 # --with-libpng=auto なら、libpng があれば使い、なければ stb_image を使う。
 # --with-libpng=yes  なら、libpng がなければエラー。

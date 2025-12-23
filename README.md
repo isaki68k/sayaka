@@ -1,4 +1,4 @@
-sayaka ちゃん & sixelv version 3.8.4 (2025/08/10)
+sayaka ちゃん & sixelv version 3.8.4+ (2025/08/10)
 =====
 
 sayaka ちゃんはターミナルに特化した Misskey ストリームクライアントです。
@@ -44,6 +44,9 @@ sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXE
 	… pkgsrc および OpenBSD ports なら `graphics/libjpeg`、
 	Ubuntu なら `libjpeg8-dev` です。
 	なくてもビルド可能です。
+* libjxl
+	… pkgsrc なら `graphics/libjxl` です。
+	sixelv でのみ必要ですが、なくてもビルド可能です。
 * libpng
 	… pkgsrc および OpenBSD ports なら `graphics/png`、
 	Ubuntu なら `libpng-dev` です。
@@ -82,6 +85,11 @@ configure のオプションは次のものがあります。
 	stb_image でデコードします。`no` なら stb_image を使用します。
 	デフォルトは `auto` です。
 	stb_image を使う場合デコードできない形式があります。
+* `--with-libjxl=(auto|yes|no)` …
+	`auto` なら libjxl が見付かれば使用し、見付からなければ使用しません。
+	デフォルトは `auto` です。
+	JPEG XL サポートは sixelv のみで、
+	sayaka はこのオプションによらず常に使用しません。
 * `--with-libpng=(auto|yes|no)` …
 	`auto` なら libpng が見付かれば使用し、見付からなければ内蔵の
 	stb_image でデコードします。`no` なら stb_image を使用します。

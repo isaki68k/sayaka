@@ -45,6 +45,7 @@ configure のオプションについては [README.md](README.md) を見てく�
 サポートしている画像形式
 ---
 * JPEG
+* JPEG XL (アニメーションには未対応)
 * PNG
 * GIF (アニメーションには未対応)
 * Webp (アニメーションには未対応)

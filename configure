@@ -647,6 +647,7 @@ DEFINE_OPENSSL
 DEFINE_LIBWEBP
 DEFINE_LIBTIFF
 DEFINE_LIBPNG
+DEFINE_LIBJXL
 DEFINE_LIBJPEG
 DEFINE_GIFLIB
 PKG_CONFIG
@@ -711,6 +712,7 @@ ac_user_opts='
 enable_option_checking
 with_giflib
 with_libjpeg
+with_libjxl
 with_libpng
 with_libtiff
 with_libwebp
@@ -1352,6 +1354,8 @@ Optional Packages:
   --with-libjpeg=(auto|yes|no)
                           Use libjpeg for JPEG instead of stb_image
                           (default:auto)
+  --with-libjxl=(auto|yes|no)
+                          Use libjxl for JPEG XL (default:auto)
   --with-libpng=(auto|yes|no)
                           Use libpng for PNG instead of stb_image
                           (default:auto)
@@ -4707,6 +4711,59 @@ printf "%s\n" "no" >&6; }
 			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
 as_fn_error $? "--with-libjpeg(=yes) is specified but libjpeg not found.
+See 'config.log' for more details" "$LINENO" 5; }
+		fi
+	fi
+	;;
+esac
+
+# libjxl はデフォルトを auto にする。
+# --with-libjxl=auto なら、libjxl があれば使い、なければ使わない。
+# --with-libjxl=yes  なら、libjxl がなければエラー。
+# --with-libjxl=no (--without-libjxl) ならチェックもしない。
+
+# Check whether --with-libjxl was given.
+if test ${with_libjxl+y}
+then :
+  withval=$with_libjxl;
+fi
+
+if test -z "${with_libjxl}"; then
+	with_libjxl=auto
+fi
+case ${with_libjxl} in
+ no)
+	;;
+ *)
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libjxl" >&5
+printf %s "checking for libjxl... " >&6; }
+	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libjxl; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+		printf "%s\n" "#define HAVE_LIBJXL 1" >>confdefs.h
+
+		DEFINE_LIBJXL=HAVE_LIBJXL=yes
+
+		eval `echo has_libjxl=yes | sed -e 's/-/_/g'`
+
+		H=`${PKG_CONFIG} --cflags libjxl`
+		L=`${PKG_CONFIG} --libs libjxl`
+		CFLAGS="${CFLAGS} ${H}"
+		LIBS="${LIBS} ${L}"
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		eval `echo has_libjxl=no | sed -e 's/-/_/g'`
+	fi
+
+
+	if test x"${has_libjxl}" \!= x"yes"; then
+		if test x"${with_libjxl}" = x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "--with-libjxl(=yes) is specified but libjxl not found.
+	On NetBSD(pkgsrc), install pkgsrc/graphics/libjxl
 See 'config.log' for more details" "$LINENO" 5; }
 		fi
 	fi
