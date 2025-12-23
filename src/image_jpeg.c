@@ -176,7 +176,7 @@ image_jpeg_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 	img = image_create(width, height, IMAGE_FMT_RGB24);
 	if (img == NULL) {
-		warnx("%s: image_create failed: %s", __func__, strerrno());
+		warn("%s: image_create failed", __func__);
 		goto done;
 	}
 	stride = image_get_stride(UNVOLATILE(img));

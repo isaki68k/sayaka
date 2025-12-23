@@ -138,7 +138,7 @@ image_gif_static(GifFileType *gif, int page, const struct diag *diag)
 
 	img = image_create(gif->SWidth, gif->SHeight, IMAGE_FMT_RGB24);
 	if (img == NULL) {
-		warnx("%s: image_create failed: %s", __func__, strerrno());
+		warn("%s: image_create failed", __func__);
 		return NULL;
 	}
 
@@ -177,7 +177,7 @@ image_gif_multi(GifFileType *gif, int target_page, const struct diag *diag)
 
 	img = image_create(gif->SWidth, gif->SHeight, IMAGE_FMT_ARGB32);
 	if (img == NULL) {
-		warnx("%s: image_create failed: %s", __func__, strerrno());
+		warn("%s: image_create failed", __func__);
 		return NULL;
 	}
 
