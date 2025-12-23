@@ -67,6 +67,7 @@ static bool ignore_error;			// true ならエラーでも次ファイルを処�
 static FILE *ofp;					// 出力中のストリーム
 static bool opt_blurhash_nearest;	// Blurhash を最近傍補間する
 static ResizeAxis opt_resize_axis;
+static bool opt_no_progressive;
 static uint opt_width;
 static uint opt_height;
 static int  opt_page;
@@ -99,6 +100,7 @@ enum {
 	OPT_ipv4,
 	OPT_ipv6,
 	OPT_list,
+	OPT_no_progressive,
 	OPT_output_format,
 	OPT_profile,
 	OPT_resize_axis,
@@ -127,6 +129,7 @@ static const struct option longopts[] = {
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "list",			no_argument,		NULL,	OPT_list },
+	{ "no-progressive",	no_argument,		NULL,	OPT_no_progressive },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "page",			required_argument,	NULL,	'p' },
 	{ "profile",		no_argument,		NULL,	OPT_profile },
@@ -353,6 +356,10 @@ main(int ac, char *av[])
 			}
 			break;
 
+		 case OPT_no_progressive:
+			opt_no_progressive = true;
+			break;
+
 		 case OPT_sixel_or:
 			imageopt.output_ormode = true;
 			break;
@@ -544,6 +551,7 @@ help_all(void)
 "  -O,--output-format=<fmt> : ascii, bmp or sixel (default:sixel)\n"
 "  -o <filename>          : Output filename, '-' means stdout (default:-)\n"
 "  -p,--page=<page>       : Specify the page(frame). (animated GIF/WebP only)\n"
+"  --no-progressive       : Don't use progressive data (jxl only)\n"
 "  --sixel-or             : Output SIXEL by OR-mode\n"
 "  --sixel-transbg        : Make SIXEL background transparent\n"
 "  --suppress-palette     : Suppress output of SIXEL palette definition\n"
@@ -653,6 +661,7 @@ do_file(const char *infile)
 		hint.width  = opt_width;
 		hint.height = opt_height;
 		hint.page   = opt_page;
+		hint.progressive = !opt_no_progressive;
 		srcimg = image_read(pstream, loader_idx, &hint, diag_image);
 		if (srcimg) {
 			// 得られた画像サイズと引数指定から、いい感じにサイズを決定。

@@ -69,6 +69,8 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	uint8 *buf;
 	JxlBasicInfo info;
 	bool success = false;
+	size_t readbytes = 0;
+	bool is_progressive = hint->progressive;
 
 	buf = malloc(BUFSIZE);
 	if (buf == NULL) {
@@ -79,7 +81,11 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	JxlDecoder *dec = JxlDecoderCreate(NULL);
 	JxlDecoderSubscribeEvents(dec,
 		JXL_DEC_BASIC_INFO |
+		JXL_DEC_FRAME_PROGRESSION |
 		JXL_DEC_FULL_IMAGE);
+
+	JxlDecoderSetProgressiveDetail(dec,
+		(JxlProgressiveDetail)kPasses);
 
 	memset(&info, 0, sizeof(info));
 	for (;;) {
@@ -103,6 +109,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			if (n == 0) {
 				break;
 			}
+			readbytes += n;
 
 			// 入力バッファをセット。
 			status = JxlDecoderSetInput(dec, buf, n);
@@ -153,6 +160,17 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 			JxlDecoderSetImageOutBuffer(dec, &jxlfmt, img->buf,
 				xsize * ysize * jxlfmt.num_channels);
+
+			if (is_progressive) {
+				uint hint_w = hint->width <= 0 ? xsize : hint->width;
+				uint hint_h = hint->height <= 0 ? ysize : hint->height;
+				uint k = xsize / hint_w * ysize / hint_h;
+				Debug(diag, "%s: k=%u", __func__, k);
+				if (k < 7) {
+					is_progressive = false;
+				}
+			}
+
 			continue;
 		}
 
@@ -160,6 +178,20 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			Trace(diag, "%s: %s", __func__, status2str(status));
 			success = true;
 			break;
+		}
+
+		if (status == JXL_DEC_FRAME_PROGRESSION) {
+			Trace(diag, "%s: %s %zu bytes read", __func__,
+				status2str(status),
+				readbytes);
+
+			if (is_progressive) {
+				Debug(diag, "%s: use progressive", __func__);
+				JxlDecoderFlushImage(dec);
+				success = true;
+				break;
+			}
+			continue;
 		}
 
 		/*else*/

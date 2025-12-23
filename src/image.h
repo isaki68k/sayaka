@@ -97,6 +97,13 @@ typedef enum {
 	RESIZE_AXIS_SCALEDOWN_BIT = 0x08,
 } ResizeAxis;
 
+// プログレッシブデータの利用
+typedef enum {
+	PROGRESSIVE_AUTO,	// 縮小率で自動適用
+	PROGRESSIVE_OFF,	// 使用しない
+	PROGRESSIVE_ON,		// 常に使用する
+} Progressive;
+
 // 減色&リサイズ方法。
 typedef enum {
 	REDUCT_SIMPLE,			// 単純一致法
@@ -229,6 +236,8 @@ typedef struct image_read_hint_ {
 
 	// 複数枚ある場合のページ(フレーム)番号。0 から始まる。
 	uint page;
+
+	bool progressive;
 } image_read_hint;
 
 struct image_opt {
