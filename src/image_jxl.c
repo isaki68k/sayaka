@@ -33,6 +33,7 @@
 #include <err.h>
 #include <string.h>
 #include <jxl/decode.h>
+#include <jxl/version.h>
 
 static const char *status2str(JxlDecoderStatus);
 
@@ -190,7 +191,9 @@ status2str(JxlDecoderStatus status)
 	 case JXL_DEC_JPEG_RECONSTRUCTION:	return "JXL_DEC_JPEG_RECONSTRUCTION";
 	 case JXL_DEC_BOX:					return "JXL_DEC_BOX";
 	 case JXL_DEC_FRAME_PROGRESSION:	return "JXL_DEC_FRAME_PROGRESSION";
+#if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
 	 case JXL_DEC_BOX_COMPLETE:			return "JXL_DEC_BOX_COMPLETE";
+#endif
 	 default:
 		break;
 	}
