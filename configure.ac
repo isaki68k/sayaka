@@ -379,7 +379,7 @@ case ${with_libjxl} in
  *)
 	CHECK_PKG([LIBJXL], [libjxl])
 	CFLAGS="${CFLAGS} ${LIBJXL_CFLAGS}"
-	LIBS="${LIBS} ${LIBJXL_LIBS}"
+	LIBS_SIXELV="${LIBS_SIXELV} ${LIBJXL_LIBS}"
 
 	if test x"${HAVE_LIBJXL}" \!= x"yes"; then
 		if test x"${with_libjxl}" = x"yes"; then
@@ -434,7 +434,7 @@ case ${with_libtiff} in
  *)
 	CHECK_PKG([LIBTIFF], [libtiff-4])
 	CFLAGS="${CFLAGS} ${LIBTIFF_CFLAGS}"
-	LIBS="${LIBS} ${LIBTIFF_LIBS}"
+	LIBS_SIXELV="${LIBS_SIXELV} ${LIBTIFF_LIBS}"
 
 	if test x"${HAVE_LIBTIFF}" \!= x"yes"; then
 		if test x"${with_libtiff}" = x"yes"; then
@@ -566,6 +566,8 @@ case "${with_iconv}" in
 	;;
 esac
 
+AC_SUBST([LIBS_SIXELV])
+
 # icu-uc
 # これは開発用なので見付からなくても気にしない。
 CHECK_PKG([ICU], [icu-uc])
@@ -573,6 +575,7 @@ CHECK_PKG([ICU], [icu-uc])
 # Uniq
 CFLAGS=[`printf "%s" "${CFLAGS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 LIBS=[`printf "%s" "${LIBS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
+LIBS_SIXELV=[`printf "%s" "${LIBS_SIXELV}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]
 
 AC_CONFIG_HEADERS([${srcdir}/src/config.h])
 AC_CONFIG_FILES([${srcdir}/src/Makefile.cfg])

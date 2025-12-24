@@ -643,6 +643,7 @@ LIBOBJS
 DEFINE_ICU
 ICU_LIBS
 ICU_CFLAGS
+LIBS_SIXELV
 DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_LIBWEBP
@@ -4950,7 +4951,7 @@ fi
 
 
 	CFLAGS="${CFLAGS} ${LIBJXL_CFLAGS}"
-	LIBS="${LIBS} ${LIBJXL_LIBS}"
+	LIBS_SIXELV="${LIBS_SIXELV} ${LIBJXL_LIBS}"
 
 	if test x"${HAVE_LIBJXL}" \!= x"yes"; then
 		if test x"${with_libjxl}" = x"yes"; then
@@ -5181,7 +5182,7 @@ fi
 
 
 	CFLAGS="${CFLAGS} ${LIBTIFF_CFLAGS}"
-	LIBS="${LIBS} ${LIBTIFF_LIBS}"
+	LIBS_SIXELV="${LIBS_SIXELV} ${LIBTIFF_LIBS}"
 
 	if test x"${HAVE_LIBTIFF}" \!= x"yes"; then
 		if test x"${with_libtiff}" = x"yes"; then
@@ -5572,6 +5573,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 	;;
 esac
 
+
+
 # icu-uc
 # これは開発用なので見付からなくても気にしない。
 
@@ -5661,6 +5664,7 @@ fi
 # Uniq
 CFLAGS=`printf "%s" "${CFLAGS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
 LIBS=`printf "%s" "${LIBS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
+LIBS_SIXELV=`printf "%s" "${LIBS_SIXELV}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`
 
 ac_config_headers="$ac_config_headers ${srcdir}/src/config.h"
 

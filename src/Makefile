@@ -83,7 +83,7 @@ sayaka:	libcommon.a libsayaka.a sayaka.o
 	${CC} ${LDFLAGS} -o $@ sayaka.o libsayaka.a libcommon.a ${LIBS}
 
 sixelv:	libcommon.a libsixelv.a sixelv.o
-	${CC} ${LDFLAGS} -o $@ sixelv.o libsixelv.a libcommon.a ${LIBS}
+	${CC} ${LDFLAGS} -o $@ sixelv.o libsixelv.a libcommon.a ${LIBS} ${LIBS_SIXELV}
 
 libcommon.a:	${SRCS_common:.c=.o}
 	rm -f $@
