@@ -3,7 +3,7 @@
 # Copyright (C) 2021-2025 isaki@NetBSD.org
 #
 
-AC_PREREQ([2.71])
+AC_PREREQ([2.71 pkg-config])
 AC_INIT([sayaka],[ ],[])
 AC_CONFIG_SRCDIR([./src/sayaka.c])
 AC_CONFIG_AUX_DIR([scripts])
@@ -150,23 +150,15 @@ AC_DEFUN([CHECK_HEADER], [
 	fi
 ])
 
-# CHECK_PKG($1=pkgname, $2=PKGNAME)
+# CHECK_PKG($1=PKGNAME, $2=pkgnames)
 AC_DEFUN([CHECK_PKG], [
-	AC_MSG_CHECKING([for $1])
-	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists $1; then
-		AC_MSG_RESULT([yes])
-		AC_DEFINE([HAVE_$2])
-		AC_SUBST([DEFINE_$2], [HAVE_$2=yes])
-		eval `echo has_$1=yes | sed -e 's/-/_/g'`
-
-		H=`${PKG_CONFIG} --cflags $1`
-		L=`${PKG_CONFIG} --libs $1`
-		CFLAGS="${CFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		AC_MSG_RESULT([no])
-		eval `echo has_$1=no | sed -e 's/-/_/g'`
-	fi
+	PKG_CHECK_MODULES($1, $2, [
+		AC_DEFINE([HAVE_$1])
+		HAVE_$1=yes
+	], [
+		HAVE_$1=no
+	])
+	AC_SUBST([DEFINE_$1], [HAVE_$1=${[HAVE_$1]}])
 ])
 
 # CHECK_LIB($1=name, $2=NAME, $3=libs, $4=include, $5=src)
@@ -275,20 +267,7 @@ if test "x${has_getprogname}" = "xno"; then
 	On Ubuntu, sudo apt install libbsd-dev])
 fi
 
-AC_CHECK_TOOL([PKG_CONFIG], [pkg-config], [:])
-case "${PKG_CONFIG}" in
- :)
-	AC_MSG_FAILURE([pkg-config (or \$PKG_CONFIG) not found.
-	On NetBSD(pkgsrc), install pkgsrc/devel/pkgconf
-	On Ubuntu, sudo apt install pkg-config
-	Or you can ignore pkg-config by 'env PKG_CONFIG=no ...'])
-	;;
- no)
-	PKG_CONFIG=:
-	;;
- *)
-	;;
-esac
+PKG_PROG_PKG_CONFIG
 
 # giflib
 AC_ARG_WITH([giflib],
@@ -371,9 +350,11 @@ case ${with_libjpeg} in
  no)
 	;;
  *)
-	CHECK_PKG([libjpeg], [LIBJPEG])
+	CHECK_PKG([LIBJPEG], [libjpeg])
+	CFLAGS="${CFLAGS} ${LIBJPEG_CFLAGS}"
+	LIBS="${LIBS} ${LIBJPEG_LIBS}"
 
-	if test x"${has_libjpeg}" \!= x"yes"; then
+	if test x"${HAVE_LIBJPEG}" \!= x"yes"; then
 		if test x"${with_libjpeg}" = x"yes"; then
 			AC_MSG_FAILURE(
 				[--with-libjpeg(=yes) is specified but libjpeg not found.])
@@ -396,9 +377,11 @@ case ${with_libjxl} in
  no)
 	;;
  *)
-	CHECK_PKG([libjxl], [LIBJXL])
+	CHECK_PKG([LIBJXL], [libjxl])
+	CFLAGS="${CFLAGS} ${LIBJXL_CFLAGS}"
+	LIBS="${LIBS} ${LIBJXL_LIBS}"
 
-	if test x"${has_libjxl}" \!= x"yes"; then
+	if test x"${HAVE_LIBJXL}" \!= x"yes"; then
 		if test x"${with_libjxl}" = x"yes"; then
 			AC_MSG_FAILURE(
 				[--with-libjxl(=yes) is specified but libjxl not found.
@@ -422,9 +405,11 @@ case ${with_libpng} in
  no)
 	;;
  *)
-	CHECK_PKG([libpng], [LIBPNG])
+	CHECK_PKG([LIBPNG], [libpng])
+	CFLAGS="${CFLAGS} ${LIBPNG_CFLAGS}"
+	LIBS="${LIBS} ${LIBPNG_LIBS}"
 
-	if test x"${has_libpng}" \!= x"yes"; then
+	if test x"${HAVE_LIBPNG}" \!= x"yes"; then
 		if test x"${with_libpng}" = x"yes"; then
 			AC_MSG_FAILURE(
 				[--with-libpng(=yes) is specified but libpng not found.])
@@ -447,9 +432,11 @@ case ${with_libtiff} in
  no)
 	;;
  *)
-	CHECK_PKG([libtiff-4], [LIBTIFF])
+	CHECK_PKG([LIBTIFF], [libtiff-4])
+	CFLAGS="${CFLAGS} ${LIBTIFF_CFLAGS}"
+	LIBS="${LIBS} ${LIBTIFF_LIBS}"
 
-	if test x"${has_libtiff}" \!= x"yes"; then
+	if test x"${HAVE_LIBTIFF}" \!= x"yes"; then
 		if test x"${with_libtiff}" = x"yes"; then
 			AC_MSG_FAILURE(
 				[--with-libtiff(=yes) is specified but libtiff not found.
@@ -467,9 +454,11 @@ case "${with_libwebp}" in
  no)
 	;;
  *)
-	CHECK_PKG([libwebp], [LIBWEBP])
+	CHECK_PKG([LIBWEBP], [libwebp])
+	CFLAGS="${CFLAGS} ${LIBWEBP_CFLAGS}"
+	LIBS="${LIBS} ${LIBWEBP_LIBS}"
 
-	if test x"${has_libwebp}" = x"yes"; then
+	if test x"${HAVE_LIBWEBP}" = x"yes"; then
 		# どうするんだこれ
 		LIBS="${LIBS} -lwebpdemux"
 	else
@@ -578,21 +567,8 @@ case "${with_iconv}" in
 esac
 
 # icu-uc
-# これはメインで使うものではないので変数も分ける。
-# そのため CHECK_PKG を横目に見ながら似たのを用意する。
-# 見付からなくても気にしない。
-AC_MSG_CHECKING([for icu-uc])
-if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists icu-uc; then
-	AC_MSG_RESULT([yes])
-
-	CFLAGS_ICU=`${PKG_CONFIG} --cflags icu-uc`
-	LIBS_ICU=`${PKG_CONFIG} --libs icu-uc`
-	AC_SUBST([CFLAGS_ICU])
-	AC_SUBST([LIBS_ICU])
-else
-	AC_MSG_RESULT([no])
-fi
-
+# これは開発用なので見付からなくても気にしない。
+CHECK_PKG([ICU], [icu-uc])
 
 # Uniq
 CFLAGS=[`printf "%s" "${CFLAGS}" | awk 'BEGIN{RS=" ";ORS=" ";} !a[$0]++ {print}'`]

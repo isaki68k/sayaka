@@ -640,16 +640,29 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-LIBS_ICU
-CFLAGS_ICU
+DEFINE_ICU
+ICU_LIBS
+ICU_CFLAGS
 DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_LIBWEBP
+LIBWEBP_LIBS
+LIBWEBP_CFLAGS
 DEFINE_LIBTIFF
+LIBTIFF_LIBS
+LIBTIFF_CFLAGS
 DEFINE_LIBPNG
+LIBPNG_LIBS
+LIBPNG_CFLAGS
 DEFINE_LIBJXL
+LIBJXL_LIBS
+LIBJXL_CFLAGS
 DEFINE_LIBJPEG
+LIBJPEG_LIBS
+LIBJPEG_CFLAGS
 DEFINE_GIFLIB
+PKG_CONFIG_LIBDIR
+PKG_CONFIG_PATH
 PKG_CONFIG
 DEFINE___THREAD
 WARNFLAGS
@@ -726,7 +739,22 @@ CC
 CFLAGS
 LDFLAGS
 LIBS
-CPPFLAGS'
+CPPFLAGS
+PKG_CONFIG
+PKG_CONFIG_PATH
+PKG_CONFIG_LIBDIR
+LIBJPEG_CFLAGS
+LIBJPEG_LIBS
+LIBJXL_CFLAGS
+LIBJXL_LIBS
+LIBPNG_CFLAGS
+LIBPNG_LIBS
+LIBTIFF_CFLAGS
+LIBTIFF_LIBS
+LIBWEBP_CFLAGS
+LIBWEBP_LIBS
+ICU_CFLAGS
+ICU_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1373,6 +1401,31 @@ Some influential environment variables:
   LIBS        libraries to pass to the linker, e.g. -l<library>
   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
               you have headers in a nonstandard directory <include dir>
+  PKG_CONFIG  path to pkg-config utility
+  PKG_CONFIG_PATH
+              directories to add to pkg-config's search path
+  PKG_CONFIG_LIBDIR
+              path overriding pkg-config's built-in search path
+  LIBJPEG_CFLAGS
+              C compiler flags for LIBJPEG, overriding pkg-config
+  LIBJPEG_LIBS
+              linker flags for LIBJPEG, overriding pkg-config
+  LIBJXL_CFLAGS
+              C compiler flags for LIBJXL, overriding pkg-config
+  LIBJXL_LIBS linker flags for LIBJXL, overriding pkg-config
+  LIBPNG_CFLAGS
+              C compiler flags for LIBPNG, overriding pkg-config
+  LIBPNG_LIBS linker flags for LIBPNG, overriding pkg-config
+  LIBTIFF_CFLAGS
+              C compiler flags for LIBTIFF, overriding pkg-config
+  LIBTIFF_LIBS
+              linker flags for LIBTIFF, overriding pkg-config
+  LIBWEBP_CFLAGS
+              C compiler flags for LIBWEBP, overriding pkg-config
+  LIBWEBP_LIBS
+              linker flags for LIBWEBP, overriding pkg-config
+  ICU_CFLAGS  C compiler flags for ICU, overriding pkg-config
+  ICU_LIBS    linker flags for ICU, overriding pkg-config
 
 Use these variables to override the choices made by 'configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -4134,7 +4187,7 @@ CFLAGS="${old_CFLAGS}"
 # CHECK_HEADER($1=header, $2=HEADER)
 
 
-# CHECK_PKG($1=pkgname, $2=PKGNAME)
+# CHECK_PKG($1=PKGNAME, $2=pkgnames)
 
 
 # CHECK_LIB($1=name, $2=NAME, $3=libs, $4=include, $5=src)
@@ -4428,19 +4481,29 @@ as_fn_error $? "getprogname is not found.
 See 'config.log' for more details" "$LINENO" 5; }
 fi
 
-if test -n "$ac_tool_prefix"; then
+
+
+
+
+
+
+
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
 set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_prog_PKG_CONFIG+y}
+if test ${ac_cv_path_PKG_CONFIG+y}
 then :
   printf %s "(cached) " >&6
 else case e in #(
-  e) if test -n "$PKG_CONFIG"; then
-  ac_cv_prog_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+  e) case $PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
 for as_dir in $PATH
 do
   IFS=$as_save_IFS
@@ -4451,7 +4514,7 @@ do
   esac
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_prog_PKG_CONFIG="${ac_tool_prefix}pkg-config"
+    ac_cv_path_PKG_CONFIG="$as_dir$ac_word$ac_exec_ext"
     printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -4459,10 +4522,11 @@ done
   done
 IFS=$as_save_IFS
 
-fi ;;
+  ;;
+esac ;;
 esac
 fi
-PKG_CONFIG=$ac_cv_prog_PKG_CONFIG
+PKG_CONFIG=$ac_cv_path_PKG_CONFIG
 if test -n "$PKG_CONFIG"; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $PKG_CONFIG" >&5
 printf "%s\n" "$PKG_CONFIG" >&6; }
@@ -4473,20 +4537,22 @@ fi
 
 
 fi
-if test -z "$ac_cv_prog_PKG_CONFIG"; then
-  ac_ct_PKG_CONFIG=$PKG_CONFIG
+if test -z "$ac_cv_path_PKG_CONFIG"; then
+  ac_pt_PKG_CONFIG=$PKG_CONFIG
   # Extract the first word of "pkg-config", so it can be a program name with args.
 set dummy pkg-config; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_prog_ac_ct_PKG_CONFIG+y}
+if test ${ac_cv_path_ac_pt_PKG_CONFIG+y}
 then :
   printf %s "(cached) " >&6
 else case e in #(
-  e) if test -n "$ac_ct_PKG_CONFIG"; then
-  ac_cv_prog_ac_ct_PKG_CONFIG="$ac_ct_PKG_CONFIG" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+  e) case $ac_pt_PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
 for as_dir in $PATH
 do
   IFS=$as_save_IFS
@@ -4497,7 +4563,7 @@ do
   esac
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_PKG_CONFIG="pkg-config"
+    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir$ac_word$ac_exec_ext"
     printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -4505,20 +4571,21 @@ done
   done
 IFS=$as_save_IFS
 
-fi ;;
+  ;;
+esac ;;
 esac
 fi
-ac_ct_PKG_CONFIG=$ac_cv_prog_ac_ct_PKG_CONFIG
-if test -n "$ac_ct_PKG_CONFIG"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_ct_PKG_CONFIG" >&5
-printf "%s\n" "$ac_ct_PKG_CONFIG" >&6; }
+ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
+if test -n "$ac_pt_PKG_CONFIG"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PKG_CONFIG" >&5
+printf "%s\n" "$ac_pt_PKG_CONFIG" >&6; }
 else
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 fi
 
-  if test "x$ac_ct_PKG_CONFIG" = x; then
-    PKG_CONFIG=":"
+  if test "x$ac_pt_PKG_CONFIG" = x; then
+    PKG_CONFIG=""
   else
     case $cross_compiling:$ac_tool_warned in
 yes:)
@@ -4526,28 +4593,29 @@ yes:)
 printf "%s\n" "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
 ac_tool_warned=yes ;;
 esac
-    PKG_CONFIG=$ac_ct_PKG_CONFIG
+    PKG_CONFIG=$ac_pt_PKG_CONFIG
   fi
 else
-  PKG_CONFIG="$ac_cv_prog_PKG_CONFIG"
+  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
 fi
 
-case "${PKG_CONFIG}" in
- :)
-	{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
-printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
-as_fn_error $? "pkg-config (or \$PKG_CONFIG) not found.
-	On NetBSD(pkgsrc), install pkgsrc/devel/pkgconf
-	On Ubuntu, sudo apt install pkg-config
-	Or you can ignore pkg-config by 'env PKG_CONFIG=no ...'
-See 'config.log' for more details" "$LINENO" 5; }
-	;;
- no)
-	PKG_CONFIG=:
-	;;
- *)
-	;;
-esac
+fi
+if test -n "$PKG_CONFIG"; then
+	_pkg_min_version=0.9.0
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
+printf %s "checking pkg-config is at least version $_pkg_min_version... " >&6; }
+	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		PKG_CONFIG=""
+	fi
+fi
+if test -z "$PKG_CONFIG"; then
+	as_fn_error $? "pkg-config not found" "$LINENO" 5
+fi
 
 # giflib
 
@@ -4684,29 +4752,92 @@ case ${with_libjpeg} in
 	;;
  *)
 
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libjpeg" >&5
+
+pkg_failed=no
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libjpeg" >&5
 printf %s "checking for libjpeg... " >&6; }
-	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libjpeg; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+
+if test -n "$LIBJPEG_CFLAGS"; then
+    pkg_cv_LIBJPEG_CFLAGS="$LIBJPEG_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libjpeg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libjpeg") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBJPEG_CFLAGS=`$PKG_CONFIG --cflags "libjpeg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBJPEG_LIBS"; then
+    pkg_cv_LIBJPEG_LIBS="$LIBJPEG_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libjpeg\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libjpeg") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBJPEG_LIBS=`$PKG_CONFIG --libs "libjpeg" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+                LIBJPEG_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libjpeg" 2>&1`
+        else
+                LIBJPEG_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libjpeg" 2>&1`
+        fi
+        # Put the nasty error message in config.log where it belongs
+        echo "$LIBJPEG_PKG_ERRORS" >&5
+
+
+		HAVE_LIBJPEG=no
+
+elif test $pkg_failed = untried; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+		HAVE_LIBJPEG=no
+
+else
+        LIBJPEG_CFLAGS=$pkg_cv_LIBJPEG_CFLAGS
+        LIBJPEG_LIBS=$pkg_cv_LIBJPEG_LIBS
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+
 		printf "%s\n" "#define HAVE_LIBJPEG 1" >>confdefs.h
 
-		DEFINE_LIBJPEG=HAVE_LIBJPEG=yes
+		HAVE_LIBJPEG=yes
 
-		eval `echo has_libjpeg=yes | sed -e 's/-/_/g'`
-
-		H=`${PKG_CONFIG} --cflags libjpeg`
-		L=`${PKG_CONFIG} --libs libjpeg`
-		CFLAGS="${CFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-		eval `echo has_libjpeg=no | sed -e 's/-/_/g'`
-	fi
+fi
+	DEFINE_LIBJPEG=HAVE_LIBJPEG=${HAVE_LIBJPEG}
 
 
-	if test x"${has_libjpeg}" \!= x"yes"; then
+	CFLAGS="${CFLAGS} ${LIBJPEG_CFLAGS}"
+	LIBS="${LIBS} ${LIBJPEG_LIBS}"
+
+	if test x"${HAVE_LIBJPEG}" \!= x"yes"; then
 		if test x"${with_libjpeg}" = x"yes"; then
 			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
@@ -4736,29 +4867,92 @@ case ${with_libjxl} in
 	;;
  *)
 
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libjxl" >&5
+
+pkg_failed=no
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libjxl" >&5
 printf %s "checking for libjxl... " >&6; }
-	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libjxl; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+
+if test -n "$LIBJXL_CFLAGS"; then
+    pkg_cv_LIBJXL_CFLAGS="$LIBJXL_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libjxl\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libjxl") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBJXL_CFLAGS=`$PKG_CONFIG --cflags "libjxl" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBJXL_LIBS"; then
+    pkg_cv_LIBJXL_LIBS="$LIBJXL_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libjxl\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libjxl") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBJXL_LIBS=`$PKG_CONFIG --libs "libjxl" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+                LIBJXL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libjxl" 2>&1`
+        else
+                LIBJXL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libjxl" 2>&1`
+        fi
+        # Put the nasty error message in config.log where it belongs
+        echo "$LIBJXL_PKG_ERRORS" >&5
+
+
+		HAVE_LIBJXL=no
+
+elif test $pkg_failed = untried; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+		HAVE_LIBJXL=no
+
+else
+        LIBJXL_CFLAGS=$pkg_cv_LIBJXL_CFLAGS
+        LIBJXL_LIBS=$pkg_cv_LIBJXL_LIBS
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+
 		printf "%s\n" "#define HAVE_LIBJXL 1" >>confdefs.h
 
-		DEFINE_LIBJXL=HAVE_LIBJXL=yes
+		HAVE_LIBJXL=yes
 
-		eval `echo has_libjxl=yes | sed -e 's/-/_/g'`
-
-		H=`${PKG_CONFIG} --cflags libjxl`
-		L=`${PKG_CONFIG} --libs libjxl`
-		CFLAGS="${CFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-		eval `echo has_libjxl=no | sed -e 's/-/_/g'`
-	fi
+fi
+	DEFINE_LIBJXL=HAVE_LIBJXL=${HAVE_LIBJXL}
 
 
-	if test x"${has_libjxl}" \!= x"yes"; then
+	CFLAGS="${CFLAGS} ${LIBJXL_CFLAGS}"
+	LIBS="${LIBS} ${LIBJXL_LIBS}"
+
+	if test x"${HAVE_LIBJXL}" \!= x"yes"; then
 		if test x"${with_libjxl}" = x"yes"; then
 			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
@@ -4789,29 +4983,92 @@ case ${with_libpng} in
 	;;
  *)
 
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libpng" >&5
+
+pkg_failed=no
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libpng" >&5
 printf %s "checking for libpng... " >&6; }
-	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libpng; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+
+if test -n "$LIBPNG_CFLAGS"; then
+    pkg_cv_LIBPNG_CFLAGS="$LIBPNG_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpng\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libpng") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBPNG_CFLAGS=`$PKG_CONFIG --cflags "libpng" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBPNG_LIBS"; then
+    pkg_cv_LIBPNG_LIBS="$LIBPNG_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpng\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libpng") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBPNG_LIBS=`$PKG_CONFIG --libs "libpng" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+                LIBPNG_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libpng" 2>&1`
+        else
+                LIBPNG_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libpng" 2>&1`
+        fi
+        # Put the nasty error message in config.log where it belongs
+        echo "$LIBPNG_PKG_ERRORS" >&5
+
+
+		HAVE_LIBPNG=no
+
+elif test $pkg_failed = untried; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+		HAVE_LIBPNG=no
+
+else
+        LIBPNG_CFLAGS=$pkg_cv_LIBPNG_CFLAGS
+        LIBPNG_LIBS=$pkg_cv_LIBPNG_LIBS
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+
 		printf "%s\n" "#define HAVE_LIBPNG 1" >>confdefs.h
 
-		DEFINE_LIBPNG=HAVE_LIBPNG=yes
+		HAVE_LIBPNG=yes
 
-		eval `echo has_libpng=yes | sed -e 's/-/_/g'`
-
-		H=`${PKG_CONFIG} --cflags libpng`
-		L=`${PKG_CONFIG} --libs libpng`
-		CFLAGS="${CFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-		eval `echo has_libpng=no | sed -e 's/-/_/g'`
-	fi
+fi
+	DEFINE_LIBPNG=HAVE_LIBPNG=${HAVE_LIBPNG}
 
 
-	if test x"${has_libpng}" \!= x"yes"; then
+	CFLAGS="${CFLAGS} ${LIBPNG_CFLAGS}"
+	LIBS="${LIBS} ${LIBPNG_LIBS}"
+
+	if test x"${HAVE_LIBPNG}" \!= x"yes"; then
 		if test x"${with_libpng}" = x"yes"; then
 			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
@@ -4841,29 +5098,92 @@ case ${with_libtiff} in
 	;;
  *)
 
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libtiff-4" >&5
+
+pkg_failed=no
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libtiff-4" >&5
 printf %s "checking for libtiff-4... " >&6; }
-	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libtiff-4; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+
+if test -n "$LIBTIFF_CFLAGS"; then
+    pkg_cv_LIBTIFF_CFLAGS="$LIBTIFF_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libtiff-4\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libtiff-4") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBTIFF_CFLAGS=`$PKG_CONFIG --cflags "libtiff-4" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBTIFF_LIBS"; then
+    pkg_cv_LIBTIFF_LIBS="$LIBTIFF_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libtiff-4\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libtiff-4") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBTIFF_LIBS=`$PKG_CONFIG --libs "libtiff-4" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+                LIBTIFF_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libtiff-4" 2>&1`
+        else
+                LIBTIFF_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libtiff-4" 2>&1`
+        fi
+        # Put the nasty error message in config.log where it belongs
+        echo "$LIBTIFF_PKG_ERRORS" >&5
+
+
+		HAVE_LIBTIFF=no
+
+elif test $pkg_failed = untried; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+		HAVE_LIBTIFF=no
+
+else
+        LIBTIFF_CFLAGS=$pkg_cv_LIBTIFF_CFLAGS
+        LIBTIFF_LIBS=$pkg_cv_LIBTIFF_LIBS
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+
 		printf "%s\n" "#define HAVE_LIBTIFF 1" >>confdefs.h
 
-		DEFINE_LIBTIFF=HAVE_LIBTIFF=yes
+		HAVE_LIBTIFF=yes
 
-		eval `echo has_libtiff-4=yes | sed -e 's/-/_/g'`
-
-		H=`${PKG_CONFIG} --cflags libtiff-4`
-		L=`${PKG_CONFIG} --libs libtiff-4`
-		CFLAGS="${CFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-		eval `echo has_libtiff-4=no | sed -e 's/-/_/g'`
-	fi
+fi
+	DEFINE_LIBTIFF=HAVE_LIBTIFF=${HAVE_LIBTIFF}
 
 
-	if test x"${has_libtiff}" \!= x"yes"; then
+	CFLAGS="${CFLAGS} ${LIBTIFF_CFLAGS}"
+	LIBS="${LIBS} ${LIBTIFF_LIBS}"
+
+	if test x"${HAVE_LIBTIFF}" \!= x"yes"; then
 		if test x"${with_libtiff}" = x"yes"; then
 			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
@@ -4889,29 +5209,92 @@ case "${with_libwebp}" in
 	;;
  *)
 
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libwebp" >&5
+
+pkg_failed=no
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libwebp" >&5
 printf %s "checking for libwebp... " >&6; }
-	if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists libwebp; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+
+if test -n "$LIBWEBP_CFLAGS"; then
+    pkg_cv_LIBWEBP_CFLAGS="$LIBWEBP_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libwebp\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libwebp") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBWEBP_CFLAGS=`$PKG_CONFIG --cflags "libwebp" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBWEBP_LIBS"; then
+    pkg_cv_LIBWEBP_LIBS="$LIBWEBP_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libwebp\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libwebp") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBWEBP_LIBS=`$PKG_CONFIG --libs "libwebp" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+                LIBWEBP_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libwebp" 2>&1`
+        else
+                LIBWEBP_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libwebp" 2>&1`
+        fi
+        # Put the nasty error message in config.log where it belongs
+        echo "$LIBWEBP_PKG_ERRORS" >&5
+
+
+		HAVE_LIBWEBP=no
+
+elif test $pkg_failed = untried; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+		HAVE_LIBWEBP=no
+
+else
+        LIBWEBP_CFLAGS=$pkg_cv_LIBWEBP_CFLAGS
+        LIBWEBP_LIBS=$pkg_cv_LIBWEBP_LIBS
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
+
 		printf "%s\n" "#define HAVE_LIBWEBP 1" >>confdefs.h
 
-		DEFINE_LIBWEBP=HAVE_LIBWEBP=yes
+		HAVE_LIBWEBP=yes
 
-		eval `echo has_libwebp=yes | sed -e 's/-/_/g'`
-
-		H=`${PKG_CONFIG} --cflags libwebp`
-		L=`${PKG_CONFIG} --libs libwebp`
-		CFLAGS="${CFLAGS} ${H}"
-		LIBS="${LIBS} ${L}"
-	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-		eval `echo has_libwebp=no | sed -e 's/-/_/g'`
-	fi
+fi
+	DEFINE_LIBWEBP=HAVE_LIBWEBP=${HAVE_LIBWEBP}
 
 
-	if test x"${has_libwebp}" = x"yes"; then
+	CFLAGS="${CFLAGS} ${LIBWEBP_CFLAGS}"
+	LIBS="${LIBS} ${LIBWEBP_LIBS}"
+
+	if test x"${HAVE_LIBWEBP}" = x"yes"; then
 		# どうするんだこれ
 		LIBS="${LIBS} -lwebpdemux"
 	else
@@ -5190,23 +5573,89 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 esac
 
 # icu-uc
-# これはメインで使うものではないので変数も分ける。
-# そのため CHECK_PKG を横目に見ながら似たのを用意する。
-# 見付からなくても気にしない。
+# これは開発用なので見付からなくても気にしない。
+
+
+pkg_failed=no
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for icu-uc" >&5
 printf %s "checking for icu-uc... " >&6; }
-if test x"${PKG_CONFIG}" \!= x":" && ${PKG_CONFIG} --exists icu-uc; then
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
 
-	CFLAGS_ICU=`${PKG_CONFIG} --cflags icu-uc`
-	LIBS_ICU=`${PKG_CONFIG} --libs icu-uc`
+if test -n "$ICU_CFLAGS"; then
+    pkg_cv_ICU_CFLAGS="$ICU_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"icu-uc\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "icu-uc") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_ICU_CFLAGS=`$PKG_CONFIG --cflags "icu-uc" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$ICU_LIBS"; then
+    pkg_cv_ICU_LIBS="$ICU_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"icu-uc\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "icu-uc") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_ICU_LIBS=`$PKG_CONFIG --libs "icu-uc" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
 
+
+
+if test $pkg_failed = yes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+                ICU_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "icu-uc" 2>&1`
+        else
+                ICU_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "icu-uc" 2>&1`
+        fi
+        # Put the nasty error message in config.log where it belongs
+        echo "$ICU_PKG_ERRORS" >&5
+
+
+		HAVE_ICU=no
+
+elif test $pkg_failed = untried; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+		HAVE_ICU=no
 
 else
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
+        ICU_CFLAGS=$pkg_cv_ICU_CFLAGS
+        ICU_LIBS=$pkg_cv_ICU_LIBS
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+		printf "%s\n" "#define HAVE_ICU 1" >>confdefs.h
+
+		HAVE_ICU=yes
+
 fi
+	DEFINE_ICU=HAVE_ICU=${HAVE_ICU}
+
 
 
 # Uniq
