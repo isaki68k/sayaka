@@ -479,11 +479,11 @@ case "${with_openssl}" in
 	;;
  *)
 	CHECK_LIB([openssl], [OPENSSL], [-lssl -lcrypto], [
-		#include <openssl/sha.h>
+		#include <openssl/evp.h>
 		#include <openssl/ssl.h>
 	], [
 		SSL_library_init();		// libssl
-		SHA1_Init(NULL);		// libcrypto
+		EVP_MD_CTX_new();		// libcrypto
 	])
 	if test x"${has_openssl}" \!= x"yes"; then
 		AC_MSG_FAILURE(

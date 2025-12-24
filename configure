@@ -5341,7 +5341,7 @@ printf %s "checking for openssl... " >&6; }
 		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-		#include <openssl/sha.h>
+		#include <openssl/evp.h>
 		#include <openssl/ssl.h>
 
 int
@@ -5349,7 +5349,7 @@ main (void)
 {
 
 		SSL_library_init();		// libssl
-		SHA1_Init(NULL);		// libcrypto
+		EVP_MD_CTX_new();		// libcrypto
 
   ;
   return 0;
