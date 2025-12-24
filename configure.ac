@@ -454,14 +454,11 @@ case "${with_libwebp}" in
  no)
 	;;
  *)
-	CHECK_PKG([LIBWEBP], [libwebp])
+	CHECK_PKG([LIBWEBP], [libwebp libwebpdemux])
 	CFLAGS="${CFLAGS} ${LIBWEBP_CFLAGS}"
 	LIBS="${LIBS} ${LIBWEBP_LIBS}"
 
-	if test x"${HAVE_LIBWEBP}" = x"yes"; then
-		# どうするんだこれ
-		LIBS="${LIBS} -lwebpdemux"
-	else
+	if test x"${HAVE_LIBWEBP}" \!= x"yes"; then
 		AC_MSG_FAILURE([--with-libwebp is specified but libwebp not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
 	On Unubtu, sudo apt install libwebp-dev])
