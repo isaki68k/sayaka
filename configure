@@ -1390,7 +1390,8 @@ Optional Packages:
                           (default:auto)
   --with-libtiff=(auto|yes|no)
                           Use libtiff for TIFF (default:auto)
-  --with-libwebp          Use libwebp (default:yes)
+  --with-libwebp=(auto|yes|no)
+                          Use libwebp for WebP (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
   --with-iconv            Use iconv to convert output charset (default:yes)
 
@@ -5196,8 +5197,8 @@ See 'config.log' for more details" "$LINENO" 5; }
 	;;
 esac
 
-# WebP は stb_image にフォールバック出来ない (し Misskey では事実上必須なので)
-# --without-libwebp が明示されない限り、なければエラー終了する。
+# libwebp はデフォルトを yes にする (Misskey では事実上必須なので)。
+# ただし sixelv のみビルドしたいとか --force-blurhash があるので、なしも可。
 
 # Check whether --with-libwebp was given.
 if test ${with_libwebp+y}
@@ -5205,6 +5206,9 @@ then :
   withval=$with_libwebp;
 fi
 
+if test -z "${with_libwebp}"; then
+	with_libwebp=yes
+fi
 case "${with_libwebp}" in
  no)
 	;;
@@ -5296,12 +5300,14 @@ fi
 	LIBS="${LIBS} ${LIBWEBP_LIBS}"
 
 	if test x"${HAVE_LIBWEBP}" \!= x"yes"; then
-		{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+		if test x"${with_libwebp}" = x"yes"; then
+			{ { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
 printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
 as_fn_error $? "--with-libwebp is specified but libwebp not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
 	On Unubtu, sudo apt install libwebp-dev
 See 'config.log' for more details" "$LINENO" 5; }
+		fi
 	fi
 	;;
 esac

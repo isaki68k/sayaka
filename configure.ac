@@ -446,10 +446,14 @@ case ${with_libtiff} in
 	;;
 esac
 
-# WebP は stb_image にフォールバック出来ない (し Misskey では事実上必須なので)
-# --without-libwebp が明示されない限り、なければエラー終了する。
+# libwebp はデフォルトを yes にする (Misskey では事実上必須なので)。
+# ただし sixelv のみビルドしたいとか --force-blurhash があるので、なしも可。
 AC_ARG_WITH([libwebp],
-	AS_HELP_STRING([--with-libwebp], [Use libwebp (default:yes)]))
+	AS_HELP_STRING([--with-libwebp=(auto|yes|no)],
+		[Use libwebp for WebP (default:yes)]))
+if test -z "${with_libwebp}"; then
+	with_libwebp=yes
+fi
 case "${with_libwebp}" in
  no)
 	;;
@@ -459,9 +463,11 @@ case "${with_libwebp}" in
 	LIBS="${LIBS} ${LIBWEBP_LIBS}"
 
 	if test x"${HAVE_LIBWEBP}" \!= x"yes"; then
-		AC_MSG_FAILURE([--with-libwebp is specified but libwebp not found.
+		if test x"${with_libwebp}" = x"yes"; then
+			AC_MSG_FAILURE([--with-libwebp is specified but libwebp not found.
 	On NetBSD(pkgsrc), install pkgsrc/graphics/libwebp
 	On Unubtu, sudo apt install libwebp-dev])
+		fi
 	fi
 	;;
 esac
