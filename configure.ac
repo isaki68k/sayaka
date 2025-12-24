@@ -153,12 +153,12 @@ AC_DEFUN([CHECK_HEADER], [
 # CHECK_PKG($1=PKGNAME, $2=pkgnames)
 AC_DEFUN([CHECK_PKG], [
 	PKG_CHECK_MODULES($1, $2, [
-		AC_DEFINE([HAVE_$1])
 		HAVE_$1=yes
+		AC_DEFINE([HAVE_$1])
+		AC_SUBST([DEFINE_$1], [HAVE_$1=yes])
 	], [
 		HAVE_$1=no
 	])
-	AC_SUBST([DEFINE_$1], [HAVE_$1=${[HAVE_$1]}])
 ])
 
 # CHECK_LIB($1=name, $2=NAME, $3=libs, $4=include, $5=src)

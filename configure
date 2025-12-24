@@ -4828,13 +4828,13 @@ else
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
+		HAVE_LIBJPEG=yes
 		printf "%s\n" "#define HAVE_LIBJPEG 1" >>confdefs.h
 
-		HAVE_LIBJPEG=yes
+		DEFINE_LIBJPEG=HAVE_LIBJPEG=yes
+
 
 fi
-	DEFINE_LIBJPEG=HAVE_LIBJPEG=${HAVE_LIBJPEG}
-
 
 	CFLAGS="${CFLAGS} ${LIBJPEG_CFLAGS}"
 	LIBS="${LIBS} ${LIBJPEG_LIBS}"
@@ -4943,13 +4943,13 @@ else
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
+		HAVE_LIBJXL=yes
 		printf "%s\n" "#define HAVE_LIBJXL 1" >>confdefs.h
 
-		HAVE_LIBJXL=yes
+		DEFINE_LIBJXL=HAVE_LIBJXL=yes
+
 
 fi
-	DEFINE_LIBJXL=HAVE_LIBJXL=${HAVE_LIBJXL}
-
 
 	CFLAGS="${CFLAGS} ${LIBJXL_CFLAGS}"
 	LIBS_SIXELV="${LIBS_SIXELV} ${LIBJXL_LIBS}"
@@ -5059,13 +5059,13 @@ else
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
+		HAVE_LIBPNG=yes
 		printf "%s\n" "#define HAVE_LIBPNG 1" >>confdefs.h
 
-		HAVE_LIBPNG=yes
+		DEFINE_LIBPNG=HAVE_LIBPNG=yes
+
 
 fi
-	DEFINE_LIBPNG=HAVE_LIBPNG=${HAVE_LIBPNG}
-
 
 	CFLAGS="${CFLAGS} ${LIBPNG_CFLAGS}"
 	LIBS="${LIBS} ${LIBPNG_LIBS}"
@@ -5174,13 +5174,13 @@ else
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
+		HAVE_LIBTIFF=yes
 		printf "%s\n" "#define HAVE_LIBTIFF 1" >>confdefs.h
 
-		HAVE_LIBTIFF=yes
+		DEFINE_LIBTIFF=HAVE_LIBTIFF=yes
+
 
 fi
-	DEFINE_LIBTIFF=HAVE_LIBTIFF=${HAVE_LIBTIFF}
-
 
 	CFLAGS="${CFLAGS} ${LIBTIFF_CFLAGS}"
 	LIBS_SIXELV="${LIBS_SIXELV} ${LIBTIFF_LIBS}"
@@ -5288,13 +5288,13 @@ else
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
+		HAVE_LIBWEBP=yes
 		printf "%s\n" "#define HAVE_LIBWEBP 1" >>confdefs.h
 
-		HAVE_LIBWEBP=yes
+		DEFINE_LIBWEBP=HAVE_LIBWEBP=yes
+
 
 fi
-	DEFINE_LIBWEBP=HAVE_LIBWEBP=${HAVE_LIBWEBP}
-
 
 	CFLAGS="${CFLAGS} ${LIBWEBP_CFLAGS}"
 	LIBS="${LIBS} ${LIBWEBP_LIBS}"
@@ -5655,13 +5655,13 @@ else
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
 
+		HAVE_ICU=yes
 		printf "%s\n" "#define HAVE_ICU 1" >>confdefs.h
 
-		HAVE_ICU=yes
+		DEFINE_ICU=HAVE_ICU=yes
+
 
 fi
-	DEFINE_ICU=HAVE_ICU=${HAVE_ICU}
-
 
 
 # Uniq
