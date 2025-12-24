@@ -49,7 +49,7 @@
 #if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
 #endif
-#if defined(HAVE_LIBTIFF) && defined(SIXELV)
+#if defined(HAVE_LIBTIFF)
 #define USE_LIBTIFF
 #endif
 #if defined(HAVE_LIBWEBP)
