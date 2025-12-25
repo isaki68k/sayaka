@@ -115,8 +115,10 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			Debug(diag, "%s: color_channels=%u alpha=%u", __func__,
 				info.num_color_channels,
 				info.alpha_bits);
+			continue;
+		}
 
-		} else if (status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) {
+		if (status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) {
 			JxlDecoderGetFrameHeader(dec, &hdr);
 			Debug(diag, "%s: %s %ux%u", __func__,
 				status2str(status),
@@ -147,10 +149,19 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 			JxlDecoderSetImageOutBuffer(dec, &jxlfmt, img->buf,
 				xsize * ysize * jxlfmt.num_channels);
+			continue;
+		}
 
-		} else {
+		if (status == JXL_DEC_FULL_IMAGE) {
 			Trace(diag, "%s: %s", __func__, status2str(status));
-			if (status == JXL_DEC_SUCCESS || status == JXL_DEC_FULL_IMAGE) {
+			success = true;
+			break;
+		}
+
+		/*else*/
+		{
+			Trace(diag, "%s: %s", __func__, status2str(status));
+			if (status == JXL_DEC_SUCCESS) {
 				success = true;
 				break;
 			}
