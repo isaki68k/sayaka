@@ -109,10 +109,16 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		}
 
 		if (status == JXL_DEC_BASIC_INFO) {
+			Trace(diag, "%s: %s", __func__, status2str(status));
 			JxlDecoderGetBasicInfo(dec, &info);
-			Debug(diag, "%s: color_channels=%u alpha=%u", __func__,
-				info.num_color_channels,
-				info.alpha_bits);
+			Debug(diag, "%s: ImageSize=(%u, %u) Color=%s%s", __func__,
+				info.xsize,
+				info.ysize,
+				(info.num_color_channels == 1 ? "Grayscale" : "RGB"),
+				(info.alpha_bits == 0 ? "" : "+Alpha"));
+			Debug(diag, "%s: have_preview=%u have_animation=%u", __func__,
+				info.have_preview,
+				info.have_animation);
 			continue;
 		}
 
