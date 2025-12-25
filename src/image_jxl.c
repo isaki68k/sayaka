@@ -63,7 +63,6 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	uint8 *buf;
 	const size_t buflen = 4096;
 	JxlBasicInfo info;
-	JxlFrameHeader hdr;
 	bool success = false;
 
 	buf = malloc(buflen);
@@ -78,7 +77,6 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		JXL_DEC_FULL_IMAGE);
 
 	memset(&info, 0, sizeof(info));
-	memset(&hdr, 0, sizeof(hdr));
 	for (;;) {
 		// 処理を進める。
 		JxlDecoderStatus status = JxlDecoderProcessInput(dec);
@@ -119,12 +117,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		}
 
 		if (status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) {
-			JxlDecoderGetFrameHeader(dec, &hdr);
-			Debug(diag, "%s: %s %ux%u", __func__,
-				status2str(status),
-				hdr.layer_info.xsize,
-				hdr.layer_info.ysize);
-
+			Trace(diag, "%s: %s", __func__, status2str(status));
 			// imgfmt は image_create() に指定するフォーマット形式。
 			// jxlfmt は JXL デコーダに指示する出力形式。
 			uint imgfmt;
@@ -140,8 +133,8 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			jxlfmt.endianness = JXL_NATIVE_ENDIAN;
 			jxlfmt.align = 0;
 
-			uint xsize = hdr.layer_info.xsize;
-			uint ysize = hdr.layer_info.ysize;
+			uint xsize = info.xsize;
+			uint ysize = info.ysize;
 			img = image_create(xsize, ysize, imgfmt);
 			if (img == NULL) {
 				break;
