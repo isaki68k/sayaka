@@ -150,7 +150,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 		} else {
 			Trace(diag, "%s: %s", __func__, status2str(status));
-			if (status == JXL_DEC_SUCCESS) {
+			if (status == JXL_DEC_SUCCESS || status == JXL_DEC_FULL_IMAGE) {
 				success = true;
 				break;
 			}
