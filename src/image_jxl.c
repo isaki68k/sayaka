@@ -128,7 +128,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			uint imgfmt;
 			JxlPixelFormat jxlfmt;
 			if (info.alpha_bits) {
-			imgfmt = IMAGE_FMT_ARGB32;
+				imgfmt = IMAGE_FMT_ARGB32;
 				jxlfmt.num_channels = 4;
 			} else {
 				imgfmt = IMAGE_FMT_RGB24;
