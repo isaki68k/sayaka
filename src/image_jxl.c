@@ -35,6 +35,12 @@
 #include <jxl/decode.h>
 #include <jxl/version.h>
 
+#if defined(SLOW_ARCH)
+#define BUFSIZE	(4096)
+#else
+#define BUFSIZE	(65536)
+#endif
+
 static const char *status2str(JxlDecoderStatus);
 
 bool
@@ -61,13 +67,12 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
 	struct image *img = NULL;
 	uint8 *buf;
-	const size_t buflen = 4096;
 	JxlBasicInfo info;
 	bool success = false;
 
-	buf = malloc(buflen);
+	buf = malloc(BUFSIZE);
 	if (buf == NULL) {
-		warnx("%s: malloc(%zu) failed", __func__, buflen);
+		warnx("%s: malloc(%u) failed", __func__, BUFSIZE);
 		return NULL;
 	}
 
@@ -90,7 +95,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			Trace(diag, "%s: %s", __func__, status2str(status));
 
 			// 読み込み。
-			size_t n = fread(buf, 1, buflen, fp);
+			size_t n = fread(buf, 1, BUFSIZE, fp);
 			if (ferror(fp)) {
 				warn("%s: fread failed", __func__);
 				break;
