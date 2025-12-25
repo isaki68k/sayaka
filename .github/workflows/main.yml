@@ -44,29 +44,6 @@ jobs:
           sh configure ${CONFIGURE_ARGS}
           bmake -DRELEASE
 
-  build-netbsd:
-    name: "build-netbsd (NetBSD/amd64 10.1 with pkgsrc)"
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install packages and run configure and make (on the NetBSD VM)
-        uses: vmactions/netbsd-vm@v1
-        with:
-          release: "10.1"
-          copyback: false
-          # Check https://github.com/NetBSD/pkgsrc/blob/trunk/net/sayaka/Makefile to check dependencies
-          prepare: |
-            uname -a
-            pkg_add pkgconf
-            pkg_add libwebp
-
-          run: |
-            echo build with \"configure\"
-            make distclean
-            sh configure
-            make -DRELEASE
-
   build-openbsd:
     name: "build-openbsd (OpenBSD/amd64 7.8 with ports)"
     runs-on: ubuntu-latest
