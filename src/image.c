@@ -421,7 +421,7 @@ static const struct {
 #if defined(USE_LIBJPEG)
 	ENTRY(jpeg, libjpeg, LOADERMAP_jpeg),
 #endif
-#if defined(USE_LIBJXL) && defined(SIXELV)
+#if defined(USE_LIBJXL)
 	ENTRY(jxl, libjxl, LOADERMAP_jxl),
 #endif
 #if defined(USE_LIBPNG)

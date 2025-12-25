@@ -379,7 +379,7 @@ case ${with_libjxl} in
  *)
 	CHECK_PKG([LIBJXL], [libjxl])
 	CFLAGS="${CFLAGS} ${LIBJXL_CFLAGS}"
-	LIBS_SIXELV="${LIBS_SIXELV} ${LIBJXL_LIBS}"
+	LIBS="${LIBS} ${LIBJXL_LIBS}"
 
 	if test x"${HAVE_LIBJXL}" \!= x"yes"; then
 		if test x"${with_libjxl}" = x"yes"; then
