@@ -44,20 +44,6 @@ strerrno(void)
 	return strerror(errno);
 }
 
-// 文字列 s 末尾の連続する改行を取り除く。
-void
-chomp(char *s)
-{
-	char *p = s + strlen(s);
-	while (--p >= s) {
-		if (*p == '\r' || *p == '\n') {
-			*p = '\0';
-		} else {
-			break;
-		}
-	}
-}
-
 // map から arg に対応する値を返す。
 // 見付からなければ -1 を返す。
 int

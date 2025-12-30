@@ -174,7 +174,6 @@ static inline void string_clear(string *s) {
 
 // util.c
 extern const char *strerrno(void);
-extern void chomp(char *);
 extern int  parse_optmap(const struct optmap *, const char *);
 extern uint32 stou32def(const char *, uint32, char **);
 extern uint32 stox32def(const char *, uint32, char **);
