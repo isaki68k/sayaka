@@ -785,7 +785,7 @@ init_screen(void)
 static void
 invalidate_cache(void)
 {
-	char cmd[1024];
+	char cmd[PATH_MAX + 80];
 
 	// アイコンは1週間分くらいか。
 	snprintf(cmd, sizeof(cmd),
