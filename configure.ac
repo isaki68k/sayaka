@@ -448,6 +448,9 @@ esac
 
 # libwebp はデフォルトを yes にする (Misskey では事実上必須なので)。
 # ただし sixelv のみビルドしたいとか --force-blurhash があるので、なしも可。
+# --with-libwebp=auto なら、libwebp があれば使い、なければ使わない。
+# --with-libwebp=yes  なら、libwebp がなければエラー。
+# --with-libwebp=no (--without-libwebp) ならチェックもしない。
 AC_ARG_WITH([libwebp],
 	AS_HELP_STRING([--with-libwebp=(auto|yes|no)],
 		[Use libwebp for WebP (default:yes)]))
