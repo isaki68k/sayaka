@@ -86,22 +86,26 @@ string_dup(const string *old)
 string *
 string_fgets(FILE *fp)
 {
-	char buf[4096];
-	string *s = string_init();
+	char *buf = NULL;
+	size_t bufsize = 0;
+	ssize_t buflen;
+	string *s;
 
-	while (fgets(buf, sizeof(buf), fp)) {
-		string_append_cstr(s, buf);
-
-		uint n = strlen(buf);
-		if (n > 0 && buf[n - 1] == '\n') {
-			break;
-		}
+	buflen = getline(&buf, &bufsize, fp);
+	if (buflen < 0) {
+		// EOF or error
+		return NULL;
 	}
 
-	if (s->len == 0) {
-		string_free(s);
-		s = NULL;
+	s = string_init();
+	if (s == NULL) {
+		free(buf);
+		return NULL;
 	}
+	s->buf = buf;
+	s->len = buflen;
+	s->capacity = bufsize;
+
 	return s;
 }
 
