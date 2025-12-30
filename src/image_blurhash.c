@@ -36,8 +36,6 @@
 #include <string.h>
 #include <math.h>
 
-#define BUFSIZE	(256)	// どうする?
-
 #define L2SRGBSIZE	(64)
 
 struct colorf {
@@ -63,7 +61,8 @@ static const uint8 table_base83[0x60];
 struct image *
 image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 {
-	char src[BUFSIZE];
+	string *s;
+	const char *src;
 	uint width;
 	uint height;
 	float maxvalue;
@@ -74,21 +73,23 @@ image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 	float *bases_y = NULL;
 	bool success = false;
 
-	if (fgets(src, sizeof(src), fp) == NULL) {
+	s = string_fgets(fp);
+	if (s == NULL) {
 		return NULL;
 	}
-	chomp(src);
+	string_rtrim_inplace(s);
+	src = string_get(s);
 
 	uint comp = decode83(src, 0, 1);
 	uint compx = (comp % 9) + 1;
 	uint compy = (comp / 9) + 1;
 
 	// 入力長が足りないくらいは事前に分かるので調べるか。
-	uint srclen = strlen(src);
+	uint srclen = string_len(s);
 	uint datalen = compx * compy * 2 + 4;
 	if (srclen < datalen) {
 		Debug(diag, "%s: too short (%u < %u)", __func__, srclen, datalen);
-		return NULL;
+		goto abort;
 	}
 
 	// 作成する画像サイズ。
@@ -99,7 +100,7 @@ image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 	} else {
 		Debug(diag, "%s: bw == 0 is invalid", __func__);
 		errno = EINVAL;
-		return NULL;
+		goto abort;
 	}
 	if (bh > 0) {
 		height = bh;
@@ -108,7 +109,7 @@ image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 	} else {
 		Debug(diag, "%s: bh == 0 is invalid", __func__);
 		errno = EINVAL;
-		return NULL;
+		goto abort;
 	}
 
 	Debug(diag, "Blurhash: Component=(%u, %u) Size=(%u, %u)",
@@ -122,7 +123,7 @@ image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 	// Decode quantized max value.
 	maxvalue = decode_maxac(decode83(src, 1, 1));
 
-	uint valuelen = 1 + ((uint)strlen(src) - 6) / 2;
+	uint valuelen = 1 + (srclen - 6) / 2;
 	values = malloc(sizeof(struct colorf) * valuelen);
 	if (values == NULL) {
 		goto abort;
@@ -133,7 +134,7 @@ image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 
 	// 残り。
 	v = &values[1];
-	for (uint pos = 6, end = strlen(src); pos < end; pos += 2) {
+	for (uint pos = 6, end = srclen; pos < end; pos += 2) {
 		uint q = decode83(src, pos, 2);
 		uint qr =  q / (19 * 19);
 		uint qg = (q / 19) % 19;
@@ -178,6 +179,7 @@ image_blurhash_read(FILE *fp, int bw, int bh, const struct diag *diag)
 	free(values);
 	free(bases_x);
 	free(bases_y);
+	string_free(s);
 	if (success == false) {
 		image_free(img);
 		img = NULL;
