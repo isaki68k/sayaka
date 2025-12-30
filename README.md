@@ -7,10 +7,22 @@ sayaka ちゃんはターミナルに特化した Misskey ストリームクラ�
 * mlterm などの SIXEL 対応ターミナルなら画像も表示できます。
 * X68030/25MHz、メモリ12MB でも快適(?)動作。
 
-sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXELV.md](SIXELV.md)
+また、SIXEL 対応ターミナル用の画像ビューワ
+sixelv も同梱しています。→ [SIXELV.md](SIXELV.md)
 
 変更点
 ---
+* 3.8.5 (2025/12/30) …
+	JPEG-XL (libjxl) に対応。
+	適応パレットによる縮小が破綻するケースを修正。
+	`--no-progressive` オプションを実装。
+	Misskey の MFM `$[ruby]` に暫定対応。
+	8色以下での時刻の表示色を調整。
+	`--force-blurhash` オプションを実装。
+	キャッシュファイル名を調整 (ユーザには影響ありません)。
+	WebSocket のエラー処理を修正。
+	Mac OS でのビルドに対応。
+
 * 3.8.4 (2025/08/10) …
 	HTTP リダイレクトに失敗する場合があったのを修正。
 	HTTPS 画像のダウンロードに失敗する場合があったのを修正。
@@ -47,17 +59,18 @@ sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXE
 * libjxl
 	… pkgsrc および OpenBSD ports なら `graphics/libjxl`、
 	Ubuntu なら `libjxl-dev` です。
-	sixelv でのみ必要ですが、なくてもビルド可能です。
+	なくてもビルド可能です。
 * libpng
 	… pkgsrc および OpenBSD ports なら `graphics/png`、
 	Ubuntu なら `libpng-dev` です。
 	なくてもビルド可能です。
 * libtiff
 	… pkgsrc および OpenBSD ports なら `graphics/tiff` です。
-	sixelv でのみ必要ですが、なくてもビルド可能です。
+	sixelv でのみ使用し、なくてもビルド可能です。
 * libwebp
 	… pkgsrc および OpenBSD ports なら `graphics/libwebp`、
 	Ubuntu なら `libwebp-dev` です。
+	なくてもビルド可能です (ただし Misskey は基本 WebP を使います)。
 * iconv
 	… NetBSD なら OS 標準です。
 	OpenBSD ports なら `converters/libiconv` です。
@@ -88,9 +101,8 @@ configure のオプションは次のものがあります。
 	stb_image を使う場合デコードできない形式があります。
 * `--with-libjxl=(auto|yes|no)` …
 	`auto` なら libjxl が見付かれば使用し、見付からなければ使用しません。
+	`no` なら JPEG-XL をデコードしません。
 	デフォルトは `auto` です。
-	JPEG XL サポートは sixelv のみで、
-	sayaka はこのオプションによらず常に使用しません。
 * `--with-libpng=(auto|yes|no)` …
 	`auto` なら libpng が見付かれば使用し、見付からなければ内蔵の
 	stb_image でデコードします。`no` なら stb_image を使用します。
@@ -100,6 +112,10 @@ configure のオプションは次のものがあります。
 	デフォルトは `auto` です。
 	TIFF サポートは sixelv のみで、
 	sayaka はこのオプションによらず常に使用しません。
+* `--with-libwebp=(auto|yes|no)` …
+	`auto` なら libwebp が見付かれば使用し、見付からなければ使用しません。
+	`no` なら WebP をデコードしません (ただし Misskey は基本 WebP を使います)。
+	デフォルトは `yes` です。
 * `--with-iconv=(yes|no)` …
 	`sixelv` のみビルドするなら `no` にすることは可能です。
 * `--with-openssl=(yes|no)` …
@@ -151,7 +167,9 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 	* `:emoji:` は未対応です。
 	* 太字、イタリック、引用(`>`)、コードブロック、`<center>`、`<small>`
 	には反応しません。そのまま表示します。
-	* 関数(`$[..]` など) はタグを取り除いて内容のみ表示します。
+	* `$[ruby]` タグに暫定対応しています。
+本文中にある、単純なケースのみ対応しています。
+	* その他の関数(`$[..]` など) はタグを取り除いて内容のみ表示します。
 * アイコンのデコレーションは現状対応予定はありません。
 * リアクションは合計数のみ表示しています。
 * 同じ投稿が連続した場合の圧縮表示は未対応です。
@@ -176,6 +194,9 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 	可能なら明るめの文字色セットを使用します。
 	デフォルトでは背景色を自動判別しようとしますが、
 	ターミナルが対応していなかったりすると `--light` が選択されます。
+
+* `--force-blurhash` … 画像に Blurhash がある場合は、
+	画像をダウンロードせず Blurhash を表示します。
 
 * `-h,--home` … ホームタイムラインモードです。
 	`--server` でサーバを、
@@ -295,6 +316,10 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 	のように表示されると思います。
 	(ブラウザでどう見えるかとご使用の端末でどう見えるかは別なので、
 	このファイルを `grep no-combine ./README.md` などで表示してみてください)
+
+* `--no-progressive` … JPEG-XL プログレッシブ画像を表示する際、
+	デフォルトでは十分な解像度が得られた時点でデコードを打ち切って表示しますが、
+	途中で打ち切らず必ず最終画像までデコードするようにします。
 
 * `--overwrite-cache` … 画像を再表示する際は
 	キャッシュファイルがあればキャッシュから読み込みますが、
