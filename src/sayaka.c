@@ -67,7 +67,7 @@ static void progress(const char *);
 static void init_screen(void);
 static void init_ngword(void);
 static void invalidate_cache(void);
-static const char *get_token(const char *);
+static string *get_token(const char *);
 static void signal_handler(int);
 static void sigwinch(bool);
 
@@ -498,7 +498,7 @@ main(int ac, char *av[])
 				errx(1, "server must be specified");
 			}
 
-			const char *token = NULL;
+			string *token = NULL;
 			if (token_file) {
 				token = get_token(token_file);
 			} else if (is_home) {
@@ -510,7 +510,7 @@ main(int ac, char *av[])
 			invalidate_cache();
 			progress("done\n");
 
-			cmd_misskey_stream(server, is_home, token);
+			cmd_misskey_stream(server, is_home, string_get(token));
 		} else {
 			cmd_misskey_play(playfile);
 		}
@@ -802,36 +802,30 @@ invalidate_cache(void)
 	}
 }
 
-// filename からトークンを取得して strdup したものを返す。
+// filename からトークンを取得して返す。
 // 失敗するとその場でエラー終了する。
-static const char *
+static string *
 get_token(const char *filename)
 {
-	char buf[64];
 	FILE *fp;
-	const char *token;
+	string *token;
 
 	assert(filename);
 
-	memset(buf, 0, sizeof(buf));
 	fp = fopen(filename, "r");
 	if (fp == NULL) {
 		err(1, "%s", filename);
 	}
-	// 1行目だけ。
-	if (fgets(buf, sizeof(buf), fp)) {
-		chomp(buf);
-	}
+	token = string_fgets(fp);
 	fclose(fp);
-
-	if (buf[0] == '\0') {
+	if (token == NULL) {
+		errx(1, "%s: No token found", filename);
+	}
+	string_rtrim_inplace(token);
+	if (string_len(token) == 0) {
 		errx(1, "%s: No token found", filename);
 	}
 
-	token = strdup(buf);
-	if (token == NULL) {
-		err(1, "%s: strdup", __func__);
-	}
 	return token;
 }
 
