@@ -67,14 +67,15 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
 	struct image *img = NULL;
 	uint8 *buf;
+	const size_t bufsize = BUFSIZE;
 	JxlBasicInfo info;
 	bool success = false;
 	size_t readbytes = 0;
 	bool is_progressive = hint->progressive;
 
-	buf = malloc(BUFSIZE);
+	buf = malloc(bufsize);
 	if (buf == NULL) {
-		warnx("%s: malloc(%u) failed", __func__, BUFSIZE);
+		warnx("%s: malloc(%zu) failed", __func__, bufsize);
 		return NULL;
 	}
 
@@ -101,7 +102,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			Trace(diag, "%s: %s", __func__, status2str(status));
 
 			// 読み込み。
-			size_t n = fread(buf, 1, BUFSIZE, fp);
+			size_t n = fread(buf, 1, bufsize, fp);
 			if (ferror(fp)) {
 				warn("%s: fread failed", __func__);
 				break;
