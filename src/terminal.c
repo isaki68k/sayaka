@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2015-2024 Tetsuya Isaki
+ * Copyright (C) 2015-2025 Tetsuya Isaki
  * Copyright (C) 2015 Y.Sugahara (moveccr)
  *
  * Redistribution and use in source and binary forms, with or without
