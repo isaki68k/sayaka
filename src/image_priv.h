@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2024-2025 Tetsuya Isaki
+ * Copyright (C) 2024-2026 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,6 +55,7 @@
 #if defined(HAVE_LIBWEBP)
 #define USE_LIBWEBP
 #endif
+#define USE_BUILTIN_PNM
 
 // image.c
 extern struct image *image_create(uint, uint, uint);
@@ -72,6 +73,9 @@ IMAGE_HANDLER(gif);
 IMAGE_HANDLER(jpeg);
 IMAGE_HANDLER(jxl);
 IMAGE_HANDLER(png);
+IMAGE_HANDLER(pnm1);
+IMAGE_HANDLER(pnm2);
+IMAGE_HANDLER(pnm3);
 IMAGE_HANDLER(stb);
 IMAGE_HANDLER(tiff);
 IMAGE_HANDLER(webp);

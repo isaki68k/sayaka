@@ -396,6 +396,9 @@ image_get_preferred_size(
 #define LOADERMAP_jpeg	(1U << IMAGE_LOADER_JPEG)
 #define LOADERMAP_jxl	(1U << IMAGE_LOADER_JXL)
 #define LOADERMAP_png	(1U << IMAGE_LOADER_PNG)
+#define LOADERMAP_pnm1	(1U << IMAGE_LOADER_PNM1)
+#define LOADERMAP_pnm2	(1U << IMAGE_LOADER_PNM2)
+#define LOADERMAP_pnm3	(1U << IMAGE_LOADER_PNM3)
 #define LOADERMAP_tiff	(1U << IMAGE_LOADER_TIFF)
 #define LOADERMAP_webp	(1U << IMAGE_LOADER_WEBP)
 #define LOADERMAP_stb	((1U << IMAGE_LOADER_BMP)	| \
@@ -433,6 +436,11 @@ static const struct {
 #endif
 #if defined(USE_LIBTIFF) && defined(SIXELV)
 	ENTRY(tiff, libtiff, LOADERMAP_tiff),
+#endif
+#if defined(USE_BUILTIN_PNM)
+	ENTRY(pnm1, builtin, LOADERMAP_pnm1),
+	ENTRY(pnm2, builtin, LOADERMAP_pnm2),
+	ENTRY(pnm3, builtin, LOADERMAP_pnm3),
 #endif
 #if defined(USE_STB_IMAGE)
 	ENTRY(stb, stb_image, LOADERMAP_stb),

@@ -1,0 +1,334 @@
+/* vi:set ts=4: */
+/*
+ * Copyright (C) 2026 Tetsuya Isaki
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+//
+// PNM 読み込み
+//
+
+// PNM (総称) ファイルは先頭の2バイトで形式が7つに分類される。
+// "P1" … PBM(1bpp)、データ部が ASCII
+// "P2" … PGM(Gray)、データ部が ASCII
+// "P3" … PPM(RGB)、 データ部が ASCII
+// "P4" … PBM(1bpp)、データ部がバイナリ
+// "P5" … PGM(Gray)、データ部がバイナリ
+// "P6" … PPM(RGB)、 データ部がバイナリ
+// "P7" … PAM(RGBA等)、データ部はバイナリのみ
+
+#include "common.h"
+#include "image_priv.h"
+#include "ascii_ctype.h"
+#include <err.h>
+#include <errno.h>
+#include <string.h>
+
+struct pnmctx
+{
+	FILE *fp;
+
+	char *p;	// カーソル位置
+
+	// 最大値 (bitdepth = 8 なら 255)。
+	// PBM では使わない。
+	uint maxval;
+
+	// maxval 階調を 256 階調に変換するテーブル。
+	// 先頭から maxval 個だけ使う。PBM では使わない。
+	uint8 palette[256];
+
+	// 仕様では1行70文字を超えてはならないとされている。
+	char buf[256];
+};
+
+static int  image_pnm_match(FILE *, const struct diag *);
+static struct image *image_pnm_read_init(struct pnmctx *, FILE *, bool,
+	const struct diag *);
+static int  getnum(struct pnmctx *);
+static const char *getstr(struct pnmctx *);
+
+//
+// P1: PBM (ASCII)
+//
+
+bool
+image_pnm1_match(FILE *fp, const struct diag *diag)
+{
+	return (image_pnm_match(fp, diag) == '1');
+}
+
+struct image *
+image_pnm1_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
+{
+	struct pnmctx ctx0;
+	struct pnmctx *ctx = &ctx0;
+	struct image *img;
+
+	img = image_pnm_read_init(ctx, fp, false, diag);
+	if (img == NULL) {
+		return NULL;
+	}
+	Debug(diag, "%s: width=%u height=%u", __func__,
+		img->width, img->height);
+
+	// PBM は '0' と '1' しかないので、ピクセル間の空白を無視出来る。
+	const char *s;
+	uint8 *d = (uint8 *)img->buf;
+	const uint8 *dend = d + image_get_stride(img) * img->height;
+	while ((s = getstr(ctx)) != NULL) {
+		for (; *s && d < dend; s++) {
+			// 色の情報はないがグレースケールとの親和性のため 0 を黒とする。
+			uint8 c = (*s == '0') ? 0 : 0xff;
+			*d++ = c;
+			*d++ = c;
+			*d++ = c;
+		}
+	}
+
+	return img;
+}
+
+//
+// P2: PGM (ASCII)
+//
+
+bool
+image_pnm2_match(FILE *fp, const struct diag *diag)
+{
+	return (image_pnm_match(fp, diag) == '2');
+}
+
+struct image *
+image_pnm2_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
+{
+	struct pnmctx ctx0;
+	struct pnmctx *ctx = &ctx0;
+	struct image *img;
+
+	img = image_pnm_read_init(ctx, fp, true, diag);
+	if (img == NULL) {
+		return NULL;
+	}
+	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
+		img->width, img->height, ctx->maxval);
+
+	int idx;
+	uint8 *d = (uint8 *)img->buf;
+	const uint8 *dend = d + image_get_stride(img) * img->height;
+	while ((idx = getnum(ctx)) != -1 && d < dend) {
+		uint8 c = ctx->palette[idx];
+		*d++ = c;
+		*d++ = c;
+		*d++ = c;
+	}
+
+	return img;
+}
+
+//
+// P3: PPM (ASCII)
+//
+
+bool
+image_pnm3_match(FILE *fp, const struct diag *diag)
+{
+	return (image_pnm_match(fp, diag) == '3');
+}
+
+struct image *
+image_pnm3_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
+{
+	struct pnmctx ctx0;
+	struct pnmctx *ctx = &ctx0;
+	struct image *img;
+
+	img = image_pnm_read_init(ctx, fp, true, diag);
+	if (img == NULL) {
+		return NULL;
+	}
+	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
+		img->width, img->height, ctx->maxval);
+
+	int idx;
+	uint8 *d = (uint8 *)img->buf;
+	const uint8 *dend = d + image_get_stride(img) * img->height;
+	while ((idx = getnum(ctx)) != -1 && d < dend) {
+		uint8 c = ctx->palette[idx];
+		*d++ = c;
+	}
+
+	return img;
+}
+
+//
+// 下請け
+//
+
+// image_*_match() の共通部分。
+// PNM ならマジックの2バイト目を返す。そうでなければ 0 を返す。
+static int
+image_pnm_match(FILE *fp, const struct diag *diag)
+{
+	uint8 magic[2];
+
+	size_t n = fread(magic, sizeof(magic), 1, fp);
+	if (n == 0) {
+		Debug(diag, "%s: fread failed: %s", __func__, strerrno());
+		return 0;
+	}
+
+	if (magic[0] != 'P') {
+		return 0;
+	}
+	return magic[1];
+}
+
+// image_*_read() の冒頭の共通部分。
+static struct image *
+image_pnm_read_init(struct pnmctx *ctx, FILE *fp, bool has_maxval,
+	const struct diag *diag)
+{
+	int width;
+	int height;
+
+	memset(ctx, 0, sizeof(*ctx));
+	ctx->fp = fp;
+	ctx->p = ctx->buf;
+
+	// マジックの2文字は読み捨てる。
+	fgetc(fp);
+	fgetc(fp);
+
+	// 横と縦のピクセル数。
+	width = getnum(ctx);
+	if (width < 0) {
+		return NULL;
+	}
+	height = getnum(ctx);
+	if (height < 0) {
+		return NULL;
+	}
+
+	// PBM 以外なら続いて最大値、8bpp なら 255。
+	if (has_maxval) {
+		int maxval = getnum(ctx);
+		if (maxval < 0) {
+			return NULL;
+		}
+		if (maxval > 255) {
+			Debug(diag, "%s: maxval=%u not supported", __func__, maxval);
+			return NULL;
+		}
+
+		ctx->maxval = maxval;
+		for (uint i = 0; i <= maxval; i++) {
+			ctx->palette[i] = i * 255 / maxval;
+		}
+	}
+
+	return image_create(width, height, IMAGE_FMT_RGB24);
+}
+
+// 次の単語を非負の10進数として数値にして返す。数値に出来なければ 0 を返す。
+// EOF なら -1 を返す。
+static int
+getnum(struct pnmctx *ctx)
+{
+	char *end;
+	long lval;
+
+	const char *p = getstr(ctx);
+	if (p == NULL) {
+		return -1;
+	}
+	errno = 0;
+	lval = strtol(p, &end, 10);
+	if (end == p || errno == ERANGE) {
+		return 0;
+	}
+	if (*end != '\0' && is_ascii_space(*end) == false) {
+		return 0;
+	}
+	if (lval < 0) {
+		return 0;
+	}
+	return (uint)lval;
+}
+
+// 次の単語を文字列のまま返す。EOF なら NULL を返す。
+// 戻り値は ctx 内のバッファを指しているので解放不要。
+static const char *
+getstr(struct pnmctx *ctx)
+{
+	for (;;) {
+		// ポインタが文字列の最後に達していれば、次の行を読み込む。
+		while (*ctx->p == '\0') {
+			if (fgets(ctx->buf, sizeof(ctx->buf), ctx->fp) == NULL) {
+				return NULL;
+			}
+
+			// コメントがあれば削除。
+			char *s = ctx->buf;
+			char *e = strchr(s, '#');
+			if (e) {
+				*e = '\0';
+			} else {
+				e = strchr(s, '\0');
+			}
+
+			// その上で行末の空白文字を削除。PNM の空白は isspace(3) 準拠。
+			while (--e >= s) {
+				if (!is_ascii_space(*e)) {
+					break;
+				}
+			}
+			e[1] = '\0';
+
+			ctx->p = s;
+		}
+
+		// まず空白文字をスキップ。
+		char *p = ctx->p;
+		for (; *p; p++) {
+			if (!is_ascii_space(*p)) {
+				break;
+			}
+		}
+		if (*p == '\0') {
+			// 空白をスキップしたら行末に来た。
+			continue;
+		}
+
+		// ここから一単語。
+		char *end = p;
+		for (; *end; end++) {
+			if (is_ascii_space(*end)) {
+				*end++ = '\0';
+				break;
+			}
+		}
+		ctx->p = end;
+		return p;
+	}
+}
