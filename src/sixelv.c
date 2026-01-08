@@ -1,7 +1,7 @@
 /* vi:set ts=4: */
 /*
  * Copyright (C) 2015 Y.Sugahara (moveccr)
- * Copyright (C) 2021-2025 Tetsuya Isaki
+ * Copyright (C) 2021-2026 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -468,7 +468,7 @@ list(void)
 {
 	char **names = image_get_loaderinfo();
 	for (uint i = 0; names[i] != NULL; i += 2) {
-		printf("%-8s %s\n", names[i], names[i + 1]);
+		printf("%-10s %s\n", names[i], names[i + 1]);
 	}
 	free(names);
 }

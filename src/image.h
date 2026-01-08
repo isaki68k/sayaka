@@ -183,7 +183,12 @@ enum {
 	IMAGE_LOADER_JPEG,
 	IMAGE_LOADER_JXL,
 	IMAGE_LOADER_PNG,
-	IMAGE_LOADER_PNM,
+	IMAGE_LOADER_PNM1,	// PBM(ASCII)
+	IMAGE_LOADER_PNM2,	// PGM(ASCII)
+	IMAGE_LOADER_PNM3,	// PPM(ASCII)
+	IMAGE_LOADER_PNM4,	// PBM(Bin)
+	IMAGE_LOADER_PNM5,	// PGM(Bin)
+	IMAGE_LOADER_PNM6,	// PPM(Bin)
 	IMAGE_LOADER_TIFF,
 	IMAGE_LOADER_WEBP,
 	IMAGE_LOADER_MAX,
@@ -196,7 +201,12 @@ enum {
 	"jpeg",	\
 	"jxl",	\
 	"png",	\
-	"pnm",	\
+	"pbm(ascii)",	\
+	"pgm(ascii)",	\
+	"ppm(ascii)",	\
+	"pbm(bin)",		\
+	"pgm(bin)",		\
+	"ppm(bin)",		\
 	"tiff",	\
 	"webp"
 

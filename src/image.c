@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2021-2025 Tetsuya Isaki
+ * Copyright (C) 2021-2026 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -402,7 +402,8 @@ image_get_preferred_size(
 						 (1U << IMAGE_LOADER_GIF)	| \
 						 (1U << IMAGE_LOADER_JPEG)	| \
 						 (1U << IMAGE_LOADER_PNG)	| \
-						 (1U << IMAGE_LOADER_PNM))
+						 (1U << IMAGE_LOADER_PNM5)	| \
+						 (1U << IMAGE_LOADER_PNM6))
 
 // サポートしているローダ。処理順に並べること。
 static const struct {
