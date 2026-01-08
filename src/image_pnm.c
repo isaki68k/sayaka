@@ -56,14 +56,23 @@ struct pnmctx
 
 	// maxval 階調を 256 階調に変換するテーブル。
 	// 先頭から maxval 個だけ使う。PBM では使わない。
-	uint8 palette[256];
+	union {
+		uint8 b[256];
+		uint16 w[256];
+	} palette;
 
 	// 仕様では1行70文字を超えてはならないとされている。
 	char buf[256];
 };
 
+#define CTX_INIT(ctx, fp, diag)	do {	\
+	memset(ctx, 0, sizeof(*(ctx)));	\
+	(ctx)->fp = (fp);	\
+	(ctx)->p = (ctx)->buf;	\
+} while (0)
+
 static int  image_pnm_match(FILE *, const struct diag *);
-static struct image *image_pnm_read_init(struct pnmctx *, FILE *, bool,
+static struct image *image_pnm_read_init(struct pnmctx *, int,
 	const struct diag *);
 static int  getnum(struct pnmctx *);
 static const char *getstr(struct pnmctx *);
@@ -85,7 +94,9 @@ image_pnm1_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	struct pnmctx *ctx = &ctx0;
 	struct image *img;
 
-	img = image_pnm_read_init(ctx, fp, false, diag);
+	CTX_INIT(ctx, fp, diag);
+
+	img = image_pnm_read_init(ctx, 1, diag);
 	if (img == NULL) {
 		return NULL;
 	}
@@ -94,15 +105,13 @@ image_pnm1_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 	// PBM は '0' と '1' しかないので、ピクセル間の空白を無視出来る。
 	const char *s;
-	uint8 *d = (uint8 *)img->buf;
-	const uint8 *dend = d + image_get_stride(img) * img->height;
+	uint16 *d = (uint16 *)img->buf;
+	const uint16 *dend = d + image_get_stride(img) * img->height;
 	while ((s = getstr(ctx)) != NULL) {
 		for (; *s && d < dend; s++) {
 			// 色の情報はないがグレースケールとの親和性のため 0 を黒とする。
-			uint8 c = (*s == '0') ? 0 : 0xff;
-			*d++ = c;
-			*d++ = c;
-			*d++ = c;
+			uint16 cc = (*s == '0') ? 0x0000 : 0x7fff;
+			*d++ = cc;
 		}
 	}
 
@@ -126,7 +135,9 @@ image_pnm2_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	struct pnmctx *ctx = &ctx0;
 	struct image *img;
 
-	img = image_pnm_read_init(ctx, fp, true, diag);
+	CTX_INIT(ctx, fp, diag);
+
+	img = image_pnm_read_init(ctx, 2, diag);
 	if (img == NULL) {
 		return NULL;
 	}
@@ -134,13 +145,11 @@ image_pnm2_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		img->width, img->height, ctx->maxval);
 
 	int idx;
-	uint8 *d = (uint8 *)img->buf;
-	const uint8 *dend = d + image_get_stride(img) * img->height;
+	uint16 *d = (uint16 *)img->buf;
+	const uint16 *dend = d + image_get_stride(img) * img->height;
 	while ((idx = getnum(ctx)) != -1 && d < dend) {
-		uint8 c = ctx->palette[idx];
-		*d++ = c;
-		*d++ = c;
-		*d++ = c;
+		uint16 cc = ctx->palette.w[idx];
+		*d++ = cc;
 	}
 
 	return img;
@@ -163,7 +172,9 @@ image_pnm3_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	struct pnmctx *ctx = &ctx0;
 	struct image *img;
 
-	img = image_pnm_read_init(ctx, fp, true, diag);
+	CTX_INIT(ctx, fp, diag);
+
+	img = image_pnm_read_init(ctx, 3, diag);
 	if (img == NULL) {
 		return NULL;
 	}
@@ -174,7 +185,7 @@ image_pnm3_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	uint8 *d = (uint8 *)img->buf;
 	const uint8 *dend = d + image_get_stride(img) * img->height;
 	while ((idx = getnum(ctx)) != -1 && d < dend) {
-		uint8 c = ctx->palette[idx];
+		uint8 c = ctx->palette.b[idx];
 		*d++ = c;
 	}
 
@@ -205,20 +216,19 @@ image_pnm_match(FILE *fp, const struct diag *diag)
 }
 
 // image_*_read() の冒頭の共通部分。
+// type==1 は PBM、
+// type==2 は PGM、
+// type==3 は PPM。
 static struct image *
-image_pnm_read_init(struct pnmctx *ctx, FILE *fp, bool has_maxval,
-	const struct diag *diag)
+image_pnm_read_init(struct pnmctx *ctx, int type, const struct diag *diag)
 {
 	int width;
 	int height;
-
-	memset(ctx, 0, sizeof(*ctx));
-	ctx->fp = fp;
-	ctx->p = ctx->buf;
+	int maxval = 0;
 
 	// マジックの2文字は読み捨てる。
-	fgetc(fp);
-	fgetc(fp);
+	fgetc(ctx->fp);
+	fgetc(ctx->fp);
 
 	// 横と縦のピクセル数。
 	width = getnum(ctx);
@@ -231,8 +241,8 @@ image_pnm_read_init(struct pnmctx *ctx, FILE *fp, bool has_maxval,
 	}
 
 	// PBM 以外なら続いて最大値、8bpp なら 255。
-	if (has_maxval) {
-		int maxval = getnum(ctx);
+	if (type != 1) {
+		maxval = getnum(ctx);
 		if (maxval < 0) {
 			return NULL;
 		}
@@ -242,12 +252,42 @@ image_pnm_read_init(struct pnmctx *ctx, FILE *fp, bool has_maxval,
 		}
 
 		ctx->maxval = maxval;
-		for (uint i = 0; i <= maxval; i++) {
-			ctx->palette[i] = i * 255 / maxval;
-		}
 	}
 
-	return image_create(width, height, IMAGE_FMT_RGB24);
+	// PGM なら ARGB16 のテーブルを作成、
+	// PPM なら uint8 のテーブルを作成。
+	switch (type) {
+	 case 2:
+		for (uint i = 0; i <= maxval; i++) {
+			uint8 v = (i * 255 / maxval) >> 3;
+			uint16 cc = (v << 10) | (v << 5) | v;
+			ctx->palette.w[i] = cc;
+		}
+		break;
+	 case 3:
+		for (uint i = 0; i <= maxval; i++) {
+			uint8 v = i * 255 / maxval;
+			ctx->palette.b[i] = v;
+		}
+		break;
+	 default:
+		__unreachable();
+	}
+
+	int imgfmt;
+	switch (type) {
+	 case 1:
+	 case 2:
+		imgfmt = IMAGE_FMT_ARGB16;
+		break;
+	 case 3:
+		imgfmt = IMAGE_FMT_RGB24;
+		break;
+	 default:
+		__unreachable();
+	}
+
+	return image_create(width, height, imgfmt);
 }
 
 // 次の単語を非負の10進数として数値にして返す。数値に出来なければ 0 を返す。
