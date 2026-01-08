@@ -587,6 +587,8 @@ image_convert_to16(struct image *img)
 
 		// 実際にあるかどうかは調べてない。
 		img->has_alpha = true;
+	} else if (img->format != IMAGE_FMT_ARGB16) {
+		assert(img->format == IMAGE_FMT_ARGB16);
 	}
 
 	img->format = IMAGE_FMT_ARGB16;
