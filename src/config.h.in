@@ -1,6 +1,6 @@
 //
 // sayaka
-// Copyright (C) 2021-2025 isaki@NetBSD.org
+// Copyright (C) 2021-2026 isaki@NetBSD.org
 //
 
 #ifndef sayaka_config_h
@@ -28,6 +28,7 @@
 
 #undef HAVE_ICONV
 #undef  ICONV_HAS_CONST_SRC
+#undef HAVE_BUILTIN_PNM
 #undef HAVE_GIFLIB
 #undef HAVE_LIBJPEG
 #undef HAVE_LIBJXL

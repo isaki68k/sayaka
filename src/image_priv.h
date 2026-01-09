@@ -37,6 +37,9 @@
 // テストなどで一時的に無効にしたい場合のため。
 #define USE_BLURHASH
 #define USE_STB_IMAGE
+#if defined(HAVE_BUILTIN_PNM)
+#define USE_BUILTIN_PNM
+#endif
 #if defined(HAVE_GIFLIB)
 #define USE_GIFLIB
 #endif
@@ -55,7 +58,6 @@
 #if defined(HAVE_LIBWEBP)
 #define USE_LIBWEBP
 #endif
-#define USE_BUILTIN_PNM
 
 // image.c
 extern struct image *image_create(uint, uint, uint);

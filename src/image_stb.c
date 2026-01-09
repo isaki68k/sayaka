@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2023-2025 Tetsuya Isaki
+ * Copyright (C) 2023-2026 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,6 +32,9 @@
 #include "image_priv.h"
 
 // 外部ライブラリでサポートしているフォーマットを除く。
+#if defined(USE_BUILTIN_PNM)
+#define STBI_NO_PNM
+#endif
 #if defined(USE_GIFLIB)
 #define STBI_NO_GIF
 #endif

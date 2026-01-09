@@ -1,6 +1,6 @@
 #
 # sayaka
-# Copyright (C) 2021-2025 isaki@NetBSD.org
+# Copyright (C) 2021-2026 isaki@NetBSD.org
 #
 
 AC_PREREQ([2.71 pkg-config])
@@ -472,6 +472,23 @@ case "${with_libwebp}" in
 	On Unubtu, sudo apt install libwebp-dev])
 		fi
 	fi
+	;;
+esac
+
+# 内蔵版 pnm はデフォルトを yes にする。
+# --with-builtin-pnm=no (--without-builtin-pnm) なら使わない。
+AC_ARG_WITH([builtin-pnm],
+	AS_HELP_STRING([--with-builtin-pnm=(yes|no)],
+		[Use built-in PNM loader (default:yes)]))
+if test -z "${with_builtin_pnm}"; then
+	with_builtin_pnm=yes
+fi
+case "${with_builtin_pnm}" in
+ no)
+	;;
+ *)
+	AC_DEFINE([HAVE_BUILTIN_PNM])
+	AC_SUBST([DEFINE_BUILTIN_PNM], [HAVE_BUILTIN_PNM=yes])
 	;;
 esac
 
