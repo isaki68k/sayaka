@@ -38,9 +38,6 @@ SRCS_common+=	image_jxl.c
 .if defined(HAVE_LIBPNG)
 SRCS_common+=	image_png.c
 .endif
-.if defined(HAVE_BUILTIN_PNM)
-SRCS_common+=	image_pnm.c
-.endif
 SRCS_common+=	image_sixel.c
 SRCS_common+=	image_stb.c
 .if defined(HAVE_LIBWEBP)
@@ -64,6 +61,9 @@ SRCS_sayaka+=	wsclient.c
 
 SRCS_sixelv+=	image_ascii.c
 SRCS_sixelv+=	image_bmp.c
+.if defined(HAVE_BUILTIN_PNM)
+SRCS_sixelv+=	image_pnm.c
+.endif
 .if defined(HAVE_LIBTIFF)
 SRCS_sixelv+=	image_tiff.c
 .endif

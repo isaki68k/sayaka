@@ -439,7 +439,7 @@ static const struct {
 #if defined(USE_LIBTIFF) && defined(SIXELV)
 	ENTRY(tiff, libtiff, LOADERMAP_tiff),
 #endif
-#if defined(USE_BUILTIN_PNM)
+#if defined(USE_BUILTIN_PNM) && defined(SIXELV)
 	ENTRY(pnm5, builtin, LOADERMAP_pnm5),
 	ENTRY(pnm6, builtin, LOADERMAP_pnm6),
 	// ASCII は実用上の価値はないので優先度後ろでいい。
