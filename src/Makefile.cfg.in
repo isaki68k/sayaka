@@ -1,6 +1,6 @@
 #
 # sayaka
-# Copyright (C) 2021-2026 isaki@NetBSD.org
+# Copyright (C) 2021-2026 Tetsuya Isaki
 #
 
 CC=	@CC@
