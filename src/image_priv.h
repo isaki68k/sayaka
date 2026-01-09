@@ -37,6 +37,7 @@
 // テストなどで一時的に無効にしたい場合のため。
 #define USE_BLURHASH
 #define USE_STB_IMAGE
+#define USE_BUILTIN_BMP
 #if defined(HAVE_BUILTIN_PNM)
 #define USE_BUILTIN_PNM
 #endif
@@ -71,6 +72,7 @@ typedef struct image *(*image_read_t)(FILE *, const image_read_hint *,
 	extern struct image *image_##name##_read(FILE *,	\
 		const image_read_hint *, const struct diag *)
 
+IMAGE_HANDLER(bmp);
 IMAGE_HANDLER(gif);
 IMAGE_HANDLER(jpeg);
 IMAGE_HANDLER(jxl);
