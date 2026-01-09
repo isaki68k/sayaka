@@ -199,6 +199,81 @@ image_pnm3_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 }
 
 //
+// P5: PGM (Binary)
+//
+
+bool
+image_pnm5_match(FILE *fp, const struct diag *diag)
+{
+	return (image_pnm_match(fp, diag) == '5');
+}
+
+struct image *
+image_pnm5_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
+{
+	struct pnmctx ctx0;
+	struct pnmctx *ctx = &ctx0;
+	struct image *img;
+
+	CTX_INIT(ctx, fp, diag);
+
+	img = image_pnm_read_init(ctx, 2, diag);
+	if (img == NULL) {
+		return NULL;
+	}
+	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
+		img->width, img->height, ctx->maxval);
+
+	int val;
+	uint16 *d = (uint16 *)img->buf;
+	const uint16 *dend = d + image_get_stride(img) * img->height;
+	while ((val = fgetc(ctx->fp)) != -1 && d < dend) {
+		uint16 cc = ctx->palette.w[val];
+		*d++ = cc;
+	}
+
+	return img;
+}
+
+//
+// P6: PPM (Binary)
+//
+
+bool
+image_pnm6_match(FILE *fp, const struct diag *diag)
+{
+	return (image_pnm_match(fp, diag) == '6');
+}
+
+struct image *
+image_pnm6_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
+{
+	struct pnmctx ctx0;
+	struct pnmctx *ctx = &ctx0;
+	struct image *img;
+
+	CTX_INIT(ctx, fp, diag);
+
+	img = image_pnm_read_init(ctx, 3, diag);
+	if (img == NULL) {
+		return NULL;
+	}
+	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
+		img->width, img->height, ctx->maxval);
+
+	int val;
+	uint8 *d = (uint8 *)img->buf;
+	const uint8 *dend = d + image_get_stride(img) * img->height;
+	while ((val = fgetc(ctx->fp)) != -1 && d < dend) {
+		uint8 c = ctx->palette.b[val];
+		*d++ = c;
+	}
+
+	return img;
+}
+
+
+//
 // 下請け
 //
 
