@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Tetsuya Isaki
+ * Copyright (C) 2025-2026 Tetsuya Isaki
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted.
@@ -33,11 +33,17 @@
 #ifndef nono_ascii_ctype_h
 #define nono_ascii_ctype_h
 
+#if defined(__cplusplus)
+#define INLINE inline
+#else
+#define INLINE static inline
+#endif
+
 // 今どきテーブルより条件分岐のほうが早そう。
 
 #include <stdbool.h>
 
-inline bool
+INLINE bool
 is_ascii_space(unsigned char c)
 {
 	// 空白文字はスペース、タブの他 CR, LF, FF, VT を含む。
@@ -52,7 +58,7 @@ is_ascii_space(unsigned char c)
 	return false;
 }
 
-inline bool
+INLINE bool
 is_ascii_digit(unsigned char c)
 {
 	if ('0' <= c && c <= '9') {
@@ -61,7 +67,7 @@ is_ascii_digit(unsigned char c)
 	return false;
 }
 
-inline bool
+INLINE bool
 is_ascii_upper(unsigned char c)
 {
 	if ('A' <= c && c <= 'Z') {
@@ -70,7 +76,7 @@ is_ascii_upper(unsigned char c)
 	return false;
 }
 
-inline bool
+INLINE bool
 is_ascii_lower(unsigned char c)
 {
 	if ('a' <= c && c <= 'z') {
@@ -79,7 +85,7 @@ is_ascii_lower(unsigned char c)
 	return false;
 }
 
-inline bool
+INLINE bool
 is_ascii_alpha(unsigned char c)
 {
 	if (is_ascii_upper(c) || is_ascii_lower(c)) {
@@ -88,7 +94,7 @@ is_ascii_alpha(unsigned char c)
 	return false;
 }
 
-inline bool
+INLINE bool
 is_ascii_alnum(unsigned char c)
 {
 	if (is_ascii_alpha(c) || is_ascii_digit(c)) {
@@ -97,7 +103,7 @@ is_ascii_alnum(unsigned char c)
 	return false;
 }
 
-inline bool
+INLINE bool
 is_ascii_xdigit(unsigned char c)
 {
 	if (is_ascii_digit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f')) {
@@ -106,7 +112,7 @@ is_ascii_xdigit(unsigned char c)
 	return false;
 }
 
-inline bool
+INLINE bool
 is_ascii_print(unsigned char c)
 {
 	if (' ' <= c && c < 0x7f) {
@@ -114,5 +120,7 @@ is_ascii_print(unsigned char c)
 	}
 	return false;
 }
+
+#undef INLINE
 
 #endif /* nono_ascii_ctype_h */
