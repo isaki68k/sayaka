@@ -150,12 +150,20 @@ image_pnm2_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
 		img->width, img->height, ctx->maxval);
 
-	int idx;
 	uint16 *d = (uint16 *)img->buf;
 	const uint16 *dend = d + image_get_stride(img) * img->height;
-	while ((idx = getnum(ctx)) != -1 && d < dend) {
-		uint16 cc = ctx->palette.w[idx];
-		*d++ = cc;
+	if (ctx->maxval < 256) {
+		int idx;
+		while ((idx = getnum(ctx)) != -1 && d < dend) {
+			uint16 cc = ctx->palette.w[idx];
+			*d++ = cc;
+		}
+	} else {
+		int idx;
+		while ((idx = getnum(ctx)) != -1 && d < dend) {
+			uint16 v = (idx * 31 / ctx->maxval);
+			*d++ = (v << 10) | (v << 5) | v;
+		}
 	}
 
 	return img;
@@ -187,12 +195,20 @@ image_pnm3_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
 		img->width, img->height, ctx->maxval);
 
-	int idx;
 	uint8 *d = (uint8 *)img->buf;
 	const uint8 *dend = d + image_get_stride(img) * img->height;
-	while ((idx = getnum(ctx)) != -1 && d < dend) {
-		uint8 c = ctx->palette.b[idx];
-		*d++ = c;
+	if (ctx->maxval < 256) {
+		int idx;
+		while ((idx = getnum(ctx)) != -1 && d < dend) {
+			uint8 c = ctx->palette.b[idx];
+			*d++ = c;
+		}
+	} else {
+		int idx;
+		while ((idx = getnum(ctx)) != -1 && d < dend) {
+			uint8 v = idx * 255 / ctx->maxval;
+			*d++ = v;
+		}
 	}
 
 	return img;
@@ -223,6 +239,11 @@ image_pnm5_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	}
 	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
 		img->width, img->height, ctx->maxval);
+	if (ctx->maxval >= 256) {
+		Debug(diag, "%s: maxval not supported", __func__);
+		image_free(img);
+		return NULL;
+	}
 
 	int val;
 	uint16 *d = (uint16 *)img->buf;
@@ -260,6 +281,11 @@ image_pnm6_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	}
 	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
 		img->width, img->height, ctx->maxval);
+	if (ctx->maxval >= 256) {
+		Debug(diag, "%s: maxval not supported", __func__);
+		image_free(img);
+		return NULL;
+	}
 
 	int val;
 	uint8 *d = (uint8 *)img->buf;
@@ -307,29 +333,27 @@ image_pnm_read_init(struct pnmctx *ctx, int type, const struct diag *diag)
 		return NULL;
 	}
 
-	if (ctx->maxval > 255) {
-		Debug(diag, "%s: maxval=%u not supported", __func__, ctx->maxval);
-		return NULL;
-	}
-
+	// 8bpp 以下で
 	// PGM なら ARGB16 のテーブルを作成、
 	// PPM なら uint8 のテーブルを作成。
-	switch (type) {
-	 case 2:
-		for (uint i = 0; i <= ctx->maxval; i++) {
-			uint8 v = (i * 255 / ctx->maxval) >> 3;
-			uint16 cc = (v << 10) | (v << 5) | v;
-			ctx->palette.w[i] = cc;
+	if (ctx->maxval < 256) {
+		switch (type) {
+		 case 2:
+			for (uint i = 0; i <= ctx->maxval; i++) {
+				uint8 v = (i * 255 / ctx->maxval) >> 3;
+				uint16 cc = (v << 10) | (v << 5) | v;
+				ctx->palette.w[i] = cc;
+			}
+			break;
+		 case 3:
+			for (uint i = 0; i <= ctx->maxval; i++) {
+				uint8 v = i * 255 / ctx->maxval;
+				ctx->palette.b[i] = v;
+			}
+			break;
+		 default:
+			break;
 		}
-		break;
-	 case 3:
-		for (uint i = 0; i <= ctx->maxval; i++) {
-			uint8 v = i * 255 / ctx->maxval;
-			ctx->palette.b[i] = v;
-		}
-		break;
-	 default:
-		break;
 	}
 
 	int imgfmt;
