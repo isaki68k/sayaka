@@ -42,6 +42,7 @@
 #include "ascii_ctype.h"
 #include <err.h>
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 
 struct pnmctx
@@ -49,6 +50,10 @@ struct pnmctx
 	FILE *fp;
 
 	char *p;	// カーソル位置
+
+	// 画像サイズ
+	uint width;
+	uint height;
 
 	// 最大値 (bitdepth = 8 なら 255)。
 	// PBM では使わない。
@@ -74,6 +79,7 @@ struct pnmctx
 static int  image_pnm_match(FILE *, const struct diag *);
 static struct image *image_pnm_read_init(struct pnmctx *, int,
 	const struct diag *);
+static bool parse_pnm_header(struct pnmctx *, const struct diag *);
 static int  getnum(struct pnmctx *);
 static const char *getstr(struct pnmctx *);
 
@@ -222,72 +228,183 @@ image_pnm_match(FILE *fp, const struct diag *diag)
 static struct image *
 image_pnm_read_init(struct pnmctx *ctx, int type, const struct diag *diag)
 {
-	int width;
-	int height;
-	int maxval = 0;
-
-	// マジックの2文字は読み捨てる。
-	fgetc(ctx->fp);
-	fgetc(ctx->fp);
-
-	// 横と縦のピクセル数。
-	width = getnum(ctx);
-	if (width < 0) {
-		return NULL;
-	}
-	height = getnum(ctx);
-	if (height < 0) {
+	if (parse_pnm_header(ctx, diag) == false) {
 		return NULL;
 	}
 
-	// PBM 以外なら続いて最大値、8bpp なら 255。
-	if (type != 1) {
-		maxval = getnum(ctx);
-		if (maxval < 0) {
-			return NULL;
-		}
-		if (maxval > 255) {
-			Debug(diag, "%s: maxval=%u not supported", __func__, maxval);
-			return NULL;
-		}
-
-		ctx->maxval = maxval;
+	if (ctx->maxval > 255) {
+		Debug(diag, "%s: maxval=%u not supported", __func__, ctx->maxval);
+		return NULL;
 	}
 
 	// PGM なら ARGB16 のテーブルを作成、
 	// PPM なら uint8 のテーブルを作成。
 	switch (type) {
 	 case 2:
-		for (uint i = 0; i <= maxval; i++) {
-			uint8 v = (i * 255 / maxval) >> 3;
+		for (uint i = 0; i <= ctx->maxval; i++) {
+			uint8 v = (i * 255 / ctx->maxval) >> 3;
 			uint16 cc = (v << 10) | (v << 5) | v;
 			ctx->palette.w[i] = cc;
 		}
 		break;
 	 case 3:
-		for (uint i = 0; i <= maxval; i++) {
-			uint8 v = i * 255 / maxval;
+		for (uint i = 0; i <= ctx->maxval; i++) {
+			uint8 v = i * 255 / ctx->maxval;
 			ctx->palette.b[i] = v;
 		}
 		break;
 	 default:
-		__unreachable();
+		break;
 	}
 
 	int imgfmt;
-	switch (type) {
-	 case 1:
-	 case 2:
-		imgfmt = IMAGE_FMT_ARGB16;
-		break;
-	 case 3:
+	if (type == 3) {
 		imgfmt = IMAGE_FMT_RGB24;
-		break;
-	 default:
-		__unreachable();
+	} else {
+		imgfmt = IMAGE_FMT_ARGB16;
+	}
+	return image_create(ctx->width, ctx->height, imgfmt);
+}
+
+// ヘッダ部分を解析。ヘッダは
+// o 2文字のマジックナンバー (判定済みなので飛ばしてよい)
+// o (1文字以上の?) 空白文字(isspace)
+// o ASCII 10進数の横ピクセル数
+// o (1文字以上の?) 空白文字
+// o ASCII 10進数の縦ピクセル数
+// if (PGM or PPM)
+//  o (1文字以上の?) 空白文字
+//  o ASCII 10進数の最大値
+// endif
+// o "1文字の" 空白文字(通常は改行)
+// から構成されており、この次の文字からはテキストかバイナリデータとなる。
+// 最後の空白文字以前には '#' から改行までを無視するコメントが置ける。
+//
+// 成功すれば width, height(, maxval) を ctx に書き戻して true を返す。
+// 失敗すれば false を返す。
+static bool
+parse_pnm_header(struct pnmctx *ctx, const struct diag *diag)
+{
+	char hdrbuf[128];
+	uint maxwords;
+	int ch;
+	enum {
+		WORD,
+		WSP,
+		COMMENT,
+	} state, prev;
+
+	char *d = hdrbuf;
+	const char *dend = d + sizeof(hdrbuf) - 1;
+
+	// マジックナンバーの1文字目は無視。
+	fgetc(ctx->fp);
+
+	// マジックナンバーの2文字目。
+	ch = fgetc(ctx->fp);
+	if (ch == '1' || ch == '4') {
+		maxwords = 2;
+	} else {
+		maxwords = 3;
+	}
+	prev = WORD;
+	state = WSP;
+
+	// maxwords 分の語を取り出す。
+	uint nwords = 0;
+	while (d < dend && (ch = fgetc(ctx->fp)) != -1) {
+	 again:
+		if (state == WORD) {
+			if (ch == '#') {
+				prev = state;
+				state = COMMENT;
+			} else if (is_ascii_space(ch)) {
+				nwords++;
+				if (nwords == maxwords) {
+					break;
+				}
+				*d++ = ' ';
+				prev = state;
+				state = WSP;
+			} else {
+				*d++ = ch;
+			}
+		} else if (state == WSP) {
+			if (ch == '#') {
+				prev = state;
+				state = COMMENT;
+			} else if (is_ascii_space(ch)) {
+				// 連続する空白は無視。
+			} else {
+				*d++ = ch;
+				prev = state;
+				state = WORD;
+			}
+		} else if (state == COMMENT) {
+			// '#' から CR か LF *の手前まで* をコメントとして無視。
+			if (ch == '\r' || ch == '\n') {
+				state = prev;
+				prev = COMMENT;
+				goto again;
+			} else {
+				// コメント中は無視。
+			}
+		}
+	}
+	*d = '\0';
+
+	// hdrbuf は [<SP>] width <SP> height [ <SP> maxval ] '\0' のはず。
+	// strto*() は冒頭の空白をスキップするのでここでは都合がいい。
+
+	char *s;
+	char *end;
+	long width;
+	long height;
+	long maxval = 0;
+
+	s = hdrbuf;
+	errno = 0;
+	width = strtol(s, &end, 10);
+	if (end == s || (*end != '\0' && *end != ' ') || errno != 0) {
+		Trace(diag, "%s: Invalid width string", __func__);
+		return false;
+	}
+	if (width < 0 || width > INT_MAX) {
+		Trace(diag, "%s: Invalid width=%ld", __func__, width);
+		return false;
 	}
 
-	return image_create(width, height, imgfmt);
+	s = end;
+	errno = 0;
+	height = strtoul(s, &end, 10);
+	if (end == s || (*end != '\0' && *end != ' ') || errno != 0) {
+		Trace(diag, "%s: Invalid height string", __func__);
+		return false;
+	}
+	if (height < 0 || height > INT_MAX) {
+		Trace(diag, "%s: Invalid height=%lu", __func__, height);
+		return false;
+	}
+
+	if (maxwords == 3) {
+		s = end;
+		errno = 0;
+		maxval = strtoul(s, &end, 10);
+		if (end == s || (*end != '\0' && *end != ' ') || errno != 0) {
+			Trace(diag, "%s: Invalid maxval string", __func__);
+			return false;
+		}
+		if (maxval < 0 || maxval > 65535) {
+			Trace(diag, "%s: Invalid maxval=%lu", __func__, maxval);
+			return false;
+		}
+	}
+
+	ctx->width  = (uint)width;
+	ctx->height = (uint)height;
+	ctx->maxval = (uint)maxval;
+
+	return true;
 }
 
 // 次の単語を非負の10進数として数値にして返す。数値に出来なければ 0 を返す。
