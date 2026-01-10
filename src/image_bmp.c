@@ -369,11 +369,14 @@ raster_rgb16(struct bmpctx *ctx, int y)
 {
 	struct image *img = ctx->img;
 	uint bmpstride = roundup(img->width * 2, 4);
-	uint8 srcbuf[bmpstride];
+	uint16 srcbuf[bmpstride / 2];
 
-	size_t n = fread(srcbuf, 2, img->width, ctx->fp);
+	size_t n = fread(srcbuf, 2, bmpstride / 2, ctx->fp);
+	if (n > img->width) {
+		n = img->width;
+	}
 
-	const uint16 *s = (uint16 *)srcbuf;
+	const uint16 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
 	for (uint x = 0; x < n; x++) {
 		// 16ビットは RGB555 形式らしいので、エンディアンを揃えるだけ。
