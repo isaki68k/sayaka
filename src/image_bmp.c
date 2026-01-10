@@ -79,6 +79,8 @@ struct bmpctx {
 
 typedef bool (*rasterop_t)(struct bmpctx *, int);
 
+static bool read_palette3(struct bmpctx *, uint);
+static bool read_palette4(struct bmpctx *, uint);
 static bool raster_rgb1(struct bmpctx *, int);
 static bool raster_rgb4(struct bmpctx *, int);
 static bool raster_rgb8(struct bmpctx *, int);
@@ -233,22 +235,19 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 	// パレットは BiBitCount が 8 以下の時にある。
 	if (bitcount <= 8) {
-		// パレット数は BiClrUsed があればこれが色数、
-		// 0 ならデフォルト (1 << BiBitCount)
+		// パレット数は BiClrUsed。
+		// BiClrUsed が 0 ならデフォルト (1 << BiBitCount) を意味する。
 		uint npal = clrused ?: (1U << bitcount);
-		uint32 palbuf[npal];
-		n = fread(palbuf, 4, npal, fp);
-		if (n < npal) {
-			Debug(diag, "%s: fread(npal=%u)=%zu: %s", __func__,
-				npal, n, strerrno());
-			goto abort;
+
+		bool r;
+		if (dib_size == sizeof(BITMAPCOREHEADER)) {
+			r = read_palette3(ctx, npal);
+		} else {
+			r = read_palette4(ctx, npal);
 		}
-		for (uint i = 0; i < npal; i++) {
-			uint xrgb = le32toh(palbuf[i]);
-			uint8 r = (xrgb >> 16) & 0xff;
-			uint8 g = (xrgb >>  8) & 0xff;
-			uint8 b = (xrgb      ) & 0xff;
-			ctx->palette[i] = RGB888_to_ARGB16(r, g, b);
+		if (r == false) {
+			Debug(diag, "%s: fread(palette) failed: %s", __func__, strerrno());
+			goto abort;
 		}
 	}
 
@@ -272,6 +271,48 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
  abort:
 	image_free(ctx->img);
 	return NULL;
+}
+
+// パレットセクション (3バイト/パレット) を読み込む。npal はパレット数。
+static bool
+read_palette3(struct bmpctx *ctx, uint npal)
+{
+	uint8 palbuf[npal * 3];
+
+	size_t n = fread(palbuf, 3, npal, ctx->fp);
+	if (n < npal) {
+		return false;
+	}
+	const uint8 *s = palbuf;
+	for (uint i = 0; i < npal; i++) {
+		uint8 b = *s++;
+		uint8 g = *s++;
+		uint8 r = *s++;
+		ctx->palette[i] = RGB888_to_ARGB16(r, g, b);
+	}
+
+	return true;
+}
+
+// パレットセクション (4バイト/パレット) を読み込む。npal はパレット数。
+static bool
+read_palette4(struct bmpctx *ctx, uint npal)
+{
+	uint32 palbuf[npal];
+
+	size_t n = fread(palbuf, 4, npal, ctx->fp);
+	if (n < npal) {
+		return false;
+	}
+	for (uint i = 0; i < npal; i++) {
+		uint xrgb = le32toh(palbuf[i]);
+		uint8 r = (xrgb >> 16) & 0xff;
+		uint8 g = (xrgb >>  8) & 0xff;
+		uint8 b = (xrgb      ) & 0xff;
+		ctx->palette[i] = RGB888_to_ARGB16(r, g, b);
+	}
+
+	return true;
 }
 
 static bool
