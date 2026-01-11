@@ -32,6 +32,10 @@
 #include "image_priv.h"
 #include <string.h>
 
+// 圧縮方式
+#define BI_RGB			(0)
+#define BI_BITFIELDS	(3)
+
 // ファイルヘッダ(共通)
 typedef struct __packed {
 	uint8  bfType[2];		// "BM"
@@ -56,8 +60,7 @@ typedef struct __packed {
 	uint32 biHeight;		// 画像のピクセル高さ (負なら上から下)
 	uint16 biPlanes;		// プレーン数 (1)
 	uint16 biBitCount;		// bits per pixel
-	uint32 biCompression;	// 圧縮方式 (BI_RGB = 0)
-#define BI_RGB	(0)
+	uint32 biCompression;	// 圧縮方式
 	uint32 biSizeImage;		// データ部のバイト数
 	uint32 biXPelsPerMeter;	// X 解像度
 	uint32 biYPelsPerMeter;	// Y 解像度
@@ -74,6 +77,12 @@ typedef union {
 struct bmpctx {
 	FILE *fp;
 	struct image *img;
+
+	// BI_BITFIELDS、各 R,G,B の順。
+	uint32 mask[3];		// マスクビット (例えば 0x00ff0000)
+	uint offset[3];		// マスクの右側のゼロの数
+	uint maskbits[3];	// マスクのビット数
+
 	uint16 palette[256];
 };
 
@@ -87,6 +96,10 @@ static bool raster_rgb8(struct bmpctx *, int);
 static bool raster_rgb16(struct bmpctx *, int);
 static bool raster_rgb24(struct bmpctx *, int);
 static bool raster_rgb32(struct bmpctx *, int);
+static void set_colormask(struct bmpctx *, uint32 *);
+static bool raster_bitfield16(struct bmpctx *, int);
+static bool raster_bitfield32(struct bmpctx *, int);
+static uint8 extend_to8bit(const struct bmpctx *, uint32, uint);
 static struct image *image_coloring(const struct image *);
 
 // R8,G8,B8 を内部形式に変換。
@@ -221,6 +234,15 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 				__func__, bitcount);
 			return false;
 		}
+	} else if (compression == BI_BITFIELDS) {
+		switch (bitcount) {
+		 case 16:	rasterop = raster_bitfield16;	break;
+		 case 32:	rasterop = raster_bitfield32;	break;
+		 default:
+			Debug(diag, "%s: BI_BITFIELDS but BitCount=%u not supported",
+				__func__, bitcount);
+			return false;
+		}
 	} else {
 		Debug(diag, "%s: compression=%u not supported", __func__,
 			compression);
@@ -230,7 +252,26 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	// 直接内部形式にする。
 	ctx->img = image_create(width, height, IMAGE_FMT_ARGB16);
 	if (ctx->img == NULL) {
-		return false;
+		return NULL;
+	}
+
+	// 圧縮形式がビットフィールドならカラーマスクを加工する。
+	// DIB=INFO なら、ヘッダ直後に R,G,B のマスクが各32ビットで配置される。
+	if (compression == BI_BITFIELDS) {
+		if (dib_size == sizeof(BITMAPINFOHEADER)) {
+			uint32 maskbuf[3];
+			n = fread(maskbuf, sizeof(maskbuf[0]), countof(maskbuf), fp);
+			if (n < countof(maskbuf)) {
+				Debug(diag, "%s: fread(colormask) failed: %s",
+					__func__, strerrno());
+				goto abort;
+			}
+			set_colormask(ctx, maskbuf);
+		}
+		Debug(diag, "%s: RGB=%u:%u:%u", __func__,
+			ctx->maskbits[0],
+			ctx->maskbits[1],
+			ctx->maskbits[2]);
 	}
 
 	// パレットは BiBitCount が 8 以下の時にある。
@@ -473,6 +514,111 @@ raster_rgb32(struct bmpctx *ctx, int y)
 
 	// 構わず成功扱いにしておく。
 	return true;
+}
+
+// カラーマスクブロックから必要な値を計算しておく。
+// maskbuf は LE のままのバッファを渡す。
+static void
+set_colormask(struct bmpctx *ctx, uint32 *maskbuf)
+{
+	// マスクブロックは R,G,B の順に32ビットずつ。
+	for (uint i = 0; i < 3; i++) {
+		uint32 mask = le32toh(maskbuf[i]);
+		uint32 offset = __builtin_ctz(mask);
+		// マスクビットは連続してるはず。
+		uint32 bits = __builtin_popcount(mask);
+
+		ctx->mask[i] = mask;
+		ctx->offset[i] = offset;
+		ctx->maskbits[i] = bits;
+	}
+}
+
+static bool
+raster_bitfield16(struct bmpctx *ctx, int y)
+{
+	struct image *img = ctx->img;
+	uint bmpstride = roundup(img->width * 2, 4);
+	uint16 srcbuf[bmpstride / 2];
+
+	size_t n = fread(srcbuf, 2, bmpstride / 2, ctx->fp);
+	if (n > img->width) {
+		n = img->width;
+	}
+
+	const uint16 *s = srcbuf;
+	uint16 *d = (uint16 *)img->buf + img->width * y;
+	for (uint x = 0; x < n; x++) {
+		uint16 data = le16toh(*s++);
+		uint8 r = extend_to8bit(ctx, data, 0);
+		uint8 g = extend_to8bit(ctx, data, 1);
+		uint8 b = extend_to8bit(ctx, data, 2);
+		*d++ = RGB888_to_ARGB16(r, g, b);
+	}
+
+	// 構わず成功扱いにしておく。
+	return true;
+}
+
+static bool
+raster_bitfield32(struct bmpctx *ctx, int y)
+{
+	struct image *img = ctx->img;
+	uint32 srcbuf[img->width];
+
+	size_t n = fread(srcbuf, 4, img->width, ctx->fp);
+
+	const uint32 *s = srcbuf;
+	uint16 *d = (uint16 *)img->buf + img->width * y;
+	for (uint x = 0; x < n; x++) {
+		uint32 data = le32toh(*s++);
+		uint8 r = extend_to8bit(ctx, data, 0);
+		uint8 g = extend_to8bit(ctx, data, 1);
+		uint8 b = extend_to8bit(ctx, data, 2);
+		*d++ = RGB888_to_ARGB16(r, g, b);
+	}
+
+	// 構わず成功扱いにしておく。
+	return true;
+}
+
+// ビットフィールドのデータから指定のチャンネルの 8ビット値を取り出す。
+// i はチャンネルインデックス (0=R, 1=G, 2=B)
+static uint8
+extend_to8bit(const struct bmpctx *ctx, uint32 data, uint i)
+{
+	uint32 v = (data & ctx->mask[i]) >> ctx->offset[i];
+
+	// 足りないところは繰り返して重ねる。
+	switch (ctx->maskbits[i]) {
+	 case 1:
+		v = v ? 0xff : 0;
+		break;
+	 case 2:
+		v = (v << 6) | (v << 4) | (v << 2);
+		break;
+	 case 3:
+		v = (v << 5) | (v << 2) | (v >> 1);
+		break;
+	 case 4:
+		v = (v << 4) | v;
+		break;
+	 case 5:
+		v = (v << 3) | (v >> 2);
+		break;
+	 case 6:
+		v = (v << 2) | (v >> 4);
+		break;
+	 case 7:
+		v = (v << 1) | (v >> 6);
+		break;
+	 case 8:
+		break;
+	 default:
+		v >>= ctx->maskbits[i] - 8;
+		break;
+	}
+	return v;
 }
 
 // image を BMP 形式で fp に出力する。
