@@ -59,6 +59,7 @@ enum {
 extern struct image_opt imageopt;
 
 static void version(void);
+static void list_supported_images(void);
 static void usage(void);
 static void help_all(void);
 static bool init(void);
@@ -126,6 +127,7 @@ enum {
 	OPT_ipv6,
 	OPT_jis,
 	OPT_light,
+	OPT_list_supported_images,
 	OPT_mathalpha,
 	OPT_max_image_cols,
 	OPT_misskey,
@@ -161,6 +163,7 @@ static const struct option longopts[] = {
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "jis",			no_argument,		NULL,	OPT_jis },
 	{ "light",			no_argument,		NULL,	OPT_light },
+	{ "list-supported-images", no_argument,	NULL,	OPT_list_supported_images },
 	{ "local",			no_argument,		NULL,	'l' },
 	{ "mathalpha",		no_argument,		NULL,	OPT_mathalpha },
 	{ "max-image-cols",	required_argument,	NULL,	OPT_max_image_cols },
@@ -375,6 +378,10 @@ main(int ac, char *av[])
 			opt_bgtheme = BG_LIGHT;
 			break;
 
+		 case OPT_list_supported_images:
+			list_supported_images();
+			exit(0);
+
 		 case OPT_mathalpha:
 			opt_mathalpha = true;
 			break;
@@ -527,6 +534,16 @@ version(void)
 }
 
 static void
+list_supported_images(void)
+{
+	char **names = image_get_loaderinfo();
+	for (uint i = 0; names[i] != NULL; i += 2) {
+		printf("%-10s %s\n", names[i], names[i + 1]);
+	}
+	free(names);
+}
+
+static void
 usage(void)
 {
 	printf("usage: %s <command> [<options...>]\n", progname);
@@ -574,6 +591,7 @@ help_all(void)
 "  --force-blurhash       : Show blurhash image instead of actual image\n"
 "  --help-all             : This help\n"
 "  --ipv4 / --ipv6        : Connect only IPv4/v6 for both stream and images\n"
+"  --list-supported-images: Show supported filetype and decoder list\n"
 "  --mathalpha            : Use alternate character for some MathAlpha chars\n"
 "  --misskey              : Set misskey mode (No other choices at this point)\n"
 "  --max-image-cols=<n>   : Set max number of images per line\n"

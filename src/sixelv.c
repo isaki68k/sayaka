@@ -50,7 +50,7 @@ typedef enum {
 } OutputFormat;
 
 static void version(void);
-static void list(void);
+static void list_supported_images(void);
 static void usage(void);
 static void help_all(void);
 static bool do_file(const char *filename);
@@ -99,7 +99,7 @@ enum {
 	OPT_help_all,
 	OPT_ipv4,
 	OPT_ipv6,
-	OPT_list,
+	OPT_list_supported_images,
 	OPT_no_progressive,
 	OPT_output_format,
 	OPT_profile,
@@ -128,7 +128,7 @@ static const struct option longopts[] = {
 	{ "ignore-error",	no_argument,		NULL,	'i' },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
-	{ "list",			no_argument,		NULL,	OPT_list },
+	{ "list-supported-images", no_argument,	NULL,	OPT_list_supported_images },
 	{ "no-progressive",	no_argument,		NULL,	OPT_no_progressive },
 	{ "output-format",	required_argument,	NULL,	'O' },
 	{ "page",			required_argument,	NULL,	'p' },
@@ -312,8 +312,8 @@ main(int ac, char *av[])
 			netopt.address_family = 6;
 			break;
 
-		 case OPT_list:
-			list();
+		 case OPT_list_supported_images:
+			list_supported_images();
 			exit(0);
 
 		 case 'O':
@@ -464,7 +464,7 @@ version(void)
 }
 
 static void
-list(void)
+list_supported_images(void)
 {
 	char **names = image_get_loaderinfo();
 	for (uint i = 0; names[i] != NULL; i += 2) {
@@ -547,7 +547,7 @@ help_all(void)
 "                           between 0.0 and 1.0 (default:1.0)\n"
 "  --gain=<gain>          : Set output gain between 0.0 and 2.0 (default:1.0)\n"
 "  --help-all             : This help\n"
-"  --list                 : Show supported filetype and decoder list\n"
+"  --list-supported-images: Show supported filetype and decoder list\n"
 "  -O,--output-format=<fmt> : ascii, bmp or sixel (default:sixel)\n"
 "  -o <filename>          : Output filename, '-' means stdout (default:-)\n"
 "  -p,--page=<page>       : Specify the page(frame). (animated GIF/WebP only)\n"
