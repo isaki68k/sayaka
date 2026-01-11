@@ -34,6 +34,7 @@
 
 // 圧縮方式
 #define BI_RGB			(0)
+#define BI_RLE8			(1)
 #define BI_BITFIELDS	(3)
 
 // ファイルヘッダ(共通)
@@ -124,6 +125,7 @@ static bool raster_rgb32(struct bmpctx *, int);
 static void set_colormask(struct bmpctx *, uint32 *);
 static bool raster_bitfield16(struct bmpctx *, int);
 static bool raster_bitfield32(struct bmpctx *, int);
+static bool raster_rle8(struct bmpctx *, int);
 static uint8 extend_to8bit(const struct bmpctx *, uint32, uint);
 static struct image *image_coloring(const struct image *);
 
@@ -283,6 +285,8 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 				__func__, bitcount);
 			return false;
 		}
+	} else if (compression == BI_RLE8) {
+		rasterop = raster_rle8;
 	} else {
 		Debug(diag, "%s: compression=%u not supported", __func__,
 			compression);
@@ -667,6 +671,61 @@ extend_to8bit(const struct bmpctx *ctx, uint32 data, uint i)
 		break;
 	}
 	return v;
+}
+
+static bool
+raster_rle8(struct bmpctx *ctx, int y)
+{
+	struct image *img = ctx->img;
+
+	uint16 *d = (uint16 *)img->buf + img->width * y;
+	for (;;) {
+		int count = fgetc(ctx->fp);
+		if (__predict_false(count < 0)) {
+			return false;
+		}
+		if (count == 0) {
+			// エスケープ。
+			// 00,00: 行末
+			// 00,01: ビットマップの終端
+			// 00,02,dx,dy: 移動
+			// 00,nn: 絶対モード
+			int cmd = fgetc(ctx->fp);
+			if (__predict_false(cmd < 0)) {
+				return false;
+			}
+			if (cmd <= 1) {
+				break;
+			} else if (__predict_false(cmd == 2)) {
+				// Not supported
+				return false;
+			} else {
+				// 絶対モード
+				for (uint i = 0; i < cmd; i++) {
+					int cc = fgetc(ctx->fp);
+					if (__predict_false(cc < 0)) {
+						return false;
+					}
+					*d++ = ctx->palette[cc];
+				}
+				int pos = ftell(ctx->fp);
+				if ((pos & 1)) {
+					fgetc(ctx->fp);
+				}
+			}
+		} else {
+			int cc = fgetc(ctx->fp);
+			if (__predict_false(cc < 0)) {
+				return false;
+			}
+			uint16 data = ctx->palette[cc];
+			for (uint i = 0; i < count; i++) {
+				*d++ = data;
+			}
+		}
+	}
+
+	return true;
 }
 
 // image を BMP 形式で fp に出力する。
