@@ -68,10 +68,35 @@ typedef struct __packed {
 	uint32 biClrImportant;
 } BITMAPINFOHEADER;
 
+// Windows (V4) 形式の DIB
+typedef struct __packed {
+	uint32 bv4Size;			// ヘッダサイズ (108)
+	uint32 bv4Width;		// 画像のピクセル幅
+	uint32 bv4Height;		// 画像のピクセル高さ
+	uint16 bv4Planes;		// プレーン数 (1)
+	uint16 bv4BitCount;		// bits per pixel
+	uint32 bv4Compression;	// 圧縮方式
+	uint32 bv4SizeImage;
+	uint32 bv4XPelsPerMeter;
+	uint32 bv4YPelsPerMeter;
+	uint32 bv4ClrUsed;
+	uint32 bv4ClrImportant;
+	uint32 bv4RedMask;		// BI_BITFIELDS のマスク
+	uint32 bv4GreenMask;	// BI_BITFIELDS のマスク
+	uint32 bv4BlueMask;		// BI_BITFIELDS のマスク
+	uint32 bv4AlphaMask;	// BI_BITFIELDS のマスク
+	uint32 bv4CSType;		// 色空間 (0)
+	uint32 bv4Endpoints[3 * 3];
+	uint32 bv4GammaRed;
+	uint32 bv4GammaGreen;
+	uint32 bv4GammaBlue;
+} BITMAPV4HEADER;
+
 typedef union {
 	uint32 dib_size;
 	BITMAPCOREHEADER bc;
 	BITMAPINFOHEADER bi;
+	BITMAPV4HEADER   bv4;
 } DIBHEADER;
 
 struct bmpctx {
@@ -210,6 +235,8 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			hdrname = "CORE";
 		} else if (dib_size == sizeof(BITMAPINFOHEADER)) {
 			hdrname = "INFO";
+		} else if (dib_size == sizeof(BITMAPV4HEADER)) {
+			hdrname = "V4";
 		} else {
 			hdrname = "unknown";
 		}
@@ -221,6 +248,19 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			bitcount, clrused);
 	}
 
+	// 知らないヘッダなら表示までは頑張ってみるけど、終了。
+	switch (dib_size) {
+	 case sizeof(BITMAPCOREHEADER):
+	 case sizeof(BITMAPINFOHEADER):
+	 case sizeof(BITMAPV4HEADER):
+		break;
+	 default:
+		Debug(diag, "%s: Unknown header format (dib_size=%u)",
+			__func__, dib_size);
+		return NULL;
+	}
+
+	// 圧縮形式によってラスター処理関数を用意。
 	if (compression == BI_RGB) {
 		switch (bitcount) {
 		 case  1:	rasterop = raster_rgb1;		break;
@@ -257,17 +297,21 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 	// 圧縮形式がビットフィールドならカラーマスクを加工する。
 	// DIB=INFO なら、ヘッダ直後に R,G,B のマスクが各32ビットで配置される。
+	// DIB=V4/V5 なら、ヘッダに含まれている。
 	if (compression == BI_BITFIELDS) {
+		uint32 maskbuf[3];
 		if (dib_size == sizeof(BITMAPINFOHEADER)) {
-			uint32 maskbuf[3];
 			n = fread(maskbuf, sizeof(maskbuf[0]), countof(maskbuf), fp);
 			if (n < countof(maskbuf)) {
 				Debug(diag, "%s: fread(colormask) failed: %s",
 					__func__, strerrno());
 				goto abort;
 			}
-			set_colormask(ctx, maskbuf);
+		} else {
+			// V4/V5 ヘッダ内の値は4バイトに整列してないため一旦コピーする。
+			memcpy(maskbuf, &info.bv4.bv4RedMask, sizeof(maskbuf));
 		}
+		set_colormask(ctx, maskbuf);
 		Debug(diag, "%s: RGB=%u:%u:%u", __func__,
 			ctx->maskbits[0],
 			ctx->maskbits[1],
@@ -291,6 +335,10 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			goto abort;
 		}
 	}
+
+	// ラスター開始位置。
+	uint32 offbits = le32toh(hdr.bfOffBits);
+	fseek(fp, offbits, SEEK_SET);
 
 	// ラスターごとに展開。
 	if (bottom_up) {
