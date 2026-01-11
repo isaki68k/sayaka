@@ -39,7 +39,9 @@ SRCS_common+=	image_jxl.c
 SRCS_common+=	image_png.c
 .endif
 SRCS_common+=	image_sixel.c
+.if defined(WITH_STB_IMAGE)
 SRCS_common+=	image_stb.c
+.endif
 .if defined(HAVE_LIBWEBP)
 SRCS_common+=	image_webp.c
 .endif

@@ -647,6 +647,7 @@ LIBS_SIXELV
 DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_BUILTIN_PNM
+DEFINE_STB_IMAGE
 DEFINE_LIBWEBP
 LIBWEBP_LIBS
 LIBWEBP_CFLAGS
@@ -731,6 +732,7 @@ with_libjxl
 with_libpng
 with_libtiff
 with_libwebp
+with_stb_image
 with_builtin_pnm
 with_openssl
 with_iconv
@@ -1394,6 +1396,8 @@ Optional Packages:
                           Use libtiff for TIFF (default:auto)
   --with-libwebp=(auto|yes|no)
                           Use libwebp for WebP (default:yes)
+  --with-stb-image=(auto|yes|no)
+                          Use bundled stb_image (defualt:auto)
   --with-builtin-pnm=(yes|no)
                           Use built-in PNM loader (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
@@ -5319,6 +5323,49 @@ See 'config.log' for more details" "$LINENO" 5; }
 	;;
 esac
 
+# stb_image はデフォルトを auto にする。
+# --with-stb-image=yes なら常に stb_image も使う。
+# --with-stb-image=no (--without-stb-image) なら使わない。
+# --with-stb-image=auto なら GIF,JPEG,PNG のいずれかの外部ライブラリがない
+# 時に stb_image を使う。3つすべて外部ライブラリがあれば stb_image を使わない。
+# stb_image でデコードできる BMP, PNM も一緒に巻き添えになるが気にしない。
+
+# Check whether --with-stb-image was given.
+if test ${with_stb_image+y}
+then :
+  withval=$with_stb_image;
+fi
+
+if test -z "${with_stb_image}"; then
+	with_stb_image=auto
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to use bundled stb_image" >&5
+printf %s "checking whether to use bundled stb_image... " >&6; }
+case "${with_stb_image}" in
+ auto)
+	if test x"${has_giflib}"  \!= x"yes" -o \
+	        x"${HAVE_LIBJPEG}" \!= x"yes" -o \
+	        x"${HAVE_LIBPNG}"  \!= x"yes"; then
+		with_stb_image=yes
+	else
+		with_stb_image=no
+	fi
+	;;
+ *)
+	;;
+esac
+if test x"${with_stb_image}" = x"yes"; then
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	printf "%s\n" "#define WITH_STB_IMAGE 1" >>confdefs.h
+
+	DEFINE_STB_IMAGE=WITH_STB_IMAGE=yes
+
+else
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
 # 内蔵版 pnm はデフォルトを yes にする。
 # --with-builtin-pnm=no (--without-builtin-pnm) なら使わない。
 
@@ -5331,14 +5378,20 @@ fi
 if test -z "${with_builtin_pnm}"; then
 	with_builtin_pnm=yes
 fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to use builtin pnm decoder" >&5
+printf %s "checking whether to use builtin pnm decoder... " >&6; }
 case "${with_builtin_pnm}" in
- no)
-	;;
- *)
+ yes)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
 	printf "%s\n" "#define HAVE_BUILTIN_PNM 1" >>confdefs.h
 
 	DEFINE_BUILTIN_PNM=HAVE_BUILTIN_PNM=yes
 
+	;;
+ *)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
 	;;
 esac
 

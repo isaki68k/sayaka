@@ -36,5 +36,6 @@
 #undef HAVE_LIBTIFF
 #undef HAVE_LIBWEBP
 #undef HAVE_OPENSSL
+#undef WITH_STB_IMAGE
 
 #endif // !sayaka_config_h

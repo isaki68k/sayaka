@@ -475,6 +475,40 @@ case "${with_libwebp}" in
 	;;
 esac
 
+# stb_image はデフォルトを auto にする。
+# --with-stb-image=yes なら常に stb_image も使う。
+# --with-stb-image=no (--without-stb-image) なら使わない。
+# --with-stb-image=auto なら GIF,JPEG,PNG のいずれかの外部ライブラリがない
+# 時に stb_image を使う。3つすべて外部ライブラリがあれば stb_image を使わない。
+# stb_image でデコードできる BMP, PNM も一緒に巻き添えになるが気にしない。
+AC_ARG_WITH([stb-image],
+	AS_HELP_STRING([--with-stb-image=(auto|yes|no)],
+		[Use bundled stb_image (defualt:auto)]))
+if test -z "${with_stb_image}"; then
+	with_stb_image=auto
+fi
+AC_MSG_CHECKING(whether to use bundled stb_image)
+case "${with_stb_image}" in
+ auto)
+	if test x"${has_giflib}"  \!= x"yes" -o \
+	        x"${HAVE_LIBJPEG}" \!= x"yes" -o \
+	        x"${HAVE_LIBPNG}"  \!= x"yes"; then
+		with_stb_image=yes
+	else
+		with_stb_image=no
+	fi
+	;;
+ *)
+	;;
+esac
+if test x"${with_stb_image}" = x"yes"; then
+	AC_MSG_RESULT([yes])
+	AC_DEFINE([WITH_STB_IMAGE])
+	AC_SUBST([DEFINE_STB_IMAGE], [WITH_STB_IMAGE=yes])
+else
+	AC_MSG_RESULT([no])
+fi
+
 # 内蔵版 pnm はデフォルトを yes にする。
 # --with-builtin-pnm=no (--without-builtin-pnm) なら使わない。
 AC_ARG_WITH([builtin-pnm],
@@ -483,12 +517,15 @@ AC_ARG_WITH([builtin-pnm],
 if test -z "${with_builtin_pnm}"; then
 	with_builtin_pnm=yes
 fi
+AC_MSG_CHECKING(whether to use builtin pnm decoder)
 case "${with_builtin_pnm}" in
- no)
-	;;
- *)
+ yes)
+	AC_MSG_RESULT([yes])
 	AC_DEFINE([HAVE_BUILTIN_PNM])
 	AC_SUBST([DEFINE_BUILTIN_PNM], [HAVE_BUILTIN_PNM=yes])
+	;;
+ *)
+	AC_MSG_RESULT([no])
 	;;
 esac
 

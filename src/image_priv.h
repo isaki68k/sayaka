@@ -36,7 +36,6 @@
 
 // テストなどで一時的に無効にしたい場合のため。
 #define USE_BLURHASH
-#define USE_STB_IMAGE
 #define USE_BUILTIN_BMP
 #if defined(HAVE_BUILTIN_PNM)
 #define USE_BUILTIN_PNM
@@ -52,6 +51,9 @@
 #endif
 #if defined(HAVE_LIBPNG)
 #define USE_LIBPNG
+#endif
+#if defined(WITH_STB_IMAGE)
+#define USE_STB_IMAGE
 #endif
 #if defined(HAVE_LIBTIFF)
 #define USE_LIBTIFF
