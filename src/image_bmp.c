@@ -96,11 +96,40 @@ typedef struct __packed {
 	uint32 bv4GammaBlue;
 } BITMAPV4HEADER;
 
+// Windows (V5) 形式の DIB
+typedef struct __packed {
+	uint32 bv5Size;
+	uint32 bv5Width;
+	uint32 bv5Height;
+	uint16 bv5Planes;
+	uint16 bv5BitCount;
+	uint32 bv5Compression;
+	uint32 bv5SizeImage;
+	uint32 bv5XPelsPerMeter;
+	uint32 bv5YPelsPerMeter;
+	uint32 bv5ClrUsed;
+	uint32 bv5ClrImportant;
+	uint32 bv5RedMask;
+	uint32 bv5GreenMask;
+	uint32 bv5BlueMask;
+	uint32 bv5AlphaMask;
+	uint32 bv5CSType;
+	uint32 bv5Endpoints[3 * 3];
+	uint32 bv5GammaRed;
+	uint32 bv5GammaGreen;
+	uint32 bv5GammaBlue;
+	uint32 bv5Intent;
+	uint32 bv5ProfileData;
+	uint32 bv5ProfileSize;
+	uint32 bv5Reserved;
+} BITMAPV5HEADER;
+
 typedef union {
 	uint32 dib_size;
 	BITMAPCOREHEADER bc;
 	BITMAPINFOHEADER bi;
 	BITMAPV4HEADER   bv4;
+	BITMAPV5HEADER   bv5;
 } DIBHEADER;
 
 struct bmpctx {
@@ -244,6 +273,8 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			hdrname = "INFO";
 		} else if (dib_size == sizeof(BITMAPV4HEADER)) {
 			hdrname = "V4";
+		} else if (dib_size == sizeof(BITMAPV5HEADER)) {
+			hdrname = "V5";
 		} else {
 			hdrname = "unknown";
 		}
@@ -260,6 +291,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	 case sizeof(BITMAPCOREHEADER):
 	 case sizeof(BITMAPINFOHEADER):
 	 case sizeof(BITMAPV4HEADER):
+	 case sizeof(BITMAPV5HEADER):
 		break;
 	 default:
 		Debug(diag, "%s: Unknown header format (dib_size=%u)",
