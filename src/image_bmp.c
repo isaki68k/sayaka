@@ -468,15 +468,15 @@ raster_rgb1(struct bmpctx *ctx, int y)
 	uint8 srcbuf[bmpstride];
 
 	size_t n = fread(srcbuf, 1, bmpstride, ctx->fp);
+	uint width = n * 8;
+	if (width > img->width) {
+		width = img->width;
+	}
 
 	const uint8 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	uint xend = img->width;
-	if (xend > n * 8) {
-		xend = n * 8;
-	}
 	uint8 bits = 0;
-	for (uint x = 0; x < xend; x++) {
+	for (uint x = 0; x < width; x++) {
 		// 左のピクセルが MSB 側。
 		if (__predict_false((x % 8) == 0)) {
 			bits = *s++;
@@ -500,16 +500,16 @@ raster_rgb4(struct bmpctx *ctx, int y)
 	uint8 srcbuf[bmpstride];
 
 	size_t n = fread(srcbuf, 1, bmpstride, ctx->fp);
+	uint width = n * 2;
+	if (width > img->width) {
+		width = img->width;
+	}
 
 	const uint8 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	uint xend = img->width;
-	if (xend > n * 2) {
-		xend = n * 2;
-	}
 	// 偶数で回せるだけ回す。
-	uint xend2 = xend & ~1U;
-	for (uint x = 0; x < xend2; x += 2) {
+	uint width2 = width & ~1U;
+	for (uint x = 0; x < width2; x += 2) {
 		// 左のピクセルが上位ニブル側。
 		uint32 packed = *s++;
 		uint32 h = packed >> 4;
@@ -518,7 +518,7 @@ raster_rgb4(struct bmpctx *ctx, int y)
 		*d++ = ctx->palette[l];
 	}
 	// 奇数ならもう1ピクセル。
-	if (xend2 != xend) {
+	if ((width & 1)) {
 		uint32 packed = *s++;
 		uint32 h = packed >> 4;
 		*d++ = ctx->palette[h];
@@ -535,11 +535,15 @@ raster_rgb8(struct bmpctx *ctx, int y)
 	uint bmpstride = roundup(img->width, 4);
 	uint8 srcbuf[bmpstride];
 
-	size_t n = fread(srcbuf, 1, img->width, ctx->fp);
+	size_t n = fread(srcbuf, 1, bmpstride, ctx->fp);
+	uint width = n;
+	if (width > img->width) {
+		width = img->width;
+	}
 
 	const uint8 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	for (uint x = 0; x < n; x++) {
+	for (uint x = 0; x < width; x++) {
 		uint8 idx = *s++;
 		*d++ = ctx->palette[idx];
 	}
@@ -556,13 +560,14 @@ raster_rgb16(struct bmpctx *ctx, int y)
 	uint16 srcbuf[bmpstride / 2];
 
 	size_t n = fread(srcbuf, 2, bmpstride / 2, ctx->fp);
-	if (n > img->width) {
-		n = img->width;
+	uint width = n;
+	if (width > img->width) {
+		width = img->width;
 	}
 
 	const uint16 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	for (uint x = 0; x < n; x++) {
+	for (uint x = 0; x < width; x++) {
 		// 16ビットは RGB555 形式らしいので、エンディアンを揃えるだけ。
 		uint16 cc = le16toh(*s++);
 		*d++ = cc;
@@ -579,11 +584,15 @@ raster_rgb24(struct bmpctx *ctx, int y)
 	uint bmpstride = roundup(img->width * 3, 4);
 	uint8 srcbuf[bmpstride];
 
-	size_t n = fread(srcbuf, 3, img->width, ctx->fp);
+	size_t n = fread(srcbuf, 1, bmpstride, ctx->fp);
+	uint width = n / 3;
+	if (width > img->width) {
+		width = img->width;
+	}
 
 	const uint8 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	for (uint x = 0; x < n; x++) {
+	for (uint x = 0; x < width; x++) {
 		// BMP はメモリ上 B,G,R の順。
 		uint8 b = *s++;
 		uint8 g = *s++;
@@ -602,10 +611,11 @@ raster_rgb32(struct bmpctx *ctx, int y)
 	uint32 srcbuf[img->width];
 
 	size_t n = fread(srcbuf, 4, img->width, ctx->fp);
+	uint width = n;
 
 	const uint32 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	for (uint x = 0; x < n; x++) {
+	for (uint x = 0; x < width; x++) {
 		// BMP はメモリ上 B,G,R,0 の順。
 		uint32 xrgb = le32toh(*s++);
 		uint8 r = (xrgb >> 16) & 0xff;
@@ -644,13 +654,14 @@ raster_bitfield16(struct bmpctx *ctx, int y)
 	uint16 srcbuf[bmpstride / 2];
 
 	size_t n = fread(srcbuf, 2, bmpstride / 2, ctx->fp);
-	if (n > img->width) {
-		n = img->width;
+	uint width = n;
+	if (width > img->width) {
+		width = img->width;
 	}
 
 	const uint16 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	for (uint x = 0; x < n; x++) {
+	for (uint x = 0; x < width; x++) {
 		uint16 data = le16toh(*s++);
 		uint8 r = extend_to8bit(ctx, data, 0);
 		uint8 g = extend_to8bit(ctx, data, 1);
@@ -669,10 +680,11 @@ raster_bitfield32(struct bmpctx *ctx, int y)
 	uint32 srcbuf[img->width];
 
 	size_t n = fread(srcbuf, 4, img->width, ctx->fp);
+	uint width = n;
 
 	const uint32 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
-	for (uint x = 0; x < n; x++) {
+	for (uint x = 0; x < width; x++) {
 		uint32 data = le32toh(*s++);
 		uint8 r = extend_to8bit(ctx, data, 0);
 		uint8 g = extend_to8bit(ctx, data, 1);
