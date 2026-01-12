@@ -37,6 +37,8 @@
 #define BI_RLE8			(1)
 #define BI_RLE4			(2)
 #define BI_BITFIELDS	(3)
+#define BI_JPEG			(4)
+#define BI_PNG			(5)
 
 // ファイルヘッダ(共通)
 typedef struct __packed {
@@ -266,7 +268,8 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	}
 
 	// 圧縮形式によってラスター処理関数を用意。
-	if (compression == BI_RGB) {
+	switch (compression) {
+	 case BI_RGB:
 		switch (bitcount) {
 		 case  1:	rasterop = raster_rgb1;		break;
 		 case  4:	rasterop = raster_rgb4;		break;
@@ -279,7 +282,14 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 				__func__, bitcount);
 			return false;
 		}
-	} else if (compression == BI_BITFIELDS) {
+		break;
+	 case BI_RLE8:
+		rasterop = raster_rle8;
+		break;
+	 case BI_RLE4:
+		rasterop = raster_rle4;
+		break;
+	 case BI_BITFIELDS:
 		switch (bitcount) {
 		 case 16:	rasterop = raster_bitfield16;	break;
 		 case 32:	rasterop = raster_bitfield32;	break;
@@ -288,11 +298,14 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 				__func__, bitcount);
 			return false;
 		}
-	} else if (compression == BI_RLE8) {
-		rasterop = raster_rle8;
-	} else if (compression == BI_RLE4) {
-		rasterop = raster_rle4;
-	} else {
+		break;
+	 case BI_JPEG:
+		// 以降が JPEG 生データ。
+		return image_jpeg_read(fp, hint, diag);
+	 case BI_PNG:
+		// 以降が PNG 生データ。
+		return image_png_read(fp, hint, diag);
+	 default:
 		Debug(diag, "%s: compression=%u not supported", __func__,
 			compression);
 		return NULL;
