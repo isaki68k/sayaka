@@ -35,6 +35,7 @@
 // 圧縮方式
 #define BI_RGB			(0)
 #define BI_RLE8			(1)
+#define BI_RLE4			(2)
 #define BI_BITFIELDS	(3)
 
 // ファイルヘッダ(共通)
@@ -125,7 +126,9 @@ static bool raster_rgb32(struct bmpctx *, int);
 static void set_colormask(struct bmpctx *, uint32 *);
 static bool raster_bitfield16(struct bmpctx *, int);
 static bool raster_bitfield32(struct bmpctx *, int);
+static bool raster_rle4(struct bmpctx *, int);
 static bool raster_rle8(struct bmpctx *, int);
+static bool raster_rle(struct bmpctx *, int, bool);
 static uint8 extend_to8bit(const struct bmpctx *, uint32, uint);
 static struct image *image_coloring(const struct image *);
 
@@ -287,6 +290,8 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		}
 	} else if (compression == BI_RLE8) {
 		rasterop = raster_rle8;
+	} else if (compression == BI_RLE4) {
+		rasterop = raster_rle4;
 	} else {
 		Debug(diag, "%s: compression=%u not supported", __func__,
 			compression);
@@ -674,7 +679,21 @@ extend_to8bit(const struct bmpctx *ctx, uint32 data, uint i)
 }
 
 static bool
+raster_rle4(struct bmpctx *ctx, int y)
+{
+	return raster_rle(ctx, y, true/*4*/);
+}
+
+static bool
 raster_rle8(struct bmpctx *ctx, int y)
+{
+	return raster_rle(ctx, y, false/*8*/);
+}
+
+// RLE4,RLE8 の共通部分。
+// ここはレアケースなので性能よりもコード量を減らす。
+static bool
+raster_rle(struct bmpctx *ctx, int y, bool rle4)
 {
 	struct image *img = ctx->img;
 
@@ -700,13 +719,29 @@ raster_rle8(struct bmpctx *ctx, int y)
 				// Not supported
 				return false;
 			} else {
-				// 絶対モード
-				for (uint i = 0; i < cmd; i++) {
-					int cc = fgetc(ctx->fp);
-					if (__predict_false(cc < 0)) {
-						return false;
+				// 絶対モードでは以後 nn ピクセル分の生データが並ぶ。
+				// その後偶数に整列。
+				if (rle4) {
+					int cc = 0;
+					for (uint i = 0; i < cmd; i++) {
+						if ((i & 1) == 0) {
+							cc = fgetc(ctx->fp);
+							if (__predict_false(cc < 0)) {
+								return false;
+							}
+							*d++ = ctx->palette[cc >> 4];
+						} else {
+							*d++ = ctx->palette[cc & 0xf];
+						}
 					}
-					*d++ = ctx->palette[cc];
+				} else {
+					for (uint i = 0; i < cmd; i++) {
+						int cc = fgetc(ctx->fp);
+						if (__predict_false(cc < 0)) {
+							return false;
+						}
+						*d++ = ctx->palette[cc];
+					}
 				}
 				int pos = ftell(ctx->fp);
 				if ((pos & 1)) {
@@ -714,13 +749,24 @@ raster_rle8(struct bmpctx *ctx, int y)
 				}
 			}
 		} else {
+			// 圧縮ブロック。
+			// count は連続する展開後のピクセル数。
 			int cc = fgetc(ctx->fp);
 			if (__predict_false(cc < 0)) {
 				return false;
 			}
-			uint16 data = ctx->palette[cc];
-			for (uint i = 0; i < count; i++) {
-				*d++ = data;
+			if (rle4) {
+				uint16 data[2];
+				data[0] = ctx->palette[cc >> 4];
+				data[1] = ctx->palette[cc & 0xf];
+				for (uint i = 0; i < count; i++) {
+					*d++ = data[(i & 1)];
+				}
+			} else {
+				uint16 data = ctx->palette[cc];
+				for (uint i = 0; i < count; i++) {
+					*d++ = data;
+				}
 			}
 		}
 	}
