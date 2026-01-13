@@ -331,12 +331,27 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			return false;
 		}
 		break;
+
+#if defined(USE_LIBJPEG) || defined(USE_STB_IMAGE)
 	 case BI_JPEG:
 		// 以降が JPEG 生データ。
+# if defined(USE_LIBJPEG)
 		return image_jpeg_read(fp, hint, diag);
+# else
+		return image_stb_read(fp, hint, diag);
+# endif
+#endif
+
+#if defined(USE_LIBPNG) || defined(USE_STB_IMAGE)
 	 case BI_PNG:
 		// 以降が PNG 生データ。
+# if defined(USE_LIBPNG)
 		return image_png_read(fp, hint, diag);
+# else
+		return image_stb_read(fp, hint, diag);
+# endif
+#endif
+
 	 default:
 		Debug(diag, "%s: compression=%u not supported", __func__,
 			compression);
