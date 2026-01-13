@@ -232,6 +232,20 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		return NULL;
 	}
 
+	// 読み込んだヘッダの種別。
+	const char *hdrname;
+	if (dib_size == sizeof(BITMAPCOREHEADER)) {
+		hdrname = "CORE";
+	} else if (dib_size == sizeof(BITMAPINFOHEADER)) {
+		hdrname = "INFO";
+	} else if (dib_size == sizeof(BITMAPV4HEADER)) {
+		hdrname = "V4";
+	} else if (dib_size == sizeof(BITMAPV5HEADER)) {
+		hdrname = "V5";
+	} else {
+		hdrname = NULL;
+	}
+
 	// ヘッダの内容を一旦変数に読み込む。エンディアンを吸収するためと、
 	// COREHEADER と INFOHEADER はメンバが似てるけど位置/サイズが違ったりする。
 	uint32 width;
@@ -265,21 +279,8 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			"JPEG",
 			"PNG",
 		};
-		const char *hdrname;
-
-		if (dib_size == sizeof(BITMAPCOREHEADER)) {
-			hdrname = "CORE";
-		} else if (dib_size == sizeof(BITMAPINFOHEADER)) {
-			hdrname = "INFO";
-		} else if (dib_size == sizeof(BITMAPV4HEADER)) {
-			hdrname = "V4";
-		} else if (dib_size == sizeof(BITMAPV5HEADER)) {
-			hdrname = "V5";
-		} else {
-			hdrname = "unknown";
-		}
 		Debug(diag, "%s: DIB=%s width=%u height=%d %s", __func__,
-			hdrname, width, height,
+			hdrname ?: "?", width, height,
 			(bottom_up ? "bottom-to-top" : "top-to-bottom"));
 		Debug(diag, "%s: compression=%s bitcount=%u colorused=%u", __func__,
 			(compression < 6 ? compstr[compression] : "?"),
@@ -287,13 +288,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	}
 
 	// 知らないヘッダなら表示までは頑張ってみるけど、終了。
-	switch (dib_size) {
-	 case sizeof(BITMAPCOREHEADER):
-	 case sizeof(BITMAPINFOHEADER):
-	 case sizeof(BITMAPV4HEADER):
-	 case sizeof(BITMAPV5HEADER):
-		break;
-	 default:
+	if (__predict_false(hdrname == NULL)) {
 		Debug(diag, "%s: Unknown header format (dib_size=%u)",
 			__func__, dib_size);
 		return NULL;
