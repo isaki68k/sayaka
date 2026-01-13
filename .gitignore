@@ -4,6 +4,7 @@
 .gitignore
 config.log
 config.status
+image/
 src/.depends
 src/Makefile.cfg
 src/config.h
