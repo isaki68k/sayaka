@@ -49,7 +49,7 @@ _Pragma("clang diagnostic pop")
 _Pragma("GCC diagnostic pop")
 #endif
 
-#define INCBUFSIZE	(1024)
+#define BUFSIZE	(4096)
 
 static bool read_all(uint8 **, size_t *, FILE *, uint32, const struct diag *);
 static bool image_webp_loadinc(struct image *, FILE *, WebPIDecoder *,
@@ -325,15 +325,26 @@ static bool
 image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 	const struct diag *diag)
 {
-	uint8 buf[INCBUFSIZE];
+	uint8 *buf;
 	int status;
 	int srcstride;
 	const uint8 *s;
 	uint8 *d;
+	bool rv;
 
-	status = VP8_STATUS_OK;
+	rv = false;
+
+	const size_t bufsize = BUFSIZE;
+	buf = malloc(bufsize);
+	if (buf == NULL) {
+		Debug(diag, "%s: malloc(%zu) failed: %s", __func__,
+			bufsize, strerrno());
+		return false;
+	}
+
+	status = VP8_STATUS_NOT_ENOUGH_DATA;
 	do {
-		size_t n = fread(buf, 1, sizeof(buf), fp);
+		size_t n = fread(buf, 1, bufsize, fp);
 		if (n == 0) {
 			break;
 		}
@@ -342,14 +353,14 @@ image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 
 	if (status != VP8_STATUS_OK) {
 		Debug(diag, "%s: Decode failed %d", __func__, status);
-		return false;
+		goto done;
 	}
 
 	// RGB バッファを取得。
 	s = WebPIDecGetRGB(idec, NULL, NULL, NULL, &srcstride);
 	if (s == NULL) {
 		Debug(diag, "%s: WebPIDecGetRGB() failed", __func__);
-		return false;
+		goto done;
 	}
 
 	// そのままコピー出来る。
@@ -363,5 +374,8 @@ image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 		d += dststride;
 	}
 
-	return true;
+	rv = true;
+ done:
+	free(buf);
+	return rv;
 }
