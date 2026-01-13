@@ -505,9 +505,11 @@ main(int ac, char *av[])
 				errx(1, "server must be specified");
 			}
 
-			string *token = NULL;
+			string *token_str = NULL;
+			const char *token = NULL;
 			if (token_file) {
-				token = get_token(token_file);
+				token_str = get_token(token_file);
+				token = string_get(token_str);
 			} else if (is_home) {
 				errx(1, "Home timeline requires your access token");
 			}
@@ -517,7 +519,7 @@ main(int ac, char *av[])
 			invalidate_cache();
 			progress("done\n");
 
-			cmd_misskey_stream(server, is_home, string_get(token));
+			cmd_misskey_stream(server, is_home, token);
 		} else {
 			cmd_misskey_play(playfile);
 		}

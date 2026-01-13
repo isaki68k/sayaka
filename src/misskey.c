@@ -117,6 +117,7 @@ cmd_misskey_play(const char *infile)
 	misskey_cleanup();
 }
 
+// token はトークン文字列を指定。トークンなしなら NULL を指定する。
 void
 cmd_misskey_stream(const char *server, bool home, const char *token)
 {
