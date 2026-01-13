@@ -65,7 +65,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	JxlBasicInfo info;
 	bool success = false;
 	size_t readbytes = 0;
-	bool is_progressive = hint->progressive;
+	bool is_progressive = !hint->no_progressive;
 
 	buf = malloc(bufsize);
 	if (buf == NULL) {

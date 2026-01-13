@@ -661,7 +661,7 @@ do_file(const char *infile)
 		hint.width  = opt_width;
 		hint.height = opt_height;
 		hint.page   = opt_page;
-		hint.progressive = !opt_no_progressive;
+		hint.no_progressive = opt_no_progressive;
 		srcimg = image_read(pstream, loader_idx, &hint, diag_image);
 		if (srcimg) {
 			// 得られた画像サイズと引数指定から、いい感じにサイズを決定。

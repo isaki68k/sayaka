@@ -242,14 +242,15 @@ struct image
 typedef struct image_read_hint_ {
 	// 必要な読み込みサイズ。
 	// 通常のラスター形式の画像では意味を持たない。
-	// プログレッシブ画像なら、このサイズを満たしたところで早期終了してもよい。
+	// プログレッシブ画像 (で no_progressive == true でない) なら、
+	// このサイズを満たしたところで早期終了してもよい。
 	// Blurhash はこの hint を使わない。
 	ResizeAxis axis;
 	uint width;
 	uint height;
 
-	// プログレッシブ画像の早期終了を認める場合は true。
-	bool progressive;
+	// プログレッシブ画像であっても最後までデコードする場合は true。
+	bool no_progressive;
 
 	// 複数枚ある場合のページ(フレーム)番号。0 から始まる。
 	uint page;
