@@ -52,7 +52,10 @@ enum {
 	WS_MASK_BIT			= 0x80,	// Frame[1]
 };
 
-#define BUFSIZE	(1024)
+// バッファサイズの初期値と増分。観測結果から 16KB を超えるメッセージは
+// あまり多くはないので、このくらいでどうか。
+#define INIT_BUFSIZE	(16384)
+#define INC_BUFSIZE		(4096)
 
 struct wsclient {
 	struct net *net;
@@ -90,12 +93,14 @@ wsclient_create(const struct diag *diag)
 		return NULL;
 	}
 
-	ws->buf = malloc(BUFSIZE);
+	ws->bufsize = INIT_BUFSIZE;
+	ws->buf = malloc(ws->bufsize);
 	if (ws->buf == NULL) {
 		goto abort;
 	}
 
-	ws->text = string_alloc(BUFSIZE);
+	// string は自動伸長だし ws->buf とは直接関係ないけど初期値を揃えておく。
+	ws->text = string_alloc(ws->bufsize);
 	if (ws->text == NULL) {
 		goto abort;
 	}
@@ -301,9 +306,9 @@ wsclient_process(struct wsclient *ws)
 	int rv = 1;
 	int r;
 
-	// 受信バッファに BUFSIZE 分の空きがあるか。
-	if (ws->bufsize - ws->buflen < BUFSIZE) {
-		uint newsize = ws->bufsize + BUFSIZE;
+	// 受信バッファが埋まっていれば伸ばす。
+	if (ws->buflen >= ws->bufsize) {
+		uint newsize = ws->bufsize + INC_BUFSIZE;
 		uint8 *newbuf = realloc(ws->buf, newsize);
 		if (newbuf == NULL) {
 			Debug(diag, "%s: realloc(%u): %s", __func__, newsize, strerrno());
