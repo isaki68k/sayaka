@@ -35,12 +35,6 @@
 #include <jxl/decode.h>
 #include <jxl/version.h>
 
-#if defined(SLOW_ARCH)
-#define BUFSIZE	(4096)
-#else
-#define BUFSIZE	(65536)
-#endif
-
 static const char *status2str(JxlDecoderStatus);
 
 bool
@@ -67,7 +61,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
 	struct image *img = NULL;
 	uint8 *buf;
-	const size_t bufsize = BUFSIZE;
+	const size_t bufsize = IMAGE_BUFSIZE;
 	JxlBasicInfo info;
 	bool success = false;
 	size_t readbytes = 0;

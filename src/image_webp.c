@@ -49,8 +49,6 @@ _Pragma("clang diagnostic pop")
 _Pragma("GCC diagnostic pop")
 #endif
 
-#define BUFSIZE	(4096)
-
 static bool read_all(uint8 **, size_t *, FILE *, uint32, const struct diag *);
 static bool image_webp_loadinc(struct image *, FILE *, WebPIDecoder *,
 	const struct diag *);
@@ -334,7 +332,7 @@ image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 
 	rv = false;
 
-	const size_t bufsize = BUFSIZE;
+	const size_t bufsize = IMAGE_BUFSIZE;
 	buf = malloc(bufsize);
 	if (buf == NULL) {
 		Debug(diag, "%s: malloc(%zu) failed: %s", __func__,

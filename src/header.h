@@ -144,4 +144,10 @@ typedef int64_t		int64;
 #define SLOW_ARCH
 #endif
 
+#if defined(SLOW_ARCH)
+#define IMAGE_BUFSIZE	(4096)
+#else
+#define IMAGE_BUFSIZE	(16384)
+#endif
+
 #endif // !sayaka_header_h
