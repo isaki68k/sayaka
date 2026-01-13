@@ -838,6 +838,8 @@ raster_rle(struct bmpctx *ctx, int y, bool rle4)
 		}
 	}
 
+	// BI_RLE(4|8) の各ラスターは2バイト境界なので、自然に整列している。
+
 	return true;
 }
 
