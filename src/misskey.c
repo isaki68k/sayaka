@@ -1085,13 +1085,14 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 	// 記号をどれだけ含むかだけが違う。
 	// Mention 1文字目は   "_" + Alnum
 	// Mention 2文字目以降 "_" + Alnum + "@.-"
-	// URL は              "_" + Alnum + "@.-" + "#%&/:;=?^~"
+	// URL は              "_" + Alnum + "@.-" +
+	//  RFC3986の集合、ただしここでは '%' も含む、'(' ')' は別処理なので除く。
 	static const char urlchars[] =
-		"#%&/:;=?^~"
+		"!#$%&'*+,/:;=?[]~"
 		"@.-"
 		"_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	#define ment2chars (urlchars + 9)
-	#define ment1chars (urlchars + 9 + 3)
+	#define ment2chars (urlchars + 16)
+	#define ment1chars (urlchars + 16 + 3)
 
 	// タグを集めて小文字にしておく。
 	ustring **tags = NULL;
