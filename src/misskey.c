@@ -1243,7 +1243,7 @@ misskey_display_text_common(const struct json *js, int inote, const char *text,
 					state_push(ctx, S_BACKTICK1);
 				}
 				continue;
-			} else if (c == '@') {
+			} else if (c == '@' && is_username == false) {
 				// '@' の直前が ment2 でなく(?)、直後が ment1 ならメンション。
 				unichar pc = ustring_at(src, pos - 1);
 				unichar nc = ustring_at(src, pos + 1);
