@@ -44,6 +44,8 @@ typedef struct misskey_user_ {
 	string *instance;	// "instance/name"、インスタンス名 (なければ NULL)
 } misskey_user;
 
+struct context;
+
 static bool misskey_init(void);
 static bool misskey_stream(struct wsclient *, bool);
 static void misskey_recv_cb(const string *);
@@ -56,6 +58,13 @@ static bool misskey_show_photo(const struct json *, int, int);
 static void misskey_print_filetype(const struct json *, int, const char *);
 static void make_cache_filename(char *, uint, const char *);
 static ustring *misskey_display_text(const struct json *, int, const char *);
+static ustring *misskey_display_name(const struct json *, int, const char *);
+static ustring *misskey_display_text_common(const struct json *, int,
+	const char *, bool);
+static void state_push(struct context *, uint);
+static bool state_pop(struct context *);
+static void state_enter(struct context *, uint);
+static void state_leave(struct context *, uint);
 static bool unichar_submatch(const unichar *, const char *);
 static int  unichar_ncasecmp(const unichar *, const unichar *);
 static string *misskey_format_poll(const struct json *, int);
@@ -498,7 +507,10 @@ misskey_show_note(const struct json *js, int inote)
 	int iuser = json_obj_find_obj(js, inote, "user");
 	misskey_user *user = misskey_get_user(js, inote);
 	ustring *headline = ustring_alloc(64);
-	ustring_append_utf8_style(headline, string_get(user->name), STYLE_USERNAME);
+	// 名前欄は MFM とかが使えるので本文同様にパース。
+	ustring *headname = misskey_display_name(js, inote, string_get(user->name));
+	ustring_append(headline, headname);
+	ustring_free(headname);
 	ustring_append_unichar(headline, ' ');
 	ustring_append_utf8_style(headline, string_get(user->id), STYLE_USERID);
 	if (user->instance) {
@@ -1067,12 +1079,57 @@ make_cache_filename(char *filename, uint bufsize, const char *url)
 			colorname, fontheight, string_get(md5));
 		string_free(md5);
 	}
+}
 
+enum {
+	S_NONE = 0,
+	S_RAWTEXT,		// 地のテキスト
+	S_PLAIN,		// <plain>〜</plain> 内
+	S_MENTION,		// @mention
+	S_URL,			// URL
+	S_RUBY1,		// ルビの本文1
+	S_RUBY2,		// ルビの本文2
+	S_UNSUPP_MFM,	// 未サポートの MFM コンテンツ内
+};
+
+struct context {
+	ustring *dst;
+
+	// states[] はスタックで [0] が底。[state_top] がトップ。
+	uint8 states[128];	// 上限は適当。
+	int state_top;
+
+	// URL 中の丸括弧。
+	int paren_in_url;
+
+	// ユーザ名フィールドなら true。地の文字色が違う。
+	bool is_username;
+};
+
+static inline uint
+state_get(const struct context *ctx)
+{
+	return ctx->states[ctx->state_top];
 }
 
 // 本文を表示用に整形。
 static ustring *
 misskey_display_text(const struct json *js, int inote, const char *text)
+{
+	return misskey_display_text_common(js, inote, text, false);
+}
+
+// 名前を表示用に整形。
+static ustring *
+misskey_display_name(const struct json *js, int inote, const char *name)
+{
+	return misskey_display_text_common(js, inote, name, true);
+}
+
+// 本文/名前を表示用に整形。
+static ustring *
+misskey_display_text_common(const struct json *js, int inote, const char *text,
+	bool is_username)
 {
 	const struct diag *diag = diag_format;
 	ustring *src = ustring_from_utf8(text);
@@ -1126,168 +1183,181 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 		}
 	}
 
+	struct context ctx0;
+	struct context *ctx = &ctx0;
+	memset(ctx, 0, sizeof(*ctx));
+	ctx->dst = dst;
+	ctx->is_username = is_username;
+	ctx->states[0] = S_RAWTEXT;
+	state_enter(ctx, ctx->states[0]);
+
 	const unichar *srcarray = ustring_get(src);
-	int mfmtag = 0;
-	for (int pos = 0, posend = ustring_len(src); pos < posend; ) {
+	for (uint pos = 0, posend = ustring_len(src); pos < posend; ) {
 		unichar c = srcarray[pos];
 
-		if (c == '<') {
-			if (unichar_submatch(&srcarray[pos + 1], "plain>")) {
-				// <plain> なら閉じ </plain> を探す。
-				pos += 7;
-				int e;
-				// ループは本当は posend-7 くらいまでで十分だが、閉じタグが
-				// なければ最後まで plain 扱いにするために posend まで回す。
-				for (e = pos; e < posend; e++) {
-					if (srcarray[e] == '<' &&
-						unichar_submatch(&srcarray[e + 1], "/plain>"))
-					{
-						break;
-					}
+		switch (state_get(ctx)) {
+		 case S_RAWTEXT:
+		 rawtext:
+			if (c == '<') {
+				if (unichar_submatch(&srcarray[pos + 1], "plain>")) {
+					pos += 7;
+					state_push(ctx, S_PLAIN);
+					continue;
 				}
-				// この間は無加工で出力。
-				for (; pos < e; pos++) {
-					ustring_append_unichar(dst, srcarray[pos]);
-				}
-				pos += 8;
-				continue;
-			}
-			// 他の HTML タグはとりあえず放置。
+			} else if (c == '$' && ustring_at(src, pos + 1) == '[') {
+				// MFM タグ開始。
+				int s = pos + 2;
 
-		} else if (c == '$' && ustring_at(src, pos + 1) == '[') {
-			// MFM タグ開始。
-			int e = pos + 2;
+				// タグ名の区切りは空白(SP)のみらしい。
+				if (unichar_submatch(&srcarray[s], "ruby ")) {
+					// $[ruby 漢字 かんじ]
+					s += 5;
 
-			// タグ名は空白(SP)区切りだろうか。
-			if (unichar_submatch(&srcarray[e], "ruby ")) {
-				e += 5;
-				// 次の空白と閉じ括弧を書き換えて、ここから本文扱いに戻す。
-				// "..$[ruby ルビ るび]..."
-				//           ^ e はイマココ
-				// "..$[ruby ルビ(るび)..."
-
-				// 空白が連続しているかも知れないのでスキップ。
-				for (; ustring_at(src, e) == ' '; e++)
-					;
-				pos = e;
-				// 一つ目の "ルビ" をスキップ。
-				for (; e < posend && srcarray[e] != ' '; e++)
-					;
-				// この区切り空白も連続してるかも知れないので一旦スキップ。
-				for (; ustring_at(src, e) == ' '; e++)
-					;
-				// "るび" の手前の空白を括弧に書き換える。
-				if (e < posend) {
-					ustring_set_at(src, e - 1, '(');
-				}
-				// タグ終端までスキップ。ネストには未対応。
-				for (; e < posend && srcarray[e] != ']'; e++)
-					;
-				ustring_set_at(src, e, ')');
-				continue;
-			} else {
-				// 知らないタグなら、タグを無視してコンテンツのみ表示。
-				for (; e < posend && srcarray[e] != ' '; e++)
-					;
-				// 空白の次から ']' の手前までが本文。
-				mfmtag++;
-				pos = e + 1;
-				continue;
-			}
-
-		} else if (c == ']' && mfmtag > 0) {
-			// MFM タグ終端。
-			mfmtag--;
-			pos++;
-			continue;
-
-		} else if (c == '@') {
-			// '@' の直前が ment2 でなく(?)、直後が ment1 ならメンション。
-			unichar pc = ustring_at(src, pos - 1);
-			unichar nc = ustring_at(src, pos + 1);
-			bool prev_is_ment2 =
-				(pc != 0 && pc < 0x80 && strchr(ment2chars, pc) != NULL);
-			bool next_is_ment1 =
-				(nc != 0 && nc < 0x80 && strchr(ment1chars, nc) != NULL);
-			if (prev_is_ment2 == false && next_is_ment1 == true) {
-				ustring_append_ascii(dst, style_begin(STYLE_USERID));
-				ustring_append_unichar(dst, c);
-				ustring_append_unichar(dst, nc);
-				// 2文字目以降はホスト名も来る可能性がある。
-				for (pos += 2; pos < posend; pos++) {
-					c = srcarray[pos];
-					if (c < 0x80 && strchr(ment2chars, c) != NULL) {
-						ustring_append_unichar(dst, c);
-					} else {
-						break;
-					}
-				}
-				ustring_append_ascii(dst, style_end(STYLE_USERID));
-				continue;
-			}
-
-		} else if (c == '#') {
-			// タグはこの時点で範囲(長さ)が分かるのでステート分岐不要。
-			int i = 0;
-			for (; i < tagcount; i++) {
-				const unichar *utag = tags[i] ? ustring_get(tags[i]) : NULL;
-				if (unichar_ncasecmp(&srcarray[pos + 1], utag) == 0) {
-					break;
-				}
-			}
-			if (i != tagcount) {
-				// 一致したらタグ。'#' 文字自身も含めてコピーする。
-				ustring_append_ascii(dst, style_begin(STYLE_TAG));
-				ustring_append_unichar(dst, c);
-				pos++;
-				uint len = ustring_len(tags[i]);
-				// tags は正規化によって何が起きてるか分からないので、
-				// posend のほうを信じる。
-				uint end = MIN(pos + len, (int)posend);
-				Trace(diag, "tag[%d] found at pos=%u len=%u end=%u",
-					i, pos, len, end);
-				for (; pos < end; pos++) {
-					ustring_append_unichar(dst, srcarray[pos]);
-				}
-				ustring_append_ascii(dst, style_end(STYLE_TAG));
-				continue;
-			}
-
-		} else if (c == 'h' &&
-			(unichar_submatch(&srcarray[pos], "https://") ||
-			 unichar_submatch(&srcarray[pos], "http://")))
-		{
-			// URL
-			int url_in_paren = 0;
-			ustring_append_ascii(dst, style_begin(STYLE_URL));
-			for (; pos < posend; pos++) {
-				// URL に使える文字集合がよく分からない。
-				// 括弧 "(",")" は、開き括弧なしで閉じ括弧が来ると URL 終了。
-				// 一方開き括弧は URL 内に来てもよい。
-				// "(http://foo/a)b" は http://foo/a が URL。
-				// "http://foo/a(b)c" は http://foo/a(b)c が URL。
-				// 正気か?
-				c = srcarray[pos];
-				if (c < 0x80 && strchr(urlchars, c) != NULL) {
-					ustring_append_unichar(dst, c);
-				} else if (c == '(') {
-					url_in_paren++;
-					ustring_append_unichar(dst, c);
-				} else if (c == ')' && url_in_paren > 0) {
-					url_in_paren--;
-					ustring_append_unichar(dst, c);
+					// 空白が連続しているかも知れないのでスキップ。
+					for (; ustring_at(src, s) == ' '; s++)
+						;
+					pos = s;
+					// ここから本文1
+					state_push(ctx, S_RUBY1);
+					continue;
 				} else {
-					break;
+					// 知らないタグなら、タグを無視してコンテンツのみ表示。
+					for (; s < posend; s++) {
+						if (srcarray[s] == ' ') {
+							// 空白の次から ']' の手前までがコンテンツ。
+							pos = s + 1;
+							state_push(ctx, S_UNSUPP_MFM);
+							goto continue_;	// 一つ上の for へ。
+						}
+					}
+					// 知らないタグのまま EOL ならタグではない。
 				}
+			} else if (c == '@') {
+				// '@' の直前が ment2 でなく(?)、直後が ment1 ならメンション。
+				unichar pc = ustring_at(src, pos - 1);
+				unichar nc = ustring_at(src, pos + 1);
+				bool prev_is_ment2 =
+					(pc != 0 && pc < 0x80 && strchr(ment2chars, pc) != NULL);
+				bool next_is_ment1 =
+					(nc != 0 && nc < 0x80 && strchr(ment1chars, nc) != NULL);
+				if (prev_is_ment2 == false && next_is_ment1 == true) {
+					state_push(ctx, S_MENTION);
+					continue;
+				}
+			} else if (c == '#') {
+				// タグはこの時点で範囲(長さ)が分かるのでステート分岐不要。
+				int i = 0;
+				for (; i < tagcount; i++) {
+					const unichar *utag = tags[i] ? ustring_get(tags[i]) : NULL;
+					if (unichar_ncasecmp(&srcarray[pos + 1], utag) == 0) {
+						break;
+					}
+				}
+				if (i != tagcount) {
+					// 一致したらタグ。'#' 文字自身も含めてコピーする。
+					ustring_append_ascii(dst, style_begin(STYLE_TAG));
+					ustring_append_unichar(dst, c);
+					pos++;
+					uint len = ustring_len(tags[i]);
+					// tags は正規化によって何が起きてるか分からないので、
+					// posend のほうを信じる。
+					uint end = MIN(pos + len, (int)posend);
+					Trace(diag, "tag[%d] found at pos=%u len=%u end=%u",
+						i, pos, len, end);
+					for (; pos < end; pos++) {
+						ustring_append_unichar(dst, srcarray[pos]);
+					}
+					ustring_append_ascii(dst, style_end(STYLE_TAG));
+					continue;
+				}
+			} else if (c == 'h' &&
+				(unichar_submatch(&srcarray[pos], "https://") ||
+				 unichar_submatch(&srcarray[pos], "http://")))
+			{
+				// URL
+				state_push(ctx, S_URL);
+				continue;
 			}
-			ustring_append_ascii(dst, style_end(STYLE_URL));
+			break;
+
+		 case S_UNSUPP_MFM:
+			// MFM コンテンツ内は閉じ括弧以外は RAWTEXT と同じ処理を通す。
+			if (c == ']') {
+				pos++;
+				state_pop(ctx);
+				continue;
+			}
+			goto rawtext;
+
+		 case S_RUBY1:
+			// ルビ1は ' ' が来たら終了。
+			if (c == ' ') {
+				pos++;
+				state_push(ctx, S_RUBY2);
+				ustring_append_unichar(dst, '(');
+				continue;
+			}
+			goto rawtext;
+
+		 case S_RUBY2:
+			// ルビ2 は ']' が来たら終了。
+			if (c == ']') {
+				ustring_append_unichar(dst, ')');
+				pos++;
+				state_pop(ctx);
+				continue;
+			}
+			goto rawtext;
+
+		 case S_PLAIN:
+			// <plain> 内なら "</plain>" が来たら終了。
+			if (c == '<' && unichar_submatch(&srcarray[pos + 1], "/plain>")) {
+				pos += 8;
+				state_pop(ctx);
+				continue;
+			}
+			break;
+
+		 case S_MENTION:
+			// メンション内なら ment2 以外の文字が来たら終了。
+			if (strchr(ment2chars, c) == NULL) {
+				state_pop(ctx);
+				continue;
+			}
+			break;
+
+		 case S_URL:
+			// 括弧 "(",")" は URL に使えるが、URL 前から始まってる括弧の
+			// 閉じ括弧との区別はヒューリスティックにしか解決できないらしい。
+			// "(http://foo/a)bc" なら http://foo/a が URL。
+			// "http://foo/a(b)c" なら http://foo/a(b)c が URL。
+			// 正気か?
+			if (strchr(urlchars, c)) {
+				// FALLTHROUGH
+			} else if (c == '(') {
+				ctx->paren_in_url++;
+			} else if (c == ')' && ctx->paren_in_url > 0) {
+				ctx->paren_in_url--;
+			} else {
+				state_pop(ctx);
+				continue;
+			}
+			break;
+
+		 default:
+			printf("unknown state=%u\n", state_get(ctx));
 			continue;
 		}
 
-		// どれでもなければここに落ちてくる。
+		// どれでもなければここに落ちてきて1文字出力。
 		ustring_append_unichar(dst, c);
 		pos++;
+
+	 continue_:;
 	}
+
+	while (state_pop(ctx))
+		;
 
 	for (uint i = 0; i < tagcount; i++) {
 		ustring_free(tags[i]);
@@ -1299,6 +1369,87 @@ misskey_display_text(const struct json *js, int inote, const char *text)
 		ustring_dump(dst, "dst");
 	}
 	return dst;
+}
+
+static void
+state_push(struct context *ctx, uint new_state)
+{
+	uint old_state = state_get(ctx);
+	state_leave(ctx, old_state);
+	state_enter(ctx, new_state);
+	assert(ctx->state_top < sizeof(ctx->states) - 2);
+	ctx->states[++ctx->state_top] = new_state;
+}
+
+static bool
+state_pop(struct context *ctx)
+{
+	uint old_state = state_get(ctx);
+	state_leave(ctx, old_state);
+
+	ctx->state_top--;
+	if (ctx->state_top >= 0) {
+		uint new_state = ctx->states[ctx->state_top];
+		state_enter(ctx, new_state);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+// ステート(装飾範囲)を開始する。
+static void
+state_enter(struct context *ctx, uint state)
+{
+	const char *style = NULL;
+	switch (state) {
+	 case S_RAWTEXT:
+	 case S_RUBY1:
+	 case S_RUBY2:
+		if (__predict_false(ctx->is_username)) {
+			style = style_begin(STYLE_USERNAME);
+		}
+		break;
+	 case S_MENTION:
+		style = style_begin(STYLE_USERID);
+		break;
+	 case S_URL:
+		style = style_begin(STYLE_URL);
+		ctx->paren_in_url = 0;
+		break;
+	 default:
+		break;
+	}
+	if (style) {
+		ustring_append_ascii(ctx->dst, style);
+	}
+}
+
+// ステート(装飾範囲)を終了する。
+static void
+state_leave(struct context *ctx, uint state)
+{
+	const char *style = NULL;
+	switch (state) {
+	 case S_RAWTEXT:
+	 case S_RUBY1:
+	 case S_RUBY2:
+		if (__predict_false(ctx->is_username)) {
+			style = style_end(STYLE_USERNAME);
+		}
+		break;
+	 case S_MENTION:
+		style = style_end(STYLE_USERID);
+		break;
+	 case S_URL:
+		style = style_end(STYLE_URL);
+		break;
+	 default:
+		break;
+	}
+	if (style) {
+		ustring_append_ascii(ctx->dst, style);
+	}
 }
 
 // ustring (の中身の配列) u 以降が key と部分一致すれば true を返す。
