@@ -1432,13 +1432,6 @@ state_enter(struct context *ctx, uint state)
 {
 	const char *style = NULL;
 	switch (state) {
-	 case S_RAWTEXT:
-	 case S_RUBY1:
-	 case S_RUBY2:
-		if (__predict_false(ctx->is_username)) {
-			style = style_begin(STYLE_USERNAME);
-		}
-		break;
 	 case S_MENTION:
 		style = style_begin(STYLE_USERID);
 		break;
@@ -1447,6 +1440,9 @@ state_enter(struct context *ctx, uint state)
 		ctx->paren_in_url = 0;
 		break;
 	 default:
+		if (__predict_false(ctx->is_username)) {
+			style = style_begin(STYLE_USERNAME);
+		}
 		break;
 	}
 	if (style) {
@@ -1460,13 +1456,6 @@ state_leave(struct context *ctx, uint state)
 {
 	const char *style = NULL;
 	switch (state) {
-	 case S_RAWTEXT:
-	 case S_RUBY1:
-	 case S_RUBY2:
-		if (__predict_false(ctx->is_username)) {
-			style = style_end(STYLE_USERNAME);
-		}
-		break;
 	 case S_MENTION:
 		style = style_end(STYLE_USERID);
 		break;
@@ -1474,6 +1463,9 @@ state_leave(struct context *ctx, uint state)
 		style = style_end(STYLE_URL);
 		break;
 	 default:
+		if (__predict_false(ctx->is_username)) {
+			style = style_end(STYLE_USERNAME);
+		}
 		break;
 	}
 	if (style) {
