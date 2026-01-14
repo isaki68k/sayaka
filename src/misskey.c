@@ -1085,6 +1085,8 @@ enum {
 	S_NONE = 0,
 	S_RAWTEXT,		// 地のテキスト
 	S_PLAIN,		// <plain>〜</plain> 内
+	S_BACKTICK1,	// `〜` 内
+	S_BACKTICK3,	// ```〜``` 内
 	S_MENTION,		// @mention
 	S_URL,			// URL
 	S_RUBY1,		// ルビの本文1
@@ -1232,6 +1234,15 @@ misskey_display_text_common(const struct json *js, int inote, const char *text,
 					}
 					// 知らないタグのまま EOL ならタグではない。
 				}
+			} else if (c == '`') {
+				if (unichar_submatch(&srcarray[pos + 1], "``")) {
+					pos += 3;
+					state_push(ctx, S_BACKTICK3);
+				} else {
+					pos++;
+					state_push(ctx, S_BACKTICK1);
+				}
+				continue;
 			} else if (c == '@') {
 				// '@' の直前が ment2 でなく(?)、直後が ment1 ならメンション。
 				unichar pc = ustring_at(src, pos - 1);
@@ -1313,6 +1324,24 @@ misskey_display_text_common(const struct json *js, int inote, const char *text,
 			// <plain> 内なら "</plain>" が来たら終了。
 			if (c == '<' && unichar_submatch(&srcarray[pos + 1], "/plain>")) {
 				pos += 8;
+				state_pop(ctx);
+				continue;
+			}
+			break;
+
+		 case S_BACKTICK1:
+			// `〜` 内なら '`' が来たら終了。
+			if (c == '`') {
+				pos++;
+				state_pop(ctx);
+				continue;
+			}
+			break;
+
+		 case S_BACKTICK3:
+			// ```〜``` なら "```" が来たら終了。
+			if (c == '`' && unichar_submatch(&srcarray[pos + 1], "``")) {
+				pos += 3;
 				state_pop(ctx);
 				continue;
 			}
