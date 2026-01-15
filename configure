@@ -646,6 +646,7 @@ ICU_CFLAGS
 LIBS_SIXELV
 DEFINE_ICONV
 DEFINE_OPENSSL
+DEFINE_BUILTIN_YPIC
 DEFINE_BUILTIN_PNM
 DEFINE_STB_IMAGE
 DEFINE_LIBWEBP
@@ -734,6 +735,7 @@ with_libtiff
 with_libwebp
 with_stb_image
 with_builtin_pnm
+with_builtin_ypic
 with_openssl
 with_iconv
 '
@@ -1400,6 +1402,8 @@ Optional Packages:
                           Use bundled stb_image (defualt:auto)
   --with-builtin-pnm=(yes|no)
                           Use built-in PNM loader (default:yes)
+  --with-builtin-ypic=(yes|no)
+                          Use built-in Yanagisawa-PIC loader (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
   --with-iconv            Use iconv to convert output charset (default:yes)
 
@@ -5387,6 +5391,35 @@ printf "%s\n" "yes" >&6; }
 	printf "%s\n" "#define HAVE_BUILTIN_PNM 1" >>confdefs.h
 
 	DEFINE_BUILTIN_PNM=HAVE_BUILTIN_PNM=yes
+
+	;;
+ *)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	;;
+esac
+
+# 内蔵版柳沢 PIC はデフォルトを yes にする。
+# --with-builtin-ypic=no (--without-builtin-ypic) なら使わない。
+
+# Check whether --with-builtin-ypic was given.
+if test ${with_builtin_ypic+y}
+then :
+  withval=$with_builtin_ypic;
+fi
+
+if test -z "${with_builtin_ypic}"; then
+	with_builtin_ypic=yes
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to use builtin Yanagisawa-PIC decoder" >&5
+printf %s "checking whether to use builtin Yanagisawa-PIC decoder... " >&6; }
+case "${with_builtin_ypic}" in
+ yes)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	printf "%s\n" "#define HAVE_BUILTIN_YPIC 1" >>confdefs.h
+
+	DEFINE_BUILTIN_YPIC=HAVE_BUILTIN_YPIC=yes
 
 	;;
  *)

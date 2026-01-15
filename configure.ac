@@ -529,6 +529,26 @@ case "${with_builtin_pnm}" in
 	;;
 esac
 
+# 内蔵版柳沢 PIC はデフォルトを yes にする。
+# --with-builtin-ypic=no (--without-builtin-ypic) なら使わない。
+AC_ARG_WITH([builtin-ypic],
+	AS_HELP_STRING([--with-builtin-ypic=(yes|no)],
+		[Use built-in Yanagisawa-PIC loader (default:yes)]))
+if test -z "${with_builtin_ypic}"; then
+	with_builtin_ypic=yes
+fi
+AC_MSG_CHECKING(whether to use builtin Yanagisawa-PIC decoder)
+case "${with_builtin_ypic}" in
+ yes)
+	AC_MSG_RESULT([yes])
+	AC_DEFINE([HAVE_BUILTIN_YPIC])
+	AC_SUBST([DEFINE_BUILTIN_YPIC], [HAVE_BUILTIN_YPIC=yes])
+	;;
+ *)
+	AC_MSG_RESULT([no])
+	;;
+esac
+
 AC_ARG_WITH([openssl], AS_HELP_STRING(
 	[--with-openssl], [Use OpenSSL for HTTPS/WSS (default:yes)]))
 case "${with_openssl}" in

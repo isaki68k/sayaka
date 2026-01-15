@@ -191,6 +191,7 @@ enum {
 	IMAGE_LOADER_PNM6,	// PPM(Bin)
 	IMAGE_LOADER_TIFF,
 	IMAGE_LOADER_WEBP,
+	IMAGE_LOADER_YPIC,
 	IMAGE_LOADER_MAX,
 };
 // IMAGE_LOADER_* に対応する名前。
@@ -208,7 +209,8 @@ enum {
 	"pgm(bin)",		\
 	"ppm(bin)",		\
 	"tiff",	\
-	"webp"
+	"webp",	\
+	"ypic"
 
 struct image
 {

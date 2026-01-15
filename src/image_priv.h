@@ -37,6 +37,7 @@
 // テストなどで一時的に無効にしたい場合のため。
 #define USE_BLURHASH
 #define USE_BUILTIN_BMP
+#define USE_BUILTIN_YPIC
 #if defined(HAVE_BUILTIN_PNM)
 #define USE_BUILTIN_PNM
 #endif
@@ -87,6 +88,7 @@ IMAGE_HANDLER(pnm6);
 IMAGE_HANDLER(stb);
 IMAGE_HANDLER(tiff);
 IMAGE_HANDLER(webp);
+IMAGE_HANDLER(ypic);
 
 #undef IMAGE_HANDLER
 

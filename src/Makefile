@@ -69,6 +69,9 @@ SRCS_sixelv+=	image_pnm.c
 .if defined(HAVE_LIBTIFF)
 SRCS_sixelv+=	image_tiff.c
 .endif
+.if defined(HAVE_BUILTIN_YPIC)
+SRCS_sixelv+=	image_ypic.c
+.endif
 
 SRCS_all=	${SRCS_common}	\
 		${SRCS_sayaka}	\
