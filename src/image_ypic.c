@@ -43,7 +43,7 @@ struct ypicctx
 	uint8 bits;			// 読み込んだビットデータ(左詰めしていく)
 	int blen;			// bits の有効ビット長(MSB 側から数える)
 
-	uint ncolors;			// 色数。
+	uint colorbits;			// 色のビット数。(256色なら8)
 	uint16 palette[256];	// パレットは最大256個。
 
 	// 色キャッシュ。
@@ -64,13 +64,14 @@ static uint16 image_get_pixel(const struct image *, int, int);
 static void image_set_pixel(struct image *, int, int, uint);
 static uint32 readbit(struct ypicctx *, int);
 
-// PIC の GGGGG'RRRRR'BBBBB'I 形式を 0'RRRRR'GGGGG'BBBBB に変換する。
+// PIC の %x'GGGGG'RRRRR'BBBBB 形式(15ビット、I なし) を
+// 内部形式 %0'RRRRR'GGGGG'BBBBB に変換する。
 static inline uint16
-GRBI16_to_ARGB16(uint16 col)
+GRB15_to_ARGB16(uint16 col)
 {
-	uint g = (col >> 11);
-	uint r = (col >>  6) & 0x1f;
-	uint b = (col >>  1) & 0x1f;
+	uint g = (col >> 10) & 0x1f;
+	uint r = (col >>  5) & 0x1f;
+	uint b =  col        & 0x1f;
 	return (r << 10) | (g << 5) | b;
 }
 
@@ -120,8 +121,8 @@ image_ypic_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 	// 機種情報は、下位ニブルが機種情報。上位は機種ごとのモード(未使用)。
 	uint machtype = hdr[1] & 0x0f;
-	uint colorbits = (hdr[2] << 8) | hdr[3];
-	ctx->ncolors = 1U << colorbits;
+	ctx->colorbits = (hdr[2] << 8) | hdr[3];
+	uint ncolors = 1U << ctx->colorbits;
 	ctx->width  = (hdr[4] << 8) | hdr[5];
 	ctx->height = (hdr[6] << 8) | hdr[7];
 
@@ -141,7 +142,7 @@ image_ypic_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			t = "?";
 		}
 		Debug(diag, "%s: %s (%u, %u) %u colors", __func__,
-			t, ctx->width, ctx->height, ctx->ncolors);
+			t, ctx->width, ctx->height, ncolors);
 	}
 	// デバッグ表示した後でエラーにする。
 
@@ -150,22 +151,18 @@ image_ypic_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		return NULL;
 	}
 
-	if (colorbits != 15) {
-		warnx("%s: Unsupported color mode: %u", __func__, ctx->ncolors);
-		return NULL;
-	}
-
 	// 256色以下ならパレット。
-	if (colorbits <= 8) {
-		uint16 palbuf[ctx->ncolors];
-		size_t n = fread(palbuf, 2, ctx->ncolors, fp);
-		if (n < ctx->ncolors) {
+	if (ctx->colorbits <= 8) {
+		uint16 palbuf[ncolors];
+		size_t n = fread(palbuf, 2, ncolors, fp);
+		if (n < ncolors) {
 			warn("%s: fread(palette) failed", __func__);
 			return NULL;
 		}
-		for (uint i = 0; i < ctx->ncolors; i++) {
-			uint piccol = be16toh(palbuf[i]);
-			ctx->palette[i] = GRBI16_to_ARGB16(piccol);
+		for (uint i = 0; i < ncolors; i++) {
+			// パレットブロックに記録されるのは %GGGGG'RRRRR'BBBBB'I 形式。
+			uint grbi = be16toh(palbuf[i]);
+			ctx->palette[i] = GRB15_to_ARGB16(grbi >> 1);
 		}
 	}
 
@@ -326,13 +323,26 @@ read_len(struct ypicctx *ctx)
 static uint16
 read_color(struct ypicctx *ctx)
 {
-	if (readbit(ctx, 1)) {
-		// cache hit
-		return color_get(ctx, readbit(ctx, 7));
+	if (ctx->colorbits <= 8) {
+		// 16色、256色はパレット方式で、色キャッシュは使わない。
+		uint idx = readbit(ctx, ctx->colorbits);
+		return ctx->palette[idx];
 	} else {
-		// cache miss
-		uint16 piccol = readbit(ctx, 15) << 1;
-		return color_new(ctx, GRBI16_to_ARGB16(piccol));
+		// 32K/64K 色は色キャッシュを使う。
+		if (readbit(ctx, 1)) {
+			// cache hit
+			uint a = (readbit(ctx, 7));
+			return color_get(ctx, a);
+		} else {
+			// cache miss
+			uint16 piccol = readbit(ctx, ctx->colorbits);
+			// 15ビットなら %GGGGG'RRRRR'BBBBB なのでそのまま使える。
+			// 16ビットなら %GGGGG'RRRRR'BBBBB'I なので1ビット落とす。
+			if (ctx->colorbits == 16) {
+				piccol >>= 1;
+			}
+			return color_new(ctx, GRB15_to_ARGB16(piccol));
+		}
 	}
 }
 
