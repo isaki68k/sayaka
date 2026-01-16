@@ -144,12 +144,6 @@ image_ypic_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		Debug(diag, "%s: %s (%u, %u) %u colors", __func__,
 			t, ctx->width, ctx->height, ncolors);
 	}
-	// デバッグ表示した後でエラーにする。
-
-	if (machtype != 0) {
-		warnx("%s: Unsupported machine type: $%02x", __func__, machtype);
-		return NULL;
-	}
 
 	// 256色以下ならパレット。
 	if (ctx->colorbits <= 8) {
