@@ -182,6 +182,7 @@ enum {
 	IMAGE_LOADER_GIF,
 	IMAGE_LOADER_JPEG,
 	IMAGE_LOADER_JXL,
+	IMAGE_LOADER_MAG,
 	IMAGE_LOADER_PNG,
 	IMAGE_LOADER_PNM1,	// PBM(ASCII)
 	IMAGE_LOADER_PNM2,	// PGM(ASCII)
@@ -201,6 +202,7 @@ enum {
 	"gif",	\
 	"jpeg",	\
 	"jxl",	\
+	"mag",	\
 	"png",	\
 	"pbm(ascii)",	\
 	"pgm(ascii)",	\

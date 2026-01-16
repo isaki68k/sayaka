@@ -509,6 +509,26 @@ else
 	AC_MSG_RESULT([no])
 fi
 
+# 内蔵版 MAG はデフォルトを yes にする。
+# --with-builtin-mag=no (--without-builtin-mag) なら使わない。
+AC_ARG_WITH([builtin-mag],
+	AS_HELP_STRING([--with-builtin-mag=(yes|no)],
+		[Use built-in MAG loader (default:yes)]))
+if test -z "${with_builtin_mag}"; then
+	with_builtin_mag=yes
+fi
+AC_MSG_CHECKING(whether to use builtin MAG loader)
+case "${with_builtin_mag}" in
+ yes)
+	AC_MSG_RESULT([yes])
+	AC_DEFINE([HAVE_BUILTIN_MAG])
+	AC_SUBST([DEFINE_BUILTIN_MAG], [HAVE_BUILTIN_MAG=yes])
+	;;
+ *)
+	AC_MSG_RESULT([no])
+	;;
+esac
+
 # 内蔵版 pnm はデフォルトを yes にする。
 # --with-builtin-pnm=no (--without-builtin-pnm) なら使わない。
 AC_ARG_WITH([builtin-pnm],

@@ -648,6 +648,7 @@ DEFINE_ICONV
 DEFINE_OPENSSL
 DEFINE_BUILTIN_YPIC
 DEFINE_BUILTIN_PNM
+DEFINE_BUILTIN_MAG
 DEFINE_STB_IMAGE
 DEFINE_LIBWEBP
 LIBWEBP_LIBS
@@ -734,6 +735,7 @@ with_libpng
 with_libtiff
 with_libwebp
 with_stb_image
+with_builtin_mag
 with_builtin_pnm
 with_builtin_ypic
 with_openssl
@@ -1400,6 +1402,8 @@ Optional Packages:
                           Use libwebp for WebP (default:yes)
   --with-stb-image=(auto|yes|no)
                           Use bundled stb_image (defualt:auto)
+  --with-builtin-mag=(yes|no)
+                          Use built-in MAG loader (default:yes)
   --with-builtin-pnm=(yes|no)
                           Use built-in PNM loader (default:yes)
   --with-builtin-ypic=(yes|no)
@@ -5369,6 +5373,35 @@ else
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 fi
+
+# 内蔵版 MAG はデフォルトを yes にする。
+# --with-builtin-mag=no (--without-builtin-mag) なら使わない。
+
+# Check whether --with-builtin-mag was given.
+if test ${with_builtin_mag+y}
+then :
+  withval=$with_builtin_mag;
+fi
+
+if test -z "${with_builtin_mag}"; then
+	with_builtin_mag=yes
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to use builtin MAG loader" >&5
+printf %s "checking whether to use builtin MAG loader... " >&6; }
+case "${with_builtin_mag}" in
+ yes)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	printf "%s\n" "#define HAVE_BUILTIN_MAG 1" >>confdefs.h
+
+	DEFINE_BUILTIN_MAG=HAVE_BUILTIN_MAG=yes
+
+	;;
+ *)
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	;;
+esac
 
 # 内蔵版 pnm はデフォルトを yes にする。
 # --with-builtin-pnm=no (--without-builtin-pnm) なら使わない。

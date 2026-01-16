@@ -396,6 +396,7 @@ image_get_preferred_size(
 #define LOADERMAP_gif	(1U << IMAGE_LOADER_GIF)
 #define LOADERMAP_jpeg	(1U << IMAGE_LOADER_JPEG)
 #define LOADERMAP_jxl	(1U << IMAGE_LOADER_JXL)
+#define LOADERMAP_mag	(1U << IMAGE_LOADER_MAG)
 #define LOADERMAP_png	(1U << IMAGE_LOADER_PNG)
 #define LOADERMAP_pnm1	(1U << IMAGE_LOADER_PNM1)
 #define LOADERMAP_pnm2	(1U << IMAGE_LOADER_PNM2)
@@ -451,6 +452,9 @@ static const struct {
 	ENTRY(pnm1, builtin, LOADERMAP_pnm1),
 	ENTRY(pnm2, builtin, LOADERMAP_pnm2),
 	ENTRY(pnm3, builtin, LOADERMAP_pnm3),
+#endif
+#if defined(USE_BUILTIN_MAG) && defined(SIXELV)
+	ENTRY(mag,  builtin, LOADERMAP_mag),
 #endif
 #if defined(USE_BUILTIN_YPIC) && defined(SIXELV)
 	ENTRY(ypic, builtin, LOADERMAP_ypic),

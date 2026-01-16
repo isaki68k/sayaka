@@ -38,6 +38,9 @@
 #define USE_BLURHASH
 #define USE_BUILTIN_BMP
 
+#if defined(HAVE_BUILTIN_MAG)
+#define USE_BUILTIN_MAG
+#endif
 #if defined(HAVE_BUILTIN_PNM)
 #define USE_BUILTIN_PNM
 #endif
@@ -82,6 +85,7 @@ IMAGE_HANDLER(bmp);
 IMAGE_HANDLER(gif);
 IMAGE_HANDLER(jpeg);
 IMAGE_HANDLER(jxl);
+IMAGE_HANDLER(mag);
 IMAGE_HANDLER(png);
 IMAGE_HANDLER(pnm1);
 IMAGE_HANDLER(pnm2);
