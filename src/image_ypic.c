@@ -33,6 +33,18 @@ struct colorcache
 	uint8 prev;
 };
 
+union union64
+{
+	uint64 q;
+	struct {
+#if BYTE_ORDER == LITTLE_ENDIAN
+		uint32 l, h;
+#else
+		uint32 h, l;
+#endif
+	};
+};
+
 struct ypicctx
 {
 	FILE *fp;
@@ -40,8 +52,8 @@ struct ypicctx
 	int width;
 	int height;
 
-	uint8 bits;			// 読み込んだビットデータ(左詰めしていく)
-	int blen;			// bits の有効ビット長(MSB 側から数える)
+	union union64 bits;	// ビットバッファ。
+	int blen;			// bits.l の有効ビット長(MSB 側から数える)
 
 	uint colorbits;			// 色のビット数。(256色なら8)
 	uint16 palette[256];	// パレットは最大256個。
@@ -325,7 +337,7 @@ read_color(struct ypicctx *ctx)
 		// 32K/64K 色は色キャッシュを使う。
 		if (readbit(ctx, 1)) {
 			// cache hit
-			uint a = (readbit(ctx, 7));
+			uint a = readbit(ctx, 7);
 			return color_get(ctx, a);
 		} else {
 			// cache miss
@@ -402,21 +414,24 @@ image_set_pixel(struct image *img, int x, int y, uint c)
 static uint32
 readbit(struct ypicctx *ctx, int n)
 {
-	uint32 val;
+	ctx->bits.h = 0;
 
-	val = 0;
-	for (int i = 0; i < n; i++) {
+	while (n > 0) {
 		if (__predict_false(ctx->blen == 0)) {
-			ctx->bits = fgetc(ctx->fp);
-			ctx->blen = 8;
+			uint32 buf;
+			size_t r = fread(&buf, 1, 4, ctx->fp);
+			if (__predict_false(r == 0)) {
+				return -1;	// 起きないはずだが、起きたらどうしようもない。
+			}
+			ctx->bits.l = be32toh(buf);
+			ctx->blen = r * 8;
 		}
-		val <<= 1;
-		if ((ctx->bits & 0x80)) {
-			val++;
-		}
-		ctx->bits <<= 1;
-		ctx->blen--;
+
+		uint l = MIN(n, ctx->blen);
+		ctx->bits.q <<= l;
+		ctx->blen -= l;
+		n -= l;
 	}
 
-	return val;
+	return ctx->bits.h;
 }
