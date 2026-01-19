@@ -180,6 +180,7 @@ enum {
 	IMAGE_LOADER_BLURHASH = 0,
 	IMAGE_LOADER_BMP,
 	IMAGE_LOADER_GIF,
+	IMAGE_LOADER_ICO,
 	IMAGE_LOADER_JPEG,
 	IMAGE_LOADER_JXL,
 	IMAGE_LOADER_MAG,
@@ -200,6 +201,7 @@ enum {
 	"blurhash",	\
 	"bmp",	\
 	"gif",	\
+	"ico",	\
 	"jpeg",	\
 	"jxl",	\
 	"mag",	\

@@ -38,6 +38,9 @@
 #define USE_BLURHASH
 #define USE_BUILTIN_BMP
 
+#if defined(HAVE_BUILTIN_ICO)
+#define USE_BUILTIN_ICO
+#endif
 #if defined(HAVE_BUILTIN_MAG)
 #define USE_BUILTIN_MAG
 #endif
@@ -83,6 +86,7 @@ typedef struct image *(*image_read_t)(FILE *, const image_read_hint *,
 
 IMAGE_HANDLER(bmp);
 IMAGE_HANDLER(gif);
+IMAGE_HANDLER(ico);
 IMAGE_HANDLER(jpeg);
 IMAGE_HANDLER(jxl);
 IMAGE_HANDLER(mag);

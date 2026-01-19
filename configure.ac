@@ -509,6 +509,26 @@ else
 	AC_MSG_RESULT([no])
 fi
 
+# 内蔵版 ICO はデフォルトを yes にする。
+# --with-builtin-ico=no (--without-builtin-ico) なら使わない。
+AC_ARG_WITH([builtin-ico],
+	AS_HELP_STRING([--with-builtin-ico=(yes|no)],
+		[Use built-in ICO decoder (default:yes)]))
+if test -z "${with_builtin_ico}"; then
+	with_builtin_ico=yes
+fi
+AC_MSG_CHECKING(whether to use builtin ICO decoder)
+case "${with_builtin_ico}" in
+ yes)
+	AC_MSG_RESULT([yes])
+	AC_DEFINE([HAVE_BUILTIN_ICO])
+	AC_SUBST([DEFINE_BUILTIN_ICO], [HAVE_BUILTIN_ICO=yes])
+	;;
+ *)
+	AC_MSG_RESULT([no])
+	;;
+esac
+
 # 内蔵版 MAG はデフォルトを yes にする。
 # --with-builtin-mag=no (--without-builtin-mag) なら使わない。
 AC_ARG_WITH([builtin-mag],

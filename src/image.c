@@ -394,6 +394,7 @@ image_get_preferred_size(
 // ローダごとにサポートしているファイル形式をビットマップフラグにしたもの。
 #define LOADERMAP_bmp	(1U << IMAGE_LOADER_BMP)
 #define LOADERMAP_gif	(1U << IMAGE_LOADER_GIF)
+#define LOADERMAP_ico	(1U << IMAGE_LOADER_ICO)
 #define LOADERMAP_jpeg	(1U << IMAGE_LOADER_JPEG)
 #define LOADERMAP_jxl	(1U << IMAGE_LOADER_JXL)
 #define LOADERMAP_mag	(1U << IMAGE_LOADER_MAG)
@@ -452,6 +453,9 @@ static const struct {
 	ENTRY(pnm1, builtin, LOADERMAP_pnm1),
 	ENTRY(pnm2, builtin, LOADERMAP_pnm2),
 	ENTRY(pnm3, builtin, LOADERMAP_pnm3),
+#endif
+#if defined(USE_BUILTIN_ICO) && defined(SIXELV)
+	ENTRY(ico,  builtin, LOADERMAP_ico),
 #endif
 #if defined(USE_BUILTIN_MAG) && defined(SIXELV)
 	ENTRY(mag,  builtin, LOADERMAP_mag),

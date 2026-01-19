@@ -63,6 +63,9 @@ SRCS_sayaka+=	wsclient.c
 
 SRCS_sixelv+=	image_ascii.c
 SRCS_sixelv+=	image_bmp.c
+.if defined(HAVE_BUILTIN_ICO)
+SRCS_sixelv+=	image_ico.c
+.endif
 .if defined(HAVE_BUILTIN_MAG)
 SRCS_sixelv+=	image_mag.c
 .endif
