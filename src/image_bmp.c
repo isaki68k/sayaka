@@ -353,12 +353,6 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		return NULL;
 	}
 
-	// 直接内部形式にする。
-	ctx->img = image_create(width, height, IMAGE_FMT_ARGB16);
-	if (ctx->img == NULL) {
-		return NULL;
-	}
-
 	// 圧縮形式がビットフィールドならカラーマスクを加工する。
 	// DIB=INFO なら、ヘッダ直後に R,G,B のマスクが各32ビットで配置される。
 	// DIB=V4/V5 なら、ヘッダに含まれている。
@@ -369,7 +363,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			if (n < countof(maskbuf)) {
 				Debug(diag, "%s: fread(colormask) failed: %s",
 					__func__, strerrno());
-				goto abort;
+				return NULL;
 			}
 		} else {
 			// V4/V5 ヘッダ内の値は4バイトに整列してないため一旦コピーする。
@@ -396,13 +390,19 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		}
 		if (r == false) {
 			Debug(diag, "%s: fread(palette) failed: %s", __func__, strerrno());
-			goto abort;
+			return NULL;
 		}
 	}
 
 	// ラスター開始位置。
 	uint32 offbits = le32toh(hdr.bfOffBits);
 	fseek(fp, offbits, SEEK_SET);
+
+	// 直接内部形式にする。
+	ctx->img = image_create(width, height, IMAGE_FMT_ARGB16);
+	if (ctx->img == NULL) {
+		return NULL;
+	}
 
 	// ラスターごとに展開。
 	if (bottom_up) {
