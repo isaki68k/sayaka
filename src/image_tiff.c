@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2025 Tetsuya Isaki
+ * Copyright (C) 2025-2026 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,6 +32,7 @@
 
 #include "common.h"
 #include "image_priv.h"
+#include <err.h>
 #include <tiffio.h>
 
 static tmsize_t tiff_read(thandle_t, void *, tmsize_t);
@@ -89,6 +90,7 @@ image_tiff_read(FILE *fp, const image_read_hint *dummy, const struct diag *diag)
 		tiff_size,
 		NULL, NULL);
 	if (__predict_false(tiff == NULL)) {
+		warn("%s: TIFFClientOpen failed", __func__);
 		return NULL;
 	}
 

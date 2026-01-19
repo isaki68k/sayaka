@@ -30,6 +30,7 @@
 
 #include "sixelv.h"
 #include "image_priv.h"
+#include <err.h>
 #include <string.h>
 
 // 圧縮方式
@@ -208,7 +209,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	// ファイルヘッダ(共通)。
 	n = fread(&hdr, sizeof(hdr), 1, fp);
 	if (n == 0) {
-		Debug(diag, "%s: fread(hdr) failed: %s", __func__, strerrno());
+		warn("%s: fread(hdr) failed", __func__);
 		return NULL;
 	}
 
@@ -305,9 +306,9 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		 case 24:	rasterop = raster_rgb24;	break;
 		 case 32:	rasterop = raster_rgb32;	break;
 		 default:
-			Debug(diag, "%s: BI_RGB but BitCount=%u not supported",
+			warnx("%s: BI_RGB but BitCount=%u not supported",
 				__func__, bitcount);
-			return false;
+			return NULL;
 		}
 		break;
 	 case BI_RLE8:
@@ -321,9 +322,9 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		 case 16:	rasterop = raster_bitfield16;	break;
 		 case 32:	rasterop = raster_bitfield32;	break;
 		 default:
-			Debug(diag, "%s: BI_BITFIELDS but BitCount=%u not supported",
+			warnx("%s: BI_BITFIELDS but BitCount=%u not supported",
 				__func__, bitcount);
-			return false;
+			return NULL;
 		}
 		break;
 
@@ -348,7 +349,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 #endif
 
 	 default:
-		Debug(diag, "%s: compression=%u not supported", __func__,
+		warnx("%s: compression=%u not supported", __func__,
 			compression);
 		return NULL;
 	}
@@ -361,8 +362,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		if (dib_size == sizeof(BITMAPINFOHEADER)) {
 			n = fread(maskbuf, sizeof(maskbuf[0]), countof(maskbuf), fp);
 			if (n < countof(maskbuf)) {
-				Debug(diag, "%s: fread(colormask) failed: %s",
-					__func__, strerrno());
+				warn("%s: fread(colormask) failed", __func__);
 				return NULL;
 			}
 		} else {
@@ -389,7 +389,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 			r = read_palette4(ctx, npal);
 		}
 		if (r == false) {
-			Debug(diag, "%s: fread(palette) failed: %s", __func__, strerrno());
+			warnx("%s: fread(palette) failed", __func__);
 			return NULL;
 		}
 	}

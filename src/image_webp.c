@@ -1,6 +1,6 @@
 /* vi:set ts=4: */
 /*
- * Copyright (C) 2023-2025 Tetsuya Isaki
+ * Copyright (C) 2023-2026 Tetsuya Isaki
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -95,8 +95,8 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		size_t newcap = filecap + 64;
 		uint8 *newbuf = realloc(filebuf, newcap);
 		if (newbuf == NULL) {
-			Debug(diag, "%s: realloc failed: %s", __func__, strerrno());
-			break;
+			warn("%s: realloc(%zu) failed", __func__, newcap);
+			goto abort;
 		}
 		filebuf = newbuf;
 		filecap = newcap;
@@ -113,11 +113,11 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 	if (r == VP8_STATUS_BITSTREAM_ERROR) {
 		// Webp ではない。
-		Debug(diag, "%s: Bitstream error.", __func__);
+		warnx("%s: Bitstream error", __func__);
 		goto abort;
 	} else if (r != 0) {
 		// それ以外のエラー。
-		Debug(diag, "%s: WebPGetFeatures() failed: %d", __func__, (int)r);
+		warnx("%s: WebPGetFeatures() failed: %d", __func__, (int)r);
 		goto abort;
 	}
 
@@ -169,6 +169,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 		// ファイル全体を読み込む。
 		if (read_all(&filebuf, &filelen, fp, filesize, diag) == false) {
+			warnx("%s: read_all failed", __func__);
 			goto abort_anime;
 		}
 
@@ -180,7 +181,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		// ページ数(フレーム数)を取得。
 		demux = WebPDemux(&data);
 		if (demux == NULL) {
-			Debug(diag, "%s: WebPDemux() failed", __func__);
+			warnx("%s: WebPDemux() failed", __func__);
 			goto abort_anime;
 		}
 		uint total_pages = WebPDemuxGetI(demux, WEBP_FF_FRAME_COUNT);
@@ -192,7 +193,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 		dec = WebPAnimDecoderNew(&data, &opt);
 		if (dec == NULL) {
-			Debug(diag, "%s: WebpAnimDecoderNew() failed", __func__);
+			warnx("%s: WebpAnimDecoderNew() failed", __func__);
 			goto abort_anime;
 		}
 
@@ -227,6 +228,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 		// ファイル全体を読み込む。
 		if (read_all(&filebuf, &filelen, fp, filesize, diag) == false) {
+			warnx("%s: read_all failed", __func__);
 			goto abort;
 		}
 
@@ -240,7 +242,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		config.output.u.RGBA.stride = outstride;
 		int status = WebPDecode(filebuf, filelen, &config);
 		if (status != VP8_STATUS_OK) {
-			Debug(diag, "%s: WebpDecode() failed", __func__);
+			warnx("%s: WebpDecode() failed", __func__);
 			goto abort_alpha;
 		}
 
@@ -257,7 +259,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 		WebPIDecoder *idec = WebPINewDecoder(NULL);
 		if (idec == NULL) {
-			Debug(diag, "%s: WebPINewDecoder() failed", __func__);
+			warnx("%s: WebPINewDecoder() failed", __func__);
 			goto abort_inc;
 		}
 
@@ -265,7 +267,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		// 全域読み終えていたら 0、そうでなければ SUSPENDED になるはず。
 		int status = WebPIAppend(idec, filebuf, filelen);
 		if (status != 0 && status != VP8_STATUS_SUSPENDED) {
-			Debug(diag, "%s: WebPIAppend(first) failed: %d", __func__, status);
+			warnx("%s: WebPIAppend(first) failed: %d", __func__, status);
 			goto abort_inc;
 		}
 
@@ -288,6 +290,7 @@ image_webp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 // *buf から始まる長さ *buflen (長さは 0 ではないかも知れない) のバッファを
 // newsize にリサイズし、そこに fp から読み込んで追加する。
 // 成功すれば、buf と buflen を更新し true を返す。
+// 失敗すれば、デバッグログを表示し false を返す。
 static bool
 read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
 	const struct diag *diag)
@@ -298,6 +301,7 @@ read_all(uint8 **bufp, size_t *buflenp, FILE *fp, uint32 newsize,
 
 	uint8 *newbuf = realloc(buf, newsize);
 	if (newbuf == NULL) {
+		Debug(diag, "%s: realloc(%u) failed", __func__, newsize);
 		return false;
 	}
 	buf = newbuf;
@@ -335,8 +339,7 @@ image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 	const size_t bufsize = IMAGE_BUFSIZE;
 	buf = malloc(bufsize);
 	if (buf == NULL) {
-		Debug(diag, "%s: malloc(%zu) failed: %s", __func__,
-			bufsize, strerrno());
+		warn("%s: malloc(%zu) failed", __func__, bufsize);
 		return false;
 	}
 
@@ -350,14 +353,14 @@ image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 	} while (status == VP8_STATUS_SUSPENDED);
 
 	if (status != VP8_STATUS_OK) {
-		Debug(diag, "%s: Decode failed %d", __func__, status);
+		warnx("%s: Decode failed by %d", __func__, status);
 		goto done;
 	}
 
 	// RGB バッファを取得。
 	s = WebPIDecGetRGB(idec, NULL, NULL, NULL, &srcstride);
 	if (s == NULL) {
-		Debug(diag, "%s: WebPIDecGetRGB() failed", __func__);
+		warnx("%s: WebPIDecGetRGB() failed", __func__);
 		goto done;
 	}
 
