@@ -65,7 +65,7 @@ struct ypicctx
 };
 
 static bool ypic_read_header(FILE *, uint8 *);
-static bool ypic_expand(struct ypicctx *);
+static void ypic_expand(struct ypicctx *);
 static void ypic_expand_chain(struct ypicctx *, int, int, uint);
 static uint32 read_len(struct ypicctx *);
 static uint16 read_color(struct ypicctx *);
@@ -183,10 +183,7 @@ image_ypic_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	}
 
 	// 圧縮データの展開。
-	if (ypic_expand(ctx) == false) {
-		image_free(ctx->img);
-		ctx->img = NULL;
-	}
+	ypic_expand(ctx);
 
 	return ctx->img;
 }
@@ -233,12 +230,12 @@ ypic_read_header(FILE *fp, uint8 *dst)
 #define ROUND_EDGE	do {								\
 	if (__predict_false(++x >= ctx->width)) {			\
 		if (__predict_false(++y >= ctx->height))		\
-			goto done;									\
+			return;										\
 		x = 0;											\
 	}													\
 } while (0)
 
-static bool
+static void
 ypic_expand(struct ypicctx *ctx)
 {
 	int x = -1;
@@ -272,9 +269,6 @@ ypic_expand(struct ypicctx *ctx)
 			ypic_expand_chain(ctx, x, y, c);
 		}
 	}
-
- done:
-	return true;
 }
 
 static void
