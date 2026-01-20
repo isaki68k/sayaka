@@ -32,6 +32,9 @@
 #include "image_priv.h"
 
 // 外部ライブラリでサポートしているフォーマットを除く。
+#if defined(USE_BUILTIN_BMP)
+#define STBI_NO_BMP
+#endif
 #if defined(USE_BUILTIN_PNM)
 #define STBI_NO_PNM
 #endif
