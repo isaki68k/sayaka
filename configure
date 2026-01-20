@@ -1403,11 +1403,11 @@ Optional Packages:
   --with-stb-image=(auto|yes|no)
                           Use bundled stb_image (defualt:auto)
   --with-builtin-mag=(yes|no)
-                          Use built-in MAG loader (default:yes)
+                          Use built-in MAG Loader (default:yes)
   --with-builtin-pnm=(yes|no)
-                          Use built-in PNM loader (default:yes)
+                          Use built-in PNM decoder (default:yes)
   --with-builtin-ypic=(yes|no)
-                          Use built-in Yanagisawa-PIC loader (default:yes)
+                          Use built-in Yanagisawa-PIC decoder (default:yes)
   --with-openssl          Use OpenSSL for HTTPS/WSS (default:yes)
   --with-iconv            Use iconv to convert output charset (default:yes)
 
@@ -5386,8 +5386,8 @@ fi
 if test -z "${with_builtin_mag}"; then
 	with_builtin_mag=yes
 fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to use builtin MAG loader" >&5
-printf %s "checking whether to use builtin MAG loader... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to use builtin MAG Loader" >&5
+printf %s "checking whether to use builtin MAG Loader... " >&6; }
 case "${with_builtin_mag}" in
  yes)
 	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5

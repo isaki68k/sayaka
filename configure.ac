@@ -513,11 +513,11 @@ fi
 # --with-builtin-mag=no (--without-builtin-mag) なら使わない。
 AC_ARG_WITH([builtin-mag],
 	AS_HELP_STRING([--with-builtin-mag=(yes|no)],
-		[Use built-in MAG loader (default:yes)]))
+		[Use built-in MAG Loader (default:yes)]))
 if test -z "${with_builtin_mag}"; then
 	with_builtin_mag=yes
 fi
-AC_MSG_CHECKING(whether to use builtin MAG loader)
+AC_MSG_CHECKING(whether to use builtin MAG Loader)
 case "${with_builtin_mag}" in
  yes)
 	AC_MSG_RESULT([yes])
@@ -533,7 +533,7 @@ esac
 # --with-builtin-pnm=no (--without-builtin-pnm) なら使わない。
 AC_ARG_WITH([builtin-pnm],
 	AS_HELP_STRING([--with-builtin-pnm=(yes|no)],
-		[Use built-in PNM loader (default:yes)]))
+		[Use built-in PNM decoder (default:yes)]))
 if test -z "${with_builtin_pnm}"; then
 	with_builtin_pnm=yes
 fi
@@ -553,7 +553,7 @@ esac
 # --with-builtin-ypic=no (--without-builtin-ypic) なら使わない。
 AC_ARG_WITH([builtin-ypic],
 	AS_HELP_STRING([--with-builtin-ypic=(yes|no)],
-		[Use built-in Yanagisawa-PIC loader (default:yes)]))
+		[Use built-in Yanagisawa-PIC decoder (default:yes)]))
 if test -z "${with_builtin_ypic}"; then
 	with_builtin_ypic=yes
 fi
