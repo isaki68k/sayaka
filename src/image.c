@@ -584,21 +584,18 @@ image_convert_to16(struct image *img)
 
 	if (img->format == IMAGE_FMT_RGB24) {
 		for (uint i = 0; i < count; i++) {
-			uint r, g, b, v;
-			r = (*s8++) >> 3;
-			g = (*s8++) >> 3;
-			b = (*s8++) >> 3;
-			v = (r << 10) | (g << 5) | b;
-			*d16++ = v;
+			uint8 r = *s8++;
+			uint8 g = *s8++;
+			uint8 b = *s8++;
+			*d16++ = RGB888_to_ARGB16(r, g, b);
 		}
 	} else if (img->format == IMAGE_FMT_ARGB32) {
 		for (uint i = 0; i < count; i++) {
-			uint r, g, b, a, v;
-			r = (*s8++) >> 3;
-			g = (*s8++) >> 3;
-			b = (*s8++) >> 3;
-			a = (*s8++);
-			v = (r << 10) | (g << 5) | b;
+			uint8 r = *s8++;
+			uint8 g = *s8++;
+			uint8 b = *s8++;
+			uint8 a = *s8++;
+			uint16 v = RGB888_to_ARGB16(r, g, b);
 			// A(不透明度)が半分以下なら透明(0x8000)とする。
 			if (a < 0x80) {
 				v |= 0x8000;

@@ -67,16 +67,6 @@ static bool raster_rle(struct bmpctx *, int, bool);
 static uint8 extend_to8bit(const struct bmpctx *, uint32, uint);
 static struct image *image_coloring(const struct image *);
 
-// R8,G8,B8 を内部形式に変換。
-static inline uint16
-RGB888_to_ARGB16(uint8 r, uint8 g, uint8 b)
-{
-	r >>= 3;
-	g >>= 3;
-	b >>= 3;
-	return (r << 10) | (g << 5) | b;
-}
-
 bool
 image_bmp_match(FILE *fp, const struct diag *diag)
 {

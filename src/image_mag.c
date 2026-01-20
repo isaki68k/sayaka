@@ -338,10 +338,7 @@ mag_read_palette(struct magctx *ctx)
 		uint g = *s++;
 		uint r = *s++;
 		uint b = *s++;
-		r >>= 3;
-		g >>= 3;
-		b >>= 3;
-		ctx->palette[i] = (r << 10) | (g << 5) | b;
+		ctx->palette[i] = RGB888_to_ARGB16(r, g, b);
 	}
 	return true;
 }
