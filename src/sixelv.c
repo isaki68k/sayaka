@@ -97,6 +97,7 @@ enum {
 	OPT_height,
 	OPT_help,
 	OPT_help_all,
+	OPT_ignore_error,
 	OPT_ipv4,
 	OPT_ipv6,
 	OPT_list_supported_images,
@@ -125,7 +126,7 @@ static const struct option longopts[] = {
 	{ "height",			required_argument,	NULL,	'h' },
 	{ "help",			no_argument,		NULL,	OPT_help, },
 	{ "help-all",		no_argument,		NULL,	OPT_help_all },
-	{ "ignore-error",	no_argument,		NULL,	'i' },
+	{ "ignore-error",	no_argument,		NULL,	OPT_ignore_error },
 	{ "ipv4",			no_argument,		NULL,	OPT_ipv4 },
 	{ "ipv6",			no_argument,		NULL,	OPT_ipv6 },
 	{ "list-supported-images", no_argument,	NULL,	OPT_list_supported_images },
@@ -301,6 +302,11 @@ main(int ac, char *av[])
 			exit(0);
 
 		 case 'i':
+			// --debug-image=1 の短縮形。
+			diag_set_level(diag_image, 1);
+			break;
+
+		 case OPT_ignore_error:
 			ignore_error = true;
 			break;
 
@@ -499,7 +505,7 @@ usage(void)
 		"--ignore-error",
 		"--ciphers=<ciphers>",
 		"--help-all",
-		"--debug-image=<0..2>",
+		"--debug-image=<0..2>,-i",
 		"--debug-net=<0..2>",
 		"--debug-sixel=<0..2>",
 		"", // 偶数パディング
@@ -557,10 +563,10 @@ help_all(void)
 "  --suppress-palette     : Suppress output of SIXEL palette definition\n"
 "  --ciphers <ciphers>    : \"RSA\" can only be specified\n"
 "  --ipv4 / --ipv6        : Connect only IPv4/v6\n"
-"  -i,--ignore-error\n"
+"  --ignore-error\n"
 "  -v                     : Show input filename\n"
 "  --version\n"
-"  --debug-image=<0..2>\n"
+"  --debug-image=<0..2>,-i: -i is a synonym for --debug-image=1\n"
 "  --debug-net  =<0..2>\n"
 "  --debug-sixel=<0..2>\n"
 	);
