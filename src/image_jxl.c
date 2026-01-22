@@ -33,8 +33,11 @@
 #include <err.h>
 #include <string.h>
 #include <jxl/decode.h>
+#include <jxl/encode.h>
 #include <jxl/version.h>
 
+static const char *primaries2str(JxlPrimaries);
+static const char *transfer_function2str(JxlTransferFunction);
 static const char *status2str(JxlDecoderStatus);
 
 bool
@@ -76,6 +79,7 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	JxlDecoder *dec = JxlDecoderCreate(NULL);
 	JxlDecoderSubscribeEvents(dec,
 		JXL_DEC_BASIC_INFO |
+		JXL_DEC_COLOR_ENCODING |
 		JXL_DEC_FRAME_PROGRESSION |
 		JXL_DEC_FULL_IMAGE);
 
@@ -118,14 +122,29 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		if (status == JXL_DEC_BASIC_INFO) {
 			Trace(diag, "%s: %s", __func__, status2str(status));
 			JxlDecoderGetBasicInfo(dec, &info);
-			Debug(diag, "%s: ImageSize=(%u, %u) Color=%s%s", __func__,
+			Debug(diag, "%s: ImageSize=(%u, %u) %u bit %s%s", __func__,
 				info.xsize,
 				info.ysize,
+				info.bits_per_sample,
 				(info.num_color_channels == 1 ? "Grayscale" : "RGB"),
 				(info.alpha_bits == 0 ? "" : "+Alpha"));
 			Debug(diag, "%s: have_preview=%u have_animation=%u", __func__,
 				info.have_preview,
 				info.have_animation);
+			continue;
+		}
+
+		if (status == JXL_DEC_COLOR_ENCODING) {
+			if (diag_get_level(diag) >= 1) {
+				JxlColorEncoding color;
+				JxlDecoderGetColorAsEncodedProfile(dec,
+					JXL_COLOR_PROFILE_TARGET_ORIGINAL, &color);
+
+				diag_print(diag, "%s: primaries=%s transfer_function=%s",
+					__func__,
+					primaries2str(color.primaries),
+					transfer_function2str(color.transfer_function));
+			}
 			continue;
 		}
 
@@ -208,6 +227,38 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		img = NULL;
 	}
 	return img;
+}
+
+static const char *
+primaries2str(JxlPrimaries val)
+{
+	switch (val) {
+	 case JXL_PRIMARIES_SRGB:	return "SRGB";
+	 case JXL_PRIMARIES_CUSTOM:	return "Custom";
+	 case JXL_PRIMARIES_2100:	return "BT.2100";
+	 case JXL_PRIMARIES_P3:		return "P3";
+	 default:
+		break;
+	}
+	return "?";
+}
+
+static const char *
+transfer_function2str(JxlTransferFunction val)
+{
+	switch (val) {
+	 case JXL_TRANSFER_FUNCTION_709:		return "BT.709";
+	 case JXL_TRANSFER_FUNCTION_UNKNOWN:	return "Unknown";
+	 case JXL_TRANSFER_FUNCTION_LINEAR:		return "Linear";
+	 case JXL_TRANSFER_FUNCTION_SRGB:		return "SRGB";
+	 case JXL_TRANSFER_FUNCTION_PQ:			return "PQ";
+	 case JXL_TRANSFER_FUNCTION_DCI:		return "DCI";
+	 case JXL_TRANSFER_FUNCTION_HLG:		return "HLG";
+	 case JXL_TRANSFER_FUNCTION_GAMMA:		return "Gamma";
+	 default:
+		break;
+	}
+	return "?";
 }
 
 static const char *
