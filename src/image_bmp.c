@@ -147,6 +147,8 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	 case sizeof(BITMAPINFOHEADER2):
 	 case sizeof(BITMAPV4HEADER):
 	 case sizeof(BITMAPV5HEADER):
+	 case 52:
+	 case 56:
 		break;
 	 default:
 		Debug(diag, "%s: Unknown header format (dib_size=%u)",
@@ -313,6 +315,10 @@ bmp_print_debuginfo(struct bmpctx *bmp, const struct diag *diag,
 			hdrname = "INFO";
 		} else if (dib_size == sizeof(BITMAPINFOHEADER2)) {
 			hdrname = "INFO2";
+		} else if (dib_size == 52) {
+			hdrname = "V2";
+		} else if (dib_size == 56) {
+			hdrname = "V3";
 		} else if (dib_size == sizeof(BITMAPV4HEADER)) {
 			hdrname = "V4";
 		} else if (dib_size == sizeof(BITMAPV5HEADER)) {
