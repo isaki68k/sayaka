@@ -112,7 +112,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	size_t len = sizeof(info.dib_size);
 	n = fread(buf, len, 1, fp);
 	if (n == 0) {
-		Debug(diag, "%s: fread(dib_size) failed: %s", __func__, strerrno());
+		warnx("%s: fread(dib_size) failed", __func__);
 		return NULL;
 	}
 	uint32 dib_size = le32toh(info.dib_size);
@@ -122,8 +122,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	len = dib_size - sizeof(info.dib_size);
 	n = fread(buf, 1, len, fp);
 	if (n < len) {
-		Debug(diag, "%s: fread(remaining %zu bytes)=%zu: %s", __func__,
-			len, n, strerrno());
+		warnx("%s: fread(remaining %zu bytes)=%zu", __func__, len, n);
 		return NULL;
 	}
 
@@ -151,8 +150,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	 case 56:
 		break;
 	 default:
-		Debug(diag, "%s: Unknown header format (dib_size=%u)",
-			__func__, dib_size);
+		warnx("%s: Unknown header format (dib_size=%u)", __func__, dib_size);
 		return NULL;
 	}
 
