@@ -735,9 +735,20 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 			if (cmd <= 1) {
 				break;
 			} else if (__predict_false(cmd == 2)) {
-				// Not supported
-				warnx("%s: Delta escape not supported", __func__);
-				return false;
+				// dx, dy だけ移動。dx, dy は unsigned。
+				// dy は画像の下方向。
+				int dx = fgetc(bmp->fp);
+				int dy = fgetc(bmp->fp);
+				if (dx < 0 || dy < 0) {
+					goto eof;
+				}
+				d += img->width * dy + dx;
+				// 一応チェック。
+				// ただこの後の書き込みで進む分はどのみちチェックしてないが。
+				if (d >= (uint16 *)img->buf + img->width * img->height) {
+					warnx("%s: Invalid delta", __func__);
+					return false;
+				}
 			} else {
 				// 絶対モードでは以後 nn ピクセル分の生データが並ぶ。
 				// その後偶数に整列。
