@@ -63,6 +63,29 @@ typedef struct __packed {
 	uint32 biClrImportant;
 } BITMAPINFOHEADER;
 
+// ?
+typedef struct __packed {
+	uint32 cSize;
+	uint32 cWidth;
+	uint32 cHeight;
+	uint16 cPlanes;
+	uint16 cBitCount;
+	uint32 cCompression;
+	uint32 cSizeImage;
+	uint32 cXResolution;
+	uint32 cYResolution;
+	uint32 cClrUsed;
+	uint32 cClrImportant;
+	uint16 cUnits;
+	uint16 cReserved;
+	uint16 cRecording;
+	uint16 cRendering;
+	uint32 cSize1;
+	uint32 cSize2;
+	uint32 cColorEncoding;
+	uint32 cIdentifier;
+} BITMAPINFOHEADER2;
+
 // Windows (V4) 形式の DIB
 typedef struct __packed {
 	uint32 bv4Size;			// ヘッダサイズ (108)

@@ -144,6 +144,7 @@ image_bmp_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 	switch (dib_size) {
 	 case sizeof(BITMAPCOREHEADER):
 	 case sizeof(BITMAPINFOHEADER):
+	 case sizeof(BITMAPINFOHEADER2):
 	 case sizeof(BITMAPV4HEADER):
 	 case sizeof(BITMAPV5HEADER):
 		break;
@@ -310,6 +311,8 @@ bmp_print_debuginfo(struct bmpctx *bmp, const struct diag *diag,
 			hdrname = "CORE";
 		} else if (dib_size == sizeof(BITMAPINFOHEADER)) {
 			hdrname = "INFO";
+		} else if (dib_size == sizeof(BITMAPINFOHEADER2)) {
+			hdrname = "INFO2";
 		} else if (dib_size == sizeof(BITMAPV4HEADER)) {
 			hdrname = "V4";
 		} else if (dib_size == sizeof(BITMAPV5HEADER)) {
