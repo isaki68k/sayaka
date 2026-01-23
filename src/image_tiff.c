@@ -190,9 +190,11 @@ photometric2str(uint16_t val)
 		"TransparencyMask",
 	};
 
-	if (val >= countof(names)) {
+	if (val < countof(names)) {
+		return names[val];
+	} else {
 		static char buf[16];
 		snprintf(buf, sizeof(buf), "0x%x(?)", val);
+		return buf;
 	}
-	return names[val];
 }
