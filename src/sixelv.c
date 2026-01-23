@@ -47,6 +47,7 @@ typedef enum {
 	OUTPUT_FORMAT_SIXEL,
 	OUTPUT_FORMAT_BMP,
 	OUTPUT_FORMAT_ASCII,
+	OUTPUT_FORMAT_NULL,
 } OutputFormat;
 
 static void version(void);
@@ -147,6 +148,7 @@ static const struct option longopts[] = {
 static const struct optmap map_output_format[] = {
 	{ "ascii",		OUTPUT_FORMAT_ASCII },
 	{ "bmp",		OUTPUT_FORMAT_BMP },
+	{ "null",		OUTPUT_FORMAT_NULL },
 	{ "sixel",		OUTPUT_FORMAT_SIXEL },
 	{ NULL },
 };
@@ -489,7 +491,7 @@ usage(void)
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
-"  -O <fmt>        : Output format, ascii, bmp or sixel (default: sixel)\n"
+"  -O <fmt>        : Output format, ascii, bmp, null or sixel (default:sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
 "  -p <page>       : Specify the page(frame). (GIF/ICO/WebP)\n"
 "  -v              : Show input filename\n");
@@ -554,7 +556,7 @@ help_all(void)
 "  --gain=<gain>          : Set output gain between 0.0 and 2.0 (default:1.0)\n"
 "  --help-all             : This help\n"
 "  --list-supported-images: Show supported filetype and decoder list\n"
-"  -O,--output-format=<fmt> : ascii, bmp or sixel (default:sixel)\n"
+"  -O,--output-format=<fmt> : ascii, bmp, null or sixel (default:sixel)\n"
 "  -o <filename>          : Output filename, '-' means stdout (default:-)\n"
 "  -p,--page=<page>       : Specify the page(frame). (GIF/ICO/WebP)\n"
 "  --no-progressive       : Don't use progressive data (jxl only)\n"
@@ -725,37 +727,42 @@ do_file(const char *infile)
 	}
 
 	// 出力先をオープン。
-	if (output_filename == NULL) {
-		ofp = stdout;
-	} else {
-		ofp = fopen(output_filename, "w");
-		if (ofp == NULL) {
-			warn("fopen(%s) failed", output_filename);
-			goto abort;
+	if (__predict_true(output_format != OUTPUT_FORMAT_NULL)) {
+		if (output_filename == NULL) {
+			ofp = stdout;
+		} else {
+			ofp = fopen(output_filename, "w");
+			if (ofp == NULL) {
+				warn("fopen(%s) failed", output_filename);
+				goto abort;
+			}
 		}
+
+		PROF(&sixel_start);
+
+		// 書き出し。
+		switch (output_format) {
+		 case OUTPUT_FORMAT_SIXEL:
+			image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
+			break;
+		 case OUTPUT_FORMAT_BMP:
+			if (image_bmp_write(ofp, resimg, diag_image) == false) {
+				goto abort;
+			}
+			break;
+		 case OUTPUT_FORMAT_ASCII:
+			if (image_ascii_write(ofp, resimg, &imageopt, diag_image) == false){
+				goto abort;
+			}
+			break;
+		 case OUTPUT_FORMAT_NULL:
+			__unreachable();
+			break;
+		}
+		fflush(ofp);
+
+		PROF(&sixel_end);
 	}
-
-	PROF(&sixel_start);
-
-	// 書き出し。
-	switch (output_format) {
-	 case OUTPUT_FORMAT_SIXEL:
-		image_sixel_write(ofp, resimg, &imageopt, diag_sixel);
-		break;
-	 case OUTPUT_FORMAT_BMP:
-		if (image_bmp_write(ofp, resimg, diag_image) == false) {
-			goto abort;
-		}
-		break;
-	 case OUTPUT_FORMAT_ASCII:
-		if (image_ascii_write(ofp, resimg, &imageopt, diag_image) == false) {
-			goto abort;
-		}
-		break;
-	}
-	fflush(ofp);
-
-	PROF(&sixel_end);
 
 	if (opt_profile) {
 		uint64 load_usec;
