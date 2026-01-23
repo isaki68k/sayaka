@@ -66,6 +66,7 @@ static uint fontheight;				// フォント高さ (ドット数)
 static bool show_filename;			// 画像の前にファイル名を表示
 static bool ignore_error;			// true ならエラーでも次ファイルを処理
 static FILE *ofp;					// 出力中のストリーム
+static bool opt_blurhash;			// 入力を Blurhash とみなす
 static bool opt_blurhash_nearest;	// Blurhash を最近傍補間する
 static ResizeAxis opt_resize_axis;
 static bool opt_no_progressive;
@@ -88,6 +89,7 @@ const char progver[]  = SIXELV_VERSION;
 
 enum {
 	OPT__start = 0x7f,
+	OPT_blurhash,
 	OPT_blurhash_nearest,
 	OPT_cdm,
 	OPT_ciphers,
@@ -114,6 +116,7 @@ enum {
 };
 
 static const struct option longopts[] = {
+	{ "blurhash",		no_argument,		NULL,	'b' },
 	{ "blurhash-nearest",no_argument,		NULL,	OPT_blurhash_nearest },
 	{ "bn",				no_argument,		NULL,	OPT_blurhash_nearest },
 	{ "ciphers",		required_argument,	NULL,	OPT_ciphers },
@@ -220,10 +223,14 @@ main(int ac, char *av[])
 	output_filename = NULL;
 	output_format = OUTPUT_FORMAT_SIXEL;
 
-	while ((c = getopt_long(ac, av, "c:d:h:iO:o:p:r:vw:",
+	while ((c = getopt_long(ac, av, "bc:d:h:iO:o:p:r:vw:",
 					longopts, NULL)) != -1)
 	{
 		switch (c) {
+		 case 'b':
+			opt_blurhash = true;
+			break;
+
 		 case OPT_blurhash_nearest:
 			opt_blurhash_nearest = true;
 			break;
@@ -550,6 +557,7 @@ help_all(void)
 "     2        : 2-pixels (right, down)\n"
 "     3        : 3-pixels (right, down, rightdown)\n"
 "     none     : No diffution\n"
+"  -b,--blurhash          : Input as Blurhash\n"
 "  --bn,--blurhash-nearest\n"
 "  --cdm=<value>          : Differential Color Diffusion Attenuator,\n"
 "                           between 0.0 and 1.0 (default:1.0)\n"
@@ -657,29 +665,35 @@ do_file(const char *infile)
 	PROF(&load_start);
 
 	// 画像形式判定。
-	int loader_idx = image_match(pstream, diag_image);
-
-	if (loader_idx >= 0) {
-		// 読み込み。
-		// この hint は libjpeg の scaling hint のことで、これをもとに
-		// 1/8 とかで読み込んだものが srcimg->{width,height} になる。
-		// ASCII の時には hint サイズも加工したほうが効率はいいがとりあえず。
-		memset(&hint, 0, sizeof(hint));
-		hint.axis   = opt_resize_axis;
-		hint.width  = opt_width;
-		hint.height = opt_height;
-		hint.page   = opt_page;
-		hint.no_progressive = opt_no_progressive;
-		srcimg = image_read(pstream, loader_idx, &hint, diag_image);
-		if (srcimg) {
-			// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
-			image_get_preferred_size(srcimg->width, srcimg->height,
-				opt_resize_axis, opt_width, opt_height,
-				&dst_width, &dst_height);
-		}
-	} else {
-		// どの画像形式でもなさそうなら Blurhash を試す。
+	if (opt_blurhash) {
+		// Blurhash はマジックも何もないで指定されないと分からないのと、
+		// このデータが Blurhash かどうかの判定も出来ないため、
+		// 他の知ってる画像形式にマッチしなかったからといって Blurhash に
+		// フォールバックしても何か無意味な画像が表示出来てしまうだけ
+		// 余計に紛らわしいため、必ずオプションで指定する。
 		srcimg = read_blurhash(pstream, &dst_width, &dst_height);
+	} else {
+		int loader_idx = image_match(pstream, diag_image);
+		if (loader_idx >= 0) {
+			// 読み込み。
+			// この hint は libjpeg の scaling hint のことで、これをもとに
+			// 1/8 とかで読み込んだものが srcimg->{width,height} になる。
+			// ASCII の時には hint サイズも加工したほうが効率はいいが
+			// とりあえず。
+			memset(&hint, 0, sizeof(hint));
+			hint.axis   = opt_resize_axis;
+			hint.width  = opt_width;
+			hint.height = opt_height;
+			hint.page   = opt_page;
+			hint.no_progressive = opt_no_progressive;
+			srcimg = image_read(pstream, loader_idx, &hint, diag_image);
+			if (srcimg) {
+				// 得られた画像サイズと引数指定から、いい感じにサイズを決定。
+				image_get_preferred_size(srcimg->width, srcimg->height,
+					opt_resize_axis, opt_width, opt_height,
+					&dst_width, &dst_height);
+			}
+		}
 	}
 
 	PROF(&load_end);
