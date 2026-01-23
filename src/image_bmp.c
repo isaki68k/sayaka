@@ -52,8 +52,7 @@ typedef union {
 
 static void bmp_read_core_header(struct bmpctx *, const BITMAPCOREHEADER *);
 static bool bmp_read_palette3(struct bmpctx *);
-static int  raster_rgb1(struct bmpctx *, int);
-static int  raster_rgb4(struct bmpctx *, int);
+static int  raster_rgb_packed(struct bmpctx *, int);
 static int  raster_rgb8(struct bmpctx *, int);
 static int  raster_rgb16(struct bmpctx *, int);
 static int  raster_rgb24(struct bmpctx *, int);
@@ -340,8 +339,9 @@ bool
 bmp_select_raster_rgb(struct bmpctx *bmp)
 {
 	switch (bmp->bitcount) {
-	 case  1:	bmp->rasterop = raster_rgb1;	break;
-	 case  4:	bmp->rasterop = raster_rgb4;	break;
+	 case  1:
+	 case  2:
+	 case  4:	bmp->rasterop = raster_rgb_packed;	break;
 	 case  8:	bmp->rasterop = raster_rgb8;	break;
 	 case 16:	bmp->rasterop = raster_rgb16;	break;
 	 case 24:	bmp->rasterop = raster_rgb24;	break;
@@ -432,70 +432,36 @@ bmp_extract(struct bmpctx *bmp)
 	return true;
 }
 
+// BI_RGB の bitcount = {1,2,4}。
 static int
-raster_rgb1(struct bmpctx *bmp, int y)
+raster_rgb_packed(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
-	// 1バイトに8ピクセル収まっているのを4バイト単位に切り上げる。
-	uint bytewidth = howmany(img->width, 8);
+	// 1バイトに n ピクセル収まっているのを4バイト単位に切り上げる。
+	uint pixels_per_byte = 8 / bmp->bitcount;
+	uint bytewidth = howmany(img->width, pixels_per_byte);
 	uint bmpstride = roundup(bytewidth, 4);
 	uint8 srcbuf[bmpstride];
 
 	size_t n = fread(srcbuf, 1, bmpstride, bmp->fp);
-	uint width = n * 8;
+	uint width = n * pixels_per_byte;
 	if (width > img->width) {
 		width = img->width;
 	}
 
 	const uint8 *s = srcbuf;
 	uint16 *d = (uint16 *)img->buf + img->width * y;
+	uint maskoffset = 8 - bmp->bitcount;
+	uint8 mask = ((1U << bmp->bitcount) - 1) << maskoffset;
 	uint8 bits = 0;
 	for (uint x = 0; x < width; x++) {
-		// 左のピクセルが MSB 側。
-		if (__predict_false((x % 8) == 0)) {
+		if (__predict_false((x % pixels_per_byte) == 0)) {
 			bits = *s++;
 		}
-		uint idx = (bits & 0x80) ? 1 : 0;
-		bits <<= 1;
+		// 左のピクセルが MSB 側。
+		uint idx = (bits & mask) >> maskoffset;
+		bits <<= bmp->bitcount;
 		*d++ = bmp->palette[idx];
-	}
-
-	// 構わず成功扱いにしておく。
-	return RASTER_OK;
-}
-
-static int
-raster_rgb4(struct bmpctx *bmp, int y)
-{
-	struct image *img = bmp->img;
-	// 1バイトに2ピクセル収まっているのを4バイト単位に切り上げる。
-	uint bytewidth = howmany(img->width, 2);
-	uint bmpstride = roundup(bytewidth, 4);
-	uint8 srcbuf[bmpstride];
-
-	size_t n = fread(srcbuf, 1, bmpstride, bmp->fp);
-	uint width = n * 2;
-	if (width > img->width) {
-		width = img->width;
-	}
-
-	const uint8 *s = srcbuf;
-	uint16 *d = (uint16 *)img->buf + img->width * y;
-	// 偶数で回せるだけ回す。
-	uint width2 = width & ~1U;
-	for (uint x = 0; x < width2; x += 2) {
-		// 左のピクセルが上位ニブル側。
-		uint32 packed = *s++;
-		uint32 h = packed >> 4;
-		uint32 l = packed & 0xf;
-		*d++ = bmp->palette[h];
-		*d++ = bmp->palette[l];
-	}
-	// 奇数ならもう1ピクセル。
-	if ((width & 1)) {
-		uint32 packed = *s++;
-		uint32 h = packed >> 4;
-		*d++ = bmp->palette[h];
 	}
 
 	// 構わず成功扱いにしておく。
