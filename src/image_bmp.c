@@ -720,7 +720,7 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 	for (;;) {
 		int count = fgetc(bmp->fp);
 		if (__predict_false(count < 0)) {
-			return false;
+			goto eof;
 		}
 		if (count == 0) {
 			// エスケープ。
@@ -730,12 +730,13 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 			// 00,nn: 絶対モード
 			int cmd = fgetc(bmp->fp);
 			if (__predict_false(cmd < 0)) {
-				return false;
+				goto eof;
 			}
 			if (cmd <= 1) {
 				break;
 			} else if (__predict_false(cmd == 2)) {
 				// Not supported
+				warnx("%s: Delta escape not supported", __func__);
 				return false;
 			} else {
 				// 絶対モードでは以後 nn ピクセル分の生データが並ぶ。
@@ -746,7 +747,7 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 						if ((i & 1) == 0) {
 							cc = fgetc(bmp->fp);
 							if (__predict_false(cc < 0)) {
-								return false;
+								goto eof;
 							}
 							*d++ = bmp->palette[cc >> 4];
 						} else {
@@ -757,7 +758,7 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 					for (uint i = 0; i < cmd; i++) {
 						int cc = fgetc(bmp->fp);
 						if (__predict_false(cc < 0)) {
-							return false;
+							goto eof;
 						}
 						*d++ = bmp->palette[cc];
 					}
@@ -772,7 +773,7 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 			// count は連続する展開後のピクセル数。
 			int cc = fgetc(bmp->fp);
 			if (__predict_false(cc < 0)) {
-				return false;
+				goto eof;
 			}
 			if (rle4) {
 				uint16 data[2];
@@ -791,8 +792,12 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 	}
 
 	// BI_RLE(4|8) の各ラスターは2バイト境界なので、自然に整列している。
-
 	return true;
+
+	// Unexpectd EOF
+ eof:
+	warnx("%s: Unexpected EOF", __func__);
+	return false;
 }
 
 // image を BMP 形式で fp に出力する。
