@@ -1,4 +1,4 @@
-sayaka ちゃん & sixelv version 3.8.5 (2025/12/30)
+sayaka ちゃん & sixelv version 3.8.5+ (2025/12/30)
 =====
 
 sayaka ちゃんはターミナルに特化した Misskey ストリームクライアントです。
@@ -56,9 +56,8 @@ sixelv も同梱しています。→ [SIXELV.md](SIXELV.md)
 	… pkgsrc および OpenBSD ports なら `graphics/libjpeg`、
 	Ubuntu なら `libjpeg8-dev` です。
 	なくてもビルド可能です。
-* libjxl
-	… pkgsrc および OpenBSD ports なら `graphics/libjxl`、
-	Ubuntu なら `libjxl-dev` です。
+* libjxl (>= 0.8.0)
+	… pkgsrc および OpenBSD ports なら `graphics/libjxl` です。
 	なくてもビルド可能です。
 * libpng
 	… pkgsrc および OpenBSD ports なら `graphics/png`、

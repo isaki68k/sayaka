@@ -377,7 +377,7 @@ case ${with_libjxl} in
  no)
 	;;
  *)
-	CHECK_PKG([LIBJXL], [libjxl])
+	CHECK_PKG([LIBJXL], [libjxl >= 0.8.0])
 	CFLAGS="${CFLAGS} ${LIBJXL_CFLAGS}"
 	LIBS="${LIBS} ${LIBJXL_LIBS}"
 
