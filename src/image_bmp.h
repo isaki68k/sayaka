@@ -138,8 +138,13 @@ typedef struct __packed {
 	uint32 bv5Reserved;
 } BITMAPV5HEADER;
 
+// ラスター処理関数の戻り値
+#define RASTER_OK	(0)		// 正常に処理した
+#define RASTER_EOF	(1)		// ここでファイル終わり (RLE)
+#define RASTER_ERR	(-1)	// エラー (エラーメッセージは表示済み)
+
 struct bmpctx;
-typedef bool (*bmp_rasterop_t)(struct bmpctx *, int);
+typedef int (*bmp_rasterop_t)(struct bmpctx *, int);
 
 struct bmpctx {
 	FILE *fp;

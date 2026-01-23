@@ -52,18 +52,18 @@ typedef union {
 
 static void bmp_read_core_header(struct bmpctx *, const BITMAPCOREHEADER *);
 static bool bmp_read_palette3(struct bmpctx *);
-static bool raster_rgb1(struct bmpctx *, int);
-static bool raster_rgb4(struct bmpctx *, int);
-static bool raster_rgb8(struct bmpctx *, int);
-static bool raster_rgb16(struct bmpctx *, int);
-static bool raster_rgb24(struct bmpctx *, int);
-static bool raster_rgb32(struct bmpctx *, int);
+static int  raster_rgb1(struct bmpctx *, int);
+static int  raster_rgb4(struct bmpctx *, int);
+static int  raster_rgb8(struct bmpctx *, int);
+static int  raster_rgb16(struct bmpctx *, int);
+static int  raster_rgb24(struct bmpctx *, int);
+static int  raster_rgb32(struct bmpctx *, int);
 static void set_colormask(struct bmpctx *, uint32 *);
-static bool raster_bitfield16(struct bmpctx *, int);
-static bool raster_bitfield32(struct bmpctx *, int);
-static bool raster_rle4(struct bmpctx *, int);
-static bool raster_rle8(struct bmpctx *, int);
-static bool raster_rle(struct bmpctx *, int, bool);
+static int  raster_bitfield16(struct bmpctx *, int);
+static int  raster_bitfield32(struct bmpctx *, int);
+static int  raster_rle4(struct bmpctx *, int);
+static int  raster_rle8(struct bmpctx *, int);
+static int  raster_rle(struct bmpctx *, int, bool);
 static uint8 extend_to8bit(const struct bmpctx *, uint32, uint);
 static struct image *image_coloring(const struct image *);
 
@@ -404,23 +404,35 @@ bmp_read_palette4(struct bmpctx *bmp)
 bool
 bmp_extract(struct bmpctx *bmp)
 {
+	int r;
+
 	if (bmp->bottom_up) {
 		for (int y = bmp->height - 1; y >= 0; y--) {
-			if (__predict_false((*bmp->rasterop)(bmp, y) == false)) {
-				return false;
+			r = (*bmp->rasterop)(bmp, y);
+			if (__predict_false(r != RASTER_OK)) {
+				if (r == RASTER_EOF) {
+					break;
+				} else {
+					return false;
+				}
 			}
 		}
 	} else {
 		for (int y = 0; y < bmp->height; y++) {
-			if (__predict_false((*bmp->rasterop)(bmp, y) == false)) {
-				return false;
+			r = (*bmp->rasterop)(bmp, y);
+			if (__predict_false(r != RASTER_OK)) {
+				if (r == RASTER_EOF) {
+					break;
+				} else {
+					return false;
+				}
 			}
 		}
 	}
 	return true;
 }
 
-static bool
+static int
 raster_rgb1(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -449,10 +461,10 @@ raster_rgb1(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
-static bool
+static int
 raster_rgb4(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -487,10 +499,10 @@ raster_rgb4(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
-static bool
+static int
 raster_rgb8(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -511,10 +523,10 @@ raster_rgb8(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
-static bool
+static int
 raster_rgb16(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -536,10 +548,10 @@ raster_rgb16(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
-static bool
+static int
 raster_rgb24(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -563,10 +575,10 @@ raster_rgb24(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
-static bool
+static int
 raster_rgb32(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -587,7 +599,7 @@ raster_rgb32(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
 // カラーマスクブロックから必要な値を計算しておく。
@@ -608,7 +620,7 @@ set_colormask(struct bmpctx *bmp, uint32 *maskbuf)
 	}
 }
 
-static bool
+static int
 raster_bitfield16(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -632,10 +644,10 @@ raster_bitfield16(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
-static bool
+static int
 raster_bitfield32(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -655,7 +667,7 @@ raster_bitfield32(struct bmpctx *bmp, int y)
 	}
 
 	// 構わず成功扱いにしておく。
-	return true;
+	return RASTER_OK;
 }
 
 // ビットフィールドのデータから指定のチャンネルの 8ビット値を取り出す。
@@ -697,13 +709,13 @@ extend_to8bit(const struct bmpctx *bmp, uint32 data, uint i)
 	return v;
 }
 
-static bool
+static int
 raster_rle4(struct bmpctx *bmp, int y)
 {
 	return raster_rle(bmp, y, true/*4*/);
 }
 
-static bool
+static int
 raster_rle8(struct bmpctx *bmp, int y)
 {
 	return raster_rle(bmp, y, false/*8*/);
@@ -711,7 +723,7 @@ raster_rle8(struct bmpctx *bmp, int y)
 
 // RLE4,RLE8 の共通部分。
 // ここはレアケースなので性能よりもコード量を減らす。
-static bool
+static int
 raster_rle(struct bmpctx *bmp, int y, bool rle4)
 {
 	struct image *img = bmp->img;
@@ -732,8 +744,12 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 			if (__predict_false(cmd < 0)) {
 				goto eof;
 			}
-			if (cmd <= 1) {
-				break;
+			if (cmd == 0) {
+				// BI_RLE(4|8) の各ラスターは2バイト境界なので、
+				// 自然に整列している。
+				return RASTER_OK;
+			} else if (cmd == 1) {
+				return RASTER_EOF;
 			} else if (__predict_false(cmd == 2)) {
 				// dx, dy だけ移動。dx, dy は unsigned。
 				// dy は画像の下方向。
@@ -747,7 +763,7 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 				// ただこの後の書き込みで進む分はどのみちチェックしてないが。
 				if (d >= (uint16 *)img->buf + img->width * img->height) {
 					warnx("%s: Invalid delta", __func__);
-					return false;
+					return RASTER_ERR;
 				}
 			} else {
 				// 絶対モードでは以後 nn ピクセル分の生データが並ぶ。
@@ -802,13 +818,10 @@ raster_rle(struct bmpctx *bmp, int y, bool rle4)
 		}
 	}
 
-	// BI_RLE(4|8) の各ラスターは2バイト境界なので、自然に整列している。
-	return true;
-
 	// Unexpectd EOF
  eof:
 	warnx("%s: Unexpected EOF", __func__);
-	return false;
+	return RASTER_ERR;
 }
 
 // image を BMP 形式で fp に出力する。

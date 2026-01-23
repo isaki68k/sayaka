@@ -110,7 +110,7 @@ static struct image *ico_read_bmp(FILE *, const struct icodir *,
 	const struct diag *);
 static struct image *ico_read_png(FILE *, const struct icodir *,
 	const struct diag *);
-static bool raster_icomask1(struct bmpctx *, int);
+static int  raster_icomask1(struct bmpctx *, int);
 
 bool
 image_ico_match(FILE *fp, const struct diag *diag)
@@ -327,7 +327,7 @@ ico_read_bmp(FILE *fp, const struct icodir *dir, const struct diag *diag)
 // アイコンのマスクデータ (AND ビットマップ) を展開する。
 // ピクセルデータ(XOR ビットマップ) のビット深度とは関係なく、
 // こちらは常に 1bit/pixel。
-static bool
+static int
 raster_icomask1(struct bmpctx *bmp, int y)
 {
 	struct image *img = bmp->img;
@@ -359,7 +359,7 @@ raster_icomask1(struct bmpctx *bmp, int y)
 		bits <<= 1;
 	}
 
-	return true;
+	return RASTER_OK;
 }
 
 // アイコンデータ (PNG 形式) を読み込む。
