@@ -176,8 +176,8 @@ image_jxl_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 				xsize * ysize * jxlfmt.num_channels);
 
 			if (is_progressive) {
-				uint hint_w = hint->width <= 0 ? xsize : hint->width;
-				uint hint_h = hint->height <= 0 ? ysize : hint->height;
+				uint hint_w = hint->width == 0 ? xsize : hint->width;
+				uint hint_h = hint->height == 0 ? ysize : hint->height;
 				uint k = xsize / hint_w * ysize / hint_h;
 				Debug(diag, "%s: k=%u", __func__, k);
 				if (k < 7) {
