@@ -300,12 +300,12 @@ bmp_print_debuginfo(struct bmpctx *bmp, const struct diag *diag,
 		"PNG",
 	};
 	char dibbuf[16];
-	const char *hdrname;
 
 	if (dib_size == 0) {
 		// ICO から呼ぶ時は DIB の区別はない。
 		dibbuf[0] = '\0';
 	} else {
+		const char *hdrname;
 		if (dib_size == sizeof(BITMAPCOREHEADER)) {
 			hdrname = "CORE";
 		} else if (dib_size == sizeof(BITMAPINFOHEADER)) {
