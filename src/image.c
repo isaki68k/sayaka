@@ -1008,10 +1008,7 @@ image_reduct_highquality_adaptive(image_reductor_handle *ir)
 			RESIZE_STEP(sx0, sx1, rx, xstep);
 
 			ColorRGB c8 = pixel_mean(ir, sy0, sy1, sx0, sx1);
-			uint16 v;
-			v  = (c8.r >> 3) << 10;
-			v |= (c8.g >> 3) <<  5;
-			v |= (c8.b >> 3);
+			uint16 v = RGB888_to_ARGB16(c8.r, c8.g, c8.b);
 			if (__predict_false(c8.a)) {
 				v |= 0x8000;
 			}
@@ -1830,7 +1827,7 @@ image_calc_adaptive_palette(image_reductor_handle *ir, struct image *srcimg,
 			if (__predict_false(r5 > 31)) r5 = 31;
 			if (__predict_false(g5 > 31)) g5 = 31;
 			if (__predict_false(b5 > 31)) b5 = 31;
-			n = (r5 << 10) | (g5 << 5) | b5;
+			n = RGB555_to_ARGB16(r5, g5, b5);
 		}
 		// ピクセル数の計数は 0xffff で頭打ちにしておく。
 		// 65536 ピクセル以上の色が 256 色以上ある時には困るかも知れないが。
