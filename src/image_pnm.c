@@ -49,8 +49,6 @@ struct pnmctx
 {
 	FILE *fp;
 
-	char *p;	// カーソル位置
-
 	// 画像サイズ
 	uint width;
 	uint height;
@@ -59,27 +57,38 @@ struct pnmctx
 	// PBM では使わない。
 	uint maxval;
 
-	// maxval 階調を 256 階調に変換するテーブル。
-	// 先頭から maxval 個だけ使う。PBM では使わない。
-	union {
-		uint8 b[256];
-		uint16 w[256];
-	} palette;
-
+	// テキストモードでの行バッファ。
 	// 仕様では1行70文字を超えてはならないとされている。
-	char buf[256];
+	char textbuf[256];
+
+	// textbuf 中のカーソル位置。
+	char *p;
+
+	// バイナリ1ラスタ分のバッファ。
+	uint8 *binbuf;
 };
 
-#define CTX_INIT(ctx, fp, diag)	do {	\
-	memset(ctx, 0, sizeof(*(ctx)));	\
-	(ctx)->fp = (fp);	\
-	(ctx)->p = (ctx)->buf;	\
+#define PNM_INIT(pnm, fp)	do {	\
+	memset(pnm, 0, sizeof(*(pnm)));	\
+	(pnm)->fp = (fp);	\
+	(pnm)->p = (pnm)->textbuf;	\
 } while (0)
 
+// (val / maxval) を内部フォーマット用の 32 段階に変換。
+#define PNMValToUInt5(val)	(((val) * 31) / pnm->maxval)
+
+#define ARGB16_BLACK	RGB888_to_ARGB16(  0,   0,   0)
+#define ARGB16_WHITE	RGB888_to_ARGB16(255, 255, 255)
+
+typedef void (*rasterop_t)(struct pnmctx *, uint16 *);
+
 static int  image_pnm_match(FILE *, const struct diag *);
-static struct image *image_pnm_read_init(struct pnmctx *, int,
-	const struct diag *);
-static bool parse_pnm_header(struct pnmctx *, const struct diag *);
+static struct image *image_pnm_read_binary(FILE *, const struct diag *);
+static void raster_pgm_byte(struct pnmctx *, uint16 *);
+static void raster_pgm_word(struct pnmctx *, uint16 *);
+static void raster_ppm_byte(struct pnmctx *, uint16 *);
+static void raster_ppm_word(struct pnmctx *, uint16 *);
+static int  parse_pnm_header(struct pnmctx *, const struct diag *);
 static int  getnum(struct pnmctx *);
 static const char *getstr(struct pnmctx *);
 
@@ -96,33 +105,39 @@ image_pnm1_match(FILE *fp, const struct diag *diag)
 struct image *
 image_pnm1_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
-	struct pnmctx ctx0;
-	struct pnmctx *ctx = &ctx0;
+	struct pnmctx pnm0;
+	struct pnmctx *pnm = &pnm0;
 	struct image *img;
 
-	CTX_INIT(ctx, fp, diag);
+	PNM_INIT(pnm, fp);
 
-	img = image_pnm_read_init(ctx, 1, diag);
+	if (parse_pnm_header(pnm, diag) < 0) {
+		return NULL;
+	}
+	const uint width  = pnm->width;
+	const uint height = pnm->height;
+
+	img = image_create(width, height, IMAGE_FMT_ARGB16);
 	if (img == NULL) {
 		return NULL;
 	}
-	Debug(diag, "%s: width=%u height=%u", __func__,
-		img->width, img->height);
+	Debug(diag, "%s: width=%u height=%u", __func__, width, height);
 
 	// PBM は '0' と '1' しかないので、ピクセル間の空白を無視出来る。
 	const char *s;
 	uint16 *d = (uint16 *)img->buf;
-	const uint16 *dend = d + image_get_stride(img) * img->height;
-	while ((s = getstr(ctx)) != NULL) {
+	const uint16 *dend = d + width * height;
+	while ((s = getstr(pnm)) != NULL) {
 		for (; *s && d < dend; s++) {
 			// 色の情報はないがグレースケールとの親和性のため 0 を黒とする。
-			uint16 cc = (*s == '0') ? 0x0000 : 0x7fff;
+			uint16 cc = (*s == '0') ? ARGB16_BLACK : ARGB16_WHITE;
 			*d++ = cc;
 		}
 	}
 
 	return img;
 }
+
 
 //
 // P2: PGM (ASCII)
@@ -137,37 +152,39 @@ image_pnm2_match(FILE *fp, const struct diag *diag)
 struct image *
 image_pnm2_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
-	struct pnmctx ctx0;
-	struct pnmctx *ctx = &ctx0;
+	struct pnmctx pnm0;
+	struct pnmctx *pnm = &pnm0;
 	struct image *img;
 
-	CTX_INIT(ctx, fp, diag);
+	PNM_INIT(pnm, fp);
 
-	img = image_pnm_read_init(ctx, 2, diag);
+	if (parse_pnm_header(pnm, diag) < 0) {
+		return NULL;
+	}
+	const uint width  = pnm->width;
+	const uint height = pnm->height;
+
+	img = image_create(width, height, IMAGE_FMT_ARGB16);
 	if (img == NULL) {
 		return NULL;
 	}
 	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
-		img->width, img->height, ctx->maxval);
+		width, height, pnm->maxval);
 
 	uint16 *d = (uint16 *)img->buf;
-	const uint16 *dend = d + image_get_stride(img) * img->height;
-	if (ctx->maxval < 256) {
-		int idx;
-		while ((idx = getnum(ctx)) != -1 && d < dend) {
-			uint16 cc = ctx->palette.w[idx];
-			*d++ = cc;
+	const uint16 *dend = d + width * height;
+	while (d < dend) {
+		int idx = getnum(pnm);
+		if (__predict_false(idx < 0)) {
+			break;
 		}
-	} else {
-		int idx;
-		while ((idx = getnum(ctx)) != -1 && d < dend) {
-			uint16 v = (idx * 31 / ctx->maxval);
-			*d++ = (v << 10) | (v << 5) | v;
-		}
+		uint v = PNMValToUInt5(idx);
+		*d++ = RGB555_to_ARGB16(v, v, v);
 	}
 
 	return img;
 }
+
 
 //
 // P3: PPM (ASCII)
@@ -182,37 +199,43 @@ image_pnm3_match(FILE *fp, const struct diag *diag)
 struct image *
 image_pnm3_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
-	struct pnmctx ctx0;
-	struct pnmctx *ctx = &ctx0;
+	struct pnmctx pnm0;
+	struct pnmctx *pnm = &pnm0;
 	struct image *img;
 
-	CTX_INIT(ctx, fp, diag);
+	PNM_INIT(pnm, fp);
 
-	img = image_pnm_read_init(ctx, 3, diag);
+	if (parse_pnm_header(pnm, diag) < 0) {
+		return NULL;
+	}
+	const uint width  = pnm->width;
+	const uint height = pnm->height;
+
+	img = image_create(width, height, IMAGE_FMT_ARGB16);
 	if (img == NULL) {
 		return NULL;
 	}
 	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
-		img->width, img->height, ctx->maxval);
+		width, height, pnm->maxval);
 
-	uint8 *d = (uint8 *)img->buf;
-	const uint8 *dend = d + image_get_stride(img) * img->height;
-	if (ctx->maxval < 256) {
-		int idx;
-		while ((idx = getnum(ctx)) != -1 && d < dend) {
-			uint8 c = ctx->palette.b[idx];
-			*d++ = c;
+	uint16 *d = (uint16 *)img->buf;
+	const uint16 *dend = d + width * height;
+	while (d < dend) {
+		int r = getnum(pnm);
+		int g = getnum(pnm);
+		int b = getnum(pnm);
+		if (__predict_false(r < 0 || g < 0 || b < 0)) {
+			break;
 		}
-	} else {
-		int idx;
-		while ((idx = getnum(ctx)) != -1 && d < dend) {
-			uint8 v = idx * 255 / ctx->maxval;
-			*d++ = v;
-		}
+		r = PNMValToUInt5(r);
+		g = PNMValToUInt5(g);
+		b = PNMValToUInt5(b);
+		*d++ = RGB555_to_ARGB16(r, g, b);
 	}
 
 	return img;
 }
+
 
 //
 // P5: PGM (Binary)
@@ -227,34 +250,37 @@ image_pnm5_match(FILE *fp, const struct diag *diag)
 struct image *
 image_pnm5_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
-	struct pnmctx ctx0;
-	struct pnmctx *ctx = &ctx0;
-	struct image *img;
-
-	CTX_INIT(ctx, fp, diag);
-
-	img = image_pnm_read_init(ctx, 2, diag);
-	if (img == NULL) {
-		return NULL;
-	}
-	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
-		img->width, img->height, ctx->maxval);
-	if (ctx->maxval >= 256) {
-		Debug(diag, "%s: maxval not supported", __func__);
-		image_free(img);
-		return NULL;
-	}
-
-	int val;
-	uint16 *d = (uint16 *)img->buf;
-	const uint16 *dend = d + image_get_stride(img) * img->height;
-	while ((val = fgetc(ctx->fp)) != -1 && d < dend) {
-		uint16 cc = ctx->palette.w[val];
-		*d++ = cc;
-	}
-
-	return img;
+	return image_pnm_read_binary(fp, diag);
 }
+
+// PGM(P5) で maxval < 256 の場合のラスターコールバック。
+static void
+raster_pgm_byte(struct pnmctx *pnm, uint16 *d)
+{
+	const uint8 *s = pnm->binbuf;
+	const uint8 *send = s + pnm->width;
+
+	while (s < send) {
+		uint v = *s++;
+		v = PNMValToUInt5(v);
+		*d++ = RGB555_to_ARGB16(v, v, v);
+	}
+}
+
+// PGM(P5) で maxval >= 256 の場合のラスターコールバック。
+static void
+raster_pgm_word(struct pnmctx *pnm, uint16 *d)
+{
+	const uint16 *s = (const uint16 *)pnm->binbuf;
+	const uint16 *send = s + pnm->width;
+
+	while (s < send) {
+		uint v = be16toh(*s++);
+		v = PNMValToUInt5(v);
+		*d++ = RGB555_to_ARGB16(v, v, v);
+	}
+}
+
 
 //
 // P6: PPM (Binary)
@@ -269,33 +295,43 @@ image_pnm6_match(FILE *fp, const struct diag *diag)
 struct image *
 image_pnm6_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 {
-	struct pnmctx ctx0;
-	struct pnmctx *ctx = &ctx0;
-	struct image *img;
+	return image_pnm_read_binary(fp, diag);
+}
 
-	CTX_INIT(ctx, fp, diag);
+// PPM(P6) で maxval < 256 の場合のラスターコールバック。
+static void
+raster_ppm_byte(struct pnmctx *pnm, uint16 *d)
+{
+	const uint8 *s = pnm->binbuf;
+	const uint8 *send = s + pnm->width * 3;
 
-	img = image_pnm_read_init(ctx, 3, diag);
-	if (img == NULL) {
-		return NULL;
+	while (s < send) {
+		uint r = *s++;
+		uint g = *s++;
+		uint b = *s++;
+		r = PNMValToUInt5(r);
+		g = PNMValToUInt5(g);
+		b = PNMValToUInt5(b);
+		*d++ = RGB555_to_ARGB16(r, g, b);
 	}
-	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
-		img->width, img->height, ctx->maxval);
-	if (ctx->maxval >= 256) {
-		Debug(diag, "%s: maxval not supported", __func__);
-		image_free(img);
-		return NULL;
-	}
+}
 
-	int val;
-	uint8 *d = (uint8 *)img->buf;
-	const uint8 *dend = d + image_get_stride(img) * img->height;
-	while ((val = fgetc(ctx->fp)) != -1 && d < dend) {
-		uint8 c = ctx->palette.b[val];
-		*d++ = c;
-	}
+// PPM(P6) で maxval >= 256 の場合のラスターコールバック。
+static void
+raster_ppm_word(struct pnmctx *pnm, uint16 *d)
+{
+	const uint16 *s = (const uint16 *)pnm->binbuf;
+	const uint16 *send = s + pnm->width * 3;
 
-	return img;
+	while (s < send) {
+		uint r = be16toh(*s++);
+		uint g = be16toh(*s++);
+		uint b = be16toh(*s++);
+		r = PNMValToUInt5(r);
+		g = PNMValToUInt5(g);
+		b = PNMValToUInt5(b);
+		*d++ = RGB555_to_ARGB16(r, g, b);
+	}
 }
 
 
@@ -322,49 +358,6 @@ image_pnm_match(FILE *fp, const struct diag *diag)
 	return magic[1];
 }
 
-// image_*_read() の冒頭の共通部分。
-// type==1 は PBM、
-// type==2 は PGM、
-// type==3 は PPM。
-static struct image *
-image_pnm_read_init(struct pnmctx *ctx, int type, const struct diag *diag)
-{
-	if (parse_pnm_header(ctx, diag) == false) {
-		return NULL;
-	}
-
-	// 8bpp 以下で
-	// PGM なら ARGB16 のテーブルを作成、
-	// PPM なら uint8 のテーブルを作成。
-	if (ctx->maxval < 256) {
-		switch (type) {
-		 case 2:
-			for (uint i = 0; i <= ctx->maxval; i++) {
-				uint8 v = (i * 255 / ctx->maxval) >> 3;
-				uint16 cc = (v << 10) | (v << 5) | v;
-				ctx->palette.w[i] = cc;
-			}
-			break;
-		 case 3:
-			for (uint i = 0; i <= ctx->maxval; i++) {
-				uint8 v = i * 255 / ctx->maxval;
-				ctx->palette.b[i] = v;
-			}
-			break;
-		 default:
-			break;
-		}
-	}
-
-	int imgfmt;
-	if (type == 3) {
-		imgfmt = IMAGE_FMT_RGB24;
-	} else {
-		imgfmt = IMAGE_FMT_ARGB16;
-	}
-	return image_create(ctx->width, ctx->height, imgfmt);
-}
-
 // ヘッダ部分を解析。ヘッダは
 // o 2文字のマジックナンバー (判定済みなので飛ばしてよい)
 // o (1文字以上の?) 空白文字(isspace)
@@ -379,13 +372,15 @@ image_pnm_read_init(struct pnmctx *ctx, int type, const struct diag *diag)
 // から構成されており、この次の文字からはテキストかバイナリデータとなる。
 // 最後の空白文字以前には '#' から改行までを無視するコメントが置ける。
 //
-// 成功すれば width, height(, maxval) を ctx に書き戻して true を返す。
-// 失敗すれば false を返す。
-static bool
-parse_pnm_header(struct pnmctx *ctx, const struct diag *diag)
+// 成功すれば width, height(, maxval) を pnm に書き戻してマジックナンバーの
+// 2文字目を返す。
+// 失敗すれば -1 を返す。
+static int
+parse_pnm_header(struct pnmctx *pnm, const struct diag *diag)
 {
 	char hdrbuf[128];
 	uint maxwords;
+	int pnmtype;
 	int ch;
 	enum {
 		WORD,
@@ -396,22 +391,20 @@ parse_pnm_header(struct pnmctx *ctx, const struct diag *diag)
 	char *d = hdrbuf;
 	const char *dend = d + sizeof(hdrbuf) - 1;
 
-	// マジックナンバーの1文字目は無視。
-	fgetc(ctx->fp);
+	// マジックナンバー。1文字目は無視。
+	fgetc(pnm->fp);
+	pnmtype = fgetc(pnm->fp);
 
-	// マジックナンバーの2文字目。
-	ch = fgetc(ctx->fp);
-	if (ch == '1' || ch == '4') {
+	// maxwords 分の語を取り出す。
+	if (pnmtype == '1' || pnmtype == '4') {
 		maxwords = 2;
 	} else {
 		maxwords = 3;
 	}
 	prev = WORD;
 	state = WSP;
-
-	// maxwords 分の語を取り出す。
 	uint nwords = 0;
-	while (d < dend && (ch = fgetc(ctx->fp)) != -1) {
+	while (d < dend && (ch = fgetc(pnm->fp)) != -1) {
 	 again:
 		if (state == WORD) {
 			if (ch == '#') {
@@ -466,11 +459,11 @@ parse_pnm_header(struct pnmctx *ctx, const struct diag *diag)
 	width = strtol(s, &end, 10);
 	if (end == s || (*end != '\0' && *end != ' ') || errno != 0) {
 		Trace(diag, "%s: Invalid width string", __func__);
-		return false;
+		return -1;
 	}
 	if (width < 0 || width > INT_MAX) {
 		Trace(diag, "%s: Invalid width=%ld", __func__, width);
-		return false;
+		return -1;
 	}
 
 	s = end;
@@ -478,11 +471,11 @@ parse_pnm_header(struct pnmctx *ctx, const struct diag *diag)
 	height = strtoul(s, &end, 10);
 	if (end == s || (*end != '\0' && *end != ' ') || errno != 0) {
 		Trace(diag, "%s: Invalid height string", __func__);
-		return false;
+		return -1;
 	}
 	if (height < 0 || height > INT_MAX) {
 		Trace(diag, "%s: Invalid height=%lu", __func__, height);
-		return false;
+		return -1;
 	}
 
 	if (maxwords == 3) {
@@ -491,30 +484,30 @@ parse_pnm_header(struct pnmctx *ctx, const struct diag *diag)
 		maxval = strtoul(s, &end, 10);
 		if (end == s || (*end != '\0' && *end != ' ') || errno != 0) {
 			Trace(diag, "%s: Invalid maxval string", __func__);
-			return false;
+			return -1;
 		}
 		if (maxval < 0 || maxval > 65535) {
 			Trace(diag, "%s: Invalid maxval=%lu", __func__, maxval);
-			return false;
+			return -1;
 		}
 	}
 
-	ctx->width  = (uint)width;
-	ctx->height = (uint)height;
-	ctx->maxval = (uint)maxval;
+	pnm->width  = (uint)width;
+	pnm->height = (uint)height;
+	pnm->maxval = (uint)maxval;
 
-	return true;
+	return pnmtype;
 }
 
 // 次の単語を非負の10進数として数値にして返す。数値に出来なければ 0 を返す。
 // EOF なら -1 を返す。
 static int
-getnum(struct pnmctx *ctx)
+getnum(struct pnmctx *pnm)
 {
 	char *end;
 	long lval;
 
-	const char *p = getstr(ctx);
+	const char *p = getstr(pnm);
 	if (p == NULL) {
 		return -1;
 	}
@@ -533,19 +526,19 @@ getnum(struct pnmctx *ctx)
 }
 
 // 次の単語を文字列のまま返す。EOF なら NULL を返す。
-// 戻り値は ctx 内のバッファを指しているので解放不要。
+// 戻り値は pnm 内のバッファを指しているので解放不要。
 static const char *
-getstr(struct pnmctx *ctx)
+getstr(struct pnmctx *pnm)
 {
 	for (;;) {
 		// ポインタが文字列の最後に達していれば、次の行を読み込む。
-		while (*ctx->p == '\0') {
-			if (fgets(ctx->buf, sizeof(ctx->buf), ctx->fp) == NULL) {
+		while (*pnm->p == '\0') {
+			if (fgets(pnm->textbuf, sizeof(pnm->textbuf), pnm->fp) == NULL) {
 				return NULL;
 			}
 
 			// コメントがあれば削除。
-			char *s = ctx->buf;
+			char *s = pnm->textbuf;
 			char *e = strchr(s, '#');
 			if (e) {
 				*e = '\0';
@@ -561,11 +554,11 @@ getstr(struct pnmctx *ctx)
 			}
 			e[1] = '\0';
 
-			ctx->p = s;
+			pnm->p = s;
 		}
 
 		// まず空白文字をスキップ。
-		char *p = ctx->p;
+		char *p = pnm->p;
 		for (; *p; p++) {
 			if (!is_ascii_space(*p)) {
 				break;
@@ -584,7 +577,82 @@ getstr(struct pnmctx *ctx)
 				break;
 			}
 		}
-		ctx->p = end;
+		pnm->p = end;
 		return p;
 	}
+}
+
+// バイナリ形式の共通読み込み部分。
+static struct image *
+image_pnm_read_binary(FILE *fp, const struct diag *diag)
+{
+	struct pnmctx pnm0;
+	struct pnmctx *pnm = &pnm0;
+	struct image *img;
+	rasterop_t rasterop;
+	int pnmtype;
+	size_t bpp;		// 1ピクセルのバイト数
+
+	PNM_INIT(pnm, fp);
+
+	pnmtype = parse_pnm_header(pnm, diag);
+	if (pnmtype < 0) {
+		return NULL;
+	}
+	const uint width  = pnm->width;
+	const uint height = pnm->height;
+
+	img = image_create(width, height, IMAGE_FMT_ARGB16);
+	if (img == NULL) {
+		return NULL;
+	}
+	Debug(diag, "%s: width=%u height=%u maxval=%u", __func__,
+		width, height, pnm->maxval);
+
+	// ラスター処理関数を選択。
+	switch (pnmtype) {
+	 case '5':
+		if (pnm->maxval < 256) {
+			rasterop = raster_pgm_byte;
+			bpp = 1;
+		} else {
+			rasterop = raster_pgm_word;
+			bpp = 2;
+		}
+		break;
+	 case '6':
+		if (pnm->maxval < 256) {
+			rasterop = raster_ppm_byte;
+			bpp = 3;
+		} else {
+			rasterop = raster_ppm_word;
+			bpp = 6;
+		}
+		break;
+	 default:
+		__unreachable();
+	}
+
+	pnm->binbuf = malloc(bpp * width);
+	if (pnm->binbuf == NULL) {
+		warn("%s: malloc(%zu) failed", __func__, bpp * width);
+		image_free(img);
+		return NULL;
+	}
+
+	uint16 *d = (uint16 *)img->buf;
+	const uint16 *dend = d + width * height;
+	for (; d < dend; d += width) {
+		// 1ラスター分読み込んで..
+		uint n = fread(pnm->binbuf, bpp, width, pnm->fp);
+		if (n < width) {
+			break;
+		}
+
+		// 内部形式に変換。
+		(*rasterop)(pnm, d);
+	}
+
+	free(pnm->binbuf);
+	return img;
 }
