@@ -79,12 +79,12 @@ static uint32 readbit(struct ypicctx *, int);
 // PIC の %x'GGGGG'RRRRR'BBBBB 形式(15ビット、I なし) を
 // 内部形式 %0'RRRRR'GGGGG'BBBBB に変換する。
 static inline uint16
-GRB15_to_ARGB16(uint16 col)
+GRB555_to_ARGB16(uint16 col)
 {
 	uint g = (col >> 10) & 0x1f;
 	uint r = (col >>  5) & 0x1f;
 	uint b =  col        & 0x1f;
-	return (r << 10) | (g << 5) | b;
+	return RGB555_to_ARGB16(r, g, b);
 }
 
 bool
@@ -168,7 +168,7 @@ image_ypic_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 		for (uint i = 0; i < ncolors; i++) {
 			// パレットブロックに記録されるのは %GGGGG'RRRRR'BBBBB'I 形式。
 			uint grbi = be16toh(palbuf[i]);
-			ctx->palette[i] = GRB15_to_ARGB16(grbi >> 1);
+			ctx->palette[i] = GRB555_to_ARGB16(grbi >> 1);
 		}
 	}
 
@@ -341,7 +341,7 @@ read_color(struct ypicctx *ctx)
 			if (ctx->colorbits == 16) {
 				piccol >>= 1;
 			}
-			return color_new(ctx, GRB15_to_ARGB16(piccol));
+			return color_new(ctx, GRB555_to_ARGB16(piccol));
 		}
 	}
 }
