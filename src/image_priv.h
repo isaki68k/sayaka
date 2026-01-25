@@ -103,14 +103,18 @@ IMAGE_HANDLER(ypic);
 
 #undef IMAGE_HANDLER
 
+// R5,G5,B5 を内部形式に変換。
+static inline uint16
+RGB555_to_ARGB16(uint8 r, uint8 g, uint8 b)
+{
+	return (r << 10) | (g << 5) | b;
+}
+
 // R8,G8,B8 を内部形式に変換。
 static inline uint16
 RGB888_to_ARGB16(uint8 r, uint8 g, uint8 b)
 {
-	r >>= 3;
-	g >>= 3;
-	b >>= 3;
-	return (r << 10) | (g << 5) | b;
+	return RGB555_to_ARGB16(r >> 3, g >> 3, b >> 3);
 }
 
 #endif // !sayaka_image_priv_h
