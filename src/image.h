@@ -185,12 +185,12 @@ enum {
 	IMAGE_LOADER_JXL,
 	IMAGE_LOADER_MAG,
 	IMAGE_LOADER_PNG,
-	IMAGE_LOADER_PNM1,	// PBM(ASCII)
-	IMAGE_LOADER_PNM2,	// PGM(ASCII)
-	IMAGE_LOADER_PNM3,	// PPM(ASCII)
-	IMAGE_LOADER_PNM4,	// PBM(Bin)
-	IMAGE_LOADER_PNM5,	// PGM(Bin)
-	IMAGE_LOADER_PNM6,	// PPM(Bin)
+	IMAGE_LOADER_PNM1,	// P1(PBM,ASCII)
+	IMAGE_LOADER_PNM2,	// P2(PGM,ASCII)
+	IMAGE_LOADER_PNM3,	// P3(PPM,ASCII)
+	IMAGE_LOADER_PNM4,	// P4(PBM,Bin)
+	IMAGE_LOADER_PNM5,	// P5(PGM,Bin)
+	IMAGE_LOADER_PNM6,	// P6(PPM,Bin)
 	IMAGE_LOADER_TIFF,
 	IMAGE_LOADER_WEBP,
 	IMAGE_LOADER_YPIC,
@@ -206,12 +206,12 @@ enum {
 	"jxl",	\
 	"mag",	\
 	"png",	\
-	"pbm(ascii)",	\
-	"pgm(ascii)",	\
-	"ppm(ascii)",	\
-	"pbm(bin)",		\
-	"pgm(bin)",		\
-	"ppm(bin)",		\
+	"pbm(P1)",	\
+	"pgm(P2)",	\
+	"ppm(P3)",	\
+	"pbm(P4)",	\
+	"pgm(P5)",	\
+	"ppm(P6)",	\
 	"tiff",	\
 	"webp",	\
 	"ypic"
