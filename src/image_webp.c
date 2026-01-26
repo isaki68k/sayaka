@@ -343,7 +343,8 @@ image_webp_loadinc(struct image *img, FILE *fp, WebPIDecoder *idec,
 		return false;
 	}
 
-	status = VP8_STATUS_NOT_ENOUGH_DATA;
+	// もう全部読めてるかも知れないので status の初期値は _OK。
+	status = VP8_STATUS_OK;
 	do {
 		size_t n = fread(buf, 1, bufsize, fp);
 		if (n == 0) {
