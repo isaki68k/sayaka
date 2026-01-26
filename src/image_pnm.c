@@ -238,6 +238,64 @@ image_pnm3_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
 
 
 //
+// P4: PBM (Binary)
+//
+
+bool
+image_pnm4_match(FILE *fp, const struct diag *diag)
+{
+	return (image_pnm_match(fp, diag) == '4');
+}
+
+struct image *
+image_pnm4_read(FILE *fp, const image_read_hint *hint, const struct diag *diag)
+{
+	struct pnmctx pnm0;
+	struct pnmctx *pnm = &pnm0;
+	struct image *img;
+	int pnmtype;
+
+	PNM_INIT(pnm, fp);
+
+	pnmtype = parse_pnm_header(pnm, diag);
+	if (pnmtype < 0) {
+		return NULL;
+	}
+	const uint width  = pnm->width;
+	const uint height = pnm->height;
+
+	img = image_create(width, height, IMAGE_FMT_ARGB16);
+	if (img == NULL) {
+		return NULL;
+	}
+	Debug(diag, "%s: width=%u height=%u", __func__, width, height);
+
+	uint bytewidth = howmany(width, 8);
+	uint8 binbuf[bytewidth];
+
+	uint16 *d = (uint16 *)img->buf;
+	for (uint y = 0; y < height; y++) {
+		uint n = fread(binbuf, 1, bytewidth, fp);
+		if (n < bytewidth) {
+			break;
+		}
+		const uint8 *s = binbuf;
+		uint8 bits = 0;
+		for (uint x = 0; x < width; x++) {
+			if ((x % 8) == 0) {
+				bits = *s++;
+			}
+			// 色の情報はないがグレースケールとの親和性のため 0 を黒とする。
+			*d++ = ((bits & 0x80)) ? ARGB16_WHITE : ARGB16_BLACK;
+			bits <<= 1;
+		}
+	}
+
+	return img;
+}
+
+
+//
 // P5: PGM (Binary)
 //
 

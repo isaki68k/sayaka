@@ -402,6 +402,7 @@ image_get_preferred_size(
 #define LOADERMAP_pnm1	(1U << IMAGE_LOADER_PNM1)
 #define LOADERMAP_pnm2	(1U << IMAGE_LOADER_PNM2)
 #define LOADERMAP_pnm3	(1U << IMAGE_LOADER_PNM3)
+#define LOADERMAP_pnm4	(1U << IMAGE_LOADER_PNM4)
 #define LOADERMAP_pnm5	(1U << IMAGE_LOADER_PNM5)
 #define LOADERMAP_pnm6	(1U << IMAGE_LOADER_PNM6)
 #define LOADERMAP_tiff	(1U << IMAGE_LOADER_TIFF)
@@ -449,10 +450,11 @@ static const struct {
 #if defined(USE_BUILTIN_PNM) && defined(SIXELV)
 	ENTRY(pnm5, builtin, LOADERMAP_pnm5),
 	ENTRY(pnm6, builtin, LOADERMAP_pnm6),
-	// ASCII は実用上の価値はないので優先度後ろでいい。
+	// ASCII と P4 は実用上の価値はないので優先度後ろでいい。
 	ENTRY(pnm1, builtin, LOADERMAP_pnm1),
 	ENTRY(pnm2, builtin, LOADERMAP_pnm2),
 	ENTRY(pnm3, builtin, LOADERMAP_pnm3),
+	ENTRY(pnm4, builtin, LOADERMAP_pnm4),
 #endif
 #if defined(USE_BUILTIN_ICO) && defined(SIXELV)
 	ENTRY(ico,  builtin, LOADERMAP_ico),
