@@ -494,34 +494,14 @@ usage(void)
 	printf("usage: %s [<options...>] [-|<file|url...>]\n", progname);
 	printf(
 "  -c <color>      : Color mode. 2, 8, 16, 256, gray[2..256] (default:256)\n"
-"                    (See --help-all for more details)\n"
 "  -w <width>      : Resize width to <width> pixel\n"
 "  -h <height>     : Resize height to <height> pixel\n"
 "  -r <method>     : Reduction method, none(simple) or high (default:high)\n"
 "  -O <fmt>        : Output format, ascii, bmp, null or sixel (default:sixel)\n"
 "  -o <filename>   : Output filename, '-' means stdout (default: -)\n"
 "  -p <page>       : Specify the page(frame). (GIF/ICO/WebP)\n"
-"  -v              : Show input filename\n");
-
-	static const char * const opts[] = {
-		"-d <diffusion>",
-		"--resize-axis=<axis>",
-		"--gain=<gain>",
-		"--blurhash-nearest",
-		"--sixel-or",
-		"--sixel-transbg",
-		"--suppress-palette",
-		"--ignore-error",
-		"--ciphers=<ciphers>",
-		"--help-all",
-		"--debug-image=<0..2>,-i",
-		"--debug-net=<0..2>",
-		"--debug-sixel=<0..2>",
-		"", // 偶数パディング
-	};
-	for (uint i = 0; i < countof(opts) / 2; i++) {
-		printf("  %-39s%s\n", opts[i * 2], opts[i * 2 + 1]);
-	}
+"  -v              : Show input filename\n"
+" See --help-all for all options and more details\n");
 }
 
 static void
@@ -557,28 +537,32 @@ help_all(void)
 "     2        : 2-pixels (right, down)\n"
 "     3        : 3-pixels (right, down, rightdown)\n"
 "     none     : No diffution\n"
+"\n" // ここからアルファベット順
 "  -b,--blurhash          : Input as Blurhash\n"
 "  --bn,--blurhash-nearest\n"
 "  --cdm=<value>          : Differential Color Diffusion Attenuator,\n"
 "                           between 0.0 and 1.0 (default:1.0)\n"
+"  --ciphers <ciphers>    : \"RSA\" can only be specified\n"
+"  --debug-image=<0..2>\n"
+"  --debug-net  =<0..2>\n"
+"  --debug-sixel=<0..2>\n"
 "  --gain=<gain>          : Set output gain between 0.0 and 2.0 (default:1.0)\n"
+"  --help                 : Short help\n"
 "  --help-all             : This help\n"
+"  -i                     : Synonym for --debug-image=1\n"
+"  --ipv4 / --ipv6        : Connect only IPv4/v6\n"
+"  --ignore-error\n"
 "  --list-supported-images: Show supported filetype and decoder list\n"
+"  --no-progressive       : Don't use progressive data (jxl only)\n"
 "  -O,--output-format=<fmt> : ascii, bmp, null or sixel (default:sixel)\n"
 "  -o <filename>          : Output filename, '-' means stdout (default:-)\n"
 "  -p,--page=<page>       : Specify the page(frame). (GIF/ICO/WebP)\n"
-"  --no-progressive       : Don't use progressive data (jxl only)\n"
+"  --profile\n"
 "  --sixel-or             : Output SIXEL by OR-mode\n"
 "  --sixel-transbg        : Make SIXEL background transparent\n"
 "  --suppress-palette     : Suppress output of SIXEL palette definition\n"
-"  --ciphers <ciphers>    : \"RSA\" can only be specified\n"
-"  --ipv4 / --ipv6        : Connect only IPv4/v6\n"
-"  --ignore-error\n"
 "  -v                     : Show input filename\n"
 "  --version\n"
-"  --debug-image=<0..2>,-i: -i is a synonym for --debug-image=1\n"
-"  --debug-net  =<0..2>\n"
-"  --debug-sixel=<0..2>\n"
 	);
 	exit(0);
 }
