@@ -1,4 +1,4 @@
-sayaka ちゃん & sixelv version 3.8.5+ (2025/12/30)
+sayaka ちゃん & sixelv version 3.8.6 (2026/01/28)
 =====
 
 sayaka ちゃんはターミナルに特化した Misskey ストリームクライアントです。
@@ -11,7 +11,7 @@ sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXE
 
 sayaka ちゃんの変更点
 ---
-* (2026/01/28) …
+* 3.8.6 (2026/01/28) …
 	Misskey の `$[ruby]` の表示を改善。
 	Misskey の `` `〜` ``、```` ```〜``` ````、`<plain>〜</plain>` 内の表示を改善。
 	URL の認識を改善。
