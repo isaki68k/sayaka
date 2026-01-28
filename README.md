@@ -7,11 +7,18 @@ sayaka ちゃんはターミナルに特化した Misskey ストリームクラ�
 * mlterm などの SIXEL 対応ターミナルなら画像も表示できます。
 * X68030/25MHz、メモリ12MB でも快適(?)動作。
 
-また、SIXEL 対応ターミナル用の画像ビューワ
-sixelv も同梱しています。→ [SIXELV.md](SIXELV.md)
+sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXELV.md](SIXELV.md)
 
-変更点
+sayaka ちゃんの変更点
 ---
+* (2026/01/28) …
+	Misskey の `$[ruby]` の表示を改善。
+	Misskey の `` `〜` ``、```` ```〜``` ````、`<plain>〜</plain>` 内の表示を改善。
+	URL の認識を改善。
+	名前欄の MFM に対応。
+	画像のロードを少し高速化。
+	ドキュメントから `--no-progressive` を削除(修正)。
+
 * 3.8.5 (2025/12/30) …
 	JPEG-XL (libjxl) に対応。
 	適応パレットによる縮小が破綻するケースを修正。
@@ -27,22 +34,8 @@ sixelv も同梱しています。→ [SIXELV.md](SIXELV.md)
 	HTTP リダイレクトに失敗する場合があったのを修正。
 	HTTPS 画像のダウンロードに失敗する場合があったのを修正。
 
-* 3.8.3 (2025/06/29) …
-	256 色を固定パレットから適応パレットに変更
-	(3.8.2 以前で使用した `~/.sayaka/cache/` は削除してください)。
-	アイコンのキャッシュ期間を7日に短縮。
-	実績達成(EarnedAchivement)通知に対応。
 
-* 3.8.2 (2025/05/17) …
-	libjpeg, libpng, giflib に対応。
-	JPEG の YCCK、モノクロなどいくつかの形式に対応 (libjpeg 使用時)。
-	SIXEL 出力の背景色を非透過に変更。
-	webp 画像がロードできない場合があったのを修正。
-	3.8.0 以降一部のキャッシュファイルが削除できていなかったのを修正
-	(すでに残っている分は削除されないので `~/.sayaka/cache/` 以下をすべて消すとかしてください)。
-
-
-必要なもの
+sayaka ちゃん &amp; sixelv のビルドに必要なもの
 ---
 * C99 compiler
 * BSD make (not GNU make)
@@ -79,9 +72,9 @@ sixelv も同梱しています。→ [SIXELV.md](SIXELV.md)
 	Ubuntu なら `libssl-dev` です。
 
 
-インストール方法
+sayaka ちゃん &amp; sixelv のビルド・インストール方法
 ---
-ビルドは以下のようにします。
+sayaka のビルドは以下のようにします。
 
 ```
 % ./configure [<options>]
@@ -90,42 +83,56 @@ sixelv も同梱しています。→ [SIXELV.md](SIXELV.md)
 
 configure のオプションは次のものがあります。
 * `--with-giflib=(auto|yes|no)` …
+	GIF 画像のデコーダを選択します。
 	`auto` なら giflib が見付かれば使用し、見付からなければ内蔵の
 	stb_image でデコードします。`no` なら stb_image を使用します。
 	デフォルトは `auto` です。
 * `--with-libjpeg=(auto|yes|no)` …
+	JPEG 画像のデコーダを選択します。
 	`auto` なら libjpeg が見付かれば使用し、見付からなければ内蔵の
 	stb_image でデコードします。`no` なら stb_image を使用します。
 	デフォルトは `auto` です。
 	stb_image を使う場合デコードできない形式があります。
 * `--with-libjxl=(auto|yes|no)` …
+	JPEG-XL 画像のデコーダを選択します。
 	`auto` なら libjxl が見付かれば使用し、見付からなければ使用しません。
 	`no` なら JPEG-XL をデコードしません。
 	デフォルトは `auto` です。
 * `--with-libpng=(auto|yes|no)` …
+	PNG 画像のデコーダを選択します。
 	`auto` なら libpng が見付かれば使用し、見付からなければ内蔵の
 	stb_image でデコードします。`no` なら stb_image を使用します。
 	デフォルトは `auto` です。
 * `--with-libtiff=(auto|yes|no)` …
+	TIFF 画像のデコーダを選択します。
 	`auto` なら libtiff が見付かれば使用し、見付からなければ使用しません。
 	デフォルトは `auto` です。
 	TIFF サポートは sixelv のみで、
 	sayaka はこのオプションによらず常に使用しません。
 * `--with-libwebp=(auto|yes|no)` …
+	WebP 画像のデコーダを選択します。
 	`auto` なら libwebp が見付かれば使用し、見付からなければ使用しません。
 	`no` なら WebP をデコードしません (ただし Misskey は基本 WebP を使います)。
 	デフォルトは `yes` です。
+* `--with-builtin-ico=(yes|no)`
+* `--with-builtin-mag=(yes|no)`
+* `--with-builtin-pnm=(yes|no)`
+* `--with-builtin-ypic=(yes|no)` …
+	ICO, MAG, PNM, 柳沢 PIC の各画像のデコーダを選択します。
+	いずれも、`yes` なら内蔵のデコーダを使用し、`no` ならデコードしません。
+	デフォルトは `yes` です。
+	これらは sixelv のみのサポートで、sayaka では常に使用しません。
 * `--with-iconv=(yes|no)` …
 	`sixelv` のみビルドするなら `no` にすることは可能です。
 * `--with-openssl=(yes|no)` …
 	`sixelv` をローカルのファイルでだけ使うなら `no` にすることは可能です。
 
 `make install` はないので、出来上がった `src/sayaka` (実行ファイル) をパスの通ったところにインストールするとかしてください。
-ちなみに `make -DRELEASE all` すると、画像ファイルを SIXEL に変換して表示する
-`sixelv` というビューアも `src/` の下に出来ます (sayaka の実行には不要です)。
+ちなみに、
+`make -DRELEASE all` すると `src/sixelv` も出来ます (sayaka の実行には不要です)。
 
 
-使い方
+sayaka ちゃんの使い方
 ---
 sayaka (ver 3.7 以降) は Misskey にのみ対応しています。
 
@@ -155,7 +162,7 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 なお初回起動時に `~/.sayaka/cache` のディレクトリを作成します。
 
 
-実装状況
+sayaka ちゃんの実装状況
 ---
 * MFM (Markup language For Misskey) の多くは対応予定はありません。
 	* メンションは概ね対応しています。
@@ -173,9 +180,11 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 * リアクションは合計数のみ表示しています。
 * 同じ投稿が連続した場合の圧縮表示は未対応です。
 * 投稿は出来ません。
+* 画像は GIF、PNG、JPEG、JPEG-XL、WebP に対応しています。
+アニメーション画像は先頭ページのみの静止画として表示します。
 
 
-主なコマンドライン引数
+sayaka ちゃんの主なコマンドライン引数
 ---
 * `-c,--color=<mode>` … 色モードを指定します。デフォルトは `256` です。
 	* `256` … 適応256色モードです。フルカラー端末向けです。
@@ -248,7 +257,7 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 	指定します。
 
 
-その他のコマンドライン引数
+sayaka ちゃんのその他のコマンドライン引数
 ---
 * `--ciphers=<ciphers>` … 通信に使用する暗号化スイートを指定します。
 	今のところ指定できるのは "RSA" (大文字) のみです。
@@ -337,14 +346,28 @@ Misskey の「設定 &gt; API &gt; アクセストークンの発行」から
 	デフォルトは `3000` (3秒)です。
 
 
-ライセンス
+sayaka ちゃんのライセンスについて
 ---
-* sayaka 自体は 2-clause BSD ライセンスです。
+* sayaka, sixelv 自体は 2-clause BSD ライセンスです。
 * サードパーティライブラリについては [NOTICES.md](NOTICES.md) を参照してください。
 
 
-更新履歴
+sayaka ちゃん更新履歴
 ---
+* 3.8.3 (2025/06/29) …
+	256 色を固定パレットから適応パレットに変更
+	(3.8.2 以前で使用した `~/.sayaka/cache/` は削除してください)。
+	アイコンのキャッシュ期間を7日に短縮。
+	実績達成(EarnedAchivement)通知に対応。
+
+* 3.8.2 (2025/05/17) …
+	libjpeg, libpng, giflib に対応。
+	JPEG の YCCK、モノクロなどいくつかの形式に対応 (libjpeg 使用時)。
+	SIXEL 出力の背景色を非透過に変更。
+	webp 画像がロードできない場合があったのを修正。
+	3.8.0 以降一部のキャッシュファイルが削除できていなかったのを修正
+	(すでに残っている分は削除されないので `~/.sayaka/cache/` 以下をすべて消すとかしてください)。
+
 * 3.8.1 (2024/09/21) …
 	リアクション通知、フォロー(された)通知に対応。
 	キープアライブを実装。
