@@ -476,9 +476,7 @@ misskey_show_note(const struct json *js, int inote)
 			// リノート元。
 			ustring *rnline = ustring_alloc(64);
 			ustring *rnowner = misskey_format_renote_owner(js, inote);
-			ustring_append_ascii(rnline, style_begin(STYLE_RENOTE));
-			ustring_append(rnline, rnowner);
-			ustring_append_ascii(rnline, style_end(STYLE_RENOTE));
+			ustring_append_ustring_style(rnline, rnowner, STYLE_RENOTE);
 			iprint(rnline);
 			printf("\n");
 			ustring_free(rnowner);
@@ -509,9 +507,7 @@ misskey_show_note(const struct json *js, int inote)
 	misskey_user *user = misskey_get_user(js, inote);
 	ustring *headline = ustring_alloc(64);
 	// 名前欄は MFM とかが使えるので本文同様にパース。
-	ustring_append_ascii(headline, style_begin(STYLE_USERNAME));
-	ustring_append(headline, user->name);
-	ustring_append_ascii(headline, style_end(STYLE_USERNAME));
+	ustring_append_ustring_style(headline, user->name, STYLE_USERNAME);
 	ustring_append_unichar(headline, ' ');
 	ustring_append_ascii_style(headline, string_get(user->id), STYLE_USERID);
 	if (user->instance) {
@@ -808,9 +804,7 @@ misskey_show_notification(const struct json *js, int ibody)
 		printf(" *\r");
 		ustring *u = ustring_alloc(128);
 		ustring_append_ascii(u, "Followed by ");
-		ustring_append_ascii(u, style_begin(STYLE_USERNAME));
-		ustring_append(u, user->name);
-		ustring_append_ascii(u, style_end(STYLE_USERNAME));
+		ustring_append_ustring_style(u, user->name, STYLE_USERNAME);
 		ustring_append_unichar(u, ' ');
 		ustring_append_ascii_style(u, string_get(user->id), STYLE_USERID);
 		if (user->instance) {

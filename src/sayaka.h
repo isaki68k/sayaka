@@ -129,6 +129,7 @@ extern const char *style_begin(uint);
 extern const char *style_end(uint);
 extern void ustring_append_ascii_style(ustring *, const char *, uint);
 extern void ustring_append_utf8_style(ustring *, const char *, uint);
+extern void ustring_append_ustring_style(ustring *, const ustring *, uint);
 extern void print_indent(uint);
 extern void iprint(const ustring *);
 extern bool show_image(const char *, const char *, uint, uint, bool, int);

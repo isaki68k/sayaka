@@ -177,37 +177,39 @@ style_end(uint style)
 	return "";
 }
 
-// ustring の u の末尾に style を適用した ASCII 文字列 str を追加する。
+#define APPEND_IF(func, dst, src)	do {	\
+	bool has_esc = (style2esc[style][0] != '\0');	\
+	if (has_esc)	\
+		ustring_append_ascii(dst, style2esc[style]);	\
+	func (dst, src);	\
+	if (has_esc)	\
+		ustring_append_ascii(dst, ESC "[0m");	\
+} while (0)
+
+// ustring の u の末尾に、style を適用した ASCII 文字列 str を追加する。
 void
 ustring_append_ascii_style(ustring *u, const char *str, uint style)
 {
 	if (str[0] != '\0') {
-		bool has_esc = (style2esc[style][0] != '\0');
-
-		if (has_esc) {
-			ustring_append_ascii(u, style2esc[style]);
-		}
-		ustring_append_ascii(u, str);
-		if (has_esc) {
-			ustring_append_ascii(u, ESC "[0m");
-		}
+		APPEND_IF(ustring_append_ascii, u, str);
 	}
 }
 
-// ustring の u の末尾に style を適用した UTF-8 文字列 str を追加する。
+// ustring の u の末尾に、style を適用した UTF-8 文字列 str を追加する。
 void
 ustring_append_utf8_style(ustring *u, const char *str, uint style)
 {
 	if (str[0] != '\0') {
-		bool has_esc = (style2esc[style][0] != '\0');
+		APPEND_IF(ustring_append_utf8, u, str);
+	}
+}
 
-		if (has_esc) {
-			ustring_append_ascii(u, style2esc[style]);
-		}
-		ustring_append_utf8(u, str);
-		if (has_esc) {
-			ustring_append_ascii(u, ESC "[0m");
-		}
+// ustring の u の末尾に、style を適用した ustring str を追加する。
+void
+ustring_append_ustring_style(ustring *u, const ustring *str, uint style)
+{
+	if (ustring_len(str) != 0) {
+		APPEND_IF(ustring_append, u, str);
 	}
 }
 
