@@ -436,6 +436,8 @@ misskey_message(string *jsonstr)
 static int
 misskey_show_note(const struct json *js, int inote)
 {
+	int crlf = -1;
+
 	if (__predict_false(diag_get_level(diag_format) >= 2)) {
 		json_dump(js, inote);
 	}
@@ -470,7 +472,7 @@ misskey_show_note(const struct json *js, int inote)
 
 	if (c_text == NULL && icw < 0 && ifiles < 0 && irenote >= 0) {
 		// リノート。
-		int crlf = misskey_show_note(js, irenote);
+		crlf = misskey_show_note(js, irenote);
 
 		if (crlf >= 0) {
 			// リノート元。
@@ -563,12 +565,14 @@ misskey_show_note(const struct json *js, int inote)
 	// 本文の NG ワード判定。
 	int ngid = misskey_ngword_match_text(top, user);
 	if (ngid >= 0) {
-		return misskey_show_ng(ngid, js, inote, user);
+		crlf = misskey_show_ng(ngid, js, inote, user);
+		goto ng_abort;
 	}
 	if (bottom) {
 		ngid = misskey_ngword_match_text(bottom, user);
 		if (ngid >= 0) {
-			return misskey_show_ng(ngid, js, inote, user);
+			crlf = misskey_show_ng(ngid, js, inote, user);
+			goto ng_abort;
 		}
 	}
 	// XXX 表示が始まる前に投票文の NG ワードも判定しないといけない。
@@ -649,12 +653,14 @@ misskey_show_note(const struct json *js, int inote)
 
 	iprint(footline);
 	printf("\n");
+	crlf = 1;
 
 	ustring_free(footline);
 	string_free(time);
 	string_free(rnmsg);
 	string_free(reactmsg);
 	ustring_free(textline);
+ ng_abort:
 	string_free(cw);
 	string_free(text);
 	ustring_free(headline);
