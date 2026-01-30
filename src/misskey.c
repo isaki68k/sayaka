@@ -1305,6 +1305,7 @@ misskey_display_text_common(const struct json *js, int inote, const char *text,
 			// ルビ1は ' ' が来たら終了。
 			if (c == ' ') {
 				pos++;
+				state_pop(ctx);
 				state_push(ctx, S_RUBY2);
 				ustring_append_unichar(dst, '(');
 				continue;
