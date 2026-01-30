@@ -39,7 +39,7 @@
 
 // ユーザ名。毎回このセットが必要なので。
 typedef struct misskey_user_ {
-	string *name;		// "name"、こっちは表示名 (NULL でない)
+	ustring *name;		// "name"、名前を表示用に加工したもの (NULL でない)
 	string *id;			// "username"、アカウント名っぽい方 (NULL でない)
 	string *instance;	// "instance/name"、インスタンス名 (なければ NULL)
 } misskey_user;
@@ -71,7 +71,7 @@ static string *misskey_format_poll(const struct json *, int);
 static string *misskey_format_time(const struct json *, int);
 static string *misskey_format_renote_count(const struct json *, int);
 static string *misskey_format_reaction_count(const struct json *, int);
-static string *misskey_format_renote_owner(const struct json *, int);
+static ustring *misskey_format_renote_owner(const struct json *, int);
 static misskey_user *misskey_get_user(const struct json *, int);
 static void misskey_free_user(misskey_user *);
 static int misskey_ngword_match_text(const string *, const misskey_user *);
@@ -475,12 +475,13 @@ misskey_show_note(const struct json *js, int inote)
 		if (crlf >= 0) {
 			// リノート元。
 			ustring *rnline = ustring_alloc(64);
-			string *rnowner = misskey_format_renote_owner(js, inote);
-			ustring_append_utf8_style(rnline, string_get(rnowner),
-				STYLE_RENOTE);
+			ustring *rnowner = misskey_format_renote_owner(js, inote);
+			ustring_append_ascii(rnline, style_begin(STYLE_RENOTE));
+			ustring_append(rnline, rnowner);
+			ustring_append_ascii(rnline, style_end(STYLE_RENOTE));
 			iprint(rnline);
 			printf("\n");
-			string_free(rnowner);
+			ustring_free(rnowner);
 			ustring_free(rnline);
 		}
 
@@ -508,11 +509,9 @@ misskey_show_note(const struct json *js, int inote)
 	misskey_user *user = misskey_get_user(js, inote);
 	ustring *headline = ustring_alloc(64);
 	// 名前欄は MFM とかが使えるので本文同様にパース。
-	ustring *headname = misskey_display_name(js, inote, string_get(user->name));
 	ustring_append_ascii(headline, style_begin(STYLE_USERNAME));
-	ustring_append(headline, headname);
+	ustring_append(headline, user->name);
 	ustring_append_ascii(headline, style_end(STYLE_USERNAME));
-	ustring_free(headname);
 	ustring_append_unichar(headline, ' ');
 	ustring_append_utf8_style(headline, string_get(user->id), STYLE_USERID);
 	if (user->instance) {
@@ -778,20 +777,20 @@ misskey_show_notification(const struct json *js, int ibody)
 		misskey_user *user = misskey_get_user(js, ibody);
 		const char *reaction = json_obj_find_cstr(js, ibody, "reaction");
 
-		string *s = string_init();
-		string_append_cstr(s, string_get(time));
-		string_append_char(s, ' ');
-		string_append_cstr(s, reaction);
-		string_append_cstr(s, " from ");
-		string_append_cstr(s, string_get(user->name));
-		string_append_char(s, ' ');
-		string_append_cstr(s, string_get(user->id));
+		ustring *u = ustring_init();
+		ustring_append_ascii(u, style_begin(STYLE_REACTION));
+		ustring_append_ascii(u, string_get(time));
+		ustring_append_unichar(u, ' ');
+		ustring_append_utf8(u, reaction);
+		ustring_append_ascii(u, " from ");
+		ustring_append(u, user->name);
+		ustring_append_unichar(u, ' ');
+		ustring_append_ascii(u, string_get(user->id));
 		if (user->instance) {
-			string_append_char(s, ' ');
-			string_append_cstr(s, string_get(user->instance));
+			ustring_append_unichar(u, ' ');
+			ustring_append_utf8(u, string_get(user->instance));
 		}
-		ustring *u = ustring_alloc(64);
-		ustring_append_utf8_style(u, string_get(s), STYLE_REACTION);
+		ustring_append_ascii(u, style_end(STYLE_REACTION));
 		iprint(u);
 		printf("\n");
 		ustring_free(u);
@@ -809,7 +808,9 @@ misskey_show_notification(const struct json *js, int ibody)
 		printf(" *\r");
 		ustring *u = ustring_alloc(128);
 		ustring_append_ascii(u, "Followed by ");
-		ustring_append_utf8_style(u, string_get(user->name), STYLE_USERNAME);
+		ustring_append_ascii(u, style_begin(STYLE_USERNAME));
+		ustring_append(u, user->name);
+		ustring_append_ascii(u, style_end(STYLE_USERNAME));
 		ustring_append_unichar(u, ' ');
 		ustring_append_utf8_style(u, string_get(user->id), STYLE_USERID);
 		if (user->instance) {
@@ -1620,26 +1621,26 @@ misskey_format_reaction_count(const struct json *js, int inote)
 }
 
 // リノート元通知を表示用に整形して返す。
-static string *
+static ustring *
 misskey_format_renote_owner(const struct json *js, int inote)
 {
-	string *s = string_init();
+	ustring *u = ustring_init();
 	string *rn_time = misskey_format_time(js, inote);
 	misskey_user *rn_user = misskey_get_user(js, inote);
 
-	string_append_cstr(s, string_get(rn_time));
-	string_append_cstr(s, " Renoted by ");
-	string_append_cstr(s, string_get(rn_user->name));
-	string_append_char(s, ' ');
-	string_append_cstr(s, string_get(rn_user->id));
+	ustring_append_ascii(u, string_get(rn_time));
+	ustring_append_ascii(u, " Renoted by ");
+	ustring_append(u, rn_user->name);
+	ustring_append_unichar(u, ' ');
+	ustring_append_ascii(u, string_get(rn_user->id));
 	if (rn_user->instance) {
-		string_append_char(s, ' ');
-		string_append_cstr(s, string_get(rn_user->instance));
+		ustring_append_unichar(u, ' ');
+		ustring_append_ascii(u, string_get(rn_user->instance));
 	}
 
 	string_free(rn_time);
 	misskey_free_user(rn_user);
-	return s;
+	return u;
 }
 
 // ノートのユーザ情報を返す。
@@ -1650,7 +1651,7 @@ misskey_get_user(const struct json *js, int inote)
 	if (user == NULL) {
 		return NULL;
 	}
-	user->name = string_init();
+	user->name = ustring_init();
 	user->id   = string_init();
 
 	int iuser = json_obj_find_obj(js, inote, "user");
@@ -1663,11 +1664,12 @@ misskey_get_user(const struct json *js, int inote)
 		if (c_name && c_name[0] != '\0') {
 			// XXX テキスト中に制御文字が含まれてたらとかはまた後で考える。
 			string *tmp = json_unescape(c_name);
-			string_append_cstr(user->name, string_get(tmp));
+			ustring *name = misskey_display_name(js, inote, string_get(tmp));
+			ustring_append(user->name, name);
 			string_free(tmp);
 		} else {
 			// こっちは ID っぽいやつなのでおかしな文字はいないはず。
-			string_append_cstr(user->name, c_username);
+			ustring_append_ascii(user->name, c_username);
 		}
 
 		// @アカウント名 [ @外部ホスト名 ]
@@ -1695,7 +1697,7 @@ static void
 misskey_free_user(misskey_user *user)
 {
 	if (user) {
-		string_free(user->name);
+		ustring_free(user->name);
 		string_free(user->id);
 		string_free(user->instance);
 	}
@@ -1749,7 +1751,9 @@ misskey_show_ng(int ngid, const struct json *js, int inote,
 	ustring *headline = ustring_alloc(64);
 	ustring *footline = ustring_alloc(64);
 
-	ustring_append_utf8_style(headline, string_get(user->name), STYLE_TIME);
+	ustring_append_ascii(headline, style_begin(STYLE_TIME));
+	ustring_append(headline, user->name);
+	ustring_append_ascii(headline, style_end(STYLE_TIME));
 	ustring_append_unichar(headline, ' ');
 	ustring_append_utf8_style(headline, string_get(user->id), STYLE_TIME);
 	if (user->instance) {
