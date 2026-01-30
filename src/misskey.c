@@ -1753,15 +1753,13 @@ misskey_show_ng(int ngid, const struct json *js, int inote,
 
 	ustring_append_ascii(headline, style_begin(STYLE_TIME));
 	ustring_append(headline, user->name);
-	ustring_append_ascii(headline, style_end(STYLE_TIME));
 	ustring_append_unichar(headline, ' ');
-	ustring_append_ascii_style(headline, string_get(user->id), STYLE_TIME);
+	ustring_append_ascii(headline, string_get(user->id));
 	if (user->instance) {
 		ustring_append_unichar(headline, ' ');
-		ustring_append_utf8_style(headline, string_get(user->instance),
-			STYLE_TIME);
+		ustring_append_utf8(headline, string_get(user->instance));
 	}
-
+	ustring_append_ascii(headline, style_end(STYLE_TIME));
 
 	string *time = misskey_format_time(js, inote);
 	const string *ngtext = ngwords->item[ngid].ng_text;
