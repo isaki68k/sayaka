@@ -509,7 +509,9 @@ misskey_show_note(const struct json *js, int inote)
 	ustring *headline = ustring_alloc(64);
 	// 名前欄は MFM とかが使えるので本文同様にパース。
 	ustring *headname = misskey_display_name(js, inote, string_get(user->name));
+	ustring_append_ascii(headline, style_begin(STYLE_USERNAME));
 	ustring_append(headline, headname);
+	ustring_append_ascii(headline, style_end(STYLE_USERNAME));
 	ustring_free(headname);
 	ustring_append_unichar(headline, ' ');
 	ustring_append_utf8_style(headline, string_get(user->id), STYLE_USERID);
@@ -1087,8 +1089,8 @@ enum {
 	S_PLAIN,		// <plain>〜</plain> 内
 	S_BACKTICK1,	// `〜` 内
 	S_BACKTICK3,	// ```〜``` 内
-	S_MENTION,		// @mention
-	S_URL,			// URL
+	S_MENTION,		// @mention、色を変える
+	S_URL,			// URL、色を変える
 	S_RUBY1,		// ルビの本文1
 	S_RUBY2,		// ルビの本文2
 	S_UNSUPP_MFM,	// 未サポートの MFM コンテンツ内
@@ -1103,9 +1105,6 @@ struct context {
 
 	// URL 中の丸括弧。
 	int paren_in_url;
-
-	// ユーザ名フィールドなら true。地の文字色が違う。
-	bool is_username;
 };
 
 static inline uint
@@ -1189,7 +1188,6 @@ misskey_display_text_common(const struct json *js, int inote, const char *text,
 	struct context *ctx = &ctx0;
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->dst = dst;
-	ctx->is_username = is_username;
 	ctx->states[0] = S_RAWTEXT;
 	state_enter(ctx, ctx->states[0]);
 
@@ -1443,9 +1441,6 @@ state_enter(struct context *ctx, uint state)
 		ctx->paren_in_url = 0;
 		break;
 	 default:
-		if (__predict_false(ctx->is_username)) {
-			style = style_begin(STYLE_USERNAME);
-		}
 		break;
 	}
 	if (style) {
@@ -1466,9 +1461,6 @@ state_leave(struct context *ctx, uint state)
 		style = style_end(STYLE_URL);
 		break;
 	 default:
-		if (__predict_false(ctx->is_username)) {
-			style = style_end(STYLE_USERNAME);
-		}
 		break;
 	}
 	if (style) {
