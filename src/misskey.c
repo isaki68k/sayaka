@@ -1635,7 +1635,7 @@ misskey_format_renote_owner(const struct json *js, int inote)
 	ustring_append_ascii(u, string_get(rn_user->id));
 	if (rn_user->instance) {
 		ustring_append_unichar(u, ' ');
-		ustring_append_ascii(u, string_get(rn_user->instance));
+		ustring_append_utf8(u, string_get(rn_user->instance));
 	}
 
 	string_free(rn_time);
