@@ -513,7 +513,7 @@ misskey_show_note(const struct json *js, int inote)
 	ustring_append(headline, user->name);
 	ustring_append_ascii(headline, style_end(STYLE_USERNAME));
 	ustring_append_unichar(headline, ' ');
-	ustring_append_utf8_style(headline, string_get(user->id), STYLE_USERID);
+	ustring_append_ascii_style(headline, string_get(user->id), STYLE_USERID);
 	if (user->instance) {
 		ustring_append_unichar(headline, ' ');
 		ustring_append_utf8_style(headline, string_get(user->instance),
@@ -812,7 +812,7 @@ misskey_show_notification(const struct json *js, int ibody)
 		ustring_append(u, user->name);
 		ustring_append_ascii(u, style_end(STYLE_USERNAME));
 		ustring_append_unichar(u, ' ');
-		ustring_append_utf8_style(u, string_get(user->id), STYLE_USERID);
+		ustring_append_ascii_style(u, string_get(user->id), STYLE_USERID);
 		if (user->instance) {
 			ustring_append_unichar(u, ' ');
 			ustring_append_utf8_style(u, string_get(user->instance),
@@ -821,7 +821,7 @@ misskey_show_notification(const struct json *js, int ibody)
 		iprint(u);
 		printf("\n");
 		ustring_clear(u);
-		ustring_append_utf8_style(u, string_get(time), STYLE_TIME);
+		ustring_append_ascii_style(u, string_get(time), STYLE_TIME);
 		iprint(u);
 		printf("\n");
 		ustring_free(u);
@@ -844,7 +844,7 @@ misskey_show_notification(const struct json *js, int ibody)
 		iprint(u);
 		printf("\n");
 		ustring_clear(u);
-		ustring_append_utf8_style(u, string_get(time), STYLE_TIME);
+		ustring_append_ascii_style(u, string_get(time), STYLE_TIME);
 		iprint(u);
 		printf("\n");
 		ustring_free(u);
@@ -1755,7 +1755,7 @@ misskey_show_ng(int ngid, const struct json *js, int inote,
 	ustring_append(headline, user->name);
 	ustring_append_ascii(headline, style_end(STYLE_TIME));
 	ustring_append_unichar(headline, ' ');
-	ustring_append_utf8_style(headline, string_get(user->id), STYLE_TIME);
+	ustring_append_ascii_style(headline, string_get(user->id), STYLE_TIME);
 	if (user->instance) {
 		ustring_append_unichar(headline, ' ');
 		ustring_append_utf8_style(headline, string_get(user->instance),
