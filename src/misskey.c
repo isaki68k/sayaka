@@ -67,6 +67,7 @@ static void state_enter(struct context *, uint);
 static void state_leave(struct context *, uint);
 static bool unichar_submatch(const unichar *, const char *);
 static int  unichar_ncasecmp(const unichar *, const unichar *);
+static bool unichar_find(const unichar *, const char *);
 static string *misskey_format_poll(const struct json *, int);
 static string *misskey_format_time(const struct json *, int);
 static string *misskey_format_renote_count(const struct json *, int);
@@ -1235,13 +1236,18 @@ misskey_display_text_common(const struct json *js, int inote, const char *text,
 				}
 			} else if (c == '`') {
 				if (unichar_submatch(&srcarray[pos + 1], "``")) {
-					pos += 3;
-					state_push(ctx, S_BACKTICK3);
+					if (unichar_find(&srcarray[pos + 3], "```")) {
+						pos += 3;
+						state_push(ctx, S_BACKTICK3);
+						continue;
+					}
 				} else {
-					pos++;
-					state_push(ctx, S_BACKTICK1);
+					if (unichar_find(&srcarray[pos + 1], "`")) {
+						pos++;
+						state_push(ctx, S_BACKTICK1);
+						continue;
+					}
 				}
-				continue;
 			} else if (is_username) {
 				// ユーザ名欄ならこれ以降のマークアップは整形しない。
 				break;
@@ -1514,6 +1520,28 @@ unichar_ncasecmp(const unichar *u1, const unichar *u2)
 		}
 	}
 	return 0;
+}
+
+// ustring (の中身の配列) u 以降から key と一致する部分があるか調べる。
+// 一致すれば true を返す。
+static bool
+unichar_find(const unichar *u, const char *key)
+{
+	uint i;
+
+	// 1文字目があるか。
+	for (i = 0; u[i]; i++) {
+		if (u[i] == key[0]) {
+			// 残りの文字が一致するか。
+			for (key++; *key; key++) {
+				if (*key != u[++i]) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+	return false;
 }
 
 // 投票を表示用に整形して返す。
