@@ -666,7 +666,7 @@ misskey_show_note(const struct json *js, int inote)
 	string_free(text);
 	ustring_free(headline);
 	misskey_free_user(user);
-	return 1;
+	return crlf;
 }
 
 // アナウンス文を処理する。構造が全然違う。
