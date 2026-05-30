@@ -1,4 +1,4 @@
-sayaka ちゃん & sixelv version 3.8.6 (2026/01/28)
+sayaka ちゃん & sixelv version 3.8.7 (2026/05/30)
 =====
 
 sayaka ちゃんはターミナルに特化した Misskey ストリームクライアントです。

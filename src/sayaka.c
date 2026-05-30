@@ -41,8 +41,8 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
-#define SAYAKA_VERSION "3.8.6"
-#define SAYAKA_RELDATE "2026/01/28"
+#define SAYAKA_VERSION "3.8.7"
+#define SAYAKA_RELDATE "2026/05/30"
 
 enum {
 	DEFAULT_FONT_WIDTH	= 7,
