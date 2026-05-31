@@ -7126,3 +7126,74 @@ printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2
 fi
 
 
+echo ""
+echo "Configuration summary:"
+printf "Decode GIF: 	"
+if test x"${has_giflib}" = x"yes"; then
+	echo "yes (giflib)"
+elif test x"${with_stb_image}" = x"yes"; then
+	echo "yes (stb_image)"
+else
+	echo "no"
+fi
+printf "Decode JPEG:	"
+if test x"${HAVE_LIBJPEG}" = x"yes"; then
+	echo "yes (libjpeg)"
+elif test x"${with_stb_image}" = x"yes"; then
+	echo "yes (stb_image)"
+else
+	echo "no"
+fi
+printf "Decode JXL: 	"
+if test x"${HAVE_LIBJXL}" = x"yes"; then
+	echo "yes (libjxl)"
+else
+	echo "no"
+fi
+printf "Decode PNG: 	"
+if test x"${HAVE_LIBPNG}" = x"yes"; then
+	echo "yes (libjpeg)"
+elif test x"${with_stb_image}" = x"yes"; then
+	echo "yes (stb_image)"
+else
+	echo "no"
+fi
+printf "Decode TIFF:	"
+if test x"${HAVE_LIBTIFF}" = x"yes"; then
+	echo "yes (libtiff)"
+else
+	echo "no"
+fi
+printf "Decode Webp:	"
+if test x"${HAVE_LIBWEBP}" = x"yes"; then
+	echo "yes (libwebp)"
+else
+	echo "no"
+fi
+
+printf "Decode BMP: 	"; echo "yes (builtin)"
+printf "Decode ICO: 	"
+if test x"${with_builtin_ico}" = x"yes"; then
+	echo "yes (builtin)"
+else
+	echo "no"
+fi
+printf "Decode MAG: 	"
+if test x"${with_builtin_mag}" = x"yes"; then
+	echo "yes (builtin)"
+else
+	echo "no"
+fi
+printf "Decode PNM: 	"
+if test x"${with_builtin_pnm}" = x"yes"; then
+	echo "yes (builtin)"
+else
+	echo "no"
+fi
+printf "Decode YPIC:	"
+if test x"${with_builtin_ypic}" = x"yes"; then
+	echo "yes (builtin)"
+else
+	echo "no"
+fi
+
