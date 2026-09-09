@@ -316,7 +316,7 @@ main(int ac, char *av[])
 			break;
 
 		 case OPT_euc_jp:
-			opt_codeset = "euc-jp";
+			opt_codeset = "cp51932";
 			break;
 
 		 case OPT_font:
