@@ -118,6 +118,7 @@ enum {
 	OPT_debug_term,
 	OPT_eaw_a,
 	OPT_eaw_n,
+	OPT_encoding,
 	OPT_euc_jp,
 	OPT_font,
 	OPT_force_blurhash,
@@ -153,6 +154,7 @@ static const struct option longopts[] = {
 	{ "debug-term",		required_argument,	NULL,	OPT_debug_term },
 	{ "eaw-a",			required_argument,	NULL,	OPT_eaw_a },
 	{ "eaw-n",			required_argument,	NULL,	OPT_eaw_n },
+	{ "encoding",		required_argument,	NULL,	OPT_encoding },
 	{ "euc-jp",			no_argument,		NULL,	OPT_euc_jp },
 	{ "font",			required_argument,	NULL,	OPT_font },
 	{ "force-blurhash",	no_argument,		NULL,	OPT_force_blurhash },
@@ -313,6 +315,10 @@ main(int ac, char *av[])
 			if (opt_eaw_n < 1 || opt_eaw_n > 2) {
 				errx(1, "--eaw-n %s: must be either 1 or 2", optarg);
 			}
+			break;
+
+		 case OPT_encoding:
+			opt_codeset = optarg;
 			break;
 
 		 case OPT_euc_jp:
@@ -588,7 +594,8 @@ help_all(void)
 "  --dark / --light       : Assume background color (default:auto detect)\n"
 "  --eaw-a=<1|2>          : Width of Unicode EAW Anbiguous char (default:2)\n"
 "  --eaw-n=<1|2>          : Width of Unicode EAW Neutral char   (defualt:1)\n"
-"  --euc-jp / --jis       : Set output charset\n"
+"  --encoding <name>      : Set output encoding. (see iconv -l)\n"
+"  --euc-jp / --jis       : Alias for --encoding cp51932 / --encoding jis\n"
 "  --font=<W>x<H>         : Set font size (Normally autodetected)\n"
 "  --force-blurhash       : Show blurhash image instead of actual image\n"
 "  --help-all             : This help\n"
@@ -761,7 +768,10 @@ init_screen(void)
 	// 出力文字コードの初期化。
 	if (init_codeset(opt_codeset) == false) {
 		if (errno == 0) {
-			errx(1, "output charset is specified but iconv is not builtin.");
+			errx(1, "iconv is not builtin.");
+		} else if (errno == EINVAL) {
+			errx(1, "Encoding '%s' is not supported. (see iconv -l)",
+				opt_codeset);
 		} else {
 			err(1, "iconv_open failed");
 		}
