@@ -786,7 +786,7 @@ socket_connect(const char *hostname, const char *servname,
 			uint64 now_usec = timespec_to_usec(&now);
 			if (now_usec >= end_usec) {
 				errno = ETIMEDOUT;
-				return -1;
+				goto abort_continue;
 			}
 			uint64 timeout_usec = end_usec - now_usec;
 			tv.tv_sec  = timeout_usec / 1000000;
