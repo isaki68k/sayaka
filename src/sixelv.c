@@ -40,8 +40,8 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#define SIXELV_VERSION "3.8.7"
-#define SIXELV_RELDATE "2026/05/30"
+#define SIXELV_VERSION "3.8.8"
+#define SIXELV_RELDATE "2026/09/11"
 
 typedef enum {
 	OUTPUT_FORMAT_SIXEL,
