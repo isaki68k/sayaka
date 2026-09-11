@@ -11,6 +11,10 @@ sixelv は SIXEL 対応ターミナル用の画像ビューワです。→ [SIXE
 
 sayaka ちゃんの変更点
 ---
+* 3.8.8 (2026/09/11) …
+	`--euc-jp` を CP51932 に変更。`--encoding` オプションを追加。
+	画像タイムアウト時のディスクリプタリークを修正。
+
 * 3.8.7 (2026/05/30) …
 	Misskey の表示整形を改善。
 
@@ -21,17 +25,6 @@ sayaka ちゃんの変更点
 	名前欄の MFM に対応。
 	画像のロードを少し高速化。
 	ドキュメントから `--no-progressive` を削除(修正)。
-
-* 3.8.5 (2025/12/30) …
-	JPEG-XL (libjxl) に対応。
-	適応パレットによる縮小が破綻するケースを修正。
-	~~`--no-progressive` オプションを実装。~~
-	Misskey の MFM `$[ruby]` に暫定対応。
-	8色以下での時刻の表示色を調整。
-	`--force-blurhash` オプションを実装。
-	キャッシュファイル名を調整 (ユーザには影響ありません)。
-	WebSocket のエラー処理を修正。
-	Mac OS でのビルドに対応。
 
 
 sayaka ちゃん &amp; sixelv のビルドに必要なもの
@@ -274,8 +267,12 @@ sayaka ちゃんのその他のコマンドライン引数
 	文字幅を 1 か 2 で指定します。デフォルトは 2 です。
 	ターミナルとフォントも幅が揃ってないとたぶん悲しい目にあいます。
 
-* `--euc-jp` … 文字コードを EUC-JP に変換して出力します。
-	VT382J 等の EUC-JP (DEC漢字) に対応したターミナルで使えます。
+* `--encoding=<code>` … 出力文字コードを指定します。
+	指定出来るのは `iconv -l` のうちのいずれかです。
+	`configure` 時に `--without-iconv` を指定した場合はこの機能は使えません。
+
+* `--euc-jp` … 文字コードを EUC-JP (というか CP51932) に変換して出力します。
+	`--encoding cp51932` の別名です。
 	`configure` 時に `--without-iconv` を指定した場合はこの機能は使えません。
 
 * `--font=<W>x<H>` … フォントの幅と高さを `--font 7x14` のように指定します。
@@ -289,6 +286,7 @@ sayaka ちゃんのその他のコマンドライン引数
 
 * `--jis` … 文字コードを JIS に変換して出力します。
 	NetBSD/x68k コンソール等の JIS に対応したターミナルで使えます。
+	`--encoding jis` の別名です。
 	`configure` 時に `--without-iconv` を指定した場合はこの機能は使えません。
 
 * `--mathalpha` … Unicode の [Mathematical Alphanumeric Symbols](https://en.wikipedia.org/wiki/Mathematical_Alphanumeric_Symbols)
@@ -353,6 +351,17 @@ sayaka ちゃんのライセンスについて
 
 sayaka ちゃん更新履歴
 ---
+* 3.8.5 (2025/12/30) …
+	JPEG-XL (libjxl) に対応。
+	適応パレットによる縮小が破綻するケースを修正。
+	~~`--no-progressive` オプションを実装。~~
+	Misskey の MFM `$[ruby]` に暫定対応。
+	8色以下での時刻の表示色を調整。
+	`--force-blurhash` オプションを実装。
+	キャッシュファイル名を調整 (ユーザには影響ありません)。
+	WebSocket のエラー処理を修正。
+	Mac OS でのビルドに対応。
+
 * 3.8.4 (2025/08/10) …
 	HTTP リダイレクトに失敗する場合があったのを修正。
 	HTTPS 画像のダウンロードに失敗する場合があったのを修正。
